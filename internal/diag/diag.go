@@ -19,11 +19,13 @@ type Error struct {
 
 func (e Error) Error() string {
 	var b strings.Builder
-	b.WriteString(e.File)
-	if e.Line > 0 {
-		fmt.Fprintf(&b, ":%d", e.Line)
+	if e.File != "" {
+		b.WriteString(e.File)
+		if e.Line > 0 {
+			fmt.Fprintf(&b, ":%d", e.Line)
+		}
+		b.WriteString(": ")
 	}
-	b.WriteString(": ")
 	if e.Line == 0 && e.Item != "" {
 		b.WriteString(e.Item)
 		b.WriteString(": ")
