@@ -24,10 +24,17 @@ type Annotation struct {
 	Kind  string
 	Value string // ID か、internal なら理由
 	Name  string // 付いているものの名前（アダプタが読み取ったもの）
+	// Adapter は、読み取ったアダプタ（go・txtar・tla・sql）。外部のコマンドのアダプタなら空
+	Adapter string
 }
 
 // adapter は、ファイルの中身と、アノテーションのある行を受け取り、行ごとに付いているものの名前を返す。
+// comments は、行ごとに、その言語のコメントの中の文だけを返す（コメントの外の @vanda: を数えないため）。
+// nil を返せば、すべての行の全体を見る（言語を知らない外部のコマンドのアダプタ）。
 type adapter interface {
+	comments(file string, src []byte) ([]string, []diag.Error)
+	// kinds は、その言語に書けるアノテーションの種類。nil なら、すべて
+	kinds() []string
 	names(file string, src []byte, lines []int) (map[int]string, []diag.Error)
 }
 
@@ -66,8 +73,24 @@ func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotat
 			errs = append(errs, diag.Error{File: f, What: "ファイルを読めない（" + err.Error() + "）", Fix: "ファイルを読む権限を確かめる"})
 			continue
 		}
-		found, ferrs := scan(f, src)
+		texts, cerrs := a.comments(f, src)
+		errs = append(errs, cerrs...)
+		if len(cerrs) > 0 {
+			continue
+		}
+		if texts == nil {
+			texts = strings.Split(string(src), "\n")
+		}
+		all, ferrs := scan(f, texts)
 		errs = append(errs, ferrs...)
+		var found []Annotation
+		for _, x := range all {
+			if ks := a.kinds(); ks != nil && !contains(ks, x.Kind) {
+				errs = append(errs, diag.Error{File: f, Line: x.Line, What: "@vanda:" + x.Kind + " は、" + hit[0].Adapter + " のアダプタのファイルには書けない", Fix: "書けるのは " + strings.Join(ks, "・") + "。種類を直すか、アノテーションを別のファイルに移す"})
+				continue
+			}
+			found = append(found, x)
+		}
 		if len(found) == 0 {
 			continue
 		}
@@ -80,11 +103,13 @@ func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotat
 		for _, x := range found {
 			if n, ok := names[x.Line]; ok {
 				x.Name = n
+				x.Adapter = hit[0].Adapter
 				out = append(out, x)
 			}
 		}
 	}
 	if len(errs) > 0 {
+		diag.Sort(errs)
 		return out, errs
 	}
 	return out, nil
@@ -107,12 +132,11 @@ func adapterFor(root string, r config.AnnotationRule) adapter {
 	return nil
 }
 
-// scan は、言語を問わず、各行の `@vanda:` を探して、種類と ID（または理由）を読む。
-// コメントの中にあるかは、言語を知っているアダプタが確かめる。
-func scan(file string, src []byte) ([]Annotation, []diag.Error) {
+// scan は、行ごとの文 texts の中の `@vanda:` を探して、種類と ID（または理由）を読む。
+func scan(file string, texts []string) ([]Annotation, []diag.Error) {
 	var out []Annotation
 	var errs []diag.Error
-	for i, line := range strings.Split(string(src), "\n") {
+	for i, line := range texts {
 		n := i + 1
 		at := strings.Index(line, marker)
 		if at < 0 {

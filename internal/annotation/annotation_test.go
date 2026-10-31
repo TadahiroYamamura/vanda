@@ -71,6 +71,9 @@ LOCAL Unique(s, f(_)) == TRUE
 \* @vanda:internal 状態の型
 \* @vanda:feature add-task
 Add(t) == t \* 足す
+
+\* @vanda:claim ids
+ids[t \in Tasks] == t
 ====
 `,
 		"db/schema.sql": `-- @vanda:evidence task-id-unique
@@ -95,6 +98,7 @@ spec/Task.tla:02 term task -> Tasks
 spec/Task.tla:05 claim task-id-unique -> Unique
 spec/Task.tla:10 internal 状態の型 -> Add
 spec/Task.tla:11 feature add-task -> Add
+spec/Task.tla:14 claim ids -> ids
 x/a_test.go:03 evidence task-id-unique -> TestTaskID
 x/a_test.go:08 sensor task-id-unique -> Store.Add
 `
@@ -149,13 +153,10 @@ VARIABLE x
 		"x/a_test.go:3: @vanda:evidence に ID が 2 つ以上ある。",
 		"x/a_test.go:6: @vanda:claimx は決まった種類でない。",
 		"x/a_test.go:9: アノテーションが func の宣言の直前のコメントにない。",
-		"x/a_test.go:13: アノテーションが func の宣言の直前のコメントにない。",
 		"x/a_test.go:15: @vanda:internal に理由がない。",
 		"x/a_test.go:18: @vanda:sensor に ID がない。",
 		"x/a_test.go:19: 1 行に @vanda: が 2 つ以上ある。",
-		"e2e/a.txtar:2: アノテーションが、最初のファイルの区切り（1 行目）より後にある。",
-		"spec/A.tla:2: アノテーションがコメントの中にない。",
-		"spec/A.tla:3: アノテーションの次の行（4 行目）が、Name == か Name(…) == の定義でない。",
+		"spec/A.tla:3: アノテーションの次の行（4 行目）が、Name ==・Name(…) ==・Name[…] == の定義でない。",
 		"spec/A.tla:5: アノテーションの後に定義がない。",
 		"db/a.sql: .vanda/config.toml の [[annotation]]（11 行目・15 行目）の 2 つ以上のパターンに当たる。",
 		"other/a.md: .vanda/config.toml の 13 行目の [[annotation]] のパターンに当たるが、使うアダプタが決まっていない。",
@@ -171,13 +172,22 @@ VARIABLE x
 	}
 }
 
-func TestReadはSQLのコメントの外のアノテーションを誤りにする(t *testing.T) {
-	root, files := setup(t, map[string]string{"db/a.sql": "CREATE TABLE t (id int); /* @vanda:evidence a */\nSELECT '@vanda:evidence a';--説明\nSELECT 1;\n"})
-	_, errs := Read(root, files, []config.AnnotationRule{{Paths: []string{"db/*.sql"}, Adapter: "sql"}})
-	for _, w := range []string{"db/a.sql:1: アノテーションが -- のコメントの中にない。", "db/a.sql:2: アノテーションが -- のコメントの中にない。"} {
-		if errs == nil || !strings.Contains(errs.Error(), w) {
-			t.Errorf("エラーに %q がない: %v", w, errs)
-		}
+func TestReadはその言語のコメントの外にあるアノテーションを数えない(t *testing.T) {
+	root, files := setup(t, map[string]string{
+		"x/a_test.go": "package x\n\nvar s = \"@vanda:evidence a b\"\nvar r = `\n// @vanda:claimx\n`\n",
+		"e2e/a.txtar": "# 説明\n-- .vanda/promises.toml --\n# @vanda:evidence a b\n",
+		"spec/A.tla":  "---- MODULE A ----\nX == \"\\* @vanda:term a b\"\n====\n",
+		"db/a.sql":    "CREATE TABLE t (id int); /* @vanda:evidence a b */\nSELECT '-- @vanda:evidence a b';\n",
+	})
+	rules := []config.AnnotationRule{
+		{Paths: []string{"**/*_test.go"}, Adapter: "go"},
+		{Paths: []string{"e2e/*.txtar"}, Adapter: "txtar"},
+		{Paths: []string{"spec/*.tla"}, Adapter: "tla"},
+		{Paths: []string{"db/*.sql"}, Adapter: "sql"},
+	}
+	as, errs := Read(root, files, rules)
+	if errs != nil || len(as) != 0 {
+		t.Errorf("as = %v, errs = %v", as, errs)
 	}
 }
 
@@ -225,5 +235,42 @@ func TestReadは外部のコマンドのアダプタの失敗と返し漏れを�
 	}
 	if n := strings.Count(got, "\n") + 1; n != len(want) {
 		t.Errorf("エラーの数 %d, want %d:\n%s", n, len(want), got)
+	}
+}
+
+func TestReadは言語ごとに決まった種類のほかを誤りにする(t *testing.T) {
+	root, files := setup(t, map[string]string{
+		"x/a_test.go": "package x\n\n// @vanda:claim a\nfunc TestA(t *testing.T) {}\n",
+		"e2e/a.txtar": "# @vanda:sensor a\n-- a --\n",
+		"spec/A.tla":  "\\* @vanda:evidence a\nX == 1\n",
+		"db/a.sql":    "-- @vanda:term a\nCREATE TABLE t (id int);\n",
+		"docs/a.md":   "<!-- @vanda:term a -->\n",
+		"adapter.sh":  "#!/bin/sh\ncat >/dev/null\necho '{\"names\":[{\"line\":1,\"name\":\"A\"}]}'\n",
+	})
+	rules := []config.AnnotationRule{
+		{Paths: []string{"**/*_test.go"}, Adapter: "go"},
+		{Paths: []string{"e2e/*.txtar"}, Adapter: "txtar"},
+		{Paths: []string{"spec/*.tla"}, Adapter: "tla"},
+		{Paths: []string{"db/*.sql"}, Adapter: "sql"},
+		{Paths: []string{"docs/*.md"}, Command: []string{"./adapter.sh"}},
+	}
+	as, errs := Read(root, files, rules)
+	want := []string{
+		"db/a.sql:1: @vanda:term は、sql のアダプタのファイルには書けない。書けるのは evidence。",
+		"e2e/a.txtar:1: @vanda:sensor は、txtar のアダプタのファイルには書けない。書けるのは evidence。",
+		"spec/A.tla:1: @vanda:evidence は、tla のアダプタのファイルには書けない。書けるのは term・feature・claim・internal。",
+		"x/a_test.go:3: @vanda:claim は、go のアダプタのファイルには書けない。書けるのは evidence・sensor。",
+	}
+	got := errs.Error()
+	if got2 := strings.Join(want, ""); len(strings.Split(got, "\n")) != len(want) || got2 == "" {
+		t.Errorf("エラーの数が違う:\n%s", got)
+	}
+	for _, w := range want {
+		if !strings.Contains(got, w) {
+			t.Errorf("エラーに %q がない:\n%s", w, got)
+		}
+	}
+	if len(as) != 1 || as[0].File != "docs/a.md" {
+		t.Errorf("外部のコマンドのアダプタでは、どの種類も書ける: %v", as)
 	}
 }

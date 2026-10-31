@@ -30,10 +30,13 @@ type Records struct {
 	Agreements []*Agreement
 }
 
-// Load は、files（リポジトリの直下からの場所の一覧）のうち patterns に当たるものを、合意の記録として読む。
-func Load(root string, files, patterns []string) (*Records, diag.Errors) {
+// Load は、files（リポジトリの直下からの場所の一覧）のうち patterns に当たるものを、合意の記録として読む。allowMissing なら、ワイルドカードのないパターンのファイルがなくても誤りにしない（設定に書かなかった既定のファイルのため）。
+func Load(root string, files, patterns []string, allowMissing bool) (*Records, diag.Errors) {
 	var errs []diag.Error
 	matched, missing := glob.Select(files, patterns)
+	if allowMissing {
+		missing = nil
+	}
 	for _, m := range missing {
 		errs = append(errs, diag.Error{File: m, What: "合意の記録のファイルがない", Fix: "ファイルを作るか、.vanda/config.toml の agreements を直す"})
 	}
@@ -46,6 +49,7 @@ func Load(root string, files, patterns []string) (*Records, diag.Errors) {
 		r.read(doc.Top())
 	}
 	if len(errs) > 0 {
+		diag.Sort(errs)
 		return r, errs
 	}
 	return r, nil

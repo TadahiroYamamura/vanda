@@ -1,4 +1,4 @@
-.PHONY: build test vet check
+.PHONY: build test vet tla check
 
 build:
 	go build -o vanda ./cmd/vanda
@@ -10,4 +10,7 @@ vet:
 test:
 	go test -count=1 ./...
 
-check: build vet test
+tla:
+	spec/check.sh
+
+check: build vet test tla

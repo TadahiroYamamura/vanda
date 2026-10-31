@@ -35,7 +35,7 @@ func TestItemFingerprintは書き方の違いで変わらずflagsとguessesを�
 	}
 	for i, src := range srcs {
 		root, files := writeFiles(t, map[string]string{".vanda/promises.toml": src})
-		l, errs := promises.Load(root, files, []string{".vanda/promises.toml"})
+		l, errs := promises.Load(root, files, []string{".vanda/promises.toml"}, false)
 		if errs != nil {
 			t.Fatal(errs)
 		}
@@ -64,7 +64,7 @@ type = "unit-test"
 stage = "test"
 layers = ["model"]
 `})
-	l, errs := promises.Load(root, files, []string{".vanda/promises.toml"})
+	l, errs := promises.Load(root, files, []string{".vanda/promises.toml"}, false)
 	if errs != nil {
 		t.Fatal(errs)
 	}
@@ -126,7 +126,7 @@ story = "#25"
 name = "PO"
 email = "po@example.com"
 `})
-	r, errs := Load(root, files, []string{".vanda/agreements.toml"})
+	r, errs := Load(root, files, []string{".vanda/agreements.toml"}, false)
 	if errs != nil {
 		t.Fatal(errs)
 	}
@@ -170,7 +170,7 @@ user = { name = "PO" }
 agreed_at = 2026-10-31T12:00:00Z
 story = "#24"
 `})
-	_, errs := Load(root, files, []string{".vanda/agreements.toml"})
+	_, errs := Load(root, files, []string{".vanda/agreements.toml"}, false)
 	want := []string{
 		`.vanda/agreements.toml:2: kind "story" は決まった値でない。`,
 		`.vanda/agreements.toml:4: fingerprint "md5:abc" が指紋の形でない。`,
