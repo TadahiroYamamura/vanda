@@ -31,6 +31,8 @@ type Annotation struct {
 // nil を返せば、すべての行の全体を見る（言語を知らない外部のコマンドのアダプタ）。
 type adapter interface {
 	comments(file string, src []byte) ([]string, []diag.Error)
+	// kinds は、その言語に書けるアノテーションの種類。nil なら、すべて
+	kinds() []string
 	names(file string, src []byte, lines []int) (map[int]string, []diag.Error)
 }
 
@@ -77,8 +79,16 @@ func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotat
 		if texts == nil {
 			texts = strings.Split(string(src), "\n")
 		}
-		found, ferrs := scan(f, texts)
+		all, ferrs := scan(f, texts)
 		errs = append(errs, ferrs...)
+		var found []Annotation
+		for _, x := range all {
+			if ks := a.kinds(); ks != nil && !contains(ks, x.Kind) {
+				errs = append(errs, diag.Error{File: f, Line: x.Line, What: "@vanda:" + x.Kind + " は、" + hit[0].Adapter + " のアダプタのファイルには書けない", Fix: "書けるのは " + strings.Join(ks, "・") + "。種類を直すか、アノテーションを別のファイルに移す"})
+				continue
+			}
+			found = append(found, x)
+		}
 		if len(found) == 0 {
 			continue
 		}

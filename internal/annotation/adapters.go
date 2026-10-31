@@ -19,6 +19,8 @@ import (
 // goAdapter: アノテーションは、func の宣言の直前のコメント（doc comment）にだけ書ける。名前は func の名前（メソッドなら `T.M`）。
 type goAdapter struct{}
 
+func (goAdapter) kinds() []string { return []string{"evidence", "sensor"} }
+
 func parseGo(file string, src []byte) (*token.FileSet, *ast.File, []diag.Error) {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, file, src, parser.ParseComments)
@@ -104,6 +106,8 @@ func recvName(e ast.Expr) string {
 // 名前はファイルの名前から `.txtar` を除いたもの（testscript のサブテストの名前に合わせる）。
 type txtarAdapter struct{}
 
+func (txtarAdapter) kinds() []string { return []string{"evidence"} }
+
 // comments は、最初のファイルの区切りより前の注釈の行だけを返す。区切りより後は、中のファイルの中身なので見ない。
 func (txtarAdapter) comments(file string, src []byte) ([]string, []diag.Error) {
 	rows := strings.Split(string(src), "\n")
@@ -149,6 +153,8 @@ func isTxtarMarker(line string) bool {
 // tlaAdapter: アノテーションは、コメント（`\*`、`(* *)`）の中に書く。付くのは、その後の、空行でもコメントでもない最初の行の定義
 // （`Name ==`、`Name(…) ==`。`LOCAL` が付いてもよい）。
 type tlaAdapter struct{}
+
+func (tlaAdapter) kinds() []string { return []string{"term", "feature", "claim", "internal"} }
 
 func (tlaAdapter) comments(file string, src []byte) ([]string, []diag.Error) {
 	rows := strings.Split(string(src), "\n")
@@ -291,6 +297,8 @@ func tlaDefName(code string) (string, bool) {
 // sqlAdapter: アノテーションは `--` のコメントの中に書く。名前は、その後の、空行でもコメントでもない最初の行の中身をそのまま使う。
 type sqlAdapter struct{}
 
+func (sqlAdapter) kinds() []string { return []string{"evidence"} }
+
 // comments は、行ごとに、文字列（'…'）の外の `--` から行の終わりまでを返す。
 func (sqlAdapter) comments(file string, src []byte) ([]string, []diag.Error) {
 	rows := strings.Split(string(src), "\n")
@@ -360,6 +368,8 @@ type responseName struct {
 	Line int    `json:"line"`
 	Name string `json:"name"`
 }
+
+func (commandAdapter) kinds() []string { return nil }
 
 func (commandAdapter) comments(string, []byte) ([]string, []diag.Error) { return nil, nil }
 

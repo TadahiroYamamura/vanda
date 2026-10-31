@@ -237,3 +237,40 @@ func TestReadは外部のコマンドのアダプタの失敗と返し漏れを�
 		t.Errorf("エラーの数 %d, want %d:\n%s", n, len(want), got)
 	}
 }
+
+func TestReadは言語ごとに決まった種類のほかを誤りにする(t *testing.T) {
+	root, files := setup(t, map[string]string{
+		"x/a_test.go": "package x\n\n// @vanda:claim a\nfunc TestA(t *testing.T) {}\n",
+		"e2e/a.txtar": "# @vanda:sensor a\n-- a --\n",
+		"spec/A.tla":  "\\* @vanda:evidence a\nX == 1\n",
+		"db/a.sql":    "-- @vanda:term a\nCREATE TABLE t (id int);\n",
+		"docs/a.md":   "<!-- @vanda:term a -->\n",
+		"adapter.sh":  "#!/bin/sh\ncat >/dev/null\necho '{\"names\":[{\"line\":1,\"name\":\"A\"}]}'\n",
+	})
+	rules := []config.AnnotationRule{
+		{Paths: []string{"**/*_test.go"}, Adapter: "go"},
+		{Paths: []string{"e2e/*.txtar"}, Adapter: "txtar"},
+		{Paths: []string{"spec/*.tla"}, Adapter: "tla"},
+		{Paths: []string{"db/*.sql"}, Adapter: "sql"},
+		{Paths: []string{"docs/*.md"}, Command: []string{"./adapter.sh"}},
+	}
+	as, errs := Read(root, files, rules)
+	want := []string{
+		"db/a.sql:1: @vanda:term は、sql のアダプタのファイルには書けない。書けるのは evidence。",
+		"e2e/a.txtar:1: @vanda:sensor は、txtar のアダプタのファイルには書けない。書けるのは evidence。",
+		"spec/A.tla:1: @vanda:evidence は、tla のアダプタのファイルには書けない。書けるのは term・feature・claim・internal。",
+		"x/a_test.go:3: @vanda:claim は、go のアダプタのファイルには書けない。書けるのは evidence・sensor。",
+	}
+	got := errs.Error()
+	if got2 := strings.Join(want, ""); len(strings.Split(got, "\n")) != len(want) || got2 == "" {
+		t.Errorf("エラーの数が違う:\n%s", got)
+	}
+	for _, w := range want {
+		if !strings.Contains(got, w) {
+			t.Errorf("エラーに %q がない:\n%s", w, got)
+		}
+	}
+	if len(as) != 1 || as[0].File != "docs/a.md" {
+		t.Errorf("外部のコマンドのアダプタでは、どの種類も書ける: %v", as)
+	}
+}
