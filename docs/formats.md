@@ -538,7 +538,22 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `fields` | 文字の項目ごとの、文字の単位の差分（`DiffMain` の後に `DiffCleanupSemantic`）。`op` は `equal`・`delete`・`insert`。`equal` と `delete` をつなげると変更前、`equal` と `insert` をつなげると変更後になる |
 | 対象の項目 | 約束は `statement`・`rationale`・`condition`、用語は `name`・`definition`、機能は `name`・`definition`・`formalWaiver`。変更前と変更後の両方に書いてある項目だけを入れ、片方にしかない項目は入れない（画面は、`before`・`after` の値をそのまま見せる）。変わっていない項目も、`equal` の 1 つとして入れる |
 
-- 配列の項目（`subjects`・`layers`・`evidence`・`guesses`）と真偽の項目は、差分を作らない。画面は `before`・`after` を並べて見せる
+- 配列の項目（`subjects`・`layers`・`guesses`）と真偽の項目は、差分を作らない。画面は `before`・`after` を並べて見せる
+- 約束のエビデンスの予定（`evidence`）は、エビデンスの単位の差分を `diff.evidence` に入れる（約束でなければ省く）
+
+```json
+"evidence": {
+  "before": [{"op": "modified", "layers": [{"op": "equal", "text": "model"}], "detail": [{"op": "equal", "text": "追加すると一覧"}, {"op": "delete", "text": "に出る"}, {"op": "insert", "text": "の先頭に出る"}]}, {"op": "removed", "layers": null, "detail": null}],
+  "after":  [{"op": "modified", "layers": [{"op": "equal", "text": "model"}], "detail": [{"op": "equal", "text": "追加すると一覧"}, {"op": "delete", "text": "に出る"}, {"op": "insert", "text": "の先頭に出る"}]}, {"op": "added", "layers": null, "detail": null}]
+}
+```
+
+| 項目 | 中身 |
+|---|---|
+| `before`・`after` | `before.evidence`・`after.evidence` と同じ数・同じ順の、エビデンス 1 つずつの印 |
+| 対応づけ | ステージ（`stage`）とタイプ（`type`）が同じものを、同じエビデンスとみなす。同じステージとタイプが 2 つ以上あれば、それぞれ現れた順に、1 つ目どうし、2 つ目どうし、と対応させる。対応の相手がないものは、変更前なら `removed`（消した）、変更後なら `added`（足した） |
+| `op` | 対応したものは、レイヤーと詳細が同じなら `equal`、どちらかが違えば `modified`。ほかは上のとおり |
+| `layers`・`detail` | `modified` のときだけ。レイヤー（`layers` を「・」でつないだ文字）と詳細（ないときは空の文字）の、文字の単位の差分（`fields` と同じ形）。両側に同じものを入れ、画面は変更前の側で `equal`・`delete`、変更後の側で `equal`・`insert` を見せる。ほかは `null` |
 
 ### `POST /api/agree`
 

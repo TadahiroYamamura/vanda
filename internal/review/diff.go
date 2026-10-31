@@ -28,6 +28,22 @@ type FileDiff struct {
 
 type ItemDiff struct {
 	Fields map[string][]DiffPart `json:"fields"`
+	// Evidence は、約束のエビデンスの予定の、エビデンスの単位の差分。約束でなければ nil
+	Evidence *EvidenceDiff `json:"evidence,omitempty"`
+}
+
+// EvidenceDiff は、変更前と変更後のエビデンスの予定の、1 つずつの印。添字は before・after の evidence の添字にそろう。
+type EvidenceDiff struct {
+	Before []EvidenceMark `json:"before"`
+	After  []EvidenceMark `json:"after"`
+}
+
+// EvidenceMark は、エビデンス 1 つの印。op は、変更前では equal・modified・removed、変更後では equal・modified・added。
+// modified のときだけ、layers（レイヤーを「・」でつないだ文字）と detail（詳細）の文字の単位の差分を持つ
+type EvidenceMark struct {
+	Op     string     `json:"op"`
+	Layers []DiffPart `json:"layers"`
+	Detail []DiffPart `json:"detail"`
 }
 
 var opName = map[diffmatchpatch.Operation]string{
@@ -152,12 +168,14 @@ func itemDiff(before, after any) ItemDiff {
 			fields[name] = charDiff(*a, *b)
 		}
 	}
+	out := ItemDiff{Fields: fields}
 	switch b := before.(type) {
 	case ClaimContent:
 		a, _ := after.(ClaimContent)
 		add("statement", &b.Statement, &a.Statement)
 		add("rationale", b.Rationale, a.Rationale)
 		add("condition", b.Condition, a.Condition)
+		out.Evidence = evidenceDiff(b.Evidence, a.Evidence)
 	case TermContent:
 		a, _ := after.(TermContent)
 		add("name", &b.Name, &a.Name)
@@ -168,5 +186,50 @@ func itemDiff(before, after any) ItemDiff {
 		add("definition", &b.Definition, &a.Definition)
 		add("formalWaiver", b.FormalWaiver, a.FormalWaiver)
 	}
-	return ItemDiff{Fields: fields}
+	return out
+}
+
+// evidenceDiff は、変更前と変更後のエビデンスの予定を対応づけ、1 つずつに印を付ける。
+// ステージとタイプが同じものを同じエビデンスとみなす。同じステージとタイプが 2 つ以上あれば、それぞれ現れた順に、
+// 1 つ目どうし、2 つ目どうし、と対応させ、余ったものは消した（変更前）か足した（変更後）とする。
+// 対応したものは、レイヤーと詳細が同じなら equal、どちらかが違えば modified
+func evidenceDiff(before, after []EvidenceContent) *EvidenceDiff {
+	key := func(e EvidenceContent) string { return e.Stage + "\x00" + e.Type }
+	d := &EvidenceDiff{Before: make([]EvidenceMark, len(before)), After: make([]EvidenceMark, len(after))}
+	for i := range d.Before {
+		d.Before[i] = EvidenceMark{Op: "removed"}
+	}
+	for i := range d.After {
+		d.After[i] = EvidenceMark{Op: "added"}
+	}
+	queue := map[string][]int{}
+	for i, e := range before {
+		queue[key(e)] = append(queue[key(e)], i)
+	}
+	text := func(p *string) string {
+		if p == nil {
+			return ""
+		}
+		return *p
+	}
+	for j, a := range after {
+		q := queue[key(a)]
+		if len(q) == 0 {
+			continue
+		}
+		i := q[0]
+		queue[key(a)] = q[1:]
+		b := before[i]
+		bl, al := strings.Join(b.Layers, "・"), strings.Join(a.Layers, "・")
+		bd, ad := text(b.Detail), text(a.Detail)
+		if bl == al && bd == ad {
+			d.Before[i] = EvidenceMark{Op: "equal"}
+			d.After[j] = EvidenceMark{Op: "equal"}
+			continue
+		}
+		layers, detail := charDiff(bl, al), charDiff(bd, ad)
+		d.Before[i] = EvidenceMark{Op: "modified", Layers: layers, Detail: detail}
+		d.After[j] = EvidenceMark{Op: "modified", Layers: layers, Detail: detail}
+	}
+	return d
 }

@@ -7,6 +7,7 @@ import { ErrorBox, FlagBadge, PresentIcon, StateBadge, shortCommit, useLoad } fr
 import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
 import { LineDiff, Parts } from "../components/DiffView";
+import { EvidenceList } from "../components/EvidenceList";
 import { langOf } from "../highlight";
 import { TlaCode } from "../components/TlaCode";
 import { changeLabel, changeMark, fileTypeLabel, kindLabel, stageLabel, typeLabel } from "../labels";
@@ -485,6 +486,15 @@ function Compare(props: { entry: Entry }) {
   const cell = (r: Row | undefined, side: "before" | "after") => {
     if (!r) return <td className="empty">—</td>;
     if (e.kind === "file") return <td>{isTla ? <TlaCode source={r[1]} /> : <CodeBlock source={r[1]} lang={langOf(e.path ?? "")} />}</td>;
+    if (e.kind === "claim" && r[0] === "エビデンスの予定") {
+      const content = (side === "before" ? e.before : e.after) as ClaimContent;
+      const marks = e.diff && "fields" in e.diff ? e.diff.evidence?.[side] : undefined;
+      return (
+        <td className="text">
+          <EvidenceList items={content.evidence} marks={marks} side={side} />
+        </td>
+      );
+    }
     const parts = r[2] && fields ? fields[r[2]] : undefined;
     return <td className="text">{parts ? <Parts parts={parts} side={side} /> : r[1]}</td>;
   };
@@ -523,38 +533,39 @@ export function ClaimSections(props: { id: string; query?: string }) {
       <h3>エビデンスの予定と実際</h3>
       {d.error != null && <ErrorBox error={d.error} title="エビデンスを探せません" />}
       {d.data && (
-        <table className="plan">
-          <thead>
-            <tr>
-              <th className="plan-narrow plan-present">
+        // 狭い幅では行を縦に並べる（CSS の display を変える）。そのときもブラウザが表として読み上げるよう、役割をはっきり書く
+        <table className="plan" role="table">
+          <thead role="rowgroup">
+            <tr role="row">
+              <th role="columnheader" className="plan-narrow plan-present">
                 <span className="visually-hidden">揃っているか</span>
               </th>
-              <th className="plan-narrow">ステージ</th>
-              <th className="plan-narrow">タイプ</th>
-              <th className="plan-narrow">レイヤー</th>
-              <th className="plan-detail">詳細</th>
-              <th className="plan-found">実際のエビデンス</th>
+              <th role="columnheader" className="plan-narrow">ステージ</th>
+              <th role="columnheader" className="plan-narrow">タイプ</th>
+              <th role="columnheader" className="plan-narrow">レイヤー</th>
+              <th role="columnheader" className="plan-detail">詳細</th>
+              <th role="columnheader" className="plan-found">実際のエビデンス</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody role="rowgroup">
             {d.data.evidence.map((ev, i) => (
-              <tr key={i}>
-                <td className="plan-narrow plan-present" data-label="揃っているか">
+              <tr key={i} role="row">
+                <td role="cell" className="plan-narrow plan-present" data-label="揃っているか">
                   <PresentIcon present={ev.present} />
                 </td>
-                <td className="plan-narrow" data-label="ステージ">
+                <td role="cell" className="plan-narrow" data-label="ステージ">
                   {stageLabel[ev.stage] ?? ev.stage}
                 </td>
-                <td className="plan-narrow" data-label="タイプ">
+                <td role="cell" className="plan-narrow" data-label="タイプ">
                   {typeLabel[ev.type] ?? ev.type}
                 </td>
-                <td className="plan-narrow" data-label="レイヤー">
+                <td role="cell" className="plan-narrow" data-label="レイヤー">
                   {ev.layers.join("・")}
                 </td>
-                <td className="plan-detail" data-label="詳細">
+                <td role="cell" className="plan-detail" data-label="詳細">
                   {ev.detail ?? ""}
                 </td>
-                <td className="plan-found" data-label="実際のエビデンス">
+                <td role="cell" className="plan-found" data-label="実際のエビデンス">
                   {ev.found.map((f) => (
                     <div key={`${f.file}:${f.line}`}>
                       {f.name}{" "}
