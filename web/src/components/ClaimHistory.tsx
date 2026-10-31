@@ -1,7 +1,7 @@
-import { Fragment, useState } from "react";
+import { Fragment, type ReactNode, useState } from "react";
 import { api, type ClaimDetail } from "../api";
-import { stageLabel, typeLabel } from "../labels";
 import { ErrorBox, shortCommit, useLoad } from "./common";
+import { EvidenceList } from "./EvidenceList";
 
 // ClaimHistory は、約束の由来（CL-04）と合意の履歴（CL-05）。約束の詳細の画面と、レビューの画面の 1 件の詳細（RV-16）で使う。
 export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) {
@@ -128,22 +128,20 @@ function ExpandButton(props: { open: boolean; onClick: () => void }) {
   );
 }
 
-function evidenceText(evs: { stage: string; type: string; layers: string[]; detail: string | null }[]): string {
-  return evs.map((ev) => `${stageLabel[ev.stage] ?? ev.stage} / ${typeLabel[ev.type] ?? ev.type} / ${ev.layers.join("・")}${ev.detail ? ` — ${ev.detail}` : ""}`).join("\n");
-}
-
-// ClaimAtRow は、ある時点の約束の中身（文・理由・条件・レイヤー・エビデンスの予定）を、押した行のすぐ下の行に出す。中身は API が、その時点の約束リストから読んだもの。
+// ClaimAtRow は、ある時点の約束の中身（変更前と変更後の表（RV-05）と同じ項目と並び）を、押した行のすぐ下の行に出す。中身は API が、その時点の約束リストから読んだもの。
 function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string }) {
   const c = props.claim;
   const d = useLoad(() => api.claimAt(c.id, props.commit), `${c.id}@${props.commit}`);
   const none = "（なし）";
-  const rows: [string, string][] = d.data
+  const rows: [string, ReactNode][] = d.data
     ? [
         ["文", d.data.content.statement],
-        ["理由", d.data.content.rationale ?? none],
         ["条件", d.data.content.condition ?? none],
+        ["理由", d.data.content.rationale ?? none],
+        ["対象", d.data.content.subjects.join("・")],
         ["レイヤー", (d.data.layers ?? d.data.content.layers.map((id) => ({ id, name: "" }))).map((l) => l.name || l.id).join("・")],
-        ["エビデンスの予定", evidenceText(d.data.content.evidence)],
+        ["エビデンスの予定", <EvidenceList items={d.data.content.evidence} />],
+        ["推測", d.data.content.guesses.length > 0 ? d.data.content.guesses.join("\n") : none],
       ]
     : [];
   return (
@@ -165,7 +163,7 @@ function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string })
               {rows.map(([label, then]) => (
                 <Fragment key={label}>
                   <dt>{label}</dt>
-                  <dd className="text">{label === "エビデンスの予定" ? <ul>{then.split("\n").filter(Boolean).map((l, i) => <li key={i}>{l}</li>)}</ul> : then}</dd>
+                  <dd className="text">{then}</dd>
                 </Fragment>
               ))}
             </dl>
