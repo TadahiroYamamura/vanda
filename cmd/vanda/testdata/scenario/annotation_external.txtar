@@ -1,0 +1,80 @@
+# アノテーションの読み取り: 外部のコマンドのアダプタ。
+# コマンドが失敗したとき、返したものが JSON として読めないときは、審査が止まる。
+# 読むファイルのパターンに当たったのに、アダプタが決まっていないファイルがあると、審査で止まる。
+#
+# 確かめないこと: コマンドが正しい JSON を返したときに読めること。受け渡しの形がまだ決まっていないため。
+# ここで使うコマンドは、渡されたものを見ずに決まった振る舞いをするので、受け渡しの形に頼らない。
+
+exec git init -q -b main
+
+# コマンドが失敗する
+cp cases/config-fail.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr 'ext/a\.ext'
+! stderr '(?m)^panic: '
+
+# コマンドが JSON として読めないものを返す
+cp cases/config-not-json.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr 'ext/a\.ext'
+! stderr '(?m)^panic: '
+
+# アダプタもコマンドも書いていない
+cp cases/config-no-adapter.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+! stderr '(?m)^panic: '
+
+# パターンに当たるファイルがなければ、コマンドは動かず、通る（上の失敗が ext/a.ext を読んだことによるものだと言えるようにするため）
+cp cases/config-fail.toml .vanda/config.toml
+expand .vanda/config.toml
+rm ext/a.ext
+exec vanda check .vanda/checks/links.toml
+
+-- .vanda/config.toml --
+-- .vanda/checks/links.toml --
+[[check]]
+name = "annotation-links"
+scope = "all"
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+-- .vanda/agreements.toml --
+-- ext/a.ext --
+@vanda:term task
+-- cases/config-fail.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+command = ["sh", "-c", "exit 3"]
+-- cases/config-not-json.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+command = ["sh", "-c", "echo not-json"]
+-- cases/config-no-adapter.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]

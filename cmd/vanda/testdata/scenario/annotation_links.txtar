@@ -1,0 +1,424 @@
+# アノテーションのつながり: アノテーションが指す ID が約束リストにあり、種類が合う
+# （term には用語、feature には機能、claim・evidence・sensor には約束）。合わない組み合わせを全部回す。
+# 仕様の型の宣言（TLA+ の TypeOK の中で \in・\subseteq の右に書いた定義）には term か internal があり、feature がない。
+# Go の型（task.go の Task）には term を求めないので、付けなくても通る。
+
+exec git init -q -b main
+expand .vanda/config.toml
+unquote scenarios/add.txtar
+
+# 元のファイル（どの種類も合う先を指す）では通る
+exec vanda check .vanda/checks/links.toml
+
+# @vanda:term が機能の ID（task-add）を指すと止まる
+cp cases/term-to-feature.case spec/Task.tla
+! exec vanda check .vanda/checks/links.toml
+stderr 'spec/Task\.tla:2: .*task-add'
+! stderr '(?m)^panic: '
+cp orig/Task.tla.orig spec/Task.tla
+
+# @vanda:term が約束の ID（task-id-unique）を指すと止まる
+cp cases/term-to-claim.case spec/Task.tla
+! exec vanda check .vanda/checks/links.toml
+stderr 'spec/Task\.tla:2: .*task-id-unique'
+! stderr '(?m)^panic: '
+cp orig/Task.tla.orig spec/Task.tla
+
+# @vanda:feature が用語の ID（task）を指すと止まる
+cp cases/feature-to-term.case spec/Task.tla
+! exec vanda check .vanda/checks/links.toml
+stderr 'spec/Task\.tla:13: .*task'
+! stderr '(?m)^panic: '
+cp orig/Task.tla.orig spec/Task.tla
+
+# @vanda:feature が約束の ID（task-id-unique）を指すと止まる
+cp cases/feature-to-claim.case spec/Task.tla
+! exec vanda check .vanda/checks/links.toml
+stderr 'spec/Task\.tla:13: .*task-id-unique'
+! stderr '(?m)^panic: '
+cp orig/Task.tla.orig spec/Task.tla
+
+# @vanda:claim が用語の ID（task）を指すと止まる
+cp cases/claim-to-term.case spec/Task.tla
+! exec vanda check .vanda/checks/links.toml
+stderr 'spec/Task\.tla:10: .*task'
+! stderr '(?m)^panic: '
+cp orig/Task.tla.orig spec/Task.tla
+
+# @vanda:claim が機能の ID（task-add）を指すと止まる
+cp cases/claim-to-feature.case spec/Task.tla
+! exec vanda check .vanda/checks/links.toml
+stderr 'spec/Task\.tla:10: .*task-add'
+! stderr '(?m)^panic: '
+cp orig/Task.tla.orig spec/Task.tla
+
+# @vanda:evidence が用語の ID（task）を指すと止まる
+cp cases/evidence-to-term.case task_test.go
+! exec vanda check .vanda/checks/links.toml
+stderr 'task_test\.go:5: .*task'
+! stderr '(?m)^panic: '
+cp orig/task_test.go.orig task_test.go
+
+# @vanda:evidence が機能の ID（task-add）を指すと止まる
+cp cases/evidence-to-feature.case task_test.go
+! exec vanda check .vanda/checks/links.toml
+stderr 'task_test\.go:5: .*task-add'
+! stderr '(?m)^panic: '
+cp orig/task_test.go.orig task_test.go
+
+# @vanda:sensor が用語の ID（task）を指すと止まる
+cp cases/sensor-to-term.case task.go
+! exec vanda check .vanda/checks/links.toml
+stderr 'task\.go:6: .*task'
+! stderr '(?m)^panic: '
+cp orig/task.go.orig task.go
+
+# @vanda:sensor が機能の ID（task-add）を指すと止まる
+cp cases/sensor-to-feature.case task.go
+! exec vanda check .vanda/checks/links.toml
+stderr 'task\.go:6: .*task-add'
+! stderr '(?m)^panic: '
+cp orig/task.go.orig task.go
+
+# TypeOK で使う型（TaskIds）に term も internal もないと止まる
+cp cases/tla-type-no-term.case spec/Task.tla
+! exec vanda check .vanda/checks/links.toml
+stderr 'spec/Task\.tla.*TaskIds'
+! stderr '(?m)^panic: '
+cp orig/Task.tla.orig spec/Task.tla
+
+# TypeOK で使う型（Small）の internal を外すと止まる
+cp cases/tla-type-no-internal.case spec/Task.tla
+! exec vanda check .vanda/checks/links.toml
+stderr 'spec/Task\.tla.*Small'
+! stderr '(?m)^panic: '
+cp orig/Task.tla.orig spec/Task.tla
+
+# TypeOK で使う型に feature を付けると止まる
+cp cases/tla-type-feature.case spec/Task.tla
+! exec vanda check .vanda/checks/links.toml
+stderr 'spec/Task\.tla:2: '
+! stderr '(?m)^panic: '
+cp orig/Task.tla.orig spec/Task.tla
+
+# TypeOK で使わない定義には、term も internal もなくてよい
+cp cases/tla-not-type.case spec/Task.tla
+exec vanda check .vanda/checks/links.toml
+cp orig/Task.tla.orig spec/Task.tla
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["**/*.go"]
+adapter = "go"
+
+[[annotation]]
+paths = ["scenarios/**/*.txtar"]
+adapter = "txtar"
+
+[[annotation]]
+paths = ["spec/**/*.tla"]
+adapter = "tla"
+
+[[annotation]]
+paths = ["db/**/*.sql"]
+adapter = "sql"
+-- .vanda/checks/links.toml --
+[[check]]
+name = "annotation-links"
+scope = "all"
+-- .vanda/agreements.toml --
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+-- task.go --
+package task
+
+// Task は利用者がやること。
+type Task struct{ ID string }
+
+// @vanda:sensor task-id-unique
+func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
+-- task_test.go --
+package task
+
+import "testing"
+
+// @vanda:evidence task-id-unique
+func TestAddKeepsIdsUnique(t *testing.T) {}
+-- scenarios/add.txtar --
+># @vanda:evidence task-id-unique
+>exec echo add
+>-- out.txt --
+>add
+-- spec/Task.tla --
+---- MODULE Task ----
+\* @vanda:term task
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:feature task-add
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- db/schema.sql --
+-- @vanda:evidence task-id-unique
+CREATE TABLE task (id TEXT PRIMARY KEY);
+-- orig/task.go.orig --
+package task
+
+// Task は利用者がやること。
+type Task struct{ ID string }
+
+// @vanda:sensor task-id-unique
+func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
+-- orig/task_test.go.orig --
+package task
+
+import "testing"
+
+// @vanda:evidence task-id-unique
+func TestAddKeepsIdsUnique(t *testing.T) {}
+-- orig/add.txtar.orig --
+># @vanda:evidence task-id-unique
+>exec echo add
+>-- out.txt --
+>add
+-- orig/Task.tla.orig --
+---- MODULE Task ----
+\* @vanda:term task
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:feature task-add
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- orig/schema.sql.orig --
+-- @vanda:evidence task-id-unique
+CREATE TABLE task (id TEXT PRIMARY KEY);
+-- cases/term-to-feature.case --
+---- MODULE Task ----
+\* @vanda:term task-add
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:feature task-add
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- cases/term-to-claim.case --
+---- MODULE Task ----
+\* @vanda:term task-id-unique
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:feature task-add
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- cases/feature-to-term.case --
+---- MODULE Task ----
+\* @vanda:term task
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:feature task
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- cases/feature-to-claim.case --
+---- MODULE Task ----
+\* @vanda:term task
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:feature task-id-unique
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- cases/claim-to-term.case --
+---- MODULE Task ----
+\* @vanda:term task
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:feature task-add
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- cases/claim-to-feature.case --
+---- MODULE Task ----
+\* @vanda:term task
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-add
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:feature task-add
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- cases/evidence-to-term.case --
+package task
+
+import "testing"
+
+// @vanda:evidence task
+func TestAddKeepsIdsUnique(t *testing.T) {}
+-- cases/evidence-to-feature.case --
+package task
+
+import "testing"
+
+// @vanda:evidence task-add
+func TestAddKeepsIdsUnique(t *testing.T) {}
+-- cases/sensor-to-term.case --
+package task
+
+// Task は利用者がやること。
+type Task struct{ ID string }
+
+// @vanda:sensor task
+func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
+-- cases/sensor-to-feature.case --
+package task
+
+// Task は利用者がやること。
+type Task struct{ ID string }
+
+// @vanda:sensor task-add
+func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
+-- cases/tla-type-no-term.case --
+---- MODULE Task ----
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:feature task-add
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- cases/tla-type-no-internal.case --
+---- MODULE Task ----
+\* @vanda:term task
+TaskIds == {"t1", "t2"}
+
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:feature task-add
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- cases/tla-type-feature.case --
+---- MODULE Task ----
+\* @vanda:feature task-add
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- cases/tla-not-type.case --
+---- MODULE Task ----
+\* @vanda:term task
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+Unused == {3}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:feature task-add
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
