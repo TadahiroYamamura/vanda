@@ -1,0 +1,39 @@
+# CMD-01: .vanda/ は git のリポジトリの根で探す。リポジトリの中のどこで動かしても同じ .vanda/ を使い、リポジトリの外では誤りになる。
+
+# リポジトリの外
+! exec vanda doctor
+! stderr '(?m)^panic: '
+! exec vanda check .vanda/checks/all.toml
+! stderr '(?m)^panic: '
+
+exec git init -q -b main
+expand .vanda/config.toml
+
+# 根で動かすと通る
+exec vanda doctor
+exec vanda check .vanda/checks/all.toml
+
+# 下のディレクトリで動かしても、根の .vanda/ を使う（審査の設定のファイルの場所の読み方は決まっていないので、doctor で確かめる）。
+# 下のディレクトリにある別の .vanda/ は、版が合わないので、読めば止まる
+cd sub
+exec vanda doctor
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+-- .vanda/checks/all.toml --
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+-- .vanda/agreements.toml --
+-- sub/.vanda/config.toml --
+version = "0.0.0-no-such"

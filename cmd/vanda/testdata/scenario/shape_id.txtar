@@ -1,11 +1,11 @@
 # CMD-10 約束リストの形: ID は英小文字・数字をハイフンでつないだ形で、用語・機能・約束を通して重ならない。
 # 重なりは、表の組み合わせ（同じ表どうし、違う表どうし）を全部回す。分けたファイルをまたいでも重ならない。
-# 重なったときにどちらの行を指すかは計画にないので、どちらでもよいことにする。
+# 重なったときは、後のほうの行を指し、前の場所（行）をメッセージに書く。前の場所の書き方は決め打ちしない。ファイルは名前の順に読むものとした（one.toml が前）。
 
 exec git init -q -b main
 expand .vanda/config.toml
 
-# 英小文字・数字をハイフンでつないだ ID なら通る
+# 英小文字で始まり、英小文字・数字をハイフンでつないだ ID なら通る
 cp cases/good-ids.toml .vanda/promises.toml
 exec vanda check .vanda/checks/shape.toml
 
@@ -57,6 +57,12 @@ cp cases/bad-id-claim-empty.toml .vanda/promises.toml
 stderr 'promises\.toml:13: '
 ! stderr '(?m)^panic: '
 
+# 約束の ID の形が誤り（leading-digit）
+cp cases/bad-id-claim-leading-digit.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml:13: '
+! stderr '(?m)^panic: '
+
 # term の ID の形が誤り（upper）
 cp cases/bad-id-term-upper.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
@@ -72,37 +78,37 @@ stderr 'promises\.toml:7: '
 # ID が重なる（term-term）
 cp cases/dup-term-term.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:(2|27): .*task'
+stderr 'promises\.toml:27: .*task.*\b2\b'
 ! stderr '(?m)^panic: '
 
 # ID が重なる（feature-feature）
 cp cases/dup-feature-feature.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:(7|27): .*task-add'
+stderr 'promises\.toml:27: .*task-add.*\b7\b'
 ! stderr '(?m)^panic: '
 
 # ID が重なる（claim-claim）
 cp cases/dup-claim-claim.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:(13|27): .*task-id-unique'
+stderr 'promises\.toml:27: .*task-id-unique.*\b13\b'
 ! stderr '(?m)^panic: '
 
 # ID が重なる（term-feature）
 cp cases/dup-term-feature.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:(2|27): .*task'
+stderr 'promises\.toml:27: .*task.*\b2\b'
 ! stderr '(?m)^panic: '
 
 # ID が重なる（term-claim）
 cp cases/dup-term-claim.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:(2|27): .*task'
+stderr 'promises\.toml:27: .*task.*\b2\b'
 ! stderr '(?m)^panic: '
 
 # ID が重なる（feature-claim）
 cp cases/dup-feature-claim.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:(7|27): .*task-add'
+stderr 'promises\.toml:27: .*task-add.*\b7\b'
 ! stderr '(?m)^panic: '
 
 # 分けたファイルをまたいで ID が重なる
@@ -110,7 +116,7 @@ cp cases/config-split.toml .vanda/config.toml
 expand .vanda/config.toml
 rm .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr '(one|two)\.toml:2: .*task'
+stderr 'two\.toml:2: .*task.*one\.toml'
 ! stderr '(?m)^panic: '
 
 -- .vanda/config.toml --
@@ -389,6 +395,31 @@ core = false
 
 [[claim]]
 id = ""
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/bad-id-claim-leading-digit.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "1-task-id"
 subjects = ["task", "task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"

@@ -1,7 +1,7 @@
 # CMD-10 約束リストの形: part_of の先が用語としてあり、循環しない。subjects の先が約束リストにある。
 # 循環していても、vanda は止まらずに回り続けることなく、エラーで止まる（回り続けると go test の時間切れで落ちる）。
 #
-# part_of は 1 つの ID の文字列として書いた。配列も書けるのかは計画にないため。TODO: 決まったら合わせる。
+# part_of は 1 つの ID の文字列として書いた。配列も書けるのかは計画にないため（報告済み）。
 # 循環のエラーがどの行を指すかは計画にないので、ファイルと循環する ID のどれかが同じ行に出ることまでを確かめる。
 
 exec git init -q -b main
@@ -39,6 +39,18 @@ stderr 'promises\.toml.*\b[xy]\b'
 cp cases/part-of-cycle-3.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml.*\b[xyz]\b'
+! stderr '(?m)^panic: '
+
+# part_of を配列で書く
+cp cases/part-of-array.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml:10: .*part_of'
+! stderr '(?m)^panic: '
+
+# subjects に約束の ID を書く
+cp cases/subjects-claim.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml:14: .*task-id-unique'
 ! stderr '(?m)^panic: '
 
 # subjects の先がない
@@ -288,6 +300,62 @@ core = false
 [[claim]]
 id = "task-id-unique"
 subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/part-of-array.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[term]]
+id = "task-id"
+name = "task-id の名前"
+definition = "task-id の定義"
+part_of = ["task"]
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/subjects-claim.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-id-unique"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"

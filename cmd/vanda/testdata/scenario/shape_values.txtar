@@ -1,7 +1,7 @@
 # CMD-10 約束リストの形: ステージ・タイプ・レイヤーが決まった値の中にある。flags は ai-proposal だけ。
 # 決まった値は全部を使って通ることを、決まった値の外の値は止まることを確かめる。
 #
-# ステージの値（plan・implementation・test・release・operation）は仮の値。計画に TOML に書く値がないため。TODO: 決まったら合わせる。
+# ステージの値（plan・implementation・test・release・operation）は仮の値。計画に TOML に書く値がないため（報告済み）。
 
 exec git init -q -b main
 expand .vanda/config.toml

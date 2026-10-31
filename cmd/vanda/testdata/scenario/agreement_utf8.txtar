@@ -1,0 +1,30 @@
+# CM-03: 指紋の元の JSON では、日本語などの文字は UTF-8 のまま書き、< > & も変えない。
+# そのとおりに手で書いた JSON から作った指紋の合意で、合意済になる。
+
+exec git init -q -b main
+expand .vanda/config.toml
+
+! exec vanda check .vanda/checks/agreement.toml
+stderr 'promises\.toml.*\btask\b'
+agree .vanda/agreements.toml '#1' term task fp/term-task.json
+exec vanda check .vanda/checks/agreement.toml
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+-- .vanda/checks/agreement.toml --
+[[check]]
+name = "agreement"
+scope = "all"
+-- .vanda/agreements.toml --
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "<利用者> & やること"
+-- fp/term-task.json --
+{"definition":"<利用者> & やること","id":"task","name":"タスク"}

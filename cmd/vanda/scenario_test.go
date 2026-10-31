@@ -17,9 +17,6 @@ import (
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
-// TODO: 台本の中の審査の設定の形（[[check]] の name・scope、審査の名前）と、エビデンスのステージの値は仮のもの。
-// docs/formats.md で決まったら、台本をそれに合わせる。
-//
 // シナリオは、ビルドした vanda の実行ファイルを外から動かして確かめる。
 // testscript.RunMain で main を直に呼ぶ形にしないのは、実装の内部の関数（main の入口の形）に頼らずに書くため。
 func TestScenario(t *testing.T) {
@@ -48,6 +45,8 @@ func TestScenario(t *testing.T) {
 			env.Setenv("VANDA_VERSION_OLDER", older)
 			// 動かしているマシンの git の設定に結果が左右されないよう、system と global の設定を読ませない。
 			env.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+			// 作業のディレクトリの上にたまたま git のリポジトリがあっても、リポジトリの外として扱わせる。
+			env.Setenv("GIT_CEILING_DIRECTORIES", filepath.Dir(env.WorkDir))
 			env.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
 			env.Setenv("GIT_AUTHOR_NAME", "テスト担当")
 			env.Setenv("GIT_AUTHOR_EMAIL", "tester@example.com")

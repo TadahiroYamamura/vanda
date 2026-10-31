@@ -2,7 +2,7 @@
 # 誤りがあれば止まり、エラーにファイルと行が出る。
 #
 # エラーは 1 件 1 行の <パス>:<行>: の形（監督が決めた形）。
-# 知らない表の行は、表の見出しの行（6）と最初の項目の行（7）のどちらでもよいことにする。
+# 知らない表の誤りは、表の見出しの行を指す。
 
 exec git init -q -b main
 expand .vanda/config.toml
@@ -20,7 +20,7 @@ stderr 'promises\.toml:3: '
 # 知らない表がある
 cp cases/unknown-table.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:[67]: .*clam'
+stderr 'promises\.toml:6: .*clam'
 ! stderr '(?m)^panic: '
 
 # term の表に知らない項目がある

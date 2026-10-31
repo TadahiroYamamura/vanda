@@ -20,16 +20,43 @@ exec vanda check .vanda/checks/all.toml
 
 # 範囲を 1 つのストーリーにする審査を含むのに --base がない
 ! exec vanda check .vanda/checks/story.toml
+stderr '--base'
 ! stderr '(?m)^panic: '
-
-# --base を渡せば通る（上の失敗が --base のないことによるものだと言えるようにするため）
-exec git checkout -q -b story-2
-exec vanda check .vanda/checks/story.toml --base main
 
 # 範囲が全部の審査と 1 つのストーリーの審査を混ぜても、--base がなければ止まる
 ! exec vanda check .vanda/checks/mixed.toml
+stderr '--base'
 ! stderr '(?m)^panic: '
+
+# ストーリーは、分かれた点より後のコミットのメッセージの ID から決める。
+# 分かれた点より後にコミットがない（ID が 0 個）と、--story を求めて止まる
+exec git checkout -q -b story-2
+! exec vanda check .vanda/checks/story.toml --base main
+stderr '--story'
+! stderr '(?m)^panic: '
+exec vanda check .vanda/checks/story.toml --base main --story '#2'
+
+# ID が 1 つなら、それを使って通る
+cp cases/note-1.txt note.txt
+exec git add -A
+exec git commit -q -m '#2 メモを足す'
+exec vanda check .vanda/checks/story.toml --base main
 exec vanda check .vanda/checks/mixed.toml --base main
+
+# 分かれた点より後のコミットに、ID のないものが混じっても、ID が 1 つなら通る
+cp cases/note-2.txt note.txt
+exec git add -A
+exec git commit -q -m 'メモを直す'
+exec vanda check .vanda/checks/story.toml --base main
+
+# ID が 2 つ以上だと、--story を求めて止まる。--story を渡せば通る
+cp cases/note-3.txt note.txt
+exec git add -A
+exec git commit -q -m '#3 メモを足す'
+! exec vanda check .vanda/checks/story.toml --base main
+stderr '--story'
+! stderr '(?m)^panic: '
+exec vanda check .vanda/checks/story.toml --base main --story '#2'
 
 -- .vanda/config.toml --
 version = "${VANDA_VERSION}"
@@ -60,3 +87,9 @@ id = "task"
 name = "タスク"
 definition = "利用者がやること"
 -- .vanda/agreements.toml --
+-- cases/note-1.txt --
+1
+-- cases/note-2.txt --
+2
+-- cases/note-3.txt --
+3

@@ -1,24 +1,32 @@
 # CMD-10 合意: エビデンスの本体のファイル（シナリオ、ガードレールの定義、オラクルの定義）も、今の中身に合意していないと止まる。
 # CM-03: ファイルの指紋は中身そのものから作るので、名前を変えただけなら合意済のまま、中身を 1 文字変えると提案中になる。
 #
-# どのファイルがエビデンスの本体かは、設定のアノテーション（txtar・tla）とガードレール（file）のパターンで決まるものとした。
-# アノテーションの付いていないファイルも合意の対象になるのかは、計画から読み取れないので、ここではどれにもアノテーションを付けた。
+# 合意の対象のファイルは、txtar と tla のアダプタのパターンに当たるファイル（アノテーションがなくても）と、ガードレールの paths に当たるファイル。
+# go のアダプタのパターンに当たるファイルは対象にしない。
+#
+# txtar のファイルの中身は、この台本の区切りとぶつからないよう、行の頭に > を付けて書き、unquote で外す。
 
 exec git init -q -b main
 expand .vanda/config.toml
 agree .vanda/agreements.toml '#1' term task fp/term-task.json
 agree .vanda/agreements.toml '#1' claim task-id-unique fp/claim.json
+unquote scenarios/plain.txtar
 
-# 3 つのファイルのどれにも合意していないと止まる
+# エビデンスの本体のファイルのどれにも合意していないと止まる。Go のファイルは対象にしない
 ! exec vanda check .vanda/checks/agreement.toml
 stderr 'scenarios/task-id\.txtar'
+stderr 'scenarios/plain\.txtar'
 stderr 'spec/Task\.tla'
+stderr 'spec/Helper\.tla'
 stderr 'db/schema\.sql'
+! stderr 'task_test\.go'
 ! stderr '(?m)^panic: '
 
 # 合意すると通る
 agree .vanda/agreements.toml '#1' file scenarios/task-id.txtar
 agree .vanda/agreements.toml '#1' file spec/Task.tla
+agree .vanda/agreements.toml '#1' file scenarios/plain.txtar
+agree .vanda/agreements.toml '#1' file spec/Helper.tla
 agree .vanda/agreements.toml '#1' file db/schema.sql
 exec vanda check .vanda/checks/agreement.toml
 
@@ -68,6 +76,10 @@ adapter = "txtar"
 paths = ["spec/**/*.tla"]
 adapter = "tla"
 
+[[annotation]]
+paths = ["**/*.go"]
+adapter = "go"
+
 [[guardrail]]
 adapter = "file"
 paths = ["db/schema.sql"]
@@ -101,6 +113,20 @@ detail = "spec/Task.tla"
 -- cases/task-id-changed.txtar --
 # @vanda:evidence task-id-unique
 # Adding two tasks gives them different IDs!
+-- scenarios/plain.txtar --
+>exec echo hello
+>-- hello.txt --
+>hello
+-- spec/Helper.tla --
+---- MODULE Helper ----
+Max(a, b) == IF a > b THEN a ELSE b
+====
+-- task_test.go --
+package task
+
+import "testing"
+
+func TestNothing(t *testing.T) {}
 -- spec/Task.tla --
 ---- MODULE Task ----
 \* @vanda:claim task-id-unique
