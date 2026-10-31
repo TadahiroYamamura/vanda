@@ -357,7 +357,7 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
       </div>
 
       <Compare entry={e} />
-      {e.kind === "claim" && e.id && e.change !== "deleted" && <EvidencePlan id={e.id} />}
+      {e.kind === "claim" && e.id && e.change !== "deleted" && <EvidencePlan id={e.id} query={props.query} />}
     </div>
   );
 }
@@ -453,7 +453,7 @@ function Compare(props: { entry: Entry }) {
 }
 
 // EvidencePlan は、エビデンスの予定と実際の表（RV-08）。合格したかは段 3 で足す。
-export function EvidencePlan(props: { id: string }) {
+export function EvidencePlan(props: { id: string; query?: string }) {
   const d = useLoad(() => api.claim(props.id), props.id);
   return (
     <div>
@@ -481,7 +481,10 @@ export function EvidencePlan(props: { id: string }) {
                 <td>
                   {ev.found.map((f) => (
                     <div key={`${f.file}:${f.line}`}>
-                      {f.name} <span className="note">{f.file}:{f.line}</span>
+                      {f.name}{" "}
+                      <Link className="note" to={`/files?${props.query ? `${props.query}&` : ""}path=${encodeURIComponent(f.file)}`}>
+                        {f.file}:{f.line}
+                      </Link>
                     </div>
                   ))}
                 </td>
