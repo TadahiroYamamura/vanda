@@ -14,13 +14,13 @@ exec vanda check .vanda/checks/shape.toml
 # エビデンスの layers に、約束にないレイヤーを書く
 cp cases/outside.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:23: .*cli'
+stdout 'promises\.toml:23: .*cli'
 ! stderr '(?m)^panic: '
 
 # 約束のレイヤーのうち cli を確かめるエビデンスがない
 cp cases/uncovered.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml.*task-id-unique.*\bcli\b|promises\.toml.*\bcli\b.*task-id-unique'
+stdout 'promises\.toml:18: .*\bcli\b'
 ! stderr '(?m)^panic: '
 
 -- .vanda/config.toml --

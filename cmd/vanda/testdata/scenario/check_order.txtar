@@ -4,20 +4,25 @@
 # - 約束リストの形: .vanda/promises/aaa.toml の 2 行目（ID の形）、.vanda/promises/qqq-broken.toml の 3 行目（subjects の先がない）と 9 行目（決まった値にないステージ）
 # - 読まれていないファイル: どのパターンにも当たらない .vanda/zzz-stray.toml
 # 1 つの審査の中では、ファイルの場所の順、同じファイルなら行の順に出る。出力の順は、毎回同じ。
+# 結果は標準出力に、審査ごとに「審査 <名前>（<範囲>）: 通った」か「失敗（<件数> 件）」の行を出し、その後に誤りを並べる。
 
 exec git init -q -b main
 expand .vanda/config.toml
 
 ! exec vanda check .vanda/checks/shape-then-unread.toml
+stdout '^審査 promise-list-shape（all）: 失敗（3 件）$'
+stdout '^審査 unread-files（all）: 失敗（1 件）$'
+order '審査 promise-list-shape' '審査 unread-files'
 order 'qqq-broken\.toml:9: ' 'zzz-stray\.toml'
 order 'aaa\.toml:2: ' 'qqq-broken\.toml:3: '
 order 'qqq-broken\.toml:3: ' 'qqq-broken\.toml:9: '
 ! stderr '(?m)^panic: '
-cp stderr first.txt
+cp stdout first.txt
 ! exec vanda check .vanda/checks/shape-then-unread.toml
-cmp stderr first.txt
+cmp stdout first.txt
 
 ! exec vanda check .vanda/checks/unread-then-shape.toml
+order '審査 unread-files' '審査 promise-list-shape'
 order 'zzz-stray\.toml' 'qqq-broken\.toml:9: '
 ! stderr '(?m)^panic: '
 
@@ -25,12 +30,14 @@ order 'zzz-stray\.toml' 'qqq-broken\.toml:9: '
 rm .vanda/zzz-stray.toml
 cp cases/aaa-fixed.toml .vanda/promises/aaa.toml
 ! exec vanda check .vanda/checks/unread-then-shape.toml
-stderr 'qqq-broken\.toml:9: '
-! stderr 'zzz-stray'
+stdout 'qqq-broken\.toml:9: '
+! stdout 'zzz-stray'
 
 # どちらも通れば、終了コードは成功になる
 cp cases/fixed.toml .vanda/promises/qqq-broken.toml
 exec vanda check .vanda/checks/unread-then-shape.toml
+stdout '^審査 unread-files（all）: 通った$'
+stdout '^審査 promise-list-shape（all）: 通った$'
 
 -- .vanda/config.toml --
 version = "${VANDA_VERSION}"

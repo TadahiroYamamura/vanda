@@ -19,109 +19,109 @@ exec vanda check .vanda/checks/shape.toml
 # term の id がない
 cp cases/missing-term-id.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:1: .*\bid\b'
+stdout 'promises\.toml:1: .*\bid\b'
 ! stderr '(?m)^panic: '
 
 # term の name がない
 cp cases/missing-term-name.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:1: .*\bname\b'
+stdout 'promises\.toml:1: .*\bname\b'
 ! stderr '(?m)^panic: '
 
 # term の definition がない
 cp cases/missing-term-definition.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:1: .*\bdefinition\b'
+stdout 'promises\.toml:1: .*\bdefinition\b'
 ! stderr '(?m)^panic: '
 
 # feature の id がない
 cp cases/missing-feature-id.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:6: .*\bid\b'
+stdout 'promises\.toml:6: .*\bid\b'
 ! stderr '(?m)^panic: '
 
 # feature の name がない
 cp cases/missing-feature-name.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:6: .*\bname\b'
+stdout 'promises\.toml:6: .*\bname\b'
 ! stderr '(?m)^panic: '
 
 # feature の definition がない
 cp cases/missing-feature-definition.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:6: .*\bdefinition\b'
+stdout 'promises\.toml:6: .*\bdefinition\b'
 ! stderr '(?m)^panic: '
 
 # claim の id がない
 cp cases/missing-claim-id.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:12: .*\bid\b'
+stdout 'promises\.toml:12: .*\bid\b'
 ! stderr '(?m)^panic: '
 
 # claim の subjects がない
 cp cases/missing-claim-subjects.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:12: .*\bsubjects\b'
+stdout 'promises\.toml:12: .*\bsubjects\b'
 ! stderr '(?m)^panic: '
 
 # claim の statement がない
 cp cases/missing-claim-statement.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:12: .*\bstatement\b'
+stdout 'promises\.toml:12: .*\bstatement\b'
 ! stderr '(?m)^panic: '
 
 # claim の layers がない
 cp cases/missing-claim-layers.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:12: .*\blayers\b'
+stdout 'promises\.toml:12: .*\blayers\b'
 ! stderr '(?m)^panic: '
 
 # claim の evidence がない
 cp cases/missing-claim-evidence.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:12: .*\bevidence\b'
+stdout 'promises\.toml:12: .*\bevidence\b'
 ! stderr '(?m)^panic: '
 
 # claim.evidence の stage がない
 cp cases/missing-claim.evidence-stage.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:20: .*\bstage\b'
+stdout 'promises\.toml:20: .*\bstage\b'
 ! stderr '(?m)^panic: '
 
 # claim.evidence の type がない
 cp cases/missing-claim.evidence-type.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:20: .*\btype\b'
+stdout 'promises\.toml:20: .*\btype\b'
 ! stderr '(?m)^panic: '
 
 # claim.evidence の layers がない
 cp cases/missing-claim.evidence-layers.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:20: .*\blayers\b'
+stdout 'promises\.toml:20: .*\blayers\b'
 ! stderr '(?m)^panic: '
 
 # claim の layers が空
 cp cases/empty-claim-layers.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:18: .*layers'
+stdout 'promises\.toml:18: .*layers'
 ! stderr '(?m)^panic: '
 
 # claim.evidence の layers が空
 cp cases/empty-evidence-layers.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:23: .*layers'
+stdout 'promises\.toml:23: .*layers'
 ! stderr '(?m)^panic: '
 
 # claim の subjects が空
 cp cases/empty-subjects.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:14: .*subjects'
+stdout 'promises\.toml:14: .*subjects'
 ! stderr '(?m)^panic: '
 
 # claim の evidence が空
 cp cases/empty-evidence.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:19: .*evidence'
+stdout 'promises\.toml:19: .*evidence'
 ! stderr '(?m)^panic: '
 
 -- .vanda/config.toml --

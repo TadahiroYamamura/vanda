@@ -18,8 +18,8 @@ exec vanda check .vanda/checks/all.toml
 # txtar のアノテーションがないと、scenario-test の予定で止まる（Go の evidence では代わりにならない）
 cp cases/add-none.txtar e2e/add.txtar
 ! exec vanda check .vanda/checks/all.toml
-stderr 'promises\.toml.*scenario-test'
-! stderr 'unit-test'
+stdout 'promises\.toml.*scenario-test'
+! stdout 'unit-test'
 ! stderr '(?m)^panic: '
 cp cases/add.txtar e2e/add.txtar
 unquote e2e/add.txtar
@@ -27,49 +27,49 @@ unquote e2e/add.txtar
 # TLA+ の claim がないと、model-check の予定で止まる
 cp cases/Task-none.tla spec/Task.tla
 ! exec vanda check .vanda/checks/all.toml
-stderr 'promises\.toml.*model-check'
-! stderr 'scenario-test'
+stdout 'promises\.toml.*model-check'
+! stdout 'scenario-test'
 ! stderr '(?m)^panic: '
 cp cases/Task.tla spec/Task.tla
 
 # SQL の evidence がないと、guardrail の予定で止まる
 cp cases/schema-none.sql db/schema.sql
 ! exec vanda check .vanda/checks/all.toml
-stderr 'promises\.toml.*guardrail'
-! stderr 'model-check'
+stdout 'promises\.toml.*guardrail'
+! stdout 'model-check'
 ! stderr '(?m)^panic: '
 cp cases/schema.sql db/schema.sql
 
 # Go の evidence がないと、Go で確かめる 5 つのタイプの予定のどれでも止まる。sensor は Go の sensor で満たされたまま
 cp cases/task_test.go.none task_test.go
 ! exec vanda check .vanda/checks/all.toml
-stderr 'promises\.toml.*unit-test'
-stderr 'promises\.toml.*cross-check'
-stderr 'promises\.toml.*random-check'
-stderr 'promises\.toml.*interface-test'
-stderr 'promises\.toml.*concurrency-test'
-! stderr 'promises\.toml.*sensor'
+stdout 'promises\.toml.*unit-test'
+stdout 'promises\.toml.*cross-check'
+stdout 'promises\.toml.*random-check'
+stdout 'promises\.toml.*interface-test'
+stdout 'promises\.toml.*concurrency-test'
+! stdout 'promises\.toml.*sensor'
 ! stderr '(?m)^panic: '
 cp cases/task_test.go.orig task_test.go
 
 # Go の sensor がないと、sensor の予定で止まる。Go の evidence では代わりにならない
 cp cases/task.go.none task.go
 ! exec vanda check .vanda/checks/all.toml
-stderr 'promises\.toml.*sensor'
-! stderr 'unit-test'
+stdout 'promises\.toml.*sensor'
+! stdout 'unit-test'
 ! stderr '(?m)^panic: '
 cp cases/task.go.orig task.go
 
 # ほかの約束のアノテーションでは、満たされない
 cp cases/promises-other.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/all.toml
-stderr 'promises\.toml.*task-title-required'
+stdout 'promises\.toml.*task-title-required'
 ! stderr '(?m)^panic: '
 
 # proof を予定に書くと、段 1 では扱えないので止まる
 cp cases/promises-proof.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/all.toml
-stderr 'promises\.toml.*proof'
+stdout 'promises\.toml.*proof'
 ! stderr '(?m)^panic: '
 
 # 範囲を 1 つのストーリーにすると、分かれた点より後に変わった約束だけを見る
@@ -83,8 +83,8 @@ exec git add -A
 exec git commit -q -m '#2 約束を足す'
 exec vanda check .vanda/checks/story.toml --base main
 ! exec vanda check .vanda/checks/all.toml
-stderr 'task-reviewed-no-annotation'
-! stderr 'task-title-required'
+stdout 'task-reviewed-no-annotation'
+! stdout 'task-title-required'
 ! stderr '(?m)^panic: '
 
 -- .vanda/config.toml --

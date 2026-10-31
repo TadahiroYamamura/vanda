@@ -15,7 +15,7 @@ exec vanda check .vanda/checks/links.toml
 # 名前で指したアノテーションの ID は、ほかのアダプタと同じく、約束リストとのつながりを審査する
 cp cases/a-no-such.ext ext/a.ext
 ! exec vanda check .vanda/checks/links.toml
-stderr 'ext/a\.ext:1: '
+stdout 'ext/a\.ext:1: '
 ! stderr '(?m)^panic: '
 cp cases/a.ext ext/a.ext
 
@@ -23,35 +23,35 @@ cp cases/a.ext ext/a.ext
 cp cases/config-wrong-line.toml .vanda/config.toml
 expand .vanda/config.toml
 ! exec vanda check .vanda/checks/links.toml
-stderr 'ext/a\.ext'
+stdout 'ext/a\.ext'
 ! stderr '(?m)^panic: '
 
 # 空の名前を返す
 cp cases/config-empty-name.toml .vanda/config.toml
 expand .vanda/config.toml
 ! exec vanda check .vanda/checks/links.toml
-stderr 'ext/a\.ext'
+stdout 'ext/a\.ext'
 ! stderr '(?m)^panic: '
 
 # 0 でない終了コードで終わると、標準エラーに書いた理由がエラーのメッセージに入る
 cp cases/config-reason.toml .vanda/config.toml
 expand .vanda/config.toml
 ! exec vanda check .vanda/checks/links.toml
-stderr 'ext/a\.ext.*the annotation is misplaced'
+stdout 'ext/a\.ext.*the annotation is misplaced'
 ! stderr '(?m)^panic: '
 
 # コマンドが失敗する
 cp cases/config-fail.toml .vanda/config.toml
 expand .vanda/config.toml
 ! exec vanda check .vanda/checks/links.toml
-stderr 'ext/a\.ext'
+stdout 'ext/a\.ext'
 ! stderr '(?m)^panic: '
 
 # コマンドが JSON として読めないものを返す
 cp cases/config-not-json.toml .vanda/config.toml
 expand .vanda/config.toml
 ! exec vanda check .vanda/checks/links.toml
-stderr 'ext/a\.ext'
+stdout 'ext/a\.ext'
 ! stderr '(?m)^panic: '
 
 # アダプタもコマンドも書いていない

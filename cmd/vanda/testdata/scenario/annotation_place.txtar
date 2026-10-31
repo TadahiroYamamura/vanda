@@ -14,14 +14,14 @@ exec vanda check .vanda/checks/links.toml
 # go で決まっていない種類（foo）を書くと、その行で止まる
 cp cases/go-unknown-kind.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stderr 'task\.go:6: .*foo'
+stdout 'task\.go:6: .*foo'
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
 # go で 1 つのアノテーションに ID を 2 つ書くと、その行で止まる
 cp cases/go-two-ids.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stderr 'task\.go:6: '
+stdout 'task\.go:6: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
@@ -29,7 +29,7 @@ cp orig/task.go.orig task.go
 cp cases/txtar-unknown-kind.case scenarios/add.txtar
 unquote scenarios/add.txtar
 ! exec vanda check .vanda/checks/links.toml
-stderr 'scenarios/add\.txtar:1: .*foo'
+stdout 'scenarios/add\.txtar:1: .*foo'
 ! stderr '(?m)^panic: '
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
@@ -38,7 +38,7 @@ unquote scenarios/add.txtar
 cp cases/txtar-two-ids.case scenarios/add.txtar
 unquote scenarios/add.txtar
 ! exec vanda check .vanda/checks/links.toml
-stderr 'scenarios/add\.txtar:1: '
+stdout 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
@@ -46,49 +46,49 @@ unquote scenarios/add.txtar
 # tla で決まっていない種類（foo）を書くと、その行で止まる
 cp cases/tla-unknown-kind.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stderr 'spec/Task\.tla:13: .*foo'
+stdout 'spec/Task\.tla:13: .*foo'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # tla で 1 つのアノテーションに ID を 2 つ書くと、その行で止まる
 cp cases/tla-two-ids.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stderr 'spec/Task\.tla:13: '
+stdout 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # sql で決まっていない種類（foo）を書くと、その行で止まる
 cp cases/sql-unknown-kind.case db/schema.sql
 ! exec vanda check .vanda/checks/links.toml
-stderr 'db/schema\.sql:1: .*foo'
+stdout 'db/schema\.sql:1: .*foo'
 ! stderr '(?m)^panic: '
 cp orig/schema.sql.orig db/schema.sql
 
 # sql で 1 つのアノテーションに ID を 2 つ書くと、その行で止まる
 cp cases/sql-two-ids.case db/schema.sql
 ! exec vanda check .vanda/checks/links.toml
-stderr 'db/schema\.sql:1: '
+stdout 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
 cp orig/schema.sql.orig db/schema.sql
 
 # Go で型の宣言の前に書くと止まる
 cp cases/go-on-type.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stderr 'task\.go:3: '
+stdout 'task\.go:3: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
 # Go で関数の中に書くと止まる
 cp cases/go-in-body.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stderr 'task\.go:7: '
+stdout 'task\.go:7: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
 # Go でコメントと func の宣言のあいだに空行があると止まる
 cp cases/go-gap.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stderr 'task\.go:6: '
+stdout 'task\.go:6: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
@@ -122,7 +122,7 @@ cp orig/schema.sql.orig db/schema.sql
 # TLA+ で次の行が定義でない（VARIABLES）と止まる
 cp cases/tla-vars.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stderr 'spec/Task\.tla:8: '
+stdout 'spec/Task\.tla:8: '
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
@@ -134,21 +134,21 @@ cp orig/Task.tla.orig spec/Task.tla
 # go でID のないアノテーションを書くと、その行で止まる
 cp cases/go-no-id.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stderr 'task\.go:6: '
+stdout 'task\.go:6: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
 # go で理由のない internal のアノテーションを書くと、その行で止まる
 cp cases/go-internal-no-reason.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stderr 'task\.go:6: '
+stdout 'task\.go:6: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
 # go で1 行に 2 つのアノテーションを書くと、その行で止まる
 cp cases/go-two-on-line.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stderr 'task\.go:6: '
+stdout 'task\.go:6: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
@@ -156,7 +156,7 @@ cp orig/task.go.orig task.go
 cp cases/txtar-no-id.case scenarios/add.txtar
 unquote scenarios/add.txtar
 ! exec vanda check .vanda/checks/links.toml
-stderr 'scenarios/add\.txtar:1: '
+stdout 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
@@ -165,7 +165,7 @@ unquote scenarios/add.txtar
 cp cases/txtar-internal-no-reason.case scenarios/add.txtar
 unquote scenarios/add.txtar
 ! exec vanda check .vanda/checks/links.toml
-stderr 'scenarios/add\.txtar:1: '
+stdout 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
@@ -174,7 +174,7 @@ unquote scenarios/add.txtar
 cp cases/txtar-two-on-line.case scenarios/add.txtar
 unquote scenarios/add.txtar
 ! exec vanda check .vanda/checks/links.toml
-stderr 'scenarios/add\.txtar:1: '
+stdout 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
@@ -182,42 +182,42 @@ unquote scenarios/add.txtar
 # tla でID のないアノテーションを書くと、その行で止まる
 cp cases/tla-no-id.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stderr 'spec/Task\.tla:13: '
+stdout 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # tla で理由のない internal のアノテーションを書くと、その行で止まる
 cp cases/tla-internal-no-reason.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stderr 'spec/Task\.tla:13: '
+stdout 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # tla で1 行に 2 つのアノテーションを書くと、その行で止まる
 cp cases/tla-two-on-line.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stderr 'spec/Task\.tla:13: '
+stdout 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # sql でID のないアノテーションを書くと、その行で止まる
 cp cases/sql-no-id.case db/schema.sql
 ! exec vanda check .vanda/checks/links.toml
-stderr 'db/schema\.sql:1: '
+stdout 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
 cp orig/schema.sql.orig db/schema.sql
 
 # sql で理由のない internal のアノテーションを書くと、その行で止まる
 cp cases/sql-internal-no-reason.case db/schema.sql
 ! exec vanda check .vanda/checks/links.toml
-stderr 'db/schema\.sql:1: '
+stdout 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
 cp orig/schema.sql.orig db/schema.sql
 
 # sql で1 行に 2 つのアノテーションを書くと、その行で止まる
 cp cases/sql-two-on-line.case db/schema.sql
 ! exec vanda check .vanda/checks/links.toml
-stderr 'db/schema\.sql:1: '
+stdout 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
 cp orig/schema.sql.orig db/schema.sql
 

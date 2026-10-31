@@ -133,7 +133,7 @@ func cmdExpand(ts *testscript.TestScript, neg bool, args []string) {
 }
 
 // order <前に出る正規表現> <後に出る正規表現>
-// 直前のコマンドの標準エラーで、前の正規表現に当たる所が、後の正規表現に当たる所より先に出ることを確かめる。
+// 直前のコマンドの標準出力（vanda check が審査の結果と誤りを出す所）で、前の正規表現に当たる所が、後の正規表現に当たる所より先に出ることを確かめる。
 // エラーは最初の 1 件で止めずに全部を集めて出す決まりなので、両方が出ていることも求める。
 func cmdOrder(ts *testscript.TestScript, neg bool, args []string) {
 	if neg {
@@ -142,21 +142,21 @@ func cmdOrder(ts *testscript.TestScript, neg bool, args []string) {
 	if len(args) != 2 {
 		ts.Fatalf("使い方: order <前に出る正規表現> <後に出る正規表現>")
 	}
-	stderr := ts.ReadFile("stderr")
+	stdout := ts.ReadFile("stdout")
 	first, err := regexp.Compile(args[0])
 	ts.Check(err)
 	second, err := regexp.Compile(args[1])
 	ts.Check(err)
-	fi := first.FindStringIndex(stderr)
+	fi := first.FindStringIndex(stdout)
 	if fi == nil {
-		ts.Fatalf("標準エラーに %q が出ていない", args[0])
+		ts.Fatalf("標準出力に %q が出ていない", args[0])
 	}
-	si := second.FindStringIndex(stderr)
+	si := second.FindStringIndex(stdout)
 	if si == nil {
-		ts.Fatalf("標準エラーに %q が出ていない", args[1])
+		ts.Fatalf("標準出力に %q が出ていない", args[1])
 	}
 	if si[0] < fi[0] {
-		ts.Fatalf("標準エラーで %q が %q より先に出ている", args[1], args[0])
+		ts.Fatalf("標準出力で %q が %q より先に出ている", args[1], args[0])
 	}
 }
 

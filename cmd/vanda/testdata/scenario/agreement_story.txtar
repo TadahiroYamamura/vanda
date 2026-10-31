@@ -42,14 +42,27 @@ exec vanda check .vanda/checks/all.toml
 
 # ストーリー 2 の範囲では、ストーリー 2 の合意が今の中身に合わなくなったので止まる
 ! exec vanda check .vanda/checks/story.toml --base main
-stderr 'task-id-unique'
-! stderr 'task-title-required'
+stdout 'task-id-unique'
+! stdout 'task-title-required'
 ! stderr '(?m)^panic: '
 
 # ストーリー 2 が今の中身に合意し直すと通る
 agree .vanda/agreements/story-2.toml '#2' claim task-id-unique fp/claim-v2.json
 exec git add -A
 exec git commit -q -m '#2 変わった約束に合意し直す'
+exec vanda check .vanda/checks/story.toml --base main
+stdout '^審査 agreement（story #2）: 通った$'
+
+# ストーリー 2 が、前に合意した約束を自分で変えても、合意し直すまで止まる（誰が変えたかを問わない）
+cp cases/b-v2.toml .vanda/promises/b.toml
+exec git add -A
+exec git commit -q -m '#2 題の約束の文を変える'
+! exec vanda check .vanda/checks/story.toml --base main
+stdout 'task-title-required'
+! stderr '(?m)^panic: '
+agree .vanda/agreements/story-2.toml '#2' claim task-title-required fp/claim-b2.json
+exec git add -A
+exec git commit -q -m '#2 変えた約束に合意し直す'
 exec vanda check .vanda/checks/story.toml --base main
 
 -- .vanda/config.toml --
@@ -124,3 +137,19 @@ detail = "task_test.go"
 {"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"No two tasks share an ID","subjects":["task"]}
 -- fp/claim-b.json --
 {"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","statement":"Every task has a title","subjects":["task"]}
+-- cases/b-v2.toml --
+[[claim]]
+id = "task-title-required"
+subjects = ["task"]
+statement = "Every task has a non-empty title"
+rationale = "Tasks are listed by title"
+condition = "always"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- fp/claim-b2.json --
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","statement":"Every task has a non-empty title","subjects":["task"]}

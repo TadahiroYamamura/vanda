@@ -11,7 +11,7 @@ exec vanda check .vanda/checks/links.toml
 cp cases/config-two.toml .vanda/config.toml
 expand .vanda/config.toml
 ! exec vanda check .vanda/checks/links.toml
-stderr 'task_test\.go'
+stdout 'task_test\.go'
 ! stderr '(?m)^panic: '
 
 -- .vanda/checks/links.toml --

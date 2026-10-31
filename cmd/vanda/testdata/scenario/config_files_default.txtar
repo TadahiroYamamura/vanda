@@ -9,7 +9,7 @@ expand .vanda/config.toml
 exec vanda check .vanda/checks/shape.toml
 cp cases/promises-bad-stage.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml'
+stdout 'promises\.toml'
 ! stderr '(?m)^panic: '
 
 # 合意の記録: 既定のファイルの中身が審査に使われる
@@ -20,7 +20,7 @@ agree .vanda/agreements.toml '#1' claim task-add-unique fp/claim.json
 exec vanda check .vanda/checks/targets.toml
 cp cases/promises-without-claim.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/targets.toml
-stderr 'agreements\.toml'
+stdout 'agreements\.toml'
 ! stderr '(?m)^panic: '
 
 # 既定のファイルがなければ、空とみなして通る
@@ -34,11 +34,11 @@ exec vanda check .vanda/checks/targets.toml
 cp cases/config-explicit.toml .vanda/config.toml
 expand .vanda/config.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml'
+stdout 'promises\.toml'
 ! stderr '(?m)^panic: '
 cp cases/promises.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/targets.toml
-stderr 'agreements\.toml'
+stdout 'agreements\.toml'
 ! stderr '(?m)^panic: '
 
 -- cases/config-explicit.toml --

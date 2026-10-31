@@ -14,12 +14,12 @@ unquote scenarios/plain.txtar
 
 # エビデンスの本体のファイルのどれにも合意していないと止まる。Go のファイルは対象にしない
 ! exec vanda check .vanda/checks/agreement.toml
-stderr 'scenarios/task-id\.txtar'
-stderr 'scenarios/plain\.txtar'
-stderr 'spec/Task\.tla'
-stderr 'spec/Helper\.tla'
-stderr 'db/schema\.sql'
-! stderr 'task_test\.go'
+stdout 'scenarios/task-id\.txtar'
+stdout 'scenarios/plain\.txtar'
+stdout 'spec/Task\.tla'
+stdout 'spec/Helper\.tla'
+stdout 'db/schema\.sql'
+! stdout 'task_test\.go'
 ! stderr '(?m)^panic: '
 
 # 合意すると通る
@@ -37,9 +37,9 @@ exec vanda check .vanda/checks/agreement.toml
 # シナリオの中身を 1 文字変えると止まる
 cp cases/task-id-changed.txtar scenarios/unique-task-id.txtar
 ! exec vanda check .vanda/checks/agreement.toml
-stderr 'scenarios/unique-task-id\.txtar'
-! stderr 'spec/Task\.tla'
-! stderr 'db/schema\.sql'
+stdout 'scenarios/unique-task-id\.txtar'
+! stdout 'spec/Task\.tla'
+! stdout 'db/schema\.sql'
 ! stderr '(?m)^panic: '
 agree .vanda/agreements.toml '#2' file scenarios/unique-task-id.txtar
 exec vanda check .vanda/checks/agreement.toml
@@ -47,7 +47,7 @@ exec vanda check .vanda/checks/agreement.toml
 # オラクルの定義の中身を 1 文字変えると止まる
 cp cases/Task-changed.tla spec/Task.tla
 ! exec vanda check .vanda/checks/agreement.toml
-stderr 'spec/Task\.tla'
+stdout 'spec/Task\.tla'
 ! stderr '(?m)^panic: '
 agree .vanda/agreements.toml '#2' file spec/Task.tla
 exec vanda check .vanda/checks/agreement.toml
@@ -55,7 +55,7 @@ exec vanda check .vanda/checks/agreement.toml
 # ガードレールの定義の中身を 1 文字変えると止まる
 cp cases/schema-changed.sql db/schema.sql
 ! exec vanda check .vanda/checks/agreement.toml
-stderr 'db/schema\.sql'
+stdout 'db/schema\.sql'
 ! stderr '(?m)^panic: '
 agree .vanda/agreements.toml '#2' file db/schema.sql
 exec vanda check .vanda/checks/agreement.toml

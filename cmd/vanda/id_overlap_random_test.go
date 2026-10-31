@@ -128,7 +128,8 @@ func Test分けたファイルをまたいでも重なったIDは後に出てき
 
 		cmd := exec.Command(bin, "check", ".vanda/checks/shape.toml")
 		cmd.Dir = root
-		var stderr strings.Builder
+		var stdout, stderr strings.Builder
+		cmd.Stdout = &stdout
 		cmd.Stderr = &stderr
 		err := cmd.Run()
 		var exitErr *exec.ExitError
@@ -136,11 +137,15 @@ func Test分けたファイルをまたいでも重なったIDは後に出てき
 			rt.Fatalf("vanda を動かせない: %v", err)
 		}
 		if (len(want) == 0) != (err == nil) {
-			rt.Fatalf("重なりが %d 件なのに、終了は %v\n%s", len(want), err, stderr.String())
+			rt.Fatalf("重なりが %d 件なのに、終了は %v\n%s%s", len(want), err, stdout.String(), stderr.String())
 		}
 		got := map[overlapLoc]string{}
-		for _, line := range strings.Split(strings.TrimSpace(stderr.String()), "\n") {
-			if line == "" {
+		if stderr.Len() > 0 {
+			rt.Fatalf("審査を始める前の誤りが出た: %s", stderr.String())
+		}
+		// 標準出力は、審査ごとの結果の行（審査 <名前>（<範囲>）: …）と、その後の誤りの行（docs/formats.md の「出力」）
+		for _, line := range strings.Split(strings.TrimSpace(stdout.String()), "\n") {
+			if line == "" || strings.HasPrefix(line, "審査 ") {
 				continue
 			}
 			var loc overlapLoc
@@ -159,7 +164,7 @@ func Test分けたファイルをまたいでも重なったIDは後に出てき
 			got[loc] = want[loc]
 		}
 		if len(got) != len(want) {
-			rt.Fatalf("重なりのエラーが足りない: want %v, got %v\n%s\n%s", want, got, stderr.String(), dump(srcs))
+			rt.Fatalf("重なりのエラーが足りない: want %v, got %v\n%s\n%s", want, got, stdout.String(), dump(srcs))
 		}
 	})
 }

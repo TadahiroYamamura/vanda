@@ -5,7 +5,7 @@ exec git init -q -b main
 expand .vanda/config.toml
 
 ! exec vanda check .vanda/checks/agreement.toml
-stderr 'promises\.toml.*\btask\b'
+stdout 'promises\.toml.*\btask\b'
 agree .vanda/agreements.toml '#1' term task fp/term-task.json
 exec vanda check .vanda/checks/agreement.toml
 
