@@ -209,6 +209,37 @@ var rvExamples = []rvExample{
 			{Kind: "file", Key: "db/reuse.sql", Change: "modified"},
 		}},
 	},
+	{
+		name: "ストーリー全体の見方はIDのないコミットが名前を変えたファイルをストーリーがさらに名前を変えたものを名前の変更として示す",
+		build: func(r *rvRepo) {
+			g := r.addFileAt(rvGuardrail, "db/a.sql")
+			r.commit("#1")
+			r.renameFileTo(g, "db/b.sql")
+			r.commit("")
+			r.renameFileTo(g, "db/c.sql")
+			r.commit("#25")
+		},
+		branch: map[string][]rvEntry{"main": nil},
+		story: map[string][]rvEntry{
+			"#25": {{Kind: "file", Key: "db/c.sql", Change: "renamed", OldPath: "db/b.sql"}},
+			// #1 が足した db/a.sql は今ないので出ない。db/c.sql を最初に変えたのは #25
+			"#1": {{Kind: "term", Key: "base", Change: "added"}},
+		},
+	},
+	{
+		name: "ストーリーが2つのコミットで2度名前を変えたファイルは最初の場所からの名前の変更の1件になる",
+		build: func(r *rvRepo) {
+			g := r.addFileAt(rvGuardrail, "db/a.sql")
+			r.commit("#1")
+			r.newBranch("story-25")
+			r.renameFileTo(g, "db/b.sql")
+			r.commit("#25")
+			r.renameFileTo(g, "db/c.sql")
+			r.commit("#25")
+		},
+		branch: map[string][]rvEntry{"main": {{Kind: "file", Key: "db/c.sql", Change: "renamed", OldPath: "db/a.sql"}}},
+		story:  map[string][]rvEntry{"#25": {{Kind: "file", Key: "db/c.sql", Change: "renamed", OldPath: "db/a.sql"}}},
+	},
 }
 
 func readPromises(r *rvRepo) string {
