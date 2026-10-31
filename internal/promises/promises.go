@@ -97,7 +97,7 @@ func (l *List) read(top *tomlread.Table) {
 		x := &Feature{Item: item(t, "feature")}
 		x.Name, _ = t.Str("name", true)
 		x.Definition, _ = t.Str("definition", true)
-		x.Core, _ = t.Bool("core", true)
+		x.Core, _ = t.Bool("core", false)
 		formal, ok := t.Bool("formal", false)
 		if ok {
 			x.Formal = formal
@@ -111,20 +111,23 @@ func (l *List) read(top *tomlread.Table) {
 	claims, _ := top.Tables("claim", false)
 	for _, t := range claims {
 		x := &Claim{Item: item(t, "claim")}
-		x.Subjects, _ = t.Strs("subjects", true)
+		x.Subjects = nonEmpty(t, "subjects", "用語か機能の ID")
 		x.Statement, _ = t.Str("statement", true)
-		x.Rationale, _ = t.Str("rationale", true)
-		x.Condition, _ = t.Str("condition", true)
-		x.Layers, _ = t.Strs("layers", true)
+		x.Rationale, _ = t.Str("rationale", false)
+		x.Condition, _ = t.Str("condition", false)
+		x.Layers = nonEmpty(t, "layers", "レイヤーの ID")
 		x.Flags, _ = t.Strs("flags", false)
 		x.Guesses, _ = t.Strs("guesses", false)
-		evs, _ := t.Tables("evidence", true)
+		evs, ok := t.Tables("evidence", true)
+		if ok && len(evs) == 0 {
+			t.ErrAt("evidence", "evidence が 1 つもない", "[[claim.evidence]] を 1 つ以上書く")
+		}
 		for _, et := range evs {
 			e := &Evidence{Table: et}
 			e.Stage, _ = et.Str("stage", true)
 			e.Type, _ = et.Str("type", true)
-			e.Layers, _ = et.Strs("layers", true)
-			e.Detail, _ = et.Str("detail", true)
+			e.Layers = nonEmpty(et, "layers", "レイヤーの ID")
+			e.Detail, _ = et.Str("detail", false)
 			et.Unknown("stage, type, layers, detail")
 			x.Evidence = append(x.Evidence, e)
 		}
@@ -140,4 +143,12 @@ func item(t *tomlread.Table, kind string) Item {
 		t.Label = kind + ` "` + id + `"`
 	}
 	return Item{ID: id, Table: t, Raw: t.M}
+}
+
+func nonEmpty(t *tomlread.Table, key, what string) []string {
+	xs, ok := t.Strs(key, true)
+	if ok && len(xs) == 0 {
+		t.ErrAt(key, key+" が空", key+" に"+what+" を 1 つ以上書く")
+	}
+	return xs
 }

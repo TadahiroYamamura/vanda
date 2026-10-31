@@ -51,9 +51,9 @@ type GuardrailRule struct {
 	Paths   []string
 }
 
-// IsID は、ID が英小文字・数字をハイフンでつないだ形かを返す。
+// IsID は、ID が英小文字で始まり、英小文字・数字をハイフンでつないだ形かを返す。
 func IsID(s string) bool {
-	if s == "" || s[0] == '-' || s[len(s)-1] == '-' || strings.Contains(s, "--") {
+	if s == "" || !(s[0] >= 'a' && s[0] <= 'z') || s[len(s)-1] == '-' || strings.Contains(s, "--") {
 		return false
 	}
 	for _, c := range s {
@@ -95,7 +95,7 @@ func parse(top *tomlread.Table) *Config {
 		if l.ID != "" {
 			t.Label = `layer "` + l.ID + `"`
 			if !IsID(l.ID) {
-				t.ErrAt("id", "レイヤーの ID "+quote(l.ID)+" が決まった形でない", "英小文字・数字をハイフンでつないだ形（例: model、db）にする")
+				t.ErrAt("id", "レイヤーの ID "+quote(l.ID)+" が決まった形でない", "英小文字で始め、英小文字・数字をハイフンでつないだ形（例: model、db）にする")
 			} else if seen[l.ID] {
 				t.ErrAt("id", "レイヤーの ID "+quote(l.ID)+" がほかのレイヤーと重なっている", "別の ID にする")
 			}

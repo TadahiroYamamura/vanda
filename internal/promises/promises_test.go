@@ -108,14 +108,12 @@ func TestLoadは型の違いと足りない項目と決まっていない項目�
 	root, files := write(t, map[string]string{".vanda/promises.toml": `[[claim]]
 id = "c"
 subjects = "task"
-statement = "s"
 rationale = "r"
-layers = ["model"]
+layers = []
 note = "x"
 
 [[claim.evidence]]
 stage = "test"
-type = "unit-test"
 layers = ["model"]
 
 [[feature]]
@@ -130,11 +128,12 @@ id = "s"
 	_, errs := Load(root, files, []string{".vanda/promises.toml", ".vanda/more.toml"})
 	want := []string{
 		`.vanda/promises.toml:3: subjects が文字列の配列でない。`,
-		`.vanda/promises.toml:1: claim "c" の condition がない。condition = "…" を書く`,
-		`.vanda/promises.toml:9: claim "c" の evidence の 1 件目 の detail がない。`,
-		`.vanda/promises.toml:7: note は決まった項目でない。`,
-		`.vanda/promises.toml:18: core が真偽でない。`,
-		`.vanda/promises.toml:20: story は決まった項目でない。`,
+		`.vanda/promises.toml:1: claim "c" の statement がない。statement = "…" を書く`,
+		`.vanda/promises.toml:5: layers が空。`,
+		`.vanda/promises.toml:8: claim "c" の evidence の 1 件目 の type がない。`,
+		`.vanda/promises.toml:6: note は決まった項目でない。`,
+		`.vanda/promises.toml:16: core が真偽でない。`,
+		`.vanda/promises.toml:18: story は決まった項目でない。`,
 		`.vanda/more.toml: 約束リストのファイルがない。`,
 	}
 	got := errs.Error()
@@ -162,5 +161,41 @@ evidence = [{ stage = "test", type = "unit-test", layers = "model", detail = "x"
 	want := `.vanda/promises.toml: claim "c" の evidence の 1 件目 の layers: layers が文字列の配列でない。`
 	if !strings.Contains(errs.Error(), want) {
 		t.Errorf("エラーに %q がない:\n%s", want, errs)
+	}
+}
+
+func TestLoadは省いてよい項目を省いても読める(t *testing.T) {
+	root, files := write(t, map[string]string{".vanda/promises.toml": `[[feature]]
+id = "f"
+name = "n"
+definition = "d"
+
+[[claim]]
+id = "c"
+subjects = ["f"]
+statement = "s"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+`})
+	l, errs := Load(root, files, []string{".vanda/promises.toml"})
+	if errs != nil {
+		t.Fatal(errs)
+	}
+	if l.Features[0].Core || l.Features[0].Formal {
+		t.Error("core を省いた機能は、core も formal も偽とみなす")
+	}
+}
+
+func TestLoadはsubjectsとevidenceが空なら誤りにする(t *testing.T) {
+	root, files := write(t, map[string]string{".vanda/promises.toml": "[[claim]]\nid = \"c\"\nsubjects = []\nstatement = \"s\"\nlayers = [\"m\"]\nevidence = []\n"})
+	_, errs := Load(root, files, []string{".vanda/promises.toml"})
+	for _, w := range []string{".vanda/promises.toml:3: subjects が空。", ".vanda/promises.toml:6: evidence が 1 つもない。"} {
+		if !strings.Contains(errs.Error(), w) {
+			t.Errorf("エラーに %q がない:\n%s", w, errs)
+		}
 	}
 }

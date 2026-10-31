@@ -112,7 +112,7 @@ func TestLoadは設定の版が動いているvandaより古いと移行を知�
 }
 
 func TestIsID(t *testing.T) {
-	for s, want := range map[string]bool{"task": true, "task-id-2": true, "2a": true, "": false, "Task": false, "-a": false, "a-": false, "a--b": false, "a_b": false, "タスク": false} {
+	for s, want := range map[string]bool{"task": true, "task-id-2": true, "2a": false, "a2": true, "": false, "Task": false, "-a": false, "a-": false, "a--b": false, "a_b": false, "タスク": false} {
 		if IsID(s) != want {
 			t.Errorf("IsID(%q) = %v", s, !want)
 		}
