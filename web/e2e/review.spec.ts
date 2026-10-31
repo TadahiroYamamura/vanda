@@ -1216,3 +1216,105 @@ test("約束の詳細とファイルの画面をURLで直接開くと合意の�
     await expect(unagreeButton(page)).toHaveCount(0);
   }
 });
+
+// 利用者が書いた文は、続いた空白（半角 3 つ・全角）と改行を保って出す。見えている文字（innerText）で確かめる
+const ws = {
+  statement: "タスクの ID は   重ならない　全角の空白の後\n2 行目の   文",
+  condition: "タスクが   1 つ以上　ある\n条件の 2 行目",
+  rationale: "消す相手を   決めるため　理由\n理由の 2 行目",
+  guess: "推測の   文　全角\n推測の 2 行目",
+  detail: "詳細の   文　全角\n詳細の 2 行目",
+  definition: "タスクを   見分ける　名前\n定義の 2 行目",
+};
+// 後の版: 文に足し、定義に空白だけを足し、理由から空白だけを消す
+const wsAfter = {
+  ...ws,
+  statement: ws.statement + "（後）",
+  definition: ws.definition.replace("見分ける", "見分ける   "),
+  rationale: ws.rationale.replace("消す相手を   ", "消す相手を"),
+};
+const q2 = (s: string) => JSON.stringify(s);
+const wsPromises = (w: typeof ws) => `[[term]]
+id = "task-id"
+name = "タスクの ID"
+definition = ${q2(w.definition)}
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task-id"]
+statement = ${q2(w.statement)}
+condition = ${q2(w.condition)}
+rationale = ${q2(w.rationale)}
+layers = ["model"]
+guesses = [${q2(w.guess)}]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["model"]
+detail = ${q2(w.detail)}
+`;
+
+// wsRepo は、空白を書いた版のコミット（wsbase はそこを指す）と、それを変えた今のコミットを作る
+function wsRepo() {
+  repo.write(".vanda/promises.toml", wsPromises(ws));
+  commit(repo, "#24 空白を書く");
+  repo.git("branch", "wsbase", "story-24");
+  repo.write(".vanda/promises.toml", wsPromises(wsAfter));
+  commit(repo, "#24 空白を変える");
+}
+const shown = async (page: Page) => page.locator("body").innerText();
+const occurrences = (text: string, s: string) => text.split(s).length - 1;
+
+test("約束の詳細の画面は利用者が書いた文の続いた空白と全角の空白と改行を保って出す", async ({ page }) => {
+  wsRepo();
+  await page.goto(serve.url + "/claims/task-id-unique");
+  await expect(page.getByText("（後）").first()).toBeVisible();
+  const text = await shown(page);
+  for (const [name, s] of Object.entries({ 文: wsAfter.statement, 条件: wsAfter.condition, 理由: wsAfter.rationale, 推測: wsAfter.guess, 詳細: wsAfter.detail })) {
+    expect(text.includes(s), `${name}の空白か改行が保たれていない: ${JSON.stringify(s)}`).toBe(true);
+  }
+});
+
+test("レビューの1列の差分は利用者が書いた文の続いた空白と全角の空白と改行を保ち空白だけを足した消した所にも印を出す", async ({ page }) => {
+  wsRepo();
+  await page.goto(serve.url + "/?view=branch&base=wsbase&story=%2324");
+  await select(page, "task-id-unique");
+  await expect(page.getByText("（後）").first()).toBeVisible();
+  let text = await shown(page);
+  // 変わっていない項目と、足しただけの文は、つながったまま見える
+  for (const [name, s] of Object.entries({ 文: wsAfter.statement, 条件: ws.condition, 推測: ws.guess, 詳細: ws.detail })) {
+    expect(text.includes(s), `${name}の空白か改行が保たれていない: ${JSON.stringify(s)}`).toBe(true);
+  }
+  // 理由から消した空白だけの所に、印（del）が出て、幅がある
+  const blankMark = async (tag: "del" | "ins") => {
+    const marks = page.locator(tag).filter({ hasText: /^\s+$/ });
+    await expect(marks.first(), `空白だけを${tag === "del" ? "消した" : "足した"}所に ${tag} がない`).toBeAttached();
+    const box = await marks.first().boundingBox();
+    expect(box && box.width > 0, `空白だけの ${tag} に幅がない（印が見えない）`).toBe(true);
+  };
+  await blankMark("del");
+  // 用語の定義に空白だけを足した所
+  await page.getByRole("listitem").filter({ hasText: /task-id(?!-)/ }).first().click();
+  await expect(page.getByText("定義の 2 行目").first()).toBeVisible();
+  text = await shown(page);
+  expect(text.includes(wsAfter.definition), `用語の定義の空白か改行が保たれていない: ${JSON.stringify(wsAfter.definition)}`).toBe(true);
+  await blankMark("ins");
+});
+
+for (const pg of pages) {
+  test(`${pg.name}でその時点の中身を開くと利用者が書いた文の続いた空白と全角の空白と改行を保って出す`, async ({ page }) => {
+    wsRepo();
+    await pg.open(page);
+    await expect(page.getByText("（後）").first()).toBeVisible();
+    const fields = { 文: ws.statement, 条件: ws.condition, 理由: ws.rationale, 推測: ws.guess, 詳細: ws.detail };
+    const before = await shown(page);
+    await choose(rowOf(page, "#24 空白を書く"));
+    await expect(page.getByText("理由の 2 行目").first()).toBeVisible();
+    await expect.poll(async () => occurrences(await shown(page), ws.rationale), { message: "その時点の理由の空白か改行が保たれていない" }).toBe(occurrences(before, ws.rationale) + 1);
+    const after = await shown(page);
+    for (const [name, s] of Object.entries(fields)) {
+      expect(occurrences(after, s), `その時点の${name}の空白か改行が保たれていない: ${JSON.stringify(s)}`).toBe(occurrences(before, s) + 1);
+    }
+  });
+}
