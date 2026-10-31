@@ -27,8 +27,9 @@
 | `github.com/rogpeppe/go-internal`（`testscript`） | シナリオテスト |
 | `pgregory.net/rapid` | ランダムチェック |
 | `react`、`react-dom` | 画面（`web/`） |
+| `@types/react`、`@types/react-dom` | 画面を TypeScript で書くための React の型 |
 | `typescript`、`vite`、`@vitejs/plugin-react` | 画面を作る |
-| `vitest`、`@testing-library/react`、`@testing-library/user-event`、`jsdom` | 画面の部品のテスト |
+| `vitest`、`@testing-library/react`、`@testing-library/dom`、`@testing-library/user-event`、`jsdom` | 画面の部品のテスト（`@testing-library/dom` は `@testing-library/react` が求めるもの） |
 | `msw` | 画面の部品のテストで API を差し替える |
 | `@playwright/test` | E2E のテスト（Chrome を動かす）。版は flake の nixpkgs の `playwright-driver` と同じにする |
 
