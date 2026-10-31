@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -339,5 +340,281 @@ func Test見せていた中身の指紋が今の中身と違うと合意を断�
 	}
 	if r.git("rev-parse", "HEAD") != head {
 		t.Errorf("断ったのにコミットができた")
+	}
+}
+
+// ---- RV-17 合意を取り消す（POST /api/revoke） ----
+
+func revokeClaim(id, fp string) map[string]any {
+	return map[string]any{"kind": "claim", "id": id, "path": nil, "fingerprint": fp, "story": reviewStory, "base": "main"}
+}
+
+type revokeResponse struct {
+	Commit      string `json:"commit"`
+	StillAgreed bool   `json:"stillAgreed"`
+	Removed     int    `json:"removed"`
+}
+
+// inlineRecord は、docs/formats.md の user = { … } の形で、task-id-unique の今の中身への合意の記録を書く（前に空行 1 つ）。
+func inlineRecord(story, name, email string) string {
+	return fmt.Sprintf("\n[[agreement]]\nkind = \"claim\"\nkey = \"task-id-unique\"\nfingerprint = %q\nagreed_at = 2026-10-31T12:00:00+09:00\nstory = %q\nuser = { name = %q, email = %q }\n",
+		reviewClaimFP, story, name, email)
+}
+
+func readFileString(t *testing.T, root, path string) string {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(root, path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
+
+// setupRevoke は、API で合意して task-id-unique のフラグを外し、合意の記録のファイルを、ベースブランチの中身 base に
+// extra を足したものに書き換えてコミットする。base（返すもの）は、合意する前（ベースブランチと同じ）の合意の記録のファイル。
+func setupRevoke(t *testing.T, extra func(base string) string) (string, *reviewRepo, *vandaServer, string) {
+	t.Helper()
+	bin, r, s := setupAgree(t)
+	base := readFileString(t, r.Root, ".vanda/agreements.toml")
+	if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil); code != 200 {
+		t.Fatalf("合意できない（%d）: %s", code, msg)
+	}
+	text := extra(base)
+	writeFile(t, r.Root, ".vanda/agreements.toml", text)
+	r.git("add", "-A")
+	r.git("commit", "-q", "-m", reviewStory+" 合意の記録を書き直す")
+	return bin, r, s, base
+}
+
+type revokeReview struct {
+	Entries []struct {
+		ID     *string `json:"id"`
+		State  *string `json:"state"`
+		Revoke *struct {
+			Possible bool    `json:"possible"`
+			Reason   *string `json:"reason"`
+		} `json:"revoke"`
+	} `json:"entries"`
+}
+
+func revokeEntry(t *testing.T, s *vandaServer) (state string, possible *bool, reason string) {
+	t.Helper()
+	var rv revokeReview
+	if code, msg := s.get("/api/review?view=branch&base=main&story=%2324", &rv); code != 200 {
+		t.Fatalf("一覧を読めない（%d）: %s", code, msg)
+	}
+	for _, e := range rv.Entries {
+		if str(e.ID) == "task-id-unique" {
+			if e.Revoke != nil {
+				p := e.Revoke.Possible
+				return str(e.State), &p, str(e.Revoke.Reason)
+			}
+			return str(e.State), nil, ""
+		}
+	}
+	t.Fatalf("一覧に task-id-unique がない")
+	return "", nil, ""
+}
+
+// RV-17
+func Test自分が今のブランチで書いた合意を取り消すとその記録と直前の空行だけが消え1つのコミットになりフラグは戻らない(t *testing.T) {
+	_, r, s, base := setupRevoke(t, func(base string) string {
+		return base + "\n# 以下は #24 の合意\n" + inlineRecord(reviewStory, reviewUserName, reviewUserEmail) + "\n# 終わりのコメント\n"
+	})
+	want := base + "\n# 以下は #24 の合意\n" + "\n# 終わりのコメント\n"
+	promises := readFileString(t, r.Root, ".vanda/promises.toml")
+	if state, possible, reason := revokeEntry(t, s); state != "agreed" || possible == nil || !*possible {
+		t.Fatalf("取り消せるはずの合意が、一覧で取り消せるとなっていない（state %q、possible %v、reason %q）", state, possible, reason)
+	}
+	// 関係のない書きかけの変更
+	writeFile(t, r.Root, "db/schema.sql", reviewSchema+"-- 書きかけ\n")
+	writeFile(t, r.Root, "notes.md", "メモ\n")
+	head := r.git("rev-parse", "HEAD")
+
+	var got revokeResponse
+	if code, msg := s.post("/api/revoke", revokeClaim("task-id-unique", reviewClaimFP), &got); code != 200 {
+		t.Fatalf("取り消せない（%d）: %s", code, msg)
+	}
+	if n := r.git("rev-list", "--count", head+"..HEAD"); n != "1" {
+		t.Errorf("コミットが %s 個できた（1 つにする）", n)
+	}
+	if got.Commit != r.git("rev-parse", "HEAD") || got.StillAgreed || got.Removed != 1 {
+		t.Errorf("返したもの: %+v（commit は今の HEAD、stillAgreed は false、removed は 1）", got)
+	}
+	if files := committedFiles(r, "HEAD"); !reflect.DeepEqual(files, []string{".vanda/agreements.toml"}) {
+		t.Errorf("コミットに入ったファイル: %v", files)
+	}
+	if subject := r.git("log", "-1", "--format=%s"); subject != "(chore) #24 で 約束 task-id-unique の合意を取り消す" {
+		t.Errorf("コミットのメッセージ: %q", subject)
+	}
+	if now := readFileString(t, r.Root, ".vanda/agreements.toml"); now != want {
+		t.Errorf("合意の記録のファイルが、その記録と直前の空行だけを消したものでない\n--- 今\n%s\n--- 思ったもの\n%s", now, want)
+	}
+	if now := readFileString(t, r.Root, ".vanda/promises.toml"); now != promises {
+		t.Errorf("取り消しで約束リストが変わった（フラグは戻さない）\n%s", now)
+	}
+	if unstaged := r.git("diff", "--name-only"); unstaged != "db/schema.sql" {
+		t.Errorf("書きかけの変更が残っていない: %q", unstaged)
+	}
+	if untracked := r.git("ls-files", "--others", "--exclude-standard"); untracked != "notes.md" {
+		t.Errorf("git が追っていないファイルが残っていない: %q", untracked)
+	}
+	if state, _, _ := revokeEntry(t, s); state == "agreed" {
+		t.Errorf("取り消した後も合意済のまま")
+	}
+}
+
+// RV-17。人の違う記録は残り、同じ人の同じ記録が 2 つあれば両方消える。ほかのストーリーの記録も残る
+func Test取り消すと今の人の記録だけが消えほかの人とほかのストーリーの記録は残り合意済のままになる(t *testing.T) {
+	other := inlineRecord(reviewStory, "ほかの人", "other@example.com")
+	story30 := inlineRecord("#30", reviewUserName, reviewUserEmail)
+	self := inlineRecord(reviewStory, reviewUserName, reviewUserEmail)
+	_, r, s, base := setupRevoke(t, func(base string) string {
+		return base + "\n# #24 の合意\n" + self + other + story30 + self
+	})
+	want := base + "\n# #24 の合意\n" + other + story30
+
+	var got revokeResponse
+	if code, msg := s.post("/api/revoke", revokeClaim("task-id-unique", reviewClaimFP), &got); code != 200 {
+		t.Fatalf("取り消せない（%d）: %s", code, msg)
+	}
+	if !got.StillAgreed || got.Removed != 2 {
+		t.Errorf("返したもの: %+v（ほかの人の合意が残るので stillAgreed は true、自分の 2 つを消すので removed は 2）", got)
+	}
+	if now := readFileString(t, r.Root, ".vanda/agreements.toml"); now != want {
+		t.Errorf("合意の記録のファイル\n--- 今\n%s\n--- 思ったもの\n%s", now, want)
+	}
+	if state, _, _ := revokeEntry(t, s); state != "agreed" {
+		t.Errorf("ほかの人の合意が残っているのに、合意済でない（%q）", state)
+	}
+}
+
+// RV-17。誰が × どこで書いたか、の組み合わせを全部回す
+func Test取り消せるのは今の人が今のブランチで書いた合意だけでほかは一覧で取り消せないとなりAPIで断られる(t *testing.T) {
+	writers := []struct {
+		name, user, email string
+		self              bool
+	}{
+		{"自分", reviewUserName, reviewUserEmail, true},
+		{"名前だけ違う人", "ほかの人", reviewUserEmail, false},
+		{"メールだけ違う人", reviewUserName, "other@example.com", false},
+		{"名前もメールも違う人", "ほかの人", "other@example.com", false},
+	}
+	for _, w := range writers {
+		for _, onBase := range []bool{false, true} {
+			place := "今のブランチ"
+			if onBase {
+				place = "ベースブランチ"
+			}
+			t.Run(w.name+"が"+place+"で書いた", func(t *testing.T) {
+				bin := buildVanda(t)
+				version, err := runningVersion(bin)
+				if err != nil {
+					t.Fatal(err)
+				}
+				r := newReviewRepo(t, version)
+				// フラグを外した今の中身への合意を、手で書く。ベースブランチなら main に書いて取り込む
+				promises := readFileString(t, r.Root, ".vanda/promises.toml")
+				promises = strings.Replace(strings.Replace(promises, "flags = [\"ai-proposal\"]\n", "", 1), "guesses = [\"タスクは消しても ID を使い回さない\"]\n", "", 1)
+				writeFile(t, r.Root, ".vanda/promises.toml", promises)
+				r.git("add", "-A")
+				r.git("commit", "-q", "-m", reviewStory+" フラグを外す")
+				rec := inlineRecord(reviewStory, w.user, w.email)
+				if onBase {
+					r.git("switch", "-q", "main")
+					writeFile(t, r.Root, ".vanda/agreements.toml", readFileString(t, r.Root, ".vanda/agreements.toml")+rec)
+					r.git("add", "-A")
+					r.git("commit", "-q", "-m", reviewStory+" 合意を書く")
+					r.git("switch", "-q", reviewBranch)
+					r.git("merge", "-q", "--no-edit", "main")
+				} else {
+					writeFile(t, r.Root, ".vanda/agreements.toml", readFileString(t, r.Root, ".vanda/agreements.toml")+rec)
+					r.git("add", "-A")
+					r.git("commit", "-q", "-m", reviewStory+" 合意を書く")
+				}
+				s := startServe(t, bin, r.Root, r.Env)
+				can := w.self && !onBase
+				state, possible, reason := revokeEntry(t, s)
+				if state != "agreed" || possible == nil {
+					t.Fatalf("手で書いた合意で合意済になっていない（state %q、revoke %v）", state, possible)
+				}
+				if *possible != can || (!can && reason == "") {
+					t.Errorf("一覧の取り消せるかが %v（理由 %q）。%v にする（取り消せないなら理由を出す）", *possible, reason, can)
+				}
+				before := readFileString(t, r.Root, ".vanda/agreements.toml")
+				head := r.git("rev-parse", "HEAD")
+				code, msg := s.post("/api/revoke", revokeClaim("task-id-unique", reviewClaimFP), nil)
+				if can {
+					if code != 200 {
+						t.Fatalf("取り消せない（%d）: %s", code, msg)
+					}
+					if n := r.git("rev-list", "--count", head+"..HEAD"); n != "1" {
+						t.Errorf("コミットが %s 個できた", n)
+					}
+					if now := readFileString(t, r.Root, ".vanda/agreements.toml"); now != strings.Replace(before, rec, "", 1) {
+						t.Errorf("取り消した記録だけが消えていない\n%s", now)
+					}
+					return
+				}
+				if code != 409 || msg == "" {
+					t.Errorf("%d（%q）を返した。409 で断り、理由を出す", code, msg)
+				}
+				if r.git("rev-parse", "HEAD") != head || readFileString(t, r.Root, ".vanda/agreements.toml") != before || r.git("status", "--porcelain") != "" {
+					t.Errorf("断ったのに、リポジトリが変わった")
+				}
+			})
+		}
+	}
+}
+
+// RV-17
+func Test合意の記録のファイルに書きかけの変更があると取り消しを断り理由を出し何も変えない(t *testing.T) {
+	_, r, s, _ := setupRevoke(t, func(base string) string {
+		return base + inlineRecord(reviewStory, reviewUserName, reviewUserEmail)
+	})
+	dirty := readFileString(t, r.Root, ".vanda/agreements.toml") + "# 書きかけ\n"
+	writeFile(t, r.Root, ".vanda/agreements.toml", dirty)
+	head := r.git("rev-parse", "HEAD")
+	if code, msg := s.post("/api/revoke", revokeClaim("task-id-unique", reviewClaimFP), nil); code != 409 || msg == "" {
+		t.Errorf("%d（%q）を返した。409 で断り、理由を出す", code, msg)
+	}
+	if r.git("rev-parse", "HEAD") != head || readFileString(t, r.Root, ".vanda/agreements.toml") != dirty {
+		t.Errorf("断ったのに、リポジトリが変わった")
+	}
+}
+
+// RV-17・CMD-10
+func Test取り消すと段1の合意の審査で止まりもう一度合意すると通る(t *testing.T) {
+	bin, r, s := setupAgree(t)
+	for _, body := range []map[string]any{
+		agreeClaim("task-id-unique", reviewClaimFP),
+		agreeClaim("task-title-required", reviewTitleFP),
+		agreeFile("e2e/add-task.txtar", reviewFileFP),
+	} {
+		if code, msg := s.post("/api/agree", body, nil); code != 200 {
+			t.Fatalf("%v に合意できない（%d）: %s", body, code, msg)
+		}
+	}
+	if code, out, errs := r.vanda(bin, "check", ".vanda/checks/merge.toml", "--base", "main"); code != 0 {
+		t.Fatalf("全部に合意しても審査が通らない（%d）\n%s%s", code, out, errs)
+	}
+	if code, msg := s.post("/api/revoke", revokeClaim("task-id-unique", reviewClaimFP), nil); code != 200 {
+		t.Fatalf("取り消せない（%d）: %s", code, msg)
+	}
+	if !strings.Contains(r.git("log", "-1", "--format=%B"), reviewStory) {
+		t.Errorf("取り消しのコミットのメッセージにストーリーの ID がない")
+	}
+	code, out, errs := r.vanda(bin, "check", ".vanda/checks/merge.toml", "--base", "main")
+	if code != 1 || !strings.Contains(out+errs, "task-id-unique") {
+		t.Errorf("取り消した後、合意の審査が task-id-unique で止まらない（%d）\n%s%s", code, out, errs)
+	}
+	if !strings.Contains(out, "審査 story-origin（story）: 通った") {
+		t.Errorf("取り消しのコミットで由来の審査が止まった\n%s%s", out, errs)
+	}
+	if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil); code != 200 {
+		t.Fatalf("もう一度合意できない（%d）: %s", code, msg)
+	}
+	if code, out, errs := r.vanda(bin, "check", ".vanda/checks/merge.toml", "--base", "main"); code != 0 {
+		t.Errorf("もう一度合意しても審査が通らない（%d）\n%s%s", code, out, errs)
 	}
 }
