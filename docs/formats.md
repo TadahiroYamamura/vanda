@@ -372,7 +372,8 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
   "bases": ["develop", "main", "origin/develop", "origin/main"],
   "user": {"name": "Tadahiro Yamamura", "email": "…"},
   "stories": [{"id": "#24", "inBranch": true}, {"id": "#12", "inBranch": false}],
-  "layers": [{"id": "model", "name": "モデル"}]
+  "layers": [{"id": "model", "name": "モデル"}],
+  "storyStore": "github"
 }
 ```
 
@@ -381,6 +382,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `branch` | 今のブランチ。ブランチにいなければ空 |
 | `defaultBase` | 設定の `[gui]` の `base`。書いていなければ空 |
 | `bases` | 手元のブランチと、リモートを追うブランチ（`refs/heads`・`refs/remotes`。`origin/HEAD` は除く）。名前の順 |
+| `storyStore` | ストーリーの置き場所のアダプタ。`github`、外部のコマンドなら `command`、設定になければ空。空なら、画面はストーリーを読みに行かず、置き場所が設定にないことを注記で出す |
 | `layers` | 設定のレイヤーの一覧（設定の順）。画面で、まとまりの名前に使う |
 | `user` | git の `user.name`・`user.email`。どちらかがなければ `null`（合意できない） |
 | `stories` | `HEAD` の履歴の、合流でないコミットのメッセージに出てくるストーリーの ID（`id_pattern`）。新しいコミットに出てくる順。`inBranch` は、`defaultBase` から分かれた点より後のコミットに出てくるか |

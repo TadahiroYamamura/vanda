@@ -25,6 +25,7 @@ export interface Context {
   user: User | null;
   stories: { id: string; inBranch: boolean }[];
   layers: LayerRef[];
+  storyStore: string;
 }
 
 export interface EvidenceContent {

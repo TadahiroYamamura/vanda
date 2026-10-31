@@ -88,7 +88,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
       </section>
 
       <div className="columns">
-        <aside className="story-panel">{story ? <StoryPanel id={story} /> : <p className="note">ストーリーが決まっていない（コミットのメッセージにストーリーの ID がないか、2 つ以上ある）。ストーリーを選ぶ</p>}</aside>
+        <aside className="story-panel">{story ? <StoryPanel id={story} configured={ctx.storyStore !== ""} /> : <p className="note">ストーリーが決まっていない（コミットのメッセージにストーリーの ID がないか、2 つ以上ある）。ストーリーを選ぶ</p>}</aside>
 
         <section className="list" aria-label="変わったものの一覧">
           {review.loading && <p className="note">読み込んでいる…</p>}
@@ -118,11 +118,14 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
   );
 }
 
-function StoryPanel(props: { id: string }) {
-  const s = useLoad(() => api.story(props.id), props.id);
+function StoryPanel(props: { id: string; configured: boolean }) {
+  const s = useLoad(props.configured ? () => api.story(props.id) : null, props.id);
   return (
     <div>
       <h2>ストーリー {props.id}</h2>
+      {!props.configured && (
+        <p className="note">ストーリーの置き場所が設定にないので、題と本文は出さない（.vanda/config.toml の [story] に書くと出る）</p>
+      )}
       {s.loading && <p className="note">読み込んでいる…</p>}
       {s.error != null && <ErrorBox error={s.error} title="ストーリーの置き場所から読めない" />}
       {s.data && (
