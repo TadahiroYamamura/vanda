@@ -332,3 +332,277 @@ scope = "story"
 | `vanda version` | 動いている vanda の版を、1 行で出す（例: `0.1.0`）。`.vanda/` がなくても、版が合わなくても動く |
 | `vanda doctor` | 設定（`.vanda/config.toml`）を読み、版が合うかを確かめる。通れば標準出力に 1 行を出す。誤りがあれば、標準エラーに出して終了コード 1 で終わる |
 | `vanda check <審査の設定のファイル> [--base <ブランチ>] [--story <ID>]` | 審査を行う。審査ごとの結果の行は標準出力に、誤りの中身は標準エラーに出す。どれかが失敗したら終了コード 1 |
+
+## GUI の API（`vanda serve`）
+
+v1.0.0 からは変えない取り決めではないが、画面とテストが頼るので、形をここに書く。
+
+### 共通
+
+- `vanda serve [--port <ポート>] [--no-open]` で起動する。`127.0.0.1` でだけ待ち受ける。`--port` を省けば（`0` なら）空いているポートを選ぶ。開いた URL を、`--no-open` のときも必ず標準出力に 1 行で出す。`--no-open` でなければブラウザで開く
+- `Host` が `127.0.0.1:<ポート>`・`localhost:<ポート>` でない要求は `403` で断る。`GET` 以外で、`Origin` があって `http://<Host>` でない要求も `403` で断る
+- 中身は UTF-8 の JSON。ストーリーの ID は URL の中で `%23` のようにエンコードする（`#24` → `%2324`）
+- 誤りは、HTTP の状態コードと、次の形で返す。`message` は何がいけないか、`fix` はどう直すか（なければ省く）
+
+```json
+{"error": {"message": "…", "fix": "…"}}
+```
+
+| 状態コード | いつ |
+|---|---|
+| `400` | 引数の誤り（ないベースブランチ、`id_pattern` に合わないストーリーの ID など） |
+| `404` | ないもの（ない約束、ないファイル、ないストーリー） |
+| `409` | 合意を断ったとき（表示した後に中身が変わった、合意で変えるファイルに書きかけの変更がある） |
+| `500` | vanda の中の誤り（一覧の数と差分の数が合わない、git が失敗したなど） |
+| `502` | ストーリーの置き場所の誤り（認証、ネットワーク）。`message` に置き場所が返した理由をそのまま入れる |
+
+- 対象の種類（`kind`）は、合意の記録と同じ `claim`・`term`・`feature`・`file`
+- ファイルの種類（`fileType`）は、`scenario`（`txtar` のアノテーションのパターンに当たる）・`oracle`（`tla`）・`guardrail`（`[[guardrail]]` の `paths`）
+
+### `GET /api/context`
+
+今の設定と、選べるもの。画面を開いたときに読む。
+
+```json
+{
+  "version": "0.1.0",
+  "branch": "story-24",
+  "head": "0123abcd…",
+  "defaultBase": "origin/develop",
+  "bases": ["develop", "main", "origin/develop", "origin/main"],
+  "user": {"name": "Tadahiro Yamamura", "email": "…"},
+  "stories": [{"id": "#24", "inBranch": true}, {"id": "#12", "inBranch": false}]
+}
+```
+
+| 項目 | 中身 |
+|---|---|
+| `branch` | 今のブランチ。ブランチにいなければ空 |
+| `defaultBase` | 設定の `[gui]` の `base`。書いていなければ空 |
+| `bases` | 手元のブランチと、リモートを追うブランチ（`refs/heads`・`refs/remotes`。`origin/HEAD` は除く）。名前の順 |
+| `user` | git の `user.name`・`user.email`。どちらかがなければ `null`（合意できない） |
+| `stories` | `HEAD` の履歴のコミットのメッセージに出てくるストーリーの ID（`id_pattern`）。新しいコミットに出てくる順。`inBranch` は、`defaultBase` から分かれた点より後のコミットに出てくるか |
+
+### `GET /api/story?id=<ストーリーの ID>`
+
+ストーリーの置き場所から読んだもの（CM-08）。
+
+```json
+{
+  "id": "#24",
+  "title": "タスクの一覧・完了・中止を追加する",
+  "body": "…（Markdown のまま）",
+  "url": "https://github.com/<owner>/<repo>/issues/24",
+  "attachments": [{"name": "画面.png", "url": "https://github.com/user-attachments/assets/…"}]
+}
+```
+
+### `GET /api/review`
+
+ストーリーで変わったものの一覧（RV-01・02・04・05・10・13・14）。
+
+| 引数 | 中身 |
+|---|---|
+| `view` | `branch`（ブランチごと）か `story`（ストーリー全体） |
+| `base` | `view=branch` のとき必ず。ベースブランチ |
+| `story` | ストーリーの ID。`view=story` のとき必ず。`view=branch` で省けば、`vanda check` と同じ決め方（分かれた点より後のコミットのメッセージにある ID が 1 つならそれ）で決め、決まらなければ `story` を `null` にする（合意と外れた合意は出せない） |
+
+```json
+{
+  "view": "branch",
+  "base": "origin/develop",
+  "mergeBase": "0123abcd…",
+  "story": "#24",
+  "total": 3,
+  "entries": [
+    {
+      "no": 1,
+      "kind": "claim",
+      "id": "task-id-unique",
+      "path": null,
+      "oldPath": null,
+      "fileType": null,
+      "change": "modified",
+      "state": "proposed",
+      "fingerprint": "sha256:…",
+      "flags": ["ai-proposal", "changed-since-agreement"],
+      "group": "layer:model",
+      "before": {"statement": "…", "rationale": "…", "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [{"stage": "test", "type": "unit-test", "layers": ["model"], "detail": null}], "flags": [], "guesses": []},
+      "after": {"statement": "…", "rationale": "…", "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [], "flags": ["ai-proposal"], "guesses": []},
+      "detachedAgreement": null,
+      "otherCommits": []
+    },
+    {
+      "no": 2,
+      "kind": "file",
+      "id": null,
+      "path": "e2e/add-task.txtar",
+      "oldPath": "e2e/add.txtar",
+      "fileType": "scenario",
+      "change": "renamed",
+      "state": "agreed",
+      "fingerprint": "sha256:…",
+      "flags": [],
+      "group": "files",
+      "before": {"text": "…"},
+      "after": {"text": "…"},
+      "detachedAgreement": null,
+      "otherCommits": []
+    }
+  ],
+  "detached": []
+}
+```
+
+| 項目 | 中身 |
+|---|---|
+| `mergeBase` | `view=branch` のときの分かれた点のコミット。`view=story` では `null` |
+| `total` | `entries` の数（RV-02 の総数） |
+| `entries[].no` | 通し番号（1 から）。並びは `group` の順（下）、同じまとまりの中は ID か場所の順 |
+| `entries[].id`・`path` | 約束・用語・機能は `id`、ファイルは `path`（削除したものは前の場所） |
+| `entries[].oldPath` | `change` が `renamed` のときの前の場所。ほかは `null` |
+| `entries[].change` | `added`・`modified`・`deleted`・`renamed` |
+| `entries[].state` | 今の中身が合意済なら `agreed`、まだなら `proposed`。`deleted` は `null`（合意の対象がないので、合意できない） |
+| `entries[].fingerprint` | 今の中身の指紋。`deleted` は `null` |
+| `entries[].flags` | `ai-proposal`（AI 案。約束の `flags`）・`guess`（推測。約束の `guesses` が空でない）・`changed-since-agreement`（差分あり。同じ鍵（ファイルなら同じ場所）に合意の記録があり、今の中身の指紋に合う合意がない）。この順 |
+| `entries[].group` | たたむまとまり（RV-10）。約束は `layer:<約束の layers の最初のレイヤー>`、用語と機能は `terms-features`、ファイルは `files`。並びは、設定のレイヤーの順の約束、`terms-features`、`files` |
+| `entries[].before`・`after` | 変更前（`added` は `null`）と変更後（`deleted` は `null`）の中身。下の表 |
+| `entries[].detachedAgreement` | このストーリーの合意が外れたもの（RV-14）なら `{"by": ["#30"]}`（`by` は、そのストーリーの合意の後に中身を変えたコミットのストーリーの ID。ID のないコミットは数えない）。ほかは `null` |
+| `entries[].otherCommits` | `view=story` で、ストーリーで最初に変えた後に、このストーリーの ID のないコミットが同じものを変えていたら、`[{"commit": "…", "subject": "…", "stories": ["#30"]}]`。`view=branch` では空 |
+| `detached` | このストーリーの外れた合意のうち、`entries` に出ないもの（比べる元と今のあいだで変わっていないもの）。形は `entries` と同じで、`no` は `null`、`change` は `unchanged`、`before` は `null`。`total` に数えない |
+
+`before`・`after` の中身（項目は、約束リストの書いたとおり。省いた項目は `null`、配列は `[]`）:
+
+| `kind` | 中身 |
+|---|---|
+| `claim` | `statement`・`rationale`・`condition`・`subjects`・`layers`・`evidence`（`stage`・`type`・`layers`・`detail` の配列）・`flags`・`guesses` |
+| `term` | `name`・`definition`・`partOf` |
+| `feature` | `name`・`definition`・`core`・`formal`・`formalWaiver` |
+| `file` | `text`（ファイルの中身） |
+
+- 一覧は、比べる元の中身と今の中身で指紋が違う鍵（約束・用語・機能は種類と ID、ファイルは場所）を、1 度ずつ出す。中身が同じで場所だけが変わったファイル（比べる元にあって今ない場所と、今あって比べる元にない場所で、中身の指紋が同じもの）は、`renamed` の 1 件にまとめる。中身も場所も変わったファイルは、`deleted` と `added` の 2 件にする
+- サーバーは、一覧を返す前に、`entries` の数が、比べる元と今で指紋の違う鍵の数から `renamed` の数を引いたものに合うかを確かめ、合わなければ `500` にする
+- `view=branch` の比べる元は、`vanda check` と同じく `git merge-base <base> HEAD` の中身。今の中身は作業ツリー
+- `view=story` の比べる元は、鍵ごとに、そのストーリーの ID を持つコミット（合流でないもの）のうち、その鍵の中身を変えた最初のコミットの、1 つ目の親の中身。今の中身は作業ツリー。比べる元と今の中身が同じもの（途中で足して後で消したものなど）は出ない
+
+### `POST /api/agree`
+
+1 件に合意する（RV-06）。
+
+```json
+{"kind": "claim", "id": "task-id-unique", "path": null, "fingerprint": "sha256:…", "story": "#24"}
+```
+
+| 項目 | 中身 |
+|---|---|
+| `id`・`path` | 約束・用語・機能は `id`、ファイルは今の `path` |
+| `fingerprint` | 画面に見せていた中身の指紋（一覧の `fingerprint`）。今の中身の指紋と違えば `409` で断る |
+| `story` | 合意するストーリーの ID（`id_pattern` に全体が当たる） |
+
+返すもの（`200`）:
+
+```json
+{"commit": "0123abcd…", "agreement": {"kind": "claim", "key": "task-id-unique", "fingerprint": "sha256:…", "path": null, "user": {"name": "…", "email": "…"}, "agreedAt": "2026-10-31T12:00:00+09:00", "story": "#24"}}
+```
+
+- 合意の記録は、設定の `agreements` のパターンの順で、最初に当たったファイルの終わりに書き足す。どれにも当たらず、最初のパターンにワイルドカードがなければ、そのファイルを作る。ワイルドカードがあれば `409` で断る
+- 約束なら、約束リストのその約束の表から、`flags` と `guesses` の行（複数行の配列なら、その全部の行）を消す。ほかの行は変えない。インラインの表（`{ … }`）の中に書いた `flags`・`guesses` は消せないので、`409` で断る
+- 合意の記録のファイルと約束リストのファイルだけを、1 つのコミットにする（`git commit -- <ファイル>`）。ほかのファイルの書きかけの変更（索引に足したものも）は入れない。メッセージは `(chore) <ストーリーの ID> で <種類> <ID か場所> に合意する`（種類は `約束`・`用語`・`機能`・`ファイル`）
+- 合意で変えるファイルに、コミットしていない変更があれば `409` で断る
+- git の `user.name` か `user.email` がなければ `400` で断る
+
+### `GET /api/claims/<約束の ID>`
+
+約束の詳細（CL-01・02・04・05）。
+
+```json
+{
+  "id": "task-id-unique",
+  "statement": "…", "rationale": "…", "condition": null,
+  "layers": [{"id": "model", "name": "モデル"}],
+  "subjects": [{"kind": "term", "id": "task-id", "name": "タスクの ID"}],
+  "state": "agreed",
+  "fingerprint": "sha256:…",
+  "flags": [], "guesses": [],
+  "evidence": [
+    {
+      "stage": "test", "type": "model-check", "layers": ["model"], "detail": null,
+      "found": [{"adapter": "tla", "file": "spec/Task.tla", "line": 12, "name": "IdsUnique", "text": "IdsUnique ==\n  …"}]
+    }
+  ],
+  "origin": [{"commit": "0123abcd…", "date": "2026-10-31T12:00:00+09:00", "subject": "(feat) …", "stories": ["#24"], "change": "added"}],
+  "agreements": [{"user": {"name": "…", "email": "…"}, "agreedAt": "…", "story": "#24", "fingerprint": "sha256:…", "current": true}]
+}
+```
+
+| 項目 | 中身 |
+|---|---|
+| `evidence[].found` | その約束を指す、タイプに合うアノテーション（「エビデンスが揃っている審査」の表と同じ組み合わせ）。`text` は、`txtar` と `sql` ならファイルの中身全体、`tla` なら付いている定義（定義の行から、次の最上位の定義か `====` の前まで）、`go` なら `null` |
+| `origin` | 約束の指紋が変わったコミット（作ったものを含む）の、古い順。`change` は `added`・`modified`。`stories` はメッセージにあるストーリーの ID |
+| `agreements` | 合意の記録のうち、`kind = "claim"` でこの ID を指すもの。`current` は、今の中身の指紋に合うか |
+
+### `GET /api/file?path=<場所>`
+
+合意の対象のファイルとアノテーションを読むファイルの中身（TLA+ のファイル全体へのリンクに使う）。`{"path": "…", "text": "…"}`。ほかのファイルは `404`。
+
+## TLA+ の記号（CL-07）
+
+画面では、オラクルの定義（TLA+）の次の書き方を、右の記号に置き換えて見せる。文字列（`"…"`）とコメント（`\*`、`(* *)`）の中と、4 つ以上の `-`・`=` だけの行の区切りは置き換えない。長いものから先に当てる。`\` で始まる書き方は、後に英字・数字・`_` が続かないときだけ当てる（`\in` を `\intersect` に当てない）。コピーしたときは、リポジトリの文字のまま（ASCII）にする。置き換えは見せ方だけで、判定には使わない（画面の側で行う）。
+
+| 書き方 | 記号 | 書き方 | 記号 |
+|---|---|---|---|
+| `==` | `≜` | `\in` | `∈` |
+| `/\`・`\land` | `∧` | `\notin` | `∉` |
+| `\/`・`\lor` | `∨` | `\subseteq` | `⊆` |
+| `~`・`\lnot`・`\neg` | `¬` | `\cup`・`\union` | `∪` |
+| `=>` | `⇒` | `\cap`・`\intersect` | `∩` |
+| `<=>`・`\equiv` | `⇔` | `\X`・`\times` | `×` |
+| `\A` | `∀` | `|->` | `↦` |
+| `\E` | `∃` | `->` | `→` |
+| `#`・`/=` | `≠` | `<<`・`>>` | `⟨`・`⟩` |
+| `<=`・`=<`・`\leq` | `≤` | `[]` | `□` |
+| `>=`・`\geq` | `≥` | `<>` | `◇` |
+| `'` | `′` | `~>` | `↝` |
+| `\o`・`\circ` | `∘` | `\div` | `÷` |
+
+## 設定の `[story]` と `[gui]`（段 2 で足したもの）
+
+```toml
+[story]
+id_pattern = "#[0-9]+"
+adapter = "github"
+repository = "TadahiroYamamura/vanda"
+api_url = "https://api.github.com"
+
+[gui]
+base = "origin/develop"
+```
+
+| 項目 | 型 | 必ずか | 中身 |
+|---|---|---|---|
+| `[story]` の `adapter` | 文字列 | `command` とどちらか 1 つ。どちらもなければ、画面にストーリーの題・本文を出さない | 中に持つストーリーの置き場所のアダプタ。今は `github`（GitHub Issues）だけ |
+| `[story]` の `repository` | 文字列 | `adapter = "github"` のときは必ず | `<owner>/<repo>` |
+| `[story]` の `api_url` | 文字列 | 省いてよい。`adapter = "github"` のときだけ書ける | GitHub の REST API の URL。省けば `https://api.github.com`（GitHub Enterprise なら、その API の URL） |
+| `[story]` の `command` | 文字列の配列 | 同上 | 外部のコマンドのアダプタと引数 |
+| `[gui]` の `base` | 文字列 | 省いてよい | 画面を開いたときのベースブランチ（CM-06） |
+
+### GitHub Issues のアダプタ
+
+- 認証の鍵は設定に書かない。使うたびに、環境の変数 `GH_TOKEN` があればそれを、なければ `gh auth token` の出力を使う
+- `GET <api_url>/repos/<repository>/issues/<番号>` を呼ぶ。番号は、ストーリーの ID の数字の部分
+- 添付ファイルは、本文の中のリンクと画像（Markdown の `[名前](URL)`・`![名前](URL)` と、HTML の `<img src>`）のうち、URL が `https://github.com/user-attachments/`・`https://github.com/<repository>/assets/`・`https://user-images.githubusercontent.com/` で始まるもの。名前は、リンクの文字か画像の代わりの文字（なければ URL の最後の部分）
+
+### 外部のコマンドのアダプタ（ストーリーの置き場所）
+
+アノテーションの外部のコマンドのアダプタと同じく、リポジトリの根を作業のディレクトリにして動かし、標準入力に JSON を渡し、標準出力から JSON を受け取る。`action` は、段 2 では `read` だけ（コメントを書く `write` は段 4 で足す）。
+
+```json
+{"action": "read", "story": "#24"}
+```
+
+```json
+{"title": "…", "body": "…", "url": "…", "attachments": [{"name": "…", "url": "…"}]}
+```
+
+- ストーリーがない・認証が通らないなどで返せないときは、0 でない終了コードで終わり、標準エラーに理由を書く。vanda は、それを画面にそのまま出す
+- 決まっていない項目は誤りにする。`title`・`body`・`url` は必ず（`url` が分からなければ空の文字列）。`attachments` は省いてよい
