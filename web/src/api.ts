@@ -86,7 +86,13 @@ export interface DiffLine {
   noNewline?: boolean;
 }
 
-export type Diff = { lines: DiffLine[] } | { fields: Record<string, DiffPart[]> };
+export interface EvidenceMark {
+  op: "equal" | "modified" | "removed" | "added";
+  layers: DiffPart[] | null;
+  detail: DiffPart[] | null;
+}
+
+export type Diff = { lines: DiffLine[] } | { fields: Record<string, DiffPart[]>; evidence?: { before: EvidenceMark[]; after: EvidenceMark[] } };
 
 export interface Entry {
   no: number | null;

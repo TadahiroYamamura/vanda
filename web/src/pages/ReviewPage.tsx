@@ -7,6 +7,7 @@ import { ErrorBox, FlagBadge, PresentIcon, StateBadge, shortCommit, useLoad } fr
 import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
 import { LineDiff, Parts } from "../components/DiffView";
+import { EvidenceList } from "../components/EvidenceList";
 import { langOf } from "../highlight";
 import { TlaCode } from "../components/TlaCode";
 import { changeLabel, changeMark, fileTypeLabel, kindLabel, stageLabel, typeLabel } from "../labels";
@@ -485,6 +486,15 @@ function Compare(props: { entry: Entry }) {
   const cell = (r: Row | undefined, side: "before" | "after") => {
     if (!r) return <td className="empty">—</td>;
     if (e.kind === "file") return <td>{isTla ? <TlaCode source={r[1]} /> : <CodeBlock source={r[1]} lang={langOf(e.path ?? "")} />}</td>;
+    if (e.kind === "claim" && r[0] === "エビデンスの予定") {
+      const content = (side === "before" ? e.before : e.after) as ClaimContent;
+      const marks = e.diff && "fields" in e.diff ? e.diff.evidence?.[side] : undefined;
+      return (
+        <td className="text">
+          <EvidenceList items={content.evidence} marks={marks} side={side} />
+        </td>
+      );
+    }
     const parts = r[2] && fields ? fields[r[2]] : undefined;
     return <td className="text">{parts ? <Parts parts={parts} side={side} /> : r[1]}</td>;
   };

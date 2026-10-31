@@ -206,6 +206,12 @@ ul.evidence-list { margin: 0; padding-left: 18px; }
 .evidence-item + .evidence-item { margin-top: 4px; }
 .evidence-detail { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg2); font-size: 12px; }
 
+.evidence-badge { margin-right: 6px; font-size: 11px; line-height: 18px; }
+.evidence-badge-added { background: var(--ok-bg); color: var(--ok); }
+.evidence-badge-removed { background: var(--bad-bg); color: var(--bad); }
+.evidence-item.evidence-added { background: var(--after-bg); border-radius: 4px; }
+.evidence-item.evidence-removed { background: var(--before-bg); border-radius: 4px; }
+
 /* 狭い画面では、一覧と 1 件の中身を縦に並べ、ページ全体をスクロールして読む。
    一覧を画面に貼り付けたまま（sticky）にすると、縦に並べたときに 1 件の中身の上に重なるため、ここでは外す */
 @media (max-width: 1000px) {
