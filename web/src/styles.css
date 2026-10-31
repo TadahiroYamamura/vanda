@@ -134,6 +134,8 @@ table.compare tr.differs td:nth-child(3) { background: var(--after-bg); }
 table.plan { border: 1px solid var(--line2); border-radius: 10px; }
 /* 詳細は省略せずに全部出す（レビューでは全部読む前提）。ほかの欄は中身に合わせて狭くし、詳細の欄が残りの幅を使う */
 table.plan .plan-narrow { width: 1%; white-space: nowrap; }
+table.plan .plan-present { padding-right: 0; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 table.plan td.plan-detail { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 12em; }
 table.plan td.plan-found { overflow-wrap: anywhere; min-width: 8em; max-width: 24em; }
 

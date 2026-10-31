@@ -53,9 +53,9 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams }) {
           <h3>{typeLabel[type] ?? type}</h3>
           {evs.map((ev, i) => (
             <div key={i} className="evidence">
-              <p className="note">
-                {stageLabel[ev.stage] ?? ev.stage} · レイヤー {ev.layers.join("・")}
-                {ev.detail && ` · ${ev.detail}`} · <PresentIcon present={ev.present} />
+              <p className="note evidence-line">
+                <PresentIcon present={ev.present} /> {stageLabel[ev.stage] ?? ev.stage} · レイヤー {ev.layers.join("・")}
+                {ev.detail && ` · ${ev.detail}`}
               </p>
               {ev.found.map((f) => (
                 <FoundView key={`${f.file}:${f.line}`} f={f} params={props.params} />

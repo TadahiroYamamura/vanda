@@ -516,17 +516,22 @@ export function ClaimSections(props: { id: string; query?: string }) {
         <table className="plan">
           <thead>
             <tr>
+              <th className="plan-narrow plan-present">
+                <span className="visually-hidden">揃っているか</span>
+              </th>
               <th className="plan-narrow">ステージ</th>
               <th className="plan-narrow">タイプ</th>
               <th className="plan-narrow">レイヤー</th>
               <th className="plan-detail">詳細</th>
               <th className="plan-found">実際のエビデンス</th>
-              <th className="plan-narrow">揃っているか</th>
             </tr>
           </thead>
           <tbody>
             {d.data.evidence.map((ev, i) => (
               <tr key={i}>
+                <td className="plan-narrow plan-present" data-label="揃っているか">
+                  <PresentIcon present={ev.present} />
+                </td>
                 <td className="plan-narrow" data-label="ステージ">
                   {stageLabel[ev.stage] ?? ev.stage}
                 </td>
@@ -548,9 +553,6 @@ export function ClaimSections(props: { id: string; query?: string }) {
                       </Link>
                     </div>
                   ))}
-                </td>
-                <td className="plan-narrow" data-label="揃っているか">
-                  <PresentIcon present={ev.present} />
                 </td>
               </tr>
             ))}
