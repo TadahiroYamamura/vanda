@@ -156,3 +156,22 @@ func nonEmpty(t *tomlread.Table, key, what string) []string {
 	}
 	return xs
 }
+
+// FromSources は、読み込み済みの中身 srcs（場所から中身へ）を、names の順に約束リストとして読む。
+// ベースブランチから分かれた点の中身を読むときに使う。
+func FromSources(names []string, srcs map[string][]byte) (*List, diag.Errors) {
+	var errs []diag.Error
+	l := &List{Files: names}
+	for _, f := range names {
+		doc := tomlread.Parse(f, srcs[f], &errs)
+		if doc == nil {
+			continue
+		}
+		l.read(doc.Top())
+	}
+	if len(errs) > 0 {
+		diag.Sort(errs)
+		return l, errs
+	}
+	return l, nil
+}

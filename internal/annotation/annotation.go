@@ -24,6 +24,8 @@ type Annotation struct {
 	Kind  string
 	Value string // ID か、internal なら理由
 	Name  string // 付いているものの名前（アダプタが読み取ったもの）
+	// Adapter は、読み取ったアダプタ（go・txtar・tla・sql）。外部のコマンドのアダプタなら空
+	Adapter string
 }
 
 // adapter は、ファイルの中身と、アノテーションのある行を受け取り、行ごとに付いているものの名前を返す。
@@ -101,6 +103,7 @@ func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotat
 		for _, x := range found {
 			if n, ok := names[x.Line]; ok {
 				x.Name = n
+				x.Adapter = hit[0].Adapter
 				out = append(out, x)
 			}
 		}
