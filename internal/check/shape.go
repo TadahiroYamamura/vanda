@@ -2,6 +2,7 @@ package check
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/TadahiroYamamura/vanda/internal/config"
@@ -20,10 +21,19 @@ func (e *env) promiseListShape() []diag.Error {
 	if e.list == nil {
 		return errs
 	}
+	// 重なりは、出てきた順（ファイルの場所の順、同じファイルなら行の順）で見て、後に出てきたほうを誤りにする
 	all := items(e.list)
+	sort.SliceStable(all, func(i, j int) bool {
+		a, b := all[i].table, all[j].table
+		if a.Doc.File != b.Doc.File {
+			return a.Doc.File < b.Doc.File
+		}
+		return a.Line("") < b.Line("")
+	})
 	where := map[string]item{}
 	for _, it := range all {
-		if it.id == "" {
+		// id を書いていないことは、読み込みの誤りとして出ている。空の ID（id = ""）は、形の誤りにする
+		if !it.table.Has("id") {
 			continue
 		}
 		if !config.IsID(it.id) {
