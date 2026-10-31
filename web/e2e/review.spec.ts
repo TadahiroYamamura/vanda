@@ -956,7 +956,8 @@ test("変わったものの一覧の1件は名前のほかに番号や状態の�
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   const detailOf = (id: string) => expect(page.getByRole("link", { name: "約束の詳細を開く" }), `${id} が選ばれていない`).toHaveAttribute("href", new RegExp(`/claims/${id}`));
   // task-title-required は 2 件目で、提案中の札と AI 案の札を持つ
-  const frame = page.getByRole("button").filter({ hasText: "task-title-required" }).first();
+  // 札は名前のボタンの外にあるので、1 件の枠（listitem）の中で押す
+  const frame = page.getByRole("listitem").filter({ hasText: "task-title-required" }).first();
   await expect(frame).toBeVisible();
   const spots: [string, () => Promise<void>][] = [
     ["番号", () => frame.getByText("2", { exact: true }).first().click()],
