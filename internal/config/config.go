@@ -35,7 +35,20 @@ type Config struct {
 	IDPattern         *regexp.Regexp
 	// IDFull は、ストーリーの ID 全体に当たるかを確かめる正規表現（id_pattern の前後を固定したもの）
 	IDFull *regexp.Regexp
+	Story  StoryStore
+	// GUIBase は、画面を開いたときのベースブランチ。書いていなければ空
+	GUIBase string
 }
+
+// StoryStore は、ストーリーの置き場所のアダプタ。Adapter と Command のどちらも空なら、置き場所につながない。
+type StoryStore struct {
+	Adapter    string
+	Repository string
+	APIURL     string
+	Command    []string
+}
+
+const DefaultGitHubAPI = "https://api.github.com"
 
 type Layer struct {
 	ID          string
@@ -169,7 +182,12 @@ func parse(top *tomlread.Table) *Config {
 				cfg.IDPattern = re
 			}
 		}
-		story.Unknown("id_pattern")
+		parseStoryStore(story, &cfg.Story)
+		story.Unknown("id_pattern, adapter, repository, api_url, command")
+	}
+	if gui, ok := top.Table("gui", false); ok {
+		cfg.GUIBase, _ = gui.Str("base", false)
+		gui.Unknown("base")
 	}
 
 	if cfg.IDPattern != nil {
@@ -179,8 +197,68 @@ func parse(top *tomlread.Table) *Config {
 			cfg.IDFull = re
 		}
 	}
-	top.Unknown("version, promises, agreements, layer, annotation, guardrail, story")
+	top.Unknown("version, promises, agreements, layer, annotation, guardrail, story, gui")
 	return cfg
+}
+
+// isRepository は、<owner>/<repo> の形（英数字と _ . - の名前を / で 1 つつないだもの）かを返す。
+func isRepository(s string) bool {
+	owner, name, ok := strings.Cut(s, "/")
+	valid := func(p string) bool {
+		if p == "" {
+			return false
+		}
+		for _, c := range p {
+			if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '_' || c == '.' || c == '-') {
+				return false
+			}
+		}
+		return true
+	}
+	return ok && valid(owner) && valid(name)
+}
+
+func parseStoryStore(t *tomlread.Table, st *StoryStore) {
+	adapter, hasAdapter := t.Str("adapter", false)
+	command, hasCommand := t.Strs("command", false)
+	repository, hasRepo := t.Str("repository", false)
+	apiURL, hasAPI := t.Str("api_url", false)
+	switch {
+	case hasAdapter && hasCommand:
+		t.ErrAt("command", "[story] に adapter と command の両方を書いている", "中に持つアダプタを使うなら adapter だけを、外部のコマンドを使うなら command だけを書く")
+	case hasAdapter:
+		if adapter != "github" {
+			t.ErrAt("adapter", "ストーリーの置き場所のアダプタ "+quote(adapter)+" は vanda の中にない", `adapter = "github" にするか、外部のコマンドを command = ["…"] で書く`)
+		}
+		st.Adapter = adapter
+	case hasCommand:
+		if len(command) == 0 || command[0] == "" {
+			t.ErrAt("command", "[story] の command に実行するコマンドがない", `command = ["コマンド", "引数"] のように書く`)
+		}
+		st.Command = command
+	}
+	if st.Adapter == "github" {
+		if !hasRepo {
+			t.ErrAt("", `adapter = "github" なのに repository がない`, `repository = "<owner>/<repo>" を書く`)
+		} else if !isRepository(repository) {
+			t.ErrAt("repository", "repository "+quote(repository)+" が <owner>/<repo> の形でない", `repository = "TadahiroYamamura/vanda" のように書く`)
+		}
+		st.Repository = repository
+		st.APIURL = DefaultGitHubAPI
+		if hasAPI {
+			if !strings.HasPrefix(apiURL, "http://") && !strings.HasPrefix(apiURL, "https://") {
+				t.ErrAt("api_url", "api_url "+quote(apiURL)+" が http:// か https:// で始まる URL でない", `api_url = "https://api.github.com" のように書く`)
+			}
+			st.APIURL = strings.TrimSuffix(apiURL, "/")
+		}
+		return
+	}
+	if hasRepo {
+		t.ErrAt("repository", `repository は adapter = "github" のときだけ書ける`, `adapter = "github" を書くか、repository を消す`)
+	}
+	if hasAPI {
+		t.ErrAt("api_url", `api_url は adapter = "github" のときだけ書ける`, `adapter = "github" を書くか、api_url を消す`)
+	}
 }
 
 func checkVersion(top *tomlread.Table, v string) {
