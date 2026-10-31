@@ -482,6 +482,24 @@ for (const pg of pages) {
     }
   });
 
+  test(`${pg.name}で由来のコミットを選ぶとその時点のレイヤーのうち今の設定にないものはIDのまま出る`, async ({ page }) => {
+    // レイヤーの名前は今の設定から引く。v3 で足した db を、v4 で設定からも約束からも消す
+    commitV3(repo);
+    const cfg = readFileSync(join(repo.root, ".vanda/config.toml"), "utf8");
+    repo.write(".vanda/config.toml", cfg.replace('[[layer]]\nid = "db"\nname = "データベース"\ndescription = "保存の制約"\n\n', ""));
+    repo.write(".vanda/promises.toml", promisesAt(v4));
+    commit(repo, "#24 文を直す");
+    expect(readFileSync(join(repo.root, ".vanda/config.toml"), "utf8")).not.toContain('id = "db"');
+
+    await pg.open(page);
+    await expect(page.getByText(v4.statement).first()).toBeVisible();
+    await expect(page.getByText(/\bdb\b/), "選ぶ前から db が出ている").toHaveCount(0);
+    await choose(rowOf(page, "#24 理由と条件を足す"));
+    await expect(page.getByText(v3.statement).first()).toBeVisible();
+    await expect(page.getByText(/\bdb\b/).first(), "今の設定にないレイヤー db が、ID のまま出ない（黙って消えている）").toBeVisible();
+    await expect(page.getByText("データベース")).toHaveCount(0);
+  });
+
   test(`${pg.name}で約束を変える前の合意の記録を選ぶと今の中身でなく合意を書いたコミットの時点の中身が出る`, async ({ page }) => {
     commitV3(repo);
     // v3 のときに画面で合意し、その後に v4 へ変える
