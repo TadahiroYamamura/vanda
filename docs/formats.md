@@ -371,7 +371,8 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
   "defaultBase": "origin/develop",
   "bases": ["develop", "main", "origin/develop", "origin/main"],
   "user": {"name": "Tadahiro Yamamura", "email": "…"},
-  "stories": [{"id": "#24", "inBranch": true}, {"id": "#12", "inBranch": false}]
+  "stories": [{"id": "#24", "inBranch": true}, {"id": "#12", "inBranch": false}],
+  "layers": [{"id": "model", "name": "モデル"}]
 }
 ```
 
@@ -380,6 +381,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `branch` | 今のブランチ。ブランチにいなければ空 |
 | `defaultBase` | 設定の `[gui]` の `base`。書いていなければ空 |
 | `bases` | 手元のブランチと、リモートを追うブランチ（`refs/heads`・`refs/remotes`。`origin/HEAD` は除く）。名前の順 |
+| `layers` | 設定のレイヤーの一覧（設定の順）。画面で、まとまりの名前に使う |
 | `user` | git の `user.name`・`user.email`。どちらかがなければ `null`（合意できない） |
 | `stories` | `HEAD` の履歴の、合流でないコミットのメッセージに出てくるストーリーの ID（`id_pattern`）。新しいコミットに出てくる順。`inBranch` は、`defaultBase` から分かれた点より後のコミットに出てくるか |
 
@@ -534,7 +536,8 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
   "evidence": [
     {
       "stage": "test", "type": "model-check", "layers": ["model"], "detail": null,
-      "found": [{"adapter": "tla", "file": "spec/Task.tla", "line": 12, "name": "IdsUnique", "text": "IdsUnique ==\n  …"}]
+      "found": [{"adapter": "tla", "file": "spec/Task.tla", "line": 12, "name": "IdsUnique", "text": "IdsUnique ==\n  …"}],
+      "present": true
     }
   ],
   "origin": [{"commit": "0123abcd…", "date": "2026-10-31T12:00:00+09:00", "subject": "(feat) …", "stories": ["#24"], "change": "added"}],
@@ -546,6 +549,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 |---|---|
 | `evidence[].found` | その約束を指す、タイプに合うアノテーション（「エビデンスが揃っている審査」の表と同じ組み合わせ）。`text` は、`txtar` と `sql` ならファイルの中身全体、`tla` なら付いている定義（定義の行から、次の最上位の定義か `====` の前まで）、`go` なら `null` |
 | `subjects` | 約束の `subjects` の順。約束リストにない ID は、`kind`・`name` を `null` にする |
+| `evidence[].present` | 揃っているか（RV-08。エビデンスが揃っている審査と同じ判定）。`found` があれば `true`。`proof` は `false`。`human-review`・`monitoring` は `null`（アノテーションで確かめない） |
 | `origin` | HEAD の履歴の、合流でないコミットのうち、約束の指紋が変わったもの（作ったものを含む）の、古い順。`change` は `added`・`modified`。`stories` はメッセージにあるストーリーの ID。消した後に同じ ID で作り直した約束は新しいものとみなし、消すまでのコミットを入れない |
 | `agreements` | 合意の記録のうち、`kind = "claim"` でこの ID を指すもの。合意の記録のファイルに書いた順。`current` は、今の中身の指紋に合うか |
 

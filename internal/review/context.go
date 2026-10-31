@@ -17,6 +17,7 @@ type Context struct {
 	Bases       []string   `json:"bases"`
 	User        *User      `json:"user"`
 	Stories     []StoryRef `json:"stories"`
+	Layers      []LayerRef `json:"layers"`
 }
 
 type User struct {
@@ -42,7 +43,10 @@ func GitUser(root string) *User {
 
 // LoadContext は、今の設定と、画面で選べるもの（ベースブランチ、ストーリー）を返す。
 func LoadContext(root string, cfg *config.Config) (*Context, *Error) {
-	c := &Context{Version: version.Current, DefaultBase: cfg.GUIBase, Bases: []string{}, Stories: []StoryRef{}, User: GitUser(root)}
+	c := &Context{Version: version.Current, DefaultBase: cfg.GUIBase, Bases: []string{}, Stories: []StoryRef{}, Layers: []LayerRef{}, User: GitUser(root)}
+	for _, l := range cfg.Layers {
+		c.Layers = append(c.Layers, LayerRef{ID: l.ID, Name: l.Name})
+	}
 	if b, err := repo.Git(root, "symbolic-ref", "-q", "--short", "HEAD"); err == nil {
 		c.Branch = strings.TrimSpace(b)
 	}

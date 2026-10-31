@@ -43,6 +43,8 @@ type SubjectRef struct {
 type EvidenceDetail struct {
 	EvidenceContent
 	Found []Found `json:"found"`
+	// Present は、エビデンスが揃っている審査と同じ判定。アノテーションで確かめないタイプ（human-review・monitoring）は nil
+	Present *bool `json:"present"`
 }
 
 type Found struct {
@@ -133,6 +135,10 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 				f.Text = text
 				ed.Found = append(ed.Found, f)
 			}
+			ed.Present = ptr(len(ed.Found) > 0)
+		} else if ev.Type == "proof" {
+			// 段 1 の審査では、proof を予定に書いたら誤り（扱えるアダプタがない）
+			ed.Present = ptr(false)
 		}
 		d.Evidence = append(d.Evidence, ed)
 	}
