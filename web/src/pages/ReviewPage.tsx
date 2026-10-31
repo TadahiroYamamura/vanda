@@ -4,6 +4,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api, type ClaimContent, type Context, type Entry, type FeatureContent, type FileContent, type Review, type TermContent } from "../api";
 import { ErrorBox, FlagBadge, StateBadge, shortCommit, useLoad } from "../components/common";
+import { LineDiff, Parts } from "../components/DiffView";
 import { TlaCode } from "../components/TlaCode";
 import { changeLabel, changeMark, fileTypeLabel, kindLabel, stageLabel, typeLabel } from "../labels";
 import { Link, navigate } from "../route";
@@ -345,7 +346,8 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
   );
 }
 
-type Row = [string, string];
+// Row は、表の 1 行。field は、差分（diff.fields）の項目の名前
+type Row = [string, string, string?];
 
 function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
   if (!c) return null;
@@ -354,9 +356,9 @@ function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
     case "claim": {
       const x = c as ClaimContent;
       return [
-        ["文", x.statement],
-        ["条件", opt(x.condition)],
-        ["理由", opt(x.rationale)],
+        ["文", x.statement, "statement"],
+        ["条件", opt(x.condition), "condition"],
+        ["理由", opt(x.rationale), "rationale"],
         ["対象", x.subjects.join("・")],
         ["レイヤー", x.layers.join("・")],
         ["エビデンスの予定", x.evidence.map((ev) => `${stageLabel[ev.stage] ?? ev.stage} / ${typeLabel[ev.type] ?? ev.type} / ${ev.layers.join("・")}${ev.detail ? ` — ${ev.detail}` : ""}`).join("\n")],
@@ -366,8 +368,8 @@ function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
     case "term": {
       const x = c as TermContent;
       return [
-        ["名前", x.name],
-        ["定義", x.definition],
+        ["名前", x.name, "name"],
+        ["定義", x.definition, "definition"],
         ["〜の一部", opt(x.partOf)],
       ];
     }
@@ -375,11 +377,11 @@ function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
       const x = c as FeatureContent;
       const b = (v: boolean | null) => (v === null ? "（書いていない）" : v ? "はい" : "いいえ");
       return [
-        ["名前", x.name],
-        ["定義", x.definition],
+        ["名前", x.name, "name"],
+        ["定義", x.definition, "definition"],
         ["コア機能", b(x.core)],
         ["形式手法を使う", b(x.formal)],
-        ["形式手法を使わない理由", opt(x.formalWaiver)],
+        ["形式手法を使わない理由", opt(x.formalWaiver), "formalWaiver"],
       ];
     }
     case "file":
@@ -389,13 +391,23 @@ function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
 
 function Compare(props: { entry: Entry }) {
   const { entry: e } = props;
+  if (e.diff && "lines" in e.diff) {
+    return (
+      <div className="compare-file">
+        <h3>変更前と変更後の差分</h3>
+        <LineDiff lines={e.diff.lines} />
+      </div>
+    );
+  }
+  const fields = e.diff && "fields" in e.diff ? e.diff.fields : null;
   const before = rows(e.kind, e.before);
   const after = rows(e.kind, e.after);
   const isTla = e.fileType === "oracle";
-  const cell = (r: Row | undefined) => {
+  const cell = (r: Row | undefined, side: "before" | "after") => {
     if (!r) return <td className="empty">—</td>;
     if (e.kind === "file") return <td>{isTla ? <TlaCode source={r[1]} /> : <pre className="code">{r[1]}</pre>}</td>;
-    return <td className="text">{r[1]}</td>;
+    const parts = r[2] && fields ? fields[r[2]] : undefined;
+    return <td className="text">{parts ? <Parts parts={parts} side={side} /> : r[1]}</td>;
   };
   const labels = (after ?? before ?? []).map((r) => r[0]);
   return (
@@ -414,8 +426,8 @@ function Compare(props: { entry: Entry }) {
           return (
             <tr key={label} className={before && after && b?.[1] !== a?.[1] ? "differs" : undefined}>
               <th scope="row">{label}</th>
-              {before && cell(b)}
-              {after && cell(a)}
+              {before && cell(b, "before")}
+              {after && cell(a, "after")}
             </tr>
           );
         })}

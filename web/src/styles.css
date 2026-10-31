@@ -13,6 +13,10 @@
   --error-bg: #fdecea;
   --differs: #fff8d6;
   --sym: #6b3fa0;
+  --del-bg: #ffd7d5;
+  --ins-bg: #ccf0d6;
+  --del-line: #fff0ef;
+  --ins-line: #eefaf1;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -31,6 +35,10 @@
     --error-bg: #3d1d1a;
     --differs: #3a3416;
     --sym: #c7a6f5;
+    --del-bg: #5c2320;
+    --ins-bg: #1d4a2b;
+    --del-line: #2b1715;
+    --ins-line: #142a1b;
   }
 }
 * { box-sizing: border-box; }
@@ -98,3 +106,12 @@ pre.code { background: var(--panel); padding: 8px; border-radius: 4px; overflow:
 .story-body table { width: auto; }
 .story-body pre { background: var(--bg); padding: 6px; overflow: auto; }
 .story-body img { max-width: 100%; }
+del.diff-part { background: var(--del-bg); color: var(--deleted); text-decoration: line-through; }
+ins.diff-part { background: var(--ins-bg); color: var(--added); text-decoration: none; }
+table.diff-lines { font: 13px/1.5 ui-monospace, monospace; }
+table.diff-lines td { border: none; padding: 0 6px; white-space: pre-wrap; }
+.diff-no-before, .diff-no-after { color: var(--muted); text-align: right; width: 3em; user-select: none; }
+.diff-mark { width: 1em; user-select: none; }
+tr.diff-delete { background: var(--del-line); }
+tr.diff-insert { background: var(--ins-line); }
+.diff-no-newline { color: var(--muted); font-size: 11px; margin-left: 8px; }

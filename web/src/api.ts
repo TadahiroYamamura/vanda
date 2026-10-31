@@ -72,6 +72,22 @@ export interface CommitRef {
   stories: string[];
 }
 
+export interface DiffPart {
+  op: "equal" | "delete" | "insert";
+  text: string;
+}
+
+export interface DiffLine {
+  op: "equal" | "delete" | "insert";
+  before: number | null;
+  after: number | null;
+  text: string;
+  parts: DiffPart[] | null;
+  noNewline?: boolean;
+}
+
+export type Diff = { lines: DiffLine[] } | { fields: Record<string, DiffPart[]> };
+
 export interface Entry {
   no: number | null;
   kind: Kind;
@@ -86,6 +102,7 @@ export interface Entry {
   group: string;
   before: Content | null;
   after: Content | null;
+  diff: Diff | null;
   detachedAgreement: { by: string[] } | null;
   otherCommits: CommitRef[];
 }
