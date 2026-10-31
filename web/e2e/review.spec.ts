@@ -950,3 +950,28 @@ test("エビデンスの予定と実際の表の詳細は長い文も改行も�
   const page_ = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, view: window.innerWidth }));
   expect(page_.scroll, "幅 400px で、ページが横にスクロールする").toBeLessThanOrEqual(page_.view);
 });
+
+// 一覧の 1 件は、枠のどこを押しても選ばれる（番号・状態の札・フラグの札・枠の端）
+test("変わったものの一覧の1件は名前のほかに番号や状態の札やフラグの札や枠の端を押しても選ばれる", async ({ page }) => {
+  await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
+  const detailOf = (id: string) => expect(page.getByRole("link", { name: "約束の詳細を開く" }), `${id} が選ばれていない`).toHaveAttribute("href", new RegExp(`/claims/${id}`));
+  // task-title-required は 2 件目で、提案中の札と AI 案の札を持つ
+  const frame = page.getByRole("button").filter({ hasText: "task-title-required" }).first();
+  await expect(frame).toBeVisible();
+  const spots: [string, () => Promise<void>][] = [
+    ["番号", () => frame.getByText("2", { exact: true }).first().click()],
+    ["状態の札", () => frame.getByText("提案中").first().click()],
+    ["フラグの札", () => frame.getByText("AI 案").first().click()],
+    ["枠の左上の端", () => frame.click({ position: { x: 2, y: 2 } })],
+    ["枠の右下の端", async () => {
+      const box = (await frame.boundingBox())!;
+      await frame.click({ position: { x: box.width - 3, y: box.height - 3 } });
+    }],
+  ];
+  for (const [spot, click] of spots) {
+    await select(page, "task-id-unique");
+    await detailOf("task-id-unique");
+    await click();
+    await expect(page.getByRole("link", { name: "約束の詳細を開く" }), `${spot}を押しても task-title-required が選ばれない`).toHaveAttribute("href", /\/claims\/task-title-required/);
+  }
+});
