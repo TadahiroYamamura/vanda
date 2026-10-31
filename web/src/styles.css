@@ -165,11 +165,10 @@ ins.diff-part { background: var(--ins-part); text-decoration: underline 2px var(
 .found p { margin: 0 0 6px; }
 .found strong { font-family: var(--mono); font-weight: 500; }
 
-.at-button { min-height: 28px; padding: 0 10px; font-size: 12px; }
-.at-button[aria-pressed="true"] { background: var(--accent-bg); border-color: var(--accent-ring); }
+.at-button { display: inline-flex; align-items: center; justify-content: center; min-height: 28px; width: 32px; padding: 0; color: var(--muted); }
+.at-button[aria-expanded="true"] { background: var(--accent-bg); border-color: var(--accent-ring); color: var(--accent-dark); }
 .claim-at { margin: 8px 0 16px; padding: 12px 14px; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; }
 .claim-at-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 8px; }
-.claim-at-head button { margin-left: auto; min-height: 28px; padding: 0 10px; font-size: 12px; }
 
 button.revoke { color: var(--bad); border-color: #e3b4b4; }
 

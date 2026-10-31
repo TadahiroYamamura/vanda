@@ -46,12 +46,10 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
                 <td>{o.change === "added" ? "作成" : "変更"}</td>
                 <td>{o.subject}</td>
                 <td>
-                  <button type="button" className="at-button" aria-pressed={isOpen(`origin:${o.commit}`)} onClick={() => toggle(`origin:${o.commit}`)}>
-                    見る
-                  </button>
+                  <ExpandButton open={isOpen(`origin:${o.commit}`)} onClick={() => toggle(`origin:${o.commit}`)} />
                 </td>
               </tr>
-              {isOpen(`origin:${o.commit}`) && <ClaimAtRow cols={6} claim={c} commit={o.commit} onClose={() => toggle(`origin:${o.commit}`)} />}
+              {isOpen(`origin:${o.commit}`) && <ClaimAtRow cols={6} claim={c} commit={o.commit} />}
               </Fragment>
             ))}
           </tbody>
@@ -84,15 +82,13 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
                 <td>{a.current ? "合います" : "合いません（前の中身への合意です）"}</td>
                 <td>
                   {a.commit ? (
-                    <button type="button" className="at-button" aria-pressed={isOpen(`agreement:${i}`)} onClick={() => toggle(`agreement:${i}`)}>
-                      見る
-                    </button>
+                    <ExpandButton open={isOpen(`agreement:${i}`)} onClick={() => toggle(`agreement:${i}`)} />
                   ) : (
                     <span className="note">まだコミットしていません</span>
                   )}
                 </td>
               </tr>
-              {a.commit && isOpen(`agreement:${i}`) && <ClaimAtRow cols={5} claim={c} commit={a.commit} onClose={() => toggle(`agreement:${i}`)} />}
+              {a.commit && isOpen(`agreement:${i}`) && <ClaimAtRow cols={5} claim={c} commit={a.commit} />}
               </Fragment>
             ))}
           </tbody>
@@ -102,12 +98,25 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
   );
 }
 
+// ExpandButton は、その時点の中身の行を開く・たたむアイコンのボタン（閉じているときは右向き、開いているときは下向きの山形）。
+// 依存を足さないよう、アイコンはインラインの SVG で書く
+function ExpandButton(props: { open: boolean; onClick: () => void }) {
+  const label = props.open ? "その時点の中身をたたむ" : "その時点の中身を開く";
+  return (
+    <button type="button" className="at-button" aria-label={label} title={label} aria-expanded={props.open} onClick={props.onClick}>
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d={props.open ? "M4 6l4 4 4-4" : "M6 4l4 4-4 4"} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
+
 function evidenceText(evs: { stage: string; type: string; layers: string[]; detail: string | null }[]): string {
   return evs.map((ev) => `${stageLabel[ev.stage] ?? ev.stage} / ${typeLabel[ev.type] ?? ev.type} / ${ev.layers.join("・")}${ev.detail ? ` — ${ev.detail}` : ""}`).join("\n");
 }
 
 // ClaimAtRow は、ある時点の約束の中身（文・理由・条件・レイヤー・エビデンスの予定）を、押した行のすぐ下の行に出す。中身は API が、その時点の約束リストから読んだもの。
-function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string; onClose: () => void }) {
+function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string }) {
   const c = props.claim;
   const d = useLoad(() => api.claimAt(c.id, props.commit), `${c.id}@${props.commit}`);
   const none = "（なし）";
@@ -131,9 +140,6 @@ function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string; o
                 {d.data.date} · {d.data.subject}
               </span>
             )}
-            <button type="button" onClick={props.onClose}>
-              閉じる
-            </button>
           </div>
           {d.loading && <p className="note">読み込んでいます…</p>}
           {d.error != null && <ErrorBox error={d.error} title="その時点の中身を読めません" />}
