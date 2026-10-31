@@ -33,6 +33,8 @@ type Config struct {
 	Annotations       []AnnotationRule
 	Guardrails        []GuardrailRule
 	IDPattern         *regexp.Regexp
+	// IDFull は、ストーリーの ID 全体に当たるかを確かめる正規表現（id_pattern の前後を固定したもの）
+	IDFull *regexp.Regexp
 }
 
 type Layer struct {
@@ -170,6 +172,13 @@ func parse(top *tomlread.Table) *Config {
 		story.Unknown("id_pattern")
 	}
 
+	if cfg.IDPattern != nil {
+		if re, err := regexp.Compile(`^(?:` + cfg.IDPattern.String() + `)$`); err != nil {
+			top.ErrAt("", "ストーリーの ID の書き方を、ID 全体に当たる形にできない（"+err.Error()+"）", "id_pattern を直す")
+		} else {
+			cfg.IDFull = re
+		}
+	}
 	top.Unknown("version, promises, agreements, layer, annotation, guardrail, story")
 	return cfg
 }
