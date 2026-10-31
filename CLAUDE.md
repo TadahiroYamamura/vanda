@@ -26,6 +26,7 @@
 | `github.com/spf13/cobra` | CLI |
 | `github.com/rogpeppe/go-internal`（`testscript`） | シナリオテスト |
 | `pgregory.net/rapid` | ランダムチェック |
+| `github.com/sergi/go-diff` | 一覧の変更前と変更後の差分（行の単位と文字の単位） |
 | `react`、`react-dom` | 画面（`web/`） |
 | `react-markdown`、`remark-gfm` | ストーリーの本文を Markdown として描く（表などは `remark-gfm`）。生の HTML は描かない |
 | `@types/react`、`@types/react-dom` | 画面を TypeScript で書くための React の型 |

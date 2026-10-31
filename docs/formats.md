@@ -492,6 +492,50 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 - `view=branch` の比べる元は、`vanda check` と同じく `git merge-base <base> HEAD` の中身。今の中身は作業ツリー
 - `view=story` の比べる元は、鍵ごとに、そのストーリーの ID を持つコミット（合流でないもの）のうち、その鍵の中身を変えた最初のコミットの、1 つ目の親の中身。今の中身は作業ツリー。比べる元と今の中身が同じもの（途中で足して後で消したものなど）は出ない
 
+#### 変更前と変更後の差分（`entries[].diff`。案。監督の確認の後に確定する）
+
+`entries[]` に `diff` を足す。`before` と `after` の両方があるとき（`modified`・`renamed`）だけ作り、ほかは `null`。差分は `github.com/sergi/go-diff` で作り、画面は見せるだけにする。
+
+ファイル（`kind` が `file`）:
+
+```json
+"diff": {
+  "lines": [
+    {"op": "equal",  "before": 1,    "after": 1,    "text": "exec vanda add 買い物", "parts": null},
+    {"op": "delete", "before": 2,    "after": null, "text": "stdout '登録した'",     "parts": [{"op": "equal", "text": "stdout '"}, {"op": "delete", "text": "登録"}, {"op": "equal", "text": "した'"}]},
+    {"op": "insert", "before": null, "after": 2,    "text": "stdout '足した'",       "parts": [{"op": "equal", "text": "stdout '"}, {"op": "insert", "text": "足"}, {"op": "equal", "text": "した'"}]},
+    {"op": "insert", "before": null, "after": 3,    "text": "",                     "parts": null, "noNewline": true}
+  ]
+}
+```
+
+| 項目 | 中身 |
+|---|---|
+| `lines` | 行の単位の差分（`DiffLinesToChars` で行を 1 文字にして比べ、戻したもの）。変更前と変更後のすべての行を、ファイルの順に 1 度ずつ並べる。同じ所で消した行と足した行は、消した行を先に並べる |
+| `lines[].op` | `equal`（両方にある）・`delete`（変更前にだけある）・`insert`（変更後にだけある） |
+| `lines[].before`・`after` | 変更前と変更後の行の番号（1 から）。その側にない行は `null` |
+| `lines[].text` | 行の中身（行の終わりの改行は含めない） |
+| `lines[].parts` | 消した行が続く所のすぐ後に足した行が続くとき（書き換えた所）だけ、その消した行のまとまりと足した行のまとまりを文字の単位で比べ（`DiffMain` の後に `DiffCleanupSemantic` をかけ、細切れの一致をまとめる）、行ごとに分けたもの。消した行には `equal`・`delete` だけ、足した行には `equal`・`insert` だけが出る。つなげると `text` になる。書き換えでない行は `null` |
+| `lines[].noNewline` | ファイルの最後の行で、終わりに改行がないときだけ `true`（ほかは省く）。改行の有無だけが違う最後の行は、`delete` と `insert` の 2 行になる |
+
+約束・用語・機能（`kind` が `claim`・`term`・`feature`）:
+
+```json
+"diff": {
+  "fields": {
+    "statement": [{"op": "equal", "text": "ID は"}, {"op": "insert", "text": "絶対に"}, {"op": "equal", "text": "重ならない"}],
+    "rationale": [{"op": "equal", "text": "理由"}]
+  }
+}
+```
+
+| 項目 | 中身 |
+|---|---|
+| `fields` | 文字の項目ごとの、文字の単位の差分（`DiffMain` の後に `DiffCleanupSemantic`）。`op` は `equal`・`delete`・`insert`。`equal` と `delete` をつなげると変更前、`equal` と `insert` をつなげると変更後になる |
+| 対象の項目 | 約束は `statement`・`rationale`・`condition`、用語は `name`・`definition`、機能は `name`・`definition`・`formalWaiver`。変更前と変更後の両方に書いてある項目だけを入れ、片方にしかない項目は入れない（画面は、`before`・`after` の値をそのまま見せる）。変わっていない項目も、`equal` の 1 つとして入れる |
+
+- 配列の項目（`subjects`・`layers`・`evidence`・`guesses`）と真偽の項目は、差分を作らない。画面は `before`・`after` を並べて見せる
+
 ### `POST /api/agree`
 
 1 件に合意する（RV-06）。
