@@ -31,4 +31,12 @@ NeverOtherAgreesOnBroken ==
 (* OnlyOwnAgreementRepairs の 2 つ目の前件: s が、外れた合意の項目に合意し直す *)
 NeverRepair ==
     [][~ \E s \in Stories, i \in Items : i \in Broken(s) /\ Agree(s, i)]_vars
+
+(* OwnChangeBreaks の前件: 前に合意したストーリーが、自分でその項目を変える *)
+NeverOwnChangeAfterAgree ==
+    [][~ \E s \in Stories, i \in Items : Change(s, i) /\ \E a \in agreements : a.item = i /\ a.story = s]_vars
+
+(* 自分しか変えていない項目でも、合意が外れていることがある（誰が変えたかを問わない） *)
+NeverBrokenByOwnChangeOnly ==
+    \A s \in Stories, i \in Items : ~ (i \in Broken(s) /\ changedBy[i] = {s})
 =============================================================================

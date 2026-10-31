@@ -34,6 +34,8 @@ func TestAgreementの性質の前提と合意の場面はどれも一度は起�
 		{"NeverBrokenWhileAgreed", false},
 		{"NeverOtherAgreesOnBroken", true},
 		{"NeverRepair", true},
+		{"NeverOwnChangeAfterAgree", true},
+		{"NeverBrokenByOwnChangeOnly", false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
