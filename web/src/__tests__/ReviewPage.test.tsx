@@ -329,6 +329,54 @@ describe("RV-05 変更前と変更後の差分", () => {
     expect(look(del[0])).not.toBe(look(ins[0]));
   });
 
+  it("エビデンスの予定はエビデンスごとに足したものと消したものに札を付け変わったものは中の差分を見せる", async () => {
+    const ev = (stage: string, type: string, detail: string | null) => ({ stage, type, layers: ["model"], detail });
+    const detail = [
+      { op: "equal", text: "TLA+ の" },
+      { op: "delete", text: "古い計画" },
+      { op: "insert", text: "新しい計画" },
+      { op: "equal", text: "で確かめる" },
+    ];
+    const layers = [{ op: "equal", text: "model" }];
+    open([
+      claimEntry(1, "c-ev", {
+        before: { ...claimEntry(1, "c-ev").before!, evidence: [ev("test", "scenario-test", null), ev("plan", "model-check", "TLA+ の古い計画で確かめる"), ev("release", "human-review", null)] },
+        after: { ...claimEntry(1, "c-ev").after!, evidence: [ev("test", "scenario-test", null), ev("plan", "model-check", "TLA+ の新しい計画で確かめる"), ev("operation", "monitoring", null)] },
+        diff: {
+          fields: { statement: [{ op: "delete", text: "c-ev の前の文" }, { op: "insert", text: "c-ev の後の文" }] },
+          evidence: {
+            before: [{ op: "equal", layers: null, detail: null }, { op: "modified", layers, detail }, { op: "removed", layers: null, detail: null }],
+            after: [{ op: "equal", layers: null, detail: null }, { op: "modified", layers, detail }, { op: "added", layers: null, detail: null }],
+          },
+        },
+      } as Partial<Entry>),
+    ]);
+    await openEntry(/c-ev/);
+    await waitFor(() => expect(bodyText()).toContain("新しい計画"));
+    // 変更前と変更後の表の「エビデンスの予定」の行の中で見る
+    const row = screen.getAllByRole("row").find((r) => (r.textContent ?? "").startsWith("エビデンスの予定"));
+    expect(row, "変更前と変更後の表に、エビデンスの予定の行がない").toBeTruthy();
+    const added = /足した|追加/;
+    const removed = /消した|削除/;
+    // エビデンス 1 つずつの項目の文字。タイプの名前を含むいちばん内側の要素から、項目（li）か、その親までを見る
+    const itemText = (label: string) => {
+      const hits = Array.from(row!.querySelectorAll<HTMLElement>("*")).filter((el) => (el.textContent ?? "").includes(label));
+      const inner = hits[hits.length - 1];
+      expect(inner, `エビデンスの予定に ${label} がない`).toBeTruthy();
+      return (inner.closest("li") ?? inner.parentElement ?? inner).textContent ?? "";
+    };
+    expect(itemText("人のレビュー"), "消したエビデンスに札がない").toMatch(removed);
+    expect(itemText("監視"), "足したエビデンスに札がない").toMatch(added);
+    expect(itemText("シナリオテスト"), "変わらないエビデンスに足した・消したの札がある").not.toMatch(/足した|追加|消した|削除/);
+    // 変わったエビデンスは、詳細の中の消した語と足した語を見分けられるように見せる
+    const exact = (t: string) => Array.from(row!.querySelectorAll<HTMLElement>("*")).filter((el) => el.textContent === t);
+    const del = exact("古い計画");
+    const ins = exact("新しい計画");
+    expect(del.length, "変わったエビデンスの詳細に、消した語がない").toBeGreaterThan(0);
+    expect(ins.length, "変わったエビデンスの詳細に、足した語がない").toBeGreaterThan(0);
+    expect(del[0].tagName + del[0].className).not.toBe(ins[0].tagName + ins[0].className);
+  });
+
   it("約束の項目の差分は消した語と足した語を見分けられるように見せる", async () => {
     open([
       claimEntry(1, "c-diff", {
