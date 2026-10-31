@@ -384,18 +384,22 @@ layers = ["model"]
 detail = "${c.plan}"
 ` : ""}`;
 
-function commit(r: Repo, subject: string): string {
+// date を渡せば、作者とコミッターの日時をそれにする
+function commit(r: Repo, subject: string, date?: string): string {
   r.git("add", "-A");
-  r.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "-m", subject);
+  execFileSync("git", ["-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "-m", subject], {
+    cwd: r.root,
+    env: date ? { ...r.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date } : r.env,
+  });
   return r.git("rev-parse", "HEAD");
 }
 
 // commitV3 は、DB のレイヤーを設定に足し、task-id-unique を v3 にする。
-function commitV3(r: Repo): string {
+function commitV3(r: Repo, date?: string): string {
   const cfg = readFileSync(join(r.root, ".vanda/config.toml"), "utf8");
   r.write(".vanda/config.toml", cfg.replace("[[annotation]]", '[[layer]]\nid = "db"\nname = "データベース"\ndescription = "保存の制約"\n\n[[annotation]]'));
   r.write(".vanda/promises.toml", promisesAt(v3));
-  return commit(r, "#24 理由と条件を足す");
+  return commit(r, "#24 理由と条件を足す", date);
 }
 
 // 由来の行と合意の記録の行は、CL の約束の詳細と同じく表の行として探す。その時点の中身は、行の中の開く・たたむを
@@ -595,6 +599,36 @@ for (const pg of pages) {
       await expect(toggle, `${rowText} のボタンでたたむと、二重に切り替わって開いたまま`).toHaveAttribute("aria-expanded", "false");
       await expect.poll(() => count(text)).toBe(base);
     }
+  });
+
+  test(`${pg.name}の由来と合意の履歴は新しいものが上に並ぶ`, async ({ page }) => {
+    // 日時が同じときの順はまだ決まっていないので、日時をずらしたコミットと合意の記録だけの前後を見る。
+    // buildRepo の #1 と #24 のコミットは今の日時なので、足すコミットはその 1 時間後と 2 時間後にする
+    const later = (h: number) => new Date(Date.now() + h * 3600_000).toISOString();
+    commitV3(repo, later(1));
+    repo.write(".vanda/promises.toml", promisesAt(v4));
+    // 合意の記録は、ファイルの中では日時の順にしない（一月の #1 の記録の後に、三月、二月）
+    const agreements = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
+    const rec = (who: string, at: string) =>
+      agreement("claim", "task-id-unique", sha(claimJSON(v4.statement)), null, "#24")
+        .replace("テスト担当", who)
+        .replace("agreed_at = 2026-01-01T10:00:00+09:00", `agreed_at = ${at}`);
+    repo.write(".vanda/agreements.toml", agreements + rec("三月に合意した人", "2026-03-01T10:00:00+09:00") + rec("二月に合意した人", "2026-02-01T10:00:00+09:00"));
+    commit(repo, "#24 文を直す", later(2));
+
+    await pg.open(page);
+    await expect(rowOf(page, "#24 文を直す")).toBeVisible();
+    const rows = await page.getByRole("row").allTextContents();
+    const at = (text: string) => {
+      const i = rows.findIndex((r) => r.includes(text));
+      expect(i, `${text} の行がない`).toBeGreaterThanOrEqual(0);
+      return i;
+    };
+    const oldest = Math.min(at("#1 はじめの約束を置く"), at("#24 約束を変え、題の約束を足す"));
+    expect(at("#24 文を直す"), "由来の 2 時間後のコミットが、1 時間後のコミットより下にある").toBeLessThan(at("#24 理由と条件を足す"));
+    expect(at("#24 理由と条件を足す"), "由来の 1 時間後のコミットが、はじめのコミットより下にある").toBeLessThan(oldest);
+    expect(at("三月に合意した人"), "合意の履歴の三月の合意が、二月の合意より下にある").toBeLessThan(at("二月に合意した人"));
+    expect(at("二月に合意した人"), "合意の履歴の二月の合意が、一月の合意より下にある").toBeLessThan(at("テスト担当"));
   });
 
   test(`${pg.name}で合意を書いたコミットの時点に約束リストが読めない合意の記録を選ぶと理由が出る`, async ({ page }) => {
