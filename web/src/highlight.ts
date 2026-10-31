@@ -36,13 +36,12 @@ const loaded = new Map<Lang, Promise<void>>();
 function highlighter(): Promise<HighlighterCore> {
   if (!core) {
     core = (async () => {
-      const [{ createHighlighterCore }, { createOnigurumaEngine }, light, dark] = await Promise.all([
+      const [{ createHighlighterCore }, { createOnigurumaEngine }, light] = await Promise.all([
         import("shiki/core"),
         import("shiki/engine/oniguruma"),
         import("shiki/themes/github-light.mjs"),
-        import("shiki/themes/github-dark.mjs"),
       ]);
-      return createHighlighterCore({ themes: [light.default, dark.default], langs: [], engine: createOnigurumaEngine(import("shiki/wasm")) });
+      return createHighlighterCore({ themes: [light.default], langs: [], engine: createOnigurumaEngine(import("shiki/wasm")) });
     })();
   }
   return core;
@@ -62,8 +61,8 @@ async function ready(lang: Lang): Promise<HighlighterCore> {
 // tokenize は、text を行ごとの色付きのかけらにする。行は、text を "\n" で分けたものと同じ数・同じ中身。
 export async function tokenize(text: string, lang: Lang): Promise<Token[][]> {
   const h = await ready(lang);
-  const res = h.codeToTokens(text, { lang, themes: { light: "github-light", dark: "github-dark" }, defaultColor: false });
-  return res.tokens.map((line: ThemedToken[]) => line.map((t) => ({ content: t.content, style: (t.htmlStyle ?? {}) as Record<string, string> })));
+  const res = h.codeToTokens(text, { lang, theme: "github-light" });
+  return res.tokens.map((line: ThemedToken[]) => line.map((t) => ({ content: t.content, style: (t.color ? { color: t.color } : {}) as Record<string, string> })));
 }
 
 export function langOf(path: string): Lang | null {
