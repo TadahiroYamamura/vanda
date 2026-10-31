@@ -14,24 +14,22 @@ import (
 
 // RV-01 の一覧の期待値を、vanda に頼らずテストの中で数える仕組み。
 // 約束リストの項目とファイルの中身を、テストの中の状態（rvState）として持ち、それを git のリポジトリに書き出す。
-// 期待する一覧は、書き出す前の状態どうしを比べて作る。リポジトリに書いた TOML やファイルを読み直して作らないのは、
+// 期待する一覧は、書き出す前の状態どうしを、docs/formats.md の GET /api/review の決まり（鍵ごとに比べ、中身が同じで
+// 場所だけが変わったファイルを名前の変更にまとめる）で比べて作る。リポジトリに書いた TOML やファイルを読み直して作らないのは、
 // 読み込みや差分の取り方を実装と同じ作りにすると、実装と同じ誤りに気づけないため。
 //
-// 期待値を仕様から決められない組み合わせは、操作の側で起こさない（rvRepo の各操作の説明に書く）。
-// - ファイルの名前を変えたうえで中身も変える: 「名前の変更」か「削除と追加」か「変更」かを、仕様から決められない。
-//   ファイルごとに、名前だけを変えるものか、中身だけを変えるものかを、足したときに決める
-// - TLA+ のファイルの名前の変更: モジュールの名前が変わり中身も変わる（docs/spec.md）ので、上と同じ理由で起こさない
-// - 消したファイルや名前を変える前の場所を、別のファイルで使い直す: 場所で追うか中身で追うかで答えが変わる
-// - 中身の同じファイルを 2 つ置く: ファイルは中身の指紋で見分けるので、どれの名前の変更かが決まらない
-// - フラグ（flags・guesses）だけを変える: 指紋には含めないが、一覧に出すかを仕様から決められない
+// 中身の同じファイルを 2 つ置く操作は起こさない（どれの名前の変更かが決まらず、期待値を一つに決められないため）。
+// 新しい中身は、毎回テストの中の番号から作るので、名前の変更のほかで中身が重なることはない。
 
 // rvEntry は、一覧の 1 件の期待値。
 type rvEntry struct {
 	Kind    string // claim・term・feature・file
 	Key     string // 約束・用語・機能は ID。ファイルは今の場所（削除なら、前の場所）
-	Change  string // added・changed・deleted・renamed
+	Change  string // added・modified・deleted・renamed
 	OldPath string // 名前の変更の、前の場所
-	Others  string // ストーリー全体の見方で、途中で同じものを変えたほかのストーリーの ID（名前の順に , でつなぐ）
+	// Others は、ストーリー全体の見方で、そのストーリーで最初に変えた後に同じものを変えた、そのストーリーの ID のないコミット。
+	// コミットごとに、メッセージにあるストーリーの ID（ないものは "-"）を書き、名前の順に , でつなぐ
+	Others string
 }
 
 func (e rvEntry) String() string {
@@ -40,7 +38,7 @@ func (e rvEntry) String() string {
 		s += " ← " + e.OldPath
 	}
 	if e.Others != "" {
-		s += "（ほかのストーリー: " + e.Others + "）"
+		s += "（ほかのコミット: " + e.Others + "）"
 	}
 	return s
 }
@@ -80,10 +78,9 @@ const (
 )
 
 type rvFile struct {
-	class      string
-	path       string
-	content    string
-	renameOnly bool // 名前だけを変えるファイルか（中身だけを変えるファイルか）
+	class   string
+	path    string
+	content string
 }
 
 type rvState struct {
@@ -136,77 +133,105 @@ paths = ["db/*.sql"]
 
 func rvFileKind(class string) bool { return class != rvNoise }
 
-func rvClassifyItem(id string, before, after *rvItem) (rvEntry, bool) {
-	switch {
-	case before == nil && after == nil:
-		return rvEntry{}, false
-	case before == nil:
-		return rvEntry{Kind: after.kind, Key: id, Change: "added"}, true
-	case after == nil:
-		return rvEntry{Kind: before.kind, Key: id, Change: "deleted"}, true
-	case before.same(*after):
-		return rvEntry{}, false
-	default:
-		return rvEntry{Kind: after.kind, Key: id, Change: "changed"}, true
-	}
+// rvVal は、一覧の鍵の 1 つの中身。kind は claim・term・feature・file、body は比べる中身。
+type rvVal struct {
+	kind string
+	body string
 }
 
-func rvClassifyFile(before, after *rvFile) (rvEntry, bool) {
-	switch {
-	case before == nil && after == nil:
-		return rvEntry{}, false
-	case before == nil:
-		if !rvFileKind(after.class) {
-			return rvEntry{}, false
+// rvKeyed は、状態を一覧の鍵ごとの中身にする。約束・用語・機能の鍵は "item:<ID>"、ファイルの鍵は "file:<場所>"。
+// 約束・用語・機能の中身は、書き方によらない形（項目の名前の順に並べたもの）にする。
+func rvKeyed(s rvState) map[string]rvVal {
+	m := map[string]rvVal{}
+	for id, it := range s.items {
+		var ks []string
+		for k := range it.fields {
+			ks = append(ks, k)
 		}
-		return rvEntry{Kind: "file", Key: after.path, Change: "added"}, true
-	case after == nil:
-		if !rvFileKind(before.class) {
-			return rvEntry{}, false
+		sort.Strings(ks)
+		var b strings.Builder
+		for _, k := range ks {
+			fmt.Fprintf(&b, "%s=%q;", k, it.fields[k])
 		}
-		return rvEntry{Kind: "file", Key: before.path, Change: "deleted"}, true
+		m["item:"+id] = rvVal{kind: it.kind, body: b.String()}
 	}
-	if !rvFileKind(after.class) {
-		return rvEntry{}, false
+	for _, f := range s.files {
+		if rvFileKind(f.class) {
+			m["file:"+f.path] = rvVal{kind: "file", body: f.content}
+		}
 	}
-	switch {
-	case before.path == after.path && before.content == after.content:
-		return rvEntry{}, false
-	case before.path == after.path:
-		return rvEntry{Kind: "file", Key: after.path, Change: "changed"}, true
-	default:
-		return rvEntry{Kind: "file", Key: after.path, Change: "renamed", OldPath: before.path}, true
-	}
+	return m
 }
 
-func itemPtr(s rvState, id string) *rvItem {
-	if it, ok := s.items[id]; ok {
-		return &it
+// rvDiff は、鍵ごとの比べる元（before）と今（after）から一覧を作る。keys に含む鍵だけを見る。
+// 比べる元にあって今ない場所と、今あって比べる元にない場所で、中身が同じファイルは、名前の変更の 1 件にまとめる。
+// others は鍵ごとのほかのコミット（rvEntry.Others の元。コミットを見分ける文字列 → 書く文字列）。
+func rvDiff(keys map[string]bool, before, after map[string]rvVal, others map[string]map[string]string) map[rvEntry]bool {
+	want := map[rvEntry]bool{}
+	var gone, came []string
+	for k := range keys {
+		b, bok := before[k]
+		a, aok := after[k]
+		switch {
+		case bok && aok && b == a:
+		case bok && aok:
+			want[rvEntryOf(k, a.kind, "modified", "", others[k])] = true
+		case bok && b.kind == "file":
+			gone = append(gone, k)
+		case aok && a.kind == "file":
+			came = append(came, k)
+		case bok:
+			want[rvEntryOf(k, b.kind, "deleted", "", others[k])] = true
+		case aok:
+			want[rvEntryOf(k, a.kind, "added", "", others[k])] = true
+		}
 	}
-	return nil
+	sort.Strings(gone)
+	sort.Strings(came)
+	paired := map[string]bool{}
+	for _, g := range gone {
+		for _, c := range came {
+			if !paired[c] && before[g].body == after[c].body {
+				paired[c], paired[g] = true, true
+				merged := map[string]string{}
+				for h, s := range others[g] {
+					merged[h] = s
+				}
+				for h, s := range others[c] {
+					merged[h] = s
+				}
+				want[rvEntryOf(c, "file", "renamed", strings.TrimPrefix(g, "file:"), merged)] = true
+				break
+			}
+		}
+	}
+	for _, g := range gone {
+		if !paired[g] {
+			want[rvEntryOf(g, "file", "deleted", "", others[g])] = true
+		}
+	}
+	for _, c := range came {
+		if !paired[c] {
+			want[rvEntryOf(c, "file", "added", "", others[c])] = true
+		}
+	}
+	return want
 }
 
-func filePtr(s rvState, n int) *rvFile {
-	if f, ok := s.files[n]; ok {
-		return &f
+func rvEntryOf(key, kind, change, oldPath string, others map[string]string) rvEntry {
+	_, k, _ := strings.Cut(key, ":")
+	var labels []string
+	for _, s := range others {
+		labels = append(labels, s)
 	}
-	return nil
+	sort.Strings(labels)
+	return rvEntry{Kind: kind, Key: k, Change: change, OldPath: oldPath, Others: strings.Join(labels, ",")}
 }
 
 // rvBranchView は、ブランチごとの見方の期待値。分かれた点の中身（base）と、作業ツリーの今の中身（cur）を比べる。
 func rvBranchView(base, cur rvState) map[rvEntry]bool {
-	want := map[rvEntry]bool{}
-	for id := range unionKeys(base.items, cur.items) {
-		if e, ok := rvClassifyItem(id, itemPtr(base, id), itemPtr(cur, id)); ok {
-			want[e] = true
-		}
-	}
-	for n := range unionKeys(base.files, cur.files) {
-		if e, ok := rvClassifyFile(filePtr(base, n), filePtr(cur, n)); ok {
-			want[e] = true
-		}
-	}
-	return want
+	b, a := rvKeyed(base), rvKeyed(cur)
+	return rvDiff(unionKeys(b, a), b, a, nil)
 }
 
 type rvCommit struct {
@@ -217,70 +242,42 @@ type rvCommit struct {
 }
 
 // rvStoryView は、ストーリー全体の見方の期待値。chain は、根のコミットから今のコミットまで（一本道の履歴）。
-// ストーリーのコミットで変わったものごとに、そのストーリーで最初に変えたコミットの直前の中身と、今の中身（cur）を比べる。
-// 最初に変えたコミットより後に、ほかのストーリーのコミットが同じものを変えていたら、その ID を Others に書く。
+// 鍵ごとに、そのストーリーの ID を持つコミットのうち、その鍵の中身を変えた最初のコミットの親の中身を比べる元にし、
+// 作業ツリーの今の中身（cur）と比べる。最初に変えたコミットより後に、そのストーリーの ID のないコミットが同じ鍵を変えていたら、
+// Others に書く。
 func rvStoryView(chain []rvCommit, cur rvState, story string) map[rvEntry]bool {
-	type ref struct {
-		item string
-		file int
-	}
-	first := map[ref]int{}
-	others := map[ref]map[string]bool{}
-	prev := newRVState()
-	for i, c := range chain {
-		var touched []ref
-		for id := range unionKeys(prev.items, c.state.items) {
-			if _, ok := rvClassifyItem(id, itemPtr(prev, id), itemPtr(c.state, id)); ok {
-				touched = append(touched, ref{item: id})
+	before := map[string]rvVal{}
+	first := map[string]bool{}
+	others := map[string]map[string]string{}
+	prev := map[string]rvVal{}
+	for _, c := range chain {
+		now := rvKeyed(c.state)
+		for k := range unionKeys(prev, now) {
+			p, pok := prev[k]
+			n, nok := now[k]
+			if pok == nok && p == n {
+				continue
 			}
-		}
-		for n := range unionKeys(prev.files, c.state.files) {
-			b, a := filePtr(prev, n), filePtr(c.state, n)
-			if (b != nil && rvFileKind(b.class)) || (a != nil && rvFileKind(a.class)) {
-				if b == nil || a == nil || *b != *a {
-					touched = append(touched, ref{file: n + 1})
-				}
-			}
-		}
-		for _, r := range touched {
-			_, seen := first[r]
 			switch {
-			case c.story == story && !seen:
-				first[r] = i
-			case c.story != story && seen:
-				if others[r] == nil {
-					others[r] = map[string]bool{}
+			case c.story == story && !first[k]:
+				first[k] = true
+				if pok {
+					before[k] = p
 				}
-				others[r][c.story] = true
+			case c.story != story && first[k]:
+				if others[k] == nil {
+					others[k] = map[string]string{}
+				}
+				label := c.story
+				if label == "" {
+					label = "-"
+				}
+				others[k][c.hash] = label
 			}
 		}
-		prev = c.state
+		prev = now
 	}
-	want := map[rvEntry]bool{}
-	for r, i := range first {
-		before := newRVState()
-		if i > 0 {
-			before = chain[i-1].state
-		}
-		var e rvEntry
-		var ok bool
-		if r.file == 0 {
-			e, ok = rvClassifyItem(r.item, itemPtr(before, r.item), itemPtr(cur, r.item))
-		} else {
-			e, ok = rvClassifyFile(filePtr(before, r.file-1), filePtr(cur, r.file-1))
-		}
-		if !ok {
-			continue
-		}
-		var ids []string
-		for s := range others[r] {
-			ids = append(ids, s)
-		}
-		sort.Strings(ids)
-		e.Others = strings.Join(ids, ",")
-		want[e] = true
-	}
-	return want
+	return rvDiff(first, before, rvKeyed(cur), others)
 }
 
 func unionKeys[K comparable, V any](a, b map[K]V) map[K]bool {

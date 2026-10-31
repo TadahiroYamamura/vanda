@@ -3,6 +3,7 @@ package main_test
 import (
 	"fmt"
 	"path"
+	"sort"
 	"strings"
 )
 
@@ -143,24 +144,54 @@ func (r *rvRepo) freshPath(class string, n int, sub bool) string {
 }
 
 // addFile は、新しい場所にファイルを足し、テストの中でそのファイルを見分ける番号を返す。
-// renameOnly なら、このファイルは名前だけを変え、中身を変えない（そうでなければ、中身だけを変え、名前を変えない）。
-func (r *rvRepo) addFile(class string, renameOnly bool) int {
-	n := r.next()
-	return r.addFileAt(class, r.freshPath(class, n, false), renameOnly)
+func (r *rvRepo) addFile(class string) int {
+	return r.addFileAt(class, r.freshPath(class, r.next(), false))
 }
 
-func (r *rvRepo) addFileAt(class, p string, renameOnly bool) int {
-	if r.used[p] {
-		r.t.Fatalf("場所 %s は前に使った", p)
+func (r *rvRepo) pathInUse(p string) bool {
+	for _, f := range r.state.files {
+		if f.path == p {
+			return true
+		}
 	}
-	if class == rvTLA && renameOnly {
-		r.t.Fatalf("TLA+ のファイルは、名前を変えると中身も変わる")
+	return false
+}
+
+// addFileAt は、場所 p にファイルを足す。前に使って今は空いている場所を使い直してもよい。
+func (r *rvRepo) addFileAt(class, p string) int {
+	if r.pathInUse(p) {
+		r.t.Fatalf("場所 %s には、もうファイルがある", p)
 	}
 	r.used[p] = true
 	id := r.next()
-	r.state.files[id] = rvFile{class: class, path: p, content: rvContent(class, p, r.next()), renameOnly: renameOnly}
+	r.state.files[id] = rvFile{class: class, path: p, content: rvContent(class, p, r.next())}
 	r.flush()
 	return id
+}
+
+// freePaths は、前に使って今は空いている、class の場所を、名前の順に返す。
+func (r *rvRepo) freePaths(class string) []string {
+	var ps []string
+	for p := range r.used {
+		if !r.pathInUse(p) && r.freshPathClass(p) == class {
+			ps = append(ps, p)
+		}
+	}
+	sort.Strings(ps)
+	return ps
+}
+
+func (r *rvRepo) freshPathClass(p string) string {
+	switch {
+	case strings.HasPrefix(p, "e2e/"):
+		return rvScenario
+	case strings.HasPrefix(p, "spec/"):
+		return rvTLA
+	case strings.HasPrefix(p, "db/"):
+		return rvGuardrail
+	default:
+		return rvNoise
+	}
 }
 
 func (r *rvRepo) file(n int) rvFile {
@@ -173,9 +204,6 @@ func (r *rvRepo) file(n int) rvFile {
 
 func (r *rvRepo) changeFile(n int) {
 	f := r.file(n)
-	if f.renameOnly {
-		r.t.Fatalf("%s は名前だけを変えるファイル", f.path)
-	}
 	f.content = rvContent(f.class, f.path, r.next())
 	r.state.files[n] = f
 	r.flush()
@@ -185,15 +213,17 @@ func (r *rvRepo) renameFile(n int, sub bool) string {
 	return r.renameFileTo(n, r.freshPath(r.file(n).class, r.next(), sub))
 }
 
+// renameFileTo は、ファイルの場所だけを変える。TLA+ は、モジュールの名前をファイルの名前に合わせるので、中身も変わる。
 func (r *rvRepo) renameFileTo(n int, p string) string {
 	f := r.file(n)
-	if !f.renameOnly {
-		r.t.Fatalf("%s は中身だけを変えるファイル", f.path)
-	}
-	if r.used[p] {
-		r.t.Fatalf("場所 %s は前に使った", p)
+	if r.pathInUse(p) {
+		r.t.Fatalf("場所 %s には、もうファイルがある", p)
 	}
 	r.used[p] = true
+	if f.class == rvTLA {
+		f.content = strings.Replace(f.content, "MODULE "+strings.TrimSuffix(path.Base(f.path), ".tla"),
+			"MODULE "+strings.TrimSuffix(path.Base(p), ".tla"), 1)
+	}
 	f.path = p
 	r.state.files[n] = f
 	r.flush()
@@ -211,9 +241,10 @@ func (r *rvRepo) deleteFile(n int) {
 // commit は、作業ツリーのすべてをコミットする。story が空なら、メッセージにストーリーの ID を入れない。
 func (r *rvRepo) commit(story string) {
 	r.g.run("add", "-A")
-	msg := "中身を変える"
+	// メッセージを毎回違うものにして、git の履歴で見分けやすくする
+	msg := fmt.Sprintf("中身を変える（%d）", r.next())
 	if story != "" {
-		msg = story + " で中身を変える"
+		msg = story + " で" + msg
 	}
 	r.g.run("commit", "-q", "--allow-empty", "-m", msg)
 	parent := -1

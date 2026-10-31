@@ -22,7 +22,7 @@ var (
 	rvClaimIDs   = []string{"c-a", "c-b", "c-c", "c-d"}
 	rvTermIDs    = []string{"t-a", "t-b"}
 	rvFeatureIDs = []string{"f-a", "f-b"}
-	rvStories    = []string{"#1", "#24", "#25"}
+	rvStories    = []string{"#1", "#24", "#25", ""}
 )
 
 func rvIDs(kind string) []string {
@@ -81,17 +81,10 @@ func rvRandomOp(rt *rapid.T, r *rvRepo) string {
 			}
 		}
 	}
-	var changeable, renameable []int
-	for n, f := range r.state.files {
-		if f.renameOnly {
-			renameable = append(renameable, n)
-		} else {
-			changeable = append(changeable, n)
-		}
+	var files []int
+	for n := range r.state.files {
+		files = append(files, n)
 	}
-	sort.Ints(changeable)
-	sort.Ints(renameable)
-	files := append(append([]int{}, changeable...), renameable...)
 	sort.Ints(files)
 	if len(absent) > 0 {
 		ops = append(ops, "addItem")
@@ -100,14 +93,9 @@ func rvRandomOp(rt *rapid.T, r *rvRepo) string {
 		ops = append(ops, "changeItem", "deleteItem", "moveItem")
 	}
 	ops = append(ops, "addFile", "reformat")
-	if len(changeable) > 0 {
-		ops = append(ops, "changeFile")
-	}
-	if len(renameable) > 0 {
-		ops = append(ops, "renameFile")
-	}
 	if len(files) > 0 {
-		ops = append(ops, "deleteFile")
+		// 名前の変更は、分かれた点より前からあるファイルに、変更なしで当たらないと一覧に出ないので、ほかより多く選ぶ
+		ops = append(ops, "changeFile", "deleteFile", "renameFile", "renameFile", "renameFile")
 	}
 	op := rapid.SampledFrom(ops).Draw(rt, "操作")
 	switch op {
@@ -132,17 +120,26 @@ func rvRandomOp(rt *rapid.T, r *rvRepo) string {
 		return fmt.Sprintf("%s %s を p%d へ", op, id, f)
 	case "addFile":
 		class := rapid.SampledFrom([]string{rvScenario, rvTLA, rvGuardrail, rvNoise}).Draw(rt, "ファイルの種類")
-		renameOnly := class != rvTLA && rapid.Bool().Draw(rt, "名前だけを変えるファイルか")
-		n := r.addFile(class, renameOnly)
+		var n int
+		if free := r.freePaths(class); len(free) > 0 && rapid.Bool().Draw(rt, "場所を使い直すか") {
+			n = r.addFileAt(class, rapid.SampledFrom(free).Draw(rt, "使い直す場所"))
+		} else {
+			n = r.addFile(class)
+		}
 		return fmt.Sprintf("%s %s", op, r.state.files[n].path)
 	case "changeFile":
-		n := rapid.SampledFrom(changeable).Draw(rt, "中身を変えるファイル")
+		n := rapid.SampledFrom(files).Draw(rt, "中身を変えるファイル")
 		r.changeFile(n)
 		return op + " " + r.state.files[n].path
 	case "renameFile":
-		n := rapid.SampledFrom(renameable).Draw(rt, "名前を変えるファイル")
+		n := rapid.SampledFrom(files).Draw(rt, "名前を変えるファイル")
 		from := r.state.files[n].path
-		to := r.renameFile(n, r.state.files[n].class == rvScenario && rapid.Bool().Draw(rt, "下のディレクトリへ"))
+		var to string
+		if free := r.freePaths(r.state.files[n].class); len(free) > 0 && rapid.Bool().Draw(rt, "場所を使い直すか") {
+			to = r.renameFileTo(n, rapid.SampledFrom(free).Draw(rt, "使い直す場所"))
+		} else {
+			to = r.renameFile(n, r.state.files[n].class == rvScenario && rapid.Bool().Draw(rt, "下のディレクトリへ"))
+		}
 		return fmt.Sprintf("%s %s → %s", op, from, to)
 	case "deleteFile":
 		n := rapid.SampledFrom(files).Draw(rt, "消すファイル")
@@ -177,7 +174,8 @@ func TestRV01の操作の列をリポジトリに当てると期待する一覧�
 	seed := rvRandomSeed(t)
 	t.Logf("種: VANDA_RV01_SEED=%d", seed)
 	setFlag(t, "rapid.seed", strconv.FormatUint(seed, 10))
-	setFlag(t, "rapid.checks", strconv.Itoa(envInt(t, "VANDA_RV01_CHECKS", 100)))
+	checks := envInt(t, "VANDA_RV01_CHECKS", 100)
+	setFlag(t, "rapid.checks", strconv.Itoa(checks))
 	tmp := t.TempDir()
 	// 一覧の期待値に、どの変化が何回出たか。生成が偏って、確かめていない変化がないかを記録に出す
 	seen := map[string]int{}
@@ -192,6 +190,20 @@ func TestRV01の操作の列をリポジトリに当てると期待する一覧�
 			fmt.Fprintf(&b, " %s=%d", k, seen[k])
 		}
 		t.Logf("期待値に出た回数:%s", b.String())
+		if t.Failed() || checks < 100 {
+			return
+		}
+		// 下限は、100 回を 5 通りの種で数えたいちばん少ない回数（種類と変化の組で 6、名前の変更で 25）の半分ほど。
+		// 生成が偏って、ある変化を確かめないまま通るのを防ぐ
+		for _, kind := range []string{"claim", "term", "feature", "file"} {
+			for _, change := range []string{"added", "modified", "deleted"} {
+				atLeast(t, seen, "ブランチごと/"+kind+"/"+change, 3)
+			}
+		}
+		atLeast(t, seen, "ブランチごと/file/renamed", 10)
+		for _, change := range []string{"added", "modified", "deleted", "renamed", "ほかのストーリー"} {
+			atLeast(t, seen, "ストーリー全体/"+change, 10)
+		}
 	}()
 
 	rapid.Check(t, func(rt *rapid.T) {
@@ -208,6 +220,20 @@ func TestRV01の操作の列をリポジトリに当てると期待する一覧�
 			}
 		}()
 
+		// 変更・削除・名前の変更が一覧に出るには、分かれた点より前からあるものが要るので、はじめにいくつか置く
+		for _, kind := range []string{"claim", "term", "feature"} {
+			for _, id := range rvIDs(kind) {
+				if rapid.Bool().Draw(rt, "はじめに置く項目か") {
+					r.addItem(kind, id, rapid.IntRange(0, rvPromiseFiles-1).Draw(rt, "ファイル"))
+					log = append(log, fmt.Sprintf("main: addItem %s %s", kind, id))
+				}
+			}
+		}
+		for i, n := 0, rapid.IntRange(1, 4).Draw(rt, "はじめのファイルの数"); i < n; i++ {
+			class := rapid.SampledFrom([]string{rvScenario, rvTLA, rvGuardrail}).Draw(rt, "はじめのファイルの種類")
+			log = append(log, "main: addFile "+r.state.files[r.addFile(class)].path)
+		}
+		r.commit("#1")
 		rvRandomOps(rt, r, "main", 10, false, &log)
 		r.newBranch("story")
 		rvRandomOps(rt, r, "story", 6, false, &log)
@@ -231,7 +257,7 @@ func TestRV01の操作の列をリポジトリに当てると期待する一覧�
 			for e := range r.storyView(s) {
 				seen["ストーリー全体/"+e.Change]++
 				if e.Others != "" {
-					seen["ストーリー全体/ほかのストーリー"]++
+					seen["ストーリー全体/ほかのストーリー"]++ // そのストーリーの ID のないコミットが途中で変えたもの
 				}
 			}
 		}
@@ -239,6 +265,13 @@ func TestRV01の操作の列をリポジトリに当てると期待する一覧�
 			rt.Fatalf("コミットしただけで、ブランチごとの見方の期待値が変わった\n%s", rvDiffEntries(branch, again))
 		}
 	})
+}
+
+func atLeast(t *testing.T, seen map[string]int, key string, min int) {
+	t.Helper()
+	if seen[key] < min {
+		t.Errorf("期待値に %s が %d 回しか出ていない（下限 %d）。操作の列の作り方が偏っている", key, seen[key], min)
+	}
 }
 
 // shape は、書き出した約束リストが、段 1 の約束リストの形の審査を通ることを確かめる。

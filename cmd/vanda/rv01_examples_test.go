@@ -38,12 +38,12 @@ var rvExamples = []rvExample{
 			r.addItem("feature", "f-change", 2)
 			r.addItem("term", "t-keep", 1)
 			r.addItem("feature", "f-keep", 0)
-			r.addFileAt(rvScenario, "e2e/keep.txtar", false)
-			ren := r.addFileAt(rvScenario, "e2e/old.txtar", true)
-			r.addFileAt(rvGuardrail, "db/schema.sql", false)
-			m := r.addFileAt(rvTLA, "spec/Model.tla", false)
-			del := r.addFileAt(rvGuardrail, "db/old.sql", false)
-			r.addFileAt(rvTLA, "spec/Keep.tla", false)
+			r.addFileAt(rvScenario, "e2e/keep.txtar")
+			ren := r.addFileAt(rvScenario, "e2e/old.txtar")
+			r.addFileAt(rvGuardrail, "db/schema.sql")
+			m := r.addFileAt(rvTLA, "spec/Model.tla")
+			del := r.addFileAt(rvGuardrail, "db/old.sql")
+			r.addFileAt(rvTLA, "spec/Keep.tla")
 			r.commit("#1")
 
 			r.newBranch("story-24")
@@ -51,20 +51,20 @@ var rvExamples = []rvExample{
 			r.deleteItem("t-del")
 			r.changeItem("f-change", "definition")
 			r.renameFileTo(ren, "e2e/sub/new-name.txtar")
-			r.addFileAt(rvNoise, "notes/memo.md", false)
+			r.addFileAt(rvNoise, "notes/memo.md")
 			r.commit("#24")
 			// ここから下はコミットしない（作業ツリーの書きかけの変更と、まだ git が追っていないファイル）
 			r.changeFile(m)
 			r.addItem("claim", "c-new", 2)
-			r.addFileAt(rvScenario, "e2e/new.txtar", false)
+			r.addFileAt(rvScenario, "e2e/new.txtar")
 			r.deleteFile(del)
 		},
 		branch: map[string][]rvEntry{"main": {
-			{Kind: "claim", Key: "c-change", Change: "changed"},
+			{Kind: "claim", Key: "c-change", Change: "modified"},
 			{Kind: "term", Key: "t-del", Change: "deleted"},
-			{Kind: "feature", Key: "f-change", Change: "changed"},
+			{Kind: "feature", Key: "f-change", Change: "modified"},
 			{Kind: "file", Key: "e2e/sub/new-name.txtar", Change: "renamed", OldPath: "e2e/old.txtar"},
-			{Kind: "file", Key: "spec/Model.tla", Change: "changed"},
+			{Kind: "file", Key: "spec/Model.tla", Change: "modified"},
 			{Kind: "claim", Key: "c-new", Change: "added"},
 			{Kind: "file", Key: "e2e/new.txtar", Change: "added"},
 			{Kind: "file", Key: "db/old.sql", Change: "deleted"},
@@ -74,17 +74,17 @@ var rvExamples = []rvExample{
 		name: "約束の文が変わらずシナリオのファイルだけが変わったものも出る",
 		build: func(r *rvRepo) {
 			r.addItem("claim", "c-a", 0)
-			s := r.addFileAt(rvScenario, "e2e/a.txtar", false)
+			s := r.addFileAt(rvScenario, "e2e/a.txtar")
 			r.commit("#1")
 			r.newBranch("story-24")
 			r.changeFile(s)
 			r.commit("#24")
 		},
 		branch: map[string][]rvEntry{"main": {
-			{Kind: "file", Key: "e2e/a.txtar", Change: "changed"},
+			{Kind: "file", Key: "e2e/a.txtar", Change: "modified"},
 		}},
 		story: map[string][]rvEntry{"#24": {
-			{Kind: "file", Key: "e2e/a.txtar", Change: "changed"},
+			{Kind: "file", Key: "e2e/a.txtar", Change: "modified"},
 		}},
 	},
 	{
@@ -129,21 +129,21 @@ var rvExamples = []rvExample{
 		},
 		branch: map[string][]rvEntry{
 			"release": {
-				{Kind: "claim", Key: "c-b", Change: "changed"},
+				{Kind: "claim", Key: "c-b", Change: "modified"},
 			},
 			"main": {
-				{Kind: "claim", Key: "c-a", Change: "changed"},
-				{Kind: "claim", Key: "c-b", Change: "changed"},
+				{Kind: "claim", Key: "c-a", Change: "modified"},
+				{Kind: "claim", Key: "c-b", Change: "modified"},
 			},
 		},
 	},
 	{
-		name: "ストーリー全体の見方は途中で足して後で消したものを出さずほかのストーリーが途中で変えたものを示す",
+		name: "ストーリー全体の見方は途中で足して後で消したものを出さずそのストーリーのIDのないコミットが途中で変えたものを示す",
 		build: func(r *rvRepo) {
 			r.addItem("claim", "c-a", 0)
 			r.addItem("claim", "c-b", 0)
-			s1 := r.addFileAt(rvScenario, "e2e/s1.txtar", false)
-			s2 := r.addFileAt(rvScenario, "e2e/s2.txtar", true)
+			s1 := r.addFileAt(rvScenario, "e2e/s1.txtar")
+			s2 := r.addFileAt(rvScenario, "e2e/s2.txtar")
 			r.commit("#1")
 			r.newBranch("story-24")
 			r.changeItem("c-a", "statement")
@@ -157,24 +157,57 @@ var rvExamples = []rvExample{
 			r.commit("#24")
 			r.changeFile(s1)
 			r.commit("#25")
+			r.changeItem("c-new", "statement")
+			r.commit("")
 		},
 		branch: map[string][]rvEntry{"main": {
-			{Kind: "claim", Key: "c-a", Change: "changed"},
+			{Kind: "claim", Key: "c-a", Change: "modified"},
 			{Kind: "claim", Key: "c-new", Change: "added"},
 			{Kind: "file", Key: "e2e/s2-renamed.txtar", Change: "renamed", OldPath: "e2e/s2.txtar"},
-			{Kind: "file", Key: "e2e/s1.txtar", Change: "changed"},
+			{Kind: "file", Key: "e2e/s1.txtar", Change: "modified"},
 		}},
 		story: map[string][]rvEntry{
 			"#24": {
-				{Kind: "claim", Key: "c-a", Change: "changed", Others: "#25"},
-				{Kind: "claim", Key: "c-new", Change: "added"},
+				{Kind: "claim", Key: "c-a", Change: "modified", Others: "#25"},
+				{Kind: "claim", Key: "c-new", Change: "added", Others: "-"},
 				{Kind: "file", Key: "e2e/s2-renamed.txtar", Change: "renamed", OldPath: "e2e/s2.txtar"},
 			},
 			"#25": {
-				{Kind: "claim", Key: "c-a", Change: "changed"},
-				{Kind: "file", Key: "e2e/s1.txtar", Change: "changed"},
+				{Kind: "claim", Key: "c-a", Change: "modified"},
+				{Kind: "file", Key: "e2e/s1.txtar", Change: "modified"},
 			},
 		},
+	},
+	{
+		name: "場所と中身を両方変えたファイルとTLAの名前の変更は削除と追加の2件になり同じ場所を使い直したものは変更になる",
+		build: func(r *rvRepo) {
+			both := r.addFileAt(rvScenario, "e2e/both.txtar")
+			tla := r.addFileAt(rvTLA, "spec/Old.tla")
+			reuse := r.addFileAt(rvGuardrail, "db/reuse.sql")
+			r.commit("#1")
+			r.newBranch("story-24")
+			r.renameFileTo(both, "e2e/both-new.txtar")
+			r.changeFile(both)
+			r.renameFileTo(tla, "spec/New.tla")
+			r.deleteFile(reuse)
+			r.commit("#24")
+			r.addFileAt(rvGuardrail, "db/reuse.sql")
+			r.commit("#24")
+		},
+		branch: map[string][]rvEntry{"main": {
+			{Kind: "file", Key: "e2e/both.txtar", Change: "deleted"},
+			{Kind: "file", Key: "e2e/both-new.txtar", Change: "added"},
+			{Kind: "file", Key: "spec/Old.tla", Change: "deleted"},
+			{Kind: "file", Key: "spec/New.tla", Change: "added"},
+			{Kind: "file", Key: "db/reuse.sql", Change: "modified"},
+		}},
+		story: map[string][]rvEntry{"#24": {
+			{Kind: "file", Key: "e2e/both.txtar", Change: "deleted"},
+			{Kind: "file", Key: "e2e/both-new.txtar", Change: "added"},
+			{Kind: "file", Key: "spec/Old.tla", Change: "deleted"},
+			{Kind: "file", Key: "spec/New.tla", Change: "added"},
+			{Kind: "file", Key: "db/reuse.sql", Change: "modified"},
+		}},
 	},
 }
 
