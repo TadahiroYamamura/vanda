@@ -877,7 +877,7 @@ test("レビュー単位がブランチでベースブランチを既定から�
   expect(repo.git("log", "-1", "--format=%s")).toContain("#30 で");
 });
 
-// RV-08: エビデンスの予定と実際の表の「揃っているか」は、アイコンの名前（aria-label）で示す。揃っている・ない・
+// RV-08: エビデンスが揃っているかは、各行の左端のアイコンの名前（aria-label）で示す。揃っている・ない・
 // アノテーションでは確かめない、の 3 つを全部回す
 test("エビデンスの予定と実際の表の揃っているかは揃っているとないとアノテーションでは確かめないをアイコンの名前で示す", async ({ page }) => {
   // シナリオテストはアノテーションがあり揃っている。モデル検査はアノテーションがなくない。人のレビューはアノテーションで確かめない
@@ -892,7 +892,7 @@ test("エビデンスの予定と実際の表の揃っているかは揃って�
   );
   commit(repo, "#24 エビデンスの予定を足す");
   await openReviewDetail(page);
-  const table = page.getByRole("table").filter({ hasText: "予定の中身" });
+  const table = evidenceTable(page);
   await expect(table).toBeVisible();
   const rows = table.getByRole("row");
   for (const [type, name] of [
@@ -902,6 +902,51 @@ test("エビデンスの予定と実際の表の揃っているかは揃って�
   ]) {
     const row = rows.filter({ hasText: type }).first();
     await expect(row.getByRole("img", { name }), `${type} の行に「${name}」のアイコンがない`).toBeVisible();
+    // アイコンは行の左端の欄に出す
+    await expect(row.getByRole("cell").first().getByRole("img", { name }), `${type} の行の「${name}」のアイコンが左端の欄にない`).toBeVisible();
     await expect(row.getByRole("img", { name }), `${type} の行のアイコンの title が名前と違う`).toHaveAttribute("title", name);
   }
+  // 約束の詳細の画面のエビデンスも、同じアイコンで示す（3 つのエビデンスに 1 つずつ）
+  await page.getByRole("link", { name: "約束の詳細を開く" }).click();
+  await expect(page.getByText("エビデンス（タイプごと）").first()).toBeVisible();
+  for (const name of ["揃っています", "ありません", "アノテーションでは確かめません"]) {
+    await expect(page.getByRole("img", { name, exact: true }), `約束の詳細の画面に「${name}」のアイコンが 1 つでない`).toHaveCount(1);
+    await expect(page.getByRole("img", { name, exact: true })).toHaveAttribute("title", name);
+  }
+  await expect(page.getByText("エビデンスがありません")).toHaveCount(0);
+});
+
+// エビデンスの予定と実際の表は、見出し「詳細」の列を持つ
+const evidenceTable = (page: Page) => page.getByRole("table").filter({ has: page.getByRole("columnheader", { name: "詳細", exact: true }) });
+
+test("エビデンスの予定と実際の表の詳細は長い文も改行も省略せずに全部出し幅400pxでページが横にスクロールしない", async ({ page }) => {
+  const lines = [
+    "TLA+ のモデルで、タスクを足す・消す・足し直すを 3 回まで繰り返し、どの順でも ID が重ならないことを確かめる予定。消したタスクの ID を使い回さないことも、同じモデルで確かめる。",
+    "定数の範囲は、タスクが 3 つまで、操作が 6 歩まで。",
+    "置き場所の候補: spec/TaskLifecycleWithDeletionAndReAddition.tla",
+  ];
+  const detail = lines.join("\n");
+  const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
+  repo.write(
+    ".vanda/promises.toml",
+    text.replace(
+      '[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n',
+      `[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "plan"\ntype = "model-check"\nlayers = ["model"]\ndetail = ${JSON.stringify(detail)}\n`,
+    ),
+  );
+  commit(repo, "#24 長い詳細を書く");
+  await page.setViewportSize({ width: 400, height: 900 });
+  await openReviewDetail(page);
+  const table = evidenceTable(page);
+  await expect(table, "見出し「詳細」のエビデンスの予定と実際の表がない").toBeVisible();
+  const cell = table.getByRole("row").filter({ hasText: "モデル検査" }).first().getByRole("cell").filter({ hasText: lines[0].slice(0, 20) }).first();
+  await expect(cell).toBeVisible();
+  // 見えている文字（innerText）に、全部の文と改行がある
+  expect((await cell.innerText()).trim(), "詳細が省略されたか、改行が保たれていない").toBe(detail);
+  // 欄の中で折り返し、はみ出して隠れた所がない
+  const overflow = await cell.evaluate((el) => ({ w: el.scrollWidth - el.clientWidth, h: el.scrollHeight - el.clientHeight }));
+  expect(overflow.w, "詳細の欄の中で、横にはみ出している").toBeLessThanOrEqual(1);
+  expect(overflow.h, "詳細の欄の中で、縦にはみ出して隠れている").toBeLessThanOrEqual(1);
+  const page_ = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, view: window.innerWidth }));
+  expect(page_.scroll, "幅 400px で、ページが横にスクロールする").toBeLessThanOrEqual(page_.view);
 });
