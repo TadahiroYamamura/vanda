@@ -534,6 +534,41 @@ for (const pg of pages) {
     }
   });
 
+  test(`${pg.name}で由来のコミットを開くとその時点の推測と対象が出る`, async ({ page }) => {
+    // 前の版は、対象が用語 task-old（後で消す）で、推測が 1 つ。後の版で、対象を task-id に、推測を別のものに変える
+    const at = (statement: string, subject: string, guess: string, oldTerm: boolean) => `[[term]]
+id = "task-id"
+name = "タスクの ID"
+definition = "タスクを見分ける名前"
+${oldTerm ? '\n[[term]]\nid = "task-old"\nname = "古いタスクの名前"\ndefinition = "前に使っていた、タスクを見分ける名前"\n' : ""}
+[[claim]]
+id = "task-id-unique"
+subjects = ["${subject}"]
+statement = "${statement}"
+layers = ["model"]
+guesses = ["${guess}"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["model"]
+`;
+    const oldGuess = "消したタスクの ID は 30 日たてば使い回せるかもしれない";
+    repo.write(".vanda/promises.toml", at("タスクの ID は、前の名前とも重ならない", "task-old", oldGuess, true));
+    commit(repo, "#24 推測を書く");
+    repo.write(".vanda/promises.toml", at(v4.statement, "task-id", "ID は数字だけかもしれない", false));
+    commit(repo, "#24 推測と対象を変える");
+
+    await pg.open(page);
+    await expect(page.getByText(v4.statement).first()).toBeVisible();
+    await expect(page.getByText(oldGuess), "開く前から前の推測が出ている").toHaveCount(0);
+    await expect(page.getByText(/task-old|古いタスクの名前/), "開く前から前の対象が出ている").toHaveCount(0);
+    await choose(rowOf(page, "#24 推測を書く"));
+    await expect(page.getByText("タスクの ID は、前の名前とも重ならない").first()).toBeVisible();
+    await expect(page.getByText(oldGuess).first(), "その時点の推測が出ない").toBeVisible();
+    await expect(page.getByText(/task-old|古いタスクの名前/).first(), "その時点の対象が出ない").toBeVisible();
+  });
+
   test(`${pg.name}で2つ以上の時点を開くとそれぞれの中身が同時に出たままになり1つをたたんでもほかは開いたまま`, async ({ page }) => {
     commitV3(repo);
     await openReviewDetail(page);
