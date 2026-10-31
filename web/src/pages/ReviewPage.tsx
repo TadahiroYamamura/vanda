@@ -45,6 +45,15 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
   const canLoad = view === "branch" ? !!base : !!storyParam;
   const review = useLoad<Review>(canLoad ? () => api.review(view, base, storyParam) : null, `${view}|${base}|${storyParam}`);
   const story = review.data?.story ?? storyParam;
+  // ほかの画面へ引き継ぐクエリ。URL に書いていない既定のもの（レビュー単位、設定のベースブランチ、ブランチのコミットから決まったストーリー）も
+  // いつも書く。移った先（約束の詳細・ファイルの画面）が、同じ一覧を引いて合意の部品を出すため（RV-18）
+  const carried = (() => {
+    const q = new URLSearchParams(params);
+    q.set("view", view);
+    if (base) q.set("base", base);
+    if (story) q.set("story", story);
+    return reviewQuery(q);
+  })();
   // 選択肢の中は短い名前にし、何と何を比べているかの説明は、触れたときに出す（欄に収まらないため）
   const branchHelp = `ブランチ（${base ?? "ベースブランチ"} と分かれた点からの、このブランチの変更。コミットしていない変更も含む）`;
   const storyHelp = story ? `ストーリー（${story} のコミットすべての変更。ほかのブランチや合流済みのものも含む）` : "ストーリー（そのストーリーのコミットすべての変更。ほかのブランチや合流済みのものも含む）";
@@ -111,7 +120,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
               story={story}
               base={base}
               ctx={ctx}
-              query={reviewQuery(params)}
+              query={carried}
               onAgreed={() => {
                 review.reload();
                 props.onAgreed();
@@ -348,6 +357,11 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
       {e.kind === "claim" && e.id && e.change !== "deleted" && (
         <p>
           <Link to={`/claims/${encodeURIComponent(e.id)}${props.query ? `?${props.query}` : ""}`}>約束の詳細を開く</Link>
+        </p>
+      )}
+      {e.kind === "file" && e.path && e.change !== "deleted" && (
+        <p>
+          <Link to={`/files?${props.query ? `${props.query}&` : ""}path=${encodeURIComponent(e.path)}`}>ファイルの画面を開く</Link>
         </p>
       )}
 
