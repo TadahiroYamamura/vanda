@@ -51,6 +51,7 @@ type Entry struct {
 	Group             string      `json:"group"`
 	Before            any         `json:"before"`
 	After             any         `json:"after"`
+	Diff              any         `json:"diff"`
 	DetachedAgreement *Detached   `json:"detachedAgreement"`
 	OtherCommits      []CommitRef `json:"otherCommits"`
 
@@ -451,6 +452,9 @@ func (s *state) itemEntry(rc rawChange) Entry {
 		e.After = Content(ae)
 		s.itemState(&e, ae)
 	}
+	if inBefore && inAfter {
+		e.Diff = itemDiff(e.Before, e.After)
+	}
 	e.Group = s.group(ref)
 	return e
 }
@@ -515,6 +519,11 @@ func (s *state) fileEntry(rc rawChange, path, old, change string) (Entry, error)
 	if change != "deleted" {
 		if err := s.fileState(&e, path, old); err != nil {
 			return e, err
+		}
+	}
+	if b, ok := e.Before.(FileContent); ok {
+		if a, ok := e.After.(FileContent); ok {
+			e.Diff = fileDiff(b.Text, a.Text)
 		}
 	}
 	return e, nil
