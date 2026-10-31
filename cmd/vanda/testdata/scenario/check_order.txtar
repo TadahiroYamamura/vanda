@@ -1,15 +1,21 @@
 # CMD-03: 審査は、審査の設定のファイルに並べた順に行う。どれかの審査が失敗すると、終了コードが失敗になる。
 #
 # 2 つの審査が、それぞれ別のファイルを指すエラーを出すようにしておき、並べる順を入れ替えると、エラーの出る順も入れ替わることを確かめる。
-# - 約束リストの形: .vanda/promises/qqq-broken.toml の、決まった値にないステージ
+# - 約束リストの形: .vanda/promises/aaa.toml の 2 行目（ID の形）、.vanda/promises/qqq-broken.toml の 3 行目（subjects の先がない）と 9 行目（決まった値にないステージ）
 # - 読まれていないファイル: どのパターンにも当たらない .vanda/zzz-stray.toml
+# 1 つの審査の中では、ファイルの場所の順、同じファイルなら行の順に出る。出力の順は、毎回同じ。
 
 exec git init -q -b main
 expand .vanda/config.toml
 
 ! exec vanda check .vanda/checks/shape-then-unread.toml
 order 'qqq-broken\.toml:9: ' 'zzz-stray\.toml'
+order 'aaa\.toml:2: ' 'qqq-broken\.toml:3: '
+order 'qqq-broken\.toml:3: ' 'qqq-broken\.toml:9: '
 ! stderr '(?m)^panic: '
+cp stderr first.txt
+! exec vanda check .vanda/checks/shape-then-unread.toml
+cmp stderr first.txt
 
 ! exec vanda check .vanda/checks/unread-then-shape.toml
 order 'zzz-stray\.toml' 'qqq-broken\.toml:9: '
@@ -17,6 +23,7 @@ order 'zzz-stray\.toml' 'qqq-broken\.toml:9: '
 
 # 通る審査の後に失敗する審査を並べても、終了コードは失敗になる
 rm .vanda/zzz-stray.toml
+cp cases/aaa-fixed.toml .vanda/promises/aaa.toml
 ! exec vanda check .vanda/checks/unread-then-shape.toml
 stderr 'qqq-broken\.toml:9: '
 ! stderr 'zzz-stray'
@@ -55,10 +62,20 @@ scope = "all"
 id = "stray"
 name = "どこからも読まれない"
 definition = "どのパターンにも当たらない"
+-- .vanda/promises/aaa.toml --
+[[term]]
+id = "Bad"
+name = "誤った ID"
+definition = "大文字で始まる"
+-- cases/aaa-fixed.toml --
+[[term]]
+id = "good"
+name = "正しい ID"
+definition = "英小文字で始まる"
 -- .vanda/promises/qqq-broken.toml --
 [[claim]]
 id = "task-id-unique"
-subjects = ["task"]
+subjects = ["nothing"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"

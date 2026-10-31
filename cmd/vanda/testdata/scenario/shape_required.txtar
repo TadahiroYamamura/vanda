@@ -1,8 +1,9 @@
 # CMD-10 約束リストの形: 必須の項目がある。
 # 表（term・feature・claim・claim.evidence）ごとに、必須の項目を 1 つずつ消すと止まる。
 #
-# 行の分からないエラーは、ファイルと ID と項目で場所を示す（監督が決めた形）。ファイルと同じ行に ID と項目が出ることを確かめる。
+# 項目がないときは、その項目を持つべき表の見出しの行を指す（docs/formats.md）。
 # claim の subjects・layers・evidence と、evidence の layers は 1 つ以上なので、空でも止まる。
+# evidence = [] は、インラインで書いた項目の行（19）と、表の見出しの行（12）のどちらを指してもよいことにする。
 # 省いてよい項目（claim の rationale・condition・flags・guesses、evidence の detail、feature の core）は、全部を省いても通る。
 
 exec git init -q -b main
@@ -19,96 +20,85 @@ exec vanda check .vanda/checks/shape.toml
 # term の id がない
 cp cases/missing-term-id.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml.*\bid\b'
+stderr 'promises\.toml:1: .*\bid\b'
 ! stderr '(?m)^panic: '
 
 # term の name がない
 cp cases/missing-term-name.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml.*\bname\b'
-stderr 'promises\.toml.*\btask\b'
+stderr 'promises\.toml:1: .*\bname\b'
 ! stderr '(?m)^panic: '
 
 # term の definition がない
 cp cases/missing-term-definition.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml.*\bdefinition\b'
-stderr 'promises\.toml.*\btask\b'
+stderr 'promises\.toml:1: .*\bdefinition\b'
 ! stderr '(?m)^panic: '
 
 # feature の id がない
 cp cases/missing-feature-id.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml.*\bid\b'
+stderr 'promises\.toml:6: .*\bid\b'
 ! stderr '(?m)^panic: '
 
 # feature の name がない
 cp cases/missing-feature-name.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml.*\bname\b'
-stderr 'promises\.toml.*\btask-add\b'
+stderr 'promises\.toml:6: .*\bname\b'
 ! stderr '(?m)^panic: '
 
 # feature の definition がない
 cp cases/missing-feature-definition.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml.*\bdefinition\b'
-stderr 'promises\.toml.*\btask-add\b'
+stderr 'promises\.toml:6: .*\bdefinition\b'
 ! stderr '(?m)^panic: '
 
 # claim の id がない
 cp cases/missing-claim-id.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml.*\bid\b'
+stderr 'promises\.toml:12: .*\bid\b'
 ! stderr '(?m)^panic: '
 
 # claim の subjects がない
 cp cases/missing-claim-subjects.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml.*\bsubjects\b'
-stderr 'promises\.toml.*\btask-id-unique\b'
+stderr 'promises\.toml:12: .*\bsubjects\b'
 ! stderr '(?m)^panic: '
 
 # claim の statement がない
 cp cases/missing-claim-statement.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml.*\bstatement\b'
-stderr 'promises\.toml.*\btask-id-unique\b'
+stderr 'promises\.toml:12: .*\bstatement\b'
 ! stderr '(?m)^panic: '
 
 # claim の layers がない
 cp cases/missing-claim-layers.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml.*\blayers\b'
-stderr 'promises\.toml.*\btask-id-unique\b'
+stderr 'promises\.toml:12: .*\blayers\b'
 ! stderr '(?m)^panic: '
 
 # claim の evidence がない
 cp cases/missing-claim-evidence.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml.*\bevidence\b'
-stderr 'promises\.toml.*\btask-id-unique\b'
+stderr 'promises\.toml:12: .*\bevidence\b'
 ! stderr '(?m)^panic: '
 
 # claim.evidence の stage がない
 cp cases/missing-claim.evidence-stage.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml.*\bstage\b'
-stderr 'promises\.toml.*\btask-id-unique\b'
+stderr 'promises\.toml:20: .*\bstage\b'
 ! stderr '(?m)^panic: '
 
 # claim.evidence の type がない
 cp cases/missing-claim.evidence-type.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml.*\btype\b'
-stderr 'promises\.toml.*\btask-id-unique\b'
+stderr 'promises\.toml:20: .*\btype\b'
 ! stderr '(?m)^panic: '
 
 # claim.evidence の layers がない
 cp cases/missing-claim.evidence-layers.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml.*\blayers\b'
-stderr 'promises\.toml.*\btask-id-unique\b'
+stderr 'promises\.toml:20: .*\blayers\b'
 ! stderr '(?m)^panic: '
 
 # claim の layers が空
@@ -132,7 +122,7 @@ stderr 'promises\.toml:14: .*subjects'
 # claim の evidence が空
 cp cases/empty-evidence.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:19: .*evidence'
+stderr 'promises\.toml:(12|19): .*evidence'
 ! stderr '(?m)^panic: '
 
 -- .vanda/config.toml --

@@ -2,10 +2,43 @@
 # コマンドが失敗したとき、返したものが JSON として読めないときは、審査が止まる。
 # 読むファイルのパターンに当たったのに、アダプタが決まっていないファイルがあると、審査で止まる。
 #
-# 確かめないこと: コマンドが正しい JSON を返したときに読めること。受け渡しの形がまだ決まっていないため。
-# ここで使うコマンドは、渡されたものを見ずに決まった振る舞いをするので、受け渡しの形に頼らない。
+# 受け渡しの形は docs/formats.md の「外部のコマンドのアダプタ」。
+# adapter/ok.sh は、標準入力にファイルの場所と行が来ていることを確かめ、決まった名前を返す。
 
 exec git init -q -b main
+
+# 正しい JSON を返せば通る
+cp cases/config-ok.toml .vanda/config.toml
+expand .vanda/config.toml
+exec vanda check .vanda/checks/links.toml
+
+# 名前で指したアノテーションの ID は、ほかのアダプタと同じく、約束リストとのつながりを審査する
+cp cases/a-no-such.ext ext/a.ext
+! exec vanda check .vanda/checks/links.toml
+stderr 'ext/a\.ext:1: '
+! stderr '(?m)^panic: '
+cp cases/a.ext ext/a.ext
+
+# 渡していない行の名前を返す
+cp cases/config-wrong-line.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr 'ext/a\.ext'
+! stderr '(?m)^panic: '
+
+# 空の名前を返す
+cp cases/config-empty-name.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr 'ext/a\.ext'
+! stderr '(?m)^panic: '
+
+# 0 でない終了コードで終わると、標準エラーに書いた理由がエラーのメッセージに入る
+cp cases/config-reason.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr 'ext/a\.ext.*the annotation is misplaced'
+! stderr '(?m)^panic: '
 
 # コマンドが失敗する
 cp cases/config-fail.toml .vanda/config.toml
@@ -46,6 +79,75 @@ definition = "利用者がやること"
 -- .vanda/agreements.toml --
 -- ext/a.ext --
 @vanda:term task
+-- adapter/ok.sh --
+in=$(cat)
+case "$in" in
+*'"ext/a.ext"'*) ;;
+*) echo "path がない: $in" >&2; exit 9 ;;
+esac
+case "$in" in
+*'"line"'*1*) ;;
+*) echo "line がない: $in" >&2; exit 9 ;;
+esac
+printf '%s' '{"names":[{"line":1,"name":"a の手順"}]}'
+-- adapter/wrong-line.sh --
+cat >/dev/null
+printf '%s' '{"names":[{"line":2,"name":"a の手順"}]}'
+-- adapter/empty-name.sh --
+cat >/dev/null
+printf '%s' '{"names":[{"line":1,"name":""}]}'
+-- adapter/reason.sh --
+cat >/dev/null
+echo 'the annotation is misplaced' >&2
+exit 4
+-- cases/a.ext --
+@vanda:term task
+-- cases/a-no-such.ext --
+@vanda:term no-such-id
+-- cases/config-ok.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+command = ["sh", "adapter/ok.sh"]
+-- cases/config-wrong-line.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+command = ["sh", "adapter/wrong-line.sh"]
+-- cases/config-empty-name.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+command = ["sh", "adapter/empty-name.sh"]
+-- cases/config-reason.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+command = ["sh", "adapter/reason.sh"]
 -- cases/config-fail.toml --
 version = "${VANDA_VERSION}"
 

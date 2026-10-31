@@ -1,5 +1,7 @@
 # アノテーションの読み取り: 決まっていない種類と、ID を 2 つ以上書いたものは、どの言語でもその行で止まる。
-# 付ける所の決まり: Go は func の宣言の直前のコメントだけ。txtar は最初の -- name -- より前だけ。
+# ID がない、理由のない internal、1 行に 2 つの @vanda: も、どの言語でも止まる。
+# 付ける所の決まり: Go は func の宣言の直前のコメントだけ。txtar は最初の -- name -- より前だけを数える（後は中のファイルの中身）。
+# 文字列の中の @vanda: は数えず、誤りにもしない。
 # TLA+ は、次の空行でもコメントでもない行が Name == か Name(...) == でなければ止まる。
 
 exec git init -q -b main
@@ -95,14 +97,22 @@ cp cases/go-method.case task.go
 exec vanda check .vanda/checks/links.toml
 cp orig/task.go.orig task.go
 
-# txtar で最初の -- name -- より後に書くと止まる
+# txtar で最初の -- name -- より後の @vanda: は数えず、誤りにもしない
 cp cases/txtar-after.case scenarios/add.txtar
 unquote scenarios/add.txtar
-! exec vanda check .vanda/checks/links.toml
-stderr 'scenarios/add\.txtar:3: '
-! stderr '(?m)^panic: '
+exec vanda check .vanda/checks/links.toml
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
+
+# Go の文字列の中の @vanda: は数えず、誤りにもしない
+cp cases/go-string.case task.go
+exec vanda check .vanda/checks/links.toml
+cp orig/task.go.orig task.go
+
+# TLA+ の文字列の中の @vanda: は数えず、誤りにもしない
+cp cases/tla-string.case spec/Task.tla
+exec vanda check .vanda/checks/links.toml
+cp orig/Task.tla.orig spec/Task.tla
 
 # TLA+ で次の行が定義でない（VARIABLES）と止まる
 cp cases/tla-vars.case spec/Task.tla
@@ -113,6 +123,111 @@ cp orig/Task.tla.orig spec/Task.tla
 
 # TLA+ でアノテーションと定義のあいだに空行とコメントがあっても通る
 cp cases/tla-gap.case spec/Task.tla
+exec vanda check .vanda/checks/links.toml
+cp orig/Task.tla.orig spec/Task.tla
+
+# go でID のないアノテーションを書くと、その行で止まる
+cp cases/go-no-id.case task.go
+! exec vanda check .vanda/checks/links.toml
+stderr 'task\.go:6: '
+! stderr '(?m)^panic: '
+cp orig/task.go.orig task.go
+
+# go で理由のない internal のアノテーションを書くと、その行で止まる
+cp cases/go-internal-no-reason.case task.go
+! exec vanda check .vanda/checks/links.toml
+stderr 'task\.go:6: '
+! stderr '(?m)^panic: '
+cp orig/task.go.orig task.go
+
+# go で1 行に 2 つのアノテーションを書くと、その行で止まる
+cp cases/go-two-on-line.case task.go
+! exec vanda check .vanda/checks/links.toml
+stderr 'task\.go:6: '
+! stderr '(?m)^panic: '
+cp orig/task.go.orig task.go
+
+# txtar でID のないアノテーションを書くと、その行で止まる
+cp cases/txtar-no-id.case scenarios/add.txtar
+unquote scenarios/add.txtar
+! exec vanda check .vanda/checks/links.toml
+stderr 'scenarios/add\.txtar:1: '
+! stderr '(?m)^panic: '
+cp orig/add.txtar.orig scenarios/add.txtar
+unquote scenarios/add.txtar
+
+# txtar で理由のない internal のアノテーションを書くと、その行で止まる
+cp cases/txtar-internal-no-reason.case scenarios/add.txtar
+unquote scenarios/add.txtar
+! exec vanda check .vanda/checks/links.toml
+stderr 'scenarios/add\.txtar:1: '
+! stderr '(?m)^panic: '
+cp orig/add.txtar.orig scenarios/add.txtar
+unquote scenarios/add.txtar
+
+# txtar で1 行に 2 つのアノテーションを書くと、その行で止まる
+cp cases/txtar-two-on-line.case scenarios/add.txtar
+unquote scenarios/add.txtar
+! exec vanda check .vanda/checks/links.toml
+stderr 'scenarios/add\.txtar:1: '
+! stderr '(?m)^panic: '
+cp orig/add.txtar.orig scenarios/add.txtar
+unquote scenarios/add.txtar
+
+# tla でID のないアノテーションを書くと、その行で止まる
+cp cases/tla-no-id.case spec/Task.tla
+! exec vanda check .vanda/checks/links.toml
+stderr 'spec/Task\.tla:13: '
+! stderr '(?m)^panic: '
+cp orig/Task.tla.orig spec/Task.tla
+
+# tla で理由のない internal のアノテーションを書くと、その行で止まる
+cp cases/tla-internal-no-reason.case spec/Task.tla
+! exec vanda check .vanda/checks/links.toml
+stderr 'spec/Task\.tla:13: '
+! stderr '(?m)^panic: '
+cp orig/Task.tla.orig spec/Task.tla
+
+# tla で1 行に 2 つのアノテーションを書くと、その行で止まる
+cp cases/tla-two-on-line.case spec/Task.tla
+! exec vanda check .vanda/checks/links.toml
+stderr 'spec/Task\.tla:13: '
+! stderr '(?m)^panic: '
+cp orig/Task.tla.orig spec/Task.tla
+
+# sql でID のないアノテーションを書くと、その行で止まる
+cp cases/sql-no-id.case db/schema.sql
+! exec vanda check .vanda/checks/links.toml
+stderr 'db/schema\.sql:1: '
+! stderr '(?m)^panic: '
+cp orig/schema.sql.orig db/schema.sql
+
+# sql で理由のない internal のアノテーションを書くと、その行で止まる
+cp cases/sql-internal-no-reason.case db/schema.sql
+! exec vanda check .vanda/checks/links.toml
+stderr 'db/schema\.sql:1: '
+! stderr '(?m)^panic: '
+cp orig/schema.sql.orig db/schema.sql
+
+# sql で1 行に 2 つのアノテーションを書くと、その行で止まる
+cp cases/sql-two-on-line.case db/schema.sql
+! exec vanda check .vanda/checks/links.toml
+stderr 'db/schema\.sql:1: '
+! stderr '(?m)^panic: '
+cp orig/schema.sql.orig db/schema.sql
+
+# TLA+ の (* *) で同じ行に閉じても、閉じは ID に含めないので通る
+cp cases/tla-block-ok.case spec/Task.tla
+exec vanda check .vanda/checks/links.toml
+cp orig/Task.tla.orig spec/Task.tla
+
+# TLA+ で LOCAL の付いた定義に付けても通る
+cp cases/tla-local.case spec/Task.tla
+exec vanda check .vanda/checks/links.toml
+cp orig/Task.tla.orig spec/Task.tla
+
+# TLA+ で関数の定義（f[x \in S] ==）に付けても通る
+cp cases/tla-func.case spec/Task.tla
 exec vanda check .vanda/checks/links.toml
 cp orig/Task.tla.orig spec/Task.tla
 
@@ -347,8 +462,37 @@ func (t Task) Valid() error { return nil }
 -- cases/txtar-after.case --
 >exec echo add
 >-- out.txt --
-># @vanda:evidence task-id-unique
+># @vanda:evidence no-such-id
+># @vanda:foo two ids
 >add
+-- cases/go-string.case --
+package task
+
+// Task は利用者がやること。
+type Task struct{ ID string }
+
+// @vanda:sensor task-id-unique
+func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
+
+const usage = "@vanda:evidence no-such-id"
+-- cases/tla-string.case --
+---- MODULE Task ----
+\* @vanda:term task
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+Msg == "@vanda:claim no-such-id"
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:feature task-add
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
 -- cases/tla-vars.case --
 ---- MODULE Task ----
 \* @vanda:term task
@@ -383,4 +527,148 @@ TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* 足す操作
 Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- cases/go-no-id.case --
+package task
+
+// Task は利用者がやること。
+type Task struct{ ID string }
+
+// @vanda:evidence
+func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
+-- cases/go-internal-no-reason.case --
+package task
+
+// Task は利用者がやること。
+type Task struct{ ID string }
+
+// @vanda:internal
+func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
+-- cases/go-two-on-line.case --
+package task
+
+// Task は利用者がやること。
+type Task struct{ ID string }
+
+// @vanda:evidence task-id-unique @vanda:evidence task-id-unique
+func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
+-- cases/txtar-no-id.case --
+># @vanda:evidence
+>exec echo add
+>-- out.txt --
+>add
+-- cases/txtar-internal-no-reason.case --
+># @vanda:internal
+>exec echo add
+>-- out.txt --
+>add
+-- cases/txtar-two-on-line.case --
+># @vanda:evidence task-id-unique @vanda:evidence task-id-unique
+>exec echo add
+>-- out.txt --
+>add
+-- cases/tla-no-id.case --
+---- MODULE Task ----
+\* @vanda:term task
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:evidence
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- cases/tla-internal-no-reason.case --
+---- MODULE Task ----
+\* @vanda:term task
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:internal
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- cases/tla-two-on-line.case --
+---- MODULE Task ----
+\* @vanda:term task
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:evidence task-id-unique @vanda:evidence task-id-unique
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- cases/sql-no-id.case --
+-- @vanda:evidence
+CREATE TABLE task (id TEXT PRIMARY KEY);
+-- cases/sql-internal-no-reason.case --
+-- @vanda:internal
+CREATE TABLE task (id TEXT PRIMARY KEY);
+-- cases/sql-two-on-line.case --
+-- @vanda:evidence task-id-unique @vanda:evidence task-id-unique
+CREATE TABLE task (id TEXT PRIMARY KEY);
+-- cases/tla-block-ok.case --
+---- MODULE Task ----
+\* @vanda:term task
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+(* @vanda:feature task-add *)
+Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- cases/tla-local.case --
+---- MODULE Task ----
+\* @vanda:term task
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:feature task-add
+LOCAL Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
+====
+-- cases/tla-func.case --
+---- MODULE Task ----
+\* @vanda:term task
+TaskIds == {"t1", "t2"}
+
+(* @vanda:internal 検査のための小さな数の集合 *)
+Small == {0, 1, 2}
+
+VARIABLES tasks, n
+
+\* @vanda:claim task-id-unique
+TypeOK == tasks \subseteq TaskIds /\ n \in Small
+
+\* @vanda:feature task-add
+Count[x \in Small] == x + 1
 ====
