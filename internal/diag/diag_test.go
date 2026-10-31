@@ -16,9 +16,10 @@ func TestSortはファイルの場所の順に並べ同じファイルなら行�
 
 func TestErrorは行があれば行を書き行がなければ場所を書く(t *testing.T) {
 	cases := map[string]Error{
-		"a.toml:3: 誤り。直す":            {File: "a.toml", Line: 3, Item: "claim \"x\"", What: "誤り", Fix: "直す"},
-		"a.toml: claim \"x\": 誤り。直す": {File: "a.toml", Item: "claim \"x\"", What: "誤り", Fix: "直す"},
-		"a.toml: 誤り":                 {File: "a.toml", What: "誤り"},
+		// 直し方の後にも「。」を付ける（docs/plans/stage2-wording.md の「誤りの終わり」）
+		"a.toml:3: 誤り。直す。":            {File: "a.toml", Line: 3, Item: "claim \"x\"", What: "誤り", Fix: "直す"},
+		"a.toml: claim \"x\": 誤り。直す。": {File: "a.toml", Item: "claim \"x\"", What: "誤り", Fix: "直す"},
+		"a.toml: 誤り":                  {File: "a.toml", What: "誤り"},
 	}
 	for want, e := range cases {
 		if got := e.Error(); got != want {

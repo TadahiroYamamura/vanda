@@ -86,19 +86,19 @@ adapter = "rust"
 id_pattern = "("
 `)
 	_, errs := Load(root)
-	want := []string{
-		".vanda/config.toml:1: 動いている vanda（0.1.0）が、設定の版（0.2.0）より古い。vanda を 0.2.0 に上げる",
-		".vanda/config.toml:2: promises にパターンがない。",
-		`.vanda/config.toml:6: レイヤーの ID "Model" が決まった形でない。`,
-		`.vanda/config.toml:5: layer "Model" の description がない。description = "…" を書く`,
-		`.vanda/config.toml:11: アダプタ "rust" は vanda の中にない。`,
-		".vanda/config.toml:14: id_pattern が正規表現として読めない",
-		".vanda/config.toml:3: extra は決まった項目でない。",
+	want := [][]string{
+		{".vanda/config.toml:1: ", "動いている vanda（0.1.0）", "設定の版（0.2.0）より古い", "vanda を 0.2.0 に上げ"},
+		{".vanda/config.toml:2: ", "promises", "パターン"},
+		{".vanda/config.toml:6: ", `レイヤーの ID "Model"`, "決まった形"},
+		{".vanda/config.toml:5: ", `layer "Model" の description`, `description = "…"`},
+		{".vanda/config.toml:11: ", `アダプタ "rust"`, "vanda の中"},
+		{".vanda/config.toml:14: ", "id_pattern", "正規表現"},
+		{".vanda/config.toml:3: ", "extra", "決まった項目"},
 	}
 	got := errs.Error()
 	for _, w := range want {
-		if !strings.Contains(got, w) {
-			t.Errorf("エラーに %q がない:\n%s", w, got)
+		if !lineWith(got, w[0], w[1:]...) {
+			t.Errorf("エラーに、%q で始まり %q を含む行がない:\n%s", w[0], w[1:], got)
 		}
 	}
 	if n := strings.Count(got, "\n") + 1; n != len(want) {
@@ -125,7 +125,30 @@ func TestIsID(t *testing.T) {
 func TestLoadは空の文字列に当たるid_patternを受け付けない(t *testing.T) {
 	root := writeConfig(t, "version = \"0.1.0\"\n[story]\nid_pattern = \"[0-9]*\"\n")
 	_, errs := Load(root)
-	if !strings.Contains(errs.Error(), ".vanda/config.toml:3: id_pattern が空の文字列に当たる") {
+	if !lineWith(errs.Error(), ".vanda/config.toml:3: ", "id_pattern", "空の文字列") {
 		t.Errorf("エラーが違う: %v", errs)
 	}
+}
+
+// lineWith は、got の行のうち、prefix で始まり、frags をこの順に含むものがあるかを返す。
+// 誤りの文は、です・ます調などの文体の細部に頼らず、骨組み（場所と行）と、ID・意味の要の語で照合する。
+func lineWith(got, prefix string, frags ...string) bool {
+	for _, line := range strings.Split(got, "\n") {
+		if !strings.HasPrefix(line, prefix) {
+			continue
+		}
+		rest, ok := line[len(prefix):], true
+		for _, f := range frags {
+			i := strings.Index(rest, f)
+			if i < 0 {
+				ok = false
+				break
+			}
+			rest = rest[i+len(f):]
+		}
+		if ok {
+			return true
+		}
+	}
+	return false
 }

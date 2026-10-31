@@ -171,23 +171,46 @@ agreed_at = 2026-10-31T12:00:00Z
 story = "#24"
 `})
 	_, errs := Load(root, files, []string{".vanda/agreements.toml"}, false)
-	want := []string{
-		`.vanda/agreements.toml:2: kind "story" は決まった値でない。`,
-		`.vanda/agreements.toml:4: fingerprint "md5:abc" が指紋の形でない。`,
-		`.vanda/agreements.toml:5: 対象が story の合意に path がある。`,
-		`.vanda/agreements.toml:1: agreement の 1 件目 の user がない。`,
-		`.vanda/agreements.toml:6: agreed_at に時差がない。`,
-		`.vanda/agreements.toml:9: 対象がファイルの合意に path がない。`,
-		`.vanda/agreements.toml:11: 対象がファイルの合意の key が fingerprint と違う。`,
-		`.vanda/agreements.toml:13: agreement の 2 件目 の user の email がない。`,
+	want := [][]string{
+		{".vanda/agreements.toml:2: ", `kind "story"`, "決まった値"},
+		{".vanda/agreements.toml:4: ", `fingerprint "md5:abc"`, "指紋の形"},
+		{".vanda/agreements.toml:5: ", "対象が story の合意", "path"},
+		{".vanda/agreements.toml:1: ", "agreement の 1 件目 の user"},
+		{".vanda/agreements.toml:6: ", "agreed_at", "時差"},
+		{".vanda/agreements.toml:9: ", "対象がファイルの合意", "path"},
+		{".vanda/agreements.toml:11: ", "対象がファイルの合意の key", "fingerprint"},
+		{".vanda/agreements.toml:13: ", "agreement の 2 件目 の user の email"},
 	}
 	got := errs.Error()
 	for _, w := range want {
-		if !strings.Contains(got, w) {
-			t.Errorf("エラーに %q がない:\n%s", w, got)
+		if !lineWith(got, w[0], w[1:]...) {
+			t.Errorf("エラーに、%q で始まり %q を含む行がない:\n%s", w[0], w[1:], got)
 		}
 	}
 	if n := strings.Count(got, "\n") + 1; n != len(want) {
 		t.Errorf("エラーの数 %d, want %d:\n%s", n, len(want), got)
 	}
+}
+
+// lineWith は、got の行のうち、prefix で始まり、frags をこの順に含むものがあるかを返す。
+// 誤りの文は、です・ます調などの文体の細部に頼らず、骨組み（場所と行）と、ID・意味の要の語で照合する。
+func lineWith(got, prefix string, frags ...string) bool {
+	for _, line := range strings.Split(got, "\n") {
+		if !strings.HasPrefix(line, prefix) {
+			continue
+		}
+		rest, ok := line[len(prefix):], true
+		for _, f := range frags {
+			i := strings.Index(rest, f)
+			if i < 0 {
+				ok = false
+				break
+			}
+			rest = rest[i+len(f):]
+		}
+		if ok {
+			return true
+		}
+	}
+	return false
 }

@@ -149,22 +149,22 @@ VARIABLE x
 		{Paths: []string{"db/*"}, Adapter: "sql", Line: 15},
 	}
 	_, errs := Read(root, files, rules)
-	want := []string{
-		"x/a_test.go:3: @vanda:evidence に ID が 2 つ以上ある。",
-		"x/a_test.go:6: @vanda:claimx は決まった種類でない。",
-		"x/a_test.go:9: アノテーションが func の宣言の直前のコメントにない。",
-		"x/a_test.go:15: @vanda:internal に理由がない。",
-		"x/a_test.go:18: @vanda:sensor に ID がない。",
-		"x/a_test.go:19: 1 行に @vanda: が 2 つ以上ある。",
-		"spec/A.tla:3: アノテーションの次の行（4 行目）が、Name ==・Name(…) ==・Name[…] == の定義でない。",
-		"spec/A.tla:5: アノテーションの後に定義がない。",
-		"db/a.sql: .vanda/config.toml の [[annotation]]（11 行目・15 行目）の 2 つ以上のパターンに当たる。",
-		"other/a.md: .vanda/config.toml の 13 行目の [[annotation]] のパターンに当たるが、使うアダプタが決まっていない。",
+	want := [][]string{
+		{"x/a_test.go:3: ", "@vanda:evidence", "ID が 2 つ以上"},
+		{"x/a_test.go:6: ", "@vanda:claimx", "決まった種類"},
+		{"x/a_test.go:9: ", "アノテーション", "func の宣言の直前のコメント"},
+		{"x/a_test.go:15: ", "@vanda:internal", "理由"},
+		{"x/a_test.go:18: ", "@vanda:sensor", "ID"},
+		{"x/a_test.go:19: ", "1 行に @vanda: が 2 つ以上"},
+		{"spec/A.tla:3: ", "アノテーションの次の行（4 行目）", "Name ==・Name(…) ==・Name[…] == の定義"},
+		{"spec/A.tla:5: ", "アノテーションの後に", "定義"},
+		{"db/a.sql: ", ".vanda/config.toml の [[annotation]]（11 行目・15 行目）", "2 つ以上のパターン"},
+		{"other/a.md: ", ".vanda/config.toml の 13 行目の [[annotation]] のパターン", "アダプタ"},
 	}
 	got := errs.Error()
 	for _, w := range want {
-		if !strings.Contains(got, w) {
-			t.Errorf("エラーに %q がない:\n%s", w, got)
+		if !lineWith(got, w[0], w[1:]...) {
+			t.Errorf("エラーに、%q で始まり %q を含む行がない:\n%s", w[0], w[1:], got)
 		}
 	}
 	if n := strings.Count(got, "\n") + 1; n != len(want) {
@@ -222,15 +222,15 @@ func TestReadは外部のコマンドのアダプタの失敗と返し漏れを�
 		{Paths: []string{"docs/a.md"}, Command: []string{"./partial.sh"}},
 		{Paths: []string{"docs/b.md"}, Command: []string{"./fail.sh"}},
 	})
-	want := []string{
-		"docs/a.md: アダプタ（./partial.sh）が、アノテーションのない 5 行目の名前を返した。",
-		"docs/a.md:2: アダプタ（./partial.sh）が、このアノテーションの名前を返さなかった。",
-		"docs/b.md: アノテーションの読み取りのアダプタ（./fail.sh）が失敗した（わからない）。",
+	want := [][]string{
+		{"docs/a.md: ", "アダプタ（./partial.sh）", "アノテーションのない 5 行目の名前"},
+		{"docs/a.md:2: ", "アダプタ（./partial.sh）", "このアノテーションの名前"},
+		{"docs/b.md: ", "アダプタ（./fail.sh）", "（わからない）"},
 	}
 	got := errs.Error()
 	for _, w := range want {
-		if !strings.Contains(got, w) {
-			t.Errorf("エラーに %q がない:\n%s", w, got)
+		if !lineWith(got, w[0], w[1:]...) {
+			t.Errorf("エラーに、%q で始まり %q を含む行がない:\n%s", w[0], w[1:], got)
 		}
 	}
 	if n := strings.Count(got, "\n") + 1; n != len(want) {
@@ -255,22 +255,45 @@ func TestReadは言語ごとに決まった種類のほかを誤りにする(t *
 		{Paths: []string{"docs/*.md"}, Command: []string{"./adapter.sh"}},
 	}
 	as, errs := Read(root, files, rules)
-	want := []string{
-		"db/a.sql:1: @vanda:term は、sql のアダプタのファイルには書けない。書けるのは evidence。",
-		"e2e/a.txtar:1: @vanda:sensor は、txtar のアダプタのファイルには書けない。書けるのは evidence。",
-		"spec/A.tla:1: @vanda:evidence は、tla のアダプタのファイルには書けない。書けるのは term・feature・claim・internal。",
-		"x/a_test.go:3: @vanda:claim は、go のアダプタのファイルには書けない。書けるのは evidence・sensor。",
+	want := [][]string{
+		{"db/a.sql:1: ", "@vanda:term", "sql のアダプタのファイル", "書けるのは evidence"},
+		{"e2e/a.txtar:1: ", "@vanda:sensor", "txtar のアダプタのファイル", "書けるのは evidence"},
+		{"spec/A.tla:1: ", "@vanda:evidence", "tla のアダプタのファイル", "書けるのは term・feature・claim・internal"},
+		{"x/a_test.go:3: ", "@vanda:claim", "go のアダプタのファイル", "書けるのは evidence・sensor"},
 	}
 	got := errs.Error()
-	if got2 := strings.Join(want, ""); len(strings.Split(got, "\n")) != len(want) || got2 == "" {
+	if len(strings.Split(got, "\n")) != len(want) {
 		t.Errorf("エラーの数が違う:\n%s", got)
 	}
 	for _, w := range want {
-		if !strings.Contains(got, w) {
-			t.Errorf("エラーに %q がない:\n%s", w, got)
+		if !lineWith(got, w[0], w[1:]...) {
+			t.Errorf("エラーに、%q で始まり %q を含む行がない:\n%s", w[0], w[1:], got)
 		}
 	}
 	if len(as) != 1 || as[0].File != "docs/a.md" {
 		t.Errorf("外部のコマンドのアダプタでは、どの種類も書ける: %v", as)
 	}
+}
+
+// lineWith は、got の行のうち、prefix で始まり、frags をこの順に含むものがあるかを返す。
+// 誤りの文は、です・ます調などの文体の細部に頼らず、骨組み（場所と行）と、ID・意味の要の語で照合する。
+func lineWith(got, prefix string, frags ...string) bool {
+	for _, line := range strings.Split(got, "\n") {
+		if !strings.HasPrefix(line, prefix) {
+			continue
+		}
+		rest, ok := line[len(prefix):], true
+		for _, f := range frags {
+			i := strings.Index(rest, f)
+			if i < 0 {
+				ok = false
+				break
+			}
+			rest = rest[i+len(f):]
+		}
+		if ok {
+			return true
+		}
+	}
+	return false
 }
