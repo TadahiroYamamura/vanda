@@ -28,6 +28,11 @@ const loaders: Record<Lang, () => Promise<LanguageRegistration[]>> = {
 let core: Promise<HighlighterCore> | null = null;
 const loaded = new Map<Lang, Promise<void>>();
 
+// 正規表現のエンジンは Oniguruma（WebAssembly、約 600KB）にしている。TextMate の文法は Oniguruma の正規表現で書かれていて、
+// VS Code と同じ色付けになるため。Oniguruma の本体（kkos/oniguruma）は 2025-04 にアーカイブされたが、Shiki が使う
+// WebAssembly の版（microsoft/vscode-oniguruma）は VS Code が使い続けていて、手入れされている。問題が出たら、まず Shiki の
+// JavaScript の正規表現のエンジン（shiki/engine/javascript）に替え、Go・SQL・TLA+・txtar の色付けが崩れないかを確かめる。
+// 崩れるなら Prism を考える（TLA+ の文法は自分で書くことになる）。
 function highlighter(): Promise<HighlighterCore> {
   if (!core) {
     core = (async () => {
