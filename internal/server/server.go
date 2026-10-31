@@ -9,8 +9,10 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/TadahiroYamamura/vanda/internal/config"
+	"github.com/TadahiroYamamura/vanda/internal/review"
 )
 
 type Server struct {
@@ -18,16 +20,51 @@ type Server struct {
 	Cfg  *config.Config
 	// UI は、画面のファイル。index.html がなければ、画面を作っていないと知らせる
 	UI fs.FS
+	// mu は、合意（ファイルを書いてコミットする）のあいだに、一覧が書きかけの中身を読まないようにする
+	mu sync.RWMutex
 }
 
 // Handler は、API（/api/ の下）と画面のファイルを出す http.Handler を返す。
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/context", s.read(s.context))
+	mux.HandleFunc("GET /api/review", s.read(s.review))
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, http.StatusNotFound, "この API はない", "")
 	})
 	mux.Handle("/", s.ui())
 	return localOnly(mux)
+}
+
+func (s *Server) read(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+		h(w, r)
+	}
+}
+
+func (s *Server) context(w http.ResponseWriter, _ *http.Request) {
+	c, err := review.LoadContext(s.Root, s.Cfg)
+	if err != nil {
+		writeReviewError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, c)
+}
+
+func (s *Server) review(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	res, err := review.Build(review.Options{Root: s.Root, Cfg: s.Cfg, View: q.Get("view"), Base: q.Get("base"), Story: q.Get("story")})
+	if err != nil {
+		writeReviewError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
+}
+
+func writeReviewError(w http.ResponseWriter, e *review.Error) {
+	writeError(w, e.Status, e.Message, e.Fix)
 }
 
 // ui は、画面のファイルを出す。ないパスは index.html を返す（画面の中の場所を URL に持つため）。
@@ -101,3 +138,4 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 		log.Printf("API の応答を書けなかった: %v", err)
 	}
 }
+
