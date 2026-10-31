@@ -31,8 +31,8 @@ func (e Error) Error() string {
 		b.WriteString(": ")
 	}
 	b.WriteString(e.What)
+	b.WriteString("。")
 	if e.Fix != "" {
-		b.WriteString("。")
 		b.WriteString(e.Fix)
 		b.WriteString("。")
 	}
