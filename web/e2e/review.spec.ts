@@ -595,7 +595,8 @@ test("合意済の約束で合意を取り消すとストーリーの今の中�
   expect(promisesAfter).toBe(promisesBefore);
   expect(promisesAfter).not.toContain("ai-proposal");
   // 書きかけの変更は残り、コミットに入らない
-  expect(repo.git("status", "--porcelain", "--untracked-files=all").split("\n").sort()).toEqual([" M README.md", "?? メモ.txt"]);
+  // git() は前後の空白を落とすので、行ごとに空白を落として比べる
+  expect(repo.git("-c", "core.quotePath=false", "status", "--porcelain", "--untracked-files=all").split("\n").map((l) => l.trim()).sort()).toEqual(["?? メモ.txt", "M README.md"]);
 
   await expect(page.getByText(/提案中/).first()).toBeVisible();
   // 自分で取り消したものは、RV-14 の「合意が外れた」としては出さない
@@ -659,6 +660,7 @@ for (const w of writers) {
         commit(repo, "#24 合意の記録を書く");
       }
       const agreementsBefore = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
+      const promisesBefore = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
       const countBefore = commitCount();
 
       await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
@@ -673,7 +675,7 @@ for (const w of writers) {
       await expect.poll(commitCount, { message: "取り消しがコミットにならない" }).toBe(countBefore + 1);
       expect(repo.git("diff", "--name-only", "HEAD~1", "HEAD").split("\n")).toEqual([".vanda/agreements.toml"]);
       expect(nonBlank(readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8"))).toEqual(withoutRecord(agreementsBefore, "task-id-unique", "#24"));
-      expect(readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8")).not.toContain("ai-proposal");
+      expect(readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8"), "取り消しでフラグが戻った").toBe(promisesBefore);
       await expect(page.getByText(/提案中/).first()).toBeVisible();
     });
   }
