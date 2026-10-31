@@ -53,7 +53,7 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
                 <td>{o.date}</td>
                 <td>{o.stories.join("・") || "（なし）"}</td>
                 <td>{o.change === "added" ? "作成" : "変更"}</td>
-                <td>{o.subject}</td>
+                <td className="user-text">{o.subject}</td>
                 <td>
                   <ExpandButton open={isOpen(`origin:${o.commit}`)} onClick={() => toggle(`origin:${o.commit}`)} />
                 </td>
@@ -84,7 +84,7 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
               <Fragment key={i}>
               <tr className={a.commit ? "at-toggle-row" : undefined} onClick={a.commit ? rowToggle(`agreement:${i}`) : undefined}>
                 <td>
-                  {a.user.name} &lt;{a.user.email}&gt;
+                  <span className="user-text">{a.user.name}</span> &lt;{a.user.email}&gt;
                 </td>
                 <td>{a.agreedAt}</td>
                 <td>{a.story}</td>
@@ -182,7 +182,7 @@ function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string; l
               {rows.map(([label, then]) => (
                 <Fragment key={label}>
                   <dt>{label}</dt>
-                  <dd className="text">{then}</dd>
+                  <dd className="text user-text">{then}</dd>
                 </Fragment>
               ))}
             </dl>

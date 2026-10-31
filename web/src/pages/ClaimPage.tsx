@@ -23,25 +23,27 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: C
         {c.id} <StateBadge state={c.state} />
       </h1>
       <ReviewAgree params={props.params} ctx={props.ctx ?? null} target={{ kind: "claim", id: c.id }} onDone={d.reload} />
-      <p className="statement">{c.statement}</p>
+      <p className="statement user-text">{c.statement}</p>
       <dl className="fields">
         <dt>条件</dt>
-        <dd>{c.condition ?? "（なし）"}</dd>
+        <dd className="user-text">{c.condition ?? "（なし）"}</dd>
         <dt>理由</dt>
-        <dd>{c.rationale ?? "（なし）"}</dd>
+        <dd className="user-text">{c.rationale ?? "（なし）"}</dd>
         <dt>レイヤー</dt>
         <dd>
           <LayerChips layers={c.layers.map((l) => l.id)} names={c.layers} />
         </dd>
         <dt>対象</dt>
-        <dd>{c.subjects.map((s) => (s.name ? `${s.name}（${s.id}）` : `${s.id}（約束リストにありません）`)).join("・")}</dd>
+        <dd className="user-text">{c.subjects.map((s) => (s.name ? `${s.name}（${s.id}）` : `${s.id}（約束リストにありません）`)).join("・")}</dd>
         {c.guesses.length > 0 && (
           <>
             <dt>推測</dt>
             <dd>
               <ul>
                 {c.guesses.map((g) => (
-                  <li key={g}>{g}</li>
+                  <li key={g} className="user-text">
+                    {g}
+                  </li>
                 ))}
               </ul>
             </dd>

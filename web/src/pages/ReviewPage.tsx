@@ -172,7 +172,7 @@ function StoryPanel(props: { id: string; configured: boolean }) {
       {s.error != null && <ErrorBox error={s.error} title="ストーリーの置き場所から読めません" />}
       {s.data && (
         <>
-          <p className="story-title">{s.data.title}</p>
+          <p className="story-title user-text">{s.data.title}</p>
           {s.data.url && (
             <p>
               <a href={s.data.url} target="_blank" rel="noopener noreferrer">
@@ -339,7 +339,7 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
           <ul>
             {e.otherCommits.map((c) => (
               <li key={c.commit}>
-                {shortCommit(c.commit)} {c.subject} {c.stories.length > 0 ? `（${c.stories.join("・")}）` : "（ストーリーの ID なし）"}
+                {shortCommit(c.commit)} <span className="user-text">{c.subject}</span> {c.stories.length > 0 ? `（${c.stories.join("・")}）` : "（ストーリーの ID なし）"}
               </li>
             ))}
           </ul>
@@ -549,7 +549,7 @@ function ItemCompare(props: { entry: Entry; before: Row[] | null; after: Row[] |
         {labels.map((label, i) => (
           <tr key={label}>
             <th scope="row">{label}</th>
-            <td className="text">{value(i)}</td>
+            <td className="text user-text">{value(i)}</td>
           </tr>
         ))}
       </tbody>
