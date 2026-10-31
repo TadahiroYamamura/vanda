@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/TadahiroYamamura/vanda/internal/agreements"
 	"github.com/TadahiroYamamura/vanda/internal/annotation"
 	"github.com/TadahiroYamamura/vanda/internal/check"
 	"github.com/TadahiroYamamura/vanda/internal/glob"
@@ -69,6 +70,8 @@ type AgreementRef struct {
 	Story       string `json:"story"`
 	Fingerprint string `json:"fingerprint"`
 	Current     bool   `json:"current"`
+	// Commit は、この合意の記録を書き足したコミット（CL-08）。まだコミットしていなければ nil
+	Commit *string `json:"commit"`
 }
 
 // Claim は、約束の詳細（CL-01・02・04・05）を返す。
@@ -176,11 +179,22 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 		d.Origin = append(d.Origin, OriginRef{Commit: cm.Hash, Date: cm.Date.Format(time.RFC3339), Subject: cm.Subject, Stories: strs(cm.Stories), Change: change})
 	}
 
+	var mine []*agreements.Agreement
 	for _, a := range s.recs.Agreements {
-		if a.Kind != "claim" || a.Key != c.ID {
-			continue
+		if a.Kind == "claim" && a.Key == c.ID {
+			mine = append(mine, a)
 		}
-		d.Agreements = append(d.Agreements, AgreementRef{User: User{Name: a.UserName, Email: a.UserEmail}, AgreedAt: a.AgreedAt.Format(time.RFC3339), Story: a.Story, Fingerprint: a.Fingerprint, Current: fp != "" && a.Fingerprint == fp})
+	}
+	written, err := s.agreementCommits(mine)
+	if err != nil {
+		return nil, internalErr(err)
+	}
+	for _, a := range mine {
+		ref := AgreementRef{User: User{Name: a.UserName, Email: a.UserEmail}, AgreedAt: a.AgreedAt.Format(time.RFC3339), Story: a.Story, Fingerprint: a.Fingerprint, Current: fp != "" && a.Fingerprint == fp}
+		if h := written[a]; h != "" {
+			ref.Commit = ptr(h)
+		}
+		d.Agreements = append(d.Agreements, ref)
 	}
 	return d, nil
 }

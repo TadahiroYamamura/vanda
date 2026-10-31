@@ -151,7 +151,16 @@ export interface ClaimDetail {
   guesses: string[];
   evidence: EvidenceDetail[];
   origin: { commit: string; date: string; subject: string; stories: string[]; change: "added" | "modified" }[];
-  agreements: { user: User; agreedAt: string; story: string; fingerprint: string; current: boolean }[];
+  agreements: { user: User; agreedAt: string; story: string; fingerprint: string; current: boolean; commit?: string | null }[];
+}
+
+export interface ClaimAt {
+  id: string;
+  commit: string;
+  date: string;
+  subject: string;
+  stories: string[];
+  content: ClaimContent;
 }
 
 export interface AgreeResult {
@@ -201,6 +210,7 @@ export const api = {
     call<Review>(`/api/review?${q({ view, base: view === "branch" ? base : null, story })}`),
   story: (id: string) => call<Story>(`/api/story?${q({ id })}`),
   claim: (id: string) => call<ClaimDetail>(`/api/claims/${encodeURIComponent(id)}`),
+  claimAt: (id: string, commit: string) => call<ClaimAt>(`/api/claims/${encodeURIComponent(id)}/at/${encodeURIComponent(commit)}`),
   file: (path: string) => call<{ path: string; text: string }>(`/api/file?${q({ path })}`),
   agree: (e: Entry, story: string) =>
     call<AgreeResult>("/api/agree", {

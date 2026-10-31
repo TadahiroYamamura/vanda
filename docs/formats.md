@@ -597,9 +597,21 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `subjects` | 約束の `subjects` の順。約束リストにない ID は、`kind`・`name` を `null` にする |
 | `evidence[].present` | 揃っているか（RV-08。エビデンスが揃っている審査と同じ判定）。`found` があれば `true`。`proof` は `false`。`human-review`・`monitoring` は `null`（アノテーションで確かめない） |
 | `origin` | HEAD の履歴の、合流でないコミットのうち、約束の指紋が変わったもの（作ったものを含む）の、古い順。`change` は `added`・`modified`。`stories` はメッセージにあるストーリーの ID。消した後に同じ ID で作り直した約束は新しいものとみなし、消すまでのコミットを入れない |
-| `agreements` | 合意の記録のうち、`kind = "claim"` でこの ID を指すもの。合意の記録のファイルに書いた順。`current` は、今の中身の指紋に合うか |
+| `agreements` | 合意の記録のうち、`kind = "claim"` でこの ID を指すもの。合意の記録のファイルに書いた順。`current` は、今の中身の指紋に合うか。`commit` は、その合意の記録を書き足したコミット（HEAD の履歴を古い順にたどり、合意の記録のファイルを変えたコミットの時点の記録に、同じ記録（`kind`・`key`・`fingerprint`・`story`・`agreed_at`・`user`）が初めて現れたコミット）。まだコミットしていなければ `null` |
 
 - アノテーションに読み込みの誤りがあれば、`500` を返し、誤りの数と最初の 1 件を出す
+
+### `GET /api/claims/<約束の ID>/at/<コミット>`
+
+あるコミットの時点の約束の中身（CL-08）。由来の `commit` か、合意の履歴の `commit` を渡す。
+
+```json
+{"id": "task-id-unique", "commit": "0123abcd…", "date": "2026-10-31T12:00:00+09:00", "subject": "(feat) …", "stories": ["#24"], "content": {"statement": "…", "rationale": null, "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [], "flags": [], "guesses": []}}
+```
+
+- `content` は、その時点の約束リストの項目（形は `/api/review` の `before`・`after` の `claim` と同じ）
+- コミットはハッシュ（16 進の 4〜64 文字）で渡す。ほかの形は `400`、ないコミットは `404`
+- その時点に約束がなければ `404`、その時点の約束リストが読めなければ `500`。どちらも `message` に理由を出す
 
 ### `GET /api/file?path=<場所>`
 
