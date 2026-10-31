@@ -131,9 +131,10 @@ func (r *repoT) run(checks, base, story string) (bool, string, error) {
 	if errs != nil {
 		r.t.Fatal(errs)
 	}
-	var out bytes.Buffer
-	pass, err := Run(Options{Root: r.root, Cfg: r.config(), Specs: specs, Base: base, Story: story, Out: &out})
-	return pass, out.String(), err
+	var out, errOut bytes.Buffer
+	pass, err := Run(Options{Root: r.root, Cfg: r.config(), Specs: specs, Base: base, Story: story, Out: &out, Err: &errOut})
+	// 多くのテストは結果の行と誤りの中身をまとめて確かめるので、両方をつないで返す。出し分けは別のテストで確かめる
+	return pass, out.String() + errOut.String(), err
 }
 
 const baseConfig = `version = "0.1.0"
@@ -481,5 +482,25 @@ func TestLoadSpecsは審査の名前と範囲の誤りを出す(t *testing.T) {
 	expect(t, errs.Error(), []string{`c.toml:2: 審査 "x" はない。`, "c.toml:6: 審査 story-origin は範囲 all で行えない。scope を story にする", `c.toml:9: 範囲 "some" は決まった値でない。`})
 	if _, errs := LoadSpecs("c.toml", []byte("check = []\n")); errs == nil {
 		t.Error("審査が 1 つもないのに通った")
+	}
+}
+
+func TestRunは審査ごとの結果の行を標準出力に誤りの中身を標準エラーに出す(t *testing.T) {
+	r := goodRepo(t)
+	r.write(map[string]string{".vanda/notes.md": "x"})
+	specs, errs := LoadSpecs("checks.toml", []byte("[[check]]\nname = \"unread-files\"\nscope = \"all\"\n[[check]]\nname = \"agreement\"\nscope = \"all\"\n"))
+	if errs != nil {
+		t.Fatal(errs)
+	}
+	var out, errOut bytes.Buffer
+	pass, err := Run(Options{Root: r.root, Cfg: r.config(), Specs: specs, Out: &out, Err: &errOut})
+	if err != nil || pass {
+		t.Fatalf("pass=%v err=%v", pass, err)
+	}
+	if got := out.String(); got != "審査 unread-files（all）: 失敗（1 件）\n審査 agreement（all）: 通った\n" {
+		t.Errorf("標準出力: %q", got)
+	}
+	if got := errOut.String(); !strings.HasPrefix(got, ".vanda/notes.md: .vanda/ にあるのに") || strings.Count(got, "\n") != 1 {
+		t.Errorf("標準エラー: %q", got)
 	}
 }
