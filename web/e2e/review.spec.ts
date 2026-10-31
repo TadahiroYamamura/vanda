@@ -1107,8 +1107,10 @@ async function revokeHere(page: Page, url: RegExp) {
   await expect(page.getByText("提案中").first(), "取り消した後に、提案中と出ない").toBeVisible();
 }
 
+// RV-18 の画面の移り方は、クエリのない / から始めて画面の操作だけで移る。ストーリーは URL で名指しせず、
+// ブランチのコミットから決まる（#24）
 test("レビューの画面から約束の詳細へ移って合意すると1コミットで記録が増えその画面で合意済になり履歴に足され戻ると一覧でも合意済でその画面で取り消せる", async ({ page }) => {
-  await page.goto(serve.url + "/?view=branch&base=main");
+  await page.goto(serve.url + "/");
   await select(page, "task-id-unique");
   await page.getByRole("link", { name: "約束の詳細を開く" }).click();
   await expect(page).toHaveURL(/\/claims\/task-id-unique/);
@@ -1135,7 +1137,7 @@ test("エビデンスのファイルのリンクからファイルの画面へ�
   repo.write("e2e/add-task.txtar", annotatedScenario);
   commit(repo, "#24 シナリオをエビデンスにする");
   const fp = sha(annotatedScenario);
-  await page.goto(serve.url + "/?view=branch&base=main");
+  await page.goto(serve.url + "/");
   await select(page, "task-id-unique");
   await page.getByRole("link", { name: /e2e\/add-task\.txtar:1/ }).first().click();
   await expect(page).toHaveURL(/\/files\?/);
@@ -1149,6 +1151,26 @@ test("エビデンスのファイルのリンクからファイルの画面へ�
 
   await select(page, "task-id-unique");
   await page.getByRole("link", { name: /e2e\/add-task\.txtar:1/ }).first().click();
+  await revokeHere(page, /\/files\?/);
+  expect(recordsOf(fp, "#24"), "取り消してもファイルへの合意の記録が残っている").toBe(0);
+});
+
+test("レビューの画面の一覧のファイルからファイルの画面へ移って合意すると1コミットで記録が増えその画面で合意済になり戻ると一覧でも合意済でその画面で取り消せる", async ({ page }) => {
+  const fp = sha(scenarioStory);
+  await page.goto(serve.url + "/");
+  await select(page, "e2e/add-task.txtar");
+  // 1 件の詳細の中の、ファイルの画面へのリンク（名前は決めていないので、行き先で探す）
+  const toFile = page.locator('a[href*="/files"]').first();
+  await expect(toFile, "一覧のファイルの 1 件の詳細に、ファイルの画面へのリンクがない").toBeVisible();
+  await toFile.click();
+  await expect(page).toHaveURL(/\/files\?/);
+  expect(recordsOf(fp, "#24")).toBe(0);
+  await agreeHere(page, /\/files\?/);
+  expect(recordsOf(fp, "#24"), "ファイルへの合意の記録が 1 件増えていない").toBe(1);
+  await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
+  await expect(listItem(page, "e2e/add-task.txtar"), "戻った一覧でファイルが合意済になっていない").toContainText("合意済");
+  await select(page, "e2e/add-task.txtar");
+  await page.locator('a[href*="/files"]').first().click();
   await revokeHere(page, /\/files\?/);
   expect(recordsOf(fp, "#24"), "取り消してもファイルへの合意の記録が残っている").toBe(0);
 });
@@ -1172,7 +1194,7 @@ for (const w of writers) {
         repo.write(".vanda/agreements.toml", readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + record);
         commit(repo, "#24 合意の記録を書く");
       }
-      await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
+      await page.goto(serve.url + "/");
       await select(page, "task-id-unique");
       await page.getByRole("link", { name: "約束の詳細を開く" }).click();
       await expect(page.getByText("合意済").first()).toBeVisible();
