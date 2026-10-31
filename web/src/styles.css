@@ -224,6 +224,17 @@ ul.evidence-list { margin: 0; padding-left: 18px; }
 .evidence-item.evidence-added { background: var(--after-bg); border-radius: 4px; }
 .evidence-item.evidence-removed { background: var(--before-bg); border-radius: 4px; }
 
+/* レイヤーの札（紫の点線の枠） */
+.chips { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; vertical-align: middle; }
+.chip { display: inline-flex; align-items: center; padding: 0 8px; font-size: 12px; line-height: 20px; white-space: nowrap; border-radius: 4px; border: 1px solid transparent; }
+.chip-layer { border: 1px dashed #9b7fd1; color: #5b3d99; background: #f6f2fd; }
+del.chip-mark, ins.chip-mark { text-decoration: none; border-radius: 4px; }
+del.chip-mark .chip { text-decoration: line-through 1.5px var(--bad); background: var(--del-part); }
+ins.chip-mark .chip { background: var(--ins-part); }
+.evidence-head { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.evidence-kind { color: var(--fg2); }
+.evidence-line { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 4px; }
+
 /* 狭い画面では、一覧と 1 件の中身を縦に並べ、ページ全体をスクロールして読む。
    一覧を画面に貼り付けたまま（sticky）にすると、縦に並べたときに 1 件の中身の上に重なるため、ここでは外す */
 @media (max-width: 1000px) {

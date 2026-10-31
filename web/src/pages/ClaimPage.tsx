@@ -1,9 +1,10 @@
 import { api, type EvidenceDetail, type Found } from "../api";
 import { ErrorBox, PresentIcon, StateBadge, useLoad } from "../components/common";
+import { LayerChips } from "../components/Chips";
+import { stageLabel, typeLabel } from "../labels";
 import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
 import { langOf } from "../highlight";
-import { stageLabel, typeLabel } from "../labels";
 import { Link, reviewQuery, reviewURL } from "../route";
 
 // ClaimPage は、約束の詳細（CL-01・02・04・05・07）。
@@ -30,7 +31,9 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams }) {
         <dt>理由</dt>
         <dd>{c.rationale ?? "（なし）"}</dd>
         <dt>レイヤー</dt>
-        <dd>{c.layers.map((l) => l.name || l.id).join("・")}</dd>
+        <dd>
+          <LayerChips layers={c.layers.map((l) => l.id)} names={c.layers} />
+        </dd>
         <dt>対象</dt>
         <dd>{c.subjects.map((s) => (s.name ? `${s.name}（${s.id}）` : `${s.id}（約束リストにありません）`)).join("・")}</dd>
         {c.guesses.length > 0 && (
@@ -53,10 +56,12 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams }) {
           <h3>{typeLabel[type] ?? type}</h3>
           {evs.map((ev, i) => (
             <div key={i} className="evidence">
-              <p className="note evidence-line">
-                <PresentIcon present={ev.present} /> {stageLabel[ev.stage] ?? ev.stage} · レイヤー {ev.layers.join("・")}
-                {ev.detail && ` · ${ev.detail}`}
-              </p>
+              <div className="evidence-line">
+                <PresentIcon present={ev.present} />
+                <span>{stageLabel[ev.stage] ?? ev.stage}</span>
+                <LayerChips layers={ev.layers} names={c.layers} />
+              </div>
+              {ev.detail && <div className="evidence-detail">{ev.detail}</div>}
               {ev.found.map((f) => (
                 <FoundView key={`${f.file}:${f.line}`} f={f} params={props.params} />
               ))}

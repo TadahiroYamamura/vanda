@@ -553,6 +553,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `before`・`after` | `before.evidence`・`after.evidence` と同じ数・同じ順の、エビデンス 1 つずつの印 |
 | 対応づけ | ステージ（`stage`）とタイプ（`type`）が同じものを、同じエビデンスとみなす。同じステージとタイプが 2 つ以上あれば、それぞれ現れた順に、1 つ目どうし、2 つ目どうし、と対応させる。対応の相手がないものは、変更前なら `removed`（消した）、変更後なら `added`（足した） |
 | `op` | 対応したものは、レイヤーと詳細が同じなら `equal`、どちらかが違えば `modified`。ほかは上のとおり |
+| `pair` | 対応したもう片方の側のエビデンスの添字（`before` の印なら `after.evidence` の添字）。`removed`・`added` は `null` |
 | `layers`・`detail` | `modified` のときだけ。レイヤー（`layers` を「・」でつないだ文字）と詳細（ないときは空の文字）の、文字の単位の差分（`fields` と同じ形）。両側に同じものを入れ、画面は変更前の側で `equal`・`delete`、変更後の側で `equal`・`insert` を見せる。ほかは `null` |
 
 ### `POST /api/agree`

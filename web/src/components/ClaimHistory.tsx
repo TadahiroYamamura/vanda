@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode, useState } from "react";
 import { api, type ClaimDetail } from "../api";
 import { ErrorBox, shortCommit, useLoad } from "./common";
+import { LayerChips } from "./Chips";
 import { EvidenceList } from "./EvidenceList";
 
 // ClaimHistory は、約束の由来（CL-04）と合意の履歴（CL-05）。約束の詳細の画面と、レビューの画面の 1 件の詳細（RV-16）で使う。
@@ -139,7 +140,7 @@ function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string })
         ["条件", d.data.content.condition ?? none],
         ["理由", d.data.content.rationale ?? none],
         ["対象", d.data.content.subjects.join("・")],
-        ["レイヤー", (d.data.layers ?? d.data.content.layers.map((id) => ({ id, name: "" }))).map((l) => l.name || l.id).join("・")],
+        ["レイヤー", <LayerChips layers={d.data.content.layers} names={d.data.layers ?? undefined} />],
         ["エビデンスの予定", <EvidenceList items={d.data.content.evidence} />],
         ["推測", d.data.content.guesses.length > 0 ? d.data.content.guesses.join("\n") : none],
       ]

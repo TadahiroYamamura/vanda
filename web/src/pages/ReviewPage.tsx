@@ -7,6 +7,7 @@ import { ErrorBox, FlagBadge, PresentIcon, StateBadge, shortCommit, useLoad } fr
 import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
 import { LineDiff, Parts } from "../components/DiffView";
+import { LayerChips, LayerChipsDiff } from "../components/Chips";
 import { EvidenceList } from "../components/EvidenceList";
 import { langOf } from "../highlight";
 import { TlaCode } from "../components/TlaCode";
@@ -519,6 +520,12 @@ function ItemCompare(props: { entry: Entry; before: Row[] | null; after: Row[] |
       if (before && after && evidenceMarks) return <UnifiedEvidence before={(e.before as ClaimContent).evidence} after={(e.after as ClaimContent).evidence} marks={evidenceMarks} />;
       return <EvidenceList items={((after ? e.after : e.before) as ClaimContent).evidence} />;
     }
+    if (e.kind === "claim" && label === "レイヤー") {
+      const bl = before ? (e.before as ClaimContent).layers : null;
+      const al = after ? (e.after as ClaimContent).layers : null;
+      if (bl && al) return <LayerChipsDiff before={bl} after={al} side="both" />;
+      return <LayerChips layers={(al ?? bl) as string[]} />;
+    }
     if (!b || !a) return (a ?? b)?.[1];
     const parts = a[2] && fields ? fields[a[2]] : undefined;
     if (parts) return <Parts parts={parts} side="both" />;
@@ -554,7 +561,7 @@ function UnifiedEvidence(props: { before: EvidenceContent[]; after: EvidenceCont
       marks.push(props.marks.before[i]);
     }
   });
-  return <EvidenceList items={items} marks={marks} side="both" />;
+  return <EvidenceList items={items} marks={marks} side="both" others={props.before} />;
 }
 
 // ClaimSections は、約束のエビデンスの予定と実際の表（RV-08。合格したかは段 3 で足す）と、由来と合意の履歴（RV-16）。
@@ -592,7 +599,7 @@ export function ClaimSections(props: { id: string; query?: string }) {
                   {typeLabel[ev.type] ?? ev.type}
                 </td>
                 <td role="cell" className="plan-narrow" data-label="レイヤー">
-                  {ev.layers.join("・")}
+                  <LayerChips layers={ev.layers} />
                 </td>
                 <td role="cell" className="plan-detail" data-label="詳細">
                   {ev.detail ?? ""}

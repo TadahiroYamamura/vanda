@@ -88,6 +88,7 @@ export interface DiffLine {
 
 export interface EvidenceMark {
   op: "equal" | "modified" | "removed" | "added";
+  pair?: number | null;
   layers: DiffPart[] | null;
   detail: DiffPart[] | null;
 }

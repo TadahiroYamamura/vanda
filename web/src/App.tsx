@@ -1,4 +1,5 @@
 import { api } from "./api";
+import { LayerNames } from "./components/Chips";
 import { ErrorBox, useLoad } from "./components/common";
 import { ClaimPage, FilePage } from "./pages/ClaimPage";
 import { ReviewPage } from "./pages/ReviewPage";
@@ -25,12 +26,14 @@ export function App() {
           </span>
         )}
       </header>
+      <LayerNames.Provider value={ctx.data?.layers ?? []}>
       <main>
         {ctx.error != null && <ErrorBox error={ctx.error} title="vanda の設定を読めません" />}
         {route.page === "claim" && <ClaimPage id={route.id} params={route.params} />}
         {route.page === "file" && <FilePage path={route.path} params={route.params} />}
         {route.page === "review" && ctx.data && <ReviewPage ctx={ctx.data} params={route.params} onAgreed={ctx.reload} />}
       </main>
+      </LayerNames.Provider>
     </div>
   );
 }
