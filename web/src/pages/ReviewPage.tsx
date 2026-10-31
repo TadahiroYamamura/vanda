@@ -9,7 +9,7 @@ import { LineDiff, Parts } from "../components/DiffView";
 import { langOf } from "../highlight";
 import { TlaCode } from "../components/TlaCode";
 import { changeLabel, changeMark, fileTypeLabel, kindLabel, stageLabel, typeLabel } from "../labels";
-import { Link, navigate } from "../route";
+import { Link, navigate, reviewQuery } from "../route";
 
 // まとまりの件数がこれを超えたら、開いたときにたたんでおく（RV-10）
 const FOLD_OVER = 10;
@@ -121,6 +121,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
               total={review.data.total}
               story={story}
               ctx={ctx}
+              query={reviewQuery(params)}
               onAgreed={() => {
                 review.reload();
                 props.onAgreed();
@@ -277,7 +278,7 @@ function EntryRow(props: { e: Entry; selected: boolean; onSelect: (key: string) 
   );
 }
 
-function EntryDetail(props: { entry: Entry; total: number; story: string | null; ctx: Context; onAgreed: () => void }) {
+function EntryDetail(props: { entry: Entry; total: number; story: string | null; ctx: Context; query: string; onAgreed: () => void }) {
   const { entry: e } = props;
   const [agreeing, setAgreeing] = useState(false);
   const [agreeError, setAgreeError] = useState<unknown>(null);
@@ -336,7 +337,7 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
       )}
       {e.kind === "claim" && e.id && e.change !== "deleted" && (
         <p>
-          <Link to={`/claims/${encodeURIComponent(e.id)}`}>約束の詳細を開く</Link>
+          <Link to={`/claims/${encodeURIComponent(e.id)}${props.query ? `?${props.query}` : ""}`}>約束の詳細を開く</Link>
         </p>
       )}
 
