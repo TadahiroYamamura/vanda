@@ -3,7 +3,6 @@ package main_test
 import (
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
 )
@@ -86,12 +85,12 @@ func (st *storySetup) checkOnlyReads(t *testing.T) {
 	}
 }
 
-func attachmentSet(got storyResponse) []string {
+// attachmentList は、添付ファイルを、返した順に「名前 URL」で並べる（並びは本文に出てくる順。監督の決定）。
+func attachmentList(got storyResponse) []string {
 	var s []string
 	for _, a := range got.Attachments {
 		s = append(s, a.Name+" "+a.URL)
 	}
-	sort.Strings(s)
 	return s
 }
 
@@ -127,10 +126,10 @@ func Testストーリーの置き場所から題と本文と添付ファイル�
 				t.Errorf("読んだもの: %+v", got)
 			}
 			want := []string{
-				"spec.pdf https://github.com/user-attachments/files/17000001/spec.pdf",
 				"画面の案 https://github.com/user-attachments/assets/3f0c9a52-0000-4000-8000-000000000001",
+				"spec.pdf https://github.com/user-attachments/files/17000001/spec.pdf",
 			}
-			if a := attachmentSet(got); strings.Join(a, "\n") != strings.Join(want, "\n") {
+			if a := attachmentList(got); strings.Join(a, "\n") != strings.Join(want, "\n") {
 				t.Errorf("添付ファイル: %q", a)
 			}
 			reqs := st.fake.Requests()
@@ -158,13 +157,12 @@ func Testストーリーの添付ファイルは決まったURLで始まるリ�
 		t.Fatalf("ストーリーを読めない（%d）: %s", code, msg)
 	}
 	want := []string{
+		"資料.pdf https://github.com/user-attachments/files/1/a.pdf",
+		"画面 https://github.com/user-attachments/assets/b-1",
 		"c.png https://github.com/owner/app/assets/1/c.png",
 		"d.png https://user-images.githubusercontent.com/1/d.png",
-		"画面 https://github.com/user-attachments/assets/b-1",
-		"資料.pdf https://github.com/user-attachments/files/1/a.pdf",
 	}
-	sort.Strings(want)
-	if a := attachmentSet(got); strings.Join(a, "\n") != strings.Join(want, "\n") {
+	if a := attachmentList(got); strings.Join(a, "\n") != strings.Join(want, "\n") {
 		t.Errorf("添付ファイル:\n%s\n--- 思ったもの\n%s", strings.Join(a, "\n"), strings.Join(want, "\n"))
 	}
 }

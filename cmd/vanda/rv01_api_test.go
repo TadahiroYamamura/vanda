@@ -124,52 +124,12 @@ func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]b
 			fmt.Fprintf(&b, "  state と fingerprint は削除のときだけ null: %s\n", r)
 		}
 	}
-	want, set = relaxRenamedOthers(want, set)
 	if d := rvDiffEntries(want, set); d != "" {
 		b.WriteString(d)
 	}
 	if b.Len() > 0 {
 		t.Fatalf("%s の一覧が思ったものでない\n%s", where, b.String())
 	}
-}
-
-// relaxRenamedOthers は、名前の変更の otherCommits だけを緩く比べる。
-// 名前の変更の 1 件は、前の場所と今の場所の 2 つの鍵にまたがる。「同じものを変えていた」コミットが、両方の場所のどちらかを
-// 変えたものか、今の場所を変えたものだけかを、docs/formats.md から決められない（監督に確かめている）。
-// テストの中では両方の場所のものを数えるので、vanda の出したものがその一部（重複を含めて）なら合うとみなす。
-func relaxRenamedOthers(want, got map[rvEntry]bool) (map[rvEntry]bool, map[rvEntry]bool) {
-	w2 := map[rvEntry]bool{}
-	for w := range want {
-		w2[w] = true
-	}
-	g2 := map[rvEntry]bool{}
-	for g := range got {
-		g2[g] = true
-		if g.Change != "renamed" || want[g] {
-			continue
-		}
-		for w := range want {
-			if w.Change == "renamed" && w.Key == g.Key && w.OldPath == g.OldPath && w.Kind == g.Kind && subMultiset(g.Others, w.Others) {
-				delete(w2, w)
-				w2[g] = true
-			}
-		}
-	}
-	return w2, g2
-}
-
-func subMultiset(sub, of string) bool {
-	count := map[string]int{}
-	for _, x := range strings.Split(of, ",") {
-		count[x]++
-	}
-	for _, x := range strings.Split(sub, ",") {
-		if count[x] == 0 {
-			return false
-		}
-		count[x]--
-	}
-	return true
 }
 
 // RV-01・RV-02・RV-13

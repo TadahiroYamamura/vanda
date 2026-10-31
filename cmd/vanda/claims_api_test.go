@@ -61,10 +61,11 @@ type claimDetail struct {
 	} `json:"agreements"`
 }
 
-// 期待する found。line は、アノテーションの行か、付いているものの行かを仕様から決められないので、両方を書いて、どちらかに合えばよいとする。
+// 期待する found。line は、アノテーションが付いているもの（定義・関数・SQL の文）の行（監督の決定）。
+// シナリオはファイル全体に付くので、アノテーションのある 1 行目とする。
 type wantFound struct {
 	adapter, file, name string
-	lines               [2]int
+	line                int
 	text                *string // nil なら text は null
 }
 
@@ -78,13 +79,14 @@ func checkFound(t *testing.T, typ string, got []claimFound, want []wantFound) {
 	}
 	for i, w := range want {
 		g := got[i]
-		if g.Adapter != w.adapter || g.File != w.file || g.Name != w.name || (g.Line != w.lines[0] && g.Line != w.lines[1]) {
+		if g.Adapter != w.adapter || g.File != w.file || g.Name != w.name || g.Line != w.line {
 			t.Errorf("%s の found: %+v（思ったもの %+v）", typ, g, w)
 		}
 		switch {
 		case w.text == nil && g.Text != nil:
 			t.Errorf("%s の text は null のはず: %q", typ, *g.Text)
-		case w.text != nil && (g.Text == nil || strings.TrimRight(*g.Text, "\n") != strings.TrimRight(*w.text, "\n")):
+		// TLA+ の定義は終わりの空行を含めない（監督の決定）。定義の最後の行の改行を含めるかは決まっていないので、どちらでもよい
+		case w.text != nil && (g.Text == nil || (*g.Text != *w.text && *g.Text != strings.TrimSuffix(*w.text, "\n"))):
 			t.Errorf("%s の text が思ったものでない: %v\n--- 思ったもの\n%s", typ, g.Text, *w.text)
 		}
 	}
@@ -121,11 +123,11 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 		layers     []string
 		found      []wantFound
 	}{
-		{"test", "scenario-test", []string{"model"}, []wantFound{{"txtar", "e2e/add-task.txtar", "add-task", [2]int{1, 1}, sp(reviewScenarioStory)}}},
-		{"plan", "model-check", []string{"model"}, []wantFound{{"tla", "spec/Task.tla", "Unique", [2]int{4, 5},
+		{"test", "scenario-test", []string{"model"}, []wantFound{{"txtar", "e2e/add-task.txtar", "add-task", 1, sp(reviewScenarioStory)}}},
+		{"plan", "model-check", []string{"model"}, []wantFound{{"tla", "spec/Task.tla", "Unique", 5,
 			sp("Unique == \\A a, b \\in DOMAIN tasks : tasks[a] = tasks[b] => a = b\n")}}},
-		{"implementation", "guardrail", []string{"db"}, []wantFound{{"sql", "db/schema.sql", "CREATE UNIQUE INDEX task_id_unique ON task (id);", [2]int{3, 4}, sp(reviewSchema)}}},
-		{"test", "unit-test", []string{"model"}, []wantFound{{"go", "internal/task/task_test.go", "TestUnique", [2]int{5, 6}, nil}}},
+		{"implementation", "guardrail", []string{"db"}, []wantFound{{"sql", "db/schema.sql", "CREATE UNIQUE INDEX task_id_unique ON task (id);", 4, sp(reviewSchema)}}},
+		{"test", "unit-test", []string{"model"}, []wantFound{{"go", "internal/task/task_test.go", "TestUnique", 6, nil}}},
 	}
 	if len(got.Evidence) != len(wantEvidence) {
 		t.Fatalf("エビデンスが %d 件: %+v", len(got.Evidence), got.Evidence)
