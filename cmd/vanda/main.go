@@ -72,7 +72,7 @@ func newCheckCommand() *cobra.Command {
 			if errs != nil {
 				return errs
 			}
-			pass, err := check.Run(check.Options{Root: root, Cfg: cfg, Specs: specs, Base: base, Story: story, Out: cmd.OutOrStdout()})
+			pass, err := check.Run(check.Options{Root: root, Cfg: cfg, Specs: specs, Base: base, Story: story, Out: cmd.OutOrStdout(), Err: cmd.ErrOrStderr()})
 			if err != nil {
 				return err
 			}

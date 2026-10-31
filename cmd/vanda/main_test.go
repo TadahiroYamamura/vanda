@@ -44,8 +44,8 @@ func TestVersionは版が合わなくても版を出す(t *testing.T) {
 
 func TestDoctorは版が合わなければ止まる(t *testing.T) {
 	dir := gitRepo(t, `version = "9.9.9"`)
-	code, _, errs := runIn(t, dir, "doctor")
-	if code != 1 || !strings.Contains(errs, ".vanda/config.toml:1: 動いている vanda（0.1.0）が、設定の版（9.9.9）より古い。") {
+	code, out, errs := runIn(t, dir, "doctor")
+	if code != 1 || out != "" || !strings.Contains(errs, ".vanda/config.toml:1: 動いている vanda（0.1.0）が、設定の版（9.9.9）より古い。") {
 		t.Errorf("code %d, stderr %q", code, errs)
 	}
 }
@@ -57,7 +57,7 @@ func TestDoctorはリポジトリの根の設定を読む(t *testing.T) {
 		t.Fatal(err)
 	}
 	code, out, errs := runIn(t, sub, "doctor")
-	if code != 0 || !strings.Contains(out, "設定を確かめた") {
+	if code != 0 || !strings.HasPrefix(out, "設定を確かめた") || strings.Count(out, "\n") != 1 || errs != "" {
 		t.Errorf("code %d, out %q, stderr %q", code, out, errs)
 	}
 }
@@ -90,7 +90,7 @@ func TestCheckは審査の設定のファイルをカレントディレクトリ
 		t.Fatal(err)
 	}
 	code, out, errs := runIn(t, sub, "check", "checks/push.toml")
-	if code != 1 || errs != "" || out != "審査 unread-files（all）: 失敗（1 件）\n.vanda/memo.txt: .vanda/ にあるのに、設定のどのパターンにも当たらず、読まれていない。.vanda/config.toml の promises か agreements のパターンに当たるようにするか、ファイルを消す\n" {
+	if code != 1 || out != "審査 unread-files（all）: 失敗（1 件）\n" || errs != ".vanda/memo.txt: .vanda/ にあるのに、設定のどのパターンにも当たらず、読まれていない。.vanda/config.toml の promises か agreements のパターンに当たるようにするか、ファイルを消す\n" {
 		t.Errorf("code %d, out %q, stderr %q", code, out, errs)
 	}
 	if err := os.Remove(filepath.Join(dir, ".vanda", "memo.txt")); err != nil {

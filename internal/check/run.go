@@ -24,7 +24,9 @@ type Options struct {
 	Specs []Spec
 	Base  string
 	Story string
-	Out   io.Writer
+	// Out には審査ごとの結果の行を、Err には誤りの中身を出す
+	Out io.Writer
+	Err io.Writer
 }
 
 // env は、審査に使う、読み込んだもの。
@@ -49,7 +51,7 @@ type env struct {
 	changedFiles map[string]bool
 }
 
-// Run は、審査を設定の順に行い、結果を o.Out に出す。審査を始める前の誤りは error で返す。すべて通れば true。
+// Run は、審査を設定の順に行い、審査ごとの結果の行を o.Out に、誤りの中身を o.Err に出す。審査を始める前の誤りは error で返す。すべて通れば true。
 func Run(o Options) (bool, error) {
 	e := &env{root: o.Root, cfg: o.Cfg}
 	if err := e.prepare(o); err != nil {
@@ -70,7 +72,7 @@ func Run(o Options) (bool, error) {
 		pass = false
 		fmt.Fprintf(o.Out, "審査 %s（%s）: 失敗（%d 件）\n", s.Name, scope, len(errs))
 		for _, err := range errs {
-			fmt.Fprintln(o.Out, err.Error())
+			fmt.Fprintln(o.Err, err.Error())
 		}
 	}
 	return pass, nil
