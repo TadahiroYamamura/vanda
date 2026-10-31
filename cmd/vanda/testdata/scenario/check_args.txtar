@@ -1,0 +1,62 @@
+# CMD-03: vanda check は、審査の設定のファイルを必須の引数で受け取る。既定の審査は持たない。
+# 範囲を「1 つのストーリー」にする審査を含む設定では、--base も必須。範囲が全部の審査だけなら、渡さなくてよい。
+
+exec git init -q -b main
+expand .vanda/config.toml
+exec git add -A
+exec git commit -q -m '#1 約束リストを足す'
+
+# 審査の設定のファイルを渡さない
+! exec vanda check
+! stderr '(?m)^panic: '
+
+# 渡した審査の設定のファイルがない
+! exec vanda check .vanda/checks/no-such.toml
+stderr 'no-such\.toml'
+! stderr '(?m)^panic: '
+
+# 範囲が全部の審査だけなら、--base なしで通る
+exec vanda check .vanda/checks/all.toml
+
+# 範囲を 1 つのストーリーにする審査を含むのに --base がない
+! exec vanda check .vanda/checks/story.toml
+! stderr '(?m)^panic: '
+
+# --base を渡せば通る（上の失敗が --base のないことによるものだと言えるようにするため）
+exec git checkout -q -b story-2
+exec vanda check .vanda/checks/story.toml --base main
+
+# 範囲が全部の審査と 1 つのストーリーの審査を混ぜても、--base がなければ止まる
+! exec vanda check .vanda/checks/mixed.toml
+! stderr '(?m)^panic: '
+exec vanda check .vanda/checks/mixed.toml --base main
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+-- .vanda/checks/all.toml --
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+-- .vanda/checks/story.toml --
+[[check]]
+name = "agreement"
+scope = "story"
+-- .vanda/checks/mixed.toml --
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+
+[[check]]
+name = "agreement"
+scope = "story"
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+-- .vanda/agreements.toml --

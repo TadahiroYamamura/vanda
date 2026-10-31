@@ -1,0 +1,88 @@
+# CMD-03: 審査は、審査の設定のファイルに並べた順に行う。どれかの審査が失敗すると、終了コードが失敗になる。
+#
+# 2 つの審査が、それぞれ別のファイルを指すエラーを出すようにしておき、並べる順を入れ替えると、エラーの出る順も入れ替わることを確かめる。
+# - 約束リストの形: .vanda/promises/qqq-broken.toml の、決まった値にないステージ
+# - 読まれていないファイル: どのパターンにも当たらない .vanda/zzz-stray.toml
+
+exec git init -q -b main
+expand .vanda/config.toml
+
+! exec vanda check .vanda/checks/shape-then-unread.toml
+order 'qqq-broken\.toml:9: ' 'zzz-stray\.toml'
+! stderr '(?m)^panic: '
+
+! exec vanda check .vanda/checks/unread-then-shape.toml
+order 'zzz-stray\.toml' 'qqq-broken\.toml:9: '
+! stderr '(?m)^panic: '
+
+# 通る審査の後に失敗する審査を並べても、終了コードは失敗になる
+rm .vanda/zzz-stray.toml
+! exec vanda check .vanda/checks/unread-then-shape.toml
+stderr 'qqq-broken\.toml:9: '
+! stderr 'zzz-stray'
+
+# どちらも通れば、終了コードは成功になる
+cp cases/fixed.toml .vanda/promises/qqq-broken.toml
+exec vanda check .vanda/checks/unread-then-shape.toml
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+promises = [".vanda/promises/*.toml"]
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+-- .vanda/checks/shape-then-unread.toml --
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+
+[[check]]
+name = "unread-files"
+scope = "all"
+-- .vanda/checks/unread-then-shape.toml --
+[[check]]
+name = "unread-files"
+scope = "all"
+
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+-- .vanda/agreements.toml --
+-- .vanda/zzz-stray.toml --
+[[term]]
+id = "stray"
+name = "どこからも読まれない"
+definition = "どのパターンにも当たらない"
+-- .vanda/promises/qqq-broken.toml --
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+[[claim.evidence]]
+stage = "no-such-stage"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- .vanda/promises/base.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+-- cases/fixed.toml --
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
