@@ -20,8 +20,8 @@ import (
 
 var (
 	rvClaimIDs   = []string{"c-a", "c-b", "c-c", "c-d"}
-	rvTermIDs    = []string{"t-a", "t-b"}
-	rvFeatureIDs = []string{"f-a", "f-b"}
+	rvTermIDs    = []string{"t-a", "t-b", "t-c", "t-d"}
+	rvFeatureIDs = []string{"f-a", "f-b", "f-c", "f-d"}
 	rvStories    = []string{"#1", "#24", "#25", ""}
 )
 
@@ -71,15 +71,29 @@ func setFlag(t *testing.T, name, value string) {
 // rvRandomOp は、今の状態でできる操作を 1 つ選んで当てる。
 func rvRandomOp(rt *rapid.T, r *rvRepo) string {
 	var ops []string
+	// 約束・用語・機能のどれを変えるかを先に選び、その中から項目を選ぶ。項目の全体から選ぶと、数の多い種類に偏り、
+	// ブランチごとの見方で用語や機能の削除がほとんど出ない種が出たため
 	var present, absent []string
+	presentKinds := map[string][]string{}
 	for _, kind := range []string{"claim", "term", "feature"} {
 		for _, id := range rvIDs(kind) {
 			if _, ok := r.state.items[id]; ok {
 				present = append(present, id)
+				presentKinds[kind] = append(presentKinds[kind], id)
 			} else {
 				absent = append(absent, kind+" "+id)
 			}
 		}
+	}
+	pickPresent := func(label string) string {
+		var kinds []string
+		for _, k := range []string{"claim", "term", "feature"} {
+			if len(presentKinds[k]) > 0 {
+				kinds = append(kinds, k)
+			}
+		}
+		k := rapid.SampledFrom(kinds).Draw(rt, label+"の種類")
+		return rapid.SampledFrom(presentKinds[k]).Draw(rt, label)
 	}
 	var files []int
 	for n := range r.state.files {
@@ -105,16 +119,16 @@ func rvRandomOp(rt *rapid.T, r *rvRepo) string {
 		r.addItem(ki[0], ki[1], f)
 		return fmt.Sprintf("%s %s %s を p%d に", op, ki[0], ki[1], f)
 	case "changeItem":
-		id := rapid.SampledFrom(present).Draw(rt, "変える項目")
+		id := pickPresent("変える項目")
 		field := rapid.SampledFrom(rvItemFields(r.state.items[id].kind)).Draw(rt, "変える所")
 		r.changeItem(id, field)
 		return fmt.Sprintf("%s %s の %s", op, id, field)
 	case "deleteItem":
-		id := rapid.SampledFrom(present).Draw(rt, "消す項目")
+		id := pickPresent("消す項目")
 		r.deleteItem(id)
 		return op + " " + id
 	case "moveItem":
-		id := rapid.SampledFrom(present).Draw(rt, "移す項目")
+		id := pickPresent("移す項目")
 		f := rapid.IntRange(0, rvPromiseFiles-1).Draw(rt, "移す先")
 		r.moveItem(id, f)
 		return fmt.Sprintf("%s %s を p%d へ", op, id, f)
@@ -204,16 +218,19 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 		if t.Failed() || checks < 100 {
 			return
 		}
-		// 下限は、100 回を 5 通りの種で数えたいちばん少ない回数（種類と変化の組で 6、名前の変更で 25）の半分ほど。
+		// 下限は、100 回の実行を 112 通りの種で数えた、組ごとの回数の最小のおよそ 3 分の 1。種によってたまたま下回らないようにする。
+		// 数えた最小（平均）: ブランチごとの種類と変化の組でいちばん少ないのは機能の削除の 6（16.9）、ブランチごとの名前の変更は 19（30.6）、
+		// ストーリー全体の名前の変更は 17（29.0）、ストーリー全体のほかの組は 79（103.5。変更）以上。
 		// 生成が偏って、ある変化を確かめないまま通るのを防ぐ
 		for _, kind := range []string{"claim", "term", "feature", "file"} {
 			for _, change := range []string{"added", "modified", "deleted"} {
-				atLeast(t, seen, "ブランチごと/"+kind+"/"+change, 3)
+				atLeast(t, seen, "ブランチごと/"+kind+"/"+change, 2)
 			}
 		}
-		atLeast(t, seen, "ブランチごと/file/renamed", 10)
-		for _, change := range []string{"added", "modified", "deleted", "renamed", "ほかのストーリー"} {
-			atLeast(t, seen, "ストーリー全体/"+change, 10)
+		atLeast(t, seen, "ブランチごと/file/renamed", 6)
+		atLeast(t, seen, "ストーリー全体/renamed", 5)
+		for _, change := range []string{"added", "modified", "deleted", "ほかのストーリー"} {
+			atLeast(t, seen, "ストーリー全体/"+change, 25)
 		}
 	}()
 

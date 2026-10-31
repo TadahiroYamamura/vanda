@@ -126,20 +126,20 @@ core = "yes"
 id = "s"
 `})
 	_, errs := Load(root, files, []string{".vanda/promises.toml", ".vanda/more.toml"}, false)
-	want := []string{
-		`.vanda/promises.toml:3: subjects が文字列の配列ではありません。`,
-		`.vanda/promises.toml:1: claim "c" の statement がありません。statement = "…" を書いてください。`,
-		`.vanda/promises.toml:5: layers が空です。`,
-		`.vanda/promises.toml:8: claim "c" の evidence の 1 件目 の type がありません。`,
-		`.vanda/promises.toml:6: note は決まった項目ではありません。`,
-		`.vanda/promises.toml:16: core が真偽ではありません。`,
-		`.vanda/promises.toml:18: story は決まった項目ではありません。`,
-		`.vanda/more.toml: 約束リストのファイルがありません。`,
+	want := [][]string{
+		{".vanda/promises.toml:3: ", "subjects", "文字列の配列"},
+		{".vanda/promises.toml:1: ", `claim "c" の statement`, `statement = "…"`},
+		{".vanda/promises.toml:5: ", "layers", "空"},
+		{".vanda/promises.toml:8: ", `claim "c" の evidence の 1 件目 の type`},
+		{".vanda/promises.toml:6: ", "note", "決まった項目"},
+		{".vanda/promises.toml:16: ", "core", "真偽"},
+		{".vanda/promises.toml:18: ", "story", "決まった項目"},
+		{".vanda/more.toml: ", "約束リストのファイル"},
 	}
 	got := errs.Error()
 	for _, w := range want {
-		if !strings.Contains(got, w) {
-			t.Errorf("エラーに %q がない:\n%s", w, got)
+		if !lineWith(got, w[0], w[1:]...) {
+			t.Errorf("エラーに、%q で始まり %q を含む行がない:\n%s", w[0], w[1:], got)
 		}
 	}
 	if n := strings.Count(got, "\n") + 1; n != len(want) {
@@ -158,9 +158,9 @@ layers = ["model"]
 evidence = [{ stage = "test", type = "unit-test", layers = "model", detail = "x" }]
 `})
 	_, errs := Load(root, files, []string{".vanda/promises.toml"}, false)
-	want := `.vanda/promises.toml: claim "c" の evidence の 1 件目 の layers: layers が文字列の配列ではありません。`
-	if !strings.Contains(errs.Error(), want) {
-		t.Errorf("エラーに %q がない:\n%s", want, errs)
+	// 行を示せない誤りは、ID と項目で場所を示す
+	if !lineWith(errs.Error(), `.vanda/promises.toml: claim "c" の evidence の 1 件目 の layers: `, "layers", "文字列の配列") {
+		t.Errorf("インラインの表の layers の誤りが、ID と項目で場所を示していない:\n%s", errs)
 	}
 }
 
@@ -193,8 +193,8 @@ layers = ["model"]
 func TestLoadはsubjectsとevidenceが空なら誤りにする(t *testing.T) {
 	root, files := write(t, map[string]string{".vanda/promises.toml": "[[claim]]\nid = \"c\"\nsubjects = []\nstatement = \"s\"\nlayers = [\"m\"]\nevidence = []\n"})
 	_, errs := Load(root, files, []string{".vanda/promises.toml"}, false)
-	for _, w := range []string{".vanda/promises.toml:3: subjects が空です。", ".vanda/promises.toml:6: evidence が 1 つもありません。"} {
-		if !strings.Contains(errs.Error(), w) {
+	for _, w := range [][]string{{".vanda/promises.toml:3: ", "subjects", "空"}, {".vanda/promises.toml:6: ", "evidence が 1 つも"}} {
+		if !lineWith(errs.Error(), w[0], w[1:]...) {
 			t.Errorf("エラーに %q がない:\n%s", w, errs)
 		}
 	}
@@ -206,4 +206,27 @@ func TestLoadは既定のファイルがなければ空とみなす(t *testing.T
 	if errs != nil || len(l.Claims) != 0 {
 		t.Errorf("errs = %v", errs)
 	}
+}
+
+// lineWith は、got の行のうち、prefix で始まり、frags をこの順に含むものがあるかを返す。
+// 誤りの文は、です・ます調などの文体の細部に頼らず、骨組み（場所と行）と、ID・意味の要の語で照合する。
+func lineWith(got, prefix string, frags ...string) bool {
+	for _, line := range strings.Split(got, "\n") {
+		if !strings.HasPrefix(line, prefix) {
+			continue
+		}
+		rest, ok := line[len(prefix):], true
+		for _, f := range frags {
+			i := strings.Index(rest, f)
+			if i < 0 {
+				ok = false
+				break
+			}
+			rest = rest[i+len(f):]
+		}
+		if ok {
+			return true
+		}
+	}
+	return false
 }

@@ -268,11 +268,12 @@ func TestRunは整った約束リストと合意とエビデンスなら全部�
 	}
 }
 
-func expect(t *testing.T, out string, want []string) {
+// expect は、出力に、want の 1 つずつについて、w[0] で始まり w[1:] をこの順に含む行があるかを確かめる。
+func expect(t *testing.T, out string, want [][]string) {
 	t.Helper()
 	for _, w := range want {
-		if !strings.Contains(out, w) {
-			t.Errorf("出力に %q がない:\n%s", w, out)
+		if !lineWith(out, w[0], w[1:]...) {
+			t.Errorf("出力に、%q で始まり %q を含む行がない:\n%s", w[0], w[1:], out)
 		}
 	}
 }
@@ -325,22 +326,22 @@ layers = ["db"]
 	if pass {
 		t.Fatal("通ってしまった")
 	}
-	expect(t, out, []string{
-		"審査 promise-list-shape（all）: 失敗（",
-		`.vanda/promises.toml:5: part_of が循環しています（task → part → task）。`,
-		`.vanda/promises.toml:11: part_of が循環しています（part → task → part）。`,
-		`.vanda/promises.toml:14: ID "task" が、.vanda/promises.toml:2 の用語（task）と重なっています。`,
-		`.vanda/promises.toml:19: 機能の ID "2nd" が決まった形ではありません。`,
-		`.vanda/promises.toml:23: コア機能で formal = false なのに、形式手法を使わない理由（formal_waiver）がありません。`,
-		`.vanda/promises.toml:29: formal_waiver を書けるのは、core = true かつ formal = false のときだけです。`,
-		`.vanda/promises.toml:33: subjects の "c" が用語にも機能にもありません（約束の ID）。`,
-		`.vanda/promises.toml:33: subjects の "nothing" が用語にも機能にもありません。`,
-		`.vanda/promises.toml:35: レイヤー "ui" が設定にありません。`,
-		`.vanda/promises.toml:35: レイヤー "model" を確かめるエビデンスがありません。`,
-		`.vanda/promises.toml:36: フラグ "maybe" は決まった値ではありません。`,
-		`.vanda/promises.toml:39: ステージ "someday" は決まった値ではありません。`,
-		`.vanda/promises.toml:40: タイプ "e2e" は決まった値ではありません。`,
-		`.vanda/promises.toml:41: エビデンスのレイヤー "db" が、約束の layers にありません。`,
+	expect(t, out, [][]string{
+		{"審査 promise-list-shape（all）: 失敗（"},
+		{".vanda/promises.toml:5: ", "part_of", "循環", "（task → part → task）"},
+		{".vanda/promises.toml:11: ", "part_of", "循環", "（part → task → part）"},
+		{".vanda/promises.toml:14: ", `ID "task"`, ".vanda/promises.toml:2 の用語（task）", "重な"},
+		{".vanda/promises.toml:19: ", `機能の ID "2nd"`, "決まった形"},
+		{".vanda/promises.toml:23: ", "コア機能", "formal = false", "formal_waiver"},
+		{".vanda/promises.toml:29: ", "formal_waiver を書けるのは", "core = true かつ formal = false"},
+		{".vanda/promises.toml:33: ", `subjects の "c"`, "用語にも機能にも", "（約束の ID）"},
+		{".vanda/promises.toml:33: ", `subjects の "nothing"`, "用語にも機能にも"},
+		{".vanda/promises.toml:35: ", `レイヤー "ui"`, "設定に"},
+		{".vanda/promises.toml:35: ", `レイヤー "model"`, "エビデンス"},
+		{".vanda/promises.toml:36: ", `フラグ "maybe"`, "決まった値"},
+		{".vanda/promises.toml:39: ", `ステージ "someday"`, "決まった値"},
+		{".vanda/promises.toml:40: ", `タイプ "e2e"`, "決まった値"},
+		{".vanda/promises.toml:41: ", `エビデンスのレイヤー "db"`, "約束の layers"},
 	})
 }
 
@@ -351,11 +352,11 @@ func TestAnnotationLinksは指す先のないIDと種類の違いと型の用語
 		"spec/Task.tla":  "---- MODULE Task ----\n\\* @vanda:feature add-task\nTasks == {1, 2}\nVARIABLE tasks\nTypeOK == tasks \\subseteq Tasks\n\\* @vanda:claim task-unique\nUnique == TRUE\n====\n",
 	})
 	_, out, _ := r.run("[[check]]\nname = \"annotation-links\"\nscope = \"all\"\n", "", "")
-	expect(t, out, []string{
-		`spec/Task.tla:2: 仕様の型 Tasks（TypeOK で使っています）に、@vanda:feature が付いています。`,
-		`spec/Task.tla:3: 仕様の型 Tasks（TypeOK で使っています）に、@vanda:term も @vanda:internal もありません。`,
-		`x/more_test.go:3: @vanda:evidence の "task" は用語の ID で、約束の ID ではありません。`,
-		`x/more_test.go:6: @vanda:sensor の "nothing" が約束リストの約束にありません。`,
+	expect(t, out, [][]string{
+		{"spec/Task.tla:2: ", "仕様の型 Tasks", "TypeOK", "@vanda:feature"},
+		{"spec/Task.tla:3: ", "仕様の型 Tasks", "TypeOK", "@vanda:term", "@vanda:internal"},
+		{"x/more_test.go:3: ", `@vanda:evidence の "task"`, "用語の ID", "約束の ID"},
+		{"x/more_test.go:6: ", `@vanda:sensor の "nothing"`, "約束リストの約束"},
 	})
 }
 
@@ -366,11 +367,11 @@ func TestAgreementは提案中とフラグと合意していないファイル�
 		"e2e/add.txtar":        "# @vanda:evidence task-unique\nexec vanda version\n",
 	})
 	_, out, _ := r.run("[[check]]\nname = \"agreement\"\nscope = \"all\"\n", "", "")
-	expect(t, out, []string{
-		"審査 agreement（all）: 失敗（3 件）",
-		".vanda/promises.toml:12: 約束 task-unique の今の中身に、まだ合意していません（提案中。指紋 sha256:",
-		".vanda/promises.toml:15: 約束 task-unique に推測（guesses）が残っています。",
-		"e2e/add.txtar: ファイルの今の中身に、まだ合意していません（提案中。指紋 sha256:",
+	expect(t, out, [][]string{
+		{"審査 agreement（all）: 失敗（3 件）"},
+		{".vanda/promises.toml:12: ", "約束 task-unique の今の中身", "合意", "提案中", "sha256:"},
+		{".vanda/promises.toml:15: ", "約束 task-unique", "推測（guesses）"},
+		{"e2e/add.txtar: ", "ファイルの今の中身", "合意", "提案中", "sha256:"},
 	})
 }
 
@@ -379,7 +380,7 @@ func TestAgreementTargetsは約束リストにない項目を指す合意を出�
 	cfg := r.config()
 	r.agreeAll("#1", cfg, "[[agreement]]\nkind = \"claim\"\nkey = \"gone\"\nfingerprint = \"sha256:0000000000000000000000000000000000000000000000000000000000000000\"\nuser = { name = \"PO\", email = \"po@example.com\" }\nagreed_at = 2026-10-31T12:00:00Z\nstory = \"#1\"\n\n")
 	_, out, _ := r.run("[[check]]\nname = \"agreement-targets\"\nscope = \"all\"\n", "", "")
-	expect(t, out, []string{`.vanda/agreements.toml:3: 合意の記録が、約束リストにない約束 "gone" を指しています。`})
+	expect(t, out, [][]string{{".vanda/agreements.toml:3: ", "合意の記録", `約束 "gone"`, "指して"}})
 }
 
 func TestEvidencePresentはタイプに合うアノテーションのない予定とproofを出す(t *testing.T) {
@@ -389,11 +390,11 @@ func TestEvidencePresentはタイプに合うアノテーションのない予�
 		"db/schema.sql":        "CREATE UNIQUE INDEX t ON task(id);\n",
 	})
 	_, out, _ := r.run("[[check]]\nname = \"evidence-present\"\nscope = \"all\"\n", "", "")
-	expect(t, out, []string{
-		"審査 evidence-present（all）: 失敗（3 件）",
-		".vanda/promises.toml:34: 約束 task-unique の guardrail のエビデンスがありません（sql のアダプタのファイルに、@vanda:evidence task-unique がありません）。",
-		".vanda/promises.toml:44: タイプ proof は、まだ扱えません",
-		".vanda/promises.toml:49: 約束 task-unique の sensor のエビデンスがありません（go のアダプタのファイルに、@vanda:sensor task-unique がありません）。",
+	expect(t, out, [][]string{
+		{"審査 evidence-present（all）: 失敗（3 件）"},
+		{".vanda/promises.toml:34: ", "約束 task-unique の guardrail のエビデンス", "sql のアダプタのファイル", "@vanda:evidence task-unique"},
+		{".vanda/promises.toml:44: ", "タイプ proof"},
+		{".vanda/promises.toml:49: ", "約束 task-unique の sensor のエビデンス", "go のアダプタのファイル", "@vanda:sensor task-unique"},
 	})
 }
 
@@ -401,7 +402,7 @@ func TestUnreadFilesは設定と審査の設定のほかの読まれていない
 	r := goodRepo(t)
 	r.write(map[string]string{".vanda/checks/push.toml": "", ".vanda/notes.md": "x", ".vanda/checks/old/a.toml": ""})
 	_, out, _ := r.run("[[check]]\nname = \"unread-files\"\nscope = \"all\"\n", "", "")
-	expect(t, out, []string{"審査 unread-files（all）: 失敗（2 件）", ".vanda/checks/old/a.toml: .vanda/ にありますが", ".vanda/notes.md: .vanda/ にありますが"})
+	expect(t, out, [][]string{{"審査 unread-files（all）: 失敗（2 件）"}, {".vanda/checks/old/a.toml: ", ".vanda/ に", "読まれて"}, {".vanda/notes.md: ", ".vanda/ に", "読まれて"}})
 }
 
 func TestStoryOriginは約束リストを変えたコミットにストーリーのIDがなければ出す(t *testing.T) {
@@ -414,7 +415,7 @@ func TestStoryOriginは約束リストを変えたコミットにストーリー
 	r.write(map[string]string{".vanda/promises.toml": basePromises + "\n\n"})
 	r.commit("(feat) ID のあるコミット #2")
 	_, out, _ := r.run("[[check]]\nname = \"story-origin\"\nscope = \"story\"\n", "main", "")
-	expect(t, out, []string{"審査 story-origin（story）: 失敗（1 件）", "「(feat) ID のないコミット」が約束リスト（.vanda/promises.toml）を変えていますが、メッセージにストーリーの ID（#[0-9]+ の形）がありません"})
+	expect(t, out, [][]string{{"審査 story-origin（story）: 失敗（1 件）"}, {"", "「(feat) ID のないコミット」", "約束リスト（.vanda/promises.toml）", "ストーリーの ID（#[0-9]+ の形）"}})
 }
 
 const storyAgreement = "[[check]]\nname = \"agreement\"\nscope = \"story\"\n"
@@ -431,7 +432,7 @@ func TestAgreementの範囲storyはそのストーリーで変わったものだ
 	}
 	r.write(map[string]string{".vanda/promises.toml": strings.Replace(basePromises, "やること", "すること", 1)})
 	_, out, _ = r.run(storyAgreement, "main", "")
-	expect(t, out, []string{"審査 agreement（story #2）: 失敗（1 件）", ".vanda/promises.toml:2: 用語 task の今の中身に、まだ合意していません"})
+	expect(t, out, [][]string{{"審査 agreement（story #2）: 失敗（1 件）"}, {".vanda/promises.toml:2: ", "用語 task の今の中身", "合意"}})
 }
 
 func TestAgreementの範囲storyはほかのストーリーが合意してもそのストーリーの外れた合意で止める(t *testing.T) {
@@ -452,21 +453,21 @@ func TestAgreementの範囲storyはほかのストーリーが合意してもそ
 		t.Fatalf("#2 の範囲は通るはず:\n%s", out)
 	}
 	_, out, _ = r.run(storyAgreement, "main", "#1")
-	expect(t, out, []string{"審査 agreement（story #1）: 失敗（1 件）", ".vanda/promises.toml:2: 用語 task の、ストーリー #1 の合意が外れています"})
+	expect(t, out, [][]string{{"審査 agreement（story #1）: 失敗（1 件）"}, {".vanda/promises.toml:2: ", "用語 task の", "ストーリー #1 の合意が外れ"}})
 }
 
 func TestRunは範囲storyのストーリーが決まらなければ止める(t *testing.T) {
 	r := goodRepo(t)
 	r.git("checkout", "-q", "-b", "work")
-	if _, _, err := r.run(storyAgreement, "", ""); err == nil || !strings.Contains(err.Error(), "--base <ブランチ> を渡してください。") {
+	if _, _, err := r.run(storyAgreement, "", ""); err == nil || !lineWith(err.Error(), "", "ベースブランチ", "--base <ブランチ>") {
 		t.Errorf("--base なし: %v", err)
 	}
 	r.commit("(chore) ID なし")
-	if _, _, err := r.run(storyAgreement, "main", ""); err == nil || !strings.Contains(err.Error(), "ストーリーの ID がありません）。--story <ID> を渡してください。") {
+	if _, _, err := r.run(storyAgreement, "main", ""); err == nil || !lineWith(err.Error(), "", "ストーリーの ID", "--story <ID>") {
 		t.Errorf("ID 0 個: %v", err)
 	}
 	r.commit("(chore) 2 つ #3 #4")
-	if _, _, err := r.run(storyAgreement, "main", ""); err == nil || !strings.Contains(err.Error(), "ストーリーの ID が #3・#4 とあります）") {
+	if _, _, err := r.run(storyAgreement, "main", ""); err == nil || !lineWith(err.Error(), "", "ストーリーの ID が #3・#4", "--story <ID>") {
 		t.Errorf("ID 2 個: %v", err)
 	}
 	if _, _, err := r.run(storyAgreement, "main", "3"); err == nil || !strings.Contains(err.Error(), "--story 3 が、ストーリーの ID の書き方") {
@@ -479,7 +480,7 @@ func TestRunは範囲storyのストーリーが決まらなければ止める(t 
 
 func TestLoadSpecsは審査の名前と範囲の誤りを出す(t *testing.T) {
 	_, errs := LoadSpecs("c.toml", []byte("[[check]]\nname = \"x\"\nscope = \"all\"\n[[check]]\nname = \"story-origin\"\nscope = \"all\"\n[[check]]\nname = \"agreement\"\nscope = \"some\"\n"))
-	expect(t, errs.Error(), []string{`c.toml:2: 審査 "x" はありません。`, "c.toml:6: 審査 story-origin は範囲 all では行えません。scope を story にしてください", `c.toml:9: 範囲 "some" は決まった値ではありません。`})
+	expect(t, errs.Error(), [][]string{{"c.toml:2: ", `審査 "x"`}, {"c.toml:6: ", "審査 story-origin", "範囲 all", "scope を story"}, {"c.toml:9: ", `範囲 "some"`, "決まった値"}})
 	if _, errs := LoadSpecs("c.toml", []byte("check = []\n")); errs == nil {
 		t.Error("審査が 1 つもないのに通った")
 	}
@@ -500,7 +501,7 @@ func TestRunは審査ごとの結果の行を標準出力に誤りの中身を�
 	if got := out.String(); got != "審査 unread-files（all）: 失敗（1 件）\n審査 agreement（all）: 通った\n" {
 		t.Errorf("標準出力: %q", got)
 	}
-	if got := errOut.String(); !strings.HasPrefix(got, ".vanda/notes.md: .vanda/ にありますが") || strings.Count(got, "\n") != 1 {
+	if got := errOut.String(); !lineWith(got, ".vanda/notes.md: ", ".vanda/ に", "読まれて") || strings.Count(got, "\n") != 1 {
 		t.Errorf("標準エラー: %q", got)
 	}
 }
@@ -509,7 +510,7 @@ func TestPromiseListShapeは空のIDを誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{".vanda/promises.toml": strings.Replace(basePromises, `id = "add-task"`, `id = ""`, 1)})
 	_, out, _ := r.run("[[check]]\nname = \"promise-list-shape\"\nscope = \"all\"\n", "", "")
-	expect(t, out, []string{`.vanda/promises.toml:7: 機能の ID "" が決まった形ではありません。`})
+	expect(t, out, [][]string{{".vanda/promises.toml:7: ", `機能の ID ""`, "決まった形"}})
 }
 
 func TestPromiseListShapeは重なったIDを表の種類でなく出てきた順で後のほうの行に出す(t *testing.T) {
@@ -521,9 +522,32 @@ func TestPromiseListShapeは重なったIDを表の種類でなく出てきた�
 		".vanda/config.toml":     strings.Replace(baseConfig, `version = "0.1.0"`, "version = \"0.1.0\"\npromises = [\".vanda/promises.toml\", \".vanda/promises/*.toml\"]", 1),
 	})
 	_, out, _ := r.run("[[check]]\nname = \"promise-list-shape\"\nscope = \"all\"\n", "", "")
-	expect(t, out, []string{
-		"審査 promise-list-shape（all）: 失敗（2 件）",
-		`.vanda/promises.toml:7: ID "a" が、.vanda/promises.toml:2 の機能（a）と重なっています。`,
-		`.vanda/promises/b.toml:2: ID "b" が、.vanda/promises/a.toml:2 の約束（b）と重なっています。`,
+	expect(t, out, [][]string{
+		{"審査 promise-list-shape（all）: 失敗（2 件）"},
+		{".vanda/promises.toml:7: ", `ID "a"`, ".vanda/promises.toml:2 の機能（a）", "重な"},
+		{".vanda/promises/b.toml:2: ", `ID "b"`, ".vanda/promises/a.toml:2 の約束（b）", "重な"},
 	})
+}
+
+// lineWith は、got の行のうち、prefix で始まり、frags をこの順に含むものがあるかを返す。
+// 誤りの文は、です・ます調などの文体の細部に頼らず、骨組み（場所と行）と、ID・意味の要の語で照合する。
+func lineWith(got, prefix string, frags ...string) bool {
+	for _, line := range strings.Split(got, "\n") {
+		if !strings.HasPrefix(line, prefix) {
+			continue
+		}
+		rest, ok := line[len(prefix):], true
+		for _, f := range frags {
+			i := strings.Index(rest, f)
+			if i < 0 {
+				ok = false
+				break
+			}
+			rest = rest[i+len(f):]
+		}
+		if ok {
+			return true
+		}
+	}
+	return false
 }
