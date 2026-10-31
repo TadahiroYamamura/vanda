@@ -42,7 +42,6 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
   const canLoad = view === "branch" ? !!base : !!storyParam;
   const review = useLoad<Review>(canLoad ? () => api.review(view, base, storyParam) : null, `${view}|${base}|${storyParam}`);
   const story = review.data?.story ?? storyParam;
-  const detected = view === "branch" && !storyParam ? (review.data?.story ?? null) : null;
   // 選択肢の中は短い名前にし、何と何を比べているかの説明は、触れたときに出す（欄に収まらないため）
   const branchHelp = `ブランチ（${base ?? "ベースブランチ"} と分かれた点からの、このブランチの変更。コミットしていない変更も含む）`;
   const storyHelp = story ? `ストーリー（${story} のコミットすべての変更。ほかのブランチや合流済みのものも含む）` : "ストーリー（そのストーリーのコミットすべての変更。ほかのブランチや合流済みのものも含む）";
@@ -79,21 +78,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
             </select>
           </label>
         )}
-        <label>
-          ストーリー
-          <select value={storyParam ?? ""} onChange={(e) => set({ story: e.target.value, sel: null })}>
-            <option value="" title={view === "branch" && detected ? "このブランチのコミットのメッセージから見つけたもの" : undefined}>
-              {view === "branch" ? (detected ? `${detected}（このブランチのコミットから）` : "（見つかりません）") : "（選んでください）"}
-            </option>
-            {storyParam && !ctx.stories.some((s) => s.id === storyParam) && <option value={storyParam}>{storyParam}</option>}
-            {ctx.stories.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.id}
-                {s.inBranch ? "（このブランチ）" : ""}
-              </option>
-            ))}
-          </select>
-        </label>
+        <StoryChoice view={view} storyParam={storyParam} review={review.data} ctx={ctx} onChange={(v) => set({ story: v, sel: null })} />
         <p className="comparing" aria-live="polite">
           {view === "branch"
             ? base
@@ -135,6 +120,38 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
         </section>
       </div>
     </div>
+  );
+}
+
+// StoryChoice は、合意の記録に書くストーリーを示す・選ぶ所（RV-13）。1 つに決まったか・選ばせるものは、API（branchStories・storyFrom）の判定をそのまま使う。
+// レビュー単位がブランチで、ブランチのコミットから 1 つに決まったときは、選ばせずに示すだけにする
+function StoryChoice(props: { view: string; storyParam: string | null; review: Review | null; ctx: Context; onChange: (v: string) => void }) {
+  const { storyParam, review, ctx } = props;
+  if (review?.storyChoice === "fixed" && review.story) {
+    return (
+      <p className="story-fixed">
+        ストーリー: <strong>{review.story}</strong>
+      </p>
+    );
+  }
+  const choices = review?.storyChoice === "branch" ? [...(review.branchStories ?? [])] : ctx.stories.map((s) => s.id);
+  if (storyParam && !choices.includes(storyParam)) choices.unshift(storyParam);
+  return (
+    <label>
+      ストーリー
+      <select value={storyParam ?? ""} onChange={(e) => props.onChange(e.target.value)}>
+        {!storyParam && (
+          <option value="" disabled>
+            （選んでください）
+          </option>
+        )}
+        {choices.map((id) => (
+          <option key={id} value={id}>
+            {id}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
