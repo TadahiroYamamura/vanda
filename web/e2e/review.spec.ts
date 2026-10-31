@@ -265,3 +265,68 @@ test("ベースブランチと見方を切り替えると一覧が変わる", as
   await expect(page).toHaveURL(/view=story/);
   for (const item of items) await expect(page.getByText(item).first()).toBeVisible();
 });
+
+// 約束の詳細とファイルの画面から「ストーリーのレビューへ戻る」で戻ると、行く前のレビューの画面（見方・ベースブランチ・
+// ストーリー・選んでいた 1 件）に戻る。ブラウザーの「戻る」には頼らない（PO の報告では、こちらだけが選ぶ前に戻っていた）。
+// ストーリー全体の見方ではベースブランチを選ぶ所が出ないので、見方とベースブランチの組は 3 つ。それと戻る経路 2 つの
+// 組み合わせを全部回す。
+const states = [
+  { name: "ブランチごとの見方でベースブランチを既定のmainにして", story: false, base: "main" },
+  { name: "ブランチごとの見方でベースブランチをreleaseに変えて", story: false, base: "release" },
+  { name: "ストーリー全体の見方に切り替えて", story: true, base: "main" },
+];
+const routes = [
+  { name: "約束の詳細から直接", viaFile: false },
+  { name: "エビデンスのファイルを経て", viaFile: true },
+];
+
+for (const v of states) {
+  for (const route of routes) {
+      test(`${v.name}選んだ約束の${route.name}ストーリーのレビューへ戻ると行く前と同じ状態に戻る`, async ({ page }) => {
+        // シナリオに task-id-unique のエビデンスを付け、約束の文も変える。release は、このコミットの直前から分かれたことに
+        // する（release と比べても task-id-unique が一覧に出て、main と比べたときとは一覧が変わる）
+        repo.git("branch", "release", "story-24");
+        repo.write("e2e/add-task.txtar", "# シナリオ\n# @vanda:evidence task-id-unique\n! exec vanda-task add a\n-- a.txt --\na\n");
+        const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
+        repo.write(".vanda/promises.toml", text.replace("すべてのタスクを通して重ならない", "どのタスクとも重ならない"));
+        repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "-am", "#24 シナリオをエビデンスにする");
+
+        await page.goto(serve.url + "/");
+        const storySelect = page.getByRole("combobox", { name: "ストーリー" });
+        const storyValue = (await storySelect.locator("option", { hasText: "#24" }).first().getAttribute("value")) ?? "#24";
+        await storySelect.selectOption(storyValue);
+        const baseSelect = page.getByRole("combobox", { name: "ベースブランチ" });
+        if (v.base !== "main") await baseSelect.selectOption(v.base);
+        const view = page.getByRole("combobox", { name: "見方" });
+        if (v.story) {
+          const storyOption = view.locator("option").filter({ hasText: "#24" }).filter({ hasText: "変更" }).first();
+          await view.selectOption((await storyOption.getAttribute("value")) ?? "story");
+        }
+        if (!v.story && v.base === "release") await expect(page.getByText("task-title-required")).toHaveCount(0);
+        else await expect(page.getByText("task-title-required").first()).toBeVisible();
+        await select(page, "task-id-unique");
+        const claimLink = page.getByRole("link", { name: "約束の詳細を開く" });
+        await expect(claimLink).toHaveAttribute("href", /task-id-unique/);
+        const before = {
+          view: await view.inputValue(),
+          base: v.story ? null : await baseSelect.inputValue(),
+          story: await storySelect.inputValue(),
+        };
+        if (!v.story) expect(before.base).toBe(v.base);
+
+        await claimLink.click();
+        await expect(page.getByText("どのタスクとも重ならない").first()).toBeVisible();
+        if (route.viaFile) {
+          await page.getByRole("link", { name: /e2e\/add-task\.txtar/ }).first().click();
+          await expect(page).toHaveURL(/\/files\?/);
+        }
+        await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
+
+        await expect(page.getByRole("combobox", { name: "見方" })).toHaveValue(before.view);
+        if (before.base !== null) await expect(page.getByRole("combobox", { name: "ベースブランチ" })).toHaveValue(before.base);
+        await expect(page.getByRole("combobox", { name: "ストーリー" })).toHaveValue(before.story);
+        await expect(page.getByRole("link", { name: "約束の詳細を開く" }), "選んでいた task-id-unique の 1 件の詳細に戻っていない").toHaveAttribute("href", /task-id-unique/);
+        await expect(page.getByRole("button", { name: /合意する/ })).toBeVisible();
+      });
+  }
+}
