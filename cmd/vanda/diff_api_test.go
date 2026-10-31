@@ -383,3 +383,130 @@ func Test約束と用語と機能の差分は両方に書いた文字の項目�
 		}
 	}
 }
+
+// RV-05: 約束のエビデンスの予定の、エビデンスの単位の差分（diff.evidence）。
+// 手で作った例: ステージとタイプの組ごとに、変わらない・詳細が変わった・レイヤーが変わった・消した・足した、と、
+// 同じ組（test・random-check）が変更前に 2 つ、変更後に 3 つあるもの（現れた順に対応し、3 つ目は足した）。
+type evidenceMark struct {
+	Op     string     `json:"op"`
+	Layers []diffPart `json:"layers"`
+	Detail []diffPart `json:"detail"`
+}
+
+type evidenceDiff struct {
+	Evidence *struct {
+		Before []evidenceMark `json:"before"`
+		After  []evidenceMark `json:"after"`
+	} `json:"evidence"`
+}
+
+const evidenceDiffTerm = "[[term]]\nid = \"t\"\nname = \"用語\"\ndefinition = \"定義\"\n\n[[claim]]\nid = \"ev\"\nsubjects = [\"t\"]\nstatement = \"エビデンスを変える\"\nlayers = [\"model\", \"db\"]\n"
+
+func evidenceTOML(stage, typ string, layers []string, detail string) string {
+	s := fmt.Sprintf("\n[[claim.evidence]]\nstage = %q\ntype = %q\nlayers = [\"%s\"]\n", stage, typ, strings.Join(layers, "\", \""))
+	if detail != "" {
+		s += fmt.Sprintf("detail = %q\n", detail)
+	}
+	return s
+}
+
+func Test約束のエビデンスの予定の差分はステージとタイプで対応づけ足した消した変わった変わらないを示し同じ組は現れた順に対応させる(t *testing.T) {
+	model, both := []string{"model"}, []string{"model", "db"}
+	before := evidenceDiffTerm +
+		evidenceTOML("test", "scenario-test", model, "同じ") +
+		evidenceTOML("plan", "model-check", model, "前の詳細") +
+		evidenceTOML("test", "unit-test", model, "") +
+		evidenceTOML("release", "human-review", model, "") +
+		evidenceTOML("test", "random-check", model, "一つ目") +
+		evidenceTOML("test", "random-check", model, "二つ目")
+	after := evidenceDiffTerm +
+		evidenceTOML("test", "scenario-test", model, "同じ") +
+		evidenceTOML("plan", "model-check", model, "後の詳細") +
+		evidenceTOML("test", "unit-test", both, "") +
+		evidenceTOML("operation", "monitoring", model, "") +
+		evidenceTOML("test", "random-check", model, "一つ目") +
+		evidenceTOML("test", "random-check", model, "二つ目を変える") +
+		evidenceTOML("test", "random-check", model, "三つ目")
+	// [変更前の値, 変更後の値]。modified のときだけ確かめる
+	type side struct{ layers, detail [2]string }
+	wantBefore := []string{"equal", "modified", "modified", "removed", "equal", "modified"}
+	wantAfter := []string{"equal", "modified", "modified", "added", "equal", "modified", "added"}
+	modified := map[int]side{ // 変更前の位置 → 変更前と変更後の値
+		1: {[2]string{"model", "model"}, [2]string{"前の詳細", "後の詳細"}},
+		2: {[2]string{"model", "model・db"}, [2]string{"", ""}},
+		5: {[2]string{"model", "model"}, [2]string{"二つ目", "二つ目を変える"}},
+	}
+	afterPos := map[int]int{1: 1, 2: 2, 5: 5} // 変更前の位置 → 対応する変更後の位置
+
+	bin := buildVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	g := newRVGit(t, root)
+	g.run("init", "-q", "-b", "main")
+	writeFile(t, root, ".vanda/config.toml", fmt.Sprintf(diffConfig, version)+"\n[[layer]]\nid = \"db\"\nname = \"DB\"\ndescription = \"保存\"\n")
+	writeFile(t, root, ".vanda/promises.toml", before)
+	g.run("add", "-A")
+	g.run("commit", "-q", "-m", "#1 はじめ")
+	g.run("switch", "-q", "-c", "story-24")
+	writeFile(t, root, ".vanda/promises.toml", after)
+	g.run("add", "-A")
+	g.run("commit", "-q", "-m", "#24 エビデンスを変える")
+	s := startServe(t, bin, root, g.env)
+	var got reviewResponse
+	if code, msg := s.get("/api/review?view=branch&base=main", &got); code != 200 {
+		t.Fatalf("一覧を読めない（%d）: %s", code, msg)
+	}
+	e := entryByKey(got, "ev")
+	if e == nil || isNull(e.Diff) {
+		t.Fatalf("約束 ev の diff がない: %+v", e)
+	}
+	var d evidenceDiff
+	if err := json.Unmarshal(e.Diff, &d); err != nil {
+		t.Fatal(err)
+	}
+	if d.Evidence == nil {
+		t.Fatalf("diff.evidence がない: %s", e.Diff)
+	}
+	ops := func(ms []evidenceMark) []string {
+		var out []string
+		for _, m := range ms {
+			out = append(out, m.Op)
+		}
+		return out
+	}
+	if !reflect.DeepEqual(ops(d.Evidence.Before), wantBefore) {
+		t.Errorf("変更前の印: %v（思ったもの %v）", ops(d.Evidence.Before), wantBefore)
+	}
+	if !reflect.DeepEqual(ops(d.Evidence.After), wantAfter) {
+		t.Errorf("変更後の印: %v（思ったもの %v）", ops(d.Evidence.After), wantAfter)
+	}
+	check := func(where string, m evidenceMark, sd side) {
+		for _, f := range []struct {
+			name  string
+			parts []diffPart
+			want  [2]string
+		}{{"layers", m.Layers, sd.layers}, {"detail", m.Detail, sd.detail}} {
+			if joinParts(f.parts, "equal", "delete") != f.want[0] || joinParts(f.parts, "equal", "insert") != f.want[1] {
+				t.Errorf("%s の %s の差分をつなげても変更前 %q・変更後 %q にならない: %+v", where, f.name, f.want[0], f.want[1], f.parts)
+			}
+		}
+	}
+	for i, m := range d.Evidence.Before {
+		if sd, ok := modified[i]; ok && m.Op == "modified" {
+			check(fmt.Sprintf("変更前の %d 番目", i+1), m, sd)
+			if j := afterPos[i]; j < len(d.Evidence.After) {
+				check(fmt.Sprintf("変更後の %d 番目", j+1), d.Evidence.After[j], sd)
+			}
+		} else if m.Layers != nil || m.Detail != nil {
+			t.Errorf("変更前の %d 番目（%s）の layers・detail が null でない: %+v", i+1, m.Op, m)
+		}
+	}
+	for j, m := range d.Evidence.After {
+		if m.Op != "modified" && (m.Layers != nil || m.Detail != nil) {
+			t.Errorf("変更後の %d 番目（%s）の layers・detail が null でない: %+v", j+1, m.Op, m)
+		}
+	}
+}
