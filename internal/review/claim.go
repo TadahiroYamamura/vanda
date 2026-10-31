@@ -80,7 +80,7 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 	key := "claim:" + id
 	cur, ok := s.cur.items[key]
 	if !ok {
-		return nil, &Error{Status: http.StatusNotFound, Message: "約束 " + id + " が約束リストにない", Fix: "約束の ID を確かめる"}
+		return nil, &Error{Status: http.StatusNotFound, Message: "約束 " + id + " は約束リストにありません。", Fix: "約束の ID を確かめてください。"}
 	}
 	c := cur.Claim
 	content := Content(cur).(ClaimContent)
@@ -117,7 +117,7 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 
 	anns, aerrs := annotation.Read(o.Root, s.cur.snap.Files, o.Cfg.Annotations)
 	if aerrs != nil {
-		return nil, &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("アノテーションに誤りがあり、エビデンスを探せない（%d 件。最初の 1 件: %s）", len(aerrs), aerrs[0].Error()), Fix: "vanda check の annotation-links で誤りを出して直す"}
+		return nil, &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("アノテーションに誤りがあるため、エビデンスを探せません（%d 件。最初の 1 件: %s）。", len(aerrs), aerrs[0].Error()), Fix: "vanda check の annotation-links で誤りを確かめて、直してください。"}
 	}
 	for _, ev := range content.Evidence {
 		ed := EvidenceDetail{EvidenceContent: ev, Found: []Found{}}
@@ -189,7 +189,7 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 func evidenceText(root string, a annotation.Annotation) (*string, int, error) {
 	src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(a.File)))
 	if err != nil {
-		return nil, 0, fmt.Errorf("%s を読めない（%v）", a.File, err)
+		return nil, 0, fmt.Errorf("%s を読めません（%v）", a.File, err)
 	}
 	line := annotation.TargetLine(a.Adapter, a.File, src, a.Line)
 	switch a.Adapter {
@@ -198,7 +198,7 @@ func evidenceText(root string, a annotation.Annotation) (*string, int, error) {
 	case "tla":
 		def, ok := annotation.TLADefinition(src, a.Line)
 		if !ok {
-			return nil, 0, fmt.Errorf("%s:%d: アノテーションの付いている定義が見つからない", a.File, a.Line)
+			return nil, 0, fmt.Errorf("%s:%d: アノテーションが付いている定義が見つかりません", a.File, a.Line)
 		}
 		return &def, line, nil
 	}
@@ -208,7 +208,7 @@ func evidenceText(root string, a annotation.Annotation) (*string, int, error) {
 
 // File は、合意の対象のファイルか、アノテーションを読むファイルの中身を返す。
 func File(o Options, path string) (string, *Error) {
-	notFound := &Error{Status: http.StatusNotFound, Message: path + " は、合意の対象のファイルでも、アノテーションを読むファイルでもない", Fix: "場所を確かめる"}
+	notFound := &Error{Status: http.StatusNotFound, Message: path + " は、合意の対象のファイルでも、アノテーションを読むファイルでもありません。", Fix: "ファイルの場所を確かめてください。"}
 	files, err := glob.Files(o.Root)
 	if err != nil {
 		return "", internalErr(err)

@@ -24,7 +24,7 @@ type Error struct {
 func (e *Error) Error() string { return e.Message + "。" + e.Fix }
 
 func internalErr(err error) *Error {
-	return &Error{Status: http.StatusInternalServerError, Message: err.Error(), Fix: "git の状態を確かめる"}
+	return &Error{Status: http.StatusInternalServerError, Message: err.Error() + "。", Fix: "git の状態を確かめてください。"}
 }
 
 type Result struct {
@@ -100,11 +100,11 @@ func Build(o Options) (*Result, *Error) {
 	switch o.View {
 	case ViewBranch:
 		if o.Base == "" {
-			return nil, &Error{Status: http.StatusBadRequest, Message: "ブランチごとの見方に、ベースブランチ（base）がない", Fix: "base にベースブランチを渡す"}
+			return nil, &Error{Status: http.StatusBadRequest, Message: "このブランチの変更を見るための、ベースブランチ（base）がありません。", Fix: "base にベースブランチを渡してください。"}
 		}
 		mb, err := repo.Git(o.Root, "merge-base", o.Base, "HEAD")
 		if err != nil {
-			return nil, &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("ベースブランチ %s から分かれた点が分からない（%v）", o.Base, err), Fix: "今のブランチと履歴のつながったブランチを選ぶ"}
+			return nil, &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("ベースブランチ %s から分かれた点が分かりません（%v）。", o.Base, err), Fix: "今のブランチと履歴のつながったブランチを選んでください。"}
 		}
 		mb = strings.TrimSpace(mb)
 		res.Base, res.MergeBase = &o.Base, &mb
@@ -123,7 +123,7 @@ func Build(o Options) (*Result, *Error) {
 		}
 	case ViewStory:
 		if o.Story == "" {
-			return nil, &Error{Status: http.StatusBadRequest, Message: "ストーリー全体の見方に、ストーリーの ID（story）がない", Fix: "story にストーリーの ID を渡す"}
+			return nil, &Error{Status: http.StatusBadRequest, Message: "ストーリーの変更を見るための、ストーリーの ID（story）がありません。", Fix: "story にストーリーの ID を渡してください。"}
 		}
 		if e := s.checkStory(o.Story); e != nil {
 			return nil, e
@@ -134,7 +134,7 @@ func Build(o Options) (*Result, *Error) {
 			return nil, internalErr(err)
 		}
 	default:
-		return nil, &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("見方 %q はない", o.View), Fix: "view を branch か story にする"}
+		return nil, &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("見方 %q はありません。", o.View), Fix: "view を branch か story にしてください。"}
 	}
 	if s.o.Story != "" {
 		st := s.o.Story
@@ -170,11 +170,11 @@ func (s *state) loadCurrent() *Error {
 		return internalErr(err)
 	}
 	if snap.ListErrs != nil {
-		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("約束リストに誤りがあり、一覧を作れない（%d 件。最初の 1 件: %s）", len(snap.ListErrs), snap.ListErrs[0].Error()), Fix: "vanda check の promise-list-shape で誤りを出して直す"}
+		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("約束リストに誤りがあるため、一覧を作れません（%d 件。最初の 1 件: %s）。", len(snap.ListErrs), snap.ListErrs[0].Error()), Fix: "vanda check の promise-list-shape で誤りを確かめて、直してください。"}
 	}
 	recs, rerrs := agreements.Load(s.o.Root, snap.Files, s.o.Cfg.Agreements, s.o.Cfg.AgreementsDefault)
 	if rerrs != nil {
-		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("合意の記録に誤りがあり、一覧を作れない（%d 件。最初の 1 件: %s）", len(rerrs), rerrs[0].Error()), Fix: "vanda check の agreement-targets で誤りを出して直す"}
+		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("合意の記録に誤りがあるため、一覧を作れません（%d 件。最初の 1 件: %s）。", len(rerrs), rerrs[0].Error()), Fix: "vanda check の agreement-targets で誤りを確かめて、直してください。"}
 	}
 	s.cur = newSide(snap)
 	s.recs = recs
@@ -183,7 +183,7 @@ func (s *state) loadCurrent() *Error {
 
 func (s *state) checkStory(id string) *Error {
 	if s.o.Cfg.IDFull == nil || !s.o.Cfg.IDFull.MatchString(id) {
-		return &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("ストーリーの ID %s が、書き方（%s）に合わない", id, s.o.Cfg.IDPattern), Fix: "設定の id_pattern に合う ID を渡す"}
+		return &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("ストーリーの ID %s が、書き方（%s）に合いません。", id, s.o.Cfg.IDPattern), Fix: "設定の id_pattern に合う ID を渡してください。"}
 	}
 	return nil
 }
@@ -195,7 +195,7 @@ func (s *state) branchStory(mb string) (string, *Error) {
 	}
 	msgs, err := repo.Git(s.o.Root, "log", "--format=%B", mb+"..HEAD")
 	if err != nil {
-		return "", internalErr(fmt.Errorf("コミットのメッセージを読めない（%v）", err))
+		return "", internalErr(fmt.Errorf("コミットのメッセージを読めません（%v）", err))
 	}
 	ids := storyIDs(s.o.Cfg, msgs)
 	if len(ids) == 1 {
@@ -605,7 +605,7 @@ func checkCount(changes []rawChange, es []Entry) *Error {
 	seen := map[string]bool{}
 	for _, e := range es {
 		if seen[e.key] {
-			return &Error{Status: http.StatusInternalServerError, Message: "一覧に同じもの（" + e.key + "）が 2 度出ている", Fix: "vanda の不具合なので、知らせる"}
+			return &Error{Status: http.StatusInternalServerError, Message: "一覧に同じもの（" + e.key + "）が 2 度出ています。", Fix: "vanda の不具合です。開発者に知らせてください。"}
 		}
 		seen[e.key] = true
 		if e.Change == "renamed" {
@@ -613,7 +613,7 @@ func checkCount(changes []rawChange, es []Entry) *Error {
 		}
 	}
 	if want := len(changes) - renamed; len(es) != want {
-		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("一覧の数（%d）と差分の数（%d）が合わない", len(es), want), Fix: "vanda の不具合なので、知らせる"}
+		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("一覧の数（%d）と差分の数（%d）が合いません。", len(es), want), Fix: "vanda の不具合です。開発者に知らせてください。"}
 	}
 	return nil
 }

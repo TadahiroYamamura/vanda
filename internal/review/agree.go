@@ -56,7 +56,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	}
 	user := GitUser(o.Root)
 	if user == nil {
-		return nil, badRequest("git の user.name か user.email がないので、誰が合意したかを記録できない", "git config user.name と git config user.email を設定する")
+		return nil, badRequest("git の user.name か user.email が設定されていないため、誰が合意したかを記録できません。", "git config user.name と git config user.email を設定してください。")
 	}
 	if e := s.loadCurrent(); e != nil {
 		return nil, e
@@ -69,27 +69,27 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	switch req.Kind {
 	case "claim", "term", "feature":
 		if req.ID == nil || *req.ID == "" {
-			return nil, badRequest(kindName[req.Kind]+"の合意に id がない", "id に ID を書く")
+			return nil, badRequest(kindName[req.Kind]+"の合意に id がありません。", "id に ID を書いてください。")
 		}
 		key := req.Kind + ":" + *req.ID
 		cur, ok := s.cur.items[key]
 		if !ok {
-			return nil, &Error{Status: http.StatusNotFound, Message: kindName[req.Kind] + " " + *req.ID + " が約束リストにない", Fix: "一覧を読み直す"}
+			return nil, &Error{Status: http.StatusNotFound, Message: kindName[req.Kind] + " " + *req.ID + " は約束リストにありません。", Fix: "一覧を読み直してください。"}
 		}
 		rec.Key, rec.Fingerprint = cur.ID, s.cur.itemFP[key]
 		if rec.Fingerprint == "" {
-			return nil, conflict(kindName[req.Kind]+" "+cur.ID+" の指紋を作れない", "vanda check の promise-list-shape で誤りを出して直す")
+			return nil, conflict(kindName[req.Kind]+" "+cur.ID+" の指紋を作れません。", "vanda check の promise-list-shape で誤りを確かめて、直してください。")
 		}
 		target = kindName[req.Kind] + " " + cur.ID
 		claim = cur.Claim
 		source = cur.Table.Doc.File
 	case "file":
 		if req.Path == nil || *req.Path == "" {
-			return nil, badRequest("ファイルの合意に path がない", "path にファイルの場所を書く")
+			return nil, badRequest("ファイルの合意に path がありません。", "path にファイルの場所を書いてください。")
 		}
 		p := *req.Path
 		if _, ok := s.cur.types[p]; !ok {
-			return nil, &Error{Status: http.StatusNotFound, Message: p + " は合意の対象のファイルでない", Fix: "一覧を読み直す"}
+			return nil, &Error{Status: http.StatusNotFound, Message: p + " は合意の対象のファイルではありません。", Fix: "一覧を読み直してください。"}
 		}
 		fp, err := s.cur.fileFP(p)
 		if err != nil {
@@ -99,13 +99,13 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		target = "ファイル " + p
 		source = p
 	default:
-		return nil, badRequest(fmt.Sprintf("対象の種類 %q はない", req.Kind), "kind を claim・term・feature・file のどれかにする")
+		return nil, badRequest(fmt.Sprintf("対象の種類 %q はありません。", req.Kind), "kind を claim・term・feature・file のどれかにしてください。")
 	}
 	if rec.Fingerprint != req.Fingerprint {
-		return nil, conflict(target+" の中身が、画面に出した後に変わった（画面 "+req.Fingerprint+"、今 "+rec.Fingerprint+"）", "一覧を読み直し、今の中身を確かめてから合意する")
+		return nil, conflict(target+" の中身が、画面に表示した後に変わりました（画面 "+req.Fingerprint+"、今 "+rec.Fingerprint+"）。", "一覧を読み直し、今の中身を確かめてから合意してください。")
 	}
 	if s.recs.AgreedBy(rec.Kind, rec.Key, rec.Fingerprint, req.Story) {
-		return nil, conflict(target+" の今の中身には、ストーリー "+req.Story+" でもう合意している", "一覧を読み直す")
+		return nil, conflict(target+" の今の中身には、ストーリー "+req.Story+" ですでに合意しています。", "一覧を読み直してください。")
 	}
 
 	agreementsFile, create, e := s.agreementsFile()
@@ -124,14 +124,14 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		return nil, internalErr(err)
 	}
 	if dirty != "" {
-		return nil, conflict(target+" が書いてある "+source+" に、コミットしていない変更がある（合意した中身と、合意のコミットの時点のリポジトリが合わなくなる）", "先に "+source+" の変更をコミットしてから合意する")
+		return nil, conflict(target+" が書いてある "+source+" に、コミットしていない変更があります（このまま合意すると、合意した中身と、合意のコミットの時点のリポジトリが合わなくなります）。", "先に "+source+" の変更をコミットしてから、合意してください。")
 	}
 	dirty, err = repo.Git(o.Root, append([]string{"status", "--porcelain", "-z", "--"}, files...)...)
 	if err != nil {
 		return nil, internalErr(err)
 	}
 	if dirty != "" {
-		return nil, conflict("合意で変えるファイル（"+strings.Join(files, "・")+"）に、コミットしていない変更がある", "そのファイルの変更をコミットするか、元に戻してから合意する")
+		return nil, conflict("合意で変えるファイル（"+strings.Join(files, "・")+"）に、コミットしていない変更があります。", "そのファイルの変更をコミットするか元に戻してから、合意してください。")
 	}
 
 	// 書く前の中身を持っておき、途中で失敗したら戻す
@@ -163,15 +163,15 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	}
 	fail := func(err error) *Error {
 		if rerr := restore(); rerr != nil {
-			return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("合意を書けず（%v）、元に戻すこともできなかった（%v）", err, rerr), Fix: "git status で、" + strings.Join(files, "・") + " を確かめて直す"}
+			return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("合意を書けず（%v）、ファイルを元に戻すこともできませんでした（%v）。", err, rerr), Fix: "git status で " + strings.Join(files, "・") + " を確かめて、直してください。"}
 		}
-		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("合意を書けなかった（%v）。ファイルは元に戻した", err), Fix: "git の状態を確かめる"}
+		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("合意を書けませんでした（%v）。ファイルは元に戻しました。", err), Fix: "git の状態を確かめてください。"}
 	}
 
 	if promiseFile != "" {
 		out, err := removeFlags(originals[promiseFile], claim)
 		if err != nil {
-			return nil, conflict(err.Error(), "flags と guesses を [[claim]] の表の行として書き直すか、手で消してから合意する")
+			return nil, conflict(err.Error(), "flags と guesses を [[claim]] の表の行として書き直すか、手で消してから合意してください。")
 		}
 		if err := os.WriteFile(filepath.Join(o.Root, filepath.FromSlash(promiseFile)), out, 0o644); err != nil {
 			return nil, fail(err)
@@ -218,7 +218,7 @@ func (s *state) agreementsFile() (string, bool, *Error) {
 	}
 	first := s.o.Cfg.Agreements[0]
 	if glob.HasMeta(first) {
-		return "", false, conflict("合意の記録のファイルがなく、設定の agreements の最初のパターン "+first+" にワイルドカードがあるので、どこに作るか決まらない", "合意の記録のファイルを作ってから合意する")
+		return "", false, conflict("合意の記録のファイルがなく、設定の agreements の最初のパターン "+first+" にワイルドカードがあるため、どこに作るかを決められません。", "合意の記録のファイルを作ってから、合意してください。")
 	}
 	return first, true, nil
 }
@@ -230,14 +230,14 @@ func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
 		return err
 	}
 	if snap.ListErrs != nil {
-		return fmt.Errorf("フラグを外した後の約束リストが読めない（%s）", snap.ListErrs[0].Error())
+		return fmt.Errorf("フラグを外した後の約束リストを読めません（%s）", snap.ListErrs[0].Error())
 	}
 	recs, rerrs := agreements.Load(s.o.Root, snap.Files, s.o.Cfg.Agreements, s.o.Cfg.AgreementsDefault)
 	if rerrs != nil {
-		return fmt.Errorf("書き足した後の合意の記録が読めない（%s）", rerrs[0].Error())
+		return fmt.Errorf("書き足した後の合意の記録を読めません（%s）", rerrs[0].Error())
 	}
 	if !recs.AgreedBy(rec.Kind, rec.Key, rec.Fingerprint, rec.Story) {
-		return errors.New("書き足した合意が、読み直した合意の記録にない")
+		return errors.New("書き足した合意が、読み直した合意の記録に見つかりません")
 	}
 	if claim == nil {
 		return nil
@@ -245,7 +245,7 @@ func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
 	after := newSide(snap)
 	key := "claim:" + claim.ID
 	if after.itemFP[key] != rec.Fingerprint {
-		return errors.New("フラグを外したら、約束の指紋が変わった")
+		return errors.New("フラグを外したら、約束の指紋が変わりました")
 	}
 	want := map[string]any{}
 	for k, v := range claim.Raw {
@@ -254,7 +254,7 @@ func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
 		}
 	}
 	if !reflect.DeepEqual(after.items[key].Raw, want) {
-		return errors.New("フラグを外したら、flags・guesses のほかの項目まで変わった")
+		return errors.New("フラグを外したら、flags・guesses のほかの項目まで変わりました")
 	}
 	return nil
 }
@@ -269,11 +269,11 @@ func removeFlags(src []byte, claim *promises.Claim) ([]byte, error) {
 		}
 		start := claim.Table.Line(key)
 		if start == 0 || !strings.HasPrefix(strings.TrimLeft(lines[start-1], " \t"), key) {
-			return nil, fmt.Errorf("%s: 約束 %s の %s が、インラインの表の中にあるので消せない", claim.Table.Doc.File, claim.ID, key)
+			return nil, fmt.Errorf("%s: 約束 %s の %s がインラインの表の中にあるため、消せません。", claim.Table.Doc.File, claim.ID, key)
 		}
 		end, err := valueEnd(lines, start-1)
 		if err != nil {
-			return nil, fmt.Errorf("%s:%d: 約束 %s の %s の終わりが分からない（%v）", claim.Table.Doc.File, start, claim.ID, key, err)
+			return nil, fmt.Errorf("%s:%d: 約束 %s の %s の終わりが分かりません（%v）。", claim.Table.Doc.File, start, claim.ID, key, err)
 		}
 		for i := start - 1; i <= end; i++ {
 			drop[i] = true
@@ -305,7 +305,7 @@ func valueEnd(lines []string, i int) (int, error) {
 			}
 			switch {
 			case strings.HasPrefix(l[j:], `"""`) || strings.HasPrefix(l[j:], `'''`):
-				return 0, errors.New("複数行の文字列は扱わない")
+				return 0, errors.New("複数行の文字列は扱えません")
 			case c == '"':
 				j++
 				for j < len(l) && l[j] != '"' {
@@ -332,7 +332,7 @@ func valueEnd(lines []string, i int) (int, error) {
 			return n, nil
 		}
 	}
-	return 0, errors.New("配列が閉じていない")
+	return 0, errors.New("配列が閉じていません")
 }
 
 // appendRecord は、合意の記録のファイルの中身 src の終わりに、1 件の [[agreement]] を書き足す。

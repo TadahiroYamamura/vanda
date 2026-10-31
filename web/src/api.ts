@@ -173,18 +173,18 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     res = await fetch(path, init);
   } catch (e) {
-    throw new ApiError(0, `vanda のサーバーに繋がらない（${String(e)}）`, "vanda serve が動いているかを確かめる");
+    throw new ApiError(0, `vanda のサーバーに繋がりません（${String(e)}）。`, "vanda serve が動いているかを確かめてください。");
   }
   const text = await res.text();
   let body: unknown;
   try {
     body = JSON.parse(text);
   } catch {
-    throw new ApiError(res.status, `サーバーの応答が JSON でない（${res.status}）: ${text.slice(0, 200)}`, "vanda serve を起動し直す");
+    throw new ApiError(res.status, `サーバーの応答が JSON ではありません（${res.status}）: ${text.slice(0, 200)}`, "vanda serve を起動し直してください。");
   }
   if (!res.ok) {
     const err = (body as { error?: { message?: string; fix?: string } }).error;
-    throw new ApiError(res.status, err?.message ?? `サーバーが ${res.status} を返した`, err?.fix ?? "");
+    throw new ApiError(res.status, err?.message ?? `サーバーが ${res.status} を返しました。`, err?.fix ?? "");
   }
   return body as T;
 }

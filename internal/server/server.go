@@ -36,7 +36,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/file", s.read(s.file))
 	mux.HandleFunc("GET /api/story", s.story)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
-		writeError(w, http.StatusNotFound, "この API はない", "")
+		writeError(w, http.StatusNotFound, "この API はありません。", "docs/formats.md の「GUI の API」を確かめてください。")
 	})
 	mux.Handle("/", s.ui())
 	return localOnly(mux)
@@ -107,7 +107,7 @@ func (s *Server) ui() http.Handler {
 	files := http.FileServer(http.FS(s.UI))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, err := fs.Stat(s.UI, "index.html"); err != nil {
-			http.Error(w, "画面のファイルが vanda に埋め込まれていない。make build で画面を作ってから、vanda をビルドし直す", http.StatusServiceUnavailable)
+			http.Error(w, "画面のファイルが vanda に埋め込まれていません。make build で画面を作ってから、vanda をビルドし直してください。", http.StatusServiceUnavailable)
 			return
 		}
 		p := strings.TrimPrefix(r.URL.Path, "/")
@@ -127,13 +127,13 @@ func (s *Server) ui() http.Handler {
 func localOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !isLocalHost(r.Host) {
-			writeError(w, http.StatusForbidden, "Host "+r.Host+" からの要求は受けない", "http://127.0.0.1:<ポート>/ で開く")
+			writeError(w, http.StatusForbidden, "Host "+r.Host+" からの要求は受け付けません。", "http://127.0.0.1:<ポート>/ で開いてください。")
 			return
 		}
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
 			origin := r.Header.Get("Origin")
 			if origin != "" && origin != "http://"+r.Host {
-				writeError(w, http.StatusForbidden, "ほかのサイト（"+origin+"）からの書き込みの要求は受けない", "vanda の画面から操作する")
+				writeError(w, http.StatusForbidden, "ほかのサイト（"+origin+"）からの書き込みの要求は受け付けません。", "vanda の画面から操作してください。")
 				return
 			}
 		}
@@ -170,7 +170,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	if err := enc.Encode(v); err != nil {
-		log.Printf("API の応答を書けなかった: %v", err)
+		log.Printf("API の応答を書けませんでした: %v", err)
 	}
 }
 
@@ -179,7 +179,7 @@ func (s *Server) agree(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "合意の要求の JSON が読めない（"+err.Error()+"）", "docs/formats.md の POST /api/agree の形で送る")
+		writeError(w, http.StatusBadRequest, "合意の要求の JSON を読めません（"+err.Error()+"）。", "docs/formats.md の POST /api/agree の形で送ってください。")
 		return
 	}
 	s.mu.Lock()

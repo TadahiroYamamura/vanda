@@ -14,7 +14,7 @@ export const changeLabel: Record<Change, string> = {
   modified: "変更",
   deleted: "削除",
   renamed: "名前の変更",
-  unchanged: "変わっていない",
+  unchanged: "変更なし",
 };
 
 export const changeMark: Record<Change, string> = {
