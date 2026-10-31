@@ -20,12 +20,8 @@ import (
 // シナリオは、ビルドした vanda の実行ファイルを外から動かして確かめる。
 // testscript.RunMain で main を直に呼ぶ形にしないのは、実装の内部の関数（main の入口の形）に頼らずに書くため。
 func TestScenario(t *testing.T) {
-	binDir := t.TempDir()
-	bin := filepath.Join(binDir, "vanda")
-	build := exec.Command("go", "build", "-o", bin, ".")
-	if out, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("vanda をビルドできない: %v\n%s", err, out)
-	}
+	bin := buildVanda(t)
+	binDir := filepath.Dir(bin)
 
 	current, err := runningVersion(bin)
 	if err != nil {
@@ -60,6 +56,16 @@ func TestScenario(t *testing.T) {
 			"agree":  cmdAgree,
 		},
 	})
+}
+
+// buildVanda は、vanda をビルドし、実行ファイルの場所を返す。テストごとにビルドするが、2 度目からは Go のビルドのキャッシュが効く。
+func buildVanda(t *testing.T) string {
+	t.Helper()
+	bin := filepath.Join(t.TempDir(), "vanda")
+	if out, err := exec.Command("go", "build", "-o", bin, ".").CombinedOutput(); err != nil {
+		t.Fatalf("vanda をビルドできない: %v\n%s", err, out)
+	}
+	return bin
 }
 
 var semverPattern = regexp.MustCompile(`v?(\d+)\.(\d+)\.(\d+)`)
