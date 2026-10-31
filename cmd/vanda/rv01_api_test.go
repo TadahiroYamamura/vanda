@@ -27,6 +27,7 @@ type reviewEntry struct {
 	Group             string          `json:"group"`
 	Before            json.RawMessage `json:"before"`
 	After             json.RawMessage `json:"after"`
+	Diff              json.RawMessage `json:"diff"`
 	DetachedAgreement *struct {
 		By []string `json:"by"`
 	} `json:"detachedAgreement"`
