@@ -74,7 +74,7 @@ layers = ["db"]
 detail = "db/schema.sql"
 `,
 	})
-	l, errs := Load(root, files, []string{".vanda/promises/*.toml"})
+	l, errs := Load(root, files, []string{".vanda/promises/*.toml"}, false)
 	if errs != nil {
 		t.Fatal(errs)
 	}
@@ -95,7 +95,7 @@ detail = "db/schema.sql"
 
 func TestLoadはcoreでない機能のformalを省けば偽とみなす(t *testing.T) {
 	root, files := write(t, map[string]string{".vanda/promises.toml": "[[feature]]\nid = \"f\"\nname = \"n\"\ndefinition = \"d\"\ncore = false\n"})
-	l, errs := Load(root, files, []string{".vanda/promises.toml"})
+	l, errs := Load(root, files, []string{".vanda/promises.toml"}, false)
 	if errs != nil {
 		t.Fatal(errs)
 	}
@@ -125,7 +125,7 @@ core = "yes"
 [[story]]
 id = "s"
 `})
-	_, errs := Load(root, files, []string{".vanda/promises.toml", ".vanda/more.toml"})
+	_, errs := Load(root, files, []string{".vanda/promises.toml", ".vanda/more.toml"}, false)
 	want := []string{
 		`.vanda/promises.toml:3: subjects が文字列の配列でない。`,
 		`.vanda/promises.toml:1: claim "c" の statement がない。statement = "…" を書く`,
@@ -157,7 +157,7 @@ condition = "c"
 layers = ["model"]
 evidence = [{ stage = "test", type = "unit-test", layers = "model", detail = "x" }]
 `})
-	_, errs := Load(root, files, []string{".vanda/promises.toml"})
+	_, errs := Load(root, files, []string{".vanda/promises.toml"}, false)
 	want := `.vanda/promises.toml: claim "c" の evidence の 1 件目 の layers: layers が文字列の配列でない。`
 	if !strings.Contains(errs.Error(), want) {
 		t.Errorf("エラーに %q がない:\n%s", want, errs)
@@ -181,7 +181,7 @@ stage = "test"
 type = "unit-test"
 layers = ["model"]
 `})
-	l, errs := Load(root, files, []string{".vanda/promises.toml"})
+	l, errs := Load(root, files, []string{".vanda/promises.toml"}, false)
 	if errs != nil {
 		t.Fatal(errs)
 	}
@@ -192,10 +192,18 @@ layers = ["model"]
 
 func TestLoadはsubjectsとevidenceが空なら誤りにする(t *testing.T) {
 	root, files := write(t, map[string]string{".vanda/promises.toml": "[[claim]]\nid = \"c\"\nsubjects = []\nstatement = \"s\"\nlayers = [\"m\"]\nevidence = []\n"})
-	_, errs := Load(root, files, []string{".vanda/promises.toml"})
+	_, errs := Load(root, files, []string{".vanda/promises.toml"}, false)
 	for _, w := range []string{".vanda/promises.toml:3: subjects が空。", ".vanda/promises.toml:6: evidence が 1 つもない。"} {
 		if !strings.Contains(errs.Error(), w) {
 			t.Errorf("エラーに %q がない:\n%s", w, errs)
 		}
+	}
+}
+
+func TestLoadは既定のファイルがなければ空とみなす(t *testing.T) {
+	root, files := write(t, map[string]string{"README.md": "x"})
+	l, errs := Load(root, files, []string{".vanda/promises.toml"}, true)
+	if errs != nil || len(l.Claims) != 0 {
+		t.Errorf("errs = %v", errs)
 	}
 }

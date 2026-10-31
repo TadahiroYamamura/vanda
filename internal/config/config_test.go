@@ -46,6 +46,9 @@ paths = ["db/schema.sql"]
 	if got := strings.Join(cfg.Promises, ","); got != ".vanda/promises.toml" {
 		t.Errorf("promises の既定: %s", got)
 	}
+	if !cfg.PromisesDefault || !cfg.AgreementsDefault {
+		t.Error("promises・agreements を書かなければ既定のファイルを使う")
+	}
 	if got := strings.Join(cfg.Agreements, ","); got != ".vanda/agreements.toml" {
 		t.Errorf("agreements の既定: %s", got)
 	}

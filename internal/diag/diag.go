@@ -3,6 +3,7 @@ package diag
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -44,4 +45,14 @@ func (es Errors) Error() string {
 		lines[i] = e.Error()
 	}
 	return strings.Join(lines, "\n")
+}
+
+// Sort は、出力の順を毎回同じにするため、ファイルの場所の順、同じファイルなら行の順に並べる。行のないものは、そのファイルの先に置く。
+func Sort(es []Error) {
+	sort.SliceStable(es, func(i, j int) bool {
+		if es[i].File != es[j].File {
+			return es[i].File < es[j].File
+		}
+		return es[i].Line < es[j].Line
+	})
 }

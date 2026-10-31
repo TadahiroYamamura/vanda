@@ -23,13 +23,16 @@ const (
 var BuiltinAdapters = []string{"go", "txtar", "tla", "sql"}
 
 type Config struct {
-	Version     string
-	Promises    []string
-	Agreements  []string
-	Layers      []Layer
-	Annotations []AnnotationRule
-	Guardrails  []GuardrailRule
-	IDPattern   *regexp.Regexp
+	Version    string
+	Promises   []string
+	Agreements []string
+	// 設定に promises・agreements を書かず、既定のファイルを使うか。既定のファイルは、なくても空とみなす
+	PromisesDefault   bool
+	AgreementsDefault bool
+	Layers            []Layer
+	Annotations       []AnnotationRule
+	Guardrails        []GuardrailRule
+	IDPattern         *regexp.Regexp
 }
 
 type Layer struct {
@@ -73,6 +76,7 @@ func Load(root string) (*Config, diag.Errors) {
 	}
 	cfg := parse(doc.Top())
 	if len(errs) > 0 {
+		diag.Sort(errs)
 		return nil, errs
 	}
 	return cfg, nil
@@ -84,6 +88,8 @@ func parse(top *tomlread.Table) *Config {
 		cfg.Version = v
 		checkVersion(top, v)
 	}
+	cfg.PromisesDefault = !top.Has("promises")
+	cfg.AgreementsDefault = !top.Has("agreements")
 	cfg.Promises = patterns(top, "promises", DefaultPromises)
 	cfg.Agreements = patterns(top, "agreements", DefaultAgreements)
 

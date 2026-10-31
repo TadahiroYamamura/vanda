@@ -61,10 +61,13 @@ type Evidence struct {
 	Detail string
 }
 
-// Load は、files（リポジトリの直下からの場所の一覧）のうち patterns に当たるものを、約束リストとして読む。
-func Load(root string, files, patterns []string) (*List, diag.Errors) {
+// Load は、files（リポジトリの直下からの場所の一覧）のうち patterns に当たるものを、約束リストとして読む。allowMissing なら、ワイルドカードのないパターンのファイルがなくても誤りにしない（設定に書かなかった既定のファイルのため）。
+func Load(root string, files, patterns []string, allowMissing bool) (*List, diag.Errors) {
 	var errs []diag.Error
 	matched, missing := glob.Select(files, patterns)
+	if allowMissing {
+		missing = nil
+	}
 	for _, m := range missing {
 		errs = append(errs, diag.Error{File: m, What: "約束リストのファイルがない", Fix: "ファイルを作るか、.vanda/config.toml の promises を直す"})
 	}
@@ -77,6 +80,7 @@ func Load(root string, files, patterns []string) (*List, diag.Errors) {
 		l.read(doc.Top())
 	}
 	if len(errs) > 0 {
+		diag.Sort(errs)
 		return l, errs
 	}
 	return l, nil
