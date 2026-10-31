@@ -185,6 +185,11 @@ button.revoke { color: var(--bad); border-color: #e3b4b4; }
 tr.claim-at-row > td { padding: 0 0 8px; background: transparent; }
 .claim-at-row .claim-at { margin: 0; }
 
+.present-icon { display: inline-flex; align-items: center; vertical-align: middle; }
+.present-yes { color: var(--ok); }
+.present-no { color: var(--bad); }
+.present-none { color: #8c93a1; }
+
 /* 狭い画面では、一覧と 1 件の中身を縦に並べ、ページ全体をスクロールして読む。
    一覧を画面に貼り付けたまま（sticky）にすると、縦に並べたときに 1 件の中身の上に重なるため、ここでは外す */
 @media (max-width: 1000px) {
