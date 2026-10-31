@@ -57,17 +57,15 @@ func (e *env) specTypes() []diag.Error {
 			continue // 読めないことは、アノテーションの読み込みの誤りとして出ている
 		}
 		for _, ty := range annotation.TLATypes(src) {
-			var term, feature bool
+			var term bool
 			for _, a := range byName[f+"\x00"+ty.Name] {
 				switch a.Kind {
 				case "term", "internal":
 					term = true
 				case "feature":
-					feature = true
+					// 直すのはアノテーションなので、定義ではなくアノテーションの行を指す
+					errs = append(errs, diag.Error{File: f, Line: a.Line, What: "仕様の型 " + ty.Name + "（TypeOK で使っている）に @vanda:feature が付いている", Fix: "型には @vanda:term <用語の ID> か @vanda:internal <理由> を付け、@vanda:feature は操作の定義に付ける"})
 				}
-			}
-			if feature {
-				errs = append(errs, diag.Error{File: f, Line: ty.Line, What: "仕様の型 " + ty.Name + "（TypeOK で使っている）に @vanda:feature が付いている", Fix: "型には @vanda:term <用語の ID> か @vanda:internal <理由> を付け、@vanda:feature は操作の定義に付ける"})
 			}
 			if !term {
 				errs = append(errs, diag.Error{File: f, Line: ty.Line, What: "仕様の型 " + ty.Name + "（TypeOK で使っている）に @vanda:term も @vanda:internal もない", Fix: "定義のすぐ上のコメントに @vanda:term <用語の ID> か @vanda:internal <理由> を書く"})
