@@ -466,8 +466,8 @@ for (const pg of pages) {
     await pg.open(page);
     await expect(page.getByText(v4.statement).first()).toBeVisible();
 
-    // その時点のレイヤーは、名前でも ID でもよい（今の中身と変更前・変更後の表とで、出し方が分かれている）
-    const v3Marks: (string | RegExp)[] = [v3.statement, v3.rationale!, v3.condition!, v3.plan!, /データベース|\bdb\b/];
+    // その時点のレイヤーは、今の中身と同じく名前で出す。db はそのコミットで設定に足したので、名前がある
+    const v3Marks: (string | RegExp)[] = [v3.statement, v3.rationale!, v3.condition!, v3.plan!, "データベース"];
     const choices: [string, (string | RegExp)[]][] = [
       ["#24 理由と条件を足す", v3Marks],
       ["#24 約束を変え、題の約束を足す", [v2Statement]],
