@@ -2,7 +2,7 @@ import { useState } from "react";
 // 本文の中の生の HTML は描かない（react-markdown の既定。rehype-raw などを足さない）。Issue の本文に悪意のある HTML があっても、画面で動かないようにするため
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { api, type ClaimContent, type Context, type Entry, type FeatureContent, type FileContent, type Review, type TermContent } from "../api";
+import { api, type ClaimContent, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FileContent, type Review, type TermContent } from "../api";
 import { ErrorBox, FlagBadge, PresentIcon, StateBadge, shortCommit, useLoad } from "../components/common";
 import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
@@ -479,50 +479,70 @@ function Compare(props: { entry: Entry }) {
       </div>
     );
   }
-  const fields = e.diff && "fields" in e.diff ? e.diff.fields : null;
   const before = rows(e.kind, e.before);
   const after = rows(e.kind, e.after);
-  const isTla = e.fileType === "oracle";
-  const cell = (r: Row | undefined, side: "before" | "after") => {
-    if (!r) return <td className="empty">—</td>;
-    if (e.kind === "file") return <td>{isTla ? <TlaCode source={r[1]} /> : <CodeBlock source={r[1]} lang={langOf(e.path ?? "")} />}</td>;
-    if (e.kind === "claim" && r[0] === "エビデンスの予定") {
-      const content = (side === "before" ? e.before : e.after) as ClaimContent;
-      const marks = e.diff && "fields" in e.diff ? e.diff.evidence?.[side] : undefined;
-      return (
-        <td className="text">
-          <EvidenceList items={content.evidence} marks={marks} side={side} />
-        </td>
-      );
-    }
-    const parts = r[2] && fields ? fields[r[2]] : undefined;
-    return <td className="text">{parts ? <Parts parts={parts} side={side} /> : r[1]}</td>;
-  };
+  if (e.kind === "file") {
+    // 追加・削除したファイル（行の差分がないもの）は、中身をそのまま出す
+    const r = (after ?? before)?.[0];
+    if (!r) return null;
+    return e.fileType === "oracle" ? <TlaCode source={r[1]} /> : <CodeBlock source={r[1]} lang={langOf(e.path ?? "")} />;
+  }
+  return <ItemCompare entry={e} before={before} after={after} />;
+}
+
+// ItemCompare は、約束・用語・機能の変更前と変更後を、項目ごとに 1 列で出す（左右に分けない）。
+// 変わっていない項目は 1 回だけ、変わった文の項目は API の文字の単位の差分（diff.fields）で、消した文字を del、足した文字を ins で出す。
+// 文字の差分のない項目（対象・レイヤー・推測・真偽）が変わったときは、変更前の値を del、変更後の値を ins で並べる。
+// 追加・削除した件は、ある側の中身だけを印なしで出す（追加・削除は件の見出しに出している）
+function ItemCompare(props: { entry: Entry; before: Row[] | null; after: Row[] | null }) {
+  const { entry: e, before, after } = props;
+  const fields = e.diff && "fields" in e.diff ? e.diff.fields : null;
+  const evidenceMarks = e.diff && "fields" in e.diff ? e.diff.evidence : undefined;
   const labels = (after ?? before ?? []).map((r) => r[0]);
+  const value = (i: number) => {
+    const b = before?.[i];
+    const a = after?.[i];
+    const label = labels[i];
+    if (e.kind === "claim" && label === "エビデンスの予定") {
+      if (before && after && evidenceMarks) return <UnifiedEvidence before={(e.before as ClaimContent).evidence} after={(e.after as ClaimContent).evidence} marks={evidenceMarks} />;
+      return <EvidenceList items={((after ? e.after : e.before) as ClaimContent).evidence} />;
+    }
+    if (!b || !a) return (a ?? b)?.[1];
+    const parts = a[2] && fields ? fields[a[2]] : undefined;
+    if (parts) return <Parts parts={parts} side="both" />;
+    if (b[1] === a[1]) return a[1];
+    return (
+      <>
+        <del className="diff-part">{b[1]}</del>
+        <ins className="diff-part">{a[1]}</ins>
+      </>
+    );
+  };
   return (
-    <table className="compare">
-      <thead>
-        <tr>
-          <th></th>
-          {before && <th>変更前</th>}
-          {after && <th>{before ? "変更後" : "今"}</th>}
-        </tr>
-      </thead>
+    <table className="compare compare-unified">
       <tbody>
-        {labels.map((label, i) => {
-          const b = before?.[i];
-          const a = after?.[i];
-          return (
-            <tr key={label} className={before && after && b?.[1] !== a?.[1] ? "differs" : undefined}>
-              <th scope="row">{label}</th>
-              {before && cell(b, "before")}
-              {after && cell(a, "after")}
-            </tr>
-          );
-        })}
+        {labels.map((label, i) => (
+          <tr key={label}>
+            <th scope="row">{label}</th>
+            <td className="text">{value(i)}</td>
+          </tr>
+        ))}
       </tbody>
     </table>
   );
+}
+
+// UnifiedEvidence は、エビデンスの予定の差分を 1 列で出す。変更後の並びで出し（変わったものは項目の中で差分）、消したものを後ろに並べる
+function UnifiedEvidence(props: { before: EvidenceContent[]; after: EvidenceContent[]; marks: { before: EvidenceMark[]; after: EvidenceMark[] } }) {
+  const items: EvidenceContent[] = [...props.after];
+  const marks: EvidenceMark[] = [...props.marks.after];
+  props.before.forEach((ev, i) => {
+    if (props.marks.before[i]?.op === "removed") {
+      items.push(ev);
+      marks.push(props.marks.before[i]);
+    }
+  });
+  return <EvidenceList items={items} marks={marks} side="both" />;
 }
 
 // ClaimSections は、約束のエビデンスの予定と実際の表（RV-08。合格したかは段 3 で足す）と、由来と合意の履歴（RV-16）。

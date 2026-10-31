@@ -4,8 +4,9 @@ import { CodeLine, symbolsByLine, useTokens } from "./Code";
 
 // 差分は API（docs/formats.md の entries[].diff）が作ったものを、そのまま見せる。
 
-export function Parts(props: { parts: DiffPart[]; side: "before" | "after" }) {
-  const hide = props.side === "before" ? "insert" : "delete";
+// side が both なら、消した文字と足した文字の両方を 1 列で見せる
+export function Parts(props: { parts: DiffPart[]; side: "before" | "after" | "both" }) {
+  const hide = props.side === "before" ? "insert" : props.side === "after" ? "delete" : "";
   return (
     <>
       {props.parts
