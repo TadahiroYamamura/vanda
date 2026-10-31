@@ -377,9 +377,11 @@ describe("RV-05 変更前と変更後の差分", () => {
     expect(del[0].tagName + del[0].className).not.toBe(ins[0].tagName + ins[0].className);
   });
 
-  it("約束の項目の差分は消した語と足した語を見分けられるように見せる", async () => {
+  it("約束の項目の差分は1列で消した語をdelに足した語をinsに出し変わっていない項目は中身を1回だけ出す", async () => {
     open([
       claimEntry(1, "c-diff", {
+        before: { ...claimEntry(1, "c-diff").before!, statement: "タスクの ID はたぶん重ならない", rationale: "消す相手を決めるため" },
+        after: { ...claimEntry(1, "c-diff").after!, statement: "タスクの ID は絶対に重ならない", rationale: "消す相手を決めるため" },
         diff: {
           fields: {
             statement: [
@@ -388,6 +390,7 @@ describe("RV-05 変更前と変更後の差分", () => {
               { op: "insert", text: "絶対に" },
               { op: "equal", text: "重ならない" },
             ],
+            rationale: [{ op: "equal", text: "消す相手を決めるため" }],
           },
         },
       } as Partial<Entry>),
@@ -395,10 +398,11 @@ describe("RV-05 変更前と変更後の差分", () => {
     await openEntry(/c-diff/);
     await waitFor(() => expect(bodyText()).toContain("絶対に"));
     const exact = (t: string) => Array.from(document.querySelectorAll<HTMLElement>("*")).filter((el) => el.textContent === t);
-    const del = exact("たぶん");
-    const ins = exact("絶対に");
-    expect(del.length).toBeGreaterThan(0);
-    expect(ins.length).toBeGreaterThan(0);
-    expect(del[0].tagName + del[0].className).not.toBe(ins[0].tagName + ins[0].className);
+    expect(exact("たぶん").map((el) => el.tagName), "消した語が del で出ない").toContain("DEL");
+    expect(exact("絶対に").map((el) => el.tagName), "足した語が ins で出ない").toContain("INS");
+    // 変わっていない語は del・ins の外
+    for (const el of document.querySelectorAll("del, ins")) expect(el.textContent).not.toMatch(/タスクの ID は|重ならない/);
+    // 変わっていない項目は、中身を 1 回だけ出す（変更前と変更後の 2 列に分けない）
+    expect(bodyText().split("消す相手を決めるため").length - 1, "変わっていない理由が 1 回でない").toBe(1);
   });
 });
