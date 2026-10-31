@@ -1011,3 +1011,77 @@ test("変わったものの一覧の1件は名前のほかに番号や状態の�
     await expect(page.getByRole("link", { name: "約束の詳細を開く" }), `${spot}を押しても task-title-required が選ばれない`).toHaveAttribute("href", /\/claims\/task-title-required/);
   }
 });
+
+// CL-02: エビデンスは、ステージ（計画→実装→テスト→リリース→運用）の見出しの下を、タイプの見出しで分けて示す。
+// 見出しは、ページの見出しのうちステージとタイプの名前のものだけを、出てくる順に見る
+const stageNames: [string, string][] = [["plan", "計画"], ["implementation", "実装"], ["test", "テスト"], ["release", "リリース"], ["operation", "運用"]];
+const typeNames: Record<string, string> = {
+  "model-check": "モデル検査", proof: "証明", "cross-check": "クロスチェック", "random-check": "ランダムチェック",
+  "scenario-test": "シナリオテスト", "unit-test": "単体テスト", "interface-test": "インターフェースのテスト",
+  "concurrency-test": "同時実行のテスト", guardrail: "ガードレール", sensor: "センサー", monitoring: "監視", "human-review": "人のレビュー",
+};
+// 書く順はステージの順にしない
+const allStagesEvidence: [string, string][] = [
+  ["operation", "monitoring"], ["test", "unit-test"], ["plan", "model-check"], ["release", "human-review"],
+  ["test", "scenario-test"], ["implementation", "guardrail"], ["plan", "proof"],
+];
+const twoStagesEvidence: [string, string][] = [["test", "scenario-test"], ["plan", "model-check"]];
+
+function promisesWithEvidence(statement: string, ev: [string, string][]) {
+  return `[[term]]\nid = "task-id"\nname = "タスクの ID"\ndefinition = "タスクを見分ける名前"\n\n[[claim]]\nid = "task-id-unique"\nsubjects = ["task-id"]\nstatement = "${statement}"\nlayers = ["model"]\n` +
+    ev.map(([stage, type]) => `\n[[claim.evidence]]\nstage = "${stage}"\ntype = "${type}"\nlayers = ["model"]\n`).join("");
+}
+
+async function evidenceHeadings(page: Page): Promise<string[]> {
+  const names = new Set([...stageNames.map(([, n]) => n), ...Object.values(typeNames)]);
+  const texts = (await page.getByRole("heading").allTextContents()).map((t) => t.trim());
+  return texts.filter((t) => names.has(t));
+}
+
+// 見出しの並びが、ev のステージを決まった順に、その下にそのステージのタイプだけを並べたものか確かめる
+function checkHeadings(got: string[], ev: [string, string][], where: string) {
+  const stagesHere = stageNames.filter(([id]) => ev.some(([s]) => s === id));
+  // ステージの見出しは、エビデンスのあるものだけが決まった順に出る
+  expect(got.filter((t) => stageNames.some(([, n]) => n === t)), `${where}: ステージの見出しの並び`).toEqual(stagesHere.map(([, n]) => n));
+  for (const [i, [id, name]] of stagesHere.entries()) {
+    const from = got.indexOf(name);
+    const to = i + 1 < stagesHere.length ? got.indexOf(stagesHere[i + 1][1]) : got.length;
+    const under = got.slice(from + 1, to).sort();
+    const want = [...new Set(ev.filter(([s]) => s === id).map(([, t]) => typeNames[t]))].sort();
+    expect(under, `${where}: ステージ「${name}」の下のタイプの見出し`).toEqual(want);
+  }
+  // エビデンスのないタイプの見出しは出ない
+  const typesHere = new Set(ev.map(([, t]) => typeNames[t]));
+  for (const n of Object.values(typeNames)) if (!typesHere.has(n)) expect(got, `${where}: エビデンスのないタイプ「${n}」の見出しが出ている`).not.toContain(n);
+}
+
+for (const pg of pages) {
+  for (const [label, ev] of [["5つのステージ全部", allStagesEvidence], ["計画とテストのステージだけ", twoStagesEvidence]] as const) {
+    test(`${pg.name}のエビデンスは${label}にエビデンスがあるときステージの見出しを決まった順に並べその下にそのステージのタイプの見出しだけを出す`, async ({ page }) => {
+      repo.write(".vanda/promises.toml", promisesWithEvidence(v4.statement, [...ev]));
+      commit(repo, "#24 エビデンスの予定を書く");
+      await pg.open(page);
+      await expect(page.getByText(v4.statement).first()).toBeVisible();
+      await expect.poll(() => evidenceHeadings(page), { message: "エビデンスの見出しが出ない" }).not.toEqual([]);
+      checkHeadings(await evidenceHeadings(page), [...ev], pg.name);
+    });
+  }
+}
+
+test("約束の詳細の画面で由来のコミットを開くとその時点のエビデンスもステージとタイプの見出しで分けて出る", async ({ page }) => {
+  repo.write(".vanda/promises.toml", promisesWithEvidence(v3.statement, allStagesEvidence));
+  commit(repo, "#24 エビデンスの予定を書く");
+  repo.write(".vanda/promises.toml", promisesWithEvidence(v4.statement, twoStagesEvidence));
+  commit(repo, "#24 エビデンスの予定を減らす");
+  await page.goto(serve.url + "/claims/task-id-unique");
+  await expect(page.getByText(v4.statement).first()).toBeVisible();
+  await expect.poll(() => evidenceHeadings(page)).not.toEqual([]);
+  const before = await evidenceHeadings(page);
+  checkHeadings(before, twoStagesEvidence, "今の中身");
+  await choose(rowOf(page, "#24 エビデンスの予定を書く"));
+  await expect(page.getByText(v3.statement).first()).toBeVisible();
+  // 開いたその時点の中身の分だけ、見出しが増える。今の中身にない実装・リリース・運用の見出しが、その時点の中身から出る
+  await expect.poll(async () => (await evidenceHeadings(page)).filter((t) => ["実装", "リリース", "運用"].includes(t)).sort()).toEqual(["リリース", "実装", "運用"].sort());
+  const after = await evidenceHeadings(page);
+  checkHeadings(after.slice(before.length), allStagesEvidence, "その時点の中身");
+});
