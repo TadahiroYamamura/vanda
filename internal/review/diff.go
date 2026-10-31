@@ -41,7 +41,9 @@ type EvidenceDiff struct {
 // EvidenceMark は、エビデンス 1 つの印。op は、変更前では equal・modified・removed、変更後では equal・modified・added。
 // modified のときだけ、layers（レイヤーを「・」でつないだ文字）と detail（詳細）の文字の単位の差分を持つ
 type EvidenceMark struct {
-	Op     string     `json:"op"`
+	Op string `json:"op"`
+	// Pair は、対応したもう片方の側のエビデンスの添字（before の印なら after の添字）。対応がなければ nil
+	Pair   *int       `json:"pair"`
 	Layers []DiffPart `json:"layers"`
 	Detail []DiffPart `json:"detail"`
 }
@@ -223,13 +225,13 @@ func evidenceDiff(before, after []EvidenceContent) *EvidenceDiff {
 		bl, al := strings.Join(b.Layers, "・"), strings.Join(a.Layers, "・")
 		bd, ad := text(b.Detail), text(a.Detail)
 		if bl == al && bd == ad {
-			d.Before[i] = EvidenceMark{Op: "equal"}
-			d.After[j] = EvidenceMark{Op: "equal"}
+			d.Before[i] = EvidenceMark{Op: "equal", Pair: ptr(j)}
+			d.After[j] = EvidenceMark{Op: "equal", Pair: ptr(i)}
 			continue
 		}
 		layers, detail := charDiff(bl, al), charDiff(bd, ad)
-		d.Before[i] = EvidenceMark{Op: "modified", Layers: layers, Detail: detail}
-		d.After[j] = EvidenceMark{Op: "modified", Layers: layers, Detail: detail}
+		d.Before[i] = EvidenceMark{Op: "modified", Pair: ptr(j), Layers: layers, Detail: detail}
+		d.After[j] = EvidenceMark{Op: "modified", Pair: ptr(i), Layers: layers, Detail: detail}
 	}
 	return d
 }

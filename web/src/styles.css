@@ -143,13 +143,7 @@ table.compare thead th:nth-child(2) { color: var(--before); }
 table.compare thead th:nth-child(3) { color: var(--ok); }
 table.compare tr.differs td:nth-child(2) { background: var(--before-bg); }
 table.compare tr.differs td:nth-child(3) { background: var(--after-bg); }
-table.plan { border: 1px solid var(--line2); border-radius: 10px; }
-/* 詳細は省略せずに全部出す（レビューでは全部読む前提）。ほかの欄は中身に合わせて狭くし、詳細の欄が残りの幅を使う */
-table.plan .plan-narrow { width: 1%; white-space: nowrap; }
-table.plan .plan-present { padding-right: 0; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-table.plan td.plan-detail { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 12em; }
-table.plan td.plan-found { overflow-wrap: anywhere; min-width: 8em; max-width: 24em; }
 
 /* コードと差分 */
 pre.code { margin: 0; padding: 14px 16px; background: var(--code-bg); border: 1px solid var(--line2); border-radius: 10px; overflow-x: auto; white-space: pre; font: 13px/1.75 var(--mono); font-variant-ligatures: none; }
@@ -178,8 +172,6 @@ ins.diff-part { background: var(--ins-part); text-decoration: underline 2px var(
 .fields dd { margin: 0; }
 .fields ul { margin: 0; padding-left: 18px; }
 .claim > h2 { margin: 4px 0 0; font-size: 16px; }
-.evidence-type { background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-.evidence-type > h3 { margin: 0; padding: 14px 18px; font-size: 15px; background: #fafbfc; border-bottom: 1px solid var(--line2); }
 .evidence { padding: 14px 18px; }
 .evidence + .evidence { border-top: 1px solid var(--line2); }
 .found { margin: 8px 0; }
@@ -224,20 +216,34 @@ ul.evidence-list { margin: 0; padding-left: 18px; }
 .evidence-item.evidence-added { background: var(--after-bg); border-radius: 4px; }
 .evidence-item.evidence-removed { background: var(--before-bg); border-radius: 4px; }
 
+/* レイヤーの札（紫の点線の枠） */
+.chips { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; vertical-align: middle; }
+.chip { display: inline-flex; align-items: center; padding: 0 8px; font-size: 12px; line-height: 20px; white-space: nowrap; border-radius: 4px; border: 1px solid transparent; }
+.chip-layer { border: 1px dashed #9b7fd1; color: #5b3d99; background: #f6f2fd; }
+del.chip-mark, ins.chip-mark { text-decoration: none; border-radius: 4px; }
+del.chip-mark .chip { text-decoration: line-through 1.5px var(--bad); background: var(--del-part); }
+ins.chip-mark .chip { background: var(--ins-part); }
+.evidence-head { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.evidence-kind { color: var(--fg2); }
+.evidence-line { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 4px; }
+
+/* エビデンスをステージ→タイプで分けて示す（CL-02） */
+.evidence-groups { display: flex; flex-direction: column; gap: 10px; }
+.evidence-stage { border: 1px solid var(--line); border-radius: 10px; background: var(--card); overflow: hidden; }
+.evidence-stage-head { margin: 0; padding: 8px 14px; font-size: 14px; background: #fafbfc; border-bottom: 1px solid var(--line2); }
+.evidence-type-group { padding: 8px 14px; }
+.evidence-type-group + .evidence-type-group { border-top: 1px solid var(--line2); }
+.evidence-type-head { margin: 0 0 6px; font-size: 13px; font-weight: 700; color: var(--fg2); }
+.evidence-groups .evidence { padding: 6px 0; }
+.evidence-groups .evidence + .evidence { border-top: 1px dashed var(--line2); }
+ul.evidence-found { margin: 4px 0 0; padding-left: 18px; font-size: 13px; overflow-wrap: anywhere; }
+.claim-at .evidence-stage-head { font-size: 13px; padding: 6px 10px; }
+.claim-at .evidence-type-group { padding: 6px 10px; }
+
 /* 狭い画面では、一覧と 1 件の中身を縦に並べ、ページ全体をスクロールして読む。
    一覧を画面に貼り付けたまま（sticky）にすると、縦に並べたときに 1 件の中身の上に重なるため、ここでは外す */
 @media (max-width: 1000px) {
   .columns { grid-template-columns: minmax(0, 1fr); grid-template-areas: "story" "list" "detail"; }
   .list { position: static; max-height: none; overflow: visible; }
   main { padding: 16px 12px 32px; }
-}
-/* 表のままでは収まらない幅では、エビデンスの予定の 1 行を、見出しを付けて縦に並べる */
-@media (max-width: 720px) {
-  table.plan, table.plan tbody, table.plan tr, table.plan td { display: block; width: auto; }
-  /* 見出しは消さず、画面から見えなくするだけにする（読み上げの表の見出しとして残すため） */
-  table.plan thead { display: block; position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  table.plan tr { padding: 6px 0; border-bottom: 1px solid var(--line2); }
-  table.plan td { border: 0; padding: 2px 12px; white-space: normal; max-width: none; min-width: 0; }
-  table.plan td.plan-detail { white-space: pre-wrap; }
-  table.plan td::before { content: attr(data-label); display: block; font-size: 11px; color: var(--muted); }
 }

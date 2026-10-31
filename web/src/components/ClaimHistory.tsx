@@ -1,12 +1,15 @@
 import { Fragment, type ReactNode, useState } from "react";
 import { api, type ClaimDetail } from "../api";
 import { ErrorBox, shortCommit, useLoad } from "./common";
-import { EvidenceList } from "./EvidenceList";
+import { LayerChips } from "./Chips";
+import { EvidenceGroups } from "./EvidenceGroups";
 
 // ClaimHistory は、約束の由来（CL-04）と合意の履歴（CL-05）。約束の詳細の画面と、レビューの画面の 1 件の詳細（RV-16）で使う。
 export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) {
   const c = props.claim;
   const H = props.level;
+  // その時点の中身のステージの見出しは、由来・合意の履歴の見出しの 1 つ下の段にする
+  const sub = props.level === "h2" ? "h3" : "h4";
   // 選んだ時点（由来のコミットか、合意の記録を書いたコミット）。押した行のすぐ下に、表の行を開く形で中身を出す（CL-08）。
   // 表の下にまとめて出すと、押した行から離れて画面の外に出ることがあり、押しても何も起きないように見えたため
   // 開いている行の鍵（"origin:<コミット>" か "agreement:<番号>"）。見比べられるよう、いくつでも同時に開ける
@@ -55,7 +58,7 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
                   <ExpandButton open={isOpen(`origin:${o.commit}`)} onClick={() => toggle(`origin:${o.commit}`)} />
                 </td>
               </tr>
-              {isOpen(`origin:${o.commit}`) && <ClaimAtRow cols={6} claim={c} commit={o.commit} />}
+              {isOpen(`origin:${o.commit}`) && <ClaimAtRow cols={6} claim={c} commit={o.commit} level={sub} />}
               </Fragment>
             ))}
           </tbody>
@@ -94,7 +97,7 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
                   )}
                 </td>
               </tr>
-              {a.commit && isOpen(`agreement:${i}`) && <ClaimAtRow cols={5} claim={c} commit={a.commit} />}
+              {a.commit && isOpen(`agreement:${i}`) && <ClaimAtRow cols={5} claim={c} commit={a.commit} level={sub} />}
               </Fragment>
             ))}
           </tbody>
@@ -129,7 +132,7 @@ function ExpandButton(props: { open: boolean; onClick: () => void }) {
 }
 
 // ClaimAtRow は、ある時点の約束の中身（変更前と変更後の表（RV-05）と同じ項目と並び）を、押した行のすぐ下の行に出す。中身は API が、その時点の約束リストから読んだもの。
-function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string }) {
+function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string; level: "h3" | "h4" }) {
   const c = props.claim;
   const d = useLoad(() => api.claimAt(c.id, props.commit), `${c.id}@${props.commit}`);
   const none = "（なし）";
@@ -139,8 +142,24 @@ function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string })
         ["条件", d.data.content.condition ?? none],
         ["理由", d.data.content.rationale ?? none],
         ["対象", d.data.content.subjects.join("・")],
-        ["レイヤー", (d.data.layers ?? d.data.content.layers.map((id) => ({ id, name: "" }))).map((l) => l.name || l.id).join("・")],
-        ["エビデンスの予定", <EvidenceList items={d.data.content.evidence} />],
+        ["レイヤー", <LayerChips layers={d.data.content.layers} names={d.data.layers ?? undefined} />],
+        [
+          "エビデンスの予定",
+          d.data.content.evidence.length === 0 ? (
+            none
+          ) : (
+            <EvidenceGroups
+              items={d.data.content.evidence}
+              level={props.level}
+              render={(ev) => (
+                <>
+                  <LayerChips layers={ev.layers} names={d.data?.layers ?? undefined} />
+                  {ev.detail && <div className="evidence-detail">{ev.detail}</div>}
+                </>
+              )}
+            />
+          ),
+        ],
         ["推測", d.data.content.guesses.length > 0 ? d.data.content.guesses.join("\n") : none],
       ]
     : [];

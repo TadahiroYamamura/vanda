@@ -1,9 +1,10 @@
-import { api, type EvidenceDetail, type Found } from "../api";
+import { api, type Found } from "../api";
 import { ErrorBox, PresentIcon, StateBadge, useLoad } from "../components/common";
+import { LayerChips } from "../components/Chips";
+import { EvidenceGroups } from "../components/EvidenceGroups";
 import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
 import { langOf } from "../highlight";
-import { stageLabel, typeLabel } from "../labels";
 import { Link, reviewQuery, reviewURL } from "../route";
 
 // ClaimPage は、約束の詳細（CL-01・02・04・05・07）。
@@ -12,9 +13,6 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams }) {
   if (d.error != null) return <ErrorBox error={d.error} title="約束の詳細を読めません" />;
   if (!d.data) return <p className="note">読み込んでいます…</p>;
   const c = d.data;
-  // タイプごとにまとめる（CL-02）。並びは、約束リストで最初に出てきた順
-  const byType = new Map<string, EvidenceDetail[]>();
-  for (const ev of c.evidence) byType.set(ev.type, [...(byType.get(ev.type) ?? []), ev]);
   return (
     <div className="claim">
       <p className="note">
@@ -30,7 +28,9 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams }) {
         <dt>理由</dt>
         <dd>{c.rationale ?? "（なし）"}</dd>
         <dt>レイヤー</dt>
-        <dd>{c.layers.map((l) => l.name || l.id).join("・")}</dd>
+        <dd>
+          <LayerChips layers={c.layers.map((l) => l.id)} names={c.layers} />
+        </dd>
         <dt>対象</dt>
         <dd>{c.subjects.map((s) => (s.name ? `${s.name}（${s.id}）` : `${s.id}（約束リストにありません）`)).join("・")}</dd>
         {c.guesses.length > 0 && (
@@ -47,23 +47,27 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams }) {
         )}
       </dl>
 
-      <h2>エビデンス（タイプごと）</h2>
-      {[...byType.entries()].map(([type, evs]) => (
-        <section key={type} className="evidence-type">
-          <h3>{typeLabel[type] ?? type}</h3>
-          {evs.map((ev, i) => (
-            <div key={i} className="evidence">
-              <p className="note evidence-line">
-                <PresentIcon present={ev.present} /> {stageLabel[ev.stage] ?? ev.stage} · レイヤー {ev.layers.join("・")}
-                {ev.detail && ` · ${ev.detail}`}
-              </p>
+      <h2>エビデンス</h2>
+      {c.evidence.length === 0 ? (
+        <p className="note">エビデンスの予定がありません。</p>
+      ) : (
+        <EvidenceGroups
+          items={c.evidence}
+          level="h3"
+          render={(ev) => (
+            <>
+              <div className="evidence-line">
+                <PresentIcon present={ev.present} />
+                <LayerChips layers={ev.layers} names={c.layers} />
+              </div>
+              {ev.detail && <div className="evidence-detail">{ev.detail}</div>}
               {ev.found.map((f) => (
                 <FoundView key={`${f.file}:${f.line}`} f={f} params={props.params} />
               ))}
-            </div>
-          ))}
-        </section>
-      ))}
+            </>
+          )}
+        />
+      )}
 
       <ClaimHistory claim={c} level="h2" />
     </div>
