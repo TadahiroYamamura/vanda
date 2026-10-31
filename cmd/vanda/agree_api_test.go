@@ -201,14 +201,19 @@ func Test合意と関係のない書きかけの変更は索引に足したも�
 
 // RV-06
 func Test合意で変えるファイルに書きかけの変更があると合意を断り理由を出し何も変えない(t *testing.T) {
+	dirtyScenario := reviewScenarioStory + "# 書きかけ\n"
 	cases := []struct {
 		name string
 		file string
 		body map[string]any
+		// 合意の対象が書いてあるファイルの書きかけは、先にコミットするよう理由に書く（docs/formats.md）
+		hint bool
 	}{
-		{"約束リストに書きかけがあるときの約束への合意", ".vanda/promises.toml", agreeClaim("task-id-unique", reviewClaimFP)},
-		{"合意の記録に書きかけがあるときの約束への合意", ".vanda/agreements.toml", agreeClaim("task-id-unique", reviewClaimFP)},
-		{"合意の記録に書きかけがあるときのファイルへの合意", ".vanda/agreements.toml", agreeFile("e2e/add-task.txtar", reviewFileFP)},
+		{"約束リストに書きかけがあるときの約束への合意", ".vanda/promises.toml", agreeClaim("task-id-unique", reviewClaimFP), true},
+		{"合意の記録に書きかけがあるときの約束への合意", ".vanda/agreements.toml", agreeClaim("task-id-unique", reviewClaimFP), false},
+		{"合意の記録に書きかけがあるときのファイルへの合意", ".vanda/agreements.toml", agreeFile("e2e/add-task.txtar", reviewFileFP), false},
+		// 見せていた指紋は書きかけの中身のもの（指紋の違いで断られるのでなく、書きかけで断られることを見るため）
+		{"合意するファイルそのものに書きかけがあるときのファイルへの合意", "e2e/add-task.txtar", agreeFile("e2e/add-task.txtar", sha256Hex([]byte(dirtyScenario))), true},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -217,12 +222,16 @@ func Test合意で変えるファイルに書きかけの変更があると合�
 			if err != nil {
 				t.Fatal(err)
 			}
-			dirty := string(data) + "\n# 書きかけ\n"
+			dirty := string(data) + "# 書きかけ\n"
 			writeFile(t, r.Root, c.file, dirty)
 			head := r.git("rev-parse", "HEAD")
 
-			if code, msg := s.post("/api/agree", c.body, nil); code != 409 || msg == "" {
+			code, msg := s.post("/api/agree", c.body, nil)
+			if code != 409 || msg == "" {
 				t.Errorf("%d（%q）を返した。409 で断り、理由を出す", code, msg)
+			}
+			if c.hint && !strings.Contains(msg, "コミット") {
+				t.Errorf("理由に、先にコミットするよう書いていない: %q", msg)
 			}
 			if now := r.git("rev-parse", "HEAD"); now != head {
 				t.Errorf("断ったのにコミットができた")
@@ -301,6 +310,22 @@ func Testファイルにも合意でき合意の記録だけが1つのコミッ�
 	}
 	if got.Agreement.Path == nil || *got.Agreement.Path != "e2e/add-task.txtar" || got.Agreement.Key != reviewFileFP {
 		t.Errorf("返した合意の記録: %+v", got.Agreement)
+	}
+}
+
+// RV-06: 同じストーリーで、今の中身にもう合意していれば断る
+func Test同じストーリーで今の中身にもう合意していれば合意を断る(t *testing.T) {
+	_, r, s := setupAgree(t)
+	if code, msg := s.post("/api/agree", agreeFile("e2e/add-task.txtar", reviewFileFP), nil); code != 200 {
+		t.Fatalf("合意できない（%d）: %s", code, msg)
+	}
+	head := r.git("rev-parse", "HEAD")
+	before := readAgreements(t, r.Root)
+	if code, msg := s.post("/api/agree", agreeFile("e2e/add-task.txtar", reviewFileFP), nil); code != 409 || msg == "" {
+		t.Errorf("2 度目の合意に %d（%q）を返した。409 で断り、理由を出す", code, msg)
+	}
+	if r.git("rev-parse", "HEAD") != head || len(readAgreements(t, r.Root)) != len(before) {
+		t.Errorf("断ったのに、コミットか合意の記録が増えた")
 	}
 }
 
