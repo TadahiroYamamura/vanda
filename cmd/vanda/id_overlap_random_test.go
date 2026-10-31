@@ -105,6 +105,8 @@ func Test分けたファイルをまたいでも重なったIDは後に出てき
 		writeFile(t, root, path, src)
 	}
 
+	// 落ちたときに rapid が testdata/rapid にファイルを書かないようにする。再現は、rapid が記録に出す種で行う
+	setFlag(t, "rapid.nofailfile", "true")
 	rapid.Check(t, func(rt *rapid.T) {
 		files := rapid.IntRange(1, 3).Draw(rt, "ファイルの数")
 		items := rapid.SliceOfN(rapid.Custom(func(rt *rapid.T) overlapItem {
