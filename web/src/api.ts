@@ -1,0 +1,199 @@
+// API の形は docs/formats.md の「GUI の API」。画面は API の結果を見せるだけで、判定を持たない。
+
+export type Kind = "claim" | "term" | "feature" | "file";
+export type FileType = "scenario" | "oracle" | "guardrail";
+export type Change = "added" | "modified" | "deleted" | "renamed" | "unchanged";
+export type State = "proposed" | "agreed";
+export type Flag = "ai-proposal" | "guess" | "changed-since-agreement";
+
+export interface User {
+  name: string;
+  email: string;
+}
+
+export interface LayerRef {
+  id: string;
+  name: string;
+}
+
+export interface Context {
+  version: string;
+  branch: string;
+  head: string;
+  defaultBase: string;
+  bases: string[];
+  user: User | null;
+  stories: { id: string; inBranch: boolean }[];
+  layers: LayerRef[];
+}
+
+export interface EvidenceContent {
+  stage: string;
+  type: string;
+  layers: string[];
+  detail: string | null;
+}
+
+export interface ClaimContent {
+  statement: string;
+  rationale: string | null;
+  condition: string | null;
+  subjects: string[];
+  layers: string[];
+  evidence: EvidenceContent[];
+  flags: string[];
+  guesses: string[];
+}
+
+export interface TermContent {
+  name: string;
+  definition: string;
+  partOf: string | null;
+}
+
+export interface FeatureContent {
+  name: string;
+  definition: string;
+  core: boolean | null;
+  formal: boolean | null;
+  formalWaiver: string | null;
+}
+
+export interface FileContent {
+  text: string;
+}
+
+export type Content = ClaimContent | TermContent | FeatureContent | FileContent;
+
+export interface CommitRef {
+  commit: string;
+  subject: string;
+  stories: string[];
+}
+
+export interface Entry {
+  no: number | null;
+  kind: Kind;
+  id: string | null;
+  path: string | null;
+  oldPath: string | null;
+  fileType: FileType | null;
+  change: Change;
+  state: State | null;
+  fingerprint: string | null;
+  flags: Flag[];
+  group: string;
+  before: Content | null;
+  after: Content | null;
+  detachedAgreement: { by: string[] } | null;
+  otherCommits: CommitRef[];
+}
+
+export interface Review {
+  view: "branch" | "story";
+  base: string | null;
+  mergeBase: string | null;
+  story: string | null;
+  total: number;
+  entries: Entry[];
+  detached: Entry[];
+}
+
+export interface Story {
+  id: string;
+  title: string;
+  body: string;
+  url: string;
+  attachments: { name: string; url: string }[];
+}
+
+export interface Found {
+  adapter: string;
+  file: string;
+  line: number;
+  name: string;
+  text: string | null;
+}
+
+export interface EvidenceDetail extends EvidenceContent {
+  found: Found[];
+  present: boolean | null;
+}
+
+export interface ClaimDetail {
+  id: string;
+  statement: string;
+  rationale: string | null;
+  condition: string | null;
+  layers: LayerRef[];
+  subjects: { kind: "term" | "feature" | null; id: string; name: string | null }[];
+  state: State;
+  fingerprint: string | null;
+  flags: string[];
+  guesses: string[];
+  evidence: EvidenceDetail[];
+  origin: { commit: string; date: string; subject: string; stories: string[]; change: "added" | "modified" }[];
+  agreements: { user: User; agreedAt: string; story: string; fingerprint: string; current: boolean }[];
+}
+
+export interface AgreeResult {
+  commit: string;
+}
+
+export class ApiError extends Error {
+  readonly status: number;
+  readonly fix: string;
+  constructor(status: number, message: string, fix: string) {
+    super(message);
+    this.status = status;
+    this.fix = fix;
+  }
+}
+
+async function call<T>(path: string, init?: RequestInit): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(path, init);
+  } catch (e) {
+    throw new ApiError(0, `vanda のサーバーに繋がらない（${String(e)}）`, "vanda serve が動いているかを確かめる");
+  }
+  const text = await res.text();
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    throw new ApiError(res.status, `サーバーの応答が JSON でない（${res.status}）: ${text.slice(0, 200)}`, "vanda serve を起動し直す");
+  }
+  if (!res.ok) {
+    const err = (body as { error?: { message?: string; fix?: string } }).error;
+    throw new ApiError(res.status, err?.message ?? `サーバーが ${res.status} を返した`, err?.fix ?? "");
+  }
+  return body as T;
+}
+
+const q = (params: Record<string, string | null | undefined>) => {
+  const u = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v) u.set(k, v);
+  return u.toString();
+};
+
+export const api = {
+  context: () => call<Context>("/api/context"),
+  review: (view: string, base: string | null, story: string | null) =>
+    call<Review>(`/api/review?${q({ view, base: view === "branch" ? base : null, story })}`),
+  story: (id: string) => call<Story>(`/api/story?${q({ id })}`),
+  claim: (id: string) => call<ClaimDetail>(`/api/claims/${encodeURIComponent(id)}`),
+  file: (path: string) => call<{ path: string; text: string }>(`/api/file?${q({ path })}`),
+  agree: (e: Entry, story: string) =>
+    call<AgreeResult>("/api/agree", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: e.kind,
+        id: e.kind === "file" ? null : e.id,
+        path: e.kind === "file" ? e.path : null,
+        fingerprint: e.fingerprint,
+        story,
+      }),
+    }),
+};
