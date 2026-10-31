@@ -203,23 +203,29 @@ func cmdAgree(ts *testscript.TestScript, neg bool, args []string) {
 		ts.Fatalf("対象の種類 %q は claim・term・feature・file のどれでもない", kind)
 	}
 
+	text := agreementTOML(kind, key, fingerprint, path, story, ts.Getenv("GIT_AUTHOR_NAME"), ts.Getenv("GIT_AUTHOR_EMAIL"))
+
+	abs := ts.MkAbs(record)
+	ts.Check(os.MkdirAll(filepath.Dir(abs), 0o755))
+	f, err := os.OpenFile(abs, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	ts.Check(err)
+	_, err = f.WriteString(text)
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	ts.Check(err)
+}
+
+// agreementTOML は、合意の記録の 1 件を、docs/formats.md の [[agreement]] の形で返す。
+func agreementTOML(kind, key, fingerprint, path, story, name, email string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "\n[[agreement]]\nkind = %q\nkey = %q\nfingerprint = %q\n", kind, key, fingerprint)
 	if path != "" {
 		fmt.Fprintf(&b, "path = %q\n", path)
 	}
 	fmt.Fprintf(&b, "agreed_at = 2026-10-31T12:00:00+09:00\nstory = %q\n", story)
-	fmt.Fprintf(&b, "\n[agreement.user]\nname = %q\nemail = %q\n", ts.Getenv("GIT_AUTHOR_NAME"), ts.Getenv("GIT_AUTHOR_EMAIL"))
-
-	abs := ts.MkAbs(record)
-	ts.Check(os.MkdirAll(filepath.Dir(abs), 0o755))
-	f, err := os.OpenFile(abs, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	ts.Check(err)
-	_, err = f.WriteString(b.String())
-	if cerr := f.Close(); err == nil {
-		err = cerr
-	}
-	ts.Check(err)
+	fmt.Fprintf(&b, "\n[agreement.user]\nname = %q\nemail = %q\n", name, email)
+	return b.String()
 }
 
 func sha256Hex(data []byte) string {
