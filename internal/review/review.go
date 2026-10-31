@@ -101,7 +101,7 @@ func Build(o Options) (*Result, *Error) {
 	switch o.View {
 	case ViewBranch:
 		if o.Base == "" {
-			return nil, &Error{Status: http.StatusBadRequest, Message: "このブランチの変更を見るための、ベースブランチ（base）がありません。", Fix: "base にベースブランチを渡してください。"}
+			return nil, &Error{Status: http.StatusBadRequest, Message: "レビュー単位がブランチのときに要る、ベースブランチ（base）がありません。", Fix: "base にベースブランチを渡してください。"}
 		}
 		mb, err := repo.Git(o.Root, "merge-base", o.Base, "HEAD")
 		if err != nil {
@@ -124,7 +124,7 @@ func Build(o Options) (*Result, *Error) {
 		}
 	case ViewStory:
 		if o.Story == "" {
-			return nil, &Error{Status: http.StatusBadRequest, Message: "ストーリーの変更を見るための、ストーリーの ID（story）がありません。", Fix: "story にストーリーの ID を渡してください。"}
+			return nil, &Error{Status: http.StatusBadRequest, Message: "レビュー単位がストーリーのときに要る、ストーリーの ID（story）がありません。", Fix: "story にストーリーの ID を渡してください。"}
 		}
 		if e := s.checkStory(o.Story); e != nil {
 			return nil, e
@@ -135,7 +135,7 @@ func Build(o Options) (*Result, *Error) {
 			return nil, internalErr(err)
 		}
 	default:
-		return nil, &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("見方 %q はありません。", o.View), Fix: "view を branch か story にしてください。"}
+		return nil, &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("レビュー単位 %q はありません。", o.View), Fix: "view を branch か story にしてください。"}
 	}
 	if s.o.Story != "" {
 		st := s.o.Story
@@ -199,7 +199,7 @@ func (s *state) checkStory(id string) *Error {
 	return nil
 }
 
-// branchStory は、ブランチごとの見方のストーリーを、vanda check と同じく決める。渡されていればそれを、なければ分かれた点より後のコミットのメッセージにある ID が 1 つのときだけそれを使う。
+// branchStory は、レビュー単位がブランチのときのストーリーを、vanda check と同じく決める。渡されていればそれを、なければ分かれた点より後のコミットのメッセージにある ID が 1 つのときだけそれを使う。
 func (s *state) branchStory(mb string) (string, *Error) {
 	if s.o.Story != "" {
 		return s.o.Story, s.checkStory(s.o.Story)
@@ -240,7 +240,7 @@ func fileKeys(a, b *side) []string {
 	return out
 }
 
-// diffAll は、before と今の中身を比べる（ブランチごとの見方）。
+// diffAll は、before と今の中身を比べる（レビュー単位がブランチ）。
 func (s *state) diffAll(before *side) ([]rawChange, error) {
 	var out []rawChange
 	for _, k := range itemKeys(before, s.cur) {
@@ -260,7 +260,7 @@ func (s *state) diffAll(before *side) ([]rawChange, error) {
 	return out, nil
 }
 
-// diffStory は、鍵ごとに、ストーリーの ID を持つコミットのうちその鍵を変えた最初のコミットの親の中身と、今の中身を比べる（ストーリー全体の見方）。
+// diffStory は、鍵ごとに、ストーリーの ID を持つコミットのうちその鍵を変えた最初のコミットの親の中身と、今の中身を比べる（レビュー単位がストーリー）。
 func (s *state) diffStory() ([]rawChange, error) {
 	commits, err := s.h.loadCommits()
 	if err != nil {
@@ -393,7 +393,7 @@ func (s *state) entries(changes []rawChange) ([]Entry, error) {
 		if pair >= 0 {
 			used[pair] = true
 			d := deleted[pair]
-			// 比べる元は、前の場所の比べる元の時点（ストーリー全体の見方では、場所ごとに時点が違う）
+			// 比べる元は、前の場所の比べる元の時点（レビュー単位がストーリーでは、場所ごとに時点が違う）
 			rc = rawChange{key: a.rc.key, before: d.rc.before, others: s.mergeCommits(d.rc.others, a.rc.others)}
 			change, old = "renamed", d.path
 		}
