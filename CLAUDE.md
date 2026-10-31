@@ -27,6 +27,7 @@
 | `github.com/rogpeppe/go-internal`（`testscript`） | シナリオテスト |
 | `pgregory.net/rapid` | ランダムチェック |
 | `react`、`react-dom` | 画面（`web/`） |
+| `react-markdown`、`remark-gfm` | ストーリーの本文を Markdown として描く（表などは `remark-gfm`）。生の HTML は描かない |
 | `@types/react`、`@types/react-dom` | 画面を TypeScript で書くための React の型 |
 | `typescript`、`vite`、`@vitejs/plugin-react` | 画面を作る |
 | `vitest`、`@testing-library/react`、`@testing-library/dom`、`@testing-library/user-event`、`jsdom` | 画面の部品のテスト（`@testing-library/dom` は `@testing-library/react` が求めるもの） |

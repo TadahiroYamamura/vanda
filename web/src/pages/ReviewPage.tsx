@@ -1,4 +1,7 @@
 import { useState } from "react";
+// 本文の中の生の HTML は描かない（react-markdown の既定。rehype-raw などを足さない）。Issue の本文に悪意のある HTML があっても、画面で動かないようにするため
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { api, type ClaimContent, type Context, type Entry, type FeatureContent, type FileContent, type Review, type TermContent } from "../api";
 import { ErrorBox, FlagBadge, StateBadge, shortCommit, useLoad } from "../components/common";
 import { TlaCode } from "../components/TlaCode";
@@ -133,21 +136,34 @@ function StoryPanel(props: { id: string; configured: boolean }) {
           <p className="story-title">{s.data.title}</p>
           {s.data.url && (
             <p>
-              <a href={s.data.url} target="_blank" rel="noreferrer">
+              <a href={s.data.url} target="_blank" rel="noopener noreferrer">
                 置き場所で開く
               </a>
             </p>
           )}
           <details open>
             <summary>本文</summary>
-            <div className="story-body">{s.data.body}</div>
+            <div className="story-body">
+              <Markdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a: ({ href, children }) => (
+                    <a href={href} target="_blank" rel="noopener noreferrer">
+                      {children}
+                    </a>
+                  ),
+                }}
+              >
+                {s.data.body}
+              </Markdown>
+            </div>
           </details>
           <details open>
             <summary>添付ファイル {s.data.attachments.length} 件</summary>
             <ul>
               {s.data.attachments.map((a) => (
                 <li key={a.url}>
-                  <a href={a.url} target="_blank" rel="noreferrer">
+                  <a href={a.url} target="_blank" rel="noopener noreferrer">
                     {a.name}
                   </a>
                 </li>

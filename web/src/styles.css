@@ -57,7 +57,7 @@ main { padding: 12px 16px; }
 @media (max-width: 1000px) { .columns { grid-template-columns: 1fr; } }
 .story-panel, .list, .detail { min-width: 0; }
 .story-title { font-weight: 600; }
-.story-body { white-space: pre-wrap; background: var(--panel); padding: 8px; border-radius: 4px; max-height: 320px; overflow: auto; }
+.story-body { overflow-wrap: anywhere; background: var(--panel); padding: 8px; border-radius: 4px; max-height: 320px; overflow: auto; }
 h2 { font-size: 16px; margin: 8px 0; }
 h3 { font-size: 14px; margin: 12px 0 4px; }
 .total { color: var(--muted); font-weight: 400; }
@@ -95,3 +95,6 @@ pre.code { background: var(--panel); padding: 8px; border-radius: 4px; overflow:
 .fields dt { color: var(--muted); }
 .fields dd { margin: 0; }
 .found { margin: 8px 0; }
+.story-body table { width: auto; }
+.story-body pre { background: var(--bg); padding: 6px; overflow: auto; }
+.story-body img { max-width: 100%; }
