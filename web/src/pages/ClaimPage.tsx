@@ -3,10 +3,10 @@ import { ErrorBox, StateBadge, shortCommit, useLoad } from "../components/common
 import { CodeBlock } from "../components/Code";
 import { langOf } from "../highlight";
 import { stageLabel, typeLabel } from "../labels";
-import { Link } from "../route";
+import { Link, reviewQuery, reviewURL } from "../route";
 
 // ClaimPage は、約束の詳細（CL-01・02・04・05・07）。
-export function ClaimPage(props: { id: string }) {
+export function ClaimPage(props: { id: string; params?: URLSearchParams }) {
   const d = useLoad(() => api.claim(props.id), props.id);
   if (d.error != null) return <ErrorBox error={d.error} title="約束の詳細を読めません" />;
   if (!d.data) return <p className="note">読み込んでいます…</p>;
@@ -17,7 +17,7 @@ export function ClaimPage(props: { id: string }) {
   return (
     <div className="claim">
       <p className="note">
-        <Link to="/">ストーリーのレビューへ戻る</Link>
+        <Link to={reviewURL(props.params)}>ストーリーのレビューへ戻る</Link>
       </p>
       <h1>
         {c.id} <StateBadge state={c.state} />
@@ -57,7 +57,7 @@ export function ClaimPage(props: { id: string }) {
                 {ev.detail && ` · ${ev.detail}`} · {ev.present === null ? "アノテーションでは確かめません" : ev.present ? "揃っています" : "エビデンスがありません"}
               </p>
               {ev.found.map((f) => (
-                <FoundView key={`${f.file}:${f.line}`} f={f} />
+                <FoundView key={`${f.file}:${f.line}`} f={f} params={props.params} />
               ))}
             </div>
           ))}
@@ -123,9 +123,11 @@ export function ClaimPage(props: { id: string }) {
   );
 }
 
-function FoundView(props: { f: Found }) {
+function FoundView(props: { f: Found; params?: URLSearchParams }) {
   const { f } = props;
-  const fileLink = <Link to={`/files?path=${encodeURIComponent(f.file)}`}>{`${f.file}:${f.line}`}</Link>;
+  const q = reviewQuery(props.params);
+  const fileURL = `/files?${q ? `${q}&` : ""}path=${encodeURIComponent(f.file)}`;
+  const fileLink = <Link to={fileURL}>{`${f.file}:${f.line}`}</Link>;
   return (
     <div className="found">
       <p>
@@ -133,7 +135,7 @@ function FoundView(props: { f: Found }) {
         {f.adapter === "tla" && (
           <>
             {" "}
-            · <Link to={`/files?path=${encodeURIComponent(f.file)}`}>ファイル全体</Link>
+            · <Link to={fileURL}>ファイル全体</Link>
           </>
         )}
       </p>
@@ -142,12 +144,12 @@ function FoundView(props: { f: Found }) {
   );
 }
 
-export function FilePage(props: { path: string }) {
+export function FilePage(props: { path: string; params?: URLSearchParams }) {
   const d = useLoad(() => api.file(props.path), props.path);
   return (
     <div>
       <p className="note">
-        <Link to="/">ストーリーのレビューへ戻る</Link>
+        <Link to={reviewURL(props.params)}>ストーリーのレビューへ戻る</Link>
       </p>
       <h1>{props.path}</h1>
       {d.error != null && <ErrorBox error={d.error} title="ファイルを読めません" />}
