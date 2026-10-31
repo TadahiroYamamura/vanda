@@ -335,11 +335,11 @@ scope = "story"
 
 ## GUI の API（`vanda serve`）
 
-> 段 2 の案。監督の確認の後に確定する。v1.0.0 からは変えない取り決めではないが、画面とテストが頼る。
+v1.0.0 からは変えない取り決めではないが、画面とテストが頼るので、形をここに書く。
 
 ### 共通
 
-- `vanda serve [--port <ポート>] [--no-open]` で起動する。`127.0.0.1` でだけ待ち受ける。`--port` を省けば（`0` なら）空いているポートを選ぶ。開いた URL を標準出力に 1 行で出し、`--no-open` でなければブラウザで開く
+- `vanda serve [--port <ポート>] [--no-open]` で起動する。`127.0.0.1` でだけ待ち受ける。`--port` を省けば（`0` なら）空いているポートを選ぶ。開いた URL を、`--no-open` のときも必ず標準出力に 1 行で出す。`--no-open` でなければブラウザで開く
 - `Host` が `127.0.0.1:<ポート>`・`localhost:<ポート>` でない要求は `403` で断る。`GET` 以外で、`Origin` があって `http://<Host>` でない要求も `403` で断る
 - 中身は UTF-8 の JSON。ストーリーの ID は URL の中で `%23` のようにエンコードする（`#24` → `%2324`）
 - 誤りは、HTTP の状態コードと、次の形で返す。`message` は何がいけないか、`fix` はどう直すか（なければ省く）
@@ -565,13 +565,14 @@ scope = "story"
 | `'` | `′` | `~>` | `↝` |
 | `\o`・`\circ` | `∘` | `\div` | `÷` |
 
-## 設定に足すもの（段 2。案）
+## 設定の `[story]` と `[gui]`（段 2 で足したもの）
 
 ```toml
 [story]
 id_pattern = "#[0-9]+"
 adapter = "github"
 repository = "TadahiroYamamura/vanda"
+api_url = "https://api.github.com"
 
 [gui]
 base = "origin/develop"
@@ -581,13 +582,14 @@ base = "origin/develop"
 |---|---|---|---|
 | `[story]` の `adapter` | 文字列 | `command` とどちらか 1 つ。どちらもなければ、画面にストーリーの題・本文を出さない | 中に持つストーリーの置き場所のアダプタ。今は `github`（GitHub Issues）だけ |
 | `[story]` の `repository` | 文字列 | `adapter = "github"` のときは必ず | `<owner>/<repo>` |
+| `[story]` の `api_url` | 文字列 | 省いてよい。`adapter = "github"` のときだけ書ける | GitHub の REST API の URL。省けば `https://api.github.com`（GitHub Enterprise なら、その API の URL） |
 | `[story]` の `command` | 文字列の配列 | 同上 | 外部のコマンドのアダプタと引数 |
 | `[gui]` の `base` | 文字列 | 省いてよい | 画面を開いたときのベースブランチ（CM-06） |
 
 ### GitHub Issues のアダプタ
 
-- 認証の鍵は、使うたびに、環境の変数 `GH_TOKEN` があればそれを、なければ `gh auth token` の出力を使う
-- `GET https://api.github.com/repos/<repository>/issues/<番号>` を呼ぶ。番号は、ストーリーの ID の数字の部分
+- 認証の鍵は設定に書かない。使うたびに、環境の変数 `GH_TOKEN` があればそれを、なければ `gh auth token` の出力を使う
+- `GET <api_url>/repos/<repository>/issues/<番号>` を呼ぶ。番号は、ストーリーの ID の数字の部分
 - 添付ファイルは、本文の中のリンクと画像（Markdown の `[名前](URL)`・`![名前](URL)` と、HTML の `<img src>`）のうち、URL が `https://github.com/user-attachments/`・`https://github.com/<repository>/assets/`・`https://user-images.githubusercontent.com/` で始まるもの。名前は、リンクの文字か画像の代わりの文字（なければ URL の最後の部分）
 
 ### 外部のコマンドのアダプタ（ストーリーの置き場所）
