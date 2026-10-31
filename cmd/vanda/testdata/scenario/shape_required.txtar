@@ -1,0 +1,574 @@
+# CMD-10 約束リストの形: 必須の項目がある。
+# 表（term・feature・claim・claim.evidence）ごとに、必須の項目を 1 つずつ消すと止まる。
+#
+# 行の分からないエラーは、ファイルと ID と項目で場所を示す（監督が決めた形）。ファイルと同じ行に ID と項目が出ることを確かめる。
+# 必須かどうかが計画から読み取れない項目（claim の rationale・condition、evidence の detail、feature の core）は、ここでは確かめない。
+# 空のレイヤーの配列は、計画に「1 つ以上」とあるので止まる。
+
+exec git init -q -b main
+expand .vanda/config.toml
+
+# 必須の項目がすべてあれば通る
+cp cases/valid.toml .vanda/promises.toml
+exec vanda check .vanda/checks/shape.toml
+
+# term の id がない
+cp cases/missing-term-id.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml.*\bid\b'
+! stderr '(?m)^panic: '
+
+# term の name がない
+cp cases/missing-term-name.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml.*\bname\b'
+stderr 'promises\.toml.*\btask\b'
+! stderr '(?m)^panic: '
+
+# term の definition がない
+cp cases/missing-term-definition.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml.*\bdefinition\b'
+stderr 'promises\.toml.*\btask\b'
+! stderr '(?m)^panic: '
+
+# feature の id がない
+cp cases/missing-feature-id.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml.*\bid\b'
+! stderr '(?m)^panic: '
+
+# feature の name がない
+cp cases/missing-feature-name.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml.*\bname\b'
+stderr 'promises\.toml.*\btask-add\b'
+! stderr '(?m)^panic: '
+
+# feature の definition がない
+cp cases/missing-feature-definition.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml.*\bdefinition\b'
+stderr 'promises\.toml.*\btask-add\b'
+! stderr '(?m)^panic: '
+
+# claim の id がない
+cp cases/missing-claim-id.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml.*\bid\b'
+! stderr '(?m)^panic: '
+
+# claim の subjects がない
+cp cases/missing-claim-subjects.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml.*\bsubjects\b'
+stderr 'promises\.toml.*\btask-id-unique\b'
+! stderr '(?m)^panic: '
+
+# claim の statement がない
+cp cases/missing-claim-statement.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml.*\bstatement\b'
+stderr 'promises\.toml.*\btask-id-unique\b'
+! stderr '(?m)^panic: '
+
+# claim の layers がない
+cp cases/missing-claim-layers.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml.*\blayers\b'
+stderr 'promises\.toml.*\btask-id-unique\b'
+! stderr '(?m)^panic: '
+
+# claim の evidence がない
+cp cases/missing-claim-evidence.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml.*\bevidence\b'
+stderr 'promises\.toml.*\btask-id-unique\b'
+! stderr '(?m)^panic: '
+
+# claim.evidence の stage がない
+cp cases/missing-claim.evidence-stage.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml.*\bstage\b'
+stderr 'promises\.toml.*\btask-id-unique\b'
+! stderr '(?m)^panic: '
+
+# claim.evidence の type がない
+cp cases/missing-claim.evidence-type.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml.*\btype\b'
+stderr 'promises\.toml.*\btask-id-unique\b'
+! stderr '(?m)^panic: '
+
+# claim.evidence の layers がない
+cp cases/missing-claim.evidence-layers.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml.*\blayers\b'
+stderr 'promises\.toml.*\btask-id-unique\b'
+! stderr '(?m)^panic: '
+
+# claim の layers が空
+cp cases/empty-claim-layers.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml:18: .*layers'
+! stderr '(?m)^panic: '
+
+# claim.evidence の layers が空
+cp cases/empty-evidence-layers.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml:23: .*layers'
+! stderr '(?m)^panic: '
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[layer]]
+id = "cli"
+name = "CLI"
+description = "引数と出力の形"
+
+[[layer]]
+id = "db"
+name = "DB"
+description = "保存"
+-- .vanda/checks/shape.toml --
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+-- .vanda/agreements.toml --
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/valid.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/missing-term-id.toml --
+[[term]]
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/missing-term-name.toml --
+[[term]]
+id = "task"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/missing-term-definition.toml --
+[[term]]
+id = "task"
+name = "タスク"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/missing-feature-id.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/missing-feature-name.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/missing-feature-definition.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/missing-claim-id.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/missing-claim-subjects.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/missing-claim-statement.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/missing-claim-layers.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/missing-claim-evidence.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+-- cases/missing-claim.evidence-stage.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/missing-claim.evidence-type.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/missing-claim.evidence-layers.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+detail = "task_test.go"
+-- cases/empty-claim-layers.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = []
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/empty-evidence-layers.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = []
+detail = "task_test.go"

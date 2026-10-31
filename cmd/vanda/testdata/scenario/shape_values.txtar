@@ -1,0 +1,308 @@
+# CMD-10 約束リストの形: ステージ・タイプ・レイヤーが決まった値の中にある。flags は ai-proposal だけ。
+# 決まった値は全部を使って通ることを、決まった値の外の値は止まることを確かめる。
+#
+# ステージの値（plan・implementation・test・release・operation）は仮の値。計画に TOML に書く値がないため。TODO: 決まったら合わせる。
+
+exec git init -q -b main
+expand .vanda/config.toml
+
+# 12 のタイプ、5 つのステージ、設定にある 3 つのレイヤー、flags の ai-proposal と guesses を使えば通る
+cp cases/all-values.toml .vanda/promises.toml
+exec vanda check .vanda/checks/shape.toml
+
+# 決まった値にないステージ
+cp cases/bad-stage.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml:21: .*testing'
+! stderr '(?m)^panic: '
+
+# 決まった値にないタイプ
+cp cases/bad-type.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml:22: .*e2e-test'
+! stderr '(?m)^panic: '
+
+# 約束に、設定にないレイヤー
+cp cases/bad-claim-layer.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml:18: .*ui'
+! stderr '(?m)^panic: '
+
+# エビデンスに、設定にないレイヤー
+cp cases/bad-evidence-layer.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml:23: .*ui'
+! stderr '(?m)^panic: '
+
+# flags に ai-proposal 以外の値
+cp cases/bad-flags.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml:19: .*guess'
+! stderr '(?m)^panic: '
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[layer]]
+id = "cli"
+name = "CLI"
+description = "引数と出力の形"
+
+[[layer]]
+id = "db"
+name = "DB"
+description = "保存"
+-- .vanda/checks/shape.toml --
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+-- .vanda/agreements.toml --
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/all-values.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model", "cli", "db"]
+flags = ["ai-proposal"]
+guesses = ["ID は登録の順に振られる"]
+
+[[claim.evidence]]
+stage = "plan"
+type = "model-check"
+layers = ["model"]
+detail = "evidence-0"
+
+[[claim.evidence]]
+stage = "implementation"
+type = "proof"
+layers = ["cli"]
+detail = "evidence-1"
+
+[[claim.evidence]]
+stage = "test"
+type = "cross-check"
+layers = ["db"]
+detail = "evidence-2"
+
+[[claim.evidence]]
+stage = "release"
+type = "random-check"
+layers = ["model"]
+detail = "evidence-3"
+
+[[claim.evidence]]
+stage = "operation"
+type = "scenario-test"
+layers = ["cli"]
+detail = "evidence-4"
+
+[[claim.evidence]]
+stage = "plan"
+type = "unit-test"
+layers = ["db"]
+detail = "evidence-5"
+
+[[claim.evidence]]
+stage = "implementation"
+type = "interface-test"
+layers = ["model"]
+detail = "evidence-6"
+
+[[claim.evidence]]
+stage = "test"
+type = "concurrency-test"
+layers = ["cli"]
+detail = "evidence-7"
+
+[[claim.evidence]]
+stage = "release"
+type = "guardrail"
+layers = ["db"]
+detail = "evidence-8"
+
+[[claim.evidence]]
+stage = "operation"
+type = "sensor"
+layers = ["model"]
+detail = "evidence-9"
+
+[[claim.evidence]]
+stage = "plan"
+type = "monitoring"
+layers = ["cli"]
+detail = "evidence-10"
+
+[[claim.evidence]]
+stage = "implementation"
+type = "human-review"
+layers = ["db"]
+detail = "evidence-11"
+-- cases/bad-stage.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "testing"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/bad-type.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "e2e-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/bad-claim-layer.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model", "ui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/bad-evidence-layer.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["ui"]
+detail = "task_test.go"
+-- cases/bad-flags.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+flags = ["guess"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"

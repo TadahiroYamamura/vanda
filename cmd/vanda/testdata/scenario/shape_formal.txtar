@@ -1,0 +1,236 @@
+# CMD-10 約束リストの形: core = true かつ formal = false なら formal_waiver がある。core = true で formal を省けば formal = true とみなす。
+# core と formal の組み合わせを全部回す（core = false で formal を省いたもの、formal_waiver を formal = true と一緒に書いたものは、
+# 計画から期待値を決められないので確かめない）。
+
+exec git init -q -b main
+expand .vanda/config.toml
+
+# core = true で formal を省き、formal_waiver もなければ、formal = true とみなして通る
+cp cases/core-formal-omitted.toml .vanda/promises.toml
+exec vanda check .vanda/checks/shape.toml
+
+# core = true かつ formal = true なら通る
+cp cases/core-formal-true.toml .vanda/promises.toml
+exec vanda check .vanda/checks/shape.toml
+
+# core = true かつ formal = false で formal_waiver がないと止まる
+cp cases/core-no-formal-no-waiver.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml.*task-add.*formal_waiver|promises\.toml.*formal_waiver.*task-add|promises\.toml:1[01]: '
+! stderr '(?m)^panic: '
+
+# core = true かつ formal = false で formal_waiver があれば通る
+cp cases/core-no-formal-waiver.toml .vanda/promises.toml
+exec vanda check .vanda/checks/shape.toml
+
+# core = false かつ formal = true なら通る
+cp cases/not-core-formal-true.toml .vanda/promises.toml
+exec vanda check .vanda/checks/shape.toml
+
+# core = false かつ formal = false なら通る
+cp cases/not-core-formal-false.toml .vanda/promises.toml
+exec vanda check .vanda/checks/shape.toml
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[layer]]
+id = "cli"
+name = "CLI"
+description = "引数と出力の形"
+
+[[layer]]
+id = "db"
+name = "DB"
+description = "保存"
+-- .vanda/checks/shape.toml --
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+-- .vanda/agreements.toml --
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/core-formal-omitted.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = true
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/core-formal-true.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = true
+formal = true
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/core-no-formal-no-waiver.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = true
+formal = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/core-no-formal-waiver.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = true
+formal = false
+formal_waiver = "画面の並びだけで、状態を持たないため"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/not-core-formal-true.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+formal = true
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/not-core-formal-false.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+formal = false
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
