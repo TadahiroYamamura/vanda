@@ -12,6 +12,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/diag"
 	"github.com/TadahiroYamamura/vanda/internal/repo"
+	"github.com/TadahiroYamamura/vanda/internal/story"
 	"github.com/TadahiroYamamura/vanda/internal/version"
 )
 
@@ -110,7 +111,14 @@ func newDoctorCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "設定を確かめた: %s（リポジトリ %s、版 %s）\n", config.File, root, cfg.Version)
+			conn, err := story.Check(root, cfg)
+			if err != nil {
+				return err
+			}
+			if conn != "" {
+				conn = "。" + conn
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "設定を確かめた: %s（リポジトリ %s、版 %s）%s\n", config.File, root, cfg.Version, conn)
 			return nil
 		},
 	}

@@ -14,6 +14,7 @@ import (
 
 	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/review"
+	"github.com/TadahiroYamamura/vanda/internal/story"
 )
 
 type Server struct {
@@ -33,6 +34,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/agree", s.agree)
 	mux.HandleFunc("GET /api/claims/{id}", s.read(s.claim))
 	mux.HandleFunc("GET /api/file", s.read(s.file))
+	mux.HandleFunc("GET /api/story", s.story)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, http.StatusNotFound, "この API はない", "")
 	})
@@ -84,6 +86,16 @@ func (s *Server) file(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"path": p, "text": text})
+}
+
+// story は、置き場所を読むだけでリポジトリを変えないので、合意と並べて動かしてよい（ロックを取らない）
+func (s *Server) story(w http.ResponseWriter, r *http.Request) {
+	st, err := story.Read(s.Root, s.Cfg, r.URL.Query().Get("id"))
+	if err != nil {
+		writeError(w, err.Status, err.Message, err.Fix)
+		return
+	}
+	writeJSON(w, http.StatusOK, st)
 }
 
 func writeReviewError(w http.ResponseWriter, e *review.Error) {
