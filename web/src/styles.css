@@ -66,7 +66,7 @@ main { padding: 20px 28px 40px; }
 .flag { border: 1px solid var(--mark-line); color: var(--mark); background: var(--mark-bg); cursor: help; }
 .flag::before { content: "!"; font-weight: 700; }
 .detached-badge { background: var(--bad-bg); color: var(--bad); }
-.tooltip { position: absolute; left: -4px; top: calc(100% + 4px); z-index: 20; white-space: nowrap; background: var(--fg); color: #fff; font-size: 11px; line-height: 1.5; padding: 3px 8px; border-radius: 6px; pointer-events: none; }
+.tooltip { position: fixed; z-index: 50; width: max-content; max-width: min(360px, calc(100vw - 16px)); white-space: normal; overflow-wrap: anywhere; background: var(--fg); color: #fff; font-size: 11px; line-height: 1.5; padding: 3px 8px; border-radius: 6px; pointer-events: none; }
 .tooltip[hidden] { display: none; }
 
 /* 誤りと注意 */
