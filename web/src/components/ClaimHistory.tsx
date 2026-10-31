@@ -31,7 +31,7 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
       {c.origin.length === 0 ? (
         <p className="note">まだコミットしていません。</p>
       ) : (
-        <table>
+        <table className="history">
           <thead>
             <tr>
               <th>コミット</th>
@@ -66,7 +66,7 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
       {c.agreements.length === 0 ? (
         <p className="note">まだ合意していません。</p>
       ) : (
-        <table>
+        <table className="history">
           <thead>
             <tr>
               <th>誰が</th>

@@ -516,22 +516,30 @@ export function ClaimSections(props: { id: string; query?: string }) {
         <table className="plan">
           <thead>
             <tr>
-              <th>ステージ</th>
-              <th>タイプ</th>
-              <th>レイヤー</th>
-              <th>予定の中身</th>
-              <th>実際のエビデンス</th>
-              <th>揃っているか</th>
+              <th className="plan-narrow">ステージ</th>
+              <th className="plan-narrow">タイプ</th>
+              <th className="plan-narrow">レイヤー</th>
+              <th className="plan-detail">詳細</th>
+              <th className="plan-found">実際のエビデンス</th>
+              <th className="plan-narrow">揃っているか</th>
             </tr>
           </thead>
           <tbody>
             {d.data.evidence.map((ev, i) => (
               <tr key={i}>
-                <td>{stageLabel[ev.stage] ?? ev.stage}</td>
-                <td>{typeLabel[ev.type] ?? ev.type}</td>
-                <td>{ev.layers.join("・")}</td>
-                <td>{ev.detail ?? ""}</td>
-                <td>
+                <td className="plan-narrow" data-label="ステージ">
+                  {stageLabel[ev.stage] ?? ev.stage}
+                </td>
+                <td className="plan-narrow" data-label="タイプ">
+                  {typeLabel[ev.type] ?? ev.type}
+                </td>
+                <td className="plan-narrow" data-label="レイヤー">
+                  {ev.layers.join("・")}
+                </td>
+                <td className="plan-detail" data-label="詳細">
+                  {ev.detail ?? ""}
+                </td>
+                <td className="plan-found" data-label="実際のエビデンス">
                   {ev.found.map((f) => (
                     <div key={`${f.file}:${f.line}`}>
                       {f.name}{" "}
@@ -541,7 +549,7 @@ export function ClaimSections(props: { id: string; query?: string }) {
                     </div>
                   ))}
                 </td>
-                <td>
+                <td className="plan-narrow" data-label="揃っているか">
                   <PresentIcon present={ev.present} />
                 </td>
               </tr>

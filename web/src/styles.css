@@ -121,14 +121,21 @@ ul.entries { list-style: none; padding: 0; margin: 0; }
 table { border-collapse: collapse; width: 100%; margin: 6px 0; }
 th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 500; padding: 8px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 td { padding: 10px 12px; border-bottom: 1px solid var(--line2); vertical-align: top; font-size: 13px; }
-td.text { white-space: pre-wrap; }
+td.text { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* 長い詳細（英字の長い並びなど）が欄を押し広げ、ページが横にスクロールしないように、変更前と変更後の表の中でも折り返す */
+table.compare { table-layout: fixed; }
+table.compare th[scope="row"] { width: 7.5em; }
 td.empty { color: var(--muted); }
-table.compare th[scope="row"] { width: 120px; white-space: normal; }
+table.compare th[scope="row"] { white-space: normal; }
 table.compare thead th:nth-child(2) { color: var(--before); }
 table.compare thead th:nth-child(3) { color: var(--ok); }
 table.compare tr.differs td:nth-child(2) { background: var(--before-bg); }
 table.compare tr.differs td:nth-child(3) { background: var(--after-bg); }
 table.plan { border: 1px solid var(--line2); border-radius: 10px; }
+/* 詳細は省略せずに全部出す（レビューでは全部読む前提）。ほかの欄は中身に合わせて狭くし、詳細の欄が残りの幅を使う */
+table.plan .plan-narrow { width: 1%; white-space: nowrap; }
+table.plan td.plan-detail { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 12em; }
+table.plan td.plan-found { overflow-wrap: anywhere; min-width: 8em; max-width: 24em; }
 
 /* コードと差分 */
 pre.code { margin: 0; padding: 14px 16px; background: var(--code-bg); border: 1px solid var(--line2); border-radius: 10px; overflow-x: auto; white-space: pre; font: 13px/1.75 var(--mono); font-variant-ligatures: none; }
@@ -182,6 +189,9 @@ button.revoke { color: var(--bad); border-color: #e3b4b4; }
 .story-fixed { margin: 0; font-size: 12px; color: var(--muted); }
 .story-fixed strong { font-family: var(--mono); font-size: 13px; color: var(--fg); font-weight: 500; }
 
+/* 由来と合意の履歴の表も、狭い幅でページが横にスクロールしないよう、見出しと中身を折り返す */
+table.history th { white-space: normal; }
+table.history td { overflow-wrap: anywhere; }
 tr.claim-at-row > td { padding: 0 0 8px; background: transparent; }
 .claim-at-row .claim-at { margin: 0; }
 
@@ -196,4 +206,13 @@ tr.claim-at-row > td { padding: 0 0 8px; background: transparent; }
   .columns { grid-template-columns: minmax(0, 1fr); grid-template-areas: "story" "list" "detail"; }
   .list { position: static; max-height: none; overflow: visible; }
   main { padding: 16px 12px 32px; }
+}
+/* 表のままでは収まらない幅では、エビデンスの予定の 1 行を、見出しを付けて縦に並べる */
+@media (max-width: 720px) {
+  table.plan, table.plan tbody, table.plan tr, table.plan td { display: block; width: auto; }
+  table.plan thead { display: none; }
+  table.plan tr { padding: 6px 0; border-bottom: 1px solid var(--line2); }
+  table.plan td { border: 0; padding: 2px 12px; white-space: normal; max-width: none; min-width: 0; }
+  table.plan td.plan-detail { white-space: pre-wrap; }
+  table.plan td::before { content: attr(data-label); display: block; font-size: 11px; color: var(--muted); }
 }
