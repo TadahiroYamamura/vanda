@@ -505,3 +505,55 @@ func Test画面で選べるもののストーリーの置き場所は設定の�
 		})
 	}
 }
+
+// RV-13: レビュー単位がブランチで story を省いたときは、分かれた点より後のコミットのメッセージにある ID が 1 つなら
+// それを使い、0 か 2 つ以上なら null にする。story を名指ししたときは、それを使う
+func Testレビュー単位がブランチのときストーリーはブランチのコミットから1つに決まるときだけ決まり名指ししたものはそのまま使う(t *testing.T) {
+	cases := []struct {
+		name  string
+		setup func(r *reviewRepo)
+		base  string
+		story string // 名指しするもの。空なら省く
+		want  string // 空なら null
+	}{
+		{"ブランチのコミットに#24だけがある", func(r *reviewRepo) {}, "main", "", "#24"},
+		{"ブランチのコミットに#24と#30がある", func(r *reviewRepo) {
+			r.git("commit", "-q", "--allow-empty", "-m", "#30 で直す")
+		}, "main", "", ""},
+		{"ブランチにストーリーのIDを持つコミットがない", func(r *reviewRepo) {
+			r.git("switch", "-q", "-c", "plain")
+			r.git("commit", "-q", "--allow-empty", "-m", "ID のないコミット")
+		}, reviewBranch, "", ""},
+		{"#24と#30があるときに#30を名指しする", func(r *reviewRepo) {
+			r.git("commit", "-q", "--allow-empty", "-m", "#30 で直す")
+		}, "main", "#30", "#30"},
+		{"#24だけがあるときにブランチにない#1を名指しする", func(r *reviewRepo) {}, "main", "#1", "#1"},
+		{"IDを持つコミットがないときに#24を名指しする", func(r *reviewRepo) {
+			r.git("switch", "-q", "-c", "plain")
+			r.git("commit", "-q", "--allow-empty", "-m", "ID のないコミット")
+		}, reviewBranch, "#24", "#24"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			bin := buildVanda(t)
+			version, err := runningVersion(bin)
+			if err != nil {
+				t.Fatal(err)
+			}
+			r := newReviewRepo(t, version)
+			c.setup(r)
+			s := startServe(t, bin, r.Root, r.Env)
+			path := "/api/review?view=branch&base=" + q(c.base)
+			if c.story != "" {
+				path += "&story=" + q(c.story)
+			}
+			var got reviewResponse
+			if code, msg := s.get(path, &got); code != 200 {
+				t.Fatalf("一覧を読めない（%d）: %s", code, msg)
+			}
+			if str(got.Story) != c.want || (c.want == "" && got.Story != nil) {
+				t.Errorf("story が %v（思ったもの %q。空なら null）", got.Story, c.want)
+			}
+		})
+	}
+}

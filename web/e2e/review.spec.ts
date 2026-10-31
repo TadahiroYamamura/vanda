@@ -693,3 +693,57 @@ for (const w of writers) {
     });
   }
 }
+
+// RV-13: レビュー単位がブランチのときのストーリーの決め方。選ぶ欄の選択肢は、ストーリーの ID だけを数える
+// （まだ選んでいないことを示す選択肢などは数えない）
+const storyField = (page: Page) => page.getByRole("combobox", { name: "ストーリー", exact: true });
+async function storyChoices(page: Page): Promise<string[]> {
+  const texts = await storyField(page).locator("option").allTextContents();
+  return texts.flatMap((t) => t.match(/#\d+/g) ?? []);
+}
+async function agreeTaskIdUnique(page: Page) {
+  await select(page, "task-id-unique");
+  const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
+  await page.getByRole("button", { name: /合意する/ }).click();
+  expect((await res).status()).toBe(200);
+}
+
+test("レビュー単位がブランチでブランチのコミットからストーリーが1つに決まるときは選ぶ欄を出さずに示しそのストーリーで合意できる", async ({ page }) => {
+  await page.goto(serve.url + "/?view=branch&base=main");
+  await expect(page.getByText(/ストーリー\s*[:：]\s*#24/).first(), "決まったストーリーが示されない").toBeVisible();
+  await expect(storyField(page)).toHaveCount(0);
+  await agreeTaskIdUnique(page);
+  expect(repo.git("log", "-1", "--format=%s")).toContain("#24 で");
+});
+
+test("レビュー単位がブランチでブランチに2つ以上のストーリーのコミットがあるときはそのブランチのストーリーだけを1度ずつ選ばせる", async ({ page }) => {
+  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "#30 で直す");
+  await page.goto(serve.url + "/?view=branch&base=main");
+  await expect(storyField(page)).toBeVisible();
+  const choices = await storyChoices(page);
+  // #1 は main のコミットにしかない。#24 は 2 つのコミットにある
+  expect(choices.sort()).toEqual(["#24", "#30"]);
+});
+
+test("レビュー単位がブランチでストーリーのIDを持つコミットがないときはすべてのストーリーから1度ずつ選ばせる", async ({ page }) => {
+  // story-24 から ID のないコミットだけのブランチを作り、story-24 と比べる（設定の既定のベースブランチ main とは別）
+  repo.git("switch", "-q", "-c", "plain");
+  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "ID のないコミット");
+  await page.goto(serve.url + "/?view=branch&base=story-24");
+  await expect(storyField(page)).toBeVisible();
+  expect((await storyChoices(page)).sort()).toEqual(["#1", "#24"]);
+});
+
+test("レビュー単位がブランチでURLのstoryでストーリーを名指ししたときはそれを使う", async ({ page }) => {
+  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "#30 で直す");
+  await page.goto(serve.url + "/?view=branch&base=main&story=%2330");
+  await agreeTaskIdUnique(page);
+  expect(repo.git("log", "-1", "--format=%s"), "名指ししたストーリーで合意していない").toContain("#30 で");
+});
+
+test("レビュー単位がストーリーのときはすべてのストーリーから1度ずつ選ばせる", async ({ page }) => {
+  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "#30 で直す");
+  await page.goto(serve.url + "/?view=story&story=%2324");
+  await expect(storyField(page)).toBeVisible();
+  expect((await storyChoices(page)).sort()).toEqual(["#1", "#24", "#30"]);
+});
