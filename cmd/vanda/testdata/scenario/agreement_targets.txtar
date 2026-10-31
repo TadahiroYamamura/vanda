@@ -1,0 +1,170 @@
+# CMD-10 合意の記録の指す先: 合意の記録が、約束リストにない約束・用語・機能を指していない。
+# 約束・用語・機能のそれぞれで、合意した後に約束リストから消すと止まる。指す ID が別の種類の項目でも止まる。
+# ファイルの合意は中身の指紋を鍵にするので、そのファイルがなくなっても止めない（履歴として残る）。
+#
+# この審査は指紋が今の中身に合うかを見ないので、指紋の元の JSON は中身と合っていなくてよい。
+
+exec git init -q -b main
+expand .vanda/config.toml
+agree .vanda/agreements.toml '#1' term note fp/any.json
+agree .vanda/agreements.toml '#1' feature task-add fp/any.json
+agree .vanda/agreements.toml '#1' claim task-id-unique fp/any.json
+agree .vanda/agreements.toml '#1' file note.txt
+exec vanda check .vanda/checks/targets.toml
+
+# ファイルの合意は、ファイルがなくなっても止めない
+rm note.txt
+exec vanda check .vanda/checks/targets.toml
+
+# 約束を消す
+cp cases/without-claim.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/targets.toml
+stderr 'agreements\.toml.*task-id-unique'
+! stderr '(?m)^panic: '
+
+# 機能を消す
+cp cases/without-feature.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/targets.toml
+stderr 'agreements\.toml.*task-add'
+! stderr '(?m)^panic: '
+
+# 用語を消す
+cp cases/without-term.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/targets.toml
+stderr 'agreements\.toml.*\bnote\b'
+! stderr '(?m)^panic: '
+
+# 用語の合意が、約束の ID を指す
+cp cases/all.toml .vanda/promises.toml
+cp cases/empty.toml .vanda/agreements.toml
+agree .vanda/agreements.toml '#1' term task-id-unique fp/any.json
+! exec vanda check .vanda/checks/targets.toml
+stderr 'agreements\.toml.*task-id-unique'
+! stderr '(?m)^panic: '
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+-- .vanda/checks/targets.toml --
+[[check]]
+name = "agreement-targets"
+scope = "all"
+-- .vanda/agreements.toml --
+-- note.txt --
+合意したファイル
+-- fp/any.json --
+{"id":"any"}
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[term]]
+id = "note"
+name = "メモ"
+definition = "タスクに付ける文"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+-- cases/all.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[term]]
+id = "note"
+name = "メモ"
+definition = "タスクに付ける文"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+-- cases/empty.toml --
+-- cases/without-claim.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[term]]
+id = "note"
+name = "メモ"
+definition = "タスクに付ける文"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+-- cases/without-feature.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[term]]
+id = "note"
+name = "メモ"
+definition = "タスクに付ける文"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+-- cases/without-term.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]

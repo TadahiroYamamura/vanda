@@ -1,0 +1,161 @@
+# CMD-10 エビデンスが揃っている: 予定したエビデンスごとに、アノテーションの付いたもの、または detail に書いたファイルがある。
+# 合格しているかは段 3 から見るので、ここではテストを動かさない。
+# 範囲を 1 つのストーリーにすると、分かれた点より後に変わった約束だけを見る。
+#
+# 確かめないこと: 1 つの約束に予定したエビデンスが 2 つ以上あるとき、どのアノテーションがどの予定に当たるか。決まっていないため。
+
+exec git init -q -b main
+expand .vanda/config.toml
+
+# detail に書いたファイルがあり、アノテーションの付いたテストがあれば通る
+exec vanda check .vanda/checks/all.toml
+
+# detail に書いたファイルがないと止まる
+mv docs/review.md docs/review.md.bak
+! exec vanda check .vanda/checks/all.toml
+stderr 'docs/review\.md'
+stderr 'task-reviewed'
+! stderr 'task-id-unique'
+! stderr '(?m)^panic: '
+mv docs/review.md.bak docs/review.md
+
+# detail がなく、アノテーションの付いたものもないと止まる
+cp cases/task_test.go.none task_test.go
+! exec vanda check .vanda/checks/all.toml
+stderr 'task-id-unique'
+! stderr 'task-reviewed'
+! stderr '(?m)^panic: '
+cp cases/task_test.go.orig task_test.go
+exec vanda check .vanda/checks/all.toml
+
+# 範囲を 1 つのストーリーにすると、分かれた点より後に変わった約束だけを見る
+cp cases/task_test.go.none task_test.go
+exec git add -A
+exec git commit -q -m '#1 約束を足す'
+exec git checkout -q -b story-2
+cp cases/promises-with-title.toml .vanda/promises.toml
+cp cases/title_test.go.case title_test.go
+exec git add -A
+exec git commit -q -m '#2 約束を足す'
+exec vanda check .vanda/checks/story.toml --base main
+! exec vanda check .vanda/checks/all.toml
+stderr 'task-id-unique'
+! stderr 'task-title-required'
+! stderr '(?m)^panic: '
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["**/*.go"]
+adapter = "go"
+-- .vanda/checks/all.toml --
+[[check]]
+name = "evidence-present"
+scope = "all"
+-- .vanda/checks/story.toml --
+[[check]]
+name = "evidence-present"
+scope = "story"
+-- .vanda/agreements.toml --
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+
+[[claim]]
+id = "task-reviewed"
+subjects = ["task"]
+statement = "タスクの画面の文言を人が読む"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "release"
+type = "human-review"
+layers = ["model"]
+detail = "docs/review.md"
+-- docs/review.md --
+読む所の一覧
+-- task_test.go --
+package task
+
+import "testing"
+
+// @vanda:evidence task-id-unique
+func TestAddKeepsIdsUnique(t *testing.T) {}
+-- cases/task_test.go.orig --
+package task
+
+import "testing"
+
+// @vanda:evidence task-id-unique
+func TestAddKeepsIdsUnique(t *testing.T) {}
+-- cases/task_test.go.none --
+package task
+
+import "testing"
+
+func TestAddKeepsIdsUnique(t *testing.T) {}
+-- cases/title_test.go.case --
+package task
+
+import "testing"
+
+// @vanda:evidence task-title-required
+func TestTitleRequired(t *testing.T) {}
+-- cases/promises-with-title.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+
+[[claim]]
+id = "task-reviewed"
+subjects = ["task"]
+statement = "タスクの画面の文言を人が読む"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "release"
+type = "human-review"
+layers = ["model"]
+detail = "docs/review.md"
+
+[[claim]]
+id = "task-title-required"
+subjects = ["task"]
+statement = "タスクには題がある"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
