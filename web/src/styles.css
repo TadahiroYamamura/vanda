@@ -240,6 +240,12 @@ ul.evidence-found { margin: 4px 0 0; padding-left: 18px; font-size: 13px; overfl
 .claim-at .evidence-stage-head { font-size: 13px; padding: 6px 10px; }
 .claim-at .evidence-type-group { padding: 6px 10px; }
 
+/* 利用者が書いた文（約束の文・条件・理由・推測、用語・機能の中身、ストーリーの題、コミットのメッセージなど）は、続いた空白と改行をそのまま出し、長い語は折り返す */
+.user-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* 空白だけの差分は、点線の枠で場所を示す。改行だけのものは、改行の印（↵）を添える（印は CSS の中だけで、コピーした文には入らない） */
+.diff-part.ws { outline: 1px dashed currentColor; outline-offset: -1px; padding-right: 0.25em; }
+.diff-part.nl::before { content: "↵"; color: var(--muted); font-size: 11px; }
+
 /* 狭い画面では、一覧と 1 件の中身を縦に並べ、ページ全体をスクロールして読む。
    一覧を画面に貼り付けたまま（sticky）にすると、縦に並べたときに 1 件の中身の上に重なるため、ここでは外す */
 @media (max-width: 1000px) {

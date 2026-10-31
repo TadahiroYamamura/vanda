@@ -4,6 +4,12 @@ import { CodeLine, symbolsByLine, useTokens } from "./Code";
 
 // 差分は API（docs/formats.md の entries[].diff）が作ったものを、そのまま見せる。
 
+// 空白だけの差分は、背景だけでは見えにくい（改行だけなら幅もない）ので、印のクラスを付ける
+function wsClass(text: string): string {
+  if (!/^\s+$/.test(text)) return "diff-part";
+  return text.includes("\n") ? "diff-part ws nl" : "diff-part ws";
+}
+
 // side が both なら、消した文字と足した文字の両方を 1 列で見せる
 export function Parts(props: { parts: DiffPart[]; side: "before" | "after" | "both" }) {
   const hide = props.side === "before" ? "insert" : props.side === "after" ? "delete" : "";
@@ -13,11 +19,11 @@ export function Parts(props: { parts: DiffPart[]; side: "before" | "after" | "bo
         .filter((p) => p.op !== hide)
         .map((p, i) =>
           p.op === "delete" ? (
-            <del key={i} className="diff-part">
+            <del key={i} className={wsClass(p.text)}>
               {p.text}
             </del>
           ) : p.op === "insert" ? (
-            <ins key={i} className="diff-part">
+            <ins key={i} className={wsClass(p.text)}>
               {p.text}
             </ins>
           ) : (

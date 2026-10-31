@@ -2,7 +2,7 @@ import { useState } from "react";
 // 本文の中の生の HTML は描かない（react-markdown の既定。rehype-raw などを足さない）。Issue の本文に悪意のある HTML があっても、画面で動かないようにするため
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { api, type ClaimContent, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FileContent, type Review, type TermContent } from "../api";
+import { api, type ClaimContent, type User, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FileContent, type Review, type TermContent } from "../api";
 import { ErrorBox, FlagBadge, PresentIcon, StateBadge, shortCommit, useLoad } from "../components/common";
 import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
@@ -172,7 +172,7 @@ function StoryPanel(props: { id: string; configured: boolean }) {
       {s.error != null && <ErrorBox error={s.error} title="ストーリーの置き場所から読めません" />}
       {s.data && (
         <>
-          <p className="story-title">{s.data.title}</p>
+          <p className="story-title user-text">{s.data.title}</p>
           {s.data.url && (
             <p>
               <a href={s.data.url} target="_blank" rel="noopener noreferrer">
@@ -312,53 +312,8 @@ function EntryRow(props: { e: Entry; selected: boolean; onSelect: (key: string) 
 
 function EntryDetail(props: { entry: Entry; total: number; story: string | null; base: string | null; ctx: Context; query: string; onAgreed: () => void }) {
   const { entry: e } = props;
-  const [agreeing, setAgreeing] = useState(false);
-  const [agreeError, setAgreeError] = useState<unknown>(null);
-  const [done, setDone] = useState<string | null>(null);
   // 合意・取り消しのたびに増やし、由来と合意の履歴（RV-16）を読み直す
   const [written, setWritten] = useState(0);
-
-  const revoke = async () => {
-    if (!props.story) return;
-    setAgreeing(true);
-    setAgreeError(null);
-    try {
-      const r = await api.revoke(e, props.story, props.base);
-      setDone(
-        r.stillAgreed
-          ? `合意を取り消しました（コミット ${shortCommit(r.commit)}）。ほかの合意が残っているため、合意済みのままです。`
-          : `合意を取り消しました（コミット ${shortCommit(r.commit)}）。`,
-      );
-      setWritten((n) => n + 1);
-      props.onAgreed();
-    } catch (err) {
-      setAgreeError(err);
-    } finally {
-      setAgreeing(false);
-    }
-  };
-
-  const agree = async () => {
-    if (!props.story) return;
-    setAgreeing(true);
-    setAgreeError(null);
-    try {
-      const r = await api.agree(e, props.story);
-      setDone(`合意しました（コミット ${shortCommit(r.commit)}）`);
-      setWritten((n) => n + 1);
-      props.onAgreed();
-    } catch (err) {
-      setAgreeError(err);
-    } finally {
-      setAgreeing(false);
-    }
-  };
-
-  const cannot = !props.story
-    ? "ストーリーを選ぶと、合意できます。"
-    : !props.ctx.user
-      ? "git の user.name と user.email を設定すると、合意できます。"
-      : null;
 
   return (
     <div>
@@ -384,7 +339,7 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
           <ul>
             {e.otherCommits.map((c) => (
               <li key={c.commit}>
-                {shortCommit(c.commit)} {c.subject} {c.stories.length > 0 ? `（${c.stories.join("・")}）` : "（ストーリーの ID なし）"}
+                {shortCommit(c.commit)} <span className="user-text">{c.subject}</span> {c.stories.length > 0 ? `（${c.stories.join("・")}）` : "（ストーリーの ID なし）"}
               </li>
             ))}
           </ul>
@@ -396,34 +351,84 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
         </p>
       )}
 
-      <div className="agree">
-        {e.state === "proposed" && (
-          <>
-            <button type="button" className="primary" disabled={agreeing || cannot !== null} onClick={agree}>
-              {agreeing ? "合意しています…" : props.story ? `ストーリー ${props.story} で合意する` : "合意する"}
-            </button>
-            {cannot && <span className="note">{cannot}</span>}
-          </>
-        )}
-        {e.state === "agreed" && <span className="note">今の中身に合意済みです。</span>}
-        {e.state === "agreed" && e.revoke?.possible && (
-          <>
-            <button type="button" className="revoke" disabled={agreeing} onClick={revoke}>
-              {agreeing ? "取り消しています…" : "合意を取り消す"}
-            </button>
-            {e.revoke.others.length > 0 && (
-              <span className="note">取り消しても、ほかの人（{e.revoke.others.map((u) => u.name).join("・")}）の合意が残るため、合意済みのままです。</span>
-            )}
-          </>
-        )}
-        {e.state === "agreed" && e.revoke && !e.revoke.possible && e.revoke.reason && <span className="note revoke-reason">{e.revoke.reason}</span>}
-        {e.state === null && <span className="note">消したものには合意できません。</span>}
-        {done && <span className="note">{done}</span>}
-        {agreeError != null && <ErrorBox error={agreeError} title="合意できません" />}
-      </div>
+      <AgreeControls
+        entry={e}
+        story={props.story}
+        base={props.base}
+        user={props.ctx.user}
+        onDone={() => {
+          setWritten((n) => n + 1);
+          props.onAgreed();
+        }}
+      />
 
       <Compare entry={e} />
       {e.kind === "claim" && e.id && e.change !== "deleted" && <ClaimSections key={written} id={e.id} query={props.query} />}
+    </div>
+  );
+}
+
+// AgreeControls は、1 件の合意の状態と、「合意する」「合意を取り消す」のボタン、合意できない・取り消せない理由（RV-06・RV-17）。
+// 合意済か・取り消せるかは API（/api/review の state・revoke）の判定をそのまま使う。レビューの画面と、そこから移った約束の詳細・ファイルの画面（RV-18）で使う
+export function AgreeControls(props: { entry: Entry; story: string | null; base: string | null; user: User | null; onDone: () => void }) {
+  const { entry: e } = props;
+  const [agreeing, setAgreeing] = useState(false);
+  const [agreeError, setAgreeError] = useState<unknown>(null);
+  const [done, setDone] = useState<string | null>(null);
+
+  const run = async (act: () => Promise<string>) => {
+    if (!props.story) return;
+    setAgreeing(true);
+    setAgreeError(null);
+    try {
+      setDone(await act());
+      props.onDone();
+    } catch (err) {
+      setAgreeError(err);
+    } finally {
+      setAgreeing(false);
+    }
+  };
+  const agree = () => run(async () => `合意しました（コミット ${shortCommit((await api.agree(e, props.story as string)).commit)}）`);
+  const revoke = () =>
+    run(async () => {
+      const r = await api.revoke(e, props.story as string, props.base);
+      return r.stillAgreed
+        ? `合意を取り消しました（コミット ${shortCommit(r.commit)}）。ほかの合意が残っているため、合意済みのままです。`
+        : `合意を取り消しました（コミット ${shortCommit(r.commit)}）。`;
+    });
+
+  const cannot = !props.story
+    ? "ストーリーを選ぶと、合意できます。"
+    : !props.user
+      ? "git の user.name と user.email を設定すると、合意できます。"
+      : null;
+
+  return (
+    <div className="agree">
+        {e.state === "proposed" && (
+        <>
+          <button type="button" className="primary" disabled={agreeing || cannot !== null} onClick={agree}>
+            {agreeing ? "合意しています…" : props.story ? `ストーリー ${props.story} で合意する` : "合意する"}
+          </button>
+          {cannot && <span className="note">{cannot}</span>}
+        </>
+      )}
+      {e.state === "agreed" && <span className="note">今の中身に合意済みです。</span>}
+      {e.state === "agreed" && e.revoke?.possible && (
+        <>
+          <button type="button" className="revoke" disabled={agreeing} onClick={revoke}>
+            {agreeing ? "取り消しています…" : "合意を取り消す"}
+          </button>
+          {e.revoke.others.length > 0 && (
+            <span className="note">取り消しても、ほかの人（{e.revoke.others.map((u) => u.name).join("・")}）の合意が残るため、合意済みのままです。</span>
+          )}
+        </>
+      )}
+      {e.state === "agreed" && e.revoke && !e.revoke.possible && e.revoke.reason && <span className="note revoke-reason">{e.revoke.reason}</span>}
+      {e.state === null && <span className="note">消したものには合意できません。</span>}
+      {done && <span className="note">{done}</span>}
+      {agreeError != null && <ErrorBox error={agreeError} title="合意できません" />}
     </div>
   );
 }
@@ -544,7 +549,7 @@ function ItemCompare(props: { entry: Entry; before: Row[] | null; after: Row[] |
         {labels.map((label, i) => (
           <tr key={label}>
             <th scope="row">{label}</th>
-            <td className="text">{value(i)}</td>
+            <td className="text user-text">{value(i)}</td>
           </tr>
         ))}
       </tbody>
