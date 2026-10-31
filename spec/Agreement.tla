@@ -1,5 +1,5 @@
 ---------------------------- MODULE Agreement ----------------------------
-(* 合意の判定のモデル。約束リストの項目の中身の変更、合意、ストーリーをまたいだ変更を操作とする。     *)
+(* 合意の判定のモデル。約束リストの項目の中身の変更、合意、合意の取り消し、ストーリーをまたいだ変更を操作とする。 *)
 (* 中身の指紋は、版の番号で表す。版は進むだけで戻らない（同じ中身に戻すことは、このモデルでは扱わない）。 *)
 EXTENDS Naturals
 
@@ -9,7 +9,7 @@ VARIABLES content, agreements, changedBy, agreedNow, last
 
 vars == <<content, agreements, changedBy, agreedNow, last>>
 
-Actions == {"none", "Change", "Agree"}
+Actions == {"none", "Change", "Agree", "Revoke"}
 
 AgreementRecord == [item : Items, fp : 0..MaxVer, story : Stories]
 
@@ -61,7 +61,17 @@ Agree(s, i) ==
     /\ last' = "Agree"
     /\ UNCHANGED <<content, changedBy>>
 
-Next == \E s \in Stories, i \in Items : Change(s, i) \/ Agree(s, i)
+(* ストーリー s で、項目 i の今の中身への s の合意の記録を消す（RV-17）。フラグは戻さない（モデルにはフラグがない）。     *)
+(* 取り消せる範囲（今の人が、今のブランチで書いた記録だけ）は、このモデルの粒度では表さない。                         *)
+(* ほかのストーリーの、今の中身への合意が残っていれば、合意済のまま                                                    *)
+Revoke(s, i) ==
+    /\ [item |-> i, fp |-> content[i], story |-> s] \in agreements
+    /\ agreements' = agreements \ {[item |-> i, fp |-> content[i], story |-> s]}
+    /\ agreedNow' = [agreedNow EXCEPT ![i] = \E t \in Stories \ {s} : [item |-> i, fp |-> content[i], story |-> t] \in agreements]
+    /\ last' = "Revoke"
+    /\ UNCHANGED <<content, changedBy>>
+
+Next == \E s \in Stories, i \in Items : Change(s, i) \/ Agree(s, i) \/ Revoke(s, i)
 
 Spec == Init /\ [][Next]_vars
 
@@ -85,5 +95,6 @@ OnlyOwnAgreementRepairs ==
 (* どの操作も一度は起きることを確かめるため、違反が見つかるはずの不変条件 *)
 NeverChange == last # "Change"
 NeverAgree == last # "Agree"
+NeverRevoke == last # "Revoke"
 NeverBroken == \A s \in Stories : Broken(s) = {}
 =============================================================================

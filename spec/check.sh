@@ -18,7 +18,7 @@ if ! run Agreement.cfg; then
 fi
 grep -E 'states generated|No error' "$meta/out"
 
-for x in NeverChange NeverAgree NeverBroken; do
+for x in NeverChange NeverAgree NeverRevoke NeverBroken; do
 	if run "Agreement.$x.cfg"; then
 		echo "Agreement.$x.cfg: $x が破られなかった（その操作や状態が一度も起きていない）" >&2
 		exit 1
