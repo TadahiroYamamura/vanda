@@ -16,6 +16,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/guardrail"
 	"github.com/TadahiroYamamura/vanda/internal/promises"
 	"github.com/TadahiroYamamura/vanda/internal/repo"
+	"github.com/TadahiroYamamura/vanda/internal/snapshot"
 )
 
 type Options struct {
@@ -155,37 +156,12 @@ func (e *env) decideStory(given string, checks []string) error {
 
 // findChanges は、分かれた点の中身と作業ツリーの今の中身を比べ、変わった項目とファイルを求める。
 func (e *env) findChanges() error {
-	out, err := repo.Git(e.root, "ls-tree", "-r", "-z", "--name-only", e.mergeBase)
+	base, err := snapshot.At(e.root, e.cfg, e.mergeBase)
 	if err != nil {
-		return fmt.Errorf("分かれた点のファイルの一覧を読めない（%v）", err)
-	}
-	var baseFiles []string
-	for _, f := range strings.Split(out, "\x00") {
-		if f != "" {
-			baseFiles = append(baseFiles, f)
-		}
-	}
-	show := func(f string) ([]byte, error) {
-		s, err := repo.Git(e.root, "show", e.mergeBase+":"+f)
-		return []byte(s), err
-	}
-	matched, _ := glob.Select(baseFiles, e.cfg.Promises)
-	srcs := map[string][]byte{}
-	for _, f := range matched {
-		b, err := show(f)
-		if err != nil {
-			return fmt.Errorf("分かれた点の %s を読めない（%v）", f, err)
-		}
-		srcs[f] = b
+		return err
 	}
 	// 分かれた点の約束リストの誤りは、ここでは出さない。読めなかった項目は、増えたものとみなす（合意を求める側に倒す）
-	baseList, _ := promises.FromSources(matched, srcs)
-	baseFP := map[string]string{}
-	for _, it := range items(baseList) {
-		if fp, err := agreements.ItemFingerprint(it.raw); err == nil {
-			baseFP[it.key()] = fp
-		}
-	}
+	baseFP := base.ItemFingerprints()
 	e.changedItems = map[string]bool{}
 	for _, it := range items(e.list) {
 		fp, err := agreements.ItemFingerprint(it.raw)
@@ -193,17 +169,13 @@ func (e *env) findChanges() error {
 			e.changedItems[it.key()] = true
 		}
 	}
-	inBase := map[string]bool{}
-	for _, f := range baseFiles {
-		inBase[f] = true
-	}
 	e.changedFiles = map[string]bool{}
 	for _, f := range e.targetFiles() {
-		if !inBase[f] {
+		if !base.Has(f) {
 			e.changedFiles[f] = true
 			continue
 		}
-		b, err := show(f)
+		b, err := base.Read(f)
 		if err != nil {
 			return fmt.Errorf("分かれた点の %s を読めない（%v）", f, err)
 		}
@@ -217,28 +189,10 @@ func (e *env) findChanges() error {
 
 // targetFiles は、合意の対象になるファイル（シナリオ、オラクルの定義、ガードレールの定義）を、場所の順で返す。
 func (e *env) targetFiles() []string {
-	seen := map[string]bool{}
 	var out []string
-	for _, f := range e.files {
-		for _, r := range e.cfg.Annotations {
-			if r.Adapter != "txtar" && r.Adapter != "tla" {
-				continue
-			}
-			for _, p := range r.Paths {
-				if glob.Match(p, f) && !seen[f] {
-					seen[f] = true
-					out = append(out, f)
-				}
-			}
-		}
+	for _, t := range snapshot.Targets(e.files, e.cfg) {
+		out = append(out, t.Path)
 	}
-	for _, f := range e.guards {
-		if !seen[f] {
-			seen[f] = true
-			out = append(out, f)
-		}
-	}
-	sort.Strings(out)
 	return out
 }
 

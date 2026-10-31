@@ -2,6 +2,7 @@ package check
 
 import (
 	"github.com/TadahiroYamamura/vanda/internal/promises"
+	"github.com/TadahiroYamamura/vanda/internal/snapshot"
 	"github.com/TadahiroYamamura/vanda/internal/tomlread"
 )
 
@@ -17,18 +18,9 @@ type item struct {
 func (it item) key() string { return it.kind + ":" + it.id }
 
 func items(l *promises.List) []item {
-	if l == nil {
-		return nil
-	}
 	var out []item
-	for _, t := range l.Terms {
-		out = append(out, item{kind: "term", id: t.ID, table: t.Table, raw: t.Raw})
-	}
-	for _, f := range l.Features {
-		out = append(out, item{kind: "feature", id: f.ID, table: f.Table, raw: f.Raw})
-	}
-	for _, c := range l.Claims {
-		out = append(out, item{kind: "claim", id: c.ID, table: c.Table, raw: c.Raw, claim: c})
+	for _, e := range snapshot.Entries(l) {
+		out = append(out, item{kind: e.Kind, id: e.ID, table: e.Table, raw: e.Raw, claim: e.Claim})
 	}
 	return out
 }
