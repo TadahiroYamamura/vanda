@@ -1307,6 +1307,9 @@ for (const pg of pages) {
     wsRepo();
     await pg.open(page);
     await expect(page.getByText("（後）").first()).toBeVisible();
+    // エビデンスと由来は後から読み込まれるので、出そろってから数える
+    await expect(page.getByRole("heading", { name: "シナリオテスト", exact: true }).first()).toBeVisible();
+    await expect(rowOf(page, "#24 空白を書く")).toBeVisible();
     const fields = { 文: ws.statement, 条件: ws.condition, 理由: ws.rationale, 推測: ws.guess, 詳細: ws.detail };
     const before = await shown(page);
     await choose(rowOf(page, "#24 空白を書く"));
