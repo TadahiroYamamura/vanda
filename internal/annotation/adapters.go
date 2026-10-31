@@ -19,15 +19,42 @@ import (
 // goAdapter: アノテーションは、func の宣言の直前のコメント（doc comment）にだけ書ける。名前は func の名前（メソッドなら `T.M`）。
 type goAdapter struct{}
 
-func (goAdapter) names(file string, src []byte, lines []int) (map[int]string, []diag.Error) {
+func parseGo(file string, src []byte) (*token.FileSet, *ast.File, []diag.Error) {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, file, src, parser.ParseComments)
 	if err != nil {
 		var list scanner.ErrorList
 		if errors.As(err, &list) && len(list) > 0 {
-			return nil, []diag.Error{{File: file, Line: list[0].Pos.Line, What: "Go として読めない（" + list[0].Msg + "）", Fix: "Go の書き方に合わせて直す"}}
+			return nil, nil, []diag.Error{{File: file, Line: list[0].Pos.Line, What: "Go として読めない（" + list[0].Msg + "）", Fix: "Go の書き方に合わせて直す"}}
 		}
-		return nil, []diag.Error{{File: file, What: "Go として読めない（" + err.Error() + "）", Fix: "Go の書き方に合わせて直す"}}
+		return nil, nil, []diag.Error{{File: file, What: "Go として読めない（" + err.Error() + "）", Fix: "Go の書き方に合わせて直す"}}
+	}
+	return fset, f, nil
+}
+
+func (goAdapter) comments(file string, src []byte) ([]string, []diag.Error) {
+	fset, f, errs := parseGo(file, src)
+	if errs != nil {
+		return nil, errs
+	}
+	texts := make([]string, strings.Count(string(src), "\n")+1)
+	for _, cg := range f.Comments {
+		for _, c := range cg.List {
+			start := fset.Position(c.Pos()).Line
+			for k, part := range strings.Split(c.Text, "\n") {
+				if l := start + k - 1; l < len(texts) {
+					texts[l] += " " + part
+				}
+			}
+		}
+	}
+	return texts, nil
+}
+
+func (goAdapter) names(file string, src []byte, lines []int) (map[int]string, []diag.Error) {
+	fset, f, errs := parseGo(file, src)
+	if errs != nil {
+		return nil, errs
 	}
 	byLine := map[int]string{}
 	for _, d := range f.Decls {
@@ -46,7 +73,6 @@ func (goAdapter) names(file string, src []byte, lines []int) (map[int]string, []
 		}
 	}
 	out := map[int]string{}
-	var errs []diag.Error
 	for _, l := range lines {
 		n, ok := byLine[l]
 		if !ok {
@@ -78,6 +104,19 @@ func recvName(e ast.Expr) string {
 // 名前はファイルの名前から `.txtar` を除いたもの（testscript のサブテストの名前に合わせる）。
 type txtarAdapter struct{}
 
+// comments は、最初のファイルの区切りより前の注釈の行だけを返す。区切りより後は、中のファイルの中身なので見ない。
+func (txtarAdapter) comments(file string, src []byte) ([]string, []diag.Error) {
+	rows := strings.Split(string(src), "\n")
+	texts := make([]string, len(rows))
+	for i, line := range rows {
+		if isTxtarMarker(strings.TrimSuffix(line, "\r")) {
+			break
+		}
+		texts[i] = line
+	}
+	return texts, nil
+}
+
 func (txtarAdapter) names(file string, src []byte, lines []int) (map[int]string, []diag.Error) {
 	first := 0
 	for i, line := range strings.Split(string(src), "\n") {
@@ -91,7 +130,7 @@ func (txtarAdapter) names(file string, src []byte, lines []int) (map[int]string,
 	var errs []diag.Error
 	for _, l := range lines {
 		if first > 0 && l >= first {
-			errs = append(errs, diag.Error{File: file, Line: l, What: fmt.Sprintf("アノテーションが、最初のファイルの区切り（%d 行目）より後にある", first), Fix: "アノテーションを、ファイルの冒頭の注釈（最初の -- 名前 -- より前）に移す"})
+			errs = append(errs, diag.Error{File: file, Line: l, What: fmt.Sprintf("アノテーションが、最初のファイルの区切り（%d 行目）より後にある", first), Fix: "vanda の不具合なので、知らせる"})
 			continue
 		}
 		out[l] = name
@@ -111,17 +150,28 @@ func isTxtarMarker(line string) bool {
 // （`Name ==`、`Name(…) ==`。`LOCAL` が付いてもよい）。
 type tlaAdapter struct{}
 
+func (tlaAdapter) comments(file string, src []byte) ([]string, []diag.Error) {
+	rows := strings.Split(string(src), "\n")
+	_, mask := splitTLA(rows)
+	texts := make([]string, len(rows))
+	for r, line := range rows {
+		b := []byte(line)
+		for i := range b {
+			if !mask[r][i] {
+				b[i] = ' '
+			}
+		}
+		texts[r] = string(b)
+	}
+	return texts, nil
+}
+
 func (tlaAdapter) names(file string, src []byte, lines []int) (map[int]string, []diag.Error) {
 	rows := strings.Split(string(src), "\n")
-	code, comment := splitTLA(rows)
+	code, _ := splitTLA(rows)
 	out := map[int]string{}
 	var errs []diag.Error
 	for _, l := range lines {
-		at := strings.Index(rows[l-1], marker)
-		if at < 0 || !comment[l-1][at] {
-			errs = append(errs, diag.Error{File: file, Line: l, What: "アノテーションがコメントの中にない", Fix: `\* か (* *) のコメントの中に書く`})
-			continue
-		}
 		next := 0
 		for j := l; j < len(code); j++ {
 			if strings.TrimSpace(code[j]) != "" {
@@ -135,7 +185,7 @@ func (tlaAdapter) names(file string, src []byte, lines []int) (map[int]string, [
 		}
 		name, ok := tlaDefName(code[next-1])
 		if !ok {
-			errs = append(errs, diag.Error{File: file, Line: l, What: fmt.Sprintf("アノテーションの次の行（%d 行目）が、Name == か Name(…) == の定義でない", next), Fix: "アノテーションを、付けたい定義のすぐ上に書く"})
+			errs = append(errs, diag.Error{File: file, Line: l, What: fmt.Sprintf("アノテーションの次の行（%d 行目）が、Name ==・Name(…) ==・Name[…] == の定義でない", next), Fix: "アノテーションを、付けたい定義のすぐ上に書く"})
 			continue
 		}
 		out[l] = name
@@ -212,13 +262,15 @@ func tlaDefName(code string) (string, bool) {
 		return "", false
 	}
 	rest := strings.TrimLeft(s[i:], " \t")
-	if strings.HasPrefix(rest, "(") {
+	if open := rest; strings.HasPrefix(open, "(") || strings.HasPrefix(open, "[") {
+		// 演算子の引数 `(…)` か、関数の定義の `[x \in S]`
+		closer := map[byte]byte{'(': ')', '[': ']'}[rest[0]]
 		depth := 0
 		j := 0
 		for ; j < len(rest); j++ {
-			if rest[j] == '(' {
+			if rest[j] == rest[0] {
 				depth++
-			} else if rest[j] == ')' {
+			} else if rest[j] == closer {
 				depth--
 				if depth == 0 {
 					break
@@ -239,17 +291,35 @@ func tlaDefName(code string) (string, bool) {
 // sqlAdapter: アノテーションは `--` のコメントの中に書く。名前は、その後の、空行でもコメントでもない最初の行の中身をそのまま使う。
 type sqlAdapter struct{}
 
+// comments は、行ごとに、文字列（'…'）の外の `--` から行の終わりまでを返す。
+func (sqlAdapter) comments(file string, src []byte) ([]string, []diag.Error) {
+	rows := strings.Split(string(src), "\n")
+	texts := make([]string, len(rows))
+	inStr := false
+	for r, line := range rows {
+		for i := 0; i < len(line); i++ {
+			if inStr {
+				if line[i] == '\'' {
+					inStr = false
+				}
+				continue
+			}
+			if line[i] == '\'' {
+				inStr = true
+			} else if strings.HasPrefix(line[i:], "--") {
+				texts[r] = line[i:]
+				break
+			}
+		}
+	}
+	return texts, nil
+}
+
 func (sqlAdapter) names(file string, src []byte, lines []int) (map[int]string, []diag.Error) {
 	rows := strings.Split(string(src), "\n")
 	out := map[int]string{}
 	var errs []diag.Error
 	for _, l := range lines {
-		line := rows[l-1]
-		dash := strings.Index(line, "--")
-		if dash < 0 || dash > strings.Index(line, marker) {
-			errs = append(errs, diag.Error{File: file, Line: l, What: "アノテーションが -- のコメントの中にない", Fix: "-- の後に書く"})
-			continue
-		}
 		name := ""
 		for j := l; j < len(rows); j++ {
 			t := strings.TrimSpace(rows[j])
@@ -290,6 +360,8 @@ type responseName struct {
 	Line int    `json:"line"`
 	Name string `json:"name"`
 }
+
+func (commandAdapter) comments(string, []byte) ([]string, []diag.Error) { return nil, nil }
 
 func (c commandAdapter) names(file string, _ []byte, lines []int) (map[int]string, []diag.Error) {
 	req := adapterRequest{Path: file}
