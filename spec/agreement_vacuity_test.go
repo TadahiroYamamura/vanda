@@ -20,7 +20,10 @@ CHECK_DEADLOCK FALSE
 func TestAgreementの性質の前提と合意の場面はどれも一度は起きる(t *testing.T) {
 	tlc, err := exec.LookPath("tlc")
 	if err != nil {
-		// TLA+ の道具は nix の flake で揃える。make check（CI）では入っているので、ここで飛ばすのは手元で道具がないときだけ
+		// make check（と CI）は VANDA_REQUIRE_TLC=1 を立てる。黙って飛ばされて、CI で何も確かめていないことに気づかないのを防ぐため
+		if os.Getenv("VANDA_REQUIRE_TLC") == "1" {
+			t.Fatalf("VANDA_REQUIRE_TLC=1 なのに tlc がない（nix develop の中で動かす）")
+		}
 		t.Skip("tlc がないので飛ばす（nix develop の中で動かす）")
 	}
 	cases := []struct {

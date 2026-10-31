@@ -7,8 +7,9 @@ vet:
 	go vet ./...
 
 # -count=1 で、結果を使い回さない（ランダムチェックのシード値を、毎回変えるため）
+# VANDA_REQUIRE_TLC=1 で、tlc がないときに TLA+ を使うテストを飛ばさず落とす
 test:
-	go test -count=1 ./...
+	VANDA_REQUIRE_TLC=1 go test -count=1 ./...
 
 tla:
 	spec/check.sh
