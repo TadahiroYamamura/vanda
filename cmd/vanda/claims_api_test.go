@@ -145,11 +145,12 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 	if len(got.Origin) != 2 {
 		t.Fatalf("由来が 2 件（作ったコミットと、文を変えたコミット）でない: %+v", got.Origin)
 	}
+	// 由来はコミットの日時の新しい順（同じ日時なら、履歴で後のコミットが先）。どちらでも、文を変えたコミットが先
 	o0, o1 := got.Origin[0], got.Origin[1]
-	if o0.Commit != first || o0.Subject != "#1 はじめの約束を置く" || !reflect.DeepEqual(o0.Stories, []string{"#1"}) || o0.Change != "added" {
+	if o0.Commit != changed || !reflect.DeepEqual(o0.Stories, []string{"#24"}) || o0.Change != "modified" {
 		t.Errorf("由来の 1 件目: %+v", o0)
 	}
-	if o1.Commit != changed || !reflect.DeepEqual(o1.Stories, []string{"#24"}) || o1.Change != "modified" {
+	if o1.Commit != first || o1.Subject != "#1 はじめの約束を置く" || !reflect.DeepEqual(o1.Stories, []string{"#1"}) || o1.Change != "added" {
 		t.Errorf("由来の 2 件目: %+v", o1)
 	}
 
@@ -175,7 +176,8 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 	if code, msg := s.get("/api/claims/task-id-unique", &again); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
 	}
-	if len(again.Agreements) != 2 || again.Agreements[0].Current || !again.Agreements[1].Current || again.Agreements[1].Story != reviewStory {
+	// 合意の履歴は合意した日時の新しい順。agreementTOML はどれも同じ日時なので、ファイルで後に書いた #24 の合意が先
+	if len(again.Agreements) != 2 || !again.Agreements[0].Current || again.Agreements[0].Story != reviewStory || again.Agreements[1].Current {
 		t.Errorf("合意した後の合意の履歴: %+v", again.Agreements)
 	}
 }

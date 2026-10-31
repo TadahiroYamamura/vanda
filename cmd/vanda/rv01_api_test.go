@@ -107,7 +107,7 @@ func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]b
 		}
 		set[r] = true
 		if got.View == "branch" && len(e.OtherCommits) != 0 {
-			fmt.Fprintf(&b, "  ブランチごとの見方なのに otherCommits がある: %s\n", r)
+			fmt.Fprintf(&b, "  レビュー単位がブランチなのに otherCommits がある: %s\n", r)
 		}
 		switch {
 		case e.Kind == "file" && (e.ID != nil || e.Path == nil || str(e.FileType) != rvFileType(str(e.Path))):
@@ -154,7 +154,7 @@ func TestRV01の一覧はAPIで手で作った例と合う(t *testing.T) {
 				if got.View != "branch" || str(got.Base) != base || str(got.MergeBase) != r.mergeBase(base).hash {
 					t.Errorf("view %q、base %q、mergeBase %q（分かれた点は %s）", got.View, str(got.Base), str(got.MergeBase), r.mergeBase(base).hash)
 				}
-				checkReview(t, "ベースブランチ "+base+" のブランチごとの見方", got, rvSet(want))
+				checkReview(t, "ベースブランチ "+base+" の、レビュー単位がブランチのとき", got, rvSet(want))
 			}
 			for story, want := range ex.story {
 				var got reviewResponse
@@ -164,7 +164,7 @@ func TestRV01の一覧はAPIで手で作った例と合う(t *testing.T) {
 				if got.View != "story" || got.MergeBase != nil || str(got.Story) != story {
 					t.Errorf("view %q、mergeBase %v、story %q", got.View, got.MergeBase, str(got.Story))
 				}
-				checkReview(t, "ストーリー "+story+" のストーリー全体の見方", got, rvSet(want))
+				checkReview(t, "ストーリー "+story+" の、レビュー単位がストーリーのとき", got, rvSet(want))
 			}
 		})
 	}
@@ -179,13 +179,13 @@ func TestRV01の一覧は無作為な操作の列を当ててもテストの中�
 		if code, msg := s.get("/api/review?view=branch&base=main&story="+q("#24"), &got); code != 200 {
 			rt.Fatalf("一覧を読めない（%d）: %s", code, msg)
 		}
-		checkReview(rt, "ブランチごとの見方", got, branch)
+		checkReview(rt, "レビュー単位がブランチのとき", got, branch)
 		for story, want := range stories {
 			var got reviewResponse
 			if code, msg := s.get("/api/review?view=story&story="+q(story), &got); code != 200 {
 				rt.Fatalf("ストーリー %s の一覧を読めない（%d）: %s", story, code, msg)
 			}
-			checkReview(rt, "ストーリー "+story+" のストーリー全体の見方", got, want)
+			checkReview(rt, "ストーリー "+story+" の、レビュー単位がストーリーのとき", got, want)
 		}
 	})
 }

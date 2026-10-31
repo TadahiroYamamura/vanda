@@ -299,7 +299,7 @@ func (r *rvRepo) mergeBase(base string) rvCommit {
 	return rvCommit{}
 }
 
-// branchView は、ベースブランチ base でのブランチごとの見方の期待値。作業ツリーの書きかけの変更も含める。
+// branchView は、ベースブランチ base での、レビュー単位がブランチのときの期待値。作業ツリーの書きかけの変更も含める。
 func (r *rvRepo) branchView(base string) map[rvEntry]bool {
 	mb := r.mergeBase(base)
 	verifyCommit(r.g, mb.hash, mb.state)
@@ -307,11 +307,11 @@ func (r *rvRepo) branchView(base string) map[rvEntry]bool {
 	return rvBranchView(mb.state, r.state)
 }
 
-// storyView は、ストーリー story の、ストーリー全体の見方の期待値。
+// storyView は、ストーリー story の、レビュー単位がストーリーのときの期待値。
 // 書きかけの変更をストーリーのものとみなすかを仕様から決められないので、作業ツリーに書きかけの変更がないときだけ作る。
 func (r *rvRepo) storyView(story string) map[rvEntry]bool {
 	if r.dirty {
-		r.t.Fatalf("書きかけの変更があるときは、ストーリー全体の見方の期待値を作らない")
+		r.t.Fatalf("書きかけの変更があるときは、レビュー単位がストーリーのときの期待値を作らない")
 	}
 	anc := r.ancestors(r.heads[r.branch])
 	chain := make([]rvCommit, len(anc))

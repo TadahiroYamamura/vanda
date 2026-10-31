@@ -213,17 +213,15 @@ async function agreeAll(page: Page, items: string[]) {
 
 const items = ["task-id-unique", "task-title-required", "e2e/add-task.txtar"];
 
-test("ストーリーを選び一覧を見て全部に合意するとvanda checkの合意の審査が通る", async ({ page }) => {
+test("ブランチのコミットからストーリーが決まるブランチで一覧を見て全部に合意するとvanda checkの合意の審査が通る", async ({ page }) => {
   expect(repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main").code, "合意する前から審査が通っている").toBe(1);
   await page.goto(serve.url + "/");
   // 開いたときの既定は、設定のベースブランチ。今どのベースブランチと比べているかを、選ぶ所のほかにも示す
   const baseSelect = page.getByRole("combobox", { name: "ベースブランチ" });
   await expect(baseSelect).toHaveValue("main");
   await expect(page.getByText(/main/).filter({ visible: true }).first()).toBeVisible();
-  // ストーリーを選ぶ
-  const storySelect = page.getByRole("combobox", { name: "ストーリー" });
-  const value = await storySelect.locator("option", { hasText: "#24" }).first().getAttribute("value");
-  await storySelect.selectOption(value ?? "#24");
+  // story-24 のブランチのコミットにあるストーリーは #24 だけなので、選ばせずに示す（RV-13）
+  await expect(page.getByText(/ストーリー\s*[:：]\s*#24/).first()).toBeVisible();
   for (const item of items) await expect(page.getByText(item).first()).toBeVisible();
   await expect(page.getByText(/全 3 件|3 件/).first()).toBeVisible();
   await agreeAll(page, items);
@@ -245,7 +243,7 @@ test("合意した約束を変えると一覧に差分ありとして戻る", as
   await expect(page.getByText(/提案中/).first()).toBeVisible();
 });
 
-test("ベースブランチと見方を切り替えると一覧が変わる", async ({ page }) => {
+test("ベースブランチとレビュー単位を切り替えると一覧が変わる", async ({ page }) => {
   // release は、#24 の最初のコミットの後から分かれたことにする（シナリオの変更だけが残る）
   repo.git("branch", "release", "story-24~1");
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
@@ -258,22 +256,20 @@ test("ベースブランチと見方を切り替えると一覧が変わる", as
   await expect(baseSelect).toHaveValue("release");
   await expect(page.getByText(/release/).filter({ visible: true }).first()).toBeVisible();
 
-  // ストーリー全体の見方の選択肢は、文の全体でなく、ストーリーの ID と「変更」で探す（文言の細部に頼らない）
-  const view = page.getByRole("combobox", { name: "見方" });
-  const storyOption = view.locator("option").filter({ hasText: "#24" }).filter({ hasText: "変更" }).first();
-  await view.selectOption((await storyOption.getAttribute("value")) ?? "story");
+  const view = page.getByRole("combobox", { name: "レビュー単位" });
+  await view.selectOption({ label: "ストーリー" });
   await expect(page).toHaveURL(/view=story/);
   for (const item of items) await expect(page.getByText(item).first()).toBeVisible();
 });
 
-// 約束の詳細とファイルの画面から「ストーリーのレビューへ戻る」で戻ると、行く前のレビューの画面（見方・ベースブランチ・
+// 約束の詳細とファイルの画面から「ストーリーのレビューへ戻る」で戻ると、行く前のレビューの画面（レビュー単位・ベースブランチ・
 // ストーリー・選んでいた 1 件）に戻る。ブラウザーの「戻る」には頼らない（PO の報告では、こちらだけが選ぶ前に戻っていた）。
-// ストーリー全体の見方ではベースブランチを選ぶ所が出ないので、見方とベースブランチの組は 3 つ。それと戻る経路 3 つの
+// レビュー単位がストーリーのときはベースブランチを選ぶ所が出ないので、レビュー単位とベースブランチの組は 3 つ。それと戻る経路 3 つの
 // 組み合わせを全部回す。
 const states = [
-  { name: "ブランチごとの見方でベースブランチを既定のmainにして", story: false, base: "main" },
-  { name: "ブランチごとの見方でベースブランチをreleaseに変えて", story: false, base: "release" },
-  { name: "ストーリー全体の見方に切り替えて", story: true, base: "main" },
+  { name: "レビュー単位がブランチのときにベースブランチを既定のmainにして", story: false, base: "main" },
+  { name: "レビュー単位がブランチのときにベースブランチをreleaseに変えて", story: false, base: "release" },
+  { name: "レビュー単位をストーリーに切り替えて", story: true, base: "main" },
 ];
 const routes = [
   { name: "約束の詳細から直接", via: "claim" },
@@ -292,16 +288,17 @@ for (const v of states) {
         repo.write(".vanda/promises.toml", text.replace("すべてのタスクを通して重ならない", "どのタスクとも重ならない"));
         repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "-am", "#24 シナリオをエビデンスにする");
 
+        // レビュー単位がブランチのときは、ブランチのコミットからストーリー #24 が決まり、選ぶ欄は出ない（RV-13）
         await page.goto(serve.url + "/");
-        const storySelect = page.getByRole("combobox", { name: "ストーリー" });
-        const storyValue = (await storySelect.locator("option", { hasText: "#24" }).first().getAttribute("value")) ?? "#24";
-        await storySelect.selectOption(storyValue);
         const baseSelect = page.getByRole("combobox", { name: "ベースブランチ" });
         if (v.base !== "main") await baseSelect.selectOption(v.base);
-        const view = page.getByRole("combobox", { name: "見方" });
+        const view = page.getByRole("combobox", { name: "レビュー単位" });
         if (v.story) {
-          const storyOption = view.locator("option").filter({ hasText: "#24" }).filter({ hasText: "変更" }).first();
-          await view.selectOption((await storyOption.getAttribute("value")) ?? "story");
+          await view.selectOption({ label: "ストーリー" });
+          const value = (await storyField(page).locator("option", { hasText: "#24" }).first().getAttribute("value")) ?? "#24";
+          await storyField(page).selectOption(value);
+        } else {
+          await expect(page.getByText(/ストーリー\s*[:：]\s*#24/).first()).toBeVisible();
         }
         if (!v.story && v.base === "release") await expect(page.getByText("task-title-required")).toHaveCount(0);
         else await expect(page.getByText("task-title-required").first()).toBeVisible();
@@ -311,7 +308,7 @@ for (const v of states) {
         const before = {
           view: await view.inputValue(),
           base: v.story ? null : await baseSelect.inputValue(),
-          story: await storySelect.inputValue(),
+          story: v.story ? await storyField(page).inputValue() : null,
         };
         if (!v.story) expect(before.base).toBe(v.base);
 
@@ -328,9 +325,10 @@ for (const v of states) {
         }
         await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
 
-        await expect(page.getByRole("combobox", { name: "見方" })).toHaveValue(before.view);
+        await expect(page.getByRole("combobox", { name: "レビュー単位" })).toHaveValue(before.view);
         if (before.base !== null) await expect(page.getByRole("combobox", { name: "ベースブランチ" })).toHaveValue(before.base);
-        await expect(page.getByRole("combobox", { name: "ストーリー" })).toHaveValue(before.story);
+        if (before.story !== null) await expect(storyField(page)).toHaveValue(before.story);
+        else await expect(page.getByText(/ストーリー\s*[:：]\s*#24/).first(), "戻った後に、決まったストーリーが示されない").toBeVisible();
         await expect(page.getByRole("link", { name: "約束の詳細を開く" }), "選んでいた task-id-unique の 1 件の詳細に戻っていない").toHaveAttribute("href", /task-id-unique/);
         await expect(page.getByRole("button", { name: /合意する/ })).toBeVisible();
       });
@@ -386,26 +384,37 @@ layers = ["model"]
 detail = "${c.plan}"
 ` : ""}`;
 
-function commit(r: Repo, subject: string): string {
+// date を渡せば、作者とコミッターの日時をそれにする
+function commit(r: Repo, subject: string, date?: string): string {
   r.git("add", "-A");
-  r.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "-m", subject);
+  execFileSync("git", ["-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "-m", subject], {
+    cwd: r.root,
+    env: date ? { ...r.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date } : r.env,
+  });
   return r.git("rev-parse", "HEAD");
 }
 
 // commitV3 は、DB のレイヤーを設定に足し、task-id-unique を v3 にする。
-function commitV3(r: Repo): string {
+function commitV3(r: Repo, date?: string): string {
   const cfg = readFileSync(join(r.root, ".vanda/config.toml"), "utf8");
   r.write(".vanda/config.toml", cfg.replace("[[annotation]]", '[[layer]]\nid = "db"\nname = "データベース"\ndescription = "保存の制約"\n\n[[annotation]]'));
   r.write(".vanda/promises.toml", promisesAt(v3));
-  return commit(r, "#24 理由と条件を足す");
+  return commit(r, "#24 理由と条件を足す", date);
 }
 
-// 由来の行と合意の記録の行は、CL の約束の詳細と同じく表の行として探す。行の中にボタンがあればそれを、なければ行を押して選ぶ
-async function choose(row: ReturnType<Page["getByRole"]>) {
+// 由来の行と合意の記録の行は、CL の約束の詳細と同じく表の行として探す。その時点の中身は、行の中の開く・たたむを
+// 切り替えるボタンで開く。押すと aria-expanded と名前が切り替わる
+type Row = ReturnType<Page["getByRole"]>;
+async function choose(row: Row) {
   await expect(row).toBeVisible();
-  const button = row.getByRole("button");
-  if ((await button.count()) > 0) await button.first().click();
-  else await row.click();
+  const open = row.getByRole("button", { name: "その時点の中身を開く" });
+  await expect(open).toHaveAttribute("aria-expanded", "false");
+  await open.click();
+  await expect(row.getByRole("button", { name: "その時点の中身をたたむ" }), "開いた後に、ボタンがたたむに切り替わらない").toHaveAttribute("aria-expanded", "true");
+}
+async function collapse(row: Row) {
+  await row.getByRole("button", { name: "その時点の中身をたたむ" }).click();
+  await expect(row.getByRole("button", { name: "その時点の中身を開く" }), "たたんだ後に、ボタンが開くに切り替わらない").toHaveAttribute("aria-expanded", "false");
 }
 const rowOf = (page: Page, text: string) => page.getByRole("row").filter({ hasText: text }).first();
 
@@ -523,6 +532,103 @@ for (const pg of pages) {
       await choose(rowOf(page, "テスト担当"));
       await expect(page.getByText(v1Statement, { exact: true }).first()).toBeVisible();
     }
+  });
+
+  test(`${pg.name}で2つ以上の時点を開くとそれぞれの中身が同時に出たままになり1つをたたんでもほかは開いたまま`, async ({ page }) => {
+    commitV3(repo);
+    await openReviewDetail(page);
+    const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
+    await page.getByRole("button", { name: /合意する/ }).click();
+    expect((await res).status()).toBe(200);
+    repo.write(".vanda/promises.toml", promisesAt(v4));
+    commit(repo, "#24 文を直す");
+
+    await pg.open(page);
+    await expect(page.getByText(v4.statement).first()).toBeVisible();
+    // 開くもの: 由来の #1（v1）と #24 の最初のコミット（v2）、v3 のときの合意（v3）。レビューの画面では v1 の文が
+    // 変更前として出ているので、出ている数が 1 つ増えるかで見る
+    const opened: [string, string][] = [
+      ["#1 はじめの約束を置く", v1Statement],
+      ["#24 約束を変え、題の約束を足す", v2Statement],
+      ["合意する人", v3.statement],
+    ];
+    const count = (text: string) => page.getByText(text, { exact: false }).count();
+    const before = new Map<string, number>();
+    for (const [, text] of opened) before.set(text, await count(text));
+    for (const [rowText] of opened) await choose(rowOf(page, rowText));
+    for (const [rowText, text] of opened) {
+      await expect.poll(() => count(text), { message: `${rowText} の時点の中身が、ほかを開いた後に出ていない` }).toBe(before.get(text)! + 1);
+    }
+    await collapse(rowOf(page, "#24 約束を変え、題の約束を足す"));
+    await expect.poll(() => count(v2Statement), { message: "たたんだ時点の中身が消えない" }).toBe(before.get(v2Statement)!);
+    for (const [rowText, text] of [opened[0], opened[2]]) {
+      await expect.poll(() => count(text), { message: `1 つをたたむと、${rowText} の時点の中身も消えた` }).toBe(before.get(text)! + 1);
+      await expect(rowOf(page, rowText).getByRole("button", { name: "その時点の中身をたたむ" })).toHaveAttribute("aria-expanded", "true");
+    }
+  });
+
+  test(`${pg.name}で由来と合意の履歴の行を押すとその時点の中身が開きもう一度押すとたたまり山形のボタンを押しても1回だけ切り替わる`, async ({ page }) => {
+    commitV3(repo);
+    repo.write(".vanda/promises.toml", promisesAt(v4));
+    commit(repo, "#24 文を直す");
+    await pg.open(page);
+    await expect(page.getByText(v4.statement).first()).toBeVisible();
+
+    // 由来の v3 のコミットの行と、合意の履歴の #1 の合意（v1）の行。レビューの画面では v1 の文が変更前として出ているので、
+    // 出ている数が 1 つ増えるか・戻るかで見る
+    const count = (text: string) => page.getByText(text, { exact: false }).count();
+    for (const [rowText, text] of [["#24 理由と条件を足す", v3.statement], ["テスト担当", v1Statement]]) {
+      const row = rowOf(page, rowText);
+      const cell = row.getByRole("cell").filter({ hasText: rowText }).first();
+      const toggle = row.getByRole("button", { name: /その時点の中身を(開く|たたむ)/ });
+      const base = await count(text);
+      await expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+      await cell.click();
+      await expect(toggle, `${rowText} の行を押しても開かない`).toHaveAttribute("aria-expanded", "true");
+      await expect.poll(() => count(text)).toBe(base + 1);
+      await cell.click();
+      await expect(toggle, `${rowText} の行をもう一度押してもたたまない`).toHaveAttribute("aria-expanded", "false");
+      await expect.poll(() => count(text)).toBe(base);
+
+      // ボタンは行の中にあるので、行の動きと二重に切り替わると、押しても閉じたままになる
+      await row.getByRole("button", { name: "その時点の中身を開く" }).click();
+      await expect(toggle, `${rowText} のボタンを押すと、二重に切り替わって閉じたまま`).toHaveAttribute("aria-expanded", "true");
+      await expect.poll(() => count(text)).toBe(base + 1);
+      await row.getByRole("button", { name: "その時点の中身をたたむ" }).click();
+      await expect(toggle, `${rowText} のボタンでたたむと、二重に切り替わって開いたまま`).toHaveAttribute("aria-expanded", "false");
+      await expect.poll(() => count(text)).toBe(base);
+    }
+  });
+
+  test(`${pg.name}の由来と合意の履歴は新しいものが上に並ぶ`, async ({ page }) => {
+    // 日時が同じときの順はまだ決まっていないので、日時をずらしたコミットと合意の記録だけの前後を見る。
+    // buildRepo の #1 と #24 のコミットは今の日時なので、足すコミットはその 1 時間後と 2 時間後にする
+    const later = (h: number) => new Date(Date.now() + h * 3600_000).toISOString();
+    commitV3(repo, later(1));
+    repo.write(".vanda/promises.toml", promisesAt(v4));
+    // 合意の記録は、ファイルの中では日時の順にしない（一月の #1 の記録の後に、三月、二月）
+    const agreements = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
+    const rec = (who: string, at: string) =>
+      agreement("claim", "task-id-unique", sha(claimJSON(v4.statement)), null, "#24")
+        .replace("テスト担当", who)
+        .replace("agreed_at = 2026-01-01T10:00:00+09:00", `agreed_at = ${at}`);
+    repo.write(".vanda/agreements.toml", agreements + rec("三月に合意した人", "2026-03-01T10:00:00+09:00") + rec("二月に合意した人", "2026-02-01T10:00:00+09:00"));
+    commit(repo, "#24 文を直す", later(2));
+
+    await pg.open(page);
+    await expect(rowOf(page, "#24 文を直す")).toBeVisible();
+    const rows = await page.getByRole("row").allTextContents();
+    const at = (text: string) => {
+      const i = rows.findIndex((r) => r.includes(text));
+      expect(i, `${text} の行がない`).toBeGreaterThanOrEqual(0);
+      return i;
+    };
+    const oldest = Math.min(at("#1 はじめの約束を置く"), at("#24 約束を変え、題の約束を足す"));
+    expect(at("#24 文を直す"), "由来の 2 時間後のコミットが、1 時間後のコミットより下にある").toBeLessThan(at("#24 理由と条件を足す"));
+    expect(at("#24 理由と条件を足す"), "由来の 1 時間後のコミットが、はじめのコミットより下にある").toBeLessThan(oldest);
+    expect(at("三月に合意した人"), "合意の履歴の三月の合意が、二月の合意より下にある").toBeLessThan(at("二月に合意した人"));
+    expect(at("二月に合意した人"), "合意の履歴の二月の合意が、一月の合意より下にある").toBeLessThan(at("テスト担当"));
   });
 
   test(`${pg.name}で合意を書いたコミットの時点に約束リストが読めない合意の記録を選ぶと理由が出る`, async ({ page }) => {
@@ -698,3 +804,174 @@ for (const w of writers) {
     });
   }
 }
+
+// RV-13: レビュー単位がブランチのときのストーリーの決め方。選ぶ欄の選択肢は、ストーリーの ID だけを数える
+// （まだ選んでいないことを示す選択肢などは数えない）。一覧を読み終えるまでは、すべてのストーリーが選択肢に出ることが
+// あるので、選択肢は落ち着くまで待って比べる
+const storyField = (page: Page) => page.getByRole("combobox", { name: "ストーリー", exact: true });
+async function storyChoices(page: Page): Promise<string[]> {
+  const texts = await storyField(page).locator("option").allTextContents();
+  return texts.flatMap((t) => t.match(/#\d+/g) ?? []);
+}
+async function agreeTaskIdUnique(page: Page) {
+  await select(page, "task-id-unique");
+  const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
+  await page.getByRole("button", { name: /合意する/ }).click();
+  expect((await res).status()).toBe(200);
+}
+
+test("レビュー単位がブランチでブランチのコミットからストーリーが1つに決まるときは選ぶ欄を出さずに示しそのストーリーで合意できる", async ({ page }) => {
+  await page.goto(serve.url + "/?view=branch&base=main");
+  await expect(page.getByText(/ストーリー\s*[:：]\s*#24/).first(), "決まったストーリーが示されない").toBeVisible();
+  await expect(storyField(page)).toHaveCount(0);
+  await agreeTaskIdUnique(page);
+  expect(repo.git("log", "-1", "--format=%s")).toContain("#24 で");
+});
+
+test("レビュー単位がブランチでブランチに2つ以上のストーリーのコミットがあるときはそのブランチのストーリーだけを1度ずつ選ばせる", async ({ page }) => {
+  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "#30 で直す");
+  await page.goto(serve.url + "/?view=branch&base=main");
+  await expect(storyField(page)).toBeVisible();
+  // #1 は main のコミットにしかない。#24 は 2 つのコミットにある
+  await expect.poll(async () => (await storyChoices(page)).sort()).toEqual(["#24", "#30"]);
+});
+
+test("レビュー単位がブランチでストーリーのIDを持つコミットがないときはすべてのストーリーから1度ずつ選ばせる", async ({ page }) => {
+  // story-24 から ID のないコミットだけのブランチを作り、story-24 と比べる（設定の既定のベースブランチ main とは別）
+  repo.git("switch", "-q", "-c", "plain");
+  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "ID のないコミット");
+  await page.goto(serve.url + "/?view=branch&base=story-24");
+  await expect(storyField(page)).toBeVisible();
+  await expect.poll(async () => (await storyChoices(page)).sort()).toEqual(["#1", "#24"]);
+});
+
+test("レビュー単位がブランチでURLのstoryでストーリーを名指ししたときはそれを使う", async ({ page }) => {
+  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "#30 で直す");
+  await page.goto(serve.url + "/?view=branch&base=main&story=%2330");
+  await agreeTaskIdUnique(page);
+  expect(repo.git("log", "-1", "--format=%s"), "名指ししたストーリーで合意していない").toContain("#30 で");
+});
+
+test("レビュー単位がストーリーのときはすべてのストーリーから1度ずつ選ばせる", async ({ page }) => {
+  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "#30 で直す");
+  await page.goto(serve.url + "/?view=story&story=%2324");
+  await expect(storyField(page)).toBeVisible();
+  await expect.poll(async () => (await storyChoices(page)).sort()).toEqual(["#1", "#24", "#30"]);
+});
+
+test("レビュー単位がブランチでベースブランチを既定から変えるとそのベースブランチと分かれた点より後のストーリーで決まる", async ({ page }) => {
+  // rel は #24 のコミットの後から分かれたことにする。rel と比べると、ブランチのストーリーは #30 だけ。
+  // #30 で task-id-unique を変え、rel と比べても一覧に出るようにする
+  repo.git("branch", "rel", "story-24");
+  const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
+  repo.write(".vanda/promises.toml", text.replace("すべてのタスクを通して重ならない", "どのタスクとも重ならない"));
+  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "-am", "#30 で直す");
+  await page.goto(serve.url + "/?view=branch&base=main");
+  await expect(storyField(page)).toBeVisible();
+  await expect.poll(async () => (await storyChoices(page)).sort()).toEqual(["#24", "#30"]);
+
+  await page.getByRole("combobox", { name: "ベースブランチ" }).selectOption("rel");
+  await expect(page.getByText(/ストーリー\s*[:：]\s*#30/).first(), "rel と比べたときのストーリー #30 が示されない").toBeVisible();
+  await expect(storyField(page)).toHaveCount(0);
+  await agreeTaskIdUnique(page);
+  expect(repo.git("log", "-1", "--format=%s")).toContain("#30 で");
+});
+
+// RV-08: エビデンスが揃っているかは、各行の左端のアイコンの名前（aria-label）で示す。揃っている・ない・
+// アノテーションでは確かめない、の 3 つを全部回す
+test("エビデンスの予定と実際の表の揃っているかは揃っているとないとアノテーションでは確かめないをアイコンの名前で示す", async ({ page }) => {
+  // シナリオテストはアノテーションがあり揃っている。モデル検査はアノテーションがなくない。人のレビューはアノテーションで確かめない
+  repo.write("e2e/add-task.txtar", "# シナリオ\n# @vanda:evidence task-id-unique\n! exec vanda-task add a\n-- a.txt --\na\n");
+  const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
+  repo.write(
+    ".vanda/promises.toml",
+    text.replace(
+      '[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n',
+      '[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "plan"\ntype = "model-check"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "release"\ntype = "human-review"\nlayers = ["model"]\n',
+    ),
+  );
+  commit(repo, "#24 エビデンスの予定を足す");
+  await openReviewDetail(page);
+  const table = evidenceTable(page);
+  await expect(table).toBeVisible();
+  const rows = table.getByRole("row");
+  for (const [type, name] of [
+    ["シナリオテスト", "揃っています"],
+    ["モデル検査", "ありません"],
+    ["人のレビュー", "アノテーションでは確かめません"],
+  ]) {
+    const row = rows.filter({ hasText: type }).first();
+    await expect(row.getByRole("img", { name }), `${type} の行に「${name}」のアイコンがない`).toBeVisible();
+    // アイコンは行の左端の欄に出す
+    await expect(row.getByRole("cell").first().getByRole("img", { name }), `${type} の行の「${name}」のアイコンが左端の欄にない`).toBeVisible();
+    await expect(row.getByRole("img", { name }), `${type} の行のアイコンの title が名前と違う`).toHaveAttribute("title", name);
+  }
+  // 約束の詳細の画面のエビデンスも、同じアイコンで示す（3 つのエビデンスに 1 つずつ）
+  await page.getByRole("link", { name: "約束の詳細を開く" }).click();
+  await expect(page.getByText("エビデンス（タイプごと）").first()).toBeVisible();
+  for (const name of ["揃っています", "ありません", "アノテーションでは確かめません"]) {
+    await expect(page.getByRole("img", { name, exact: true }), `約束の詳細の画面に「${name}」のアイコンが 1 つでない`).toHaveCount(1);
+    await expect(page.getByRole("img", { name, exact: true })).toHaveAttribute("title", name);
+  }
+  await expect(page.getByText("エビデンスがありません")).toHaveCount(0);
+});
+
+// エビデンスの予定と実際の表は、見出し「詳細」の列を持つ
+const evidenceTable = (page: Page) => page.getByRole("table").filter({ has: page.getByRole("columnheader", { name: "詳細", exact: true }) });
+
+test("エビデンスの予定と実際の表の詳細は長い文も改行も省略せずに全部出し幅400pxでページが横にスクロールしない", async ({ page }) => {
+  const lines = [
+    "TLA+ のモデルで、タスクを足す・消す・足し直すを 3 回まで繰り返し、どの順でも ID が重ならないことを確かめる予定。消したタスクの ID を使い回さないことも、同じモデルで確かめる。",
+    "定数の範囲は、タスクが 3 つまで、操作が 6 歩まで。",
+    "置き場所の候補: spec/TaskLifecycleWithDeletionAndReAddition.tla",
+  ];
+  const detail = lines.join("\n");
+  const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
+  repo.write(
+    ".vanda/promises.toml",
+    text.replace(
+      '[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n',
+      `[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "plan"\ntype = "model-check"\nlayers = ["model"]\ndetail = ${JSON.stringify(detail)}\n`,
+    ),
+  );
+  commit(repo, "#24 長い詳細を書く");
+  await page.setViewportSize({ width: 400, height: 900 });
+  await openReviewDetail(page);
+  const table = evidenceTable(page);
+  await expect(table, "見出し「詳細」のエビデンスの予定と実際の表がない").toBeVisible();
+  const cell = table.getByRole("row").filter({ hasText: "モデル検査" }).first().getByRole("cell").filter({ hasText: lines[0].slice(0, 20) }).first();
+  await expect(cell).toBeVisible();
+  // 見えている文字（innerText）に、全部の文と改行がある
+  expect((await cell.innerText()).trim(), "詳細が省略されたか、改行が保たれていない").toBe(detail);
+  // 欄の中で折り返し、はみ出して隠れた所がない
+  const overflow = await cell.evaluate((el) => ({ w: el.scrollWidth - el.clientWidth, h: el.scrollHeight - el.clientHeight }));
+  expect(overflow.w, "詳細の欄の中で、横にはみ出している").toBeLessThanOrEqual(1);
+  expect(overflow.h, "詳細の欄の中で、縦にはみ出して隠れている").toBeLessThanOrEqual(1);
+  const page_ = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, view: window.innerWidth }));
+  expect(page_.scroll, "幅 400px で、ページが横にスクロールする").toBeLessThanOrEqual(page_.view);
+});
+
+// 一覧の 1 件は、枠のどこを押しても選ばれる（番号・状態の札・フラグの札・枠の端）
+test("変わったものの一覧の1件は名前のほかに番号や状態の札やフラグの札や枠の端を押しても選ばれる", async ({ page }) => {
+  await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
+  const detailOf = (id: string) => expect(page.getByRole("link", { name: "約束の詳細を開く" }), `${id} が選ばれていない`).toHaveAttribute("href", new RegExp(`/claims/${id}`));
+  // task-title-required は 2 件目で、提案中の札と AI 案の札を持つ
+  const frame = page.getByRole("button").filter({ hasText: "task-title-required" }).first();
+  await expect(frame).toBeVisible();
+  const spots: [string, () => Promise<void>][] = [
+    ["番号", () => frame.getByText("2", { exact: true }).first().click()],
+    ["状態の札", () => frame.getByText("提案中").first().click()],
+    ["フラグの札", () => frame.getByText("AI 案").first().click()],
+    ["枠の左上の端", () => frame.click({ position: { x: 2, y: 2 } })],
+    ["枠の右下の端", async () => {
+      const box = (await frame.boundingBox())!;
+      await frame.click({ position: { x: box.width - 3, y: box.height - 3 } });
+    }],
+  ];
+  for (const [spot, click] of spots) {
+    await select(page, "task-id-unique");
+    await detailOf("task-id-unique");
+    await click();
+    await expect(page.getByRole("link", { name: "約束の詳細を開く" }), `${spot}を押しても task-title-required が選ばれない`).toHaveAttribute("href", /\/claims\/task-title-required/);
+  }
+});

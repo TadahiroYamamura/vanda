@@ -143,7 +143,7 @@ func checkDetached(t *testing.T, where string, got reviewResponse) {
 }
 
 // RV-14
-func TestRV14はストーリーの合意が外れたものをブランチごとの見方でもストーリー全体の見方でも変えたストーリーと一緒に示す(t *testing.T) {
+func TestRV14はストーリーの合意が外れたものをレビュー単位がブランチのときもストーリーのときも変えたストーリーと一緒に示す(t *testing.T) {
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
 	if err != nil {
@@ -164,18 +164,18 @@ func TestRV14はストーリーの合意が外れたものをブランチごと�
 
 	var branch reviewResponse
 	if code, msg := s.get("/api/review?view=branch&base=main&story="+q("#24"), &branch); code != 200 {
-		t.Fatalf("ブランチごとの一覧を読めない（%d）: %s", code, msg)
+		t.Fatalf("レビュー単位がブランチのときの一覧を読めない（%d）: %s", code, msg)
 	}
-	checkDetached(t, "ブランチごとの見方", branch)
+	checkDetached(t, "レビュー単位がブランチのとき", branch)
 
 	var story reviewResponse
 	if code, msg := s.get("/api/review?view=story&story="+q("#24"), &story); code != 200 {
-		t.Fatalf("ストーリー全体の一覧を読めない（%d）: %s", code, msg)
+		t.Fatalf("レビュー単位がストーリーのときの一覧を読めない（%d）: %s", code, msg)
 	}
-	checkDetached(t, "ストーリー全体の見方", story)
+	checkDetached(t, "レビュー単位がストーリーのとき", story)
 	if a := findEntry(story.Entries, "item-a"); a != nil {
 		if len(a.OtherCommits) != 1 || !reflect.DeepEqual(a.OtherCommits[0].Stories, []string{"#30"}) || a.OtherCommits[0].Subject != "#30 で item-a を変える" {
-			t.Errorf("ストーリー全体の見方の item-a の otherCommits が、#30 のコミット 1 つでない: %+v", a.OtherCommits)
+			t.Errorf("レビュー単位がストーリーのときの item-a の otherCommits が、#30 のコミット 1 つでない: %+v", a.OtherCommits)
 		}
 	}
 

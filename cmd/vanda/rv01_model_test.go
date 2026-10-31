@@ -27,7 +27,7 @@ type rvEntry struct {
 	Key     string // 約束・用語・機能は ID。ファイルは今の場所（削除なら、前の場所）
 	Change  string // added・modified・deleted・renamed
 	OldPath string // 名前の変更の、前の場所
-	// Others は、ストーリー全体の見方で、そのストーリーで最初に変えた後に同じものを変えた、そのストーリーの ID のないコミット。
+	// Others は、レビュー単位がストーリーのときに、そのストーリーで最初に変えた後に同じものを変えた、そのストーリーの ID のないコミット。
 	// コミットごとに、メッセージにあるストーリーの ID（ないものは "-"）を書き、名前の順に , でつなぐ。
 	// 名前の変更は、前の場所か今の場所のどちらかを変えたコミットを数える（監督の決定）
 	Others string
@@ -229,7 +229,7 @@ func rvEntryOf(key, kind, change, oldPath string, others map[string]string) rvEn
 	return rvEntry{Kind: kind, Key: k, Change: change, OldPath: oldPath, Others: strings.Join(labels, ",")}
 }
 
-// rvBranchView は、ブランチごとの見方の期待値。分かれた点の中身（base）と、作業ツリーの今の中身（cur）を比べる。
+// rvBranchView は、レビュー単位がブランチのときの期待値。分かれた点の中身（base）と、作業ツリーの今の中身（cur）を比べる。
 func rvBranchView(base, cur rvState) map[rvEntry]bool {
 	b, a := rvKeyed(base), rvKeyed(cur)
 	return rvDiff(unionKeys(b, a), b, a, nil)
@@ -242,7 +242,7 @@ type rvCommit struct {
 	hash   string
 }
 
-// rvStoryView は、ストーリー全体の見方の期待値。chain は、根のコミットから今のコミットまで（一本道の履歴）。
+// rvStoryView は、レビュー単位がストーリーのときの期待値。chain は、根のコミットから今のコミットまで（一本道の履歴）。
 // 鍵ごとに、そのストーリーの ID を持つコミットのうち、その鍵の中身を変えた最初のコミットの親の中身を比べる元にし、
 // 作業ツリーの今の中身（cur）と比べる。最初に変えたコミットより後に、そのストーリーの ID のないコミットが同じ鍵を変えていたら、
 // Others に書く。

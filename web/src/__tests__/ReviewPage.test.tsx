@@ -169,7 +169,7 @@ describe("RV-06 合意する", () => {
   });
 });
 
-describe("RV-13・RV-14 見方と外れた合意", () => {
+describe("RV-13・RV-14 レビュー単位と外れた合意", () => {
   it("外れた合意をそれを外したストーリーと一緒に示す", async () => {
     const detached = claimEntry(0, "c-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
     open([claimEntry(1, "c-changed", { detachedAgreement: { by: ["#31"] } })], { detached: [detached] });
@@ -182,7 +182,7 @@ describe("RV-13・RV-14 見方と外れた合意", () => {
     await waitFor(() => expect(bodyText()).toContain("#30"));
   });
 
-  it("ストーリー全体の見方ではほかのストーリーが途中で変えたことを示す", async () => {
+  it("レビュー単位がストーリーのときはほかのストーリーが途中で変えたことを示す", async () => {
     window.history.pushState({}, "", "/?view=story&story=%2324");
     open(
       [
