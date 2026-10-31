@@ -138,7 +138,8 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 		checkFound(t, w.typ, g.Found, w.found)
 	}
 
-	first, changed := r.git("rev-parse", "main"), r.git("rev-parse", reviewBranch+"~1")
+	first := r.git("rev-parse", "main")
+	changed := r.git("log", "-1", "--format=%H", "--fixed-strings", "--grep=タスクの ID の約束を変え", reviewBranch)
 	if len(got.Origin) != 2 {
 		t.Fatalf("由来が 2 件（作ったコミットと、文を変えたコミット）でない: %+v", got.Origin)
 	}
