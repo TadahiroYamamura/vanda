@@ -1,0 +1,70 @@
+# アノテーションの読み取り: 1 つのファイルが 2 つ以上の [[annotation]] のパターンに当たると止まる。
+
+exec git init -q -b main
+
+# 当たるのが 1 つなら通る
+cp cases/config-one.toml .vanda/config.toml
+expand .vanda/config.toml
+exec vanda check .vanda/checks/links.toml
+
+# go と、外部のコマンドの両方に当たる
+cp cases/config-two.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr 'task_test\.go'
+! stderr '(?m)^panic: '
+
+-- .vanda/checks/links.toml --
+[[check]]
+name = "annotation-links"
+scope = "all"
+-- .vanda/agreements.toml --
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+-- task_test.go --
+package task
+
+import "testing"
+
+// @vanda:evidence task-id-unique
+func TestAddKeepsIdsUnique(t *testing.T) {}
+-- cases/config-one.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["**/*_test.go"]
+adapter = "go"
+-- cases/config-two.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["**/*_test.go"]
+adapter = "go"
+
+[[annotation]]
+paths = ["*.go"]
+command = ["sh", "-c", "cat >/dev/null; printf '%s' '{\"names\":[{\"line\":5,\"name\":\"x\"}]}'"]

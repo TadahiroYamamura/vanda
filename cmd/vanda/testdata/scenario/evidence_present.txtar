@@ -1,45 +1,89 @@
-# CMD-10 エビデンスが揃っている: 予定したエビデンスごとに、アノテーションの付いたもの、または detail に書いたファイルがある。
-# 合格しているかは段 3 から見るので、ここではテストを動かさない。
+# CMD-10 エビデンスが揃っている（段 1）: 予定したエビデンスの 1 件ごとに、そのタイプに合うアダプタのアノテーションが 1 つ以上ある。
+# タイプとアノテーションの対応（監督の決定）:
+#   scenario-test は txtar の evidence、model-check は TLA+ の claim、guardrail は SQL の evidence、
+#   unit-test・cross-check・random-check・interface-test・concurrency-test は Go の evidence、sensor は Go の sensor。
+# 1 つのアノテーションが、同じ約束の複数の予定を満たしてよい。proof は段 1 では扱えない誤りにする。
+# 実行しないタイプ（human-review・monitoring）は確かめない（detail に書いたファイルがなくても止めない）。
 # 範囲を 1 つのストーリーにすると、分かれた点より後に変わった約束だけを見る。
 #
-# 確かめないこと: 1 つの約束に予定したエビデンスが 2 つ以上あるとき、どのアノテーションがどの予定に当たるか。決まっていないため。
+# txtar のファイルの中身は、この台本の区切りとぶつからないよう、行の頭に > を付けて書き、unquote で外す。
 
 exec git init -q -b main
 expand .vanda/config.toml
+unquote e2e/add.txtar cases/add-none.txtar
 
-# detail に書いたファイルがあり、アノテーションの付いたテストがあれば通る
+# どの予定にも、タイプに合うアノテーションがあれば通る
 exec vanda check .vanda/checks/all.toml
 
-# detail に書いたファイルがないと止まる
-mv docs/review.md docs/review.md.bak
+# txtar のアノテーションがないと、scenario-test の予定で止まる（Go の evidence では代わりにならない）
+cp cases/add-none.txtar e2e/add.txtar
 ! exec vanda check .vanda/checks/all.toml
-stderr 'docs/review\.md'
-stderr 'task-reviewed'
-! stderr 'task-id-unique'
+stderr 'promises\.toml.*scenario-test'
+! stderr 'unit-test'
 ! stderr '(?m)^panic: '
-mv docs/review.md.bak docs/review.md
+cp cases/add.txtar e2e/add.txtar
+unquote e2e/add.txtar
 
-# detail がなく、アノテーションの付いたものもないと止まる
+# TLA+ の claim がないと、model-check の予定で止まる
+cp cases/Task-none.tla spec/Task.tla
+! exec vanda check .vanda/checks/all.toml
+stderr 'promises\.toml.*model-check'
+! stderr 'scenario-test'
+! stderr '(?m)^panic: '
+cp cases/Task.tla spec/Task.tla
+
+# SQL の evidence がないと、guardrail の予定で止まる
+cp cases/schema-none.sql db/schema.sql
+! exec vanda check .vanda/checks/all.toml
+stderr 'promises\.toml.*guardrail'
+! stderr 'model-check'
+! stderr '(?m)^panic: '
+cp cases/schema.sql db/schema.sql
+
+# Go の evidence がないと、Go で確かめる 5 つのタイプの予定のどれでも止まる。sensor は Go の sensor で満たされたまま
 cp cases/task_test.go.none task_test.go
 ! exec vanda check .vanda/checks/all.toml
-stderr 'task-id-unique'
-! stderr 'task-reviewed'
+stderr 'promises\.toml.*unit-test'
+stderr 'promises\.toml.*cross-check'
+stderr 'promises\.toml.*random-check'
+stderr 'promises\.toml.*interface-test'
+stderr 'promises\.toml.*concurrency-test'
+! stderr 'promises\.toml.*sensor'
 ! stderr '(?m)^panic: '
 cp cases/task_test.go.orig task_test.go
-exec vanda check .vanda/checks/all.toml
+
+# Go の sensor がないと、sensor の予定で止まる。Go の evidence では代わりにならない
+cp cases/task.go.none task.go
+! exec vanda check .vanda/checks/all.toml
+stderr 'promises\.toml.*sensor'
+! stderr 'unit-test'
+! stderr '(?m)^panic: '
+cp cases/task.go.orig task.go
+
+# ほかの約束のアノテーションでは、満たされない
+cp cases/promises-other.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/all.toml
+stderr 'promises\.toml.*task-title-required'
+! stderr '(?m)^panic: '
+
+# proof を予定に書くと、段 1 では扱えないので止まる
+cp cases/promises-proof.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/all.toml
+stderr 'promises\.toml.*proof'
+! stderr '(?m)^panic: '
 
 # 範囲を 1 つのストーリーにすると、分かれた点より後に変わった約束だけを見る
-cp cases/task_test.go.none task_test.go
+cp cases/promises-main.toml .vanda/promises.toml
 exec git add -A
 exec git commit -q -m '#1 約束を足す'
 exec git checkout -q -b story-2
-cp cases/promises-with-title.toml .vanda/promises.toml
+cp cases/promises-story.toml .vanda/promises.toml
 cp cases/title_test.go.case title_test.go
 exec git add -A
 exec git commit -q -m '#2 約束を足す'
 exec vanda check .vanda/checks/story.toml --base main
 ! exec vanda check .vanda/checks/all.toml
-stderr 'task-id-unique'
+stderr 'task-reviewed-no-annotation'
 ! stderr 'task-title-required'
 ! stderr '(?m)^panic: '
 
@@ -54,6 +98,18 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["**/*.go"]
 adapter = "go"
+
+[[annotation]]
+paths = ["e2e/**/*.txtar"]
+adapter = "txtar"
+
+[[annotation]]
+paths = ["spec/**/*.tla"]
+adapter = "tla"
+
+[[annotation]]
+paths = ["db/**/*.sql"]
+adapter = "sql"
 -- .vanda/checks/all.toml --
 [[check]]
 name = "evidence-present"
@@ -77,22 +133,110 @@ layers = ["model"]
 
 [[claim.evidence]]
 stage = "test"
+type = "scenario-test"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "model-check"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "guardrail"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
 type = "unit-test"
 layers = ["model"]
 
-[[claim]]
-id = "task-reviewed"
-subjects = ["task"]
-statement = "タスクの画面の文言を人が読む"
+[[claim.evidence]]
+stage = "test"
+type = "cross-check"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "random-check"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "concurrency-test"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "operation"
+type = "sensor"
 layers = ["model"]
 
 [[claim.evidence]]
 stage = "release"
 type = "human-review"
 layers = ["model"]
-detail = "docs/review.md"
--- docs/review.md --
-読む所の一覧
+detail = "docs/no-such-review.md"
+
+[[claim.evidence]]
+stage = "operation"
+type = "monitoring"
+layers = ["model"]
+detail = "docs/no-such-dashboard.md"
+-- e2e/add.txtar --
+># @vanda:evidence task-id-unique
+>exec echo add
+>-- out.txt --
+>add
+-- cases/add.txtar --
+># @vanda:evidence task-id-unique
+>exec echo add
+>-- out.txt --
+>add
+-- cases/add-none.txtar --
+>exec echo add
+>-- out.txt --
+>add
+-- spec/Task.tla --
+---- MODULE Task ----
+\* @vanda:claim task-id-unique
+Unique == TRUE
+====
+-- cases/Task.tla --
+---- MODULE Task ----
+\* @vanda:claim task-id-unique
+Unique == TRUE
+====
+-- cases/Task-none.tla --
+---- MODULE Task ----
+Unique == TRUE
+====
+-- db/schema.sql --
+-- @vanda:evidence task-id-unique
+CREATE TABLE task (id TEXT PRIMARY KEY);
+-- cases/schema.sql --
+-- @vanda:evidence task-id-unique
+CREATE TABLE task (id TEXT PRIMARY KEY);
+-- cases/schema-none.sql --
+CREATE TABLE task (id TEXT PRIMARY KEY);
+-- task.go --
+package task
+
+// @vanda:sensor task-id-unique
+func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
+-- cases/task.go.orig --
+package task
+
+// @vanda:sensor task-id-unique
+func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
+-- cases/task.go.none --
+package task
+
+func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
 -- task_test.go --
 package task
 
@@ -120,7 +264,23 @@ import "testing"
 
 // @vanda:evidence task-title-required
 func TestTitleRequired(t *testing.T) {}
--- cases/promises-with-title.toml --
+-- cases/promises-other.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[claim]]
+id = "task-title-required"
+subjects = ["task"]
+statement = "タスクには題がある"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+-- cases/promises-proof.toml --
 [[term]]
 id = "task"
 name = "タスク"
@@ -134,20 +294,40 @@ layers = ["model"]
 
 [[claim.evidence]]
 stage = "test"
-type = "unit-test"
+type = "proof"
 layers = ["model"]
+-- cases/promises-main.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
 
 [[claim]]
-id = "task-reviewed"
+id = "task-reviewed-no-annotation"
 subjects = ["task"]
-statement = "タスクの画面の文言を人が読む"
+statement = "タスクの ID は重ならない"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "release"
-type = "human-review"
+stage = "test"
+type = "unit-test"
 layers = ["model"]
-detail = "docs/review.md"
+-- cases/promises-story.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[claim]]
+id = "task-reviewed-no-annotation"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
 
 [[claim]]
 id = "task-title-required"

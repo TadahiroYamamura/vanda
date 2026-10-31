@@ -3,7 +3,6 @@
 #
 # 項目がないときは、その項目を持つべき表の見出しの行を指す（docs/formats.md）。
 # claim の subjects・layers・evidence と、evidence の layers は 1 つ以上なので、空でも止まる。
-# evidence = [] は、インラインで書いた項目の行（19）と、表の見出しの行（12）のどちらを指してもよいことにする。
 # 省いてよい項目（claim の rationale・condition・flags・guesses、evidence の detail、feature の core）は、全部を省いても通る。
 
 exec git init -q -b main
@@ -122,7 +121,7 @@ stderr 'promises\.toml:14: .*subjects'
 # claim の evidence が空
 cp cases/empty-evidence.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stderr 'promises\.toml:(12|19): .*evidence'
+stderr 'promises\.toml:19: .*evidence'
 ! stderr '(?m)^panic: '
 
 -- .vanda/config.toml --

@@ -1,9 +1,9 @@
-# アノテーションの読み取り: 6 つの種類のうち ID を書く 5 つを、Go・シナリオ（txtar）・TLA+・SQL のそれぞれで読む。
-# 読んだことは、約束リストにない ID（no-such-id）を指すとアノテーションのつながりの審査がその行で止まることで確かめる。
+# アノテーションの読み取り: 6 つの種類 × Go・シナリオ（txtar）・TLA+・SQL を全部回す。
+# 書ける組み合わせ（Go: evidence・sensor、txtar: evidence、TLA+: term・feature・claim・internal、SQL: evidence）は、
+# 約束リストにない ID（no-such-id）を指すと、アノテーションのつながりの審査がその行で止まることで、読んだことを確かめる。
+# 書けない組み合わせは、種類に合う ID を書いても、その行で止まる。
 #
-# その言語で使わない組み合わせ（例: Go の term）を誤りにするのかは決まっていないので、どちらでも止まる約束リストにない ID で確かめる。
-# internal は ID を書かないので、ここでは読めたことを確かめられない。TLA+ の型の宣言の決まり（annotation_links.txtar）で確かめる。
-# 付いているものの名前（関数の名前、ファイルの名前、定義の名前）は CLI から見えないので、単体テストで確かめる。
+# TLA+ の internal を読めたことと、付いているものの名前は、単体テスト（internal/annotation）で確かめる。
 
 exec git init -q -b main
 expand .vanda/config.toml
@@ -12,22 +12,29 @@ unquote scenarios/add.txtar
 # 元のファイルでは通る
 exec vanda check .vanda/checks/links.toml
 
-# go の @vanda:term を読む（約束リストにない ID を指すと、その行で止まる）
+# go では @vanda:term を書けないので、その行で止まる
 cp cases/go-term.case task.go
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
-# go の @vanda:feature を読む（約束リストにない ID を指すと、その行で止まる）
+# go では @vanda:feature を書けないので、その行で止まる
 cp cases/go-feature.case task.go
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
-# go の @vanda:claim を読む（約束リストにない ID を指すと、その行で止まる）
+# go では @vanda:claim を書けないので、その行で止まる
 cp cases/go-claim.case task.go
+! exec vanda check .vanda/checks/links.toml
+stderr 'task\.go:6: '
+! stderr '(?m)^panic: '
+cp orig/task.go.orig task.go
+
+# go では @vanda:internal を書けないので、その行で止まる
+cp cases/go-internal.case task.go
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
@@ -47,7 +54,7 @@ stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
-# txtar の @vanda:term を読む（約束リストにない ID を指すと、その行で止まる）
+# txtar では @vanda:term を書けないので、その行で止まる
 cp cases/txtar-term.case scenarios/add.txtar
 unquote scenarios/add.txtar
 ! exec vanda check .vanda/checks/links.toml
@@ -56,7 +63,7 @@ stderr 'scenarios/add\.txtar:1: '
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
 
-# txtar の @vanda:feature を読む（約束リストにない ID を指すと、その行で止まる）
+# txtar では @vanda:feature を書けないので、その行で止まる
 cp cases/txtar-feature.case scenarios/add.txtar
 unquote scenarios/add.txtar
 ! exec vanda check .vanda/checks/links.toml
@@ -65,8 +72,17 @@ stderr 'scenarios/add\.txtar:1: '
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
 
-# txtar の @vanda:claim を読む（約束リストにない ID を指すと、その行で止まる）
+# txtar では @vanda:claim を書けないので、その行で止まる
 cp cases/txtar-claim.case scenarios/add.txtar
+unquote scenarios/add.txtar
+! exec vanda check .vanda/checks/links.toml
+stderr 'scenarios/add\.txtar:1: '
+! stderr '(?m)^panic: '
+cp orig/add.txtar.orig scenarios/add.txtar
+unquote scenarios/add.txtar
+
+# txtar では @vanda:internal を書けないので、その行で止まる
+cp cases/txtar-internal.case scenarios/add.txtar
 unquote scenarios/add.txtar
 ! exec vanda check .vanda/checks/links.toml
 stderr 'scenarios/add\.txtar:1: '
@@ -83,7 +99,7 @@ stderr 'scenarios/add\.txtar:1: '
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
 
-# txtar の @vanda:sensor を読む（約束リストにない ID を指すと、その行で止まる）
+# txtar では @vanda:sensor を書けないので、その行で止まる
 cp cases/txtar-sensor.case scenarios/add.txtar
 unquote scenarios/add.txtar
 ! exec vanda check .vanda/checks/links.toml
@@ -113,36 +129,43 @@ stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
-# tla の @vanda:evidence を読む（約束リストにない ID を指すと、その行で止まる）
+# tla では @vanda:evidence を書けないので、その行で止まる
 cp cases/tla-evidence.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
-# tla の @vanda:sensor を読む（約束リストにない ID を指すと、その行で止まる）
+# tla では @vanda:sensor を書けないので、その行で止まる
 cp cases/tla-sensor.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
-# sql の @vanda:term を読む（約束リストにない ID を指すと、その行で止まる）
+# sql では @vanda:term を書けないので、その行で止まる
 cp cases/sql-term.case db/schema.sql
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
 cp orig/schema.sql.orig db/schema.sql
 
-# sql の @vanda:feature を読む（約束リストにない ID を指すと、その行で止まる）
+# sql では @vanda:feature を書けないので、その行で止まる
 cp cases/sql-feature.case db/schema.sql
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
 cp orig/schema.sql.orig db/schema.sql
 
-# sql の @vanda:claim を読む（約束リストにない ID を指すと、その行で止まる）
+# sql では @vanda:claim を書けないので、その行で止まる
 cp cases/sql-claim.case db/schema.sql
+! exec vanda check .vanda/checks/links.toml
+stderr 'db/schema\.sql:1: '
+! stderr '(?m)^panic: '
+cp orig/schema.sql.orig db/schema.sql
+
+# sql では @vanda:internal を書けないので、その行で止まる
+cp cases/sql-internal.case db/schema.sql
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
@@ -155,7 +178,7 @@ stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
 cp orig/schema.sql.orig db/schema.sql
 
-# sql の @vanda:sensor を読む（約束リストにない ID を指すと、その行で止まる）
+# sql では @vanda:sensor を書けないので、その行で止まる
 cp cases/sql-sensor.case db/schema.sql
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: '
@@ -302,7 +325,7 @@ package task
 // Task は利用者がやること。
 type Task struct{ ID string }
 
-// @vanda:term no-such-id
+// @vanda:term task
 func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
 -- cases/go-feature.case --
 package task
@@ -310,7 +333,7 @@ package task
 // Task は利用者がやること。
 type Task struct{ ID string }
 
-// @vanda:feature no-such-id
+// @vanda:feature task-add
 func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
 -- cases/go-claim.case --
 package task
@@ -318,7 +341,15 @@ package task
 // Task は利用者がやること。
 type Task struct{ ID string }
 
-// @vanda:claim no-such-id
+// @vanda:claim task-id-unique
+func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
+-- cases/go-internal.case --
+package task
+
+// Task は利用者がやること。
+type Task struct{ ID string }
+
+// @vanda:internal 仕様の中だけで使う
 func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
 -- cases/go-evidence.case --
 package task
@@ -337,17 +368,22 @@ type Task struct{ ID string }
 // @vanda:sensor no-such-id
 func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
 -- cases/txtar-term.case --
-># @vanda:term no-such-id
+># @vanda:term task
 >exec echo add
 >-- out.txt --
 >add
 -- cases/txtar-feature.case --
-># @vanda:feature no-such-id
+># @vanda:feature task-add
 >exec echo add
 >-- out.txt --
 >add
 -- cases/txtar-claim.case --
-># @vanda:claim no-such-id
+># @vanda:claim task-id-unique
+>exec echo add
+>-- out.txt --
+>add
+-- cases/txtar-internal.case --
+># @vanda:internal 仕様の中だけで使う
 >exec echo add
 >-- out.txt --
 >add
@@ -357,7 +393,7 @@ func Add(ids []string, id string) ([]string, error) { return append(ids, id), ni
 >-- out.txt --
 >add
 -- cases/txtar-sensor.case --
-># @vanda:sensor no-such-id
+># @vanda:sensor task-id-unique
 >exec echo add
 >-- out.txt --
 >add
@@ -422,7 +458,7 @@ VARIABLES tasks, n
 \* @vanda:claim task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
-\* @vanda:evidence no-such-id
+\* @vanda:evidence task-id-unique
 Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
 ====
 -- cases/tla-sensor.case --
@@ -438,23 +474,26 @@ VARIABLES tasks, n
 \* @vanda:claim task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
-\* @vanda:sensor no-such-id
+\* @vanda:sensor task-id-unique
 Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
 ====
 -- cases/sql-term.case --
--- @vanda:term no-such-id
+-- @vanda:term task
 CREATE TABLE task (id TEXT PRIMARY KEY);
 -- cases/sql-feature.case --
--- @vanda:feature no-such-id
+-- @vanda:feature task-add
 CREATE TABLE task (id TEXT PRIMARY KEY);
 -- cases/sql-claim.case --
--- @vanda:claim no-such-id
+-- @vanda:claim task-id-unique
+CREATE TABLE task (id TEXT PRIMARY KEY);
+-- cases/sql-internal.case --
+-- @vanda:internal 仕様の中だけで使う
 CREATE TABLE task (id TEXT PRIMARY KEY);
 -- cases/sql-evidence.case --
 -- @vanda:evidence no-such-id
 CREATE TABLE task (id TEXT PRIMARY KEY);
 -- cases/sql-sensor.case --
--- @vanda:sensor no-such-id
+-- @vanda:sensor task-id-unique
 CREATE TABLE task (id TEXT PRIMARY KEY);
 -- cases/tla-block.case --
 ---- MODULE Task ----

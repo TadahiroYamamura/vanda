@@ -2,7 +2,7 @@
 # 分かれた点より前のコミットは見ない（履歴を書き換えないと直せないため）。約束リストを変えていないコミットには、ID がなくてよい。
 # ID の書き方は、設定に書かなければ #<数>。
 #
-# ストーリーは --story で渡す（ID のないコミットが混じるので、コミットから決められるかに頼らないため）。
+# 由来の審査は、範囲を 1 つのストーリーにしても、どのストーリーかを決めない（分かれた点より後のコミットを見るだけ）ので、--story は要らない。
 
 exec git init -q -b main
 expand .vanda/config.toml
@@ -11,26 +11,32 @@ exec git commit -q -m '約束リストを足す'
 
 # 分かれた点より前の、ID のないコミットは見ない
 exec git checkout -q -b story-2
-exec vanda check .vanda/checks/origin.toml --base main --story '#2'
+exec vanda check .vanda/checks/origin.toml --base main
 
 # 約束リストを変えたコミットに ID があれば通る
 cp cases/promises-2.toml .vanda/promises.toml
 exec git add -A
 exec git commit -q -m '#2 約束の文を変える'
-exec vanda check .vanda/checks/origin.toml --base main --story '#2'
+exec vanda check .vanda/checks/origin.toml --base main
 
 # 約束リスト以外（合意の記録、ほかのファイル）を変えたコミットには、ID がなくてよい
 cp cases/note.txt note.txt
 cp cases/agreements.toml .vanda/agreements.toml
 exec git add -A
 exec git commit -q -m 'メモと合意の記録を変える'
-exec vanda check .vanda/checks/origin.toml --base main --story '#2'
+exec vanda check .vanda/checks/origin.toml --base main
+
+# 分かれた点より後のコミットに、別のストーリーの ID が混じっても、--story なしで行う
+cp cases/note-3.txt note.txt
+exec git add -A
+exec git commit -q -m '#3 メモを直す'
+exec vanda check .vanda/checks/origin.toml --base main
 
 # 約束リストを変えたコミットに ID がないと止まる
 cp cases/promises-3.toml .vanda/promises.toml
 exec git add -A
 exec git commit -q -m '約束の文をまた変える'
-! exec vanda check .vanda/checks/origin.toml --base main --story '#2'
+! exec vanda check .vanda/checks/origin.toml --base main
 ! stderr '(?m)^panic: '
 
 # ID の書き方を設定で変えると、その書き方だけを ID とみなす
@@ -41,11 +47,11 @@ expand .vanda/config.toml
 cp cases/promises-2.toml .vanda/promises.toml
 exec git add -A
 exec git commit -q -m 'PROJ-12 約束の文を変える'
-exec vanda check .vanda/checks/origin.toml --base main --story PROJ-12
+exec vanda check .vanda/checks/origin.toml --base main
 cp cases/promises-3.toml .vanda/promises.toml
 exec git add -A
 exec git commit -q -m '#3 約束の文をまた変える'
-! exec vanda check .vanda/checks/origin.toml --base main --story PROJ-12
+! exec vanda check .vanda/checks/origin.toml --base main
 ! stderr '(?m)^panic: '
 
 -- .vanda/config.toml --
@@ -89,3 +95,5 @@ description = "判定と状態の変化"
 
 [story]
 id_pattern = "PROJ-[0-9]+"
+-- cases/note-3.txt --
+別のメモ

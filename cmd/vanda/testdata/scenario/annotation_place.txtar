@@ -114,6 +114,11 @@ cp cases/tla-string.case spec/Task.tla
 exec vanda check .vanda/checks/links.toml
 cp orig/Task.tla.orig spec/Task.tla
 
+# SQL の文字列の中の @vanda: は数えず、誤りにもしない
+cp cases/sql-string.case db/schema.sql
+exec vanda check .vanda/checks/links.toml
+cp orig/schema.sql.orig db/schema.sql
+
 # TLA+ で次の行が定義でない（VARIABLES）と止まる
 cp cases/tla-vars.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
@@ -493,6 +498,10 @@ TypeOK == tasks \subseteq TaskIds /\ n \in Small
 \* @vanda:feature task-add
 Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
 ====
+-- cases/sql-string.case --
+-- @vanda:evidence task-id-unique
+CREATE TABLE task (id TEXT PRIMARY KEY);
+INSERT INTO task VALUES ('@vanda:evidence no-such-id');
 -- cases/tla-vars.case --
 ---- MODULE Task ----
 \* @vanda:term task
