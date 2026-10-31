@@ -128,6 +128,9 @@ export interface Review {
   total: number;
   entries: Entry[];
   detached: Entry[];
+  branchStories?: string[] | null;
+  storyFrom?: string;
+  storyChoice?: "fixed" | "branch" | "all";
 }
 
 export interface Story {

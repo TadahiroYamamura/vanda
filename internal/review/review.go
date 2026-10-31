@@ -35,6 +35,12 @@ type Result struct {
 	Total     int     `json:"total"`
 	Entries   []Entry `json:"entries"`
 	Detached  []Entry `json:"detached"`
+	// BranchStories は、レビュー単位がブランチのとき、分かれた点より後のコミットのメッセージにあるストーリーの ID（名前の順）。ストーリーのときは nil
+	BranchStories []string `json:"branchStories"`
+	// StoryFrom は、story をどう決めたか。query（story= で名指しした）・branch（ブランチのコミットから 1 つに決まった）。決まっていなければ空
+	StoryFrom string `json:"storyFrom"`
+	// StoryChoice は、画面でストーリーをどう示すか（RV-13）。fixed（1 つに決まったので選ばせずに示す）・branch（ブランチのストーリーから選ばせる）・all（すべてのストーリーから選ばせる）
+	StoryChoice string `json:"storyChoice"`
 }
 
 type Entry struct {
@@ -109,9 +115,16 @@ func Build(o Options) (*Result, *Error) {
 		}
 		mb = strings.TrimSpace(mb)
 		res.Base, res.MergeBase = &o.Base, &mb
-		story, e := s.branchStory(mb)
+		story, ids, e := s.branchStory(mb)
 		if e != nil {
 			return nil, e
+		}
+		res.BranchStories = ids
+		switch {
+		case o.Story != "":
+			res.StoryFrom = "query"
+		case story != "":
+			res.StoryFrom = "branch"
 		}
 		s.o.Story = story
 		before, err := s.h.sideAt(mb)
@@ -141,6 +154,10 @@ func Build(o Options) (*Result, *Error) {
 		st := s.o.Story
 		res.Story = &st
 	}
+	if res.View == ViewBranch && res.BranchStories == nil {
+		res.BranchStories = []string{}
+	}
+	res.StoryChoice = storyChoice(res.View, o.Story, res.BranchStories)
 	entries, err := s.entries(changes)
 	if err != nil {
 		return nil, internalErr(err)
@@ -200,19 +217,35 @@ func (s *state) checkStory(id string) *Error {
 }
 
 // branchStory は、レビュー単位がブランチのときのストーリーを、vanda check と同じく決める。渡されていればそれを、なければ分かれた点より後のコミットのメッセージにある ID が 1 つのときだけそれを使う。
-func (s *state) branchStory(mb string) (string, *Error) {
-	if s.o.Story != "" {
-		return s.o.Story, s.checkStory(s.o.Story)
-	}
+func (s *state) branchStory(mb string) (string, []string, *Error) {
 	msgs, err := repo.Git(s.o.Root, "log", "--format=%B", mb+"..HEAD")
 	if err != nil {
-		return "", internalErr(fmt.Errorf("コミットのメッセージを読めません（%v）", err))
+		return "", nil, internalErr(fmt.Errorf("コミットのメッセージを読めません（%v）", err))
 	}
 	ids := storyIDs(s.o.Cfg, msgs)
-	if len(ids) == 1 {
-		return ids[0], nil
+	sort.Strings(ids)
+	if s.o.Story != "" {
+		return s.o.Story, ids, s.checkStory(s.o.Story)
 	}
-	return "", nil
+	if len(ids) == 1 {
+		return ids[0], ids, nil
+	}
+	return "", ids, nil
+}
+
+// storyChoice は、画面でストーリーをどう示すかを決める。レビュー単位がブランチで、ブランチのコミットからストーリーが 1 つに決まるなら示すだけ、
+// 2 つ以上ならそのブランチのストーリーから、見つからなければすべてのストーリーから選ばせる。story= で別のストーリーを名指ししたら、それを選べるようにする
+func storyChoice(view, named string, branch []string) string {
+	if view != ViewBranch {
+		return "all"
+	}
+	switch {
+	case len(branch) == 1 && (named == "" || named == branch[0]):
+		return "fixed"
+	case len(branch) >= 2:
+		return "branch"
+	}
+	return "all"
 }
 
 // rawChange は、比べる元と今で中身の違う鍵 1 つ。before はその鍵の比べる元の時点。
