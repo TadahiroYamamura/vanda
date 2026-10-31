@@ -122,7 +122,7 @@ export function useTokens(text: string, lang: Lang | null): Token[][] | null {
       (t) => {
         if (live) setTokens(t);
       },
-      (e) => console.error(`${lang} の色付けができなかった`, e),
+      (e) => console.error(`${lang} の色付けができませんでした`, e),
     );
     return () => {
       live = false;
@@ -148,8 +148,8 @@ export function CodeBlock(props: { source: string; lang: Lang | null }) {
   };
   const copyAll = () => {
     navigator.clipboard.writeText(props.source).then(
-      () => setCopied("コピーした（リポジトリの文字のまま）"),
-      (err) => setCopied(`コピーできなかった（${String(err)}）`),
+      () => setCopied("コピーしました（リポジトリの文字のままです）"),
+      (err) => setCopied(`コピーできませんでした（${String(err)}）`),
     );
   };
   return (
@@ -157,7 +157,7 @@ export function CodeBlock(props: { source: string; lang: Lang | null }) {
       {symbols && (
         <div className="tla-tools">
           <button type="button" onClick={copyAll}>
-            コピー
+            コピーする
           </button>
           {copied && <span className="note">{copied}</span>}
         </div>

@@ -50,7 +50,7 @@ const timeout = 20 * time.Second
 // Read は、ストーリー id を、設定の置き場所から読む。
 func Read(root string, cfg *config.Config, id string) (*Story, *Error) {
 	if cfg.IDFull == nil || !cfg.IDFull.MatchString(id) {
-		return nil, &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("ストーリーの ID %s が、書き方（%s）に合わない", id, cfg.IDPattern), Fix: "設定の id_pattern に合う ID を渡す"}
+		return nil, &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("ストーリーの ID %s が、書き方（%s）に合いません。", id, cfg.IDPattern), Fix: "設定の id_pattern に合う ID を渡してください。"}
 	}
 	switch {
 	case cfg.Story.Adapter == "github":
@@ -58,7 +58,7 @@ func Read(root string, cfg *config.Config, id string) (*Story, *Error) {
 	case len(cfg.Story.Command) > 0:
 		return readCommand(root, cfg.Story.Command, id)
 	}
-	return nil, &Error{Status: http.StatusNotFound, Message: "ストーリーの置き場所が設定にない", Fix: `.vanda/config.toml の [story] に adapter = "github" と repository、または command を書く`}
+	return nil, &Error{Status: http.StatusNotFound, Message: "ストーリーの置き場所が設定されていません。", Fix: `.vanda/config.toml の [story] に、adapter = "github" と repository、または command を書いてください。`}
 }
 
 // Token は、GitHub の認証の鍵を、使うたびに読む。環境の変数 GH_TOKEN があればそれを、なければ gh auth token の出力を使う。
@@ -76,7 +76,7 @@ func Token() (string, *Error) {
 		if msg == "" {
 			msg = err.Error()
 		}
-		return "", storeErr("GitHub の認証の鍵を読めない（gh auth token: "+msg+"）", "gh auth login でログインするか、環境の変数 GH_TOKEN に鍵を入れて vanda を起動し直す")
+		return "", storeErr("GitHub の認証の鍵を読めません（gh auth token: "+msg+"）。", "gh auth login でログインするか、環境の変数 GH_TOKEN に鍵を入れて、vanda を起動し直してください。")
 	}
 	return strings.TrimSpace(stdout.String()), nil
 }
@@ -92,7 +92,7 @@ func get(st config.StoryStore, path string, v any, notFound *Error) *Error {
 	url := st.APIURL + path
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return storeErr("GitHub への要求を作れない（"+err.Error()+"）", ".vanda/config.toml の [story] の api_url と repository を確かめる")
+		return storeErr("GitHub への要求を作れません（"+err.Error()+"）。", ".vanda/config.toml の [story] の api_url と repository を確かめてください。")
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
@@ -101,12 +101,12 @@ func get(st config.StoryStore, path string, v any, notFound *Error) *Error {
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return storeErr("GitHub（"+url+"）に繋がらない（"+err.Error()+"）", "ネットワークと、[story] の api_url を確かめる")
+		return storeErr("GitHub（"+url+"）に繋がりません（"+err.Error()+"）。", "ネットワークと、[story] の api_url を確かめてください。")
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 10<<20))
 	if err != nil {
-		return storeErr("GitHub（"+url+"）の応答を読めない（"+err.Error()+"）", "ネットワークを確かめる")
+		return storeErr("GitHub（"+url+"）の応答を読めません（"+err.Error()+"）。", "ネットワークを確かめてください。")
 	}
 	switch {
 	case resp.StatusCode == http.StatusNotFound && notFound != nil:
@@ -119,14 +119,14 @@ func get(st config.StoryStore, path string, v any, notFound *Error) *Error {
 		if json.Unmarshal(body, &m) == nil && m.Message != "" {
 			reason = m.Message
 		}
-		fix := "GitHub の応答の理由を確かめる"
+		fix := "GitHub が返した理由を確かめてください。"
 		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-			fix = "gh auth login でログインし直すか、GH_TOKEN の鍵に、このリポジトリの Issues を読む権限があるかを確かめる"
+			fix = "gh auth login でログインし直すか、GH_TOKEN の鍵に、このリポジトリの Issues を読む権限があるかを確かめてください。"
 		}
-		return storeErr(fmt.Sprintf("GitHub（%s）が %d を返した（%s）", url, resp.StatusCode, reason), fix)
+		return storeErr(fmt.Sprintf("GitHub（%s）が %d を返しました（%s）。", url, resp.StatusCode, reason), fix)
 	}
 	if err := json.Unmarshal(body, v); err != nil {
-		return storeErr("GitHub（"+url+"）の応答が JSON として読めない（"+err.Error()+"）", "[story] の api_url が GitHub の REST API の URL かを確かめる")
+		return storeErr("GitHub（"+url+"）の応答を JSON として読めません（"+err.Error()+"）。", "[story] の api_url が GitHub の REST API の URL かを確かめてください。")
 	}
 	return nil
 }
@@ -137,7 +137,7 @@ func readGitHub(st config.StoryStore, id string) (*Story, *Error) {
 		nums = append(nums, f)
 	}
 	if len(nums) == 0 {
-		return nil, &Error{Status: http.StatusBadRequest, Message: "ストーリーの ID " + id + " に、GitHub の Issue の番号（数字）がない", Fix: "id_pattern を、番号を含む書き方（例: #[0-9]+）にする"}
+		return nil, &Error{Status: http.StatusBadRequest, Message: "ストーリーの ID " + id + " に、GitHub の Issue の番号（数字）がありません。", Fix: "id_pattern を、番号を含む書き方（例: #[0-9]+）にしてください。"}
 	}
 	num := nums[len(nums)-1]
 	var issue struct {
@@ -145,7 +145,7 @@ func readGitHub(st config.StoryStore, id string) (*Story, *Error) {
 		Body    *string `json:"body"`
 		HTMLURL string  `json:"html_url"`
 	}
-	notFound := &Error{Status: http.StatusNotFound, Message: "GitHub の " + st.Repository + " に Issue " + num + " がない", Fix: "ストーリーの ID と、[story] の repository を確かめる"}
+	notFound := &Error{Status: http.StatusNotFound, Message: "GitHub の " + st.Repository + " に Issue " + num + " はありません。", Fix: "ストーリーの ID と、[story] の repository を確かめてください。"}
 	if e := get(st, "/repos/"+st.Repository+"/issues/"+num, &issue, notFound); e != nil {
 		return nil, e
 	}
@@ -155,7 +155,7 @@ func readGitHub(st config.StoryStore, id string) (*Story, *Error) {
 	}
 	atts, err := Attachments(st.Repository, body)
 	if err != nil {
-		return nil, &Error{Status: http.StatusInternalServerError, Message: err.Error(), Fix: "vanda の不具合なので、知らせる"}
+		return nil, &Error{Status: http.StatusInternalServerError, Message: err.Error() + "。", Fix: "vanda の不具合です。開発者に知らせてください。"}
 	}
 	return &Story{ID: id, Title: issue.Title, Body: body, URL: issue.HTMLURL, Attachments: atts}, nil
 }
@@ -185,7 +185,7 @@ func compileAll(patterns ...string) ([]*regexp.Regexp, error) {
 func Attachments(repository, body string) ([]Attachment, error) {
 	res, err := compileAll(mdLinkPattern, imgTagPattern, srcAttrPattern, altAttrPattern)
 	if err != nil {
-		return nil, fmt.Errorf("添付ファイルを探す正規表現が読めない（%v）", err)
+		return nil, fmt.Errorf("添付ファイルを探す正規表現を読めません（%v）", err)
 	}
 	mdLink, imgTag, srcAttr, altAttr := res[0], res[1], res[2], res[3]
 	prefixes := []string{"https://github.com/user-attachments/", "https://github.com/" + repository + "/assets/", "https://user-images.githubusercontent.com/"}
@@ -248,7 +248,7 @@ type commandResponse struct {
 func readCommand(root string, command []string, id string) (*Story, *Error) {
 	in, err := json.Marshal(commandRequest{Action: "read", Story: id})
 	if err != nil {
-		return nil, storeErr("外部のアダプタに渡す JSON を作れない（"+err.Error()+"）", "vanda の不具合なので、知らせる")
+		return nil, storeErr("外部のアダプタに渡す JSON を作れません（"+err.Error()+"）。", "vanda の不具合です。開発者に知らせてください。")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -263,32 +263,32 @@ func readCommand(root string, command []string, id string) (*Story, *Error) {
 		if msg == "" {
 			msg = err.Error()
 		}
-		return nil, storeErr("ストーリーの置き場所のアダプタ（"+name+"）が "+id+" を読めなかった（"+msg+"）", "アダプタが返した理由を確かめる")
+		return nil, storeErr("ストーリーの置き場所のアダプタ（"+name+"）が "+id+" を読めませんでした（"+msg+"）。", "アダプタが返した理由を確かめてください。")
 	}
 	var resp commandResponse
 	dec := json.NewDecoder(&stdout)
 	dec.DisallowUnknownFields()
 	bad := func(what string) *Error {
-		return storeErr("ストーリーの置き場所のアダプタ（"+name+"）が返した JSON の形が誤っている（"+what+"）", "アダプタを docs/formats.md の形に合わせて直す")
+		return storeErr("ストーリーの置き場所のアダプタ（"+name+"）が返した JSON の形が誤っています（"+what+"）。", "アダプタを docs/formats.md の形に合わせて直してください。")
 	}
 	if err := dec.Decode(&resp); err != nil {
 		return nil, bad(err.Error())
 	}
 	if dec.More() {
-		return nil, bad("JSON の後に続きがある")
+		return nil, bad("JSON の後に続きがあります")
 	}
 	switch {
 	case resp.Title == nil:
-		return nil, bad("title がない")
+		return nil, bad("title がありません")
 	case resp.Body == nil:
-		return nil, bad("body がない")
+		return nil, bad("body がありません")
 	case resp.URL == nil:
-		return nil, bad("url がない")
+		return nil, bad("url がありません")
 	}
 	atts := []Attachment{}
 	for i, a := range resp.Attachments {
 		if a.Name == "" || a.URL == "" {
-			return nil, bad(fmt.Sprintf("attachments の %d 件目に name か url がない", i+1))
+			return nil, bad(fmt.Sprintf("attachments の %d 件目に name か url がありません", i+1))
 		}
 		atts = append(atts, a)
 	}
@@ -303,19 +303,19 @@ func Check(root string, cfg *config.Config) (string, error) {
 		var repo struct {
 			HasIssues bool `json:"has_issues"`
 		}
-		notFound := storeErr("GitHub に "+st.Repository+" がないか、今の認証の鍵では見えない", "[story] の repository と、鍵の権限を確かめる")
+		notFound := storeErr("GitHub に "+st.Repository+" がないか、今の認証の鍵では見えません。", "[story] の repository と、鍵の権限を確かめてください。")
 		if e := get(st, "/repos/"+st.Repository, &repo, notFound); e != nil {
 			return "", e
 		}
 		if !repo.HasIssues {
-			return "", errors.New("GitHub の " + st.Repository + " で Issues が使えない。リポジトリの設定で Issues を有効にする")
+			return "", errors.New("GitHub の " + st.Repository + " で Issues が使えません。リポジトリの設定で Issues を有効にしてください。")
 		}
-		return "ストーリーの置き場所 GitHub Issues（" + st.Repository + "）に繋がった", nil
+		return "ストーリーの置き場所 GitHub Issues（" + st.Repository + "）に繋がりました", nil
 	case len(st.Command) > 0:
 		if _, err := exec.LookPath(command0(root, st.Command[0])); err != nil {
-			return "", fmt.Errorf("ストーリーの置き場所のアダプタ %s が見つからない（%v）。[story] の command を直す", st.Command[0], err)
+			return "", fmt.Errorf("ストーリーの置き場所のアダプタ %s が見つかりません（%v）。[story] の command を直してください。", st.Command[0], err)
 		}
-		return "ストーリーの置き場所のアダプタ " + st.Command[0] + " がある", nil
+		return "ストーリーの置き場所のアダプタ " + st.Command[0] + " があります", nil
 	}
 	return "", nil
 }

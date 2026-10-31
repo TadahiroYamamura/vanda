@@ -41,6 +41,11 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
   const canLoad = view === "branch" ? !!base : !!storyParam;
   const review = useLoad<Review>(canLoad ? () => api.review(view, base, storyParam) : null, `${view}|${base}|${storyParam}`);
   const story = review.data?.story ?? storyParam;
+  const detected = view === "branch" && !storyParam ? (review.data?.story ?? null) : null;
+  // 選択肢の中は短い名前にし、何と何を比べているかの説明は、触れたときに出す（欄に収まらないため）
+  const branchHelp = `このブランチの変更（${base ?? "ベースブランチ"} と分かれた点からの差分）`;
+  const storyHelp = story ? `ストーリー ${story} の変更（${story} のコミットすべて。ほかのブランチや合流済みのものも含む）` : "ストーリーの変更（そのストーリーのコミットすべて。ほかのブランチや合流済みのものも含む）";
+  const viewHelp = view === "branch" ? branchHelp : storyHelp;
 
   const all = review.data ? [...review.data.detached, ...review.data.entries] : [];
   const selected = all.find((e) => entryKey(e) === sel) ?? null;
@@ -50,16 +55,20 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
       <section className="controls" aria-label="比べるもの">
         <label>
           見方
-          <select value={view} onChange={(e) => set({ view: e.target.value, sel: null })}>
-            <option value="branch">ブランチごと</option>
-            <option value="story">ストーリー全体</option>
+          <select value={view} onChange={(e) => set({ view: e.target.value, sel: null })} title={viewHelp}>
+            <option value="branch" title={branchHelp}>
+              このブランチの変更
+            </option>
+            <option value="story" title={storyHelp}>
+              {story ? `ストーリー ${story} の変更` : "ストーリーの変更"}
+            </option>
           </select>
         </label>
         {view === "branch" && (
           <label>
             ベースブランチ
             <select value={base ?? ""} onChange={(e) => set({ base: e.target.value, sel: null })}>
-              {!base && <option value="">（選ぶ）</option>}
+              {!base && <option value="">（選んでください）</option>}
               {base && !ctx.bases.includes(base) && <option value={base}>{base}</option>}
               {ctx.bases.map((b) => (
                 <option key={b} value={b}>
@@ -72,7 +81,9 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
         <label>
           ストーリー
           <select value={storyParam ?? ""} onChange={(e) => set({ story: e.target.value, sel: null })}>
-            <option value="">{view === "branch" ? "（コミットから決める）" : "（選ぶ）"}</option>
+            <option value="" title={view === "branch" && detected ? "このブランチのコミットのメッセージから見つけたもの" : undefined}>
+              {view === "branch" ? (detected ? `${detected}（このブランチのコミットから）` : "（見つかりません）") : "（選んでください）"}
+            </option>
             {storyParam && !ctx.stories.some((s) => s.id === storyParam) && <option value={storyParam}>{storyParam}</option>}
             {ctx.stories.map((s) => (
               <option key={s.id} value={s.id}>
@@ -85,20 +96,20 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
         <p className="comparing" aria-live="polite">
           {view === "branch"
             ? base
-              ? `ベースブランチ ${base} と比べている${review.data?.mergeBase ? `（分かれた点 ${shortCommit(review.data.mergeBase)}）` : ""}`
-              : "ベースブランチを選ぶ"
+              ? `このブランチの変更（${base} と分かれた点${review.data?.mergeBase ? ` ${shortCommit(review.data.mergeBase)}` : ""} からの差分）を見ています`
+              : "ベースブランチを選んでください"
             : storyParam
-              ? `ストーリー ${storyParam} で最初に変える直前の中身と、今の中身を比べている`
-              : "ストーリーを選ぶ"}
+              ? `ストーリー ${storyParam} の変更（${storyParam} のコミットすべて。ほかのブランチや合流済みのものも含む）を見ています`
+              : "ストーリーを選んでください"}
         </p>
       </section>
 
       <div className="columns">
-        <aside className="story-panel">{story ? <StoryPanel id={story} configured={ctx.storyStore !== ""} /> : <p className="note">ストーリーが決まっていない（コミットのメッセージにストーリーの ID がないか、2 つ以上ある）。ストーリーを選ぶ</p>}</aside>
+        <aside className="story-panel">{story ? <StoryPanel id={story} configured={ctx.storyStore !== ""} /> : <p className="note">ストーリーが決まっていません。ストーリーを選んでください。</p>}</aside>
 
         <section className="list" aria-label="変わったものの一覧">
-          {review.loading && <p className="note">読み込んでいる…</p>}
-          {review.error != null && <ErrorBox error={review.error} title="一覧を作れない" />}
+          {review.loading && <p className="note">読み込んでいます…</p>}
+          {review.error != null && <ErrorBox error={review.error} title="一覧を作れません" />}
           {review.data && <EntryList review={review.data} ctx={ctx} selected={sel} onSelect={(k) => set({ sel: k }, true)} />}
         </section>
 
@@ -116,7 +127,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
               }}
             />
           ) : (
-            <p className="note">一覧から 1 件を選ぶ</p>
+            <p className="note">一覧から 1 件を選んでください。</p>
           )}
         </section>
       </div>
@@ -130,10 +141,12 @@ function StoryPanel(props: { id: string; configured: boolean }) {
     <div>
       <h2>ストーリー {props.id}</h2>
       {!props.configured && (
-        <p className="note">ストーリーの置き場所が設定にないので、題と本文は出さない（.vanda/config.toml の [story] に書くと出る）</p>
+        <p className="note" title="ストーリーの置き場所が設定されていないため、題と本文を表示しません。.vanda/config.toml の [story] に書くと表示します。">
+          題と本文なし（置き場所が未設定）
+        </p>
       )}
-      {s.loading && <p className="note">読み込んでいる…</p>}
-      {s.error != null && <ErrorBox error={s.error} title="ストーリーの置き場所から読めない" />}
+      {s.loading && <p className="note">読み込んでいます…</p>}
+      {s.error != null && <ErrorBox error={s.error} title="ストーリーの置き場所から読めません" />}
       {s.data && (
         <>
           <p className="story-title">{s.data.title}</p>
@@ -206,7 +219,7 @@ function EntryList(props: { review: Review; ctx: Context; selected: string | nul
       </p>
       {review.detached.length > 0 && (
         <div className="detached">
-          <h3>合意が外れたもの（{review.detached.length} 件。比べる元から変わっていないので、総数に数えない）</h3>
+          <h3>合意が外れたもの（{review.detached.length} 件。比べる元から変わっていないため、総数に数えません）</h3>
           <ul className="entries">
             {review.detached.map((e) => (
               <EntryRow key={entryKey(e)} e={e} selected={props.selected === entryKey(e)} onSelect={props.onSelect} />
@@ -214,7 +227,7 @@ function EntryList(props: { review: Review; ctx: Context; selected: string | nul
           </ul>
         </div>
       )}
-      {review.total === 0 && <p className="note">比べる元と今のあいだで、変わったものはない</p>}
+      {review.total === 0 && <p className="note">比べる元と今のあいだで、変わったものはありません。</p>}
       {groups.map((g) => (
         <Group key={g.name} label={groupLabel(g.name, props.ctx)} entries={g.entries} selected={props.selected} onSelect={props.onSelect} />
       ))}
@@ -276,7 +289,7 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
     setAgreeError(null);
     try {
       const r = await api.agree(e, props.story);
-      setDone(`合意した（コミット ${shortCommit(r.commit)}）`);
+      setDone(`合意しました（コミット ${shortCommit(r.commit)}）`);
       props.onAgreed();
     } catch (err) {
       setAgreeError(err);
@@ -286,15 +299,15 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
   };
 
   const cannot = !props.story
-    ? "ストーリーを選ぶと合意できる"
+    ? "ストーリーを選ぶと、合意できます。"
     : !props.ctx.user
-      ? "git の user.name と user.email を設定すると合意できる"
+      ? "git の user.name と user.email を設定すると、合意できます。"
       : null;
 
   return (
     <div>
       <p className="note">
-        {e.no !== null ? `${e.no} / ${props.total}` : "総数に数えない"} · {e.kind === "file" && e.fileType ? fileTypeLabel[e.fileType] : kindLabel[e.kind]} · {changeLabel[e.change]}
+        {e.no !== null ? `${e.no} / ${props.total}` : "総数に数えません"} · {e.kind === "file" && e.fileType ? fileTypeLabel[e.fileType] : kindLabel[e.kind]} · {changeLabel[e.change]}
       </p>
       <h2 className="entry-title">
         {entryName(e)} <StateBadge state={e.state} />
@@ -305,13 +318,13 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
       {e.oldPath && <p className="note">前の場所: {e.oldPath}</p>}
       {e.detachedAgreement && (
         <p className="warn">
-          ストーリー {props.story} の合意が外れた
+          ストーリー {props.story} の合意が外れています。
           {e.detachedAgreement.by.length > 0 && `（合意の後に変えたコミットのストーリー: ${e.detachedAgreement.by.join("・")}）`}
         </p>
       )}
       {e.otherCommits.length > 0 && (
         <div className="warn">
-          ほかのコミットが、途中で同じものを変えている:
+          ほかのコミットが、途中で同じものを変えています:
           <ul>
             {e.otherCommits.map((c) => (
               <li key={c.commit}>
@@ -331,15 +344,15 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
         {e.state === "proposed" && (
           <>
             <button type="button" className="primary" disabled={agreeing || cannot !== null} onClick={agree}>
-              {agreeing ? "合意している…" : `ストーリー ${props.story ?? ""} で合意する`}
+              {agreeing ? "合意しています…" : props.story ? `ストーリー ${props.story} で合意する` : "合意する"}
             </button>
             {cannot && <span className="note">{cannot}</span>}
           </>
         )}
-        {e.state === "agreed" && <span className="note">今の中身に合意済</span>}
-        {e.state === null && <span className="note">消したものには合意できない</span>}
+        {e.state === "agreed" && <span className="note">今の中身に合意済みです。</span>}
+        {e.state === null && <span className="note">消したものには合意できません。</span>}
         {done && <span className="note">{done}</span>}
-        {agreeError != null && <ErrorBox error={agreeError} title="合意できない" />}
+        {agreeError != null && <ErrorBox error={agreeError} title="合意できません" />}
       </div>
 
       <Compare entry={e} />
@@ -377,7 +390,7 @@ function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
     }
     case "feature": {
       const x = c as FeatureContent;
-      const b = (v: boolean | null) => (v === null ? "（書いていない）" : v ? "はい" : "いいえ");
+      const b = (v: boolean | null) => (v === null ? "（書いていません）" : v ? "はい" : "いいえ");
       return [
         ["名前", x.name, "name"],
         ["定義", x.definition, "definition"],
@@ -444,7 +457,7 @@ export function EvidencePlan(props: { id: string }) {
   return (
     <div>
       <h3>エビデンスの予定と実際</h3>
-      {d.error != null && <ErrorBox error={d.error} title="エビデンスを探せない" />}
+      {d.error != null && <ErrorBox error={d.error} title="エビデンスを探せません" />}
       {d.data && (
         <table className="plan">
           <thead>
@@ -471,7 +484,7 @@ export function EvidencePlan(props: { id: string }) {
                     </div>
                   ))}
                 </td>
-                <td>{ev.present === null ? "アノテーションで確かめない" : ev.present ? "揃っている" : "ない"}</td>
+                <td>{ev.present === null ? "アノテーションでは確かめません" : ev.present ? "揃っています" : "ありません"}</td>
               </tr>
             ))}
           </tbody>

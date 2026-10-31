@@ -25,7 +25,7 @@ func newServeCommand() *cobra.Command {
 	var noOpen bool
 	cmd := &cobra.Command{
 		Use:   "serve",
-		Short: "手元のサーバーを起動し、ブラウザで開く",
+		Short: "手元のサーバーを起動し、ブラウザで開きます",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			root, cfg, err := loadConfig()
@@ -35,14 +35,14 @@ func newServeCommand() *cobra.Command {
 			// 自分のマシンの中でだけ開く（CM-01）ため、127.0.0.1 でだけ待ち受ける
 			ln, err := net.Listen("tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(port)))
 			if err != nil {
-				return fmt.Errorf("127.0.0.1:%d で待ち受けられない（%v）。--port に空いているポートを渡すか、--port 0 で空いているものを選ばせる", port, err)
+				return fmt.Errorf("127.0.0.1:%d で待ち受けられません（%v）。--port に空いているポートを渡すか、--port 0 を渡してください（0 なら空いているポートを選びます）。", port, err)
 			}
 			url := "http://" + ln.Addr().String() + "/"
 			srv := &http.Server{Handler: (&server.Server{Root: root, Cfg: cfg, UI: web.Files()}).Handler()}
-			fmt.Fprintf(cmd.OutOrStdout(), "vanda の画面を %s で開いている（止めるには Ctrl+C）\n", url)
+			fmt.Fprintf(cmd.OutOrStdout(), "vanda を起動しました: %s（Ctrl+C で停止します）\n", url)
 			if !noOpen {
 				if err := openBrowser(url); err != nil {
-					fmt.Fprintf(cmd.ErrOrStderr(), "ブラウザを開けなかった（%v）。%s をブラウザで開く\n", err, url)
+					fmt.Fprintf(cmd.ErrOrStderr(), "ブラウザを開けませんでした（%v）。%s をブラウザで開いてください。\n", err, url)
 				}
 			}
 
@@ -52,20 +52,20 @@ func newServeCommand() *cobra.Command {
 			go func() { done <- srv.Serve(ln) }()
 			select {
 			case err := <-done:
-				return fmt.Errorf("サーバーが止まった（%v）", err)
+				return fmt.Errorf("サーバーが止まりました（%v）", err)
 			case <-ctx.Done():
 			}
 			if err := srv.Shutdown(context.Background()); err != nil {
-				return fmt.Errorf("サーバーを止められなかった（%v）", err)
+				return fmt.Errorf("サーバーを止められませんでした（%v）", err)
 			}
 			if err := <-done; err != nil && !errors.Is(err, http.ErrServerClosed) {
-				return fmt.Errorf("サーバーが止まった（%v）", err)
+				return fmt.Errorf("サーバーが止まりました（%v）", err)
 			}
 			return nil
 		},
 	}
-	cmd.Flags().IntVar(&port, "port", 0, "待ち受けるポート。0 なら空いているものを選ぶ")
-	cmd.Flags().BoolVar(&noOpen, "no-open", false, "ブラウザを開かない")
+	cmd.Flags().IntVar(&port, "port", 0, "待ち受けるポート。0 なら空いているポートを選びます")
+	cmd.Flags().BoolVar(&noOpen, "no-open", false, "ブラウザを開きません")
 	return cmd
 }
 
@@ -85,7 +85,7 @@ func openBrowser(url string) error {
 	// 開いたコマンドが終わるのを待って、終わったプロセスを残さない
 	go func() {
 		if err := c.Wait(); err != nil {
-			log.Printf("ブラウザを開くコマンドが失敗した（%v）。%s をブラウザで開く", err, url)
+			log.Printf("ブラウザを開くコマンドが失敗しました（%v）。%s をブラウザで開いてください。", err, url)
 		}
 	}()
 	return nil

@@ -171,7 +171,7 @@ func (h *history) loadCommits() ([]commit, error) {
 	}
 	out, err := repo.Git(h.root, "log", "--no-merges", "--reverse", "--format=%H%x00%P%x00%cI%x00%B%x1e", "HEAD")
 	if err != nil {
-		return nil, fmt.Errorf("コミットの履歴を読めない（%v）", err)
+		return nil, fmt.Errorf("コミットの履歴を読めません（%v）", err)
 	}
 	h.commits = []commit{}
 	for _, rec := range strings.Split(out, "\x1e") {
@@ -181,11 +181,11 @@ func (h *history) loadCommits() ([]commit, error) {
 		}
 		f := strings.SplitN(rec, "\x00", 4)
 		if len(f) != 4 {
-			return nil, fmt.Errorf("コミットの履歴の形が読めない（%q）", rec)
+			return nil, fmt.Errorf("コミットの履歴の形を読めません（%q）", rec)
 		}
 		date, err := time.Parse(time.RFC3339, f[2])
 		if err != nil {
-			return nil, fmt.Errorf("コミット %s の日時 %q が読めない（%v）", f[0], f[2], err)
+			return nil, fmt.Errorf("コミット %s の日時 %q を読めません（%v）", f[0], f[2], err)
 		}
 		parent, _, _ := strings.Cut(f[1], " ")
 		msg := strings.TrimSpace(f[3])
@@ -204,7 +204,7 @@ func (h *history) changed(c commit) (*changeSet, error) {
 	h.changes[c.Hash] = cs
 	names, err := repo.Git(h.root, "diff-tree", "--no-commit-id", "--name-only", "-r", "-z", "--root", c.Hash)
 	if err != nil {
-		return nil, fmt.Errorf("コミット %s で変わったファイルを読めない（%v）", short(c.Hash), err)
+		return nil, fmt.Errorf("コミット %s で変わったファイルを読めません（%v）", short(c.Hash), err)
 	}
 	var touched []string
 	promisesTouched := false
