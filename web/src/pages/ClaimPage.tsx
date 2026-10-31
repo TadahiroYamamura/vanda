@@ -1,5 +1,6 @@
 import { api, type EvidenceDetail, type Found } from "../api";
-import { ErrorBox, StateBadge, shortCommit, useLoad } from "../components/common";
+import { ErrorBox, StateBadge, useLoad } from "../components/common";
+import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
 import { langOf } from "../highlight";
 import { stageLabel, typeLabel } from "../labels";
@@ -64,61 +65,7 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams }) {
         </section>
       ))}
 
-      <h2>由来</h2>
-      {c.origin.length === 0 ? (
-        <p className="note">まだコミットしていません。</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>コミット</th>
-              <th>日時</th>
-              <th>ストーリー</th>
-              <th>何をしたか</th>
-              <th>メッセージ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {c.origin.map((o) => (
-              <tr key={o.commit}>
-                <td>{shortCommit(o.commit)}</td>
-                <td>{o.date}</td>
-                <td>{o.stories.join("・") || "（なし）"}</td>
-                <td>{o.change === "added" ? "作成" : "変更"}</td>
-                <td>{o.subject}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      <h2>合意の履歴</h2>
-      {c.agreements.length === 0 ? (
-        <p className="note">まだ合意していません。</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>誰が</th>
-              <th>いつ</th>
-              <th>ストーリー</th>
-              <th>今の中身に</th>
-            </tr>
-          </thead>
-          <tbody>
-            {c.agreements.map((a, i) => (
-              <tr key={i}>
-                <td>
-                  {a.user.name} &lt;{a.user.email}&gt;
-                </td>
-                <td>{a.agreedAt}</td>
-                <td>{a.story}</td>
-                <td>{a.current ? "合います" : "合いません（前の中身への合意です）"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <ClaimHistory claim={c} level="h2" />
     </div>
   );
 }
