@@ -595,9 +595,6 @@ func (s *state) order(es []Entry) {
 		if si != sj {
 			return si < sj
 		}
-		if es[i].Kind != es[j].Kind {
-			return es[i].Kind > es[j].Kind // 用語（term）を機能（feature）の先に
-		}
 		return name(es[i]) < name(es[j])
 	})
 }
