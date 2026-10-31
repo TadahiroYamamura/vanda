@@ -166,6 +166,15 @@ func rvRandomOps(rt *rapid.T, r *rvRepo, label string, max int, mayLeave bool, l
 
 // RV-01・RV-13
 func TestRV01の操作の列をリポジトリに当てると期待する一覧を数えられる(t *testing.T) {
+	runRV01Random(t, nil)
+}
+
+// rvCompare は、作った一時的なリポジトリ（r）と期待する一覧を受け取り、vanda の一覧と比べる。
+// 書きかけの変更があるときは、ブランチごとの見方だけで 1 度呼び（stories は nil）、コミットした後に両方の見方で呼ぶ。
+type rvCompare func(rt *rapid.T, bin string, r *rvRepo, branch map[rvEntry]bool, stories map[string]map[rvEntry]bool)
+
+// runRV01Random は、無作為な操作の列を当てたリポジトリを作り、期待する一覧を数える。compare があれば、vanda の一覧と比べる。
+func runRV01Random(t *testing.T, compare rvCompare) {
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
 	if err != nil {
@@ -176,6 +185,8 @@ func TestRV01の操作の列をリポジトリに当てると期待する一覧�
 	setFlag(t, "rapid.seed", strconv.FormatUint(seed, 10))
 	checks := envInt(t, "VANDA_RV01_CHECKS", 100)
 	setFlag(t, "rapid.checks", strconv.Itoa(checks))
+	// 落ちたときに rapid が testdata/rapid に書くファイルを作らせない。再現には、記録に出した種を使う
+	setFlag(t, "rapid.nofailfile", "true")
 	tmp := t.TempDir()
 	// 一覧の期待値に、どの変化が何回出たか。生成が偏って、確かめていない変化がないかを記録に出す
 	seen := map[string]int{}
@@ -242,7 +253,11 @@ func TestRV01の操作の列をリポジトリに当てると期待する一覧�
 		r.switchTo("story")
 		rvRandomOps(rt, r, "story", 8, true, &log)
 
-		branch := r.branchView("main")
+		dirtyBranch := r.branchView("main")
+		if compare != nil && r.dirty {
+			compare(rt, bin, r, dirtyBranch, nil)
+		}
+		branch := dirtyBranch
 		for e := range branch {
 			seen["ブランチごと/"+e.Kind+"/"+e.Change]++
 		}
@@ -253,8 +268,13 @@ func TestRV01の操作の列をリポジトリに当てると期待する一覧�
 			r.commit(story)
 			log = append(log, "残りをコミット "+story)
 		}
+		stories := map[string]map[rvEntry]bool{}
 		for _, s := range rvStories {
-			for e := range r.storyView(s) {
+			if s == "" {
+				continue
+			}
+			stories[s] = r.storyView(s)
+			for e := range stories[s] {
 				seen["ストーリー全体/"+e.Change]++
 				if e.Others != "" {
 					seen["ストーリー全体/ほかのストーリー"]++ // そのストーリーの ID のないコミットが途中で変えたもの
@@ -263,6 +283,9 @@ func TestRV01の操作の列をリポジトリに当てると期待する一覧�
 		}
 		if again := r.branchView("main"); rvDiffEntries(branch, again) != "" {
 			rt.Fatalf("コミットしただけで、ブランチごとの見方の期待値が変わった\n%s", rvDiffEntries(branch, again))
+		}
+		if compare != nil {
+			compare(rt, bin, r, branch, stories)
 		}
 	})
 }
