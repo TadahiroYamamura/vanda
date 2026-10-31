@@ -1,0 +1,219 @@
+package main_test
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+// RV-01・RV-13 の、手で作った例。操作の列と、期待する一覧を、手で書く。
+// テストの中の数え方（rvBranchView・rvStoryView）が、この例と合うことを確かめる。
+// API ができたら、同じ例を vanda の一覧と比べる。
+
+type rvExample struct {
+	name   string
+	build  func(r *rvRepo)
+	branch map[string][]rvEntry // ベースブランチ → ブランチごとの見方の一覧
+	story  map[string][]rvEntry // ストーリーの ID → ストーリー全体の見方の一覧
+}
+
+func pickFirst(int) int { return 0 }
+
+// pickCycle は、毎回違う選び方をする。書き方だけを変えて書き直すのに使う。
+func pickCycle() rvPick {
+	k := 0
+	return func(n int) int {
+		k++
+		return k % n
+	}
+}
+
+var rvExamples = []rvExample{
+	{
+		name: "追加・変更・削除・名前の変更のそれぞれが1度ずつ出て変わっていないものは出ず作業ツリーの書きかけの変更も含む",
+		build: func(r *rvRepo) {
+			r.addItem("claim", "c-keep", 0)
+			r.addItem("claim", "c-change", 1)
+			r.addItem("term", "t-del", 0)
+			r.addItem("feature", "f-change", 2)
+			r.addItem("term", "t-keep", 1)
+			r.addItem("feature", "f-keep", 0)
+			r.addFileAt(rvScenario, "e2e/keep.txtar", false)
+			ren := r.addFileAt(rvScenario, "e2e/old.txtar", true)
+			r.addFileAt(rvGuardrail, "db/schema.sql", false)
+			m := r.addFileAt(rvTLA, "spec/Model.tla", false)
+			del := r.addFileAt(rvGuardrail, "db/old.sql", false)
+			r.addFileAt(rvTLA, "spec/Keep.tla", false)
+			r.commit("#1")
+
+			r.newBranch("story-24")
+			r.changeItem("c-change", "condition")
+			r.deleteItem("t-del")
+			r.changeItem("f-change", "definition")
+			r.renameFileTo(ren, "e2e/sub/new-name.txtar")
+			r.addFileAt(rvNoise, "notes/memo.md", false)
+			r.commit("#24")
+			// ここから下はコミットしない（作業ツリーの書きかけの変更と、まだ git が追っていないファイル）
+			r.changeFile(m)
+			r.addItem("claim", "c-new", 2)
+			r.addFileAt(rvScenario, "e2e/new.txtar", false)
+			r.deleteFile(del)
+		},
+		branch: map[string][]rvEntry{"main": {
+			{Kind: "claim", Key: "c-change", Change: "changed"},
+			{Kind: "term", Key: "t-del", Change: "deleted"},
+			{Kind: "feature", Key: "f-change", Change: "changed"},
+			{Kind: "file", Key: "e2e/sub/new-name.txtar", Change: "renamed", OldPath: "e2e/old.txtar"},
+			{Kind: "file", Key: "spec/Model.tla", Change: "changed"},
+			{Kind: "claim", Key: "c-new", Change: "added"},
+			{Kind: "file", Key: "e2e/new.txtar", Change: "added"},
+			{Kind: "file", Key: "db/old.sql", Change: "deleted"},
+		}},
+	},
+	{
+		name: "約束の文が変わらずシナリオのファイルだけが変わったものも出る",
+		build: func(r *rvRepo) {
+			r.addItem("claim", "c-a", 0)
+			s := r.addFileAt(rvScenario, "e2e/a.txtar", false)
+			r.commit("#1")
+			r.newBranch("story-24")
+			r.changeFile(s)
+			r.commit("#24")
+		},
+		branch: map[string][]rvEntry{"main": {
+			{Kind: "file", Key: "e2e/a.txtar", Change: "changed"},
+		}},
+		story: map[string][]rvEntry{"#24": {
+			{Kind: "file", Key: "e2e/a.txtar", Change: "changed"},
+		}},
+	},
+	{
+		name: "項目の順や空白や引用符やファイルの分け方だけを変えたものは出ない",
+		build: func(r *rvRepo) {
+			r.addItem("claim", "c-a", 0)
+			r.addItem("claim", "c-b", 0)
+			r.addItem("term", "t-a", 1)
+			r.addItem("feature", "f-a", 2)
+			r.commit("#1")
+			before := readPromises(r)
+			r.newBranch("story-24")
+			r.pick = pickCycle()
+			r.reformat()
+			r.moveItem("c-b", 2)
+			r.moveItem("t-a", 0)
+			r.commit("#24")
+			if after := readPromises(r); after == before {
+				r.t.Fatalf("書き方を変えたつもりが、約束リストのファイルが変わっていない")
+			}
+		},
+		branch: map[string][]rvEntry{"main": nil},
+		story:  map[string][]rvEntry{"#24": nil},
+	},
+	{
+		name: "ブランチごとの見方はベースブランチと分かれた点との差分でベースブランチを変えると一覧も変わる",
+		build: func(r *rvRepo) {
+			r.addItem("claim", "c-a", 0)
+			r.addItem("claim", "c-b", 0)
+			r.commit("#1")
+			r.newBranch("release")
+			r.changeItem("c-a", "statement")
+			r.commit("#2")
+			r.newBranch("story-24")
+			r.changeItem("c-b", "rationale")
+			r.commit("#24")
+			// 分かれた後に main で足したものは、main と比べても出ない（main の先端との差分ではない）
+			r.switchTo("main")
+			r.addItem("claim", "c-main", 1)
+			r.commit("#3")
+			r.switchTo("story-24")
+		},
+		branch: map[string][]rvEntry{
+			"release": {
+				{Kind: "claim", Key: "c-b", Change: "changed"},
+			},
+			"main": {
+				{Kind: "claim", Key: "c-a", Change: "changed"},
+				{Kind: "claim", Key: "c-b", Change: "changed"},
+			},
+		},
+	},
+	{
+		name: "ストーリー全体の見方は途中で足して後で消したものを出さずほかのストーリーが途中で変えたものを示す",
+		build: func(r *rvRepo) {
+			r.addItem("claim", "c-a", 0)
+			r.addItem("claim", "c-b", 0)
+			s1 := r.addFileAt(rvScenario, "e2e/s1.txtar", false)
+			s2 := r.addFileAt(rvScenario, "e2e/s2.txtar", true)
+			r.commit("#1")
+			r.newBranch("story-24")
+			r.changeItem("c-a", "statement")
+			r.addItem("claim", "c-tmp", 1)
+			r.commit("#24")
+			r.changeItem("c-a", "condition")
+			r.commit("#25")
+			r.deleteItem("c-tmp")
+			r.renameFileTo(s2, "e2e/s2-renamed.txtar")
+			r.addItem("claim", "c-new", 2)
+			r.commit("#24")
+			r.changeFile(s1)
+			r.commit("#25")
+		},
+		branch: map[string][]rvEntry{"main": {
+			{Kind: "claim", Key: "c-a", Change: "changed"},
+			{Kind: "claim", Key: "c-new", Change: "added"},
+			{Kind: "file", Key: "e2e/s2-renamed.txtar", Change: "renamed", OldPath: "e2e/s2.txtar"},
+			{Kind: "file", Key: "e2e/s1.txtar", Change: "changed"},
+		}},
+		story: map[string][]rvEntry{
+			"#24": {
+				{Kind: "claim", Key: "c-a", Change: "changed", Others: "#25"},
+				{Kind: "claim", Key: "c-new", Change: "added"},
+				{Kind: "file", Key: "e2e/s2-renamed.txtar", Change: "renamed", OldPath: "e2e/s2.txtar"},
+			},
+			"#25": {
+				{Kind: "claim", Key: "c-a", Change: "changed"},
+				{Kind: "file", Key: "e2e/s1.txtar", Change: "changed"},
+			},
+		},
+	},
+}
+
+func readPromises(r *rvRepo) string {
+	var all string
+	for f := 0; f < rvPromiseFiles; f++ {
+		data, err := os.ReadFile(filepath.Join(r.root, filepath.FromSlash(rvPromisePath(f))))
+		if err != nil {
+			r.t.Fatalf("%v", err)
+		}
+		all += string(data)
+	}
+	return all
+}
+
+func rvSet(es []rvEntry) map[rvEntry]bool {
+	m := map[rvEntry]bool{}
+	for _, e := range es {
+		m[e] = true
+	}
+	return m
+}
+
+// RV-01・RV-13
+func TestRV01の期待値の数え方は手で作った例と合う(t *testing.T) {
+	for _, ex := range rvExamples {
+		t.Run(ex.name, func(t *testing.T) {
+			r := newRVRepo(t, t.TempDir(), "0.1.0", "#1", pickFirst)
+			ex.build(r)
+			for base, want := range ex.branch {
+				if d := rvDiffEntries(rvSet(want), r.branchView(base)); d != "" {
+					t.Errorf("ベースブランチ %s のブランチごとの見方が、手で作った例と合わない\n%s", base, d)
+				}
+			}
+			for story, want := range ex.story {
+				if d := rvDiffEntries(rvSet(want), r.storyView(story)); d != "" {
+					t.Errorf("ストーリー %s のストーリー全体の見方が、手で作った例と合わない\n%s", story, d)
+				}
+			}
+		})
+	}
+}
