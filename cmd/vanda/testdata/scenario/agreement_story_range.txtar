@@ -1,0 +1,84 @@
+# CMD-10 合意: 範囲を 1 つのストーリーにすると、ベースブランチから分かれた点より後に変わったものだけが対象になる。
+# main には合意していない約束（task-id-unique）が残っているが、ストーリー 2 で変えていないので、ストーリー 2 の範囲の審査では止めない。
+
+exec git init -q -b main
+expand .vanda/config.toml
+exec git add -A
+exec git commit -q -m '#9 約束を足す'
+
+exec git checkout -q -b story-2
+
+# ストーリー 2 で足した約束に合意していなければ、ストーリー 2 の範囲でも止まる
+cp cases/b.toml .vanda/promises/b.toml
+exec git add -A
+exec git commit -q -m '#2 約束を足す'
+! exec vanda check .vanda/checks/story.toml --base main
+stderr 'b\.toml.*task-title-required'
+! stderr 'task-id-unique'
+! stderr '(?m)^panic: '
+
+# 合意すれば、ストーリー 2 の範囲では通る
+agree .vanda/agreements/story-2.toml '#2' claim task-title-required fp/claim-b.json
+exec git add -A
+exec git commit -q -m '#2 約束に合意する'
+exec vanda check .vanda/checks/story.toml --base main
+
+# 全部の範囲では、main の合意していない約束で止まる
+! exec vanda check .vanda/checks/all.toml
+stderr 'a\.toml.*task-id-unique'
+! stderr 'task-title-required'
+! stderr '(?m)^panic: '
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+promises = [".vanda/promises/*.toml"]
+agreements = [".vanda/agreements/*.toml"]
+
+[[layer]]
+id = "model"
+name = "Model"
+description = "Decisions and state changes"
+-- .vanda/checks/all.toml --
+[[check]]
+name = "agreement"
+scope = "all"
+-- .vanda/checks/story.toml --
+[[check]]
+name = "agreement"
+scope = "story"
+-- .vanda/agreements/base.toml --
+-- .vanda/promises/a.toml --
+[[term]]
+id = "task"
+name = "Task"
+definition = "A thing to do"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "Task IDs are unique"
+rationale = "Tasks are referred to by ID"
+condition = "always"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/b.toml --
+[[claim]]
+id = "task-title-required"
+subjects = ["task"]
+statement = "Every task has a title"
+rationale = "Tasks are listed by title"
+condition = "always"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- fp/claim-b.json --
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","statement":"Every task has a title","subjects":["task"]}

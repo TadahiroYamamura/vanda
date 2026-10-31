@@ -1,0 +1,216 @@
+# CMD-10 合意: 今の中身がすべて合意済で、フラグ（flags・guesses）が残っていないと通る。
+# CM-03: 指紋は flags と guesses を除いた中身から作る。同じ中身に 2 つのストーリーが合意しても合意済。約束の ID を変えると提案中。
+#
+# 指紋の元の JSON（fp/ の下）は、約束リストの項目から手で書いた（キーを名前の順に並べ、空白なし）。
+# 日本語の文字を JSON でどう書くか（そのままか \u の形か）を決め打ちしないよう、中身は ASCII だけにした。
+
+exec git init -q -b main
+expand .vanda/config.toml
+
+# 合意していない約束・用語があると止まる
+! exec vanda check .vanda/checks/agreement.toml
+stderr 'promises\.toml.*task-id-unique'
+stderr '(?m)promises\.toml.*\btask\b($|[^-])'
+! stderr '(?m)^panic: '
+
+# 合意すると通る
+agree .vanda/agreements.toml '#1' term task fp/term-task.json
+agree .vanda/agreements.toml '#1' claim task-id-unique fp/claim-v1.json
+exec vanda check .vanda/checks/agreement.toml
+
+# 合意した後に中身（文）を変えると止まる
+cp cases/promises-v2.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/agreement.toml
+stderr 'promises\.toml.*task-id-unique'
+! stderr '(?m)^panic: '
+
+# 合意したときの中身に戻すと、また通る（合意は指紋で探すため）
+cp cases/promises-v1.toml .vanda/promises.toml
+exec vanda check .vanda/checks/agreement.toml
+
+# 項目の順・空白・引用符だけが違う書き方なら、合意済のまま
+cp cases/promises-v1-reformatted.toml .vanda/promises.toml
+exec vanda check .vanda/checks/agreement.toml
+
+# 合意した後に flags だけを立てると、指紋は変わらないが、フラグが残っているので止まる
+cp cases/promises-v1-flags.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/agreement.toml
+stderr 'promises\.toml.*(task-id-unique|ai-proposal|flags)'
+! stderr '(?m)^panic: '
+
+# 合意した後に guesses だけを書いても、同じく止まる
+cp cases/promises-v1-guesses.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/agreement.toml
+stderr 'promises\.toml.*(task-id-unique|guesses)'
+! stderr '(?m)^panic: '
+
+# 中身を変えて、別のストーリーが今の中身に合意すれば通る。前の合意は履歴として残っていてよい
+cp cases/promises-v2.toml .vanda/promises.toml
+agree .vanda/agreements.toml '#2' claim task-id-unique fp/claim-v2.json
+exec vanda check .vanda/checks/agreement.toml
+
+# 同じ中身に、もう 1 つのストーリーが別に合意しても、合意済のまま
+agree .vanda/agreements.toml '#3' claim task-id-unique fp/claim-v2.json
+exec vanda check .vanda/checks/agreement.toml
+
+# 約束の ID を変えると、中身が同じでも提案中になる
+cp cases/promises-v2-renamed.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/agreement.toml
+stderr 'promises\.toml.*task-ids-unique'
+! stderr '(?m)^panic: '
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "Model"
+description = "Decisions and state changes"
+-- .vanda/checks/agreement.toml --
+[[check]]
+name = "agreement"
+scope = "all"
+-- .vanda/agreements.toml --
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "Task"
+definition = "A thing to do"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "Task IDs are unique"
+rationale = "Tasks are referred to by ID"
+condition = "always"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/promises-v1.toml --
+[[term]]
+id = "task"
+name = "Task"
+definition = "A thing to do"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "Task IDs are unique"
+rationale = "Tasks are referred to by ID"
+condition = "always"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/promises-v1-reformatted.toml --
+[[claim]]
+layers    =    [ "model" ]
+condition = 'always'
+rationale = "Tasks are referred to by ID"
+statement = 'Task IDs are unique'
+subjects  = [
+  "task",
+]
+id = "task-id-unique"
+
+  [[claim.evidence]]
+  type = 'unit-test'
+  detail = "task_test.go"
+  layers = ['model']
+  stage = "test"
+
+[[term]]
+definition = 'A thing to do'
+name="Task"
+id="task"
+-- cases/promises-v1-flags.toml --
+[[term]]
+id = "task"
+name = "Task"
+definition = "A thing to do"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "Task IDs are unique"
+rationale = "Tasks are referred to by ID"
+condition = "always"
+layers = ["model"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/promises-v1-guesses.toml --
+[[term]]
+id = "task"
+name = "Task"
+definition = "A thing to do"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "Task IDs are unique"
+rationale = "Tasks are referred to by ID"
+condition = "always"
+layers = ["model"]
+guesses = ["IDs are assigned in order"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/promises-v2.toml --
+[[term]]
+id = "task"
+name = "Task"
+definition = "A thing to do"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "No two tasks share an ID"
+rationale = "Tasks are referred to by ID"
+condition = "always"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/promises-v2-renamed.toml --
+[[term]]
+id = "task"
+name = "Task"
+definition = "A thing to do"
+
+[[claim]]
+id = "task-ids-unique"
+subjects = ["task"]
+statement = "No two tasks share an ID"
+rationale = "Tasks are referred to by ID"
+condition = "always"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- fp/term-task.json --
+{"definition":"A thing to do","id":"task","name":"Task"}
+-- fp/claim-v1.json --
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"Task IDs are unique","subjects":["task"]}
+-- fp/claim-v2.json --
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"No two tasks share an ID","subjects":["task"]}

@@ -1,0 +1,126 @@
+# CMD-10 合意（範囲を 1 つのストーリーにする）、RV-14:
+# ストーリー 1 が約束を変えて合意し、ストーリー 2 が変える前の中身に合意していたとき、
+# ストーリー 1 の範囲の審査は通り、ストーリー 2 の範囲の審査は止まる。ストーリー 2 が今の中身に合意し直すと通る。
+#
+# 合流でぶつからないよう、約束リストと合意の記録をストーリーごとのファイルに分けた。
+# どのストーリーの範囲かは、ブランチのコミットのメッセージのストーリーの ID（#1、#2）で分かるようにしてある。
+
+exec git init -q -b main
+expand .vanda/config.toml
+agree .vanda/agreements/base.toml '#9' term task fp/term-task.json
+agree .vanda/agreements/base.toml '#9' claim task-id-unique fp/claim-v1.json
+exec git add -A
+exec git commit -q -m '#9 約束を足す'
+exec vanda check .vanda/checks/all.toml
+
+# ストーリー 1: 約束の文を変えて、今の中身に合意する
+exec git checkout -q -b story-1
+cp cases/a-v2.toml .vanda/promises/a.toml
+agree .vanda/agreements/story-1.toml '#1' claim task-id-unique fp/claim-v2.json
+exec git add -A
+exec git commit -q -m '#1 約束の文を変える'
+exec vanda check .vanda/checks/story.toml --base main
+
+# ストーリー 2: 変える前の中身に合意し、別の約束を足して合意する
+exec git checkout -q main
+exec git checkout -q -b story-2
+cp cases/b.toml .vanda/promises/b.toml
+agree .vanda/agreements/story-2.toml '#2' claim task-id-unique fp/claim-v1.json
+agree .vanda/agreements/story-2.toml '#2' claim task-title-required fp/claim-b.json
+exec git add -A
+exec git commit -q -m '#2 約束を足す'
+exec vanda check .vanda/checks/story.toml --base main
+
+# ストーリー 1 が先に合流し、ストーリー 2 が main を取り込む
+exec git checkout -q main
+exec git merge -q --ff-only story-1
+exec git checkout -q story-2
+exec git merge -q --no-edit -m '#2 main を取り込む' main
+
+# 全部の範囲では、今の中身にストーリー 1 が合意しているので通る
+exec vanda check .vanda/checks/all.toml
+
+# ストーリー 2 の範囲では、ストーリー 2 の合意が今の中身に合わなくなったので止まる
+! exec vanda check .vanda/checks/story.toml --base main
+stderr 'task-id-unique'
+! stderr 'task-title-required'
+! stderr '(?m)^panic: '
+
+# ストーリー 2 が今の中身に合意し直すと通る
+agree .vanda/agreements/story-2.toml '#2' claim task-id-unique fp/claim-v2.json
+exec git add -A
+exec git commit -q -m '#2 変わった約束に合意し直す'
+exec vanda check .vanda/checks/story.toml --base main
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+promises = [".vanda/promises/*.toml"]
+agreements = [".vanda/agreements/*.toml"]
+
+[[layer]]
+id = "model"
+name = "Model"
+description = "Decisions and state changes"
+-- .vanda/checks/all.toml --
+[[check]]
+name = "agreement"
+scope = "all"
+-- .vanda/checks/story.toml --
+[[check]]
+name = "agreement"
+scope = "story"
+-- .vanda/promises/a.toml --
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "Task IDs are unique"
+rationale = "Tasks are referred to by ID"
+condition = "always"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- .vanda/promises/terms.toml --
+[[term]]
+id = "task"
+name = "Task"
+definition = "A thing to do"
+-- cases/a-v2.toml --
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "No two tasks share an ID"
+rationale = "Tasks are referred to by ID"
+condition = "always"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/b.toml --
+[[claim]]
+id = "task-title-required"
+subjects = ["task"]
+statement = "Every task has a title"
+rationale = "Tasks are listed by title"
+condition = "always"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- fp/term-task.json --
+{"definition":"A thing to do","id":"task","name":"Task"}
+-- fp/claim-v1.json --
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"Task IDs are unique","subjects":["task"]}
+-- fp/claim-v2.json --
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"No two tasks share an ID","subjects":["task"]}
+-- fp/claim-b.json --
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","statement":"Every task has a title","subjects":["task"]}
