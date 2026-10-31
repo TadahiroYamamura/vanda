@@ -258,7 +258,10 @@ test("ベースブランチと見方を切り替えると一覧が変わる", as
   await expect(baseSelect).toHaveValue("release");
   await expect(page.getByText(/release/).filter({ visible: true }).first()).toBeVisible();
 
-  await page.getByRole("combobox", { name: "見方" }).selectOption({ label: "ストーリー全体" });
+  // ストーリー全体の見方の選択肢は、文の全体でなく、ストーリーの ID と「変更」で探す（文言の細部に頼らない）
+  const view = page.getByRole("combobox", { name: "見方" });
+  const storyOption = view.locator("option").filter({ hasText: "#24" }).filter({ hasText: "変更" }).first();
+  await view.selectOption((await storyOption.getAttribute("value")) ?? "story");
   await expect(page).toHaveURL(/view=story/);
   for (const item of items) await expect(page.getByText(item).first()).toBeVisible();
 });
