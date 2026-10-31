@@ -99,25 +99,19 @@ function evidenceText(evs: { stage: string; type: string; layers: string[]; deta
 }
 
 // ClaimAtRow は、ある時点の約束の中身（文・理由・条件・レイヤー・エビデンスの予定）を、押した行のすぐ下の行に出す。中身は API が、その時点の約束リストから読んだもの。
-// 今の中身と違う項目には印を付ける。比べるのは、画面に出す文字列が同じかどうかだけ
 function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string; onClose: () => void }) {
   const c = props.claim;
   const d = useLoad(() => api.claimAt(c.id, props.commit), `${c.id}@${props.commit}`);
   const none = "（なし）";
-  const rows: [string, string, string][] = d.data
+  const rows: [string, string][] = d.data
     ? [
-        ["文", d.data.content.statement, c.statement],
-        ["理由", d.data.content.rationale ?? none, c.rationale ?? none],
-        ["条件", d.data.content.condition ?? none, c.condition ?? none],
-        [
-          "レイヤー",
-          (d.data.layers ?? d.data.content.layers.map((id) => ({ id, name: "" }))).map((l) => l.name || l.id).join("・"),
-          c.layers.map((l) => l.name || l.id).join("・"),
-        ],
-        ["エビデンスの予定", evidenceText(d.data.content.evidence), evidenceText(c.evidence)],
+        ["文", d.data.content.statement],
+        ["理由", d.data.content.rationale ?? none],
+        ["条件", d.data.content.condition ?? none],
+        ["レイヤー", (d.data.layers ?? d.data.content.layers.map((id) => ({ id, name: "" }))).map((l) => l.name || l.id).join("・")],
+        ["エビデンスの予定", evidenceText(d.data.content.evidence)],
       ]
     : [];
-  const differs = rows.filter(([, then, now]) => then !== now).length;
   return (
     <tr className="claim-at-row">
       <td colSpan={props.cols}>
@@ -136,20 +130,14 @@ function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string; o
           {d.loading && <p className="note">読み込んでいます…</p>}
           {d.error != null && <ErrorBox error={d.error} title="その時点の中身を読めません" />}
           {d.data && (
-            <>
-              <p className="note claim-at-compare">{differs === 0 ? "今の中身と同じです。" : `今の中身と違う項目が ${differs} つあります（印の付いた項目）。`}</p>
-              <dl className="fields">
-                {rows.map(([label, then, now]) => (
-                  <Fragment key={label}>
-                    <dt className={then !== now ? "differs-now" : undefined}>
-                      {label}
-                      {then !== now && <span className="badge differs-badge">今と違う</span>}
-                    </dt>
-                    <dd className="text">{label === "エビデンスの予定" ? <ul>{then.split("\n").filter(Boolean).map((l, i) => <li key={i}>{l}</li>)}</ul> : then}</dd>
-                  </Fragment>
-                ))}
-              </dl>
-            </>
+            <dl className="fields">
+              {rows.map(([label, then]) => (
+                <Fragment key={label}>
+                  <dt>{label}</dt>
+                  <dd className="text">{label === "エビデンスの予定" ? <ul>{then.split("\n").filter(Boolean).map((l, i) => <li key={i}>{l}</li>)}</ul> : then}</dd>
+                </Fragment>
+              ))}
+            </dl>
           )}
         </section>
       </td>

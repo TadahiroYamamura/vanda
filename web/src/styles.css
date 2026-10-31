@@ -178,8 +178,6 @@ button.revoke { color: var(--bad); border-color: #e3b4b4; }
 
 tr.claim-at-row > td { padding: 0 0 8px; background: transparent; }
 .claim-at-row .claim-at { margin: 0; }
-.differs-badge { margin-left: 6px; background: var(--pend-bg); color: var(--pend); }
-dt.differs-now { color: var(--pend); font-weight: 500; }
 
 /* 狭い画面では、一覧と 1 件の中身を縦に並べ、ページ全体をスクロールして読む。
    一覧を画面に貼り付けたまま（sticky）にすると、縦に並べたときに 1 件の中身の上に重なるため、ここでは外す */
