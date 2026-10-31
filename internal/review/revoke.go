@@ -24,7 +24,7 @@ type Revocation struct {
 }
 
 // branchPoint は、「今のブランチ」の始まり（ベースブランチと分かれた点）を返す。決まらなければ空の文字列。
-// ブランチごとの見方では、その分かれた点。ストーリーの変更の見方では、選んでいるベースブランチか、設定の既定のもの
+// レビュー単位がブランチなら、その分かれた点。レビュー単位がストーリーなら、選んでいるベースブランチか、設定の既定のもの
 func (s *state) branchPoint(mergeBase string) string {
 	if mergeBase != "" {
 		return mergeBase

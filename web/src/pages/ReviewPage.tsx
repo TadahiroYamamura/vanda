@@ -44,8 +44,8 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
   const story = review.data?.story ?? storyParam;
   const detected = view === "branch" && !storyParam ? (review.data?.story ?? null) : null;
   // 選択肢の中は短い名前にし、何と何を比べているかの説明は、触れたときに出す（欄に収まらないため）
-  const branchHelp = `このブランチの変更（${base ?? "ベースブランチ"} と分かれた点からの差分）`;
-  const storyHelp = story ? `ストーリー ${story} の変更（${story} のコミットすべて。ほかのブランチや合流済みのものも含む）` : "ストーリーの変更（そのストーリーのコミットすべて。ほかのブランチや合流済みのものも含む）";
+  const branchHelp = `ブランチ（${base ?? "ベースブランチ"} と分かれた点からの、このブランチの変更。コミットしていない変更も含む）`;
+  const storyHelp = story ? `ストーリー（${story} のコミットすべての変更。ほかのブランチや合流済みのものも含む）` : "ストーリー（そのストーリーのコミットすべての変更。ほかのブランチや合流済みのものも含む）";
   const viewHelp = view === "branch" ? branchHelp : storyHelp;
 
   const all = review.data ? [...review.data.detached, ...review.data.entries] : [];
@@ -55,13 +55,13 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
     <div className="review">
       <section className="controls" aria-label="比べるもの">
         <label>
-          見方
+          レビュー単位
           <select value={view} onChange={(e) => set({ view: e.target.value, sel: null })} title={viewHelp}>
             <option value="branch" title={branchHelp}>
-              このブランチの変更
+              ブランチ
             </option>
             <option value="story" title={storyHelp}>
-              {story ? `ストーリー ${story} の変更` : "ストーリーの変更"}
+              ストーリー
             </option>
           </select>
         </label>
@@ -97,10 +97,10 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
         <p className="comparing" aria-live="polite">
           {view === "branch"
             ? base
-              ? `このブランチの変更（${base} と分かれた点${review.data?.mergeBase ? ` ${shortCommit(review.data.mergeBase)}` : ""} からの差分）を見ています`
+              ? `レビュー単位はブランチです（${base} と分かれた点${review.data?.mergeBase ? ` ${shortCommit(review.data.mergeBase)}` : ""} からの、このブランチの変更。コミットしていない変更も含む）`
               : "ベースブランチを選んでください"
             : storyParam
-              ? `ストーリー ${storyParam} の変更（${storyParam} のコミットすべて。ほかのブランチや合流済みのものも含む）を見ています`
+              ? `レビュー単位はストーリーです（${storyParam} のコミットすべての変更。ほかのブランチや合流済みのものも含む）`
               : "ストーリーを選んでください"}
         </p>
       </section>
