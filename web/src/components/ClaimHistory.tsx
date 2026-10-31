@@ -2,7 +2,7 @@ import { Fragment, type ReactNode, useState } from "react";
 import { api, type ClaimDetail } from "../api";
 import { ErrorBox, shortCommit, useLoad } from "./common";
 import { LayerChips } from "./Chips";
-import { EvidenceList } from "./EvidenceList";
+import { EvidenceGroups } from "./EvidenceGroups";
 
 // ClaimHistory は、約束の由来（CL-04）と合意の履歴（CL-05）。約束の詳細の画面と、レビューの画面の 1 件の詳細（RV-16）で使う。
 export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) {
@@ -141,7 +141,23 @@ function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string })
         ["理由", d.data.content.rationale ?? none],
         ["対象", d.data.content.subjects.join("・")],
         ["レイヤー", <LayerChips layers={d.data.content.layers} names={d.data.layers ?? undefined} />],
-        ["エビデンスの予定", <EvidenceList items={d.data.content.evidence} />],
+        [
+          "エビデンスの予定",
+          d.data.content.evidence.length === 0 ? (
+            none
+          ) : (
+            <EvidenceGroups
+              items={d.data.content.evidence}
+              level="h5"
+              render={(ev) => (
+                <>
+                  <LayerChips layers={ev.layers} names={d.data?.layers ?? undefined} />
+                  {ev.detail && <div className="evidence-detail">{ev.detail}</div>}
+                </>
+              )}
+            />
+          ),
+        ],
         ["推測", d.data.content.guesses.length > 0 ? d.data.content.guesses.join("\n") : none],
       ]
     : [];

@@ -8,6 +8,7 @@ import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
 import { LineDiff, Parts } from "../components/DiffView";
 import { LayerChips, LayerChipsDiff } from "../components/Chips";
+import { EvidenceGroups } from "../components/EvidenceGroups";
 import { EvidenceList } from "../components/EvidenceList";
 import { langOf } from "../highlight";
 import { TlaCode } from "../components/TlaCode";
@@ -572,52 +573,31 @@ export function ClaimSections(props: { id: string; query?: string }) {
       <h3>エビデンスの予定と実際</h3>
       {d.error != null && <ErrorBox error={d.error} title="エビデンスを探せません" />}
       {d.data && (
-        // 狭い幅では行を縦に並べる（CSS の display を変える）。そのときもブラウザが表として読み上げるよう、役割をはっきり書く
-        <table className="plan" role="table">
-          <thead role="rowgroup">
-            <tr role="row">
-              <th role="columnheader" className="plan-narrow plan-present">
-                <span className="visually-hidden">揃っているか</span>
-              </th>
-              <th role="columnheader" className="plan-narrow">ステージ</th>
-              <th role="columnheader" className="plan-narrow">タイプ</th>
-              <th role="columnheader" className="plan-narrow">レイヤー</th>
-              <th role="columnheader" className="plan-detail">詳細</th>
-              <th role="columnheader" className="plan-found">実際のエビデンス</th>
-            </tr>
-          </thead>
-          <tbody role="rowgroup">
-            {d.data.evidence.map((ev, i) => (
-              <tr key={i} role="row">
-                <td role="cell" className="plan-narrow plan-present" data-label="揃っているか">
-                  <PresentIcon present={ev.present} />
-                </td>
-                <td role="cell" className="plan-narrow" data-label="ステージ">
-                  {stageLabel[ev.stage] ?? ev.stage}
-                </td>
-                <td role="cell" className="plan-narrow" data-label="タイプ">
-                  {typeLabel[ev.type] ?? ev.type}
-                </td>
-                <td role="cell" className="plan-narrow" data-label="レイヤー">
-                  <LayerChips layers={ev.layers} />
-                </td>
-                <td role="cell" className="plan-detail" data-label="詳細">
-                  {ev.detail ?? ""}
-                </td>
-                <td role="cell" className="plan-found" data-label="実際のエビデンス">
+        <EvidenceGroups
+          items={d.data.evidence}
+          level="h4"
+          render={(ev) => (
+            <>
+              <div className="evidence-line">
+                <PresentIcon present={ev.present} />
+                <LayerChips layers={ev.layers} />
+              </div>
+              {ev.detail && <div className="evidence-detail">{ev.detail}</div>}
+              {ev.found.length > 0 && (
+                <ul className="evidence-found">
                   {ev.found.map((f) => (
-                    <div key={`${f.file}:${f.line}`}>
+                    <li key={`${f.file}:${f.line}`}>
                       {f.name}{" "}
                       <Link className="note" to={`/files?${props.query ? `${props.query}&` : ""}path=${encodeURIComponent(f.file)}`}>
                         {f.file}:{f.line}
                       </Link>
-                    </div>
+                    </li>
                   ))}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </ul>
+              )}
+            </>
+          )}
+        />
       )}
       {d.data && <ClaimHistory claim={d.data} level="h3" />}
     </div>
