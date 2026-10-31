@@ -68,3 +68,36 @@ func TestDoctorはgitのリポジトリの外では誤りにする(t *testing.T)
 		t.Errorf("code %d, stderr %q", code, errs)
 	}
 }
+
+func TestCheckは審査の設定のファイルを渡さなければ誤りにする(t *testing.T) {
+	dir := gitRepo(t, `version = "0.1.0"`)
+	code, _, errs := runIn(t, dir, "check")
+	if code != 1 || !strings.Contains(errs, "既定の審査はない") {
+		t.Errorf("code %d, stderr %q", code, errs)
+	}
+}
+
+func TestCheckは審査の設定のファイルをカレントディレクトリから読み失敗なら終了コード1にする(t *testing.T) {
+	dir := gitRepo(t, `version = "0.1.0"`)
+	sub := filepath.Join(dir, "sub")
+	if err := os.MkdirAll(filepath.Join(sub, "checks"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sub, "checks", "push.toml"), []byte("[[check]]\nname = \"unread-files\"\nscope = \"all\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".vanda", "memo.txt"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	code, out, errs := runIn(t, sub, "check", "checks/push.toml")
+	if code != 1 || errs != "" || out != "審査 unread-files（all）: 失敗（1 件）\n.vanda/memo.txt: .vanda/ にあるのに、設定のどのパターンにも当たらず、読まれていない。.vanda/config.toml の promises か agreements のパターンに当たるようにするか、ファイルを消す\n" {
+		t.Errorf("code %d, out %q, stderr %q", code, out, errs)
+	}
+	if err := os.Remove(filepath.Join(dir, ".vanda", "memo.txt")); err != nil {
+		t.Fatal(err)
+	}
+	code, out, _ = runIn(t, sub, "check", "checks/push.toml")
+	if code != 0 || out != "審査 unread-files（all）: 通った\n" {
+		t.Errorf("code %d, out %q", code, out)
+	}
+}

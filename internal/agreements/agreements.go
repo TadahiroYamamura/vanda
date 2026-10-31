@@ -127,3 +127,13 @@ func contains(xs []string, s string) bool {
 }
 
 func quote(s string) string { return `"` + s + `"` }
+
+// AgreedBy は、ストーリー story の合意のうち、kind・key・fp に合うものがあるかを返す。
+func (r *Records) AgreedBy(kind, key, fp, story string) bool {
+	for _, a := range r.Agreements {
+		if a.Kind == kind && a.Key == key && a.Fingerprint == fp && a.Story == story {
+			return true
+		}
+	}
+	return false
+}
