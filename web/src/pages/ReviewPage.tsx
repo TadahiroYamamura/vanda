@@ -285,6 +285,8 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
   const [agreeing, setAgreeing] = useState(false);
   const [agreeError, setAgreeError] = useState<unknown>(null);
   const [done, setDone] = useState<string | null>(null);
+  // 合意・取り消しのたびに増やし、由来と合意の履歴（RV-16）を読み直す
+  const [written, setWritten] = useState(0);
 
   const revoke = async () => {
     if (!props.story) return;
@@ -297,6 +299,7 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
           ? `合意を取り消しました（コミット ${shortCommit(r.commit)}）。ほかの合意が残っているため、合意済みのままです。`
           : `合意を取り消しました（コミット ${shortCommit(r.commit)}）。`,
       );
+      setWritten((n) => n + 1);
       props.onAgreed();
     } catch (err) {
       setAgreeError(err);
@@ -312,6 +315,7 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
     try {
       const r = await api.agree(e, props.story);
       setDone(`合意しました（コミット ${shortCommit(r.commit)}）`);
+      setWritten((n) => n + 1);
       props.onAgreed();
     } catch (err) {
       setAgreeError(err);
@@ -389,7 +393,7 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
       </div>
 
       <Compare entry={e} />
-      {e.kind === "claim" && e.id && e.change !== "deleted" && <ClaimSections id={e.id} query={props.query} />}
+      {e.kind === "claim" && e.id && e.change !== "deleted" && <ClaimSections key={written} id={e.id} query={props.query} />}
     </div>
   );
 }
