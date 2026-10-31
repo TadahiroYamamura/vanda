@@ -26,6 +26,11 @@
 | `github.com/spf13/cobra` | CLI |
 | `github.com/rogpeppe/go-internal`（`testscript`） | シナリオテスト |
 | `pgregory.net/rapid` | ランダムチェック |
+| `react`、`react-dom` | 画面（`web/`） |
+| `typescript`、`vite`、`@vitejs/plugin-react` | 画面を作る |
+| `vitest`、`@testing-library/react`、`@testing-library/user-event`、`jsdom` | 画面の部品のテスト |
+| `msw` | 画面の部品のテストで API を差し替える |
+| `@playwright/test` | E2E のテスト（Chrome を動かす）。版は flake の nixpkgs の `playwright-driver` と同じにする |
 
 - コメントは、なぜこの形なのか（制約、選ばなかった案、直感に反する点）だけを書く。何をしているかは、コードで分かるようにする
 
