@@ -268,7 +268,7 @@ test("ベースブランチと見方を切り替えると一覧が変わる", as
 
 // 約束の詳細とファイルの画面から「ストーリーのレビューへ戻る」で戻ると、行く前のレビューの画面（見方・ベースブランチ・
 // ストーリー・選んでいた 1 件）に戻る。ブラウザーの「戻る」には頼らない（PO の報告では、こちらだけが選ぶ前に戻っていた）。
-// ストーリー全体の見方ではベースブランチを選ぶ所が出ないので、見方とベースブランチの組は 3 つ。それと戻る経路 2 つの
+// ストーリー全体の見方ではベースブランチを選ぶ所が出ないので、見方とベースブランチの組は 3 つ。それと戻る経路 3 つの
 // 組み合わせを全部回す。
 const states = [
   { name: "ブランチごとの見方でベースブランチを既定のmainにして", story: false, base: "main" },
@@ -276,13 +276,14 @@ const states = [
   { name: "ストーリー全体の見方に切り替えて", story: true, base: "main" },
 ];
 const routes = [
-  { name: "約束の詳細から直接", viaFile: false },
-  { name: "エビデンスのファイルを経て", viaFile: true },
-];
+  { name: "約束の詳細から直接", via: "claim" },
+  { name: "約束の詳細からエビデンスのファイルを経て", via: "claim-file" },
+  { name: "エビデンスの予定と実際の表からファイルを経て", via: "review-file" },
+] as const;
 
 for (const v of states) {
   for (const route of routes) {
-      test(`${v.name}選んだ約束の${route.name}ストーリーのレビューへ戻ると行く前と同じ状態に戻る`, async ({ page }) => {
+      test(`${v.name}選んだ約束で${route.name}ストーリーのレビューへ戻ると行く前と同じ状態に戻る`, async ({ page }) => {
         // シナリオに task-id-unique のエビデンスを付け、約束の文も変える。release は、このコミットの直前から分かれたことに
         // する（release と比べても task-id-unique が一覧に出て、main と比べたときとは一覧が変わる）
         repo.git("branch", "release", "story-24");
@@ -314,11 +315,16 @@ for (const v of states) {
         };
         if (!v.story) expect(before.base).toBe(v.base);
 
-        await claimLink.click();
-        await expect(page.getByText("どのタスクとも重ならない").first()).toBeVisible();
-        if (route.viaFile) {
-          await page.getByRole("link", { name: /e2e\/add-task\.txtar/ }).first().click();
+        if (route.via === "review-file") {
+          await page.getByRole("link", { name: /e2e\/add-task\.txtar:1/ }).first().click();
           await expect(page).toHaveURL(/\/files\?/);
+        } else {
+          await claimLink.click();
+          await expect(page.getByText("どのタスクとも重ならない").first()).toBeVisible();
+          if (route.via === "claim-file") {
+            await page.getByRole("link", { name: /e2e\/add-task\.txtar/ }).first().click();
+            await expect(page).toHaveURL(/\/files\?/);
+          }
         }
         await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
 
@@ -330,3 +336,117 @@ for (const v of states) {
       });
   }
 }
+
+// RV-16 と CL-08 の前提: task-id-unique を、main（v1）、#24 の最初のコミット（v2）の後に、さらに 2 回変える（v3・v4）。
+// 版ごとに、文・理由・条件・レイヤー・エビデンスの予定に、ほかの版に出てこない文字を入れる。
+interface ClaimVersion {
+  statement: string;
+  rationale?: string;
+  condition?: string;
+  layers: string[];
+  plan?: string;
+}
+const v1Statement = "タスクの ID は重ならない";
+const v2Statement = "タスクの ID は、すべてのタスクを通して重ならない";
+const v3: ClaimVersion = {
+  statement: "タスクの ID は、消したタスクとも重ならない",
+  rationale: "消したタスクの ID を使い回すと、古い記録と取り違える",
+  condition: "タスクを一度でも登録したことがある",
+  layers: ["model", "db"],
+  plan: "TLA+ で消したタスクも含めて確かめる予定",
+};
+const v4: ClaimVersion = {
+  statement: "タスクの ID は、どのタスクとも重ならない",
+  rationale: "ID でタスクを 1 つに決めるため",
+  condition: "タスクが 1 つ以上ある",
+  layers: ["model"],
+  plan: "モデル検査で重ならないことを確かめる予定",
+};
+
+const promisesAt = (c: ClaimVersion) => `[[term]]
+id = "task-id"
+name = "タスクの ID"
+definition = "タスクを見分ける名前"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task-id"]
+statement = "${c.statement}"
+${c.rationale ? `rationale = "${c.rationale}"\n` : ""}${c.condition ? `condition = "${c.condition}"\n` : ""}layers = [${c.layers.map((l) => `"${l}"`).join(", ")}]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["model"]
+${c.plan ? `
+[[claim.evidence]]
+stage = "plan"
+type = "model-check"
+layers = ["model"]
+detail = "${c.plan}"
+` : ""}`;
+
+function commit(r: Repo, subject: string): string {
+  r.git("add", "-A");
+  r.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "-m", subject);
+  return r.git("rev-parse", "HEAD");
+}
+
+// commitV3 は、DB のレイヤーを設定に足し、task-id-unique を v3 にする。
+function commitV3(r: Repo): string {
+  const cfg = readFileSync(join(r.root, ".vanda/config.toml"), "utf8");
+  r.write(".vanda/config.toml", cfg.replace("[[annotation]]", '[[layer]]\nid = "db"\nname = "データベース"\ndescription = "保存の制約"\n\n[[annotation]]'));
+  r.write(".vanda/promises.toml", promisesAt(v3));
+  return commit(r, "#24 理由と条件を足す");
+}
+
+// 由来の行と合意の記録の行は、CL の約束の詳細と同じく表の行として探す。行の中にボタンがあればそれを、なければ行を押して選ぶ
+async function choose(row: ReturnType<Page["getByRole"]>) {
+  await expect(row).toBeVisible();
+  const button = row.getByRole("button");
+  if ((await button.count()) > 0) await button.first().click();
+  else await row.click();
+}
+const rowOf = (page: Page, text: string) => page.getByRole("row").filter({ hasText: text }).first();
+
+async function openReviewDetail(page: Page) {
+  await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
+  await select(page, "task-id-unique");
+  await expect(page.getByRole("link", { name: "約束の詳細を開く" })).toBeVisible();
+}
+
+// RV-16。中身は CL-04・CL-05 と同じ（由来はコミットとストーリーの ID、合意の履歴は合意した人・ストーリー・今の中身に合うか）
+test("レビューの画面の1件の詳細に約束の由来と合意の履歴が出て合意すると今の中身に合う合意が履歴に足される", async ({ page }) => {
+  const c1 = repo.git("rev-parse", "main");
+  const c2 = repo.git("rev-parse", "story-24~1");
+  const c3 = commitV3(repo);
+  await openReviewDetail(page);
+
+  // 由来: 約束を作り・変えたコミットだけ。シナリオだけを変えたコミットは出ない
+  for (const [hash, subject, story] of [
+    [c1, "#1 はじめの約束を置く", "#1"],
+    [c2, "#24 約束を変え、題の約束を足す", "#24"],
+    [c3, "#24 理由と条件を足す", "#24"],
+  ]) {
+    const row = rowOf(page, subject);
+    await expect(row, `由来に ${subject} がない`).toBeVisible();
+    await expect(row).toContainText(hash.slice(0, 7));
+    await expect(row).toContainText(story);
+  }
+  await expect(page.getByText("#24 シナリオを変える")).toHaveCount(0);
+
+  // 合意の履歴: #1 の合意は v1 への合意なので、今の中身に合わない
+  const old = rowOf(page, "テスト担当");
+  await expect(old).toContainText("#1");
+  await expect(old).toContainText(/合いません/);
+  await expect(page.getByRole("row").filter({ hasText: "合意する人" })).toHaveCount(0);
+
+  const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
+  await page.getByRole("button", { name: /合意する/ }).click();
+  expect((await res).status()).toBe(200);
+  const now = rowOf(page, "合意する人");
+  await expect(now, "合意した後に、合意の履歴に足されていない").toBeVisible();
+  await expect(now).toContainText("#24");
+  await expect(now).toContainText(/合います/);
+  await expect(rowOf(page, "テスト担当")).toContainText(/合いません/);
+});
