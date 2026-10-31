@@ -28,13 +28,18 @@ import (
 // ストーリーの範囲の差分は、シナリオテスト（agreement_story_range など）が受け持つ。
 //
 // 写し方: Items の i1 は約束 item-1、i2 はシナリオのファイル e2e/item-2.txtar。版 n は、約束の文やファイルの中身の v<n>。
-// Stories の A・B はストーリーの ID #1・#2。Change(s, i) は中身の書き換えのコミット、Agree(s, i) は合意の記録の書き足しのコミット。
+// Stories の A・B はストーリーの ID #1・#2。Change(s, i) は中身の書き換えのコミット、Agree(s, i) は合意の記録の書き足しのコミット、
+// Revoke(s, i) は、Agree(s, i) で書き足した記録をストーリーの合意の記録のファイルから消すコミット。
+// Revoke は、POST /api/revoke でなくファイルを直接書き換えて送る。トレースはすべて main の上で進むので、取り消せる範囲
+// （今のブランチで書いた記録だけ）に入る記録がない。また Agree もファイルを直接書いて送っており、比べるのは判定だけ。
+// 人はテスト担当 1 人に固定する（モデルは人を区別しない）。人が複数のときの取り消しは、API のテストが受け持つ。
 
 const (
-	xcheckDefaultTraces = 30
+	xcheckDefaultTraces = 150
 	xcheckDefaultDepth  = 12
-	// 場面ごとに、全部のトレースで少なくともこれだけ出ることを求める。30 本・深さ 12 を 40 通りの種で数えると、
-	// いちばん少ない場面（RV-14）でも 65〜109 回（平均 82）だった。種によってたまたま下回らないよう、その半分ほどにした
+	// 場面ごとに、全部のトレースで少なくともこれだけ出ることを求める。取り消しを足した後、150 本・深さ 12 を 10 通りの
+	// 種で数えると、いちばん少ない場面（取り消した後も、ほかのストーリーの合意で合意済のまま）でも 58〜85 回（平均 75）
+	// だった。30 本では 16〜37 回で、種によって下回った。種によってたまたま下回らないよう、その半分ほどにした
 	xcheckMinScenes = 30
 )
 
@@ -251,6 +256,14 @@ func countScenes(states []xcheckState) map[string]int {
 		if changed && st.allPass {
 			c["変えた後に、全部の範囲が通る"]++
 		}
+		if k > 0 && st.step[0] == "Revoke" {
+			i := string(st.step[2].(tlaModel))
+			if st.agreed[i] {
+				c["取り消した後も、ほかのストーリーの合意で合意済のまま"]++
+			} else {
+				c["取り消して、提案中に戻る"]++
+			}
+		}
 		if k > 0 && st.step[0] == "Change" {
 			s, i := string(st.step[1].(tlaModel)), string(st.step[2].(tlaModel))
 			for _, a := range states[k-1].agreements {
@@ -270,6 +283,8 @@ var xcheckSceneNames = []string{
 	"同じ中身に 2 つのストーリーが合意している",
 	"変えた後に、全部の範囲が通る",
 	"前に合意したストーリーが、自分で変えて外れる",
+	"取り消して、提案中に戻る",
+	"取り消した後も、ほかのストーリーの合意で合意済のまま",
 }
 
 // ---- vanda の側 ----
@@ -354,29 +369,48 @@ func (r *xcheckRepo) apply(k int, next xcheckState) {
 			writeFile(r.t, r.root, "e2e/item-2.txtar", fileContent(ver))
 		}
 	case "Agree":
-		var rec string
-		if i == "i1" {
-			rec = agreementTOML("claim", "item-1", claimFingerprint(ver), "", story, "テスト担当", "tester@example.com")
-		} else {
-			fp := sha256Hex([]byte(fileContent(ver)))
-			rec = agreementTOML("file", fp, fp, "e2e/item-2.txtar", story, "テスト担当", "tester@example.com")
-		}
-		path := filepath.Join(r.root, ".vanda", "agreements", "story-"+strings.TrimPrefix(story, "#")+".toml")
+		path := r.agreementsPath(story)
 		f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 		if err != nil {
 			r.t.Fatal(err)
 		}
-		_, err = f.WriteString(rec)
+		_, err = f.WriteString(xcheckRecord(i, ver, story))
 		if cerr := f.Close(); err == nil {
 			err = cerr
 		}
 		if err != nil {
 			r.t.Fatal(err)
 		}
+	case "Revoke":
+		path := r.agreementsPath(story)
+		src, err := os.ReadFile(path)
+		if err != nil {
+			r.t.Fatalf("%d 歩目: %s の合意の記録のファイルを読めない: %v", k, story, err)
+		}
+		rec := xcheckRecord(i, ver, story)
+		if strings.Count(string(src), rec) != 1 {
+			r.t.Fatalf("%d 歩目: モデルでは取り消す記録がちょうど 1 つあるのに、%s に %d 個ある", k, path, strings.Count(string(src), rec))
+		}
+		if err := os.WriteFile(path, []byte(strings.Replace(string(src), rec, "", 1)), 0o644); err != nil {
+			r.t.Fatal(err)
+		}
 	default:
 		r.t.Fatalf("知らない操作 %q", op)
 	}
 	r.commit(fmt.Sprintf("%s %s %s", story, op, i))
+}
+
+func (r *xcheckRepo) agreementsPath(story string) string {
+	return filepath.Join(r.root, ".vanda", "agreements", "story-"+strings.TrimPrefix(story, "#")+".toml")
+}
+
+// xcheckRecord は、項目 i の版 ver への、ストーリー story の合意の記録を返す。
+func xcheckRecord(i string, ver int, story string) string {
+	if i == "i1" {
+		return agreementTOML("claim", "item-1", claimFingerprint(ver), "", story, "テスト担当", "tester@example.com")
+	}
+	fp := sha256Hex([]byte(fileContent(ver)))
+	return agreementTOML("file", fp, fp, "e2e/item-2.txtar", story, "テスト担当", "tester@example.com")
 }
 
 // check は vanda check を動かし、通ったかと、誤りに出た項目（i1・i2）を返す。
