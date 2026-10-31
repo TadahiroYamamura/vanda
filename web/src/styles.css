@@ -80,7 +80,7 @@ main { padding: 20px 28px 40px; }
 .controls label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
 .controls .comparing { margin: 0; font-size: 13px; font-weight: 500; color: var(--fg2); }
 .columns { display: grid; grid-template-columns: minmax(240px, 340px) minmax(0, 1fr); grid-template-areas: "story story" "list detail"; gap: 16px; align-items: start; }
-@media (max-width: 900px) { .columns { grid-template-columns: 1fr; grid-template-areas: "story" "list" "detail"; } }
+
 .story-panel { grid-area: story; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; min-width: 0; }
 .story-panel h2 { font-family: var(--mono); font-size: 13px; font-weight: 400; color: var(--muted); margin: 0 0 4px; }
 .story-title { margin: 0 0 6px; font-size: 22px; font-weight: 700; line-height: 1.4; }
@@ -164,3 +164,11 @@ ins.diff-part { background: var(--ins-part); text-decoration: underline 2px var(
 .found { margin: 8px 0; }
 .found p { margin: 0 0 6px; }
 .found strong { font-family: var(--mono); font-weight: 500; }
+
+/* 狭い画面では、一覧と 1 件の中身を縦に並べ、ページ全体をスクロールして読む。
+   一覧を画面に貼り付けたまま（sticky）にすると、縦に並べたときに 1 件の中身の上に重なるため、ここでは外す */
+@media (max-width: 1000px) {
+  .columns { grid-template-columns: minmax(0, 1fr); grid-template-areas: "story" "list" "detail"; }
+  .list { position: static; max-height: none; overflow: visible; }
+  main { padding: 16px 12px 32px; }
+}
