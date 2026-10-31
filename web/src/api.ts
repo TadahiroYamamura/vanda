@@ -104,7 +104,20 @@ export interface Entry {
   after: Content | null;
   diff: Diff | null;
   detachedAgreement: { by: string[] } | null;
+  revoke?: Revocation | null;
   otherCommits: CommitRef[];
+}
+
+export interface Revocation {
+  possible: boolean;
+  reason: string | null;
+  others: User[];
+}
+
+export interface RevokeResult {
+  commit: string;
+  stillAgreed: boolean;
+  removed: number;
 }
 
 export interface Review {
@@ -207,11 +220,24 @@ const q = (params: Record<string, string | null | undefined>) => {
 export const api = {
   context: () => call<Context>("/api/context"),
   review: (view: string, base: string | null, story: string | null) =>
-    call<Review>(`/api/review?${q({ view, base: view === "branch" ? base : null, story })}`),
+    call<Review>(`/api/review?${q({ view, base, story })}`),
   story: (id: string) => call<Story>(`/api/story?${q({ id })}`),
   claim: (id: string) => call<ClaimDetail>(`/api/claims/${encodeURIComponent(id)}`),
   claimAt: (id: string, commit: string) => call<ClaimAt>(`/api/claims/${encodeURIComponent(id)}/at/${encodeURIComponent(commit)}`),
   file: (path: string) => call<{ path: string; text: string }>(`/api/file?${q({ path })}`),
+  revoke: (e: Entry, story: string, base: string | null) =>
+    call<RevokeResult>("/api/revoke", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: e.kind,
+        id: e.kind === "file" ? null : e.id,
+        path: e.kind === "file" ? e.path : null,
+        fingerprint: e.fingerprint,
+        story,
+        base,
+      }),
+    }),
   agree: (e: Entry, story: string) =>
     call<AgreeResult>("/api/agree", {
       method: "POST",

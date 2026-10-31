@@ -121,6 +121,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
               entry={selected}
               total={review.data.total}
               story={story}
+              base={base}
               ctx={ctx}
               query={reviewQuery(params)}
               onAgreed={() => {
@@ -279,11 +280,30 @@ function EntryRow(props: { e: Entry; selected: boolean; onSelect: (key: string) 
   );
 }
 
-function EntryDetail(props: { entry: Entry; total: number; story: string | null; ctx: Context; query: string; onAgreed: () => void }) {
+function EntryDetail(props: { entry: Entry; total: number; story: string | null; base: string | null; ctx: Context; query: string; onAgreed: () => void }) {
   const { entry: e } = props;
   const [agreeing, setAgreeing] = useState(false);
   const [agreeError, setAgreeError] = useState<unknown>(null);
   const [done, setDone] = useState<string | null>(null);
+
+  const revoke = async () => {
+    if (!props.story) return;
+    setAgreeing(true);
+    setAgreeError(null);
+    try {
+      const r = await api.revoke(e, props.story, props.base);
+      setDone(
+        r.stillAgreed
+          ? `合意を取り消しました（コミット ${shortCommit(r.commit)}）。ほかの合意が残っているため、合意済みのままです。`
+          : `合意を取り消しました（コミット ${shortCommit(r.commit)}）。`,
+      );
+      props.onAgreed();
+    } catch (err) {
+      setAgreeError(err);
+    } finally {
+      setAgreeing(false);
+    }
+  };
 
   const agree = async () => {
     if (!props.story) return;
@@ -352,6 +372,17 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
           </>
         )}
         {e.state === "agreed" && <span className="note">今の中身に合意済みです。</span>}
+        {e.state === "agreed" && e.revoke?.possible && (
+          <>
+            <button type="button" className="revoke" disabled={agreeing} onClick={revoke}>
+              {agreeing ? "取り消しています…" : "合意を取り消す"}
+            </button>
+            {e.revoke.others.length > 0 && (
+              <span className="note">取り消しても、ほかの人（{e.revoke.others.map((u) => u.name).join("・")}）の合意が残るため、合意済みのままです。</span>
+            )}
+          </>
+        )}
+        {e.state === "agreed" && e.revoke && !e.revoke.possible && e.revoke.reason && <span className="note revoke-reason">{e.revoke.reason}</span>}
         {e.state === null && <span className="note">消したものには合意できません。</span>}
         {done && <span className="note">{done}</span>}
         {agreeError != null && <ErrorBox error={agreeError} title="合意できません" />}
