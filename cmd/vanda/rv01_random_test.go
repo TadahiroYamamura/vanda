@@ -72,7 +72,7 @@ func setFlag(t *testing.T, name, value string) {
 func rvRandomOp(rt *rapid.T, r *rvRepo) string {
 	var ops []string
 	// 約束・用語・機能のどれを変えるかを先に選び、その中から項目を選ぶ。項目の全体から選ぶと、数の多い種類に偏り、
-	// ブランチごとの見方で用語や機能の削除がほとんど出ない種が出たため
+	// レビュー単位がブランチのときに用語や機能の削除がほとんど出ない種が出たため
 	var present, absent []string
 	presentKinds := map[string][]string{}
 	for _, kind := range []string{"claim", "term", "feature"} {
@@ -184,7 +184,7 @@ func TestRV01の操作の列をリポジトリに当てると期待する一覧�
 }
 
 // rvCompare は、作った一時的なリポジトリ（r）と期待する一覧を受け取り、vanda の一覧と比べる。
-// 書きかけの変更があるときは、ブランチごとの見方だけで 1 度呼び（stories は nil）、コミットした後に両方の見方で呼ぶ。
+// 書きかけの変更があるときは、レビュー単位がブランチのときだけで 1 度呼び（stories は nil）、コミットした後に両方のレビュー単位で呼ぶ。
 type rvCompare func(rt *rapid.T, bin string, r *rvRepo, branch map[rvEntry]bool, stories map[string]map[rvEntry]bool)
 
 // runRV01Random は、無作為な操作の列を当てたリポジトリを作り、期待する一覧を数える。compare があれば、vanda の一覧と比べる。
@@ -219,18 +219,18 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 			return
 		}
 		// 下限は、100 回の実行を 112 通りの種で数えた、組ごとの回数の最小のおよそ 3 分の 1。種によってたまたま下回らないようにする。
-		// 数えた最小（平均）: ブランチごとの種類と変化の組でいちばん少ないのは機能の削除の 6（16.9）、ブランチごとの名前の変更は 19（30.6）、
-		// ストーリー全体の名前の変更は 17（29.0）、ストーリー全体のほかの組は 79（103.5。変更）以上。
+		// 数えた最小（平均）: レビュー単位がブランチのときの種類と変化の組でいちばん少ないのは機能の削除の 6（16.9）、ブランチのときの名前の変更は 19（30.6）、
+		// ストーリーのときの名前の変更は 17（29.0）、ストーリーのときのほかの組は 79（103.5。変更）以上。
 		// 生成が偏って、ある変化を確かめないまま通るのを防ぐ
 		for _, kind := range []string{"claim", "term", "feature", "file"} {
 			for _, change := range []string{"added", "modified", "deleted"} {
-				atLeast(t, seen, "ブランチごと/"+kind+"/"+change, 2)
+				atLeast(t, seen, "ブランチ/"+kind+"/"+change, 2)
 			}
 		}
-		atLeast(t, seen, "ブランチごと/file/renamed", 6)
-		atLeast(t, seen, "ストーリー全体/renamed", 5)
+		atLeast(t, seen, "ブランチ/file/renamed", 6)
+		atLeast(t, seen, "ストーリー/renamed", 5)
 		for _, change := range []string{"added", "modified", "deleted", "ほかのストーリー"} {
-			atLeast(t, seen, "ストーリー全体/"+change, 25)
+			atLeast(t, seen, "ストーリー/"+change, 25)
 		}
 	}()
 
@@ -276,7 +276,7 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 		}
 		branch := dirtyBranch
 		for e := range branch {
-			seen["ブランチごと/"+e.Kind+"/"+e.Change]++
+			seen["ブランチ/"+e.Kind+"/"+e.Change]++
 		}
 		shape(rt, bin, root)
 
@@ -292,14 +292,14 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 			}
 			stories[s] = r.storyView(s)
 			for e := range stories[s] {
-				seen["ストーリー全体/"+e.Change]++
+				seen["ストーリー/"+e.Change]++
 				if e.Others != "" {
-					seen["ストーリー全体/ほかのストーリー"]++ // そのストーリーの ID のないコミットが途中で変えたもの
+					seen["ストーリー/ほかのストーリー"]++ // そのストーリーの ID のないコミットが途中で変えたもの
 				}
 			}
 		}
 		if again := r.branchView("main"); rvDiffEntries(branch, again) != "" {
-			rt.Fatalf("コミットしただけで、ブランチごとの見方の期待値が変わった\n%s", rvDiffEntries(branch, again))
+			rt.Fatalf("コミットしただけで、レビュー単位がブランチのときの期待値が変わった\n%s", rvDiffEntries(branch, again))
 		}
 		if compare != nil {
 			compare(rt, bin, r, branch, stories)

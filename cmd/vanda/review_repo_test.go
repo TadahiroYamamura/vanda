@@ -228,7 +228,7 @@ var reviewStoryItemJSON = map[string]string{
 		`"id":"task-title-required","layers":["model"],"statement":"タスクの題は空にできない","subjects":["add-task"]}`,
 }
 
-// ストーリー #24 のブランチごとの見方（ベースブランチ main）で、一覧に出るもの。
+// ストーリー #24 の、レビュー単位がブランチ（ベースブランチ main）のときに、一覧に出るもの。
 var reviewStoryEntries = []rvEntry{
 	{Kind: "claim", Key: "task-id-unique", Change: "changed"},
 	{Kind: "claim", Key: "task-title-required", Change: "added"},

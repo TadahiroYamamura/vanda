@@ -245,7 +245,7 @@ test("合意した約束を変えると一覧に差分ありとして戻る", as
   await expect(page.getByText(/提案中/).first()).toBeVisible();
 });
 
-test("ベースブランチと見方を切り替えると一覧が変わる", async ({ page }) => {
+test("ベースブランチとレビュー単位を切り替えると一覧が変わる", async ({ page }) => {
   // release は、#24 の最初のコミットの後から分かれたことにする（シナリオの変更だけが残る）
   repo.git("branch", "release", "story-24~1");
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
@@ -258,22 +258,20 @@ test("ベースブランチと見方を切り替えると一覧が変わる", as
   await expect(baseSelect).toHaveValue("release");
   await expect(page.getByText(/release/).filter({ visible: true }).first()).toBeVisible();
 
-  // ストーリー全体の見方の選択肢は、文の全体でなく、ストーリーの ID と「変更」で探す（文言の細部に頼らない）
-  const view = page.getByRole("combobox", { name: "見方" });
-  const storyOption = view.locator("option").filter({ hasText: "#24" }).filter({ hasText: "変更" }).first();
-  await view.selectOption((await storyOption.getAttribute("value")) ?? "story");
+  const view = page.getByRole("combobox", { name: "レビュー単位" });
+  await view.selectOption({ label: "ストーリー" });
   await expect(page).toHaveURL(/view=story/);
   for (const item of items) await expect(page.getByText(item).first()).toBeVisible();
 });
 
-// 約束の詳細とファイルの画面から「ストーリーのレビューへ戻る」で戻ると、行く前のレビューの画面（見方・ベースブランチ・
+// 約束の詳細とファイルの画面から「ストーリーのレビューへ戻る」で戻ると、行く前のレビューの画面（レビュー単位・ベースブランチ・
 // ストーリー・選んでいた 1 件）に戻る。ブラウザーの「戻る」には頼らない（PO の報告では、こちらだけが選ぶ前に戻っていた）。
-// ストーリー全体の見方ではベースブランチを選ぶ所が出ないので、見方とベースブランチの組は 3 つ。それと戻る経路 3 つの
+// レビュー単位がストーリーのときはベースブランチを選ぶ所が出ないので、レビュー単位とベースブランチの組は 3 つ。それと戻る経路 3 つの
 // 組み合わせを全部回す。
 const states = [
-  { name: "ブランチごとの見方でベースブランチを既定のmainにして", story: false, base: "main" },
-  { name: "ブランチごとの見方でベースブランチをreleaseに変えて", story: false, base: "release" },
-  { name: "ストーリー全体の見方に切り替えて", story: true, base: "main" },
+  { name: "レビュー単位がブランチのときにベースブランチを既定のmainにして", story: false, base: "main" },
+  { name: "レビュー単位がブランチのときにベースブランチをreleaseに変えて", story: false, base: "release" },
+  { name: "レビュー単位をストーリーに切り替えて", story: true, base: "main" },
 ];
 const routes = [
   { name: "約束の詳細から直接", via: "claim" },
@@ -298,11 +296,8 @@ for (const v of states) {
         await storySelect.selectOption(storyValue);
         const baseSelect = page.getByRole("combobox", { name: "ベースブランチ" });
         if (v.base !== "main") await baseSelect.selectOption(v.base);
-        const view = page.getByRole("combobox", { name: "見方" });
-        if (v.story) {
-          const storyOption = view.locator("option").filter({ hasText: "#24" }).filter({ hasText: "変更" }).first();
-          await view.selectOption((await storyOption.getAttribute("value")) ?? "story");
-        }
+        const view = page.getByRole("combobox", { name: "レビュー単位" });
+        if (v.story) await view.selectOption({ label: "ストーリー" });
         if (!v.story && v.base === "release") await expect(page.getByText("task-title-required")).toHaveCount(0);
         else await expect(page.getByText("task-title-required").first()).toBeVisible();
         await select(page, "task-id-unique");
@@ -328,7 +323,7 @@ for (const v of states) {
         }
         await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
 
-        await expect(page.getByRole("combobox", { name: "見方" })).toHaveValue(before.view);
+        await expect(page.getByRole("combobox", { name: "レビュー単位" })).toHaveValue(before.view);
         if (before.base !== null) await expect(page.getByRole("combobox", { name: "ベースブランチ" })).toHaveValue(before.base);
         await expect(page.getByRole("combobox", { name: "ストーリー" })).toHaveValue(before.story);
         await expect(page.getByRole("link", { name: "約束の詳細を開く" }), "選んでいた task-id-unique の 1 件の詳細に戻っていない").toHaveAttribute("href", /task-id-unique/);

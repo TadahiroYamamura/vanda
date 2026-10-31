@@ -13,8 +13,8 @@ import (
 type rvExample struct {
 	name   string
 	build  func(r *rvRepo)
-	branch map[string][]rvEntry // ベースブランチ → ブランチごとの見方の一覧
-	story  map[string][]rvEntry // ストーリーの ID → ストーリー全体の見方の一覧
+	branch map[string][]rvEntry // ベースブランチ → レビュー単位がブランチのときの一覧
+	story  map[string][]rvEntry // ストーリーの ID → レビュー単位がストーリーのときの一覧
 }
 
 func pickFirst(int) int { return 0 }
@@ -110,7 +110,7 @@ var rvExamples = []rvExample{
 		story:  map[string][]rvEntry{"#24": nil},
 	},
 	{
-		name: "ブランチごとの見方はベースブランチと分かれた点との差分でベースブランチを変えると一覧も変わる",
+		name: "レビュー単位がブランチのときはベースブランチと分かれた点との差分でベースブランチを変えると一覧も変わる",
 		build: func(r *rvRepo) {
 			r.addItem("claim", "c-a", 0)
 			r.addItem("claim", "c-b", 0)
@@ -138,7 +138,7 @@ var rvExamples = []rvExample{
 		},
 	},
 	{
-		name: "ストーリー全体の見方は途中で足して後で消したものを出さずそのストーリーのIDのないコミットが途中で変えたものを示す",
+		name: "レビュー単位がストーリーのときは途中で足して後で消したものを出さずそのストーリーのIDのないコミットが途中で変えたものを示す",
 		build: func(r *rvRepo) {
 			r.addItem("claim", "c-a", 0)
 			r.addItem("claim", "c-b", 0)
@@ -210,7 +210,7 @@ var rvExamples = []rvExample{
 		}},
 	},
 	{
-		name: "ストーリー全体の見方はIDのないコミットが名前を変えたファイルをストーリーがさらに名前を変えたものを名前の変更として示す",
+		name: "レビュー単位がストーリーのときはIDのないコミットが名前を変えたファイルをストーリーがさらに名前を変えたものを名前の変更として示す",
 		build: func(r *rvRepo) {
 			g := r.addFileAt(rvGuardrail, "db/a.sql")
 			r.commit("#1")
@@ -270,12 +270,12 @@ func TestRV01の期待値の数え方は手で作った例と合う(t *testing.T
 			ex.build(r)
 			for base, want := range ex.branch {
 				if d := rvDiffEntries(rvSet(want), r.branchView(base)); d != "" {
-					t.Errorf("ベースブランチ %s のブランチごとの見方が、手で作った例と合わない\n%s", base, d)
+					t.Errorf("ベースブランチ %s の、レビュー単位がブランチのときの一覧が、手で作った例と合わない\n%s", base, d)
 				}
 			}
 			for story, want := range ex.story {
 				if d := rvDiffEntries(rvSet(want), r.storyView(story)); d != "" {
-					t.Errorf("ストーリー %s のストーリー全体の見方が、手で作った例と合わない\n%s", story, d)
+					t.Errorf("ストーリー %s の、レビュー単位がストーリーのときの一覧が、手で作った例と合わない\n%s", story, d)
 				}
 			}
 		})
