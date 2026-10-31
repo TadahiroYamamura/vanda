@@ -19,6 +19,12 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
       else next.add(key);
       return next;
     });
+  // 行のどこを押しても開く・たたむ。文字をドラッグで選んだ後に離したとき（コピーしようとしたとき）は、開け閉めしない
+  const rowToggle = (key: string) => () => {
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed && sel.toString() !== "") return;
+    toggle(key);
+  };
   return (
     <>
       <H>由来</H>
@@ -39,7 +45,7 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
           <tbody>
             {c.origin.map((o) => (
               <Fragment key={o.commit}>
-              <tr>
+              <tr className="at-toggle-row" onClick={rowToggle(`origin:${o.commit}`)}>
                 <td>{shortCommit(o.commit)}</td>
                 <td>{o.date}</td>
                 <td>{o.stories.join("・") || "（なし）"}</td>
@@ -73,7 +79,7 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
           <tbody>
             {c.agreements.map((a, i) => (
               <Fragment key={i}>
-              <tr>
+              <tr className={a.commit ? "at-toggle-row" : undefined} onClick={a.commit ? rowToggle(`agreement:${i}`) : undefined}>
                 <td>
                   {a.user.name} &lt;{a.user.email}&gt;
                 </td>
@@ -103,7 +109,18 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
 function ExpandButton(props: { open: boolean; onClick: () => void }) {
   const label = props.open ? "その時点の中身をたたむ" : "その時点の中身を開く";
   return (
-    <button type="button" className="at-button" aria-label={label} title={label} aria-expanded={props.open} onClick={props.onClick}>
+    <button
+      type="button"
+      className="at-button"
+      aria-label={label}
+      title={label}
+      aria-expanded={props.open}
+      onClick={(e) => {
+        // 行にも同じ動きがあるので、行へ伝えず、二重に切り替わらないようにする
+        e.stopPropagation();
+        props.onClick();
+      }}
+    >
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
         <path d={props.open ? "M4 6l4 4 4-4" : "M6 4l4 4-4 4"} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
