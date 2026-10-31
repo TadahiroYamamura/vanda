@@ -17,6 +17,7 @@ NextT ==
     /\ \E s \in Stories, i \in Items :
           \/ Change(s, i) /\ step' = <<"Change", s, i>>
           \/ Agree(s, i) /\ step' = <<"Agree", s, i>>
+          \/ Revoke(s, i) /\ step' = <<"Revoke", s, i>>
     /\ obs' = Obs'
 
 SpecT == InitT /\ [][NextT]_<<vars, step, obs>>
