@@ -466,18 +466,19 @@ for (const pg of pages) {
     await pg.open(page);
     await expect(page.getByText(v4.statement).first()).toBeVisible();
 
-    const v3Marks = [v3.statement, v3.rationale!, v3.condition!, v3.plan!, "データベース"];
-    const choices: [string, string[]][] = [
+    // その時点のレイヤーは、名前でも ID でもよい（今の中身と変更前・変更後の表とで、出し方が分かれている）
+    const v3Marks: (string | RegExp)[] = [v3.statement, v3.rationale!, v3.condition!, v3.plan!, /データベース|\bdb\b/];
+    const choices: [string, (string | RegExp)[]][] = [
       ["#24 理由と条件を足す", v3Marks],
       ["#24 約束を変え、題の約束を足す", [v2Statement]],
     ];
     if (!pg.showsV1) choices.push(["#1 はじめの約束を置く", [v1Statement]]);
     for (const [, marks] of choices) {
-      for (const m of marks) await expect(page.getByText(m, { exact: false }), `選ぶ前から ${m} が出ている`).toHaveCount(0);
+      for (const m of marks) await expect(page.getByText(m), `選ぶ前から ${m} が出ている`).toHaveCount(0);
     }
     for (const [subject, marks] of choices) {
       await choose(rowOf(page, subject));
-      for (const m of marks) await expect(page.getByText(m, { exact: false }).first(), `${subject} を選んでも ${m} が出ない`).toBeVisible();
+      for (const m of marks) await expect(page.getByText(m).first(), `${subject} を選んでも ${m} が出ない`).toBeVisible();
     }
   });
 
