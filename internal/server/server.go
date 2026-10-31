@@ -4,6 +4,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/fs"
 	"log"
 	"net"
@@ -19,7 +20,8 @@ import (
 
 type Server struct {
 	Root string
-	Cfg  *config.Config
+	// Cfg は、起動したときに読んだ設定。要求ごとには、設定を読み直して使う（config を参照）
+	Cfg *config.Config
 	// UI は、画面のファイル。index.html がなければ、画面を作っていないと知らせる
 	UI fs.FS
 	// mu は、合意（ファイルを書いてコミットする）のあいだに、一覧が書きかけの中身を読まないようにする
@@ -44,6 +46,18 @@ func (s *Server) Handler() http.Handler {
 	return localOnly(mux)
 }
 
+// config は、要求ごとに設定（.vanda/config.toml）を読み直す。起動した後にブランチを切り替えたり、設定を書き換えたりしても、
+// 画面を開き直すだけで今の設定が効くようにするため（起動したときの設定を使い続けると、たとえばレイヤーの名前が古いままになる）。
+// 読めなければ、誤りを返して false を返す
+func (s *Server) config(w http.ResponseWriter) (*config.Config, bool) {
+	cfg, errs := config.Load(s.Root)
+	if errs != nil {
+		writeError(w, http.StatusInternalServerError, fmt.Sprintf("設定（%s）を読めません（%d 件。最初の 1 件: %s）。", config.File, len(errs), errs[0].Error()), "vanda doctor で誤りを確かめて、直してください。")
+		return nil, false
+	}
+	return cfg, true
+}
+
 func (s *Server) read(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		s.mu.RLock()
@@ -53,7 +67,11 @@ func (s *Server) read(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func (s *Server) context(w http.ResponseWriter, _ *http.Request) {
-	c, err := review.LoadContext(s.Root, s.Cfg)
+	cfg, ok := s.config(w)
+	if !ok {
+		return
+	}
+	c, err := review.LoadContext(s.Root, cfg)
 	if err != nil {
 		writeReviewError(w, err)
 		return
@@ -62,8 +80,12 @@ func (s *Server) context(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) review(w http.ResponseWriter, r *http.Request) {
+	cfg, ok := s.config(w)
+	if !ok {
+		return
+	}
 	q := r.URL.Query()
-	res, err := review.Build(review.Options{Root: s.Root, Cfg: s.Cfg, View: q.Get("view"), Base: q.Get("base"), Story: q.Get("story")})
+	res, err := review.Build(review.Options{Root: s.Root, Cfg: cfg, View: q.Get("view"), Base: q.Get("base"), Story: q.Get("story")})
 	if err != nil {
 		writeReviewError(w, err)
 		return
@@ -72,7 +94,11 @@ func (s *Server) review(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
-	d, err := review.Claim(review.Options{Root: s.Root, Cfg: s.Cfg}, r.PathValue("id"))
+	cfg, ok := s.config(w)
+	if !ok {
+		return
+	}
+	d, err := review.Claim(review.Options{Root: s.Root, Cfg: cfg}, r.PathValue("id"))
 	if err != nil {
 		writeReviewError(w, err)
 		return
@@ -81,7 +107,11 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) claimAt(w http.ResponseWriter, r *http.Request) {
-	d, err := review.ClaimAtCommit(review.Options{Root: s.Root, Cfg: s.Cfg}, r.PathValue("id"), r.PathValue("commit"))
+	cfg, ok := s.config(w)
+	if !ok {
+		return
+	}
+	d, err := review.ClaimAtCommit(review.Options{Root: s.Root, Cfg: cfg}, r.PathValue("id"), r.PathValue("commit"))
 	if err != nil {
 		writeReviewError(w, err)
 		return
@@ -90,8 +120,12 @@ func (s *Server) claimAt(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) file(w http.ResponseWriter, r *http.Request) {
+	cfg, ok := s.config(w)
+	if !ok {
+		return
+	}
 	p := r.URL.Query().Get("path")
-	text, err := review.File(review.Options{Root: s.Root, Cfg: s.Cfg}, p)
+	text, err := review.File(review.Options{Root: s.Root, Cfg: cfg}, p)
 	if err != nil {
 		writeReviewError(w, err)
 		return
@@ -101,7 +135,11 @@ func (s *Server) file(w http.ResponseWriter, r *http.Request) {
 
 // story は、置き場所を読むだけでリポジトリを変えないので、合意と並べて動かしてよい（ロックを取らない）
 func (s *Server) story(w http.ResponseWriter, r *http.Request) {
-	st, err := story.Read(s.Root, s.Cfg, r.URL.Query().Get("id"))
+	cfg, ok := s.config(w)
+	if !ok {
+		return
+	}
+	st, err := story.Read(s.Root, cfg, r.URL.Query().Get("id"))
 	if err != nil {
 		writeError(w, err.Status, err.Message, err.Fix)
 		return
@@ -195,7 +233,11 @@ func (s *Server) agree(w http.ResponseWriter, r *http.Request) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	res, err := review.Agree(review.Options{Root: s.Root, Cfg: s.Cfg}, req, time.Now())
+	cfg, ok := s.config(w)
+	if !ok {
+		return
+	}
+	res, err := review.Agree(review.Options{Root: s.Root, Cfg: cfg}, req, time.Now())
 	if err != nil {
 		writeReviewError(w, err)
 		return
@@ -213,7 +255,11 @@ func (s *Server) revoke(w http.ResponseWriter, r *http.Request) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	res, err := review.Revoke(review.Options{Root: s.Root, Cfg: s.Cfg}, req)
+	cfg, ok := s.config(w)
+	if !ok {
+		return
+	}
+	res, err := review.Revoke(review.Options{Root: s.Root, Cfg: cfg}, req)
 	if err != nil {
 		writeReviewError(w, err)
 		return
