@@ -6,9 +6,12 @@ import (
 	"strings"
 
 	"github.com/TadahiroYamamura/vanda/internal/agreements"
+	"github.com/TadahiroYamamura/vanda/internal/config"
+	"github.com/TadahiroYamamura/vanda/internal/diag"
 	"github.com/TadahiroYamamura/vanda/internal/glob"
 	"github.com/TadahiroYamamura/vanda/internal/repo"
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
+	"github.com/TadahiroYamamura/vanda/internal/tomlread"
 )
 
 // ClaimAt は、あるコミットの時点の約束の中身（CL-08）。
@@ -19,6 +22,8 @@ type ClaimAt struct {
 	Subject string       `json:"subject"`
 	Stories []string     `json:"stories"`
 	Content ClaimContent `json:"content"`
+	// Layers は、content の layers の順に、その時点の設定のレイヤーの名前を付けたもの。その時点の設定にないレイヤーは、名前を空にする
+	Layers []LayerRef `json:"layers"`
 }
 
 // ClaimAtCommit は、コミット rev の時点の、約束 id の中身を返す。
@@ -48,7 +53,13 @@ func ClaimAtCommit(o Options, id, rev string) (*ClaimAt, *Error) {
 	}
 	for _, e := range snapshot.Entries(snap.List) {
 		if e.Kind == "claim" && e.ID == id {
-			return &ClaimAt{ID: id, Commit: full, Date: date, Subject: subject, Stories: strs(storyIDs(o.Cfg, msg)), Content: Content(e).(ClaimContent)}, nil
+			c := Content(e).(ClaimContent)
+			names := layerNamesAt(o.Root, full)
+			layers := make([]LayerRef, 0, len(c.Layers))
+			for _, l := range c.Layers {
+				layers = append(layers, LayerRef{ID: l, Name: names[l]})
+			}
+			return &ClaimAt{ID: id, Commit: full, Date: date, Subject: subject, Stories: strs(storyIDs(o.Cfg, msg)), Content: c, Layers: layers}, nil
 		}
 	}
 	return nil, &Error{Status: http.StatusNotFound, Message: fmt.Sprintf("コミット %s の時点には、約束 %s はありません。", short(full), id), Fix: "由来か合意の履歴から、ほかの時点を選んでください。"}
@@ -132,4 +143,28 @@ func isHash(s string) bool {
 		}
 	}
 	return true
+}
+
+// layerNamesAt は、コミット rev の時点の設定（.vanda/config.toml）のレイヤーの ID から名前への表を返す。
+// その時点の設定を読めなければ空の表を返し、画面はレイヤーを ID のまま出す（名前は見せ方の手がかりで、判定に使わないため）。
+func layerNamesAt(root, rev string) map[string]string {
+	out := map[string]string{}
+	src, err := repo.Git(root, "show", rev+":"+config.File)
+	if err != nil {
+		return out
+	}
+	var errs []diag.Error
+	doc := tomlread.Parse(config.File, []byte(src), &errs)
+	if doc == nil {
+		return out
+	}
+	layers, _ := doc.Top().Tables("layer", false)
+	for _, t := range layers {
+		id, _ := t.Str("id", false)
+		name, _ := t.Str("name", false)
+		if id != "" && name != "" {
+			out[id] = name
+		}
+	}
+	return out
 }

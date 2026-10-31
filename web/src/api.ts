@@ -174,6 +174,7 @@ export interface ClaimAt {
   subject: string;
   stories: string[];
   content: ClaimContent;
+  layers?: LayerRef[];
 }
 
 export interface AgreeResult {

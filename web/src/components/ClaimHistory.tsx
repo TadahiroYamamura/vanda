@@ -115,7 +115,7 @@ function ClaimAtView(props: { id: string; commit: string; onClose: () => void })
           <dt>条件</dt>
           <dd>{d.data.content.condition ?? "（なし）"}</dd>
           <dt>レイヤー</dt>
-          <dd>{d.data.content.layers.join("・")}</dd>
+          <dd>{(d.data.layers ?? d.data.content.layers.map((id) => ({ id, name: "" }))).map((l) => l.name || l.id).join("・")}</dd>
           <dt>エビデンスの予定</dt>
           <dd>
             <ul>
