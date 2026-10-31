@@ -876,3 +876,32 @@ test("レビュー単位がブランチでベースブランチを既定から�
   await agreeTaskIdUnique(page);
   expect(repo.git("log", "-1", "--format=%s")).toContain("#30 で");
 });
+
+// RV-08: エビデンスの予定と実際の表の「揃っているか」は、アイコンの名前（aria-label）で示す。揃っている・ない・
+// アノテーションでは確かめない、の 3 つを全部回す
+test("エビデンスの予定と実際の表の揃っているかは揃っているとないとアノテーションでは確かめないをアイコンの名前で示す", async ({ page }) => {
+  // シナリオテストはアノテーションがあり揃っている。モデル検査はアノテーションがなくない。人のレビューはアノテーションで確かめない
+  repo.write("e2e/add-task.txtar", "# シナリオ\n# @vanda:evidence task-id-unique\n! exec vanda-task add a\n-- a.txt --\na\n");
+  const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
+  repo.write(
+    ".vanda/promises.toml",
+    text.replace(
+      '[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n',
+      '[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "plan"\ntype = "model-check"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "release"\ntype = "human-review"\nlayers = ["model"]\n',
+    ),
+  );
+  commit(repo, "#24 エビデンスの予定を足す");
+  await openReviewDetail(page);
+  const table = page.getByRole("table").filter({ hasText: "予定の中身" });
+  await expect(table).toBeVisible();
+  const rows = table.getByRole("row");
+  for (const [type, name] of [
+    ["シナリオテスト", "揃っています"],
+    ["モデル検査", "ありません"],
+    ["人のレビュー", "アノテーションでは確かめません"],
+  ]) {
+    const row = rows.filter({ hasText: type }).first();
+    await expect(row.getByRole("img", { name }), `${type} の行に「${name}」のアイコンがない`).toBeVisible();
+    await expect(row.getByRole("img", { name }), `${type} の行のアイコンの title が名前と違う`).toHaveAttribute("title", name);
+  }
+});
