@@ -9,8 +9,16 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
   const H = props.level;
   // 選んだ時点（由来のコミットか、合意の記録を書いたコミット）。押した行のすぐ下に、表の行を開く形で中身を出す（CL-08）。
   // 表の下にまとめて出すと、押した行から離れて画面の外に出ることがあり、押しても何も起きないように見えたため
-  const [at, setAt] = useState<{ commit: string; what: string } | null>(null);
-  const pick = (commit: string, what: string) => setAt(at?.commit === commit && at.what === what ? null : { commit, what });
+  // 開いている行の鍵（"origin:<コミット>" か "agreement:<番号>"）。見比べられるよう、いくつでも同時に開ける
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const isOpen = (key: string) => open.has(key);
+  const toggle = (key: string) =>
+    setOpen((cur) => {
+      const next = new Set(cur);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   return (
     <>
       <H>由来</H>
@@ -38,12 +46,12 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
                 <td>{o.change === "added" ? "作成" : "変更"}</td>
                 <td>{o.subject}</td>
                 <td>
-                  <button type="button" className="at-button" aria-pressed={at?.commit === o.commit && at.what === "origin"} onClick={() => pick(o.commit, "origin")}>
+                  <button type="button" className="at-button" aria-pressed={isOpen(`origin:${o.commit}`)} onClick={() => toggle(`origin:${o.commit}`)}>
                     見る
                   </button>
                 </td>
               </tr>
-              {at?.commit === o.commit && at.what === "origin" && <ClaimAtRow cols={6} claim={c} commit={o.commit} onClose={() => setAt(null)} />}
+              {isOpen(`origin:${o.commit}`) && <ClaimAtRow cols={6} claim={c} commit={o.commit} onClose={() => toggle(`origin:${o.commit}`)} />}
               </Fragment>
             ))}
           </tbody>
@@ -76,7 +84,7 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
                 <td>{a.current ? "合います" : "合いません（前の中身への合意です）"}</td>
                 <td>
                   {a.commit ? (
-                    <button type="button" className="at-button" aria-pressed={at?.commit === a.commit && at.what === `agreement-${i}`} onClick={() => pick(a.commit as string, `agreement-${i}`)}>
+                    <button type="button" className="at-button" aria-pressed={isOpen(`agreement:${i}`)} onClick={() => toggle(`agreement:${i}`)}>
                       見る
                     </button>
                   ) : (
@@ -84,7 +92,7 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
                   )}
                 </td>
               </tr>
-              {a.commit && at?.commit === a.commit && at.what === `agreement-${i}` && <ClaimAtRow cols={5} claim={c} commit={a.commit} onClose={() => setAt(null)} />}
+              {a.commit && isOpen(`agreement:${i}`) && <ClaimAtRow cols={5} claim={c} commit={a.commit} onClose={() => toggle(`agreement:${i}`)} />}
               </Fragment>
             ))}
           </tbody>
