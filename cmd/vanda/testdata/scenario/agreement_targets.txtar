@@ -19,19 +19,19 @@ exec vanda check .vanda/checks/targets.toml
 # 約束を消す
 cp cases/without-claim.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/targets.toml
-stdout 'agreements\.toml.*task-id-unique'
+stderr 'agreements\.toml.*task-id-unique'
 ! stderr '(?m)^panic: '
 
 # 機能を消す
 cp cases/without-feature.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/targets.toml
-stdout 'agreements\.toml.*task-add'
+stderr 'agreements\.toml.*task-add'
 ! stderr '(?m)^panic: '
 
 # 用語を消す
 cp cases/without-term.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/targets.toml
-stdout 'agreements\.toml.*\bnote\b'
+stderr 'agreements\.toml.*\bnote\b'
 ! stderr '(?m)^panic: '
 
 # 用語の合意が、約束の ID を指す
@@ -39,7 +39,7 @@ cp cases/all.toml .vanda/promises.toml
 cp cases/empty.toml .vanda/agreements.toml
 agree .vanda/agreements.toml '#1' term task-id-unique fp/any.json
 ! exec vanda check .vanda/checks/targets.toml
-stdout 'agreements\.toml.*task-id-unique'
+stderr 'agreements\.toml.*task-id-unique'
 ! stderr '(?m)^panic: '
 
 -- .vanda/config.toml --

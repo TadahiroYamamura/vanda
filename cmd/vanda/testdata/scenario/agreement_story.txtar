@@ -42,8 +42,8 @@ exec vanda check .vanda/checks/all.toml
 
 # ストーリー 2 の範囲では、ストーリー 2 の合意が今の中身に合わなくなったので止まる
 ! exec vanda check .vanda/checks/story.toml --base main
-stdout 'task-id-unique'
-! stdout 'task-title-required'
+stderr 'task-id-unique'
+! stderr 'task-title-required'
 ! stderr '(?m)^panic: '
 
 # ストーリー 2 が今の中身に合意し直すと通る
@@ -58,7 +58,7 @@ cp cases/b-v2.toml .vanda/promises/b.toml
 exec git add -A
 exec git commit -q -m '#2 題の約束の文を変える'
 ! exec vanda check .vanda/checks/story.toml --base main
-stdout 'task-title-required'
+stderr 'task-title-required'
 ! stderr '(?m)^panic: '
 agree .vanda/agreements/story-2.toml '#2' claim task-title-required fp/claim-b2.json
 exec git add -A

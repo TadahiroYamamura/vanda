@@ -15,42 +15,42 @@ exec vanda check .vanda/checks/links.toml
 # go では @vanda:term を書けないので、その行で止まる
 cp cases/go-term.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stdout 'task\.go:6: '
+stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
 # go では @vanda:feature を書けないので、その行で止まる
 cp cases/go-feature.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stdout 'task\.go:6: '
+stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
 # go では @vanda:claim を書けないので、その行で止まる
 cp cases/go-claim.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stdout 'task\.go:6: '
+stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
 # go では @vanda:internal を書けないので、その行で止まる
 cp cases/go-internal.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stdout 'task\.go:6: '
+stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
 # go の @vanda:evidence を読む（約束リストにない ID を指すと、その行で止まる）
 cp cases/go-evidence.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stdout 'task\.go:6: '
+stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
 # go の @vanda:sensor を読む（約束リストにない ID を指すと、その行で止まる）
 cp cases/go-sensor.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stdout 'task\.go:6: '
+stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
@@ -58,7 +58,7 @@ cp orig/task.go.orig task.go
 cp cases/txtar-term.case scenarios/add.txtar
 unquote scenarios/add.txtar
 ! exec vanda check .vanda/checks/links.toml
-stdout 'scenarios/add\.txtar:1: '
+stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
@@ -67,7 +67,7 @@ unquote scenarios/add.txtar
 cp cases/txtar-feature.case scenarios/add.txtar
 unquote scenarios/add.txtar
 ! exec vanda check .vanda/checks/links.toml
-stdout 'scenarios/add\.txtar:1: '
+stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
@@ -76,7 +76,7 @@ unquote scenarios/add.txtar
 cp cases/txtar-claim.case scenarios/add.txtar
 unquote scenarios/add.txtar
 ! exec vanda check .vanda/checks/links.toml
-stdout 'scenarios/add\.txtar:1: '
+stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
@@ -85,7 +85,7 @@ unquote scenarios/add.txtar
 cp cases/txtar-internal.case scenarios/add.txtar
 unquote scenarios/add.txtar
 ! exec vanda check .vanda/checks/links.toml
-stdout 'scenarios/add\.txtar:1: '
+stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
@@ -94,7 +94,7 @@ unquote scenarios/add.txtar
 cp cases/txtar-evidence.case scenarios/add.txtar
 unquote scenarios/add.txtar
 ! exec vanda check .vanda/checks/links.toml
-stdout 'scenarios/add\.txtar:1: '
+stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
@@ -103,7 +103,7 @@ unquote scenarios/add.txtar
 cp cases/txtar-sensor.case scenarios/add.txtar
 unquote scenarios/add.txtar
 ! exec vanda check .vanda/checks/links.toml
-stdout 'scenarios/add\.txtar:1: '
+stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
@@ -111,84 +111,84 @@ unquote scenarios/add.txtar
 # tla の @vanda:term を読む（約束リストにない ID を指すと、その行で止まる）
 cp cases/tla-term.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stdout 'spec/Task\.tla:13: '
+stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # tla の @vanda:feature を読む（約束リストにない ID を指すと、その行で止まる）
 cp cases/tla-feature.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stdout 'spec/Task\.tla:13: '
+stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # tla の @vanda:claim を読む（約束リストにない ID を指すと、その行で止まる）
 cp cases/tla-claim.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stdout 'spec/Task\.tla:13: '
+stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # tla では @vanda:evidence を書けないので、その行で止まる
 cp cases/tla-evidence.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stdout 'spec/Task\.tla:13: '
+stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # tla では @vanda:sensor を書けないので、その行で止まる
 cp cases/tla-sensor.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stdout 'spec/Task\.tla:13: '
+stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # sql では @vanda:term を書けないので、その行で止まる
 cp cases/sql-term.case db/schema.sql
 ! exec vanda check .vanda/checks/links.toml
-stdout 'db/schema\.sql:1: '
+stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
 cp orig/schema.sql.orig db/schema.sql
 
 # sql では @vanda:feature を書けないので、その行で止まる
 cp cases/sql-feature.case db/schema.sql
 ! exec vanda check .vanda/checks/links.toml
-stdout 'db/schema\.sql:1: '
+stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
 cp orig/schema.sql.orig db/schema.sql
 
 # sql では @vanda:claim を書けないので、その行で止まる
 cp cases/sql-claim.case db/schema.sql
 ! exec vanda check .vanda/checks/links.toml
-stdout 'db/schema\.sql:1: '
+stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
 cp orig/schema.sql.orig db/schema.sql
 
 # sql では @vanda:internal を書けないので、その行で止まる
 cp cases/sql-internal.case db/schema.sql
 ! exec vanda check .vanda/checks/links.toml
-stdout 'db/schema\.sql:1: '
+stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
 cp orig/schema.sql.orig db/schema.sql
 
 # sql の @vanda:evidence を読む（約束リストにない ID を指すと、その行で止まる）
 cp cases/sql-evidence.case db/schema.sql
 ! exec vanda check .vanda/checks/links.toml
-stdout 'db/schema\.sql:1: '
+stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
 cp orig/schema.sql.orig db/schema.sql
 
 # sql では @vanda:sensor を書けないので、その行で止まる
 cp cases/sql-sensor.case db/schema.sql
 ! exec vanda check .vanda/checks/links.toml
-stdout 'db/schema\.sql:1: '
+stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
 cp orig/schema.sql.orig db/schema.sql
 
 # tla の (* *) の中のアノテーションも読む
 cp cases/tla-block.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stdout 'spec/Task\.tla:13: '
+stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 

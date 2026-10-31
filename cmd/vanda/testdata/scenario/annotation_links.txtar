@@ -13,91 +13,91 @@ exec vanda check .vanda/checks/links.toml
 # @vanda:term が機能の ID（task-add）を指すと止まる
 cp cases/term-to-feature.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stdout 'spec/Task\.tla:2: .*task-add'
+stderr 'spec/Task\.tla:2: .*task-add'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # @vanda:term が約束の ID（task-id-unique）を指すと止まる
 cp cases/term-to-claim.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stdout 'spec/Task\.tla:2: .*task-id-unique'
+stderr 'spec/Task\.tla:2: .*task-id-unique'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # @vanda:feature が用語の ID（task）を指すと止まる
 cp cases/feature-to-term.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stdout 'spec/Task\.tla:13: .*task'
+stderr 'spec/Task\.tla:13: .*task'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # @vanda:feature が約束の ID（task-id-unique）を指すと止まる
 cp cases/feature-to-claim.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stdout 'spec/Task\.tla:13: .*task-id-unique'
+stderr 'spec/Task\.tla:13: .*task-id-unique'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # @vanda:claim が用語の ID（task）を指すと止まる
 cp cases/claim-to-term.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stdout 'spec/Task\.tla:10: .*task'
+stderr 'spec/Task\.tla:10: .*task'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # @vanda:claim が機能の ID（task-add）を指すと止まる
 cp cases/claim-to-feature.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stdout 'spec/Task\.tla:10: .*task-add'
+stderr 'spec/Task\.tla:10: .*task-add'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # @vanda:evidence が用語の ID（task）を指すと止まる
 cp cases/evidence-to-term.case task_test.go
 ! exec vanda check .vanda/checks/links.toml
-stdout 'task_test\.go:5: .*task'
+stderr 'task_test\.go:5: .*task'
 ! stderr '(?m)^panic: '
 cp orig/task_test.go.orig task_test.go
 
 # @vanda:evidence が機能の ID（task-add）を指すと止まる
 cp cases/evidence-to-feature.case task_test.go
 ! exec vanda check .vanda/checks/links.toml
-stdout 'task_test\.go:5: .*task-add'
+stderr 'task_test\.go:5: .*task-add'
 ! stderr '(?m)^panic: '
 cp orig/task_test.go.orig task_test.go
 
 # @vanda:sensor が用語の ID（task）を指すと止まる
 cp cases/sensor-to-term.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stdout 'task\.go:6: .*task'
+stderr 'task\.go:6: .*task'
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
 # @vanda:sensor が機能の ID（task-add）を指すと止まる
 cp cases/sensor-to-feature.case task.go
 ! exec vanda check .vanda/checks/links.toml
-stdout 'task\.go:6: .*task-add'
+stderr 'task\.go:6: .*task-add'
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
 # TypeOK で使う型（TaskIds）に term も internal もないと止まる
 cp cases/tla-type-no-term.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stdout 'spec/Task\.tla.*TaskIds'
+stderr 'spec/Task\.tla.*TaskIds'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # TypeOK で使う型（Small）の internal を外すと止まる
 cp cases/tla-type-no-internal.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stdout 'spec/Task\.tla.*Small'
+stderr 'spec/Task\.tla.*Small'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
 # TypeOK で使う型に feature を付けると止まる（アノテーションの行と定義の行のどちらを指すかは決まっていない）
 cp cases/tla-type-feature.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
-stdout 'spec/Task\.tla:[23]: .*feature'
+stderr 'spec/Task\.tla:[23]: .*feature'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 

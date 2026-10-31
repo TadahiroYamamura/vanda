@@ -14,37 +14,37 @@ exec vanda check .vanda/checks/shape.toml
 # TOML として読めない
 cp cases/syntax.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stdout 'promises\.toml:3: '
+stderr 'promises\.toml:3: '
 ! stderr '(?m)^panic: '
 
 # 知らない表がある
 cp cases/unknown-table.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stdout 'promises\.toml:6: .*clam'
+stderr 'promises\.toml:6: .*clam'
 ! stderr '(?m)^panic: '
 
 # term の表に知らない項目がある
 cp cases/unknown-key-term.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stdout 'promises\.toml:5: .*note'
+stderr 'promises\.toml:5: .*note'
 ! stderr '(?m)^panic: '
 
 # feature の表に知らない項目がある
 cp cases/unknown-key-feature.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stdout 'promises\.toml:11: .*note'
+stderr 'promises\.toml:11: .*note'
 ! stderr '(?m)^panic: '
 
 # claim の表に知らない項目がある
 cp cases/unknown-key-claim.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stdout 'promises\.toml:19: .*note'
+stderr 'promises\.toml:19: .*note'
 ! stderr '(?m)^panic: '
 
 # claim.evidence の表に知らない項目がある
 cp cases/unknown-key-claim.evidence.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/shape.toml
-stdout 'promises\.toml:25: .*note'
+stderr 'promises\.toml:25: .*note'
 ! stderr '(?m)^panic: '
 
 -- .vanda/config.toml --

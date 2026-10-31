@@ -10,14 +10,14 @@ exec vanda check .vanda/checks/unread.toml
 # どのパターンにも当たらない TOML のファイル
 cp cases/stray.toml .vanda/stray.toml
 ! exec vanda check .vanda/checks/unread.toml
-stdout '\.vanda/stray\.toml'
+stderr '\.vanda/stray\.toml'
 ! stderr '(?m)^panic: '
 rm .vanda/stray.toml
 
 # TOML でないファイルも止める
 cp cases/notes.md .vanda/notes.md
 ! exec vanda check .vanda/checks/unread.toml
-stdout '\.vanda/notes\.md'
+stderr '\.vanda/notes\.md'
 ! stderr '(?m)^panic: '
 rm .vanda/notes.md
 
@@ -25,7 +25,7 @@ rm .vanda/notes.md
 mkdir .vanda/sub
 cp cases/stray.toml .vanda/sub/stray.toml
 ! exec vanda check .vanda/checks/unread.toml
-stdout '\.vanda/sub/stray\.toml'
+stderr '\.vanda/sub/stray\.toml'
 ! stderr '(?m)^panic: '
 rm .vanda/sub
 
@@ -40,7 +40,7 @@ exec vanda check .vanda/checks/unread.toml
 # 既定のファイル名でも、パターンを書いた後は当たらないので止まる
 cp cases/promises.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/unread.toml
-stdout '\.vanda/promises\.toml'
+stderr '\.vanda/promises\.toml'
 ! stderr '(?m)^panic: '
 
 -- .vanda/config.toml --

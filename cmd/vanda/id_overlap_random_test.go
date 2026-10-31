@@ -140,12 +140,9 @@ func Test分けたファイルをまたいでも重なったIDは後に出てき
 			rt.Fatalf("重なりが %d 件なのに、終了は %v\n%s%s", len(want), err, stdout.String(), stderr.String())
 		}
 		got := map[overlapLoc]string{}
-		if stderr.Len() > 0 {
-			rt.Fatalf("審査を始める前の誤りが出た: %s", stderr.String())
-		}
-		// 標準出力は、審査ごとの結果の行（審査 <名前>（<範囲>）: …）と、その後の誤りの行（docs/formats.md の「出力」）
-		for _, line := range strings.Split(strings.TrimSpace(stdout.String()), "\n") {
-			if line == "" || strings.HasPrefix(line, "審査 ") {
+		// 審査ごとの結果の行は標準出力に、誤りの中身は標準エラーに出る
+		for _, line := range strings.Split(strings.TrimSpace(stderr.String()), "\n") {
+			if line == "" {
 				continue
 			}
 			var loc overlapLoc
@@ -164,7 +161,7 @@ func Test分けたファイルをまたいでも重なったIDは後に出てき
 			got[loc] = want[loc]
 		}
 		if len(got) != len(want) {
-			rt.Fatalf("重なりのエラーが足りない: want %v, got %v\n%s\n%s", want, got, stdout.String(), dump(srcs))
+			rt.Fatalf("重なりのエラーが足りない: want %v, got %v\n%s\n%s", want, got, stderr.String(), dump(srcs))
 		}
 	})
 }

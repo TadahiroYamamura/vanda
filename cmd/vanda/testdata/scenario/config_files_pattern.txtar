@@ -11,7 +11,7 @@ exec vanda check .vanda/checks/shape.toml
 # パターンに当たったファイルの誤りで止まる
 cp cases/b-bad-stage.toml .vanda/promises/b.toml
 ! exec vanda check .vanda/checks/shape.toml
-stdout 'b\.toml'
+stderr 'b\.toml'
 ! stderr '(?m)^panic: '
 
 # 合意の記録も、パターンに当たったファイルを全部読む。
@@ -23,7 +23,7 @@ agree .vanda/agreements/y.toml '#2' claim b-claim fp/b-claim.json
 exec vanda check .vanda/checks/targets.toml
 cp cases/b-without-claim.toml .vanda/promises/b.toml
 ! exec vanda check .vanda/checks/targets.toml
-stdout 'y\.toml'
+stderr 'y\.toml'
 ! stderr '(?m)^panic: '
 
 -- .vanda/config.toml --
