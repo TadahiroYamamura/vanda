@@ -53,6 +53,7 @@ type Entry struct {
 	After             any         `json:"after"`
 	Diff              any         `json:"diff"`
 	DetachedAgreement *Detached   `json:"detachedAgreement"`
+	Revoke            *Revocation `json:"revoke"`
 	OtherCommits      []CommitRef `json:"otherCommits"`
 
 	key string // 項目なら "<種類>:<ID>"、ファイルなら "path:<場所>"
@@ -149,6 +150,16 @@ func Build(o Options) (*Result, *Error) {
 	}
 	detached, err := s.detached(entries)
 	if err != nil {
+		return nil, internalErr(err)
+	}
+	mbStr := ""
+	if res.MergeBase != nil {
+		mbStr = *res.MergeBase
+	}
+	if err := s.setRevocations(entries, mbStr); err != nil {
+		return nil, internalErr(err)
+	}
+	if err := s.setRevocations(detached, mbStr); err != nil {
 		return nil, internalErr(err)
 	}
 	s.order(entries)

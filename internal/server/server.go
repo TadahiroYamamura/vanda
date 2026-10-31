@@ -32,6 +32,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/context", s.read(s.context))
 	mux.HandleFunc("GET /api/review", s.read(s.review))
 	mux.HandleFunc("POST /api/agree", s.agree)
+	mux.HandleFunc("POST /api/revoke", s.revoke)
 	mux.HandleFunc("GET /api/claims/{id}", s.read(s.claim))
 	mux.HandleFunc("GET /api/claims/{id}/at/{commit}", s.read(s.claimAt))
 	mux.HandleFunc("GET /api/file", s.read(s.file))
@@ -195,6 +196,24 @@ func (s *Server) agree(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	res, err := review.Agree(review.Options{Root: s.Root, Cfg: s.Cfg}, req, time.Now())
+	if err != nil {
+		writeReviewError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
+}
+
+func (s *Server) revoke(w http.ResponseWriter, r *http.Request) {
+	var req review.RevokeRequest
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "取り消しの要求の JSON を読めません（"+err.Error()+"）。", "docs/formats.md の POST /api/revoke の形で送ってください。")
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	res, err := review.Revoke(review.Options{Root: s.Root, Cfg: s.Cfg}, req)
 	if err != nil {
 		writeReviewError(w, err)
 		return
