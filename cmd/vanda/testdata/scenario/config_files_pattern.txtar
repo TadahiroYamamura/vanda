@@ -1,0 +1,138 @@
+# CM-09: 設定に読むファイルのパターンを書くと、当たったファイルを全部読む。
+# パターンを書いたときは、既定のファイル（.vanda/promises.toml）は読まない。
+
+exec git init -q -b main
+expand .vanda/config.toml
+
+# a.toml の約束は b.toml の機能を、b.toml の約束は a.toml の用語を対象にする。
+# どちらかのファイルを読まなければ、対象が見つからずに止まる。
+exec vanda check .vanda/checks/shape.toml
+
+# パターンに当たったファイルの誤りで止まる
+cp cases/b-bad-stage.toml .vanda/promises/b.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'b\.toml'
+! stderr '(?m)^panic: '
+
+# 合意の記録も、パターンに当たったファイルを全部読む。
+# 合意した約束を約束リストから消すと、どちらのファイルの記録でも、約束リストにない約束を指すようになる。
+# この審査は指紋が今の中身に合うかを見ないので、指紋の元の JSON の書き方（日本語の文字の扱い）は結果に関わらない。
+cp cases/b.toml .vanda/promises/b.toml
+agree .vanda/agreements/x.toml '#1' claim a-claim fp/a-claim.json
+agree .vanda/agreements/y.toml '#2' claim b-claim fp/b-claim.json
+exec vanda check .vanda/checks/targets.toml
+cp cases/b-without-claim.toml .vanda/promises/b.toml
+! exec vanda check .vanda/checks/targets.toml
+stderr 'y\.toml'
+! stderr '(?m)^panic: '
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+promises = [".vanda/promises/*.toml"]
+agreements = [".vanda/agreements/*.toml"]
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+-- .vanda/checks/shape.toml --
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+-- .vanda/checks/targets.toml --
+[[check]]
+name = "agreement-targets"
+scope = "all"
+-- .vanda/agreements/x.toml --
+-- .vanda/agreements/y.toml --
+-- .vanda/promises.toml --
+これは TOML として読めない。パターンを書いたので、読まれないはずのファイル。
+-- .vanda/promises/a.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[claim]]
+id = "a-claim"
+subjects = ["task-add"]
+statement = "登録したタスクは一覧に出る"
+rationale = "登録できたかを確かめるため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- .vanda/promises/b.toml --
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "b-claim"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/b.toml --
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "b-claim"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/b-bad-stage.toml --
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+
+[[claim]]
+id = "b-claim"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "no-such-stage"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/b-without-claim.toml --
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = false
+-- fp/a-claim.json --
+{"condition":"いつも","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"a-claim","layers":["model"],"rationale":"登録できたかを確かめるため","statement":"登録したタスクは一覧に出る","subjects":["task-add"]}
+-- fp/b-claim.json --
+{"condition":"いつも","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"b-claim","layers":["model"],"rationale":"ID でタスクを指すため","statement":"タスクの ID は重ならない","subjects":["task"]}

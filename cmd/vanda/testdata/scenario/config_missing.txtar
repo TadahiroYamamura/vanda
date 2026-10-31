@@ -1,0 +1,22 @@
+# CMD-01、CM-09: 設定のファイル（.vanda/config.toml）がないと、エラーで止まる。
+
+exec git init -q -b main
+
+! exec vanda doctor
+stderr 'config\.toml'
+! stderr '(?m)^panic: '
+
+! exec vanda check .vanda/checks/all.toml
+stderr 'config\.toml'
+! stderr '(?m)^panic: '
+
+-- .vanda/checks/all.toml --
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+-- .vanda/agreements.toml --

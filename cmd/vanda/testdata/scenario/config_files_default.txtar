@@ -1,0 +1,104 @@
+# CM-09: 設定に読むファイルのパターンを書かないとき、約束リストは .vanda/promises.toml を、
+# 合意の記録は .vanda/agreements.toml を読む。
+
+exec git init -q -b main
+expand .vanda/config.toml
+
+# 約束リスト: 既定のファイルの中身が審査に使われる
+exec vanda check .vanda/checks/shape.toml
+cp cases/promises-bad-stage.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/shape.toml
+stderr 'promises\.toml'
+! stderr '(?m)^panic: '
+
+# 合意の記録: 既定のファイルの中身が審査に使われる
+# 合意した約束を約束リストから消すと、合意の記録が約束リストにない約束を指すようになる
+# この審査は指紋が今の中身に合うかを見ないので、指紋の元の JSON の書き方（日本語の文字の扱い）は結果に関わらない
+cp cases/promises.toml .vanda/promises.toml
+agree .vanda/agreements.toml '#1' claim task-add-unique fp/claim.json
+exec vanda check .vanda/checks/targets.toml
+cp cases/promises-without-claim.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/targets.toml
+stderr 'agreements\.toml'
+! stderr '(?m)^panic: '
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+-- .vanda/checks/shape.toml --
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+-- .vanda/checks/targets.toml --
+[[check]]
+name = "agreement-targets"
+scope = "all"
+-- .vanda/agreements.toml --
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[claim]]
+id = "task-add-unique"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[claim]]
+id = "task-add-unique"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/promises-bad-stage.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[claim]]
+id = "task-add-unique"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+rationale = "ID でタスクを指すため"
+condition = "いつも"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "no-such-stage"
+type = "unit-test"
+layers = ["model"]
+detail = "task_test.go"
+-- cases/promises-without-claim.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+-- fp/claim.json --
+{"condition":"いつも","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-add-unique","layers":["model"],"rationale":"ID でタスクを指すため","statement":"タスクの ID は重ならない","subjects":["task"]}

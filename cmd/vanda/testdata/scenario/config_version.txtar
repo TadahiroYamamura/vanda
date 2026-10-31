@@ -1,0 +1,81 @@
+# CMD-01、CM-09: 設定の version と、動いている vanda の版を比べる。
+# version が動いている vanda と同じなら通り、新しい・古い・ないときはエラーで止まる。
+# 審査（vanda check）も、版が合わなければ止まる。
+#
+# 確かめないこと: 新しいときに「上げる」、古いときに「移行のコマンドを使う」と知らせる文言。
+# 文言は計画に書かれていないため。ここでは、エラーが version の行（1 行目）を指し、書いた版が出ることまでを確かめる。
+
+exec git init -q -b main
+
+# 同じ版なら通る（この後の失敗が、版の比べ方によるものだと言えるようにするため）
+cp cases/config-current.toml .vanda/config.toml
+expand .vanda/config.toml
+exec vanda doctor
+exec vanda check .vanda/checks/all.toml
+
+# version が動いている vanda より新しい
+cp cases/config-newer.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda doctor
+stderr 'config\.toml:1: .*'$VANDA_VERSION_NEWER
+! stderr '(?m)^panic: '
+! exec vanda check .vanda/checks/all.toml
+stderr 'config\.toml'
+! stderr '(?m)^panic: '
+
+# version が動いている vanda より古い
+cp cases/config-older.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda doctor
+stderr 'config\.toml:1: .*'$VANDA_VERSION_OLDER
+! stderr '(?m)^panic: '
+! exec vanda check .vanda/checks/all.toml
+stderr 'config\.toml'
+! stderr '(?m)^panic: '
+
+# version がない
+cp cases/config-no-version.toml .vanda/config.toml
+! exec vanda doctor
+stderr 'config\.toml.*\bversion\b'
+! stderr '(?m)^panic: '
+! exec vanda check .vanda/checks/all.toml
+stderr 'config\.toml'
+! stderr '(?m)^panic: '
+
+-- cases/config-current.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+-- cases/config-newer.toml --
+version = "${VANDA_VERSION_NEWER}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+-- cases/config-older.toml --
+version = "${VANDA_VERSION_OLDER}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+-- cases/config-no-version.toml --
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+-- .vanda/config.toml --
+-- .vanda/checks/all.toml --
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+-- .vanda/agreements.toml --
