@@ -534,6 +534,41 @@ for (const pg of pages) {
     }
   });
 
+  test(`${pg.name}で由来のコミットを開くとその時点の推測と対象が出る`, async ({ page }) => {
+    // 前の版は、対象が用語 task-old（後で消す）で、推測が 1 つ。後の版で、対象を task-id に、推測を別のものに変える
+    const at = (statement: string, subject: string, guess: string, oldTerm: boolean) => `[[term]]
+id = "task-id"
+name = "タスクの ID"
+definition = "タスクを見分ける名前"
+${oldTerm ? '\n[[term]]\nid = "task-old"\nname = "古いタスクの名前"\ndefinition = "前に使っていた、タスクを見分ける名前"\n' : ""}
+[[claim]]
+id = "task-id-unique"
+subjects = ["${subject}"]
+statement = "${statement}"
+layers = ["model"]
+guesses = ["${guess}"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["model"]
+`;
+    const oldGuess = "消したタスクの ID は 30 日たてば使い回せるかもしれない";
+    repo.write(".vanda/promises.toml", at("タスクの ID は、前の名前とも重ならない", "task-old", oldGuess, true));
+    commit(repo, "#24 推測を書く");
+    repo.write(".vanda/promises.toml", at(v4.statement, "task-id", "ID は数字だけかもしれない", false));
+    commit(repo, "#24 推測と対象を変える");
+
+    await pg.open(page);
+    await expect(page.getByText(v4.statement).first()).toBeVisible();
+    await expect(page.getByText(oldGuess), "開く前から前の推測が出ている").toHaveCount(0);
+    await expect(page.getByText(/task-old|古いタスクの名前/), "開く前から前の対象が出ている").toHaveCount(0);
+    await choose(rowOf(page, "#24 推測を書く"));
+    await expect(page.getByText("タスクの ID は、前の名前とも重ならない").first()).toBeVisible();
+    await expect(page.getByText(oldGuess).first(), "その時点の推測が出ない").toBeVisible();
+    await expect(page.getByText(/task-old|古いタスクの名前/).first(), "その時点の対象が出ない").toBeVisible();
+  });
+
   test(`${pg.name}で2つ以上の時点を開くとそれぞれの中身が同時に出たままになり1つをたたんでもほかは開いたまま`, async ({ page }) => {
     commitV3(repo);
     await openReviewDetail(page);
@@ -877,9 +912,9 @@ test("レビュー単位がブランチでベースブランチを既定から�
   expect(repo.git("log", "-1", "--format=%s")).toContain("#30 で");
 });
 
-// RV-08: エビデンスが揃っているかは、各行の左端のアイコンの名前（aria-label）で示す。揃っている・ない・
+// RV-08: エビデンスが揃っているかは、各エビデンスのアイコンの名前（aria-label）で示す。揃っている・ない・
 // アノテーションでは確かめない、の 3 つを全部回す
-test("エビデンスの予定と実際の表の揃っているかは揃っているとないとアノテーションでは確かめないをアイコンの名前で示す", async ({ page }) => {
+test("エビデンスの予定と実際の揃っているかは揃っているとないとアノテーションでは確かめないをアイコンの名前で示す", async ({ page }) => {
   // シナリオテストはアノテーションがあり揃っている。モデル検査はアノテーションがなくない。人のレビューはアノテーションで確かめない
   repo.write("e2e/add-task.txtar", "# シナリオ\n# @vanda:evidence task-id-unique\n! exec vanda-task add a\n-- a.txt --\na\n");
   const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
@@ -892,23 +927,18 @@ test("エビデンスの予定と実際の表の揃っているかは揃って�
   );
   commit(repo, "#24 エビデンスの予定を足す");
   await openReviewDetail(page);
-  const table = evidenceTable(page);
-  await expect(table).toBeVisible();
-  const rows = table.getByRole("row");
   for (const [type, name] of [
     ["シナリオテスト", "揃っています"],
     ["モデル検査", "ありません"],
     ["人のレビュー", "アノテーションでは確かめません"],
   ]) {
-    const row = rows.filter({ hasText: type }).first();
-    await expect(row.getByRole("img", { name }), `${type} の行に「${name}」のアイコンがない`).toBeVisible();
-    // アイコンは行の左端の欄に出す
-    await expect(row.getByRole("cell").first().getByRole("img", { name }), `${type} の行の「${name}」のアイコンが左端の欄にない`).toBeVisible();
-    await expect(row.getByRole("img", { name }), `${type} の行のアイコンの title が名前と違う`).toHaveAttribute("title", name);
+    const group = typeGroup(page, type);
+    await expect(group.getByRole("img", { name }), `${type} のエビデンスに「${name}」のアイコンがない`).toBeVisible();
+    await expect(group.getByRole("img", { name }), `${type} のエビデンスのアイコンの title が名前と違う`).toHaveAttribute("title", name);
   }
   // 約束の詳細の画面のエビデンスも、同じアイコンで示す（3 つのエビデンスに 1 つずつ）
   await page.getByRole("link", { name: "約束の詳細を開く" }).click();
-  await expect(page.getByText("エビデンス（タイプごと）").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "シナリオテスト", exact: true }).first()).toBeVisible();
   for (const name of ["揃っています", "ありません", "アノテーションでは確かめません"]) {
     await expect(page.getByRole("img", { name, exact: true }), `約束の詳細の画面に「${name}」のアイコンが 1 つでない`).toHaveCount(1);
     await expect(page.getByRole("img", { name, exact: true })).toHaveAttribute("title", name);
@@ -916,10 +946,10 @@ test("エビデンスの予定と実際の表の揃っているかは揃って�
   await expect(page.getByText("エビデンスがありません")).toHaveCount(0);
 });
 
-// エビデンスの予定と実際の表は、見出し「詳細」の列を持つ
-const evidenceTable = (page: Page) => page.getByRole("table").filter({ has: page.getByRole("columnheader", { name: "詳細", exact: true }) });
+// エビデンスは、タイプの見出しの下にまとまる。そのまとまり（見出しの親）の中を見る
+const typeGroup = (page: Page, type: string) => page.getByRole("heading", { name: type, exact: true }).first().locator("xpath=..");
 
-test("エビデンスの予定と実際の表の詳細は長い文も改行も省略せずに全部出し幅400pxでページが横にスクロールしない", async ({ page }) => {
+test("エビデンスの予定と実際の詳細は長い文も改行も省略せずに全部出し幅400pxでページが横にスクロールしない", async ({ page }) => {
   const lines = [
     "TLA+ のモデルで、タスクを足す・消す・足し直すを 3 回まで繰り返し、どの順でも ID が重ならないことを確かめる予定。消したタスクの ID を使い回さないことも、同じモデルで確かめる。",
     "定数の範囲は、タスクが 3 つまで、操作が 6 歩まで。",
@@ -937,9 +967,9 @@ test("エビデンスの予定と実際の表の詳細は長い文も改行も�
   commit(repo, "#24 長い詳細を書く");
   await page.setViewportSize({ width: 400, height: 900 });
   await openReviewDetail(page);
-  const table = evidenceTable(page);
-  await expect(table, "見出し「詳細」のエビデンスの予定と実際の表がない").toBeVisible();
-  const cell = table.getByRole("row").filter({ hasText: "モデル検査" }).first().getByRole("cell").filter({ hasText: lines[0].slice(0, 20) }).first();
+  const group = typeGroup(page, "モデル検査");
+  await expect(group, "モデル検査の見出しのまとまりがない").toBeVisible();
+  const cell = group.getByText(lines[0].slice(0, 20)).first();
   await expect(cell).toBeVisible();
   // 見えている文字（innerText）に、全部の文と改行がある
   expect((await cell.innerText()).trim(), "詳細が省略されたか、改行が保たれていない").toBe(detail);
@@ -956,7 +986,8 @@ test("変わったものの一覧の1件は名前のほかに番号や状態の�
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   const detailOf = (id: string) => expect(page.getByRole("link", { name: "約束の詳細を開く" }), `${id} が選ばれていない`).toHaveAttribute("href", new RegExp(`/claims/${id}`));
   // task-title-required は 2 件目で、提案中の札と AI 案の札を持つ
-  const frame = page.getByRole("button").filter({ hasText: "task-title-required" }).first();
+  // 札は名前のボタンの外にあるので、1 件の枠（listitem）の中で押す
+  const frame = page.getByRole("listitem").filter({ hasText: "task-title-required" }).first();
   await expect(frame).toBeVisible();
   const spots: [string, () => Promise<void>][] = [
     ["番号", () => frame.getByText("2", { exact: true }).first().click()],
@@ -975,3 +1006,340 @@ test("変わったものの一覧の1件は名前のほかに番号や状態の�
     await expect(page.getByRole("link", { name: "約束の詳細を開く" }), `${spot}を押しても task-title-required が選ばれない`).toHaveAttribute("href", /\/claims\/task-title-required/);
   }
 });
+
+// CL-02: エビデンスは、ステージ（計画→実装→テスト→リリース→運用）の見出しの下を、タイプの見出しで分けて示す。
+// 見出しは、ページの見出しのうちステージとタイプの名前のものだけを、出てくる順に見る
+const stageNames: [string, string][] = [["plan", "計画"], ["implementation", "実装"], ["test", "テスト"], ["release", "リリース"], ["operation", "運用"]];
+const typeNames: Record<string, string> = {
+  "model-check": "モデル検査", proof: "証明", "cross-check": "クロスチェック", "random-check": "ランダムチェック",
+  "scenario-test": "シナリオテスト", "unit-test": "単体テスト", "interface-test": "インターフェースのテスト",
+  "concurrency-test": "同時実行のテスト", guardrail: "ガードレール", sensor: "センサー", monitoring: "監視", "human-review": "人のレビュー",
+};
+// 書く順はステージの順にしない
+const allStagesEvidence: [string, string][] = [
+  ["operation", "monitoring"], ["test", "unit-test"], ["plan", "model-check"], ["release", "human-review"],
+  ["test", "scenario-test"], ["implementation", "guardrail"], ["plan", "proof"],
+];
+const twoStagesEvidence: [string, string][] = [["test", "scenario-test"], ["plan", "model-check"]];
+
+function promisesWithEvidence(statement: string, ev: [string, string][]) {
+  return `[[term]]\nid = "task-id"\nname = "タスクの ID"\ndefinition = "タスクを見分ける名前"\n\n[[claim]]\nid = "task-id-unique"\nsubjects = ["task-id"]\nstatement = "${statement}"\nlayers = ["model"]\n` +
+    ev.map(([stage, type]) => `\n[[claim.evidence]]\nstage = "${stage}"\ntype = "${type}"\nlayers = ["model"]\n`).join("");
+}
+
+async function evidenceHeadings(page: Page): Promise<string[]> {
+  const names = new Set([...stageNames.map(([, n]) => n), ...Object.values(typeNames)]);
+  const texts = (await page.getByRole("heading").allTextContents()).map((t) => t.trim());
+  return texts.filter((t) => names.has(t));
+}
+
+// 見出しの並びが、ev のステージを決まった順に、その下にそのステージのタイプだけを並べたものか確かめる
+function checkHeadings(got: string[], ev: [string, string][], where: string) {
+  const stagesHere = stageNames.filter(([id]) => ev.some(([s]) => s === id));
+  // ステージの見出しは、エビデンスのあるものだけが決まった順に出る
+  expect(got.filter((t) => stageNames.some(([, n]) => n === t)), `${where}: ステージの見出しの並び`).toEqual(stagesHere.map(([, n]) => n));
+  for (const [i, [id, name]] of stagesHere.entries()) {
+    const from = got.indexOf(name);
+    const to = i + 1 < stagesHere.length ? got.indexOf(stagesHere[i + 1][1]) : got.length;
+    const under = got.slice(from + 1, to).sort();
+    const want = [...new Set(ev.filter(([s]) => s === id).map(([, t]) => typeNames[t]))].sort();
+    expect(under, `${where}: ステージ「${name}」の下のタイプの見出し`).toEqual(want);
+  }
+  // エビデンスのないタイプの見出しは出ない
+  const typesHere = new Set(ev.map(([, t]) => typeNames[t]));
+  for (const n of Object.values(typeNames)) if (!typesHere.has(n)) expect(got, `${where}: エビデンスのないタイプ「${n}」の見出しが出ている`).not.toContain(n);
+}
+
+for (const pg of pages) {
+  for (const [label, ev] of [["5つのステージ全部", allStagesEvidence], ["計画とテストのステージだけ", twoStagesEvidence]] as const) {
+    test(`${pg.name}のエビデンスは${label}にエビデンスがあるときステージの見出しを決まった順に並べその下にそのステージのタイプの見出しだけを出す`, async ({ page }) => {
+      repo.write(".vanda/promises.toml", promisesWithEvidence(v4.statement, [...ev]));
+      commit(repo, "#24 エビデンスの予定を書く");
+      await pg.open(page);
+      await expect(page.getByText(v4.statement).first()).toBeVisible();
+      await expect.poll(() => evidenceHeadings(page), { message: "エビデンスの見出しが出ない" }).not.toEqual([]);
+      checkHeadings(await evidenceHeadings(page), [...ev], pg.name);
+    });
+  }
+}
+
+test("約束の詳細の画面で由来のコミットを開くとその時点のエビデンスもステージとタイプの見出しで分けて出る", async ({ page }) => {
+  repo.write(".vanda/promises.toml", promisesWithEvidence(v3.statement, allStagesEvidence));
+  commit(repo, "#24 エビデンスの予定を書く");
+  repo.write(".vanda/promises.toml", promisesWithEvidence(v4.statement, twoStagesEvidence));
+  commit(repo, "#24 エビデンスの予定を減らす");
+  await page.goto(serve.url + "/claims/task-id-unique");
+  await expect(page.getByText(v4.statement).first()).toBeVisible();
+  await expect.poll(() => evidenceHeadings(page)).not.toEqual([]);
+  const before = await evidenceHeadings(page);
+  checkHeadings(before, twoStagesEvidence, "今の中身");
+  await choose(rowOf(page, "#24 エビデンスの予定を書く"));
+  await expect(page.getByText(v3.statement).first()).toBeVisible();
+  // 開いたその時点の中身の分だけ、見出しが増える。今の中身にない実装・リリース・運用の見出しが、その時点の中身から出る
+  await expect.poll(async () => (await evidenceHeadings(page)).filter((t) => ["実装", "リリース", "運用"].includes(t)).sort()).toEqual(["リリース", "実装", "運用"].sort());
+  const after = await evidenceHeadings(page);
+  checkHeadings(after.slice(before.length), allStagesEvidence, "その時点の中身");
+});
+
+// RV-18: 約束の詳細の画面とファイルの画面でも、ストーリーのレビューから移ったときは合意・取り消しができる
+const annotatedScenario = "# シナリオ\n# @vanda:evidence task-id-unique\n! exec vanda-task add a\n-- a.txt --\na\n";
+const recordsOf = (key: string, story: string) => {
+  const text = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
+  return text.split("[[agreement]]").filter((b) => b.includes(`key = "${key}"`) && b.includes(`story = "${story}"`)).length;
+};
+const listItem = (page: Page, text: string) => page.getByRole("listitem").filter({ hasText: text }).first();
+
+async function agreeHere(page: Page, url: RegExp) {
+  const count = commitCount();
+  const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
+  await page.getByRole("button", { name: /合意する/ }).click();
+  expect((await res).status()).toBe(200);
+  await expect.poll(commitCount, { message: "合意が 1 つのコミットにならない" }).toBe(count + 1);
+  await expect(page, "合意した後に、画面を移った").toHaveURL(url);
+  await expect(page.getByText("合意済").first(), "合意した後に、合意済と出ない").toBeVisible();
+}
+
+async function revokeHere(page: Page, url: RegExp) {
+  const count = commitCount();
+  await unagreeButton(page).click();
+  await expect.poll(commitCount, { message: "取り消しが 1 つのコミットにならない" }).toBe(count + 1);
+  await expect(page, "取り消した後に、画面を移った").toHaveURL(url);
+  await expect(page.getByText("提案中").first(), "取り消した後に、提案中と出ない").toBeVisible();
+}
+
+// RV-18 の画面の移り方は、クエリのない / から始めて画面の操作だけで移る。ストーリーは URL で名指しせず、
+// ブランチのコミットから決まる（#24）
+test("レビューの画面から約束の詳細へ移って合意すると1コミットで記録が増えその画面で合意済になり履歴に足され戻ると一覧でも合意済でその画面で取り消せる", async ({ page }) => {
+  await page.goto(serve.url + "/");
+  await select(page, "task-id-unique");
+  await page.getByRole("link", { name: "約束の詳細を開く" }).click();
+  await expect(page).toHaveURL(/\/claims\/task-id-unique/);
+  expect(recordsOf("task-id-unique", "#24")).toBe(0);
+  await agreeHere(page, /\/claims\/task-id-unique/);
+  expect(recordsOf("task-id-unique", "#24"), "合意の記録が 1 件増えていない").toBe(1);
+  expect(repo.git("diff", "--name-only", "HEAD~1", "HEAD").split("\n").sort()).toEqual([".vanda/agreements.toml", ".vanda/promises.toml"]);
+  const row = rowOf(page, "合意する人");
+  await expect(row, "合意の履歴に足されていない").toBeVisible();
+  await expect(row).toContainText("#24");
+  await expect(row).toContainText(/合います/);
+
+  await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
+  await expect(listItem(page, "task-id-unique"), "戻った一覧で合意済になっていない").toContainText("合意済");
+
+  await page.getByRole("link", { name: "約束の詳細を開く" }).click();
+  await revokeHere(page, /\/claims\/task-id-unique/);
+  expect(recordsOf("task-id-unique", "#24"), "取り消しても合意の記録が残っている").toBe(0);
+  await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
+  await expect(listItem(page, "task-id-unique")).toContainText("提案中");
+});
+
+test("エビデンスのファイルのリンクからファイルの画面へ移って合意すると1コミットで記録が増えその画面で合意済になり戻ると一覧でも合意済でその画面で取り消せる", async ({ page }) => {
+  repo.write("e2e/add-task.txtar", annotatedScenario);
+  commit(repo, "#24 シナリオをエビデンスにする");
+  const fp = sha(annotatedScenario);
+  await page.goto(serve.url + "/");
+  await select(page, "task-id-unique");
+  await page.getByRole("link", { name: /e2e\/add-task\.txtar:1/ }).first().click();
+  await expect(page).toHaveURL(/\/files\?/);
+  expect(recordsOf(fp, "#24")).toBe(0);
+  await agreeHere(page, /\/files\?/);
+  expect(recordsOf(fp, "#24"), "ファイルへの合意の記録が 1 件増えていない").toBe(1);
+  expect(repo.git("diff", "--name-only", "HEAD~1", "HEAD")).toBe(".vanda/agreements.toml");
+
+  await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
+  await expect(listItem(page, "e2e/add-task.txtar"), "戻った一覧でファイルが合意済になっていない").toContainText("合意済");
+
+  await select(page, "task-id-unique");
+  await page.getByRole("link", { name: /e2e\/add-task\.txtar:1/ }).first().click();
+  await revokeHere(page, /\/files\?/);
+  expect(recordsOf(fp, "#24"), "取り消してもファイルへの合意の記録が残っている").toBe(0);
+});
+
+test("レビューの画面の一覧のファイルからファイルの画面へ移って合意すると1コミットで記録が増えその画面で合意済になり戻ると一覧でも合意済でその画面で取り消せる", async ({ page }) => {
+  const fp = sha(scenarioStory);
+  await page.goto(serve.url + "/");
+  await select(page, "e2e/add-task.txtar");
+  // 1 件の詳細の中の、ファイルの画面へのリンク（名前は決めていないので、行き先で探す）
+  const toFile = page.locator('a[href*="/files"]').first();
+  await expect(toFile, "一覧のファイルの 1 件の詳細に、ファイルの画面へのリンクがない").toBeVisible();
+  await toFile.click();
+  await expect(page).toHaveURL(/\/files\?/);
+  expect(recordsOf(fp, "#24")).toBe(0);
+  await agreeHere(page, /\/files\?/);
+  expect(recordsOf(fp, "#24"), "ファイルへの合意の記録が 1 件増えていない").toBe(1);
+  await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
+  await expect(listItem(page, "e2e/add-task.txtar"), "戻った一覧でファイルが合意済になっていない").toContainText("合意済");
+  await select(page, "e2e/add-task.txtar");
+  await page.locator('a[href*="/files"]').first().click();
+  await revokeHere(page, /\/files\?/);
+  expect(recordsOf(fp, "#24"), "取り消してもファイルへの合意の記録が残っている").toBe(0);
+});
+
+// 取り消せる範囲は RV-17 と同じ。約束の詳細の画面で、誰が × どこで書いたかを全部回す
+for (const w of writers) {
+  for (const pl of places) {
+    const can = w.self && !pl.onBase;
+    test(`約束の詳細の画面で${w.name}が${pl.name}で書いた合意の記録は${can ? "取り消せる" : "取り消せず取り消しのボタンが出ない"}`, async ({ page }) => {
+      repo.write(".vanda/promises.toml", promises(v2Statement, false, true));
+      commit(repo, "#24 フラグを外す");
+      const record = agreement("claim", "task-id-unique", sha(claimJSON(v2Statement)), null, "#24")
+        .replace('user = { name = "テスト担当", email = "tester@example.com" }', `user = { name = "${w.user.name}", email = "${w.user.email}" }`);
+      if (pl.onBase) {
+        repo.git("switch", "-q", "main");
+        repo.write(".vanda/agreements.toml", readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + record);
+        commit(repo, "#24 合意の記録を書く");
+        repo.git("switch", "-q", "story-24");
+        repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "merge", "-q", "--no-edit", "main");
+      } else {
+        repo.write(".vanda/agreements.toml", readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + record);
+        commit(repo, "#24 合意の記録を書く");
+      }
+      await page.goto(serve.url + "/");
+      await select(page, "task-id-unique");
+      await page.getByRole("link", { name: "約束の詳細を開く" }).click();
+      await expect(page.getByText("合意済").first()).toBeVisible();
+      if (!can) {
+        await expect(unagreeButton(page)).toHaveCount(0);
+        return;
+      }
+      await revokeHere(page, /\/claims\/task-id-unique/);
+    });
+  }
+}
+
+test("ストーリーのレビューから一覧にないファイルや約束を開くと合意のボタンがなくこのストーリーでは変わっていないと示す", async ({ page }) => {
+  // release は story-24 の今と同じ。release と比べると一覧は空なので、どのファイルも約束も一覧にない
+  repo.git("branch", "release", "story-24");
+  await page.goto(serve.url + "/?view=branch&base=main");
+  await select(page, "task-id-unique");
+  const claimHref = await page.getByRole("link", { name: "約束の詳細を開く" }).getAttribute("href");
+  expect(claimHref).toBeTruthy();
+  // レビューから移るときの URL のまま、ベースブランチだけを release に、ストーリーを #24 に名指しする
+  const fromReview = (path: string) => {
+    const u = new URL(claimHref!, serve.url);
+    u.searchParams.set("base", "release");
+    u.searchParams.set("story", "#24");
+    u.searchParams.delete("sel");
+    return path + "?" + u.searchParams.toString();
+  };
+  await page.goto(serve.url + fromReview("/claims/task-id-unique"));
+  await expect(page.getByText("このストーリーでは変わっていない約束です。").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /合意する/ })).toHaveCount(0);
+  await page.goto(serve.url + fromReview("/files") + "&path=" + encodeURIComponent("e2e/add-task.txtar"));
+  await expect(page.getByText("このストーリーでは変わっていないファイルです。").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /合意する/ })).toHaveCount(0);
+});
+
+test("約束の詳細とファイルの画面をURLで直接開くと合意のボタンがなくストーリーのレビューから開くと合意できると示す", async ({ page }) => {
+  for (const path of ["/claims/task-id-unique", "/files?path=" + encodeURIComponent("e2e/add-task.txtar")]) {
+    await page.goto(serve.url + path);
+    await expect(page.getByText("ストーリーのレビューから開くと、合意できます。").first(), `${path} に示されない`).toBeVisible();
+    await expect(page.getByRole("button", { name: /合意する/ })).toHaveCount(0);
+    await expect(unagreeButton(page)).toHaveCount(0);
+  }
+});
+
+// 利用者が書いた文は、続いた空白（半角 3 つ・全角）と改行を保って出す。見えている文字（innerText）で確かめる
+const ws = {
+  statement: "タスクの ID は   重ならない　全角の空白の後\n2 行目の   文",
+  condition: "タスクが   1 つ以上　ある\n条件の 2 行目",
+  rationale: "消す相手を   決めるため　理由\n理由の 2 行目",
+  guess: "推測の   文　全角\n推測の 2 行目",
+  detail: "詳細の   文　全角\n詳細の 2 行目",
+  definition: "タスクを   見分ける　名前\n定義の 2 行目",
+};
+// 後の版: 文に足し、定義に空白だけを足し、理由から空白だけを消す
+const wsAfter = {
+  ...ws,
+  statement: ws.statement + "（後）",
+  definition: ws.definition.replace("見分ける", "見分ける   "),
+  rationale: ws.rationale.replace("消す相手を   ", "消す相手を"),
+};
+const q2 = (s: string) => JSON.stringify(s);
+const wsPromises = (w: typeof ws) => `[[term]]
+id = "task-id"
+name = "タスクの ID"
+definition = ${q2(w.definition)}
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task-id"]
+statement = ${q2(w.statement)}
+condition = ${q2(w.condition)}
+rationale = ${q2(w.rationale)}
+layers = ["model"]
+guesses = [${q2(w.guess)}]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["model"]
+detail = ${q2(w.detail)}
+`;
+
+// wsRepo は、空白を書いた版のコミット（wsbase はそこを指す）と、それを変えた今のコミットを作る
+function wsRepo() {
+  repo.write(".vanda/promises.toml", wsPromises(ws));
+  commit(repo, "#24 空白を書く");
+  repo.git("branch", "wsbase", "story-24");
+  repo.write(".vanda/promises.toml", wsPromises(wsAfter));
+  commit(repo, "#24 空白を変える");
+}
+const shown = async (page: Page) => page.locator("body").innerText();
+const occurrences = (text: string, s: string) => text.split(s).length - 1;
+
+test("約束の詳細の画面は利用者が書いた文の続いた空白と全角の空白と改行を保って出す", async ({ page }) => {
+  wsRepo();
+  await page.goto(serve.url + "/claims/task-id-unique");
+  await expect(page.getByText("（後）").first()).toBeVisible();
+  const text = await shown(page);
+  for (const [name, s] of Object.entries({ 文: wsAfter.statement, 条件: wsAfter.condition, 理由: wsAfter.rationale, 推測: wsAfter.guess, 詳細: wsAfter.detail })) {
+    expect(text.includes(s), `${name}の空白か改行が保たれていない: ${JSON.stringify(s)}`).toBe(true);
+  }
+});
+
+test("レビューの1列の差分は利用者が書いた文の続いた空白と全角の空白と改行を保ち空白だけを足した消した所にも印を出す", async ({ page }) => {
+  wsRepo();
+  await page.goto(serve.url + "/?view=branch&base=wsbase&story=%2324");
+  await select(page, "task-id-unique");
+  await expect(page.getByText("（後）").first()).toBeVisible();
+  let text = await shown(page);
+  // 変わっていない項目と、足しただけの文は、つながったまま見える
+  for (const [name, s] of Object.entries({ 文: wsAfter.statement, 条件: ws.condition, 推測: ws.guess, 詳細: ws.detail })) {
+    expect(text.includes(s), `${name}の空白か改行が保たれていない: ${JSON.stringify(s)}`).toBe(true);
+  }
+  // 理由から消した空白だけの所に、印（del）が出て、幅がある
+  const blankMark = async (tag: "del" | "ins") => {
+    const marks = page.locator(tag).filter({ hasText: /^\s+$/ });
+    await expect(marks.first(), `空白だけを${tag === "del" ? "消した" : "足した"}所に ${tag} がない`).toBeAttached();
+    const box = await marks.first().boundingBox();
+    expect(box && box.width > 0, `空白だけの ${tag} に幅がない（印が見えない）`).toBe(true);
+  };
+  await blankMark("del");
+  // 用語の定義に空白だけを足した所
+  await page.getByRole("listitem").filter({ hasText: /task-id(?!-)/ }).first().click();
+  await expect(page.getByText("定義の 2 行目").first()).toBeVisible();
+  text = await shown(page);
+  expect(text.includes(wsAfter.definition), `用語の定義の空白か改行が保たれていない: ${JSON.stringify(wsAfter.definition)}`).toBe(true);
+  await blankMark("ins");
+});
+
+for (const pg of pages) {
+  test(`${pg.name}でその時点の中身を開くと利用者が書いた文の続いた空白と全角の空白と改行を保って出す`, async ({ page }) => {
+    wsRepo();
+    await pg.open(page);
+    await expect(page.getByText("（後）").first()).toBeVisible();
+    // エビデンスと由来は後から読み込まれるので、出そろってから数える
+    await expect(page.getByRole("heading", { name: "シナリオテスト", exact: true }).first()).toBeVisible();
+    await expect(rowOf(page, "#24 空白を書く")).toBeVisible();
+    const fields = { 文: ws.statement, 条件: ws.condition, 理由: ws.rationale, 推測: ws.guess, 詳細: ws.detail };
+    const before = await shown(page);
+    await choose(rowOf(page, "#24 空白を書く"));
+    await expect(page.getByText("理由の 2 行目").first()).toBeVisible();
+    await expect.poll(async () => occurrences(await shown(page), ws.rationale), { message: "その時点の理由の空白か改行が保たれていない" }).toBe(occurrences(before, ws.rationale) + 1);
+    const after = await shown(page);
+    for (const [name, s] of Object.entries(fields)) {
+      expect(occurrences(after, s), `その時点の${name}の空白か改行が保たれていない: ${JSON.stringify(s)}`).toBe(occurrences(before, s) + 1);
+    }
+  });
+}
