@@ -125,6 +125,18 @@ td.text { white-space: pre-wrap; overflow-wrap: anywhere; }
 /* 長い詳細（英字の長い並びなど）が欄を押し広げ、ページが横にスクロールしないように、変更前と変更後の表の中でも折り返す */
 table.compare { table-layout: fixed; }
 table.compare th[scope="row"] { width: 7.5em; }
+/* 1 列の差分の表。項目名は中身に合わせて狭く、中身の欄が残りを使う */
+table.compare-unified { table-layout: auto; }
+table.compare.compare-unified th[scope="row"] { width: 1%; white-space: nowrap; }
+table.compare-unified td { width: 99%; overflow-wrap: anywhere; }
+table.compare-unified del.diff-part { text-decoration: line-through 1.5px var(--bad); }
+table.compare-unified ins.diff-part { text-decoration: none; }
+@media (max-width: 600px) {
+  /* 狭い幅では、項目名を中身の上に置く（項目名が 1 文字ずつ折り返されて読みにくくならないように） */
+  table.compare-unified, table.compare-unified tbody, table.compare-unified tr { display: block; }
+  table.compare.compare-unified th[scope="row"] { display: block; width: auto; white-space: normal; border-bottom: 0; padding: 8px 12px 0; }
+  table.compare-unified td { display: block; width: auto; padding-top: 2px; }
+}
 td.empty { color: var(--muted); }
 table.compare th[scope="row"] { white-space: normal; }
 table.compare thead th:nth-child(2) { color: var(--before); }
