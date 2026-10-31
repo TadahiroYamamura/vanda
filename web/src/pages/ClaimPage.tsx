@@ -1,5 +1,5 @@
 import { api, type EvidenceDetail, type Found } from "../api";
-import { ErrorBox, StateBadge, useLoad } from "../components/common";
+import { ErrorBox, PresentIcon, StateBadge, useLoad } from "../components/common";
 import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
 import { langOf } from "../highlight";
@@ -55,7 +55,7 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams }) {
             <div key={i} className="evidence">
               <p className="note">
                 {stageLabel[ev.stage] ?? ev.stage} · レイヤー {ev.layers.join("・")}
-                {ev.detail && ` · ${ev.detail}`} · {ev.present === null ? "アノテーションでは確かめません" : ev.present ? "揃っています" : "エビデンスがありません"}
+                {ev.detail && ` · ${ev.detail}`} · <PresentIcon present={ev.present} />
               </p>
               {ev.found.map((f) => (
                 <FoundView key={`${f.file}:${f.line}`} f={f} params={props.params} />
