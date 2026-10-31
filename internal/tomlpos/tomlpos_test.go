@@ -34,6 +34,9 @@ id_pattern = "#[0-9]+"
 `
 	want := map[string]int{
 		"version":                    1,
+		"term":                       3,
+		"claim":                      10,
+		"claim[0].evidence":          17,
 		"term[0]":                    3,
 		"term[0].id":                 4,
 		"term[0].name":               5,

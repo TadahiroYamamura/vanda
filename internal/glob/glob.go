@@ -84,3 +84,24 @@ func Files(root string) ([]string, error) {
 	sort.Strings(files)
 	return files, err
 }
+
+// Select は、files のうちパターンのどれかに当たるものを、files の順で返す。
+// ワイルドカードのないパターンで、files にないものは missing に返す。
+func Select(files, patterns []string) (matched, missing []string) {
+	have := map[string]bool{}
+	for _, f := range files {
+		have[f] = true
+		for _, p := range patterns {
+			if Match(p, f) {
+				matched = append(matched, f)
+				break
+			}
+		}
+	}
+	for _, p := range patterns {
+		if !HasMeta(p) && !have[p] {
+			missing = append(missing, p)
+		}
+	}
+	return matched, missing
+}

@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
+	"time"
 
 	"github.com/BurntSushi/toml"
 
@@ -87,8 +89,8 @@ func (t *Table) keyLabel(key string) string {
 	return t.Label + " の " + key
 }
 
-// ErrAt は、項目 key の行にエラーを足す。key が空なら表の見出しの行にする。行が見つからなければ、行を書かず、Label で場所を示す。
-func (t *Table) ErrAt(key, what, fix string) {
+// Err は、項目 key の行のエラーを作る。key が空なら表の見出しの行にする。行が見つからなければ、行を書かず、Label で場所を示す。
+func (t *Table) Err(key, what, fix string) diag.Error {
 	e := diag.Error{File: t.Doc.File, What: what, Fix: fix}
 	if key == "" {
 		e.Line = t.Doc.Lines[t.Path]
@@ -97,7 +99,12 @@ func (t *Table) ErrAt(key, what, fix string) {
 		e.Line = t.Doc.Lines[t.keyPath(key)]
 		e.Item = t.keyLabel(key)
 	}
-	*t.Doc.Errs = append(*t.Doc.Errs, e)
+	return e
+}
+
+// ErrAt は、Err で作ったエラーを、読み込みのエラーに足す。
+func (t *Table) ErrAt(key, what, fix string) {
+	*t.Doc.Errs = append(*t.Doc.Errs, t.Err(key, what, fix))
 }
 
 // Line は、項目 key の行を返す。key が空なら表の見出しの行。見つからなければ 0。
@@ -154,6 +161,30 @@ func (t *Table) Bool(key string, required bool) (bool, bool) {
 	return b, true
 }
 
+// Time は、時差の付いた日時の項目を返す。
+func (t *Table) Time(key string, required bool) (time.Time, bool) {
+	t.used[key] = true
+	v, ok := t.M[key]
+	if !ok {
+		if required {
+			t.missing(key, key+" = 2026-10-31T12:00:00+09:00")
+		}
+		return time.Time{}, false
+	}
+	tm, ok := v.(time.Time)
+	if !ok {
+		t.ErrAt(key, key+" が日時でない", key+" = 2026-10-31T12:00:00+09:00 のように、時差の付いた日時で書く")
+		return time.Time{}, false
+	}
+	// BurntSushi/toml は、時差のない日時・日付・時刻を、この名前の時間帯で返す
+	switch tm.Location().String() {
+	case "datetime-local", "date-local", "time-local":
+		t.ErrAt(key, key+" に時差がない", key+" = 2026-10-31T12:00:00+09:00 のように、時差（+09:00 や Z）を付ける")
+		return time.Time{}, false
+	}
+	return tm, true
+}
+
 // Strs は、文字列の配列の項目を返す。
 func (t *Table) Strs(key string, required bool) ([]string, bool) {
 	t.used[key] = true
@@ -187,7 +218,7 @@ func (t *Table) Tables(key string, required bool) ([]*Table, bool) {
 	v, ok := t.M[key]
 	if !ok {
 		if required {
-			t.missing(key, "[["+t.keyPath(key)+"]]")
+			t.missing(key, "[["+header(t.keyPath(key))+"]]")
 		}
 		return nil, false
 	}
@@ -199,13 +230,13 @@ func (t *Table) Tables(key string, required bool) ([]*Table, bool) {
 		for _, e := range arr {
 			m, ok := e.(map[string]any)
 			if !ok {
-				t.ErrAt(key, key+" が表の配列でない", "[["+t.keyPath(key)+"]] の表で書く")
+				t.ErrAt(key, key+" が表の配列でない", "[["+header(t.keyPath(key))+"]] の表で書く")
 				return nil, false
 			}
 			ms = append(ms, m)
 		}
 	default:
-		t.ErrAt(key, key+" が表の配列でない", "[["+t.keyPath(key)+"]] の表で書く")
+		t.ErrAt(key, key+" が表の配列でない", "[["+header(t.keyPath(key))+"]] の表で書く")
 		return nil, false
 	}
 	out := make([]*Table, len(ms))
@@ -221,13 +252,13 @@ func (t *Table) Table(key string, required bool) (*Table, bool) {
 	v, ok := t.M[key]
 	if !ok {
 		if required {
-			t.missing(key, "["+t.keyPath(key)+"]")
+			t.missing(key, "["+header(t.keyPath(key))+"]")
 		}
 		return nil, false
 	}
 	m, ok := v.(map[string]any)
 	if !ok {
-		t.ErrAt(key, key+" が表でない", "["+t.keyPath(key)+"] の表で書く")
+		t.ErrAt(key, key+" が表でない", "["+header(t.keyPath(key))+"] の表で書く")
 		return nil, false
 	}
 	return t.sub(t.keyPath(key), t.keyLabel(key), m), true
@@ -245,4 +276,21 @@ func (t *Table) Unknown(allowed string) {
 	for _, k := range keys {
 		t.ErrAt(k, k+" は決まった項目でない", "消すか、名前を直す（書ける項目: "+allowed+"）")
 	}
+}
+
+// header は、場所の書き方から要素の添字を除き、TOML の見出しの名前にする（例: claim[0].evidence → claim.evidence）。
+func header(path string) string {
+	var b strings.Builder
+	skip := false
+	for _, c := range path {
+		switch {
+		case c == '[':
+			skip = true
+		case c == ']':
+			skip = false
+		case !skip:
+			b.WriteRune(c)
+		}
+	}
+	return b.String()
 }

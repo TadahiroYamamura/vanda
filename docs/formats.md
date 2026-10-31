@@ -62,3 +62,56 @@ id_pattern = "#[0-9]+"
 | `[story]` の `id_pattern` | 文字列 | 省いてよい | コミットのメッセージの中のストーリーの ID の書き方。ID 全体に当たる正規表現（Go の RE2）。省けば `#[0-9]+`（GitHub Issues）。空の文字列に当たるものは書けない |
 
 決まっていない項目は、エラーにする。
+
+## 約束リスト（既定は `.vanda/promises.toml`）
+
+```toml
+[[term]]
+id = "task-id"
+name = "タスクの ID"
+definition = "タスクを見分ける名前"
+part_of = "task"
+
+[[feature]]
+id = "add-task"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = true
+formal = false
+formal_waiver = "…"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task-id"]
+statement = "タスクの ID は重ならない"
+rationale = "…"
+condition = "…"
+layers = ["model", "db"]
+flags = ["ai-proposal"]
+guesses = ["…"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+detail = "…"
+```
+
+| 表 | 項目 | 型 | 必ずか |
+|---|---|---|---|
+| `[[term]]` | `id`・`name`・`definition` | 文字列 | 必ず |
+| | `part_of` | 文字列（用語の ID） | 省いてよい |
+| `[[feature]]` | `id`・`name`・`definition` | 文字列 | 必ず |
+| | `core` | 真偽 | 必ず |
+| | `formal` | 真偽 | 省いてよい。省けば `core` と同じ値とみなす |
+| | `formal_waiver` | 文字列 | 省いてよい（`core = true` かつ `formal = false` なら、審査で要る） |
+| `[[claim]]` | `id`・`statement`・`rationale`・`condition` | 文字列 | 必ず |
+| | `subjects`・`layers` | 文字列の配列 | 必ず |
+| | `flags`・`guesses` | 文字列の配列 | 省いてよい |
+| | `[[claim.evidence]]` | 表の配列 | 必ず |
+| `[[claim.evidence]]` | `stage`・`type`・`detail` | 文字列 | 必ず |
+| | `layers` | 文字列の配列 | 必ず |
+
+- 表は `term`・`feature`・`claim` だけ。決まっていない表と項目は、エラーにする
+- `[[claim.evidence]]` は、インラインの表の配列（`evidence = [{ … }]`）で書いてもよい。ただし、エラーでは行を示せない
+- 設定の `promises` のパターンに当たるファイルを、すべて読む

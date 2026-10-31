@@ -52,6 +52,7 @@ func (s *scanner) line(n int, line string) {
 		s.counts[arr] = idx + 1
 		s.current = arr + "[" + strconv.Itoa(idx) + "]"
 		s.lost = false
+		s.record(arr, n)
 		s.record(s.current, n)
 		return
 	}
