@@ -352,7 +352,7 @@ func TestAnnotationLinksは指す先のないIDと種類の違いと型の用語
 	})
 	_, out, _ := r.run("[[check]]\nname = \"annotation-links\"\nscope = \"all\"\n", "", "")
 	expect(t, out, []string{
-		`spec/Task.tla:3: 仕様の型 Tasks（TypeOK で使っている）に @vanda:feature が付いている。`,
+		`spec/Task.tla:2: 仕様の型 Tasks（TypeOK で使っている）に @vanda:feature が付いている。`,
 		`spec/Task.tla:3: 仕様の型 Tasks（TypeOK で使っている）に @vanda:term も @vanda:internal もない。`,
 		`x/more_test.go:3: @vanda:evidence の "task" は用語の ID で、約束の ID でない。`,
 		`x/more_test.go:6: @vanda:sensor の "nothing" が約束リストの約束にない。`,
@@ -503,4 +503,27 @@ func TestRunは審査ごとの結果の行を標準出力に誤りの中身を�
 	if got := errOut.String(); !strings.HasPrefix(got, ".vanda/notes.md: .vanda/ にあるのに") || strings.Count(got, "\n") != 1 {
 		t.Errorf("標準エラー: %q", got)
 	}
+}
+
+func TestPromiseListShapeは空のIDを誤りにする(t *testing.T) {
+	r := goodRepo(t)
+	r.write(map[string]string{".vanda/promises.toml": strings.Replace(basePromises, `id = "add-task"`, `id = ""`, 1)})
+	_, out, _ := r.run("[[check]]\nname = \"promise-list-shape\"\nscope = \"all\"\n", "", "")
+	expect(t, out, []string{`.vanda/promises.toml:7: 機能の ID "" が決まった形でない。`})
+}
+
+func TestPromiseListShapeは重なったIDを表の種類でなく出てきた順で後のほうの行に出す(t *testing.T) {
+	r := goodRepo(t)
+	r.write(map[string]string{
+		".vanda/promises.toml":   "[[feature]]\nid = \"a\"\nname = \"n\"\ndefinition = \"d\"\n\n[[term]]\nid = \"a\"\nname = \"n\"\ndefinition = \"d\"\n",
+		".vanda/promises/b.toml": "[[term]]\nid = \"b\"\nname = \"n\"\ndefinition = \"d\"\n",
+		".vanda/promises/a.toml": "[[claim]]\nid = \"b\"\nsubjects = [\"a\"]\nstatement = \"s\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"test\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n",
+		".vanda/config.toml":     strings.Replace(baseConfig, `version = "0.1.0"`, "version = \"0.1.0\"\npromises = [\".vanda/promises.toml\", \".vanda/promises/*.toml\"]", 1),
+	})
+	_, out, _ := r.run("[[check]]\nname = \"promise-list-shape\"\nscope = \"all\"\n", "", "")
+	expect(t, out, []string{
+		"審査 promise-list-shape（all）: 失敗（2 件）",
+		`.vanda/promises.toml:7: ID "a" が、.vanda/promises.toml:2 の機能（a）と重なっている。`,
+		`.vanda/promises/b.toml:2: ID "b" が、.vanda/promises/a.toml:2 の約束（b）と重なっている。`,
+	})
 }
