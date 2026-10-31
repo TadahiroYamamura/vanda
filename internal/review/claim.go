@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/TadahiroYamamura/vanda/internal/agreements"
@@ -196,6 +197,7 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 		}
 		d.Agreements = append(d.Agreements, ref)
 	}
+	newestFirst(d, commits, mine)
 	return d, nil
 }
 
@@ -258,4 +260,39 @@ func File(o Options, path string) (string, *Error) {
 		return "", internalErr(err)
 	}
 	return string(b), nil
+}
+
+// newestFirst は、由来と合意の履歴を、新しいものが上の順に並べる。
+// 由来はコミットの日時の新しい順、同じ日時なら履歴で後のコミットを先に。合意の履歴は合意した日時（agreed_at）の新しい順、
+// 同じ日時なら合意の記録のファイルで後に書いた記録を先に（同じ日時のときも、後から足したものが上に来るように）
+func newestFirst(d *ClaimDetail, commits []commit, recs []*agreements.Agreement) {
+	order := map[string]int{}
+	date := map[string]time.Time{}
+	for i, c := range commits {
+		order[c.Hash] = i
+		date[c.Hash] = c.Date
+	}
+	sort.SliceStable(d.Origin, func(i, j int) bool {
+		a, b := d.Origin[i].Commit, d.Origin[j].Commit
+		if !date[a].Equal(date[b]) {
+			return date[a].After(date[b])
+		}
+		return order[a] > order[b]
+	})
+	idx := make([]int, len(d.Agreements))
+	for i := range idx {
+		idx[i] = i
+	}
+	sort.SliceStable(idx, func(i, j int) bool {
+		a, b := recs[idx[i]].AgreedAt, recs[idx[j]].AgreedAt
+		if !a.Equal(b) {
+			return a.After(b)
+		}
+		return idx[i] > idx[j]
+	})
+	sorted := make([]AgreementRef, len(idx))
+	for k, i := range idx {
+		sorted[k] = d.Agreements[i]
+	}
+	d.Agreements = sorted
 }
