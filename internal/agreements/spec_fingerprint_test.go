@@ -423,7 +423,7 @@ func load(t interface {
 	if err := os.WriteFile(path, []byte(src), 0o644); err != nil {
 		t.Fatalf("%v", err)
 	}
-	list, errs := promises.Load(root, []string{".vanda/promises.toml"}, []string{".vanda/promises.toml"})
+	list, errs := promises.Load(root, []string{".vanda/promises.toml"}, []string{".vanda/promises.toml"}, false)
 	if len(errs) > 0 {
 		t.Fatalf("約束リストを読めない: %v\n%s", errs, src)
 	}
