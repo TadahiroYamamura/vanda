@@ -40,6 +40,7 @@
     --del-line: #2b1715;
     --ins-line: #142a1b;
   }
+  .tok { color: var(--shiki-dark, inherit) !important;  }
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.6 system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif; }
@@ -106,8 +107,9 @@ pre.code { background: var(--panel); padding: 8px; border-radius: 4px; overflow:
 .story-body table { width: auto; }
 .story-body pre { background: var(--bg); padding: 6px; overflow: auto; }
 .story-body img { max-width: 100%; }
-del.diff-part { background: var(--del-bg); color: var(--deleted); text-decoration: line-through; }
-ins.diff-part { background: var(--ins-bg); color: var(--added); text-decoration: none; }
+del.diff-part { background: var(--del-bg); text-decoration: underline 2px var(--deleted); text-underline-offset: 3px; }
+ins.diff-part { background: var(--ins-bg); text-decoration: underline 2px var(--added); text-underline-offset: 3px; }
+.tok { color: var(--shiki-light, inherit); }
 table.diff-lines { font: 13px/1.5 ui-monospace, monospace; }
 table.diff-lines td { border: none; padding: 0 6px; white-space: pre-wrap; }
 .diff-no-before, .diff-no-after { color: var(--muted); text-align: right; width: 3em; user-select: none; }

@@ -1,0 +1,41 @@
+{
+  "name": "txtar",
+  "scopeName": "source.txtar",
+  "patterns": [
+    { "include": "#file" },
+    { "include": "#marker" },
+    { "include": "#comment" },
+    { "include": "#command" }
+  ],
+  "repository": {
+    "marker": {
+      "match": "^-- .*\\S.* --$",
+      "name": "markup.heading.txtar"
+    },
+    "file": {
+      "begin": "^(-- .*\\S.* --)$",
+      "beginCaptures": { "1": { "name": "markup.heading.txtar" } },
+      "end": "(?=^-- .*\\S.* --$)",
+      "contentName": "string.unquoted.txtar"
+    },
+    "comment": {
+      "match": "^\\s*#.*$",
+      "name": "comment.line.number-sign.txtar"
+    },
+    "command": {
+      "begin": "^\\s*(?:(\\[[^\\]]*\\])\\s*)?(!\\s*|\\?\\s*)?(\\S+)",
+      "beginCaptures": {
+        "1": { "name": "meta.condition.txtar" },
+        "2": { "name": "keyword.operator.txtar" },
+        "3": { "name": "entity.name.function.txtar" }
+      },
+      "end": "$",
+      "patterns": [
+        { "match": "'[^']*'", "name": "string.quoted.single.txtar" },
+        { "match": "\"(?:[^\"\\\\]|\\\\.)*\"", "name": "string.quoted.double.txtar" },
+        { "match": "\\$\\w+|\\$\\{[^}]*\\}", "name": "variable.other.txtar" },
+        { "match": "\\s#.*$", "name": "comment.line.number-sign.txtar" }
+      ]
+    }
+  }
+}

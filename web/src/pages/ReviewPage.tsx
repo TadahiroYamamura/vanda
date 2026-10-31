@@ -4,7 +4,9 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api, type ClaimContent, type Context, type Entry, type FeatureContent, type FileContent, type Review, type TermContent } from "../api";
 import { ErrorBox, FlagBadge, StateBadge, shortCommit, useLoad } from "../components/common";
+import { CodeBlock } from "../components/Code";
 import { LineDiff, Parts } from "../components/DiffView";
+import { langOf } from "../highlight";
 import { TlaCode } from "../components/TlaCode";
 import { changeLabel, changeMark, fileTypeLabel, kindLabel, stageLabel, typeLabel } from "../labels";
 import { Link, navigate } from "../route";
@@ -395,7 +397,7 @@ function Compare(props: { entry: Entry }) {
     return (
       <div className="compare-file">
         <h3>変更前と変更後の差分</h3>
-        <LineDiff lines={e.diff.lines} />
+        <LineDiff lines={e.diff.lines} lang={langOf(e.path ?? "")} />
       </div>
     );
   }
@@ -405,7 +407,7 @@ function Compare(props: { entry: Entry }) {
   const isTla = e.fileType === "oracle";
   const cell = (r: Row | undefined, side: "before" | "after") => {
     if (!r) return <td className="empty">—</td>;
-    if (e.kind === "file") return <td>{isTla ? <TlaCode source={r[1]} /> : <pre className="code">{r[1]}</pre>}</td>;
+    if (e.kind === "file") return <td>{isTla ? <TlaCode source={r[1]} /> : <CodeBlock source={r[1]} lang={langOf(e.path ?? "")} />}</td>;
     const parts = r[2] && fields ? fields[r[2]] : undefined;
     return <td className="text">{parts ? <Parts parts={parts} side={side} /> : r[1]}</td>;
   };

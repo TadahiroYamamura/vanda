@@ -1,6 +1,7 @@
 import { api, type EvidenceDetail, type Found } from "../api";
 import { ErrorBox, StateBadge, shortCommit, useLoad } from "../components/common";
-import { TlaCode } from "../components/TlaCode";
+import { CodeBlock } from "../components/Code";
+import { langOf } from "../highlight";
 import { stageLabel, typeLabel } from "../labels";
 import { Link } from "../route";
 
@@ -136,7 +137,7 @@ function FoundView(props: { f: Found }) {
           </>
         )}
       </p>
-      {f.text !== null && (f.adapter === "tla" ? <TlaCode source={f.text} /> : <pre className="code">{f.text}</pre>)}
+      {f.text !== null && <CodeBlock source={f.text} lang={langOf(f.file)} />}
     </div>
   );
 }
@@ -150,7 +151,7 @@ export function FilePage(props: { path: string }) {
       </p>
       <h1>{props.path}</h1>
       {d.error != null && <ErrorBox error={d.error} title="ファイルを読めない" />}
-      {d.data && (props.path.endsWith(".tla") ? <TlaCode source={d.data.text} /> : <pre className="code">{d.data.text}</pre>)}
+      {d.data && <CodeBlock source={d.data.text} lang={langOf(props.path)} />}
     </div>
   );
 }

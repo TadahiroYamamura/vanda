@@ -18,7 +18,8 @@
     "types": [
       "vitest/globals",
       "vite/client"
-    ]
+    ],
+    "resolveJsonModule": true
   },
   "include": [
     "src",
