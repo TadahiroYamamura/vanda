@@ -160,8 +160,8 @@ func (e *env) agreementTargets() []diag.Error {
 	return errs
 }
 
-// evidenceTypes は、エビデンスのタイプと、揃っているとするアノテーション（アダプタと種類）。
-var evidenceTypes = map[string][2]string{
+// EvidenceTypes は、エビデンスのタイプと、揃っているとするアノテーション（アダプタと種類）。
+var EvidenceTypes = map[string][2]string{
 	"scenario-test":    {"txtar", "evidence"},
 	"model-check":      {"tla", "claim"},
 	"guardrail":        {"sql", "evidence"},
@@ -198,7 +198,7 @@ func (e *env) evidencePresent(scope string) []diag.Error {
 			case "human-review", "monitoring":
 				continue
 			}
-			want, ok := evidenceTypes[ev.Type]
+			want, ok := EvidenceTypes[ev.Type]
 			if !ok {
 				continue // 決まった値でないタイプは、約束リストの形の審査で出す
 			}
