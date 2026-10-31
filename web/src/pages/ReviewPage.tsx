@@ -482,10 +482,22 @@ function Compare(props: { entry: Entry }) {
   const before = rows(e.kind, e.before);
   const after = rows(e.kind, e.after);
   if (e.kind === "file") {
-    // 追加・削除したファイル（行の差分がないもの）は、中身をそのまま出す
-    const r = (after ?? before)?.[0];
-    if (!r) return null;
-    return e.fileType === "oracle" ? <TlaCode source={r[1]} /> : <CodeBlock source={r[1]} lang={langOf(e.path ?? "")} />;
+    // 行の差分がないファイル（追加・削除したもの）は、ある側の中身をそのまま出す。両側があれば、変更前・変更後の順に出す
+    const show = (r: Row) => (e.fileType === "oracle" ? <TlaCode source={r[1]} /> : <CodeBlock source={r[1]} lang={langOf(e.path ?? "")} />);
+    const b = before?.[0];
+    const a = after?.[0];
+    if (b && a) {
+      return (
+        <div className="compare-file">
+          <h3>変更前</h3>
+          {show(b)}
+          <h3>変更後</h3>
+          {show(a)}
+        </div>
+      );
+    }
+    const r = a ?? b;
+    return r ? show(r) : null;
   }
   return <ItemCompare entry={e} before={before} after={after} />;
 }
