@@ -23,12 +23,11 @@ TypeOK ==
 (* 今の中身の指紋に合う合意が 1 つでもあれば合意済 *)
 Agreed(i) == \E a \in agreements : a.item = i /\ a.fp = content[i]
 
-(* s が合意した項目のうち、今の中身に s の合意がなく、s 以外のストーリーが変えたもの *)
+(* s の外れた合意: s が合意したことがあり、今の中身に s の合意がない項目。誰が変えたかを問わない（PO の判断） *)
 Broken(s) ==
     {i \in Items :
         /\ \E a \in agreements : a.item = i /\ a.story = s
-        /\ ~ \E a \in agreements : a.item = i /\ a.story = s /\ a.fp = content[i]
-        /\ changedBy[i] \ {s} # {}}
+        /\ ~ \E a \in agreements : a.item = i /\ a.story = s /\ a.fp = content[i]}
 
 (* s の範囲の合意の審査が通る: s が変えた項目がすべて合意済で、s の外れた合意がない *)
 StoryPass(s) ==
@@ -73,6 +72,11 @@ AgreedOnlyWithMatchingFingerprint == \A i \in Items : agreedNow[i] = Agreed(i)
 BrokenBlocksStory == \A s \in Stories : Broken(s) # {} => ~ StoryPass(s)
 
 (* 性質 3: ほかのストーリーが今の中身に合意しても、s の外れた合意は外れたまま。s が合意し直せば解ける *)
+(* 性質 4: s 自身が変えた項目も、s が前に合意していれば、s が合意し直すまで外れたまま *)
+OwnChangeBreaks ==
+    [][\A s \in Stories, i \in Items :
+          (Change(s, i) /\ \E a \in agreements : a.item = i /\ a.story = s) => i \in Broken(s)']_vars
+
 OnlyOwnAgreementRepairs ==
     [][\A s, t \in Stories, i \in Items :
           /\ (Agree(t, i) /\ t # s /\ i \in Broken(s)) => i \in Broken(s)'
