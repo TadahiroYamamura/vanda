@@ -65,6 +65,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	rec := AgreementRecord{Kind: req.Kind, User: *user, AgreedAt: now.Format(time.RFC3339), Story: req.Story}
 	var target string // 一覧の名前（コミットのメッセージに書く）
 	var claim *promises.Claim
+	var source string // 合意の対象が書いてあるファイル
 	switch req.Kind {
 	case "claim", "term", "feature":
 		if req.ID == nil || *req.ID == "" {
@@ -81,6 +82,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		}
 		target = kindName[req.Kind] + " " + cur.ID
 		claim = cur.Claim
+		source = cur.Table.Doc.File
 	case "file":
 		if req.Path == nil || *req.Path == "" {
 			return nil, badRequest("ファイルの合意に path がない", "path にファイルの場所を書く")
@@ -95,6 +97,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		}
 		rec.Key, rec.Fingerprint, rec.Path = fp, fp, &p
 		target = "ファイル " + p
+		source = p
 	default:
 		return nil, badRequest(fmt.Sprintf("対象の種類 %q はない", req.Kind), "kind を claim・term・feature・file のどれかにする")
 	}
@@ -115,7 +118,15 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		promiseFile = claim.Table.Doc.File
 		files = append(files, promiseFile)
 	}
-	dirty, err := repo.Git(o.Root, append([]string{"status", "--porcelain", "-z", "--"}, files...)...)
+	// 合意の対象のファイルにコミットしていない変更があると、合意のコミットの時点のリポジトリが、合意した中身と合わなくなる
+	dirty, err := repo.Git(o.Root, "status", "--porcelain", "-z", "--", source)
+	if err != nil {
+		return nil, internalErr(err)
+	}
+	if dirty != "" {
+		return nil, conflict(target+" が書いてある "+source+" に、コミットしていない変更がある（合意した中身と、合意のコミットの時点のリポジトリが合わなくなる）", "先に "+source+" の変更をコミットしてから合意する")
+	}
+	dirty, err = repo.Git(o.Root, append([]string{"status", "--porcelain", "-z", "--"}, files...)...)
 	if err != nil {
 		return nil, internalErr(err)
 	}
