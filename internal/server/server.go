@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/review"
@@ -29,6 +30,7 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/context", s.read(s.context))
 	mux.HandleFunc("GET /api/review", s.read(s.review))
+	mux.HandleFunc("POST /api/agree", s.agree)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, http.StatusNotFound, "この API はない", "")
 	})
@@ -139,3 +141,20 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	}
 }
 
+func (s *Server) agree(w http.ResponseWriter, r *http.Request) {
+	var req review.AgreeRequest
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "合意の要求の JSON が読めない（"+err.Error()+"）", "docs/formats.md の POST /api/agree の形で送る")
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	res, err := review.Agree(review.Options{Root: s.Root, Cfg: s.Cfg}, req, time.Now())
+	if err != nil {
+		writeReviewError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
+}
