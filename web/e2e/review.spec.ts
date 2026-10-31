@@ -524,3 +524,157 @@ for (const pg of pages) {
     await expect(page.getByText(/promises\.toml/).first(), "その時点の約束リストが読めない理由が出ない").toBeVisible();
   });
 }
+
+// RV-17。取り消しのボタンの名前と API の形はまだ決まっていないので、ボタンは「取り消」を含む名前で探し、
+// 取り消しが済んだかはコミットが増えたことで待つ。API で断られることは、API の形が docs/formats.md に書かれてから確かめる
+const unagreeButton = (page: Page) => page.getByRole("button", { name: /取り消/ });
+const commitCount = () => Number(repo.git("rev-list", "--count", "HEAD"));
+const nonBlank = (t: string) => t.split("\n").filter((l) => l.trim() !== "");
+
+// withoutRecord は、合意の記録のファイルの空行でない行から、key と story の記録 1 件（[[agreement]] から、コメント・次の記録の前まで）を除く
+function withoutRecord(text: string, key: string, story: string): string[] {
+  const lines = nonBlank(text);
+  const out: string[] = [];
+  let block: string[] = [];
+  const flush = () => {
+    const hit = block.some((l) => l.includes(`key = "${key}"`)) && block.some((l) => l.includes(`story = "${story}"`));
+    if (!hit) out.push(...block);
+    block = [];
+  };
+  for (const l of lines) {
+    if (l.startsWith("[[agreement]]")) flush();
+    if (l.startsWith("#")) {
+      flush();
+      out.push(l);
+    } else if (block.length > 0 || l.startsWith("[[agreement]]")) block.push(l);
+    else out.push(l);
+  }
+  flush();
+  return out;
+}
+
+// 合意の記録のファイルに、コメントと空行を混ぜる（取り消しで、ほかの行が変わらないことを見るため）
+function decorateAgreements(r: Repo) {
+  const text = readFileSync(join(r.root, ".vanda/agreements.toml"), "utf8");
+  const parts = text.split("\n[[agreement]]");
+  r.write(".vanda/agreements.toml", "# 合意の記録（E2E の例）\n\n" + parts[0] + "\n[[agreement]]" + parts[1] + "\n# 用語の次は約束\n\n\n[[agreement]]" + parts.slice(2).join("\n[[agreement]]") + "\n# 終わりのコメント\n");
+  r.write("README.md", "# 例\n");
+  commit(r, "#24 合意の記録にコメントを足す");
+}
+
+test("合意済の約束で合意を取り消すとストーリーの今の中身への合意の記録だけが1つのコミットで消え提案中に戻り審査で止まりもう一度合意すると通る", async ({ page }) => {
+  decorateAgreements(repo);
+  await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
+  await select(page, "task-id-unique");
+  await expect(page.getByRole("button", { name: /合意する/ })).toBeVisible();
+  await expect(unagreeButton(page), "提案中のものに取り消しが出ている").toHaveCount(0);
+  await agreeAll(page, items);
+  const passed = repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main");
+  expect(passed.code, passed.out).toBe(0);
+
+  const agreementsBefore = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
+  const promisesBefore = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
+  const countBefore = commitCount();
+  // 合意と関係のない書きかけの変更（追跡しているファイルと、追跡していないファイル）
+  repo.write("README.md", "# 例\n書きかけ\n");
+  repo.write("メモ.txt", "書きかけ\n");
+
+  await select(page, "task-id-unique");
+  await unagreeButton(page).click();
+  await expect.poll(commitCount, { message: "取り消しがコミットにならない" }).toBe(countBefore + 1);
+
+  expect(repo.git("log", "-1", "--format=%B"), "コミットのメッセージにストーリーの ID がない").toContain("#24");
+  expect(repo.git("diff", "--name-only", "HEAD~1", "HEAD").split("\n"), "合意の記録のファイルのほかに変わったものがある").toEqual([".vanda/agreements.toml"]);
+  const agreementsAfter = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
+  // #24 の task-id-unique への記録だけが消え、#1 の記録とコメントは同じ順で残る
+  expect(nonBlank(agreementsAfter)).toEqual(withoutRecord(agreementsBefore, "task-id-unique", "#24"));
+  expect(nonBlank(agreementsAfter).length).toBeLessThan(nonBlank(agreementsBefore).length);
+  for (const c of ["# 合意の記録（E2E の例）", "# 用語の次は約束", "# 終わりのコメント"]) expect(agreementsAfter).toContain(c);
+  // フラグは戻らない
+  const promisesAfter = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
+  expect(promisesAfter).toBe(promisesBefore);
+  expect(promisesAfter).not.toContain("ai-proposal");
+  // 書きかけの変更は残り、コミットに入らない
+  expect(repo.git("status", "--porcelain", "--untracked-files=all").split("\n").sort()).toEqual([" M README.md", "?? メモ.txt"]);
+
+  await expect(page.getByText(/提案中/).first()).toBeVisible();
+  // 自分で取り消したものは、RV-14 の「合意が外れた」としては出さない
+  await expect(page.getByText(/合意が外れた/)).toHaveCount(0);
+  const stopped = repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main");
+  expect(stopped.code, "取り消した後も合意の審査が通る").toBe(1);
+  expect(stopped.out).toContain("task-id-unique");
+
+  await agreeAll(page, ["task-id-unique"]);
+  const again = repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main");
+  expect(again.code, again.out).toBe(0);
+});
+
+test("合意の記録のファイルに書きかけの変更があると合意の取り消しを断り理由を出しコミットしない", async ({ page }) => {
+  await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
+  await agreeAll(page, ["task-id-unique"]);
+  const dirty = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + "# 書きかけ\n";
+  repo.write(".vanda/agreements.toml", dirty);
+  const countBefore = commitCount();
+  await expect(page.getByText(/agreements\.toml|合意の記録/)).toHaveCount(0);
+
+  await select(page, "task-id-unique");
+  await unagreeButton(page).click();
+  await expect(page.getByText(/agreements\.toml|合意の記録/).first(), "断った理由が出ない").toBeVisible();
+  expect(commitCount()).toBe(countBefore);
+  expect(readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8")).toBe(dirty);
+  await expect(page.getByText(/合意済/).first()).toBeVisible();
+});
+
+// 取り消せるのは、今の git の人（buildRepo の user.name「合意する人」・user.email「po@example.com」）が今のブランチで書いた
+// 合意の記録だけ。誰が × どこで書いたか、の組み合わせを全部回す。ほかの人は、名前だけ・メールだけ・両方の違いを分ける
+const writers = [
+  { name: "自分", user: { name: "合意する人", email: "po@example.com" }, self: true },
+  { name: "名前だけ違うほかの人", user: { name: "ほかの人", email: "po@example.com" }, self: false },
+  { name: "メールだけ違うほかの人", user: { name: "合意する人", email: "other@example.com" }, self: false },
+  { name: "名前もメールも違うほかの人", user: { name: "ほかの人", email: "other@example.com" }, self: false },
+];
+const places = [
+  { name: "今のブランチ", onBase: false },
+  { name: "ベースブランチ", onBase: true },
+];
+
+for (const w of writers) {
+  for (const pl of places) {
+    const can = w.self && !pl.onBase;
+    test(`${w.name}が${pl.name}で書いた合意の記録は${can ? "取り消せて記録が消えた1つのコミットになる" : "取り消せず取り消しのボタンが出ない"}`, async ({ page }) => {
+      // task-id-unique のフラグを外し、今の中身（#24 の文）への合意の記録を手で書く。ベースブランチなら main に書いて
+      // story-24 に取り込み、分かれた点より前にする
+      repo.write(".vanda/promises.toml", promises(v2Statement, false, true));
+      commit(repo, "#24 フラグを外す");
+      const record = agreement("claim", "task-id-unique", sha(claimJSON(v2Statement)), null, "#24")
+        .replace('user = { name = "テスト担当", email = "tester@example.com" }', `user = { name = "${w.user.name}", email = "${w.user.email}" }`);
+      if (pl.onBase) {
+        repo.git("switch", "-q", "main");
+        repo.write(".vanda/agreements.toml", readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + record);
+        commit(repo, "#24 合意の記録を書く");
+        repo.git("switch", "-q", "story-24");
+        repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "merge", "-q", "--no-edit", "main");
+      } else {
+        repo.write(".vanda/agreements.toml", readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + record);
+        commit(repo, "#24 合意の記録を書く");
+      }
+      const agreementsBefore = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
+      const countBefore = commitCount();
+
+      await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
+      await select(page, "task-id-unique");
+      await expect(page.getByText("今の中身に合意済みです。").first(), "手で書いた合意の記録が今の中身への合意になっていない").toBeVisible();
+      if (!can) {
+        await expect(unagreeButton(page)).toHaveCount(0);
+        expect(commitCount()).toBe(countBefore);
+        return;
+      }
+      await unagreeButton(page).click();
+      await expect.poll(commitCount, { message: "取り消しがコミットにならない" }).toBe(countBefore + 1);
+      expect(repo.git("diff", "--name-only", "HEAD~1", "HEAD").split("\n")).toEqual([".vanda/agreements.toml"]);
+      expect(nonBlank(readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8"))).toEqual(withoutRecord(agreementsBefore, "task-id-unique", "#24"));
+      expect(readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8")).not.toContain("ai-proposal");
+      await expect(page.getByText(/提案中/).first()).toBeVisible();
+    });
+  }
+}
