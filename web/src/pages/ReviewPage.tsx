@@ -4,6 +4,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api, type ClaimContent, type Context, type Entry, type FeatureContent, type FileContent, type Review, type TermContent } from "../api";
 import { ErrorBox, FlagBadge, StateBadge, shortCommit, useLoad } from "../components/common";
+import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
 import { LineDiff, Parts } from "../components/DiffView";
 import { langOf } from "../highlight";
@@ -357,7 +358,7 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
       </div>
 
       <Compare entry={e} />
-      {e.kind === "claim" && e.id && e.change !== "deleted" && <EvidencePlan id={e.id} query={props.query} />}
+      {e.kind === "claim" && e.id && e.change !== "deleted" && <ClaimSections id={e.id} query={props.query} />}
     </div>
   );
 }
@@ -452,8 +453,8 @@ function Compare(props: { entry: Entry }) {
   );
 }
 
-// EvidencePlan は、エビデンスの予定と実際の表（RV-08）。合格したかは段 3 で足す。
-export function EvidencePlan(props: { id: string; query?: string }) {
+// ClaimSections は、約束のエビデンスの予定と実際の表（RV-08。合格したかは段 3 で足す）と、由来と合意の履歴（RV-16）。
+export function ClaimSections(props: { id: string; query?: string }) {
   const d = useLoad(() => api.claim(props.id), props.id);
   return (
     <div>
@@ -494,6 +495,7 @@ export function EvidencePlan(props: { id: string; query?: string }) {
           </tbody>
         </table>
       )}
+      {d.data && <ClaimHistory claim={d.data} level="h3" />}
     </div>
   );
 }

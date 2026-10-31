@@ -137,3 +137,22 @@ func (r *Records) AgreedBy(kind, key, fp, story string) bool {
 	}
 	return false
 }
+
+// FromSources は、読み込み済みの中身 srcs（場所から中身へ）を、names の順に合意の記録として読む。
+// 過去のコミットの合意の記録を読むときに使う。
+func FromSources(names []string, srcs map[string][]byte) (*Records, diag.Errors) {
+	var errs []diag.Error
+	r := &Records{Files: names}
+	for _, f := range names {
+		doc := tomlread.Parse(f, srcs[f], &errs)
+		if doc == nil {
+			continue
+		}
+		r.read(doc.Top())
+	}
+	if len(errs) > 0 {
+		diag.Sort(errs)
+		return r, errs
+	}
+	return r, nil
+}
