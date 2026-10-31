@@ -279,8 +279,18 @@ function Group(props: { label: string; entries: Entry[]; selected: string | null
 function EntryRow(props: { e: Entry; selected: boolean; onSelect: (key: string) => void }) {
   const { e } = props;
   return (
-    <li className={props.selected ? "entry selected" : "entry"}>
-      <button type="button" className="entry-button" onClick={() => props.onSelect(entryKey(e))} aria-current={props.selected}>
+    // 1 件の枠（番号・種類・名前・札）のどこを押しても選ぶ。キーボードと読み上げのために、名前の所は <button> のまま残す
+    <li className={props.selected ? "entry selected" : "entry"} onClick={() => props.onSelect(entryKey(e))}>
+      <button
+        type="button"
+        className="entry-button"
+        onClick={(ev) => {
+          // 枠にも同じ動きがあるので、枠へ伝えず、二度選ばないようにする
+          ev.stopPropagation();
+          props.onSelect(entryKey(e));
+        }}
+        aria-current={props.selected}
+      >
         <span className="no">{e.no ?? "—"}</span>
         <span className={`change change-${e.change}`} title={changeLabel[e.change]}>
           {changeMark[e.change]}
