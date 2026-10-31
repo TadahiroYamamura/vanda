@@ -1,6 +1,7 @@
 package annotation
 
 import (
+	"go/ast"
 	"strings"
 )
 
@@ -147,4 +148,39 @@ func TLADefinition(src []byte, annLine int) (string, bool) {
 		end--
 	}
 	return strings.Join(rows[start:end], "\n"), true
+}
+
+// TargetLine は、行 annLine（1 から数える）のアノテーションが付いているものの行を返す。
+// go は func の宣言の行、tla は定義の行、sql は文の行、txtar はファイル全体に付くので 1。見つからなければ annLine。
+func TargetLine(adapter, file string, src []byte, annLine int) int {
+	rows := strings.Split(string(src), "\n")
+	switch adapter {
+	case "txtar":
+		return 1
+	case "go":
+		fset, f, errs := parseGo(file, src)
+		if errs != nil {
+			return annLine
+		}
+		for _, d := range f.Decls {
+			fd, ok := d.(*ast.FuncDecl)
+			if ok && fd.Doc != nil && fset.Position(fd.Doc.Pos()).Line <= annLine && annLine <= fset.Position(fd.Doc.End()).Line {
+				return fset.Position(fd.Pos()).Line
+			}
+		}
+	case "tla":
+		code, _ := splitTLA(rows)
+		for j := annLine; j < len(code); j++ {
+			if strings.TrimSpace(code[j]) != "" {
+				return j + 1
+			}
+		}
+	case "sql":
+		for j := annLine; j < len(rows); j++ {
+			if t := strings.TrimSpace(rows[j]); t != "" && !strings.HasPrefix(t, "--") {
+				return j + 1
+			}
+		}
+	}
+	return annLine
 }

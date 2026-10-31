@@ -127,8 +127,9 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 				if a.Adapter != want[0] || a.Kind != want[1] || a.Value != c.ID {
 					continue
 				}
-				f := Found{Adapter: a.Adapter, File: a.File, Line: a.Line, Name: a.Name}
-				text, err := evidenceText(o.Root, a)
+				f := Found{Adapter: a.Adapter, File: a.File, Name: a.Name}
+				text, line, err := evidenceText(o.Root, a)
+				f.Line = line
 				if err != nil {
 					return nil, internalErr(err)
 				}
@@ -184,24 +185,25 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 	return d, nil
 }
 
-// evidenceText は、エビデンスの本文を返す。txtar と sql はファイル全体、tla は付いている定義、go は返さない。
-func evidenceText(root string, a annotation.Annotation) (*string, error) {
-	if a.Adapter == "go" {
-		return nil, nil
-	}
+// evidenceText は、エビデンスの本文と、アノテーションが付いているものの行を返す。本文は、txtar と sql はファイル全体、tla は付いている定義、go は返さない。
+func evidenceText(root string, a annotation.Annotation) (*string, int, error) {
 	src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(a.File)))
 	if err != nil {
-		return nil, fmt.Errorf("%s を読めない（%v）", a.File, err)
+		return nil, 0, fmt.Errorf("%s を読めない（%v）", a.File, err)
 	}
-	if a.Adapter == "tla" {
+	line := annotation.TargetLine(a.Adapter, a.File, src, a.Line)
+	switch a.Adapter {
+	case "go":
+		return nil, line, nil
+	case "tla":
 		def, ok := annotation.TLADefinition(src, a.Line)
 		if !ok {
-			return nil, fmt.Errorf("%s:%d: アノテーションの付いている定義が見つからない", a.File, a.Line)
+			return nil, 0, fmt.Errorf("%s:%d: アノテーションの付いている定義が見つからない", a.File, a.Line)
 		}
-		return &def, nil
+		return &def, line, nil
 	}
 	text := string(src)
-	return &text, nil
+	return &text, line, nil
 }
 
 // File は、合意の対象のファイルか、アノテーションを読むファイルの中身を返す。

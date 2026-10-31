@@ -377,12 +377,15 @@ func (s *state) entries(changes []rawChange) ([]Entry, error) {
 				break
 			}
 		}
-		change, old := "added", ""
+		rc, change, old := a.rc, "added", ""
 		if pair >= 0 {
 			used[pair] = true
-			change, old = "renamed", deleted[pair].path
+			d := deleted[pair]
+			// 比べる元は、前の場所の比べる元の時点（ストーリー全体の見方では、場所ごとに時点が違う）
+			rc = rawChange{key: a.rc.key, before: d.rc.before, others: s.mergeCommits(d.rc.others, a.rc.others)}
+			change, old = "renamed", d.path
 		}
-		e, err := s.fileEntry(a.rc, a.path, old, change)
+		e, err := s.fileEntry(rc, a.path, old, change)
 		if err != nil {
 			return nil, err
 		}
@@ -399,6 +402,28 @@ func (s *state) entries(changes []rawChange) ([]Entry, error) {
 		out = append(out, e)
 	}
 	return out, nil
+}
+
+// mergeCommits は、2 つのコミットの並びを、重ねずに、履歴の古い順にまとめる。
+// 名前の変更では、前の場所と今の場所のどちらかを変えたコミットを、どちらも示す（見落とすより、多めに示すほうを選んだ）。
+func (s *state) mergeCommits(a, b []CommitRef) []CommitRef {
+	if a == nil && b == nil {
+		return nil
+	}
+	order := map[string]int{}
+	for i, c := range s.h.commits {
+		order[c.Hash] = i
+	}
+	seen := map[string]bool{}
+	out := []CommitRef{}
+	for _, c := range append(append([]CommitRef{}, a...), b...) {
+		if !seen[c.Commit] {
+			seen[c.Commit] = true
+			out = append(out, c)
+		}
+	}
+	sort.SliceStable(out, func(i, j int) bool { return order[out[i].Commit] < order[out[j].Commit] })
+	return out
 }
 
 func ptr[T any](v T) *T { return &v }
