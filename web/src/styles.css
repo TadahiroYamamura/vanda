@@ -212,7 +212,8 @@ tr.claim-at-row > td { padding: 0 0 8px; background: transparent; }
 /* 表のままでは収まらない幅では、エビデンスの予定の 1 行を、見出しを付けて縦に並べる */
 @media (max-width: 720px) {
   table.plan, table.plan tbody, table.plan tr, table.plan td { display: block; width: auto; }
-  table.plan thead { display: none; }
+  /* 見出しは消さず、画面から見えなくするだけにする（読み上げの表の見出しとして残すため） */
+  table.plan thead { display: block; position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   table.plan tr { padding: 6px 0; border-bottom: 1px solid var(--line2); }
   table.plan td { border: 0; padding: 2px 12px; white-space: normal; max-width: none; min-width: 0; }
   table.plan td.plan-detail { white-space: pre-wrap; }
