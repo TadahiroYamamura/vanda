@@ -398,12 +398,19 @@ function commitV3(r: Repo): string {
   return commit(r, "#24 理由と条件を足す");
 }
 
-// 由来の行と合意の記録の行は、CL の約束の詳細と同じく表の行として探す。行の中にボタンがあればそれを、なければ行を押して選ぶ
-async function choose(row: ReturnType<Page["getByRole"]>) {
+// 由来の行と合意の記録の行は、CL の約束の詳細と同じく表の行として探す。その時点の中身は、行の中の開く・たたむを
+// 切り替えるボタンで開く。押すと aria-expanded と名前が切り替わる
+type Row = ReturnType<Page["getByRole"]>;
+async function choose(row: Row) {
   await expect(row).toBeVisible();
-  const button = row.getByRole("button");
-  if ((await button.count()) > 0) await button.first().click();
-  else await row.click();
+  const open = row.getByRole("button", { name: "その時点の中身を開く" });
+  await expect(open).toHaveAttribute("aria-expanded", "false");
+  await open.click();
+  await expect(row.getByRole("button", { name: "その時点の中身をたたむ" }), "開いた後に、ボタンがたたむに切り替わらない").toHaveAttribute("aria-expanded", "true");
+}
+async function collapse(row: Row) {
+  await row.getByRole("button", { name: "その時点の中身をたたむ" }).click();
+  await expect(row.getByRole("button", { name: "その時点の中身を開く" }), "たたんだ後に、ボタンが開くに切り替わらない").toHaveAttribute("aria-expanded", "false");
 }
 const rowOf = (page: Page, text: string) => page.getByRole("row").filter({ hasText: text }).first();
 
@@ -520,6 +527,73 @@ for (const pg of pages) {
       await expect(page.getByText(v1Statement, { exact: true })).toHaveCount(0);
       await choose(rowOf(page, "テスト担当"));
       await expect(page.getByText(v1Statement, { exact: true }).first()).toBeVisible();
+    }
+  });
+
+  test(`${pg.name}で2つ以上の時点を開くとそれぞれの中身が同時に出たままになり1つをたたんでもほかは開いたまま`, async ({ page }) => {
+    commitV3(repo);
+    await openReviewDetail(page);
+    const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
+    await page.getByRole("button", { name: /合意する/ }).click();
+    expect((await res).status()).toBe(200);
+    repo.write(".vanda/promises.toml", promisesAt(v4));
+    commit(repo, "#24 文を直す");
+
+    await pg.open(page);
+    await expect(page.getByText(v4.statement).first()).toBeVisible();
+    // 開くもの: 由来の #1（v1）と #24 の最初のコミット（v2）、v3 のときの合意（v3）。レビューの画面では v1 の文が
+    // 変更前として出ているので、出ている数が 1 つ増えるかで見る
+    const opened: [string, string][] = [
+      ["#1 はじめの約束を置く", v1Statement],
+      ["#24 約束を変え、題の約束を足す", v2Statement],
+      ["合意する人", v3.statement],
+    ];
+    const count = (text: string) => page.getByText(text, { exact: false }).count();
+    const before = new Map<string, number>();
+    for (const [, text] of opened) before.set(text, await count(text));
+    for (const [rowText] of opened) await choose(rowOf(page, rowText));
+    for (const [rowText, text] of opened) {
+      await expect.poll(() => count(text), { message: `${rowText} の時点の中身が、ほかを開いた後に出ていない` }).toBe(before.get(text)! + 1);
+    }
+    await collapse(rowOf(page, "#24 約束を変え、題の約束を足す"));
+    await expect.poll(() => count(v2Statement), { message: "たたんだ時点の中身が消えない" }).toBe(before.get(v2Statement)!);
+    for (const [rowText, text] of [opened[0], opened[2]]) {
+      await expect.poll(() => count(text), { message: `1 つをたたむと、${rowText} の時点の中身も消えた` }).toBe(before.get(text)! + 1);
+      await expect(rowOf(page, rowText).getByRole("button", { name: "その時点の中身をたたむ" })).toHaveAttribute("aria-expanded", "true");
+    }
+  });
+
+  test(`${pg.name}で由来と合意の履歴の行を押すとその時点の中身が開きもう一度押すとたたまり山形のボタンを押しても1回だけ切り替わる`, async ({ page }) => {
+    commitV3(repo);
+    repo.write(".vanda/promises.toml", promisesAt(v4));
+    commit(repo, "#24 文を直す");
+    await pg.open(page);
+    await expect(page.getByText(v4.statement).first()).toBeVisible();
+
+    // 由来の v3 のコミットの行と、合意の履歴の #1 の合意（v1）の行。レビューの画面では v1 の文が変更前として出ているので、
+    // 出ている数が 1 つ増えるか・戻るかで見る
+    const count = (text: string) => page.getByText(text, { exact: false }).count();
+    for (const [rowText, text] of [["#24 理由と条件を足す", v3.statement], ["テスト担当", v1Statement]]) {
+      const row = rowOf(page, rowText);
+      const cell = row.getByRole("cell").filter({ hasText: rowText }).first();
+      const toggle = row.getByRole("button", { name: /その時点の中身を(開く|たたむ)/ });
+      const base = await count(text);
+      await expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+      await cell.click();
+      await expect(toggle, `${rowText} の行を押しても開かない`).toHaveAttribute("aria-expanded", "true");
+      await expect.poll(() => count(text)).toBe(base + 1);
+      await cell.click();
+      await expect(toggle, `${rowText} の行をもう一度押してもたたまない`).toHaveAttribute("aria-expanded", "false");
+      await expect.poll(() => count(text)).toBe(base);
+
+      // ボタンは行の中にあるので、行の動きと二重に切り替わると、押しても閉じたままになる
+      await row.getByRole("button", { name: "その時点の中身を開く" }).click();
+      await expect(toggle, `${rowText} のボタンを押すと、二重に切り替わって閉じたまま`).toHaveAttribute("aria-expanded", "true");
+      await expect.poll(() => count(text)).toBe(base + 1);
+      await row.getByRole("button", { name: "その時点の中身をたたむ" }).click();
+      await expect(toggle, `${rowText} のボタンでたたむと、二重に切り替わって開いたまま`).toHaveAttribute("aria-expanded", "false");
+      await expect.poll(() => count(text)).toBe(base);
     }
   });
 
