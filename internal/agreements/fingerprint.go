@@ -50,7 +50,7 @@ func writeJSON(b *strings.Builder, v any) error {
 	switch x := v.(type) {
 	case string:
 		if !utf8.ValidString(x) {
-			return fmt.Errorf("UTF-8 でない文字列がある")
+			return fmt.Errorf("UTF-8 でない文字列があります")
 		}
 		writeString(b, x)
 	case bool:
@@ -98,7 +98,7 @@ func writeJSON(b *strings.Builder, v any) error {
 		}
 		b.WriteByte('}')
 	default:
-		return fmt.Errorf("指紋を作れない種類の値（%T）がある", v)
+		return fmt.Errorf("指紋を作れない種類の値（%T）があります", v)
 	}
 	return nil
 }

@@ -87,13 +87,13 @@ id_pattern = "("
 `)
 	_, errs := Load(root)
 	want := []string{
-		".vanda/config.toml:1: 動いている vanda（0.1.0）が、設定の版（0.2.0）より古い。vanda を 0.2.0 に上げる",
-		".vanda/config.toml:2: promises にパターンがない。",
-		`.vanda/config.toml:6: レイヤーの ID "Model" が決まった形でない。`,
-		`.vanda/config.toml:5: layer "Model" の description がない。description = "…" を書く`,
-		`.vanda/config.toml:11: アダプタ "rust" は vanda の中にない。`,
-		".vanda/config.toml:14: id_pattern が正規表現として読めない",
-		".vanda/config.toml:3: extra は決まった項目でない。",
+		".vanda/config.toml:1: 動いている vanda（0.1.0）が、設定の版（0.2.0）より古いです。vanda を 0.2.0 に上げてください",
+		".vanda/config.toml:2: promises にパターンがありません。",
+		`.vanda/config.toml:6: レイヤーの ID "Model" が決まった形ではありません。`,
+		`.vanda/config.toml:5: layer "Model" の description がありません。description = "…" を書いてください。`,
+		`.vanda/config.toml:11: アダプタ "rust" は vanda の中にありません。`,
+		".vanda/config.toml:14: id_pattern を正規表現として読めません",
+		".vanda/config.toml:3: extra は決まった項目ではありません。",
 	}
 	got := errs.Error()
 	for _, w := range want {
@@ -125,7 +125,7 @@ func TestIsID(t *testing.T) {
 func TestLoadは空の文字列に当たるid_patternを受け付けない(t *testing.T) {
 	root := writeConfig(t, "version = \"0.1.0\"\n[story]\nid_pattern = \"[0-9]*\"\n")
 	_, errs := Load(root)
-	if !strings.Contains(errs.Error(), ".vanda/config.toml:3: id_pattern が空の文字列に当たる") {
+	if !strings.Contains(errs.Error(), ".vanda/config.toml:3: id_pattern が空の文字列に当たります") {
 		t.Errorf("エラーが違う: %v", errs)
 	}
 }

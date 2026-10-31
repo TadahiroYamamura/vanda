@@ -27,9 +27,9 @@ func parseGo(file string, src []byte) (*token.FileSet, *ast.File, []diag.Error) 
 	if err != nil {
 		var list scanner.ErrorList
 		if errors.As(err, &list) && len(list) > 0 {
-			return nil, nil, []diag.Error{{File: file, Line: list[0].Pos.Line, What: "Go として読めない（" + list[0].Msg + "）", Fix: "Go の書き方に合わせて直す"}}
+			return nil, nil, []diag.Error{{File: file, Line: list[0].Pos.Line, What: "Go として読めません（" + list[0].Msg + "）", Fix: "Go の書き方に合わせて直してください"}}
 		}
-		return nil, nil, []diag.Error{{File: file, What: "Go として読めない（" + err.Error() + "）", Fix: "Go の書き方に合わせて直す"}}
+		return nil, nil, []diag.Error{{File: file, What: "Go として読めません（" + err.Error() + "）", Fix: "Go の書き方に合わせて直してください"}}
 	}
 	return fset, f, nil
 }
@@ -78,7 +78,7 @@ func (goAdapter) names(file string, src []byte, lines []int) (map[int]string, []
 	for _, l := range lines {
 		n, ok := byLine[l]
 		if !ok {
-			errs = append(errs, diag.Error{File: file, Line: l, What: "アノテーションが func の宣言の直前のコメントにない", Fix: "付けたい func の宣言のすぐ上のコメント（空行をはさまない）に移す"})
+			errs = append(errs, diag.Error{File: file, Line: l, What: "アノテーションが、func の宣言の直前のコメントにありません", Fix: "付けたい func の宣言のすぐ上のコメント（空行をはさまない）に移してください"})
 			continue
 		}
 		out[l] = n
@@ -134,7 +134,7 @@ func (txtarAdapter) names(file string, src []byte, lines []int) (map[int]string,
 	var errs []diag.Error
 	for _, l := range lines {
 		if first > 0 && l >= first {
-			errs = append(errs, diag.Error{File: file, Line: l, What: fmt.Sprintf("アノテーションが、最初のファイルの区切り（%d 行目）より後にある", first), Fix: "vanda の不具合なので、知らせる"})
+			errs = append(errs, diag.Error{File: file, Line: l, What: fmt.Sprintf("アノテーションが、最初のファイルの区切り（%d 行目）より後にあります", first), Fix: "vanda の不具合です。開発者に知らせてください"})
 			continue
 		}
 		out[l] = name
@@ -186,12 +186,12 @@ func (tlaAdapter) names(file string, src []byte, lines []int) (map[int]string, [
 			}
 		}
 		if next == 0 {
-			errs = append(errs, diag.Error{File: file, Line: l, What: "アノテーションの後に定義がない", Fix: "アノテーションを、付けたい定義のすぐ上に書く"})
+			errs = append(errs, diag.Error{File: file, Line: l, What: "アノテーションの後に、定義がありません", Fix: "アノテーションを、付けたい定義のすぐ上に書いてください"})
 			continue
 		}
 		name, ok := tlaDefName(code[next-1])
 		if !ok {
-			errs = append(errs, diag.Error{File: file, Line: l, What: fmt.Sprintf("アノテーションの次の行（%d 行目）が、Name ==・Name(…) ==・Name[…] == の定義でない", next), Fix: "アノテーションを、付けたい定義のすぐ上に書く"})
+			errs = append(errs, diag.Error{File: file, Line: l, What: fmt.Sprintf("アノテーションの次の行（%d 行目）が、Name ==・Name(…) ==・Name[…] == の定義ではありません", next), Fix: "アノテーションを、付けたい定義のすぐ上に書いてください"})
 			continue
 		}
 		out[l] = name
@@ -337,7 +337,7 @@ func (sqlAdapter) names(file string, src []byte, lines []int) (map[int]string, [
 			}
 		}
 		if name == "" {
-			errs = append(errs, diag.Error{File: file, Line: l, What: "アノテーションの後に、コメントでない行がない", Fix: "アノテーションを、付けたい定義のすぐ上に書く"})
+			errs = append(errs, diag.Error{File: file, Line: l, What: "アノテーションの後に、コメントでない行がありません", Fix: "アノテーションを、付けたい定義のすぐ上に書いてください"})
 			continue
 		}
 		out[l] = name
@@ -380,7 +380,7 @@ func (c commandAdapter) names(file string, _ []byte, lines []int) (map[int]strin
 	}
 	in, err := json.Marshal(req)
 	if err != nil {
-		return nil, []diag.Error{{File: file, What: "アダプタに渡す JSON を作れない（" + err.Error() + "）", Fix: "vanda の不具合なので、知らせる"}}
+		return nil, []diag.Error{{File: file, What: "アダプタに渡す JSON を作れません（" + err.Error() + "）", Fix: "vanda の不具合です。開発者に知らせてください"}}
 	}
 	cmdline := strings.Join(c.command, " ")
 	cmd := exec.Command(c.command[0], c.command[1:]...)
@@ -393,13 +393,13 @@ func (c commandAdapter) names(file string, _ []byte, lines []int) (map[int]strin
 		if msg == "" {
 			msg = err.Error()
 		}
-		return nil, []diag.Error{{File: file, What: "アノテーションの読み取りのアダプタ（" + cmdline + "）が失敗した（" + msg + "）", Fix: "アダプタのエラーに従って直す"}}
+		return nil, []diag.Error{{File: file, What: "アノテーションの読み取りのアダプタ（" + cmdline + "）が失敗しました（" + msg + "）", Fix: "アダプタが出したエラーに従って、直してください"}}
 	}
 	dec := json.NewDecoder(&stdout)
 	dec.DisallowUnknownFields()
 	var res adapterResponse
 	if err := dec.Decode(&res); err != nil {
-		return nil, []diag.Error{{File: file, What: "アノテーションの読み取りのアダプタ（" + cmdline + "）の出力が、決まった形の JSON でない（" + err.Error() + "）", Fix: `アダプタが {"names": [{"line": 行, "name": "名前"}]} を出すように直す`}}
+		return nil, []diag.Error{{File: file, What: "アノテーションの読み取りのアダプタ（" + cmdline + "）の出力が、決まった形の JSON ではありません（" + err.Error() + "）", Fix: `アダプタが {"names": [{"line": 行, "name": "名前"}]} を出すように直す`}}
 	}
 	asked := map[int]bool{}
 	for _, l := range lines {
@@ -410,18 +410,18 @@ func (c commandAdapter) names(file string, _ []byte, lines []int) (map[int]strin
 	for _, n := range res.Names {
 		switch {
 		case !asked[n.Line]:
-			errs = append(errs, diag.Error{File: file, What: fmt.Sprintf("アダプタ（%s）が、アノテーションのない %d 行目の名前を返した", cmdline, n.Line), Fix: "渡された行の名前だけを返すように、アダプタを直す"})
+			errs = append(errs, diag.Error{File: file, What: fmt.Sprintf("アダプタ（%s）が、アノテーションのない %d 行目の名前を返しました", cmdline, n.Line), Fix: "渡された行の名前だけを返すように、アダプタを直してください"})
 		case n.Name == "":
-			errs = append(errs, diag.Error{File: file, Line: n.Line, What: "アダプタ（" + cmdline + "）が空の名前を返した", Fix: "名前を返すように、アダプタを直す"})
+			errs = append(errs, diag.Error{File: file, Line: n.Line, What: "アダプタ（" + cmdline + "）が空の名前を返しました", Fix: "名前を返すように、アダプタを直してください"})
 		case out[n.Line] != "":
-			errs = append(errs, diag.Error{File: file, Line: n.Line, What: "アダプタ（" + cmdline + "）が同じ行の名前を 2 つ以上返した", Fix: "1 行に 1 つの名前を返すように、アダプタを直す"})
+			errs = append(errs, diag.Error{File: file, Line: n.Line, What: "アダプタ（" + cmdline + "）が同じ行の名前を 2 つ以上返しました", Fix: "1 行に 1 つの名前を返すように、アダプタを直してください"})
 		default:
 			out[n.Line] = n.Name
 		}
 	}
 	for _, l := range lines {
 		if _, ok := out[l]; !ok {
-			errs = append(errs, diag.Error{File: file, Line: l, What: "アダプタ（" + cmdline + "）が、このアノテーションの名前を返さなかった", Fix: "渡された行のすべてに名前を返すように、アダプタを直す"})
+			errs = append(errs, diag.Error{File: file, Line: l, What: "アダプタ（" + cmdline + "）が、このアノテーションの名前を返しませんでした", Fix: "渡された行のすべてに名前を返すように、アダプタを直してください"})
 		}
 	}
 	return out, errs

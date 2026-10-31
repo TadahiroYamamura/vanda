@@ -127,14 +127,14 @@ id = "s"
 `})
 	_, errs := Load(root, files, []string{".vanda/promises.toml", ".vanda/more.toml"}, false)
 	want := []string{
-		`.vanda/promises.toml:3: subjects が文字列の配列でない。`,
-		`.vanda/promises.toml:1: claim "c" の statement がない。statement = "…" を書く`,
-		`.vanda/promises.toml:5: layers が空。`,
-		`.vanda/promises.toml:8: claim "c" の evidence の 1 件目 の type がない。`,
-		`.vanda/promises.toml:6: note は決まった項目でない。`,
-		`.vanda/promises.toml:16: core が真偽でない。`,
-		`.vanda/promises.toml:18: story は決まった項目でない。`,
-		`.vanda/more.toml: 約束リストのファイルがない。`,
+		`.vanda/promises.toml:3: subjects が文字列の配列ではありません。`,
+		`.vanda/promises.toml:1: claim "c" の statement がありません。statement = "…" を書いてください。`,
+		`.vanda/promises.toml:5: layers が空です。`,
+		`.vanda/promises.toml:8: claim "c" の evidence の 1 件目 の type がありません。`,
+		`.vanda/promises.toml:6: note は決まった項目ではありません。`,
+		`.vanda/promises.toml:16: core が真偽ではありません。`,
+		`.vanda/promises.toml:18: story は決まった項目ではありません。`,
+		`.vanda/more.toml: 約束リストのファイルがありません。`,
 	}
 	got := errs.Error()
 	for _, w := range want {
@@ -158,7 +158,7 @@ layers = ["model"]
 evidence = [{ stage = "test", type = "unit-test", layers = "model", detail = "x" }]
 `})
 	_, errs := Load(root, files, []string{".vanda/promises.toml"}, false)
-	want := `.vanda/promises.toml: claim "c" の evidence の 1 件目 の layers: layers が文字列の配列でない。`
+	want := `.vanda/promises.toml: claim "c" の evidence の 1 件目 の layers: layers が文字列の配列ではありません。`
 	if !strings.Contains(errs.Error(), want) {
 		t.Errorf("エラーに %q がない:\n%s", want, errs)
 	}
@@ -193,7 +193,7 @@ layers = ["model"]
 func TestLoadはsubjectsとevidenceが空なら誤りにする(t *testing.T) {
 	root, files := write(t, map[string]string{".vanda/promises.toml": "[[claim]]\nid = \"c\"\nsubjects = []\nstatement = \"s\"\nlayers = [\"m\"]\nevidence = []\n"})
 	_, errs := Load(root, files, []string{".vanda/promises.toml"}, false)
-	for _, w := range []string{".vanda/promises.toml:3: subjects が空。", ".vanda/promises.toml:6: evidence が 1 つもない。"} {
+	for _, w := range []string{".vanda/promises.toml:3: subjects が空です。", ".vanda/promises.toml:6: evidence が 1 つもありません。"} {
 		if !strings.Contains(errs.Error(), w) {
 			t.Errorf("エラーに %q がない:\n%s", w, errs)
 		}

@@ -16,7 +16,7 @@ func Files(files []string, rules []config.GuardrailRule) ([]string, []diag.Error
 	for _, r := range rules {
 		matched, missing := glob.Select(files, r.Paths)
 		for _, m := range missing {
-			errs = append(errs, diag.Error{File: m, What: "ガードレールの定義のファイルがない", Fix: "ファイルを作るか、.vanda/config.toml の [[guardrail]] の paths を直す"})
+			errs = append(errs, diag.Error{File: m, What: "ガードレールの定義のファイルがありません", Fix: "ファイルを作るか、.vanda/config.toml の [[guardrail]] の paths を直してください"})
 		}
 		for _, f := range matched {
 			if !seen[f] {

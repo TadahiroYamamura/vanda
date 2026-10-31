@@ -172,6 +172,11 @@ CLAUDE.md の「文言（CLI の出力と画面）」に合わせて、段 1 の
 | `cmd/vanda/main.go` | `"今のディレクトリが分からない（" + err.Error() + "）"` | `"今のディレクトリが分かりません（" + err.Error() + "）。"` |
 | `internal/version/version.go` | `"版 %q が major.minor.patch の形でない", s)` | `"版 %q が major.minor.patch の形ではありません", s)` |
 | `internal/version/version.go` | `"版 %q が major.minor.patch の形でない", s)` | `"版 %q が major.minor.patch の形ではありません", s)` |
+| `internal/annotation/adapters.go` | `Fix: "渡された行の名前だけを返すように、アダプタを直す"` | `Fix: "渡された行の名前だけを返すように、アダプタを直してください"` |
+| `internal/snapshot/snapshot.go` | `"リポジトリのファイルの一覧を作れない（%v）。ファイルを読む権限を確かめる"` | `"リポジトリのファイルの一覧を作れません（%v）。ファイルを読む権限を確かめてください。"` |
+| `internal/snapshot/snapshot.go` | `"コミット %s のファイルの一覧を読めない（%v）"` | `"コミット %s のファイルの一覧を読めません（%v）。"` |
+| `internal/snapshot/snapshot.go` | `"コミット %s の %s を読めない（%v）"` | `"コミット %s の %s を読めません（%v）。"` |
+| `internal/snapshot/snapshot.go` | `"%s がない", path` | `"%s がありません", path` |
 
 - 表のほかに、誤りの中に入る次の語も変わる: `（<種類>の ID）`（`notKind`）はそのまま。`（設定にレイヤーがない）` → `（設定にレイヤーがありません）`
 - ˋ は、ソースのバッククォート（Go の生の文字列）を表す

@@ -32,10 +32,10 @@ type Doc struct {
 func Load(root, file string, errs *[]diag.Error) *Doc {
 	src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
 	if err != nil {
-		what := "ファイルを読めない（" + err.Error() + "）"
-		fix := "ファイルの場所と、読む権限を確かめる"
+		what := "ファイルを読めません（" + err.Error() + "）"
+		fix := "ファイルの場所と、読む権限を確かめてください"
 		if errors.Is(err, os.ErrNotExist) {
-			what, fix = "ファイルがない", "ファイルを作るか、設定（.vanda/config.toml）の場所を直す"
+			what, fix = "ファイルがありません", "ファイルを作るか、設定（.vanda/config.toml）の場所を直してください"
 		}
 		*errs = append(*errs, diag.Error{File: file, What: what, Fix: fix})
 		return nil
@@ -49,9 +49,9 @@ func Parse(file string, src []byte, errs *[]diag.Error) *Doc {
 	if _, err := toml.Decode(string(src), &root); err != nil {
 		var pe toml.ParseError
 		if errors.As(err, &pe) {
-			*errs = append(*errs, diag.Error{File: file, Line: pe.Position.Line, What: "TOML として読めない（" + pe.Message + "）", Fix: "TOML の書き方に合わせて直す"})
+			*errs = append(*errs, diag.Error{File: file, Line: pe.Position.Line, What: "TOML として読めません（" + pe.Message + "）", Fix: "TOML の書き方に合わせて直してください"})
 		} else {
-			*errs = append(*errs, diag.Error{File: file, What: "TOML として読めない（" + err.Error() + "）", Fix: "TOML の書き方に合わせて直す"})
+			*errs = append(*errs, diag.Error{File: file, What: "TOML として読めません（" + err.Error() + "）", Fix: "TOML の書き方に合わせて直してください"})
 		}
 		return nil
 	}
@@ -116,7 +116,7 @@ func (t *Table) Line(key string) int {
 }
 
 func (t *Table) missing(key, example string) {
-	t.ErrAt("", fmt.Sprintf("%s がない", t.keyLabel(key)), fmt.Sprintf("%s を書く", example))
+	t.ErrAt("", fmt.Sprintf("%s がありません", t.keyLabel(key)), fmt.Sprintf("%s を書いてください", example))
 }
 
 // Has は、項目 key が書かれているかを返す。
@@ -137,7 +137,7 @@ func (t *Table) Str(key string, required bool) (string, bool) {
 	}
 	s, ok := v.(string)
 	if !ok {
-		t.ErrAt(key, key+" が文字列でない", key+` = "…" のように文字列で書く`)
+		t.ErrAt(key, key+" が文字列ではありません", key+` = "…" のように、文字列で書いてください`)
 		return "", false
 	}
 	return s, true
@@ -155,7 +155,7 @@ func (t *Table) Bool(key string, required bool) (bool, bool) {
 	}
 	b, ok := v.(bool)
 	if !ok {
-		t.ErrAt(key, key+" が真偽でない", key+" = true か "+key+" = false と書く")
+		t.ErrAt(key, key+" が真偽ではありません", key+" = true か "+key+" = false と書いてください")
 		return false, false
 	}
 	return b, true
@@ -173,13 +173,13 @@ func (t *Table) Time(key string, required bool) (time.Time, bool) {
 	}
 	tm, ok := v.(time.Time)
 	if !ok {
-		t.ErrAt(key, key+" が日時でない", key+" = 2026-10-31T12:00:00+09:00 のように、時差の付いた日時で書く")
+		t.ErrAt(key, key+" が日時ではありません", key+" = 2026-10-31T12:00:00+09:00 のように、時差の付いた日時で書いてください")
 		return time.Time{}, false
 	}
 	// BurntSushi/toml は、時差のない日時・日付・時刻を、この名前の時間帯で返す
 	switch tm.Location().String() {
 	case "datetime-local", "date-local", "time-local":
-		t.ErrAt(key, key+" に時差がない", key+" = 2026-10-31T12:00:00+09:00 のように、時差（+09:00 や Z）を付ける")
+		t.ErrAt(key, key+" に時差がありません", key+" = 2026-10-31T12:00:00+09:00 のように、時差（+09:00 や Z）を付けてください")
 		return time.Time{}, false
 	}
 	return tm, true
@@ -197,14 +197,14 @@ func (t *Table) Strs(key string, required bool) ([]string, bool) {
 	}
 	arr, ok := v.([]any)
 	if !ok {
-		t.ErrAt(key, key+" が文字列の配列でない", key+` = ["…"] のように書く`)
+		t.ErrAt(key, key+" が文字列の配列ではありません", key+` = ["…"] のように書いてください`)
 		return nil, false
 	}
 	out := make([]string, 0, len(arr))
 	for _, e := range arr {
 		s, ok := e.(string)
 		if !ok {
-			t.ErrAt(key, key+" に文字列でない値がある", key+` = ["…"] のように、文字列だけを並べる`)
+			t.ErrAt(key, key+" に、文字列でない値があります", key+` = ["…"] のように、文字列だけを並べてください`)
 			return nil, false
 		}
 		out = append(out, s)
@@ -230,13 +230,13 @@ func (t *Table) Tables(key string, required bool) ([]*Table, bool) {
 		for _, e := range arr {
 			m, ok := e.(map[string]any)
 			if !ok {
-				t.ErrAt(key, key+" が表の配列でない", "[["+header(t.keyPath(key))+"]] の表で書く")
+				t.ErrAt(key, key+" が表の配列ではありません", "[["+header(t.keyPath(key))+"]] の表で書いてください")
 				return nil, false
 			}
 			ms = append(ms, m)
 		}
 	default:
-		t.ErrAt(key, key+" が表の配列でない", "[["+header(t.keyPath(key))+"]] の表で書く")
+		t.ErrAt(key, key+" が表の配列ではありません", "[["+header(t.keyPath(key))+"]] の表で書いてください")
 		return nil, false
 	}
 	out := make([]*Table, len(ms))
@@ -258,7 +258,7 @@ func (t *Table) Table(key string, required bool) (*Table, bool) {
 	}
 	m, ok := v.(map[string]any)
 	if !ok {
-		t.ErrAt(key, key+" が表でない", "["+header(t.keyPath(key))+"] の表で書く")
+		t.ErrAt(key, key+" が表ではありません", "["+header(t.keyPath(key))+"] の表で書いてください")
 		return nil, false
 	}
 	return t.sub(t.keyPath(key), t.keyLabel(key), m), true
@@ -274,7 +274,7 @@ func (t *Table) Unknown(allowed string) {
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		t.ErrAt(k, k+" は決まった項目でない", "消すか、名前を直す（書ける項目: "+allowed+"）")
+		t.ErrAt(k, k+" は決まった項目ではありません", "消すか、名前を直してください（書ける項目: "+allowed+"）")
 	}
 }
 

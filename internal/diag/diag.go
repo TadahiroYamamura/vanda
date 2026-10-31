@@ -34,6 +34,7 @@ func (e Error) Error() string {
 	if e.Fix != "" {
 		b.WriteString("。")
 		b.WriteString(e.Fix)
+		b.WriteString("。")
 	}
 	return b.String()
 }

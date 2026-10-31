@@ -172,14 +172,14 @@ story = "#24"
 `})
 	_, errs := Load(root, files, []string{".vanda/agreements.toml"}, false)
 	want := []string{
-		`.vanda/agreements.toml:2: kind "story" は決まった値でない。`,
-		`.vanda/agreements.toml:4: fingerprint "md5:abc" が指紋の形でない。`,
-		`.vanda/agreements.toml:5: 対象が story の合意に path がある。`,
-		`.vanda/agreements.toml:1: agreement の 1 件目 の user がない。`,
-		`.vanda/agreements.toml:6: agreed_at に時差がない。`,
-		`.vanda/agreements.toml:9: 対象がファイルの合意に path がない。`,
-		`.vanda/agreements.toml:11: 対象がファイルの合意の key が fingerprint と違う。`,
-		`.vanda/agreements.toml:13: agreement の 2 件目 の user の email がない。`,
+		`.vanda/agreements.toml:2: kind "story" は決まった値ではありません。`,
+		`.vanda/agreements.toml:4: fingerprint "md5:abc" が指紋の形ではありません。`,
+		`.vanda/agreements.toml:5: 対象が story の合意に、path があります。`,
+		`.vanda/agreements.toml:1: agreement の 1 件目 の user がありません。`,
+		`.vanda/agreements.toml:6: agreed_at に時差がありません。`,
+		`.vanda/agreements.toml:9: 対象がファイルの合意に、path がありません。`,
+		`.vanda/agreements.toml:11: 対象がファイルの合意の key が、fingerprint と違います。`,
+		`.vanda/agreements.toml:13: agreement の 2 件目 の user の email がありません。`,
 	}
 	got := errs.Error()
 	for _, w := range want {

@@ -60,17 +60,17 @@ func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotat
 			for i, r := range hit {
 				lines[i] = fmt.Sprintf("%d 行目", r.Line)
 			}
-			errs = append(errs, diag.Error{File: f, What: config.File + " の [[annotation]]（" + strings.Join(lines, "・") + "）の 2 つ以上のパターンに当たる", Fix: "どれか 1 つの [[annotation]] にだけ当たるように、パターンを直す"})
+			errs = append(errs, diag.Error{File: f, What: config.File + " の [[annotation]]（" + strings.Join(lines, "・") + "）の 2 つ以上のパターンに当たります", Fix: "どれか 1 つの [[annotation]] にだけ当たるように、パターンを直してください"})
 			continue
 		}
 		a := adapterFor(root, hit[0])
 		if a == nil {
-			errs = append(errs, diag.Error{File: f, What: fmt.Sprintf("%s の %d 行目の [[annotation]] のパターンに当たるが、使うアダプタが決まっていない", config.File, hit[0].Line), Fix: "その [[annotation]] に adapter か command を書く"})
+			errs = append(errs, diag.Error{File: f, What: fmt.Sprintf("%s の %d 行目の [[annotation]] のパターンに当たりますが、使うアダプタが決まっていません", config.File, hit[0].Line), Fix: "その [[annotation]] に、adapter か command を書いてください"})
 			continue
 		}
 		src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(f)))
 		if err != nil {
-			errs = append(errs, diag.Error{File: f, What: "ファイルを読めない（" + err.Error() + "）", Fix: "ファイルを読む権限を確かめる"})
+			errs = append(errs, diag.Error{File: f, What: "ファイルを読めません（" + err.Error() + "）", Fix: "ファイルを読む権限を確かめてください"})
 			continue
 		}
 		texts, cerrs := a.comments(f, src)
@@ -86,7 +86,7 @@ func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotat
 		var found []Annotation
 		for _, x := range all {
 			if ks := a.kinds(); ks != nil && !contains(ks, x.Kind) {
-				errs = append(errs, diag.Error{File: f, Line: x.Line, What: "@vanda:" + x.Kind + " は、" + hit[0].Adapter + " のアダプタのファイルには書けない", Fix: "書けるのは " + strings.Join(ks, "・") + "。種類を直すか、アノテーションを別のファイルに移す"})
+				errs = append(errs, diag.Error{File: f, Line: x.Line, What: "@vanda:" + x.Kind + " は、" + hit[0].Adapter + " のアダプタのファイルには書けません", Fix: "書けるのは " + strings.Join(ks, "・") + " です。種類を直すか、アノテーションを別のファイルに移してください"})
 				continue
 			}
 			found = append(found, x)
@@ -144,7 +144,7 @@ func scan(file string, texts []string) ([]Annotation, []diag.Error) {
 		}
 		rest := line[at+len(marker):]
 		if strings.Contains(rest, marker) {
-			errs = append(errs, diag.Error{File: file, Line: n, What: "1 行に @vanda: が 2 つ以上ある", Fix: "アノテーションを 1 行に 1 つずつ書く"})
+			errs = append(errs, diag.Error{File: file, Line: n, What: "1 行に @vanda: が 2 つ以上あります", Fix: "アノテーションを、1 行に 1 つずつ書いてください"})
 			continue
 		}
 		k := 0
@@ -158,13 +158,13 @@ func scan(file string, texts []string) ([]Annotation, []diag.Error) {
 			if f := strings.Fields(arg); glued && len(f) > 0 {
 				word += f[0]
 			}
-			errs = append(errs, diag.Error{File: file, Line: n, What: "@vanda:" + word + " は決まった種類でない", Fix: "@vanda: の後を " + strings.Join(Kinds, "・") + " のどれかにする"})
+			errs = append(errs, diag.Error{File: file, Line: n, What: "@vanda:" + word + " は決まった種類ではありません", Fix: "@vanda: の後を、" + strings.Join(Kinds, "・") + " のどれかにしてください"})
 			continue
 		}
 		arg = trimCloser(strings.TrimSpace(arg))
 		if kind == "internal" {
 			if arg == "" {
-				errs = append(errs, diag.Error{File: file, Line: n, What: "@vanda:internal に理由がない", Fix: "@vanda:internal <仕様の中だけで使う理由> のように書く"})
+				errs = append(errs, diag.Error{File: file, Line: n, What: "@vanda:internal に理由がありません", Fix: "@vanda:internal <仕様の中だけで使う理由> のように書いてください"})
 				continue
 			}
 			out = append(out, Annotation{File: file, Line: n, Kind: kind, Value: arg})
@@ -173,11 +173,11 @@ func scan(file string, texts []string) ([]Annotation, []diag.Error) {
 		fields := strings.Fields(arg)
 		switch len(fields) {
 		case 0:
-			errs = append(errs, diag.Error{File: file, Line: n, What: "@vanda:" + kind + " に ID がない", Fix: "@vanda:" + kind + " <ID> のように書く"})
+			errs = append(errs, diag.Error{File: file, Line: n, What: "@vanda:" + kind + " に ID がありません", Fix: "@vanda:" + kind + " <ID> のように書いてください"})
 			continue
 		case 1:
 		default:
-			errs = append(errs, diag.Error{File: file, Line: n, What: "@vanda:" + kind + " に ID が 2 つ以上ある", Fix: "1 つのアノテーションには ID を 1 つだけ書き、複数の ID は行を分けて書く"})
+			errs = append(errs, diag.Error{File: file, Line: n, What: "@vanda:" + kind + " に ID が 2 つ以上あります", Fix: "1 つのアノテーションには ID を 1 つだけ書き、複数の ID は行を分けて書いてください"})
 			continue
 		}
 		out = append(out, Annotation{File: file, Line: n, Kind: kind, Value: fields[0]})

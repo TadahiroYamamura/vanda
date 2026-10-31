@@ -37,11 +37,11 @@ func (e *env) promiseListShape() []diag.Error {
 			continue
 		}
 		if !config.IsID(it.id) {
-			errs = append(errs, it.table.Err("id", kindName[it.kind]+"の ID "+quote(it.id)+" が決まった形でない", "英小文字で始め、英小文字・数字をハイフンでつないだ形（例: task-id）にする"))
+			errs = append(errs, it.table.Err("id", kindName[it.kind]+"の ID "+quote(it.id)+" が決まった形ではありません", "英小文字で始め、英小文字・数字をハイフンでつないだ形（例: task-id）にしてください"))
 			continue
 		}
 		if prev, dup := where[it.id]; dup {
-			errs = append(errs, it.table.Err("id", fmt.Sprintf("ID %s が、%s の%s（%s）と重なっている", quote(it.id), place(prev), kindName[prev.kind], prev.id), "用語・機能・約束のどれとも重ならない ID にする"))
+			errs = append(errs, it.table.Err("id", fmt.Sprintf("ID %s が、%s の%s（%s）と重なっています", quote(it.id), place(prev), kindName[prev.kind], prev.id), "用語・機能・約束のどれとも重ならない ID にしてください"))
 			continue
 		}
 		where[it.id] = it
@@ -65,7 +65,7 @@ func (e *env) promiseListShape() []diag.Error {
 			continue
 		}
 		if k := kindOf(t.PartOf); k != "term" {
-			errs = append(errs, t.Table.Err("part_of", "part_of の先 "+quote(t.PartOf)+" が用語にない"+notKind(k), "part_of に、約束リストにある用語の ID を書く"))
+			errs = append(errs, t.Table.Err("part_of", "part_of の先 "+quote(t.PartOf)+" が用語にありません"+notKind(k), "part_of に、約束リストにある用語の ID を書いてください"))
 		}
 	}
 	errs = append(errs, e.partOfCycles()...)
@@ -74,39 +74,39 @@ func (e *env) promiseListShape() []diag.Error {
 		waiver := f.Table.Has("formal_waiver")
 		switch {
 		case f.Core && !f.Formal && !waiver:
-			errs = append(errs, f.Table.Err("formal", "コア機能で formal = false なのに、形式手法を使わない理由（formal_waiver）がない", `formal_waiver = "…" に理由を書くか、formal = true にする`))
+			errs = append(errs, f.Table.Err("formal", "コア機能で formal = false なのに、形式手法を使わない理由（formal_waiver）がありません", `formal_waiver = "…" に理由を書くか、formal = true にしてください`))
 		case waiver && !(f.Core && !f.Formal):
-			errs = append(errs, f.Table.Err("formal_waiver", "formal_waiver を書けるのは core = true かつ formal = false のときだけ", "formal_waiver を消す"))
+			errs = append(errs, f.Table.Err("formal_waiver", "formal_waiver を書けるのは、core = true かつ formal = false のときだけです", "formal_waiver を消してください"))
 		}
 	}
 
 	for _, c := range e.list.Claims {
 		for _, s := range c.Subjects {
 			if k := kindOf(s); k != "term" && k != "feature" {
-				errs = append(errs, c.Table.Err("subjects", "subjects の "+quote(s)+" が用語にも機能にもない"+notKind(k), "subjects に、約束リストにある用語か機能の ID を書く"))
+				errs = append(errs, c.Table.Err("subjects", "subjects の "+quote(s)+" が用語にも機能にもありません"+notKind(k), "subjects に、約束リストにある用語か機能の ID を書いてください"))
 			}
 		}
 		for _, l := range c.Layers {
 			if !layers[l] {
-				errs = append(errs, c.Table.Err("layers", "レイヤー "+quote(l)+" が設定にない", "layers を "+orNone(layerIDs)+" から選ぶか、.vanda/config.toml の [[layer]] に足す"))
+				errs = append(errs, c.Table.Err("layers", "レイヤー "+quote(l)+" が設定にありません", "layers を "+orNone(layerIDs)+" から選ぶか、.vanda/config.toml の [[layer]] に足してください"))
 			}
 		}
 		for _, fl := range c.Flags {
 			if !contains(Flags, fl) {
-				errs = append(errs, c.Table.Err("flags", "フラグ "+quote(fl)+" は決まった値でない", "flags に書けるのは ai-proposal だけ"))
+				errs = append(errs, c.Table.Err("flags", "フラグ "+quote(fl)+" は決まった値ではありません", "flags には ai-proposal だけを書いてください"))
 			}
 		}
 		covered := map[string]bool{}
 		for _, ev := range c.Evidence {
 			if ev.Table.Has("stage") && !contains(Stages, ev.Stage) {
-				errs = append(errs, ev.Table.Err("stage", "ステージ "+quote(ev.Stage)+" は決まった値でない", "stage を "+strings.Join(Stages, "・")+" のどれかにする"))
+				errs = append(errs, ev.Table.Err("stage", "ステージ "+quote(ev.Stage)+" は決まった値ではありません", "stage を "+strings.Join(Stages, "・")+" のどれかにしてください"))
 			}
 			if ev.Table.Has("type") && !contains(Types, ev.Type) {
-				errs = append(errs, ev.Table.Err("type", "タイプ "+quote(ev.Type)+" は決まった値でない", "type を "+strings.Join(Types, "・")+" のどれかにする"))
+				errs = append(errs, ev.Table.Err("type", "タイプ "+quote(ev.Type)+" は決まった値ではありません", "type を "+strings.Join(Types, "・")+" のどれかにしてください"))
 			}
 			for _, l := range ev.Layers {
 				if !contains(c.Layers, l) {
-					errs = append(errs, ev.Table.Err("layers", "エビデンスのレイヤー "+quote(l)+" が、約束の layers にない", "エビデンスの layers を、約束の layers（"+strings.Join(c.Layers, "・")+"）から選ぶ"))
+					errs = append(errs, ev.Table.Err("layers", "エビデンスのレイヤー "+quote(l)+" が、約束の layers にありません", "エビデンスの layers を、約束の layers（"+strings.Join(c.Layers, "・")+"）から選んでください"))
 					continue
 				}
 				covered[l] = true
@@ -114,7 +114,7 @@ func (e *env) promiseListShape() []diag.Error {
 		}
 		for _, l := range c.Layers {
 			if layers[l] && !covered[l] {
-				errs = append(errs, c.Table.Err("layers", "レイヤー "+quote(l)+" を確かめるエビデンスがない", "layers に "+l+" を含む [[claim.evidence]] を足す"))
+				errs = append(errs, c.Table.Err("layers", "レイヤー "+quote(l)+" を確かめるエビデンスがありません", "layers に "+l+" を含む [[claim.evidence]] を足してください"))
 			}
 		}
 	}
@@ -140,7 +140,7 @@ func (e *env) partOfCycles() []diag.Error {
 		for cur := parent[t.ID]; cur != ""; cur = parent[cur] {
 			path = append(path, cur)
 			if cur == t.ID {
-				errs = append(errs, t.Table.Err("part_of", "part_of が循環している（"+strings.Join(path, " → ")+"）", "どれかの part_of を消すか、別の用語にする"))
+				errs = append(errs, t.Table.Err("part_of", "part_of が循環しています（"+strings.Join(path, " → ")+"）", "どれかの part_of を消すか、別の用語にしてください"))
 				break
 			}
 			if seen[cur] {
@@ -168,7 +168,7 @@ func notKind(k string) string {
 
 func orNone(xs []string) string {
 	if len(xs) == 0 {
-		return "（設定にレイヤーがない）"
+		return "（設定にレイヤーがありません）"
 	}
 	return strings.Join(xs, "・")
 }

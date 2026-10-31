@@ -86,7 +86,7 @@ func needsStory(s Spec) bool {
 func (e *env) prepare(o Options) error {
 	files, err := glob.Files(e.root)
 	if err != nil {
-		return fmt.Errorf("リポジトリのファイルの一覧を作れない（%v）。ファイルを読む権限を確かめる", err)
+		return fmt.Errorf("リポジトリのファイルの一覧を作れません（%v）。ファイルを読む権限を確かめてください。", err)
 	}
 	e.files = files
 	e.list, e.listErrs = promises.Load(e.root, files, e.cfg.Promises, e.cfg.PromisesDefault)
@@ -107,11 +107,11 @@ func (e *env) prepare(o Options) error {
 		return nil
 	}
 	if o.Base == "" {
-		return fmt.Errorf(`審査の設定に scope = "story" の審査（%s）があるので、ベースブランチが要る。--base <ブランチ> を渡す`, strings.Join(storyChecks, "・"))
+		return fmt.Errorf(`審査の設定に scope = "story" の審査（%s）があるため、ベースブランチが必要です。--base <ブランチ> を渡してください。`, strings.Join(storyChecks, "・"))
 	}
 	mb, err := repo.Git(e.root, "merge-base", o.Base, "HEAD")
 	if err != nil {
-		return fmt.Errorf("ベースブランチ %s から分かれた点が分からない（%v）。--base に、今のブランチと履歴のつながったブランチを渡す", o.Base, err)
+		return fmt.Errorf("ベースブランチ %s から分かれた点が分かりません（%v）。--base に、今のブランチと履歴のつながったブランチを渡してください。", o.Base, err)
 	}
 	e.mergeBase = strings.TrimSpace(mb)
 	if len(needStory) > 0 {
@@ -125,14 +125,14 @@ func (e *env) prepare(o Options) error {
 func (e *env) decideStory(given string, checks []string) error {
 	if given != "" {
 		if e.cfg.IDFull == nil || !e.cfg.IDFull.MatchString(given) {
-			return fmt.Errorf("--story %s が、ストーリーの ID の書き方（%s）に合わない。設定の id_pattern に合う ID を渡す", given, e.cfg.IDPattern)
+			return fmt.Errorf("--story %s が、ストーリーの ID の書き方（%s）に合いません。設定の id_pattern に合う ID を渡してください。", given, e.cfg.IDPattern)
 		}
 		e.story = given
 		return nil
 	}
 	msgs, err := repo.Git(e.root, "log", "--format=%B", e.mergeBase+"..HEAD")
 	if err != nil {
-		return fmt.Errorf("コミットのメッセージを読めない（%v）", err)
+		return fmt.Errorf("コミットのメッセージを読めません（%v）。", err)
 	}
 	seen := map[string]bool{}
 	var ids []string
@@ -148,9 +148,9 @@ func (e *env) decideStory(given string, checks []string) error {
 		e.story = ids[0]
 		return nil
 	case 0:
-		return fmt.Errorf("範囲 story の審査（%s）のストーリーが分からない（分かれた点より後のコミットのメッセージに、ストーリーの ID がない）。--story <ID> を渡す", strings.Join(checks, "・"))
+		return fmt.Errorf("範囲 story の審査（%s）のストーリーが分かりません（分かれた点より後のコミットのメッセージに、ストーリーの ID がありません）。--story <ID> を渡してください。", strings.Join(checks, "・"))
 	default:
-		return fmt.Errorf("範囲 story の審査（%s）のストーリーが決まらない（分かれた点より後のコミットのメッセージに、ストーリーの ID が %s とある）。--story <ID> で 1 つを渡す", strings.Join(checks, "・"), strings.Join(ids, "・"))
+		return fmt.Errorf("範囲 story の審査（%s）のストーリーが 1 つに決まりません（分かれた点より後のコミットのメッセージに、ストーリーの ID が %s とあります）。--story <ID> で 1 つを渡してください。", strings.Join(checks, "・"), strings.Join(ids, "・"))
 	}
 }
 
@@ -213,10 +213,10 @@ func (e *env) run(s Spec) []diag.Error {
 	case "unread-files":
 		return e.unreadFiles()
 	}
-	return []diag.Error{{What: "審査 " + s.Name + " はない", Fix: "vanda の不具合なので、知らせる"}}
+	return []diag.Error{{What: "審査 " + s.Name + " はありません", Fix: "vanda の不具合です。開発者に知らせてください"}}
 }
 
 // cannot は、前提の読み込みに失敗したために行えない審査の、1 行の誤り。
 func cannot(what string, n int, owner string) []diag.Error {
-	return []diag.Error{{What: fmt.Sprintf("%sが読めないため行えない（誤りが %d 件ある）", what, n), Fix: "審査 " + owner + " で誤りを出して直す"}}
+	return []diag.Error{{What: fmt.Sprintf("%sを読めないため、この審査を行えません（誤りが %d 件あります）", what, n), Fix: "審査 " + owner + " で誤りを確かめて、直してください"}}
 }

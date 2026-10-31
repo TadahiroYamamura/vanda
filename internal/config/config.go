@@ -116,9 +116,9 @@ func parse(top *tomlread.Table) *Config {
 		if l.ID != "" {
 			t.Label = `layer "` + l.ID + `"`
 			if !IsID(l.ID) {
-				t.ErrAt("id", "レイヤーの ID "+quote(l.ID)+" が決まった形でない", "英小文字で始め、英小文字・数字をハイフンでつないだ形（例: model、db）にする")
+				t.ErrAt("id", "レイヤーの ID "+quote(l.ID)+" が決まった形ではありません", "英小文字で始め、英小文字・数字をハイフンでつないだ形（例: model、db）にしてください")
 			} else if seen[l.ID] {
-				t.ErrAt("id", "レイヤーの ID "+quote(l.ID)+" がほかのレイヤーと重なっている", "別の ID にする")
+				t.ErrAt("id", "レイヤーの ID "+quote(l.ID)+" がほかのレイヤーと重なっています", "別の ID にしてください")
 			}
 			seen[l.ID] = true
 		}
@@ -136,15 +136,15 @@ func parse(top *tomlread.Table) *Config {
 		command, hasCommand := t.Strs("command", false)
 		switch {
 		case hasAdapter && hasCommand:
-			t.ErrAt("command", "adapter と command の両方を書いている", "中に持つアダプタを使うなら adapter だけを、外部のコマンドを使うなら command だけを書く")
+			t.ErrAt("command", "adapter と command の両方が書かれています", "vanda の中のアダプタを使うなら adapter だけを、外部のコマンドを使うなら command だけを書いてください")
 		case hasAdapter:
 			if !contains(BuiltinAdapters, adapter) {
-				t.ErrAt("adapter", "アダプタ "+quote(adapter)+" は vanda の中にない", "adapter を "+strings.Join(BuiltinAdapters, "・")+" のどれかにするか、外部のコマンドを command = [\"…\"] で書く")
+				t.ErrAt("adapter", "アダプタ "+quote(adapter)+" は vanda の中にありません", "adapter を "+strings.Join(BuiltinAdapters, "・")+" のどれかにするか、外部のコマンドを command = [\"…\"] で書いてください")
 			}
 			r.Adapter = adapter
 		case hasCommand:
 			if len(command) == 0 || command[0] == "" {
-				t.ErrAt("command", "command に実行するコマンドがない", `command = ["コマンド", "引数"] のように書く`)
+				t.ErrAt("command", "command に、実行するコマンドがありません", `command = ["コマンド", "引数"] のように書いてください`)
 			}
 			r.Command = command
 		}
@@ -157,7 +157,7 @@ func parse(top *tomlread.Table) *Config {
 		var g GuardrailRule
 		if a, ok := t.Str("adapter", true); ok {
 			if a != "file" {
-				t.ErrAt("adapter", "ガードレールの定義の取り出しのアダプタ "+quote(a)+" は vanda の中にない", `adapter = "file" にする（今はファイルを読むだけのアダプタしかない）`)
+				t.ErrAt("adapter", "ガードレールの定義の取り出しのアダプタ "+quote(a)+" は vanda の中にありません", `adapter = "file" にしてください（今は、ファイルを読むだけのアダプタしかありません）`)
 			}
 			g.Adapter = a
 		}
@@ -167,7 +167,7 @@ func parse(top *tomlread.Table) *Config {
 	}
 
 	if re, err := regexp.Compile(DefaultIDPattern); err != nil {
-		top.ErrAt("", "vanda の中のストーリーの ID の既定の書き方が読めない（"+err.Error()+"）", "vanda の不具合なので、知らせる")
+		top.ErrAt("", "vanda の中の、ストーリーの ID の既定の書き方を読めません（"+err.Error()+"）", "vanda の不具合です。開発者に知らせてください")
 	} else {
 		cfg.IDPattern = re
 	}
@@ -175,9 +175,9 @@ func parse(top *tomlread.Table) *Config {
 		if p, ok := story.Str("id_pattern", false); ok {
 			re, err := regexp.Compile(p)
 			if err != nil {
-				story.ErrAt("id_pattern", "id_pattern が正規表現として読めない（"+err.Error()+"）", "Go の正規表現（RE2）の書き方で直す")
+				story.ErrAt("id_pattern", "id_pattern を正規表現として読めません（"+err.Error()+"）", "Go の正規表現（RE2）の書き方で直してください")
 			} else if re.MatchString("") {
-				story.ErrAt("id_pattern", "id_pattern が空の文字列に当たる", "ストーリーの ID 全体に当たる正規表現（例: #[0-9]+）にする")
+				story.ErrAt("id_pattern", "id_pattern が空の文字列に当たります", "ストーリーの ID 全体に当たる正規表現（例: #[0-9]+）にしてください")
 			} else {
 				cfg.IDPattern = re
 			}
@@ -192,7 +192,7 @@ func parse(top *tomlread.Table) *Config {
 
 	if cfg.IDPattern != nil {
 		if re, err := regexp.Compile(`^(?:` + cfg.IDPattern.String() + `)$`); err != nil {
-			top.ErrAt("", "ストーリーの ID の書き方を、ID 全体に当たる形にできない（"+err.Error()+"）", "id_pattern を直す")
+			top.ErrAt("", "ストーリーの ID の書き方を、ID 全体に当たる形にできません（"+err.Error()+"）", "id_pattern を直してください")
 		} else {
 			cfg.IDFull = re
 		}
@@ -225,58 +225,58 @@ func parseStoryStore(t *tomlread.Table, st *StoryStore) {
 	apiURL, hasAPI := t.Str("api_url", false)
 	switch {
 	case hasAdapter && hasCommand:
-		t.ErrAt("command", "[story] に adapter と command の両方を書いている", "中に持つアダプタを使うなら adapter だけを、外部のコマンドを使うなら command だけを書く")
+		t.ErrAt("command", "[story] に adapter と command の両方が書かれています", "vanda の中のアダプタを使うなら adapter だけを、外部のコマンドを使うなら command だけを書いてください")
 	case hasAdapter:
 		if adapter != "github" {
-			t.ErrAt("adapter", "ストーリーの置き場所のアダプタ "+quote(adapter)+" は vanda の中にない", `adapter = "github" にするか、外部のコマンドを command = ["…"] で書く`)
+			t.ErrAt("adapter", "ストーリーの置き場所のアダプタ "+quote(adapter)+" は vanda の中にありません", `adapter = "github" にするか、外部のコマンドを command = ["…"] で書いてください`)
 		}
 		st.Adapter = adapter
 	case hasCommand:
 		if len(command) == 0 || command[0] == "" {
-			t.ErrAt("command", "[story] の command に実行するコマンドがない", `command = ["コマンド", "引数"] のように書く`)
+			t.ErrAt("command", "[story] の command に、実行するコマンドがありません", `command = ["コマンド", "引数"] のように書いてください`)
 		}
 		st.Command = command
 	}
 	if st.Adapter == "github" {
 		if !hasRepo {
-			t.ErrAt("", `adapter = "github" なのに repository がない`, `repository = "<owner>/<repo>" を書く`)
+			t.ErrAt("", `adapter = "github" なのに、repository がありません`, `repository = "<owner>/<repo>" を書いてください`)
 		} else if !isRepository(repository) {
-			t.ErrAt("repository", "repository "+quote(repository)+" が <owner>/<repo> の形でない", `repository = "TadahiroYamamura/vanda" のように書く`)
+			t.ErrAt("repository", "repository "+quote(repository)+" が <owner>/<repo> の形ではありません", `repository = "TadahiroYamamura/vanda" のように書いてください`)
 		}
 		st.Repository = repository
 		st.APIURL = DefaultGitHubAPI
 		if hasAPI {
 			if !strings.HasPrefix(apiURL, "http://") && !strings.HasPrefix(apiURL, "https://") {
-				t.ErrAt("api_url", "api_url "+quote(apiURL)+" が http:// か https:// で始まる URL でない", `api_url = "https://api.github.com" のように書く`)
+				t.ErrAt("api_url", "api_url "+quote(apiURL)+" が、http:// か https:// で始まる URL ではありません", `api_url = "https://api.github.com" のように書いてください`)
 			}
 			st.APIURL = strings.TrimSuffix(apiURL, "/")
 		}
 		return
 	}
 	if hasRepo {
-		t.ErrAt("repository", `repository は adapter = "github" のときだけ書ける`, `adapter = "github" を書くか、repository を消す`)
+		t.ErrAt("repository", `repository は、adapter = "github" のときだけ書けます`, `adapter = "github" を書くか、repository を消してください`)
 	}
 	if hasAPI {
-		t.ErrAt("api_url", `api_url は adapter = "github" のときだけ書ける`, `adapter = "github" を書くか、api_url を消す`)
+		t.ErrAt("api_url", `api_url は、adapter = "github" のときだけ書けます`, `adapter = "github" を書くか、api_url を消してください`)
 	}
 }
 
 func checkVersion(top *tomlread.Table, v string) {
 	want, err := version.Parse(v)
 	if err != nil {
-		top.ErrAt("version", "version "+quote(v)+" が major.minor.patch の形でない", `version = "`+version.Current+`" のように書く`)
+		top.ErrAt("version", "version "+quote(v)+" が major.minor.patch の形ではありません", `version = "`+version.Current+`" のように書いてください`)
 		return
 	}
 	cur, err := version.Parse(version.Current)
 	if err != nil {
-		top.ErrAt("version", "動いている vanda の版 "+quote(version.Current)+" が読めない", "vanda の不具合なので、知らせる")
+		top.ErrAt("version", "動いている vanda の版 "+quote(version.Current)+" を読めません", "vanda の不具合です。開発者に知らせてください")
 		return
 	}
 	switch c := version.Compare(cur, want); {
 	case c < 0:
-		top.ErrAt("version", "動いている vanda（"+version.Current+"）が、設定の版（"+v+"）より古い", "vanda を "+v+" に上げる")
+		top.ErrAt("version", "動いている vanda（"+version.Current+"）が、設定の版（"+v+"）より古いです", "vanda を "+v+" に上げてください")
 	case c > 0:
-		top.ErrAt("version", "動いている vanda（"+version.Current+"）が、設定の版（"+v+"）より新しい", "vanda の移行のコマンドで .vanda/ を "+version.Current+" の形に書き換える")
+		top.ErrAt("version", "動いている vanda（"+version.Current+"）が、設定の版（"+v+"）より新しいです", "vanda の移行のコマンドで、.vanda/ を "+version.Current+" の形に書き換えてください")
 	}
 }
 
@@ -289,11 +289,11 @@ func patterns(t *tomlread.Table, key, def string) []string {
 		return []string{def}
 	}
 	if len(ps) == 0 {
-		t.ErrAt(key, key+" にパターンがない", key+` = ["…"] のように、1 つ以上書く`)
+		t.ErrAt(key, key+" にパターンがありません", key+` = ["…"] のように、1 つ以上書いてください`)
 	}
 	for _, p := range ps {
 		if err := glob.Validate(p); err != nil {
-			t.ErrAt(key, "パターン "+quote(p)+" の書き方が誤っている", "リポジトリの直下からの / 区切りの場所で書く（* と ? と [] と、何段のディレクトリにも当たる ** が使える）")
+			t.ErrAt(key, "パターン "+quote(p)+" の書き方が誤っています", "リポジトリの直下からの / 区切りの場所で書いてください（* と ? と [] と、何段のディレクトリにも当たる ** が使えます）")
 		}
 	}
 	return ps

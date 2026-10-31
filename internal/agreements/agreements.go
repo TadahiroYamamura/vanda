@@ -38,7 +38,7 @@ func Load(root string, files, patterns []string, allowMissing bool) (*Records, d
 		missing = nil
 	}
 	for _, m := range missing {
-		errs = append(errs, diag.Error{File: m, What: "合意の記録のファイルがない", Fix: "ファイルを作るか、.vanda/config.toml の agreements を直す"})
+		errs = append(errs, diag.Error{File: m, What: "合意の記録のファイルがありません", Fix: "ファイルを作るか、.vanda/config.toml の agreements を直してください"})
 	}
 	r := &Records{Files: matched}
 	for _, f := range matched {
@@ -61,14 +61,14 @@ func (r *Records) read(top *tomlread.Table) {
 		a := &Agreement{Table: t}
 		if k, ok := t.Str("kind", true); ok {
 			if !contains(Kinds, k) {
-				t.ErrAt("kind", "kind "+quote(k)+" は決まった値でない", "kind を "+strings.Join(Kinds, "・")+" のどれかにする")
+				t.ErrAt("kind", "kind "+quote(k)+" は決まった値ではありません", "kind を "+strings.Join(Kinds, "・")+" のどれかにしてください")
 			}
 			a.Kind = k
 		}
 		a.Key, _ = t.Str("key", true)
 		if fp, ok := t.Str("fingerprint", true); ok {
 			if !isFingerprint(fp) {
-				t.ErrAt("fingerprint", "fingerprint "+quote(fp)+" が指紋の形でない", "sha256: に続けて 16 進の小文字 64 文字で書く")
+				t.ErrAt("fingerprint", "fingerprint "+quote(fp)+" が指紋の形ではありません", "sha256: に続けて、16 進の小文字 64 文字で書いてください")
 			}
 			a.Fingerprint = fp
 		}
@@ -76,13 +76,13 @@ func (r *Records) read(top *tomlread.Table) {
 		a.Path = path
 		if a.Kind == "file" {
 			if !t.Has("path") {
-				t.ErrAt("", "対象がファイルの合意に path がない", `path = "…" に、合意したときのファイルの場所を書く`)
+				t.ErrAt("", "対象がファイルの合意に、path がありません", `path = "…" に、合意したときのファイルの場所を書いてください`)
 			}
 			if a.Key != "" && a.Fingerprint != "" && a.Key != a.Fingerprint {
-				t.ErrAt("key", "対象がファイルの合意の key が fingerprint と違う", "key にも、ファイルの中身の指紋を書く")
+				t.ErrAt("key", "対象がファイルの合意の key が、fingerprint と違います", "key にも、ファイルの中身の指紋を書いてください")
 			}
 		} else if hasPath && a.Kind != "" {
-			t.ErrAt("path", "対象が "+a.Kind+" の合意に path がある", "path は対象がファイルのときだけ書く。消す")
+			t.ErrAt("path", "対象が "+a.Kind+" の合意に、path があります", "path は対象がファイルのときだけ書けます。消してください")
 		}
 		if u, ok := t.Table("user", true); ok {
 			a.UserName, _ = u.Str("name", true)

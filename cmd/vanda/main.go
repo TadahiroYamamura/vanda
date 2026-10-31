@@ -38,7 +38,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 func newRootCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:           "vanda",
-		Short:         "エビデンス・ファースト開発の道具一式",
+		Short:         "エビデンス・ファースト開発の道具一式です",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
@@ -47,16 +47,16 @@ func newRootCommand() *cobra.Command {
 }
 
 // errFailed は、審査が失敗したことを表す。中身はすでに出しているので、もう出さない。
-var errFailed = errors.New("審査が失敗した")
+var errFailed = errors.New("審査が失敗しました")
 
 func newCheckCommand() *cobra.Command {
 	var base, story string
 	cmd := &cobra.Command{
 		Use:   "check <審査の設定のファイル>",
-		Short: "審査を行う",
+		Short: "審査を行います",
 		Args: func(_ *cobra.Command, args []string) error {
 			if len(args) != 1 {
-				return errors.New("審査の設定のファイルを 1 つ渡す（例: vanda check .vanda/checks/push.toml）。既定の審査はない")
+				return errors.New("審査の設定のファイルがありません。審査の設定のファイルを 1 つ渡してください（例: vanda check .vanda/checks/push.toml。既定の審査はありません）。")
 			}
 			return nil
 		},
@@ -67,7 +67,7 @@ func newCheckCommand() *cobra.Command {
 			}
 			src, err := os.ReadFile(args[0])
 			if err != nil {
-				return errors.New(args[0] + ": 審査の設定のファイルを読めない（" + err.Error() + "）。今のディレクトリからの場所を確かめる")
+				return errors.New(args[0] + ": 審査の設定のファイルを読めません（" + err.Error() + "）。今のディレクトリからの場所を確かめてください。")
 			}
 			specs, errs := check.LoadSpecs(args[0], src)
 			if errs != nil {
@@ -83,8 +83,8 @@ func newCheckCommand() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&base, "base", "", `ベースブランチ（scope = "story" の審査があるときに要る）`)
-	cmd.Flags().StringVar(&story, "story", "", "ストーリーの ID（コミットのメッセージから決まらないときに渡す）")
+	cmd.Flags().StringVar(&base, "base", "", `ベースブランチ（scope = "story" の審査があるときに必要です）`)
+	cmd.Flags().StringVar(&story, "story", "", "ストーリーの ID（コミットのメッセージから決まらないときに渡します）")
 	return cmd
 }
 
@@ -92,7 +92,7 @@ func newCheckCommand() *cobra.Command {
 func newVersionCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
-		Short: "版を出す",
+		Short: "版を表示します",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			fmt.Fprintln(cmd.OutOrStdout(), version.Current)
@@ -104,7 +104,7 @@ func newVersionCommand() *cobra.Command {
 func newDoctorCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "doctor",
-		Short: "設定と版を確かめる",
+		Short: "設定と版を確かめます",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			root, cfg, err := loadConfig()
@@ -118,7 +118,7 @@ func newDoctorCommand() *cobra.Command {
 			if conn != "" {
 				conn = "。" + conn
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "設定を確かめた: %s（リポジトリ %s、版 %s）%s\n", config.File, root, cfg.Version, conn)
+			fmt.Fprintf(cmd.OutOrStdout(), "設定を確かめました: %s（リポジトリ %s、版 %s）%s\n", config.File, root, cfg.Version, conn)
 			return nil
 		},
 	}
@@ -128,7 +128,7 @@ func newDoctorCommand() *cobra.Command {
 func loadConfig() (string, *config.Config, error) {
 	wd, err := os.Getwd()
 	if err != nil {
-		return "", nil, errors.New("今のディレクトリが分からない（" + err.Error() + "）")
+		return "", nil, errors.New("今のディレクトリが分かりません（" + err.Error() + "）。")
 	}
 	root, rerr := repo.Root(wd)
 	if rerr != nil {

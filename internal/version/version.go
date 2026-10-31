@@ -16,12 +16,12 @@ func Parse(s string) (Semver, error) {
 	var v Semver
 	parts := strings.Split(s, ".")
 	if len(parts) != 3 {
-		return v, fmt.Errorf("版 %q が major.minor.patch の形でない", s)
+		return v, fmt.Errorf("版 %q が major.minor.patch の形ではありません", s)
 	}
 	for i, p := range parts {
 		n, err := strconv.Atoi(p)
 		if err != nil || n < 0 || p != strconv.Itoa(n) {
-			return v, fmt.Errorf("版 %q が major.minor.patch の形でない", s)
+			return v, fmt.Errorf("版 %q が major.minor.patch の形ではありません", s)
 		}
 		v[i] = n
 	}

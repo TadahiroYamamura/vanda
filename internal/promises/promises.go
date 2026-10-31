@@ -69,7 +69,7 @@ func Load(root string, files, patterns []string, allowMissing bool) (*List, diag
 		missing = nil
 	}
 	for _, m := range missing {
-		errs = append(errs, diag.Error{File: m, What: "約束リストのファイルがない", Fix: "ファイルを作るか、.vanda/config.toml の promises を直す"})
+		errs = append(errs, diag.Error{File: m, What: "約束リストのファイルがありません", Fix: "ファイルを作るか、.vanda/config.toml の promises を直してください"})
 	}
 	l := &List{Files: matched}
 	for _, f := range matched {
@@ -124,7 +124,7 @@ func (l *List) read(top *tomlread.Table) {
 		x.Guesses, _ = t.Strs("guesses", false)
 		evs, ok := t.Tables("evidence", true)
 		if ok && len(evs) == 0 {
-			t.ErrAt("evidence", "evidence が 1 つもない", "[[claim.evidence]] を 1 つ以上書く")
+			t.ErrAt("evidence", "evidence が 1 つもありません", "[[claim.evidence]] を 1 つ以上書いてください")
 		}
 		for _, et := range evs {
 			e := &Evidence{Table: et}
@@ -152,7 +152,7 @@ func item(t *tomlread.Table, kind string) Item {
 func nonEmpty(t *tomlread.Table, key, what string) []string {
 	xs, ok := t.Strs(key, true)
 	if ok && len(xs) == 0 {
-		t.ErrAt(key, key+" が空", key+" に"+what+" を 1 つ以上書く")
+		t.ErrAt(key, key+" が空です", key+" に"+what+" を 1 つ以上書いてください")
 	}
 	return xs
 }

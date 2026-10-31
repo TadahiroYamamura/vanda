@@ -19,13 +19,13 @@ func matchPath(p, f string) bool { return glob.Match(p, f) }
 func (e *env) storyOrigin() []diag.Error {
 	out, err := repo.Git(e.root, "rev-list", "--no-merges", "--reverse", e.mergeBase+"..HEAD")
 	if err != nil {
-		return []diag.Error{{What: "コミットの一覧を読めない（" + err.Error() + "）", Fix: "git の状態を確かめる"}}
+		return []diag.Error{{What: "コミットの一覧を読めません（" + err.Error() + "）", Fix: "git の状態を確かめてください"}}
 	}
 	var errs []diag.Error
 	for _, c := range strings.Fields(out) {
 		names, err := repo.Git(e.root, "diff-tree", "--no-commit-id", "--name-only", "-r", "-z", "--root", c)
 		if err != nil {
-			return append(errs, diag.Error{What: "コミット " + short(c) + " で変わったファイルを読めない（" + err.Error() + "）", Fix: "git の状態を確かめる"})
+			return append(errs, diag.Error{What: "コミット " + short(c) + " で変わったファイルを読めません（" + err.Error() + "）", Fix: "git の状態を確かめてください"})
 		}
 		var touched []string
 		for _, f := range strings.Split(names, "\x00") {
@@ -44,13 +44,13 @@ func (e *env) storyOrigin() []diag.Error {
 		}
 		msg, err := repo.Git(e.root, "log", "-1", "--format=%B", c)
 		if err != nil {
-			return append(errs, diag.Error{What: "コミット " + short(c) + " のメッセージを読めない（" + err.Error() + "）", Fix: "git の状態を確かめる"})
+			return append(errs, diag.Error{What: "コミット " + short(c) + " のメッセージを読めません（" + err.Error() + "）", Fix: "git の状態を確かめてください"})
 		}
 		if e.cfg.IDPattern.MatchString(msg) {
 			continue
 		}
 		subject := strings.SplitN(strings.TrimSpace(msg), "\n", 2)[0]
-		errs = append(errs, diag.Error{What: fmt.Sprintf("コミット %s「%s」が約束リスト（%s）を変えているのに、メッセージにストーリーの ID（%s の形）がない", short(c), subject, strings.Join(touched, "・"), e.cfg.IDPattern), Fix: "そのコミットのメッセージに、ストーリーの ID を書く"})
+		errs = append(errs, diag.Error{What: fmt.Sprintf("コミット %s「%s」が約束リスト（%s）を変えていますが、メッセージにストーリーの ID（%s の形）がありません", short(c), subject, strings.Join(touched, "・"), e.cfg.IDPattern), Fix: "そのコミットのメッセージに、ストーリーの ID を書いてください"})
 	}
 	return errs
 }
@@ -93,24 +93,24 @@ func (e *env) agreement(scope string) []diag.Error {
 		}
 		fp, err := agreements.ItemFingerprint(it.raw)
 		if err != nil {
-			errs = append(errs, it.table.Err("", kindName[it.kind]+" "+it.id+" の指紋を作れない（"+err.Error()+"）", "約束リストに書ける値（文字列・真偽・配列・表）だけにする"))
+			errs = append(errs, it.table.Err("", kindName[it.kind]+" "+it.id+" の指紋を作れません（"+err.Error()+"）", "約束リストに書ける値（文字列・真偽・配列・表）だけにしてください"))
 			continue
 		}
 		switch {
 		case changed && !e.recs.Agreed(it.kind, it.id, fp):
-			errs = append(errs, it.table.Err("id", kindName[it.kind]+" "+it.id+" の今の中身に合意していない（提案中。指紋 "+fp+"）", "中身を確かめて合意し、合意の記録に書く"))
+			errs = append(errs, it.table.Err("id", kindName[it.kind]+" "+it.id+" の今の中身に、まだ合意していません（提案中。指紋 "+fp+"）", "中身を確かめてから合意し、合意の記録に書いてください"))
 		case storyAgreed[it.key()] && !e.recs.AgreedBy(it.kind, it.id, fp, e.story):
-			errs = append(errs, it.table.Err("id", kindName[it.kind]+" "+it.id+" の、ストーリー "+e.story+" の合意が外れている（前に合意した後に中身が変わり、今の中身 "+fp+" に "+e.story+" の合意がない）", "今の中身を確かめ、ストーリー "+e.story+" で合意し直す"))
+			errs = append(errs, it.table.Err("id", kindName[it.kind]+" "+it.id+" の、ストーリー "+e.story+" の合意が外れています（前に合意した後に中身が変わり、今の中身 "+fp+" に "+e.story+" の合意がありません）", "今の中身を確かめ、ストーリー "+e.story+" で合意し直してください"))
 		}
 		if !changed {
 			continue
 		}
 		if it.claim != nil {
 			if len(it.claim.Flags) > 0 {
-				errs = append(errs, it.table.Err("flags", "約束 "+it.id+" にフラグ（"+strings.Join(it.claim.Flags, "・")+"）が残っている", "合意するときにフラグを外す（合意の後にフラグだけを立てたなら、中身を確かめ直して外す）"))
+				errs = append(errs, it.table.Err("flags", "約束 "+it.id+" にフラグ（"+strings.Join(it.claim.Flags, "・")+"）が残っています", "合意するときに、フラグを外してください（合意の後にフラグだけを立てたなら、中身を確かめ直してから外してください）"))
 			}
 			if len(it.claim.Guesses) > 0 {
-				errs = append(errs, it.table.Err("guesses", "約束 "+it.id+" に推測（guesses）が残っている", "推測を確かめ、合意するときに guesses を外す"))
+				errs = append(errs, it.table.Err("guesses", "約束 "+it.id+" に推測（guesses）が残っています", "推測を確かめ、合意するときに guesses を外してください"))
 			}
 		}
 	}
@@ -122,15 +122,15 @@ func (e *env) agreement(scope string) []diag.Error {
 		}
 		src, err := os.ReadFile(filepath.Join(e.root, filepath.FromSlash(f)))
 		if err != nil {
-			errs = append(errs, diag.Error{File: f, What: "ファイルを読めない（" + err.Error() + "）", Fix: "ファイルを読む権限を確かめる"})
+			errs = append(errs, diag.Error{File: f, What: "ファイルを読めません（" + err.Error() + "）", Fix: "ファイルを読む権限を確かめてください"})
 			continue
 		}
 		fp := agreements.FileFingerprint(src)
 		switch {
 		case changed && !e.recs.Agreed("file", fp, fp):
-			errs = append(errs, diag.Error{File: f, What: "ファイルの今の中身に合意していない（提案中。指紋 " + fp + "）", Fix: "中身を確かめて合意し、合意の記録に書く"})
+			errs = append(errs, diag.Error{File: f, What: "ファイルの今の中身に、まだ合意していません（提案中。指紋 " + fp + "）", Fix: "中身を確かめてから合意し、合意の記録に書いてください"})
 		case storyAgreed["path:"+f] && !e.recs.AgreedBy("file", fp, fp, e.story):
-			errs = append(errs, diag.Error{File: f, What: "ストーリー " + e.story + " の合意が外れている（前に合意した後に中身が変わり、今の中身 " + fp + " に " + e.story + " の合意がない）", Fix: "今の中身を確かめ、ストーリー " + e.story + " で合意し直す"})
+			errs = append(errs, diag.Error{File: f, What: "ストーリー " + e.story + " の合意が外れています（前に合意した後に中身が変わり、今の中身 " + fp + " に " + e.story + " の合意がありません）", Fix: "今の中身を確かめ、ストーリー " + e.story + " で合意し直してください"})
 		}
 	}
 	return errs
@@ -154,7 +154,7 @@ func (e *env) agreementTargets() []diag.Error {
 			continue
 		}
 		if !have[a.Kind+":"+a.Key] {
-			errs = append(errs, a.Table.Err("key", "合意の記録が、約束リストにない"+kindName[a.Kind]+" "+quote(a.Key)+" を指している", "約束リストに戻すか、この合意の記録を消す"))
+			errs = append(errs, a.Table.Err("key", "合意の記録が、約束リストにない"+kindName[a.Kind]+" "+quote(a.Key)+" を指しています", "約束リストに戻すか、この合意の記録を消してください"))
 		}
 	}
 	return errs
@@ -193,7 +193,7 @@ func (e *env) evidencePresent(scope string) []diag.Error {
 		for _, ev := range c.Evidence {
 			switch ev.Type {
 			case "proof":
-				errs = append(errs, ev.Table.Err("type", "タイプ proof は段 1 では扱えない（対応するアダプタがない）", "別のタイプのエビデンスにする"))
+				errs = append(errs, ev.Table.Err("type", "タイプ proof は、まだ扱えません（対応するアダプタがありません）", "別のタイプのエビデンスにしてください"))
 				continue
 			case "human-review", "monitoring":
 				continue
@@ -203,7 +203,7 @@ func (e *env) evidencePresent(scope string) []diag.Error {
 				continue // 決まった値でないタイプは、約束リストの形の審査で出す
 			}
 			if !have[want[0]+"\x00"+want[1]+"\x00"+c.ID] {
-				errs = append(errs, ev.Table.Err("type", fmt.Sprintf("約束 %s の %s のエビデンスがない（%s のアダプタのファイルに @vanda:%s %s がない）", c.ID, ev.Type, want[0], want[1], c.ID), fmt.Sprintf("エビデンスを作り、@vanda:%s %s を付ける", want[1], c.ID)))
+				errs = append(errs, ev.Table.Err("type", fmt.Sprintf("約束 %s の %s のエビデンスがありません（%s のアダプタのファイルに、@vanda:%s %s がありません）", c.ID, ev.Type, want[0], want[1], c.ID), fmt.Sprintf("エビデンスを作り、@vanda:%s %s を付けてください", want[1], c.ID)))
 			}
 		}
 	}
@@ -225,7 +225,7 @@ func (e *env) unreadFiles() []diag.Error {
 			}
 		}
 		if !read {
-			errs = append(errs, diag.Error{File: f, What: ".vanda/ にあるのに、設定のどのパターンにも当たらず、読まれていない", Fix: ".vanda/config.toml の promises か agreements のパターンに当たるようにするか、ファイルを消す"})
+			errs = append(errs, diag.Error{File: f, What: ".vanda/ にありますが、設定のどのパターンにも当たらないため、読まれていません", Fix: ".vanda/config.toml の promises か agreements のパターンに当たるようにするか、ファイルを消してください"})
 		}
 	}
 	return errs

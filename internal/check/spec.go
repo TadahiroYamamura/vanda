@@ -42,7 +42,7 @@ func LoadSpecs(file string, src []byte) ([]Spec, diag.Errors) {
 	top := doc.Top()
 	ts, _ := top.Tables("check", true)
 	if ts != nil && len(ts) == 0 {
-		top.ErrAt("check", "審査が 1 つもない", "[[check]] に name と scope を書く")
+		top.ErrAt("check", "審査が 1 つもありません", "[[check]] に name と scope を書いてください")
 	}
 	var names []string
 	for _, n := range Names {
@@ -65,13 +65,13 @@ func LoadSpecs(file string, src []byte) ([]Spec, diag.Errors) {
 		}
 		switch {
 		case scopes == nil:
-			t.ErrAt("name", "審査 "+quote(name)+" はない", "name を "+strings.Join(names, "・")+" のどれかにする")
+			t.ErrAt("name", "審査 "+quote(name)+" はありません", "name を "+strings.Join(names, "・")+" のどれかにしてください")
 			continue
 		case scope != ScopeAll && scope != ScopeStory:
-			t.ErrAt("scope", "範囲 "+quote(scope)+" は決まった値でない", `scope を "all" か "story" にする`)
+			t.ErrAt("scope", "範囲 "+quote(scope)+" は決まった値ではありません", `scope を "all" か "story" にしてください`)
 			continue
 		case !contains(scopes, scope):
-			t.ErrAt("scope", "審査 "+name+" は範囲 "+scope+" で行えない", "scope を "+strings.Join(scopes, " か ")+" にする")
+			t.ErrAt("scope", "審査 "+name+" は範囲 "+scope+" では行えません", "scope を "+strings.Join(scopes, " か ")+" にしてください")
 			continue
 		}
 		s.Name, s.Scope = name, scope

@@ -14,7 +14,7 @@ import (
 func Root(dir string) (string, *diag.Error) {
 	out, err := Git(dir, "rev-parse", "--show-toplevel")
 	if err != nil {
-		return "", &diag.Error{What: "git のリポジトリの外で動かしている（" + err.Error() + "）", Fix: "vanda は、.vanda/ のある git のリポジトリの中で動かす"}
+		return "", &diag.Error{What: "git のリポジトリの外で動かしています（" + err.Error() + "）", Fix: "vanda は、.vanda/ のある git のリポジトリの中で動かしてください"}
 	}
 	return filepath.FromSlash(strings.TrimSpace(out)), nil
 }

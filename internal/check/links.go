@@ -30,9 +30,9 @@ func (e *env) annotationLinks() []diag.Error {
 		got := kindOf[a.Value]
 		switch {
 		case got == "":
-			errs = append(errs, diag.Error{File: a.File, Line: a.Line, What: "@vanda:" + a.Kind + " の " + quote(a.Value) + " が約束リストの" + kindName[want] + "にない", Fix: "約束リストにある" + kindName[want] + "の ID にするか、約束リストに足す"})
+			errs = append(errs, diag.Error{File: a.File, Line: a.Line, What: "@vanda:" + a.Kind + " の " + quote(a.Value) + " が約束リストの" + kindName[want] + "にありません", Fix: "約束リストにある" + kindName[want] + "の ID にするか、約束リストに足してください"})
 		case got != want:
-			errs = append(errs, diag.Error{File: a.File, Line: a.Line, What: "@vanda:" + a.Kind + " の " + quote(a.Value) + " は" + kindName[got] + "の ID で、" + kindName[want] + "の ID でない", Fix: "@vanda:" + a.Kind + " には" + kindName[want] + "の ID を書く"})
+			errs = append(errs, diag.Error{File: a.File, Line: a.Line, What: "@vanda:" + a.Kind + " の " + quote(a.Value) + " は" + kindName[got] + "の ID で、" + kindName[want] + "の ID ではありません", Fix: "@vanda:" + a.Kind + " には、" + kindName[want] + "の ID を書いてください"})
 		}
 	}
 	errs = append(errs, e.specTypes()...)
@@ -64,11 +64,11 @@ func (e *env) specTypes() []diag.Error {
 					term = true
 				case "feature":
 					// 直すのはアノテーションなので、定義ではなくアノテーションの行を指す
-					errs = append(errs, diag.Error{File: f, Line: a.Line, What: "仕様の型 " + ty.Name + "（TypeOK で使っている）に @vanda:feature が付いている", Fix: "型には @vanda:term <用語の ID> か @vanda:internal <理由> を付け、@vanda:feature は操作の定義に付ける"})
+					errs = append(errs, diag.Error{File: f, Line: a.Line, What: "仕様の型 " + ty.Name + "（TypeOK で使っています）に、@vanda:feature が付いています", Fix: "型には @vanda:term <用語の ID> か @vanda:internal <理由> を付け、@vanda:feature は操作の定義に付けてください"})
 				}
 			}
 			if !term {
-				errs = append(errs, diag.Error{File: f, Line: ty.Line, What: "仕様の型 " + ty.Name + "（TypeOK で使っている）に @vanda:term も @vanda:internal もない", Fix: "定義のすぐ上のコメントに @vanda:term <用語の ID> か @vanda:internal <理由> を書く"})
+				errs = append(errs, diag.Error{File: f, Line: ty.Line, What: "仕様の型 " + ty.Name + "（TypeOK で使っています）に、@vanda:term も @vanda:internal もありません", Fix: "定義のすぐ上のコメントに、@vanda:term <用語の ID> か @vanda:internal <理由> を書いてください"})
 			}
 		}
 	}

@@ -111,7 +111,7 @@ type Snapshot struct {
 func Working(root string, cfg *config.Config) (*Snapshot, error) {
 	files, err := glob.Files(root)
 	if err != nil {
-		return nil, fmt.Errorf("リポジトリのファイルの一覧を作れない（%v）。ファイルを読む権限を確かめる", err)
+		return nil, fmt.Errorf("リポジトリのファイルの一覧を作れません（%v）。ファイルを読む権限を確かめてください。", err)
 	}
 	s := newSnapshot(files, cfg, func(f string) ([]byte, error) {
 		return os.ReadFile(filepath.Join(root, filepath.FromSlash(f)))
@@ -125,7 +125,7 @@ func Working(root string, cfg *config.Config) (*Snapshot, error) {
 func At(root string, cfg *config.Config, rev string) (*Snapshot, error) {
 	out, err := repo.Git(root, "ls-tree", "-r", "-z", "--name-only", rev)
 	if err != nil {
-		return nil, fmt.Errorf("コミット %s のファイルの一覧を読めない（%v）", rev, err)
+		return nil, fmt.Errorf("コミット %s のファイルの一覧を読めません（%v）。", rev, err)
 	}
 	var files []string
 	for _, f := range strings.Split(out, "\x00") {
@@ -143,7 +143,7 @@ func At(root string, cfg *config.Config, rev string) (*Snapshot, error) {
 	for _, f := range matched {
 		b, err := s.read(f)
 		if err != nil {
-			return nil, fmt.Errorf("コミット %s の %s を読めない（%v）", rev, f, err)
+			return nil, fmt.Errorf("コミット %s の %s を読めません（%v）。", rev, f, err)
 		}
 		srcs[f] = b
 	}
@@ -165,7 +165,7 @@ func (s *Snapshot) Has(path string) bool { return s.has[path] }
 // Read は、その時点の path のファイルの中身を返す。
 func (s *Snapshot) Read(path string) ([]byte, error) {
 	if !s.has[path] {
-		return nil, fmt.Errorf("%s がない", path)
+		return nil, fmt.Errorf("%s がありません", path)
 	}
 	return s.read(path)
 }

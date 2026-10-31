@@ -150,16 +150,16 @@ VARIABLE x
 	}
 	_, errs := Read(root, files, rules)
 	want := []string{
-		"x/a_test.go:3: @vanda:evidence に ID が 2 つ以上ある。",
-		"x/a_test.go:6: @vanda:claimx は決まった種類でない。",
-		"x/a_test.go:9: アノテーションが func の宣言の直前のコメントにない。",
-		"x/a_test.go:15: @vanda:internal に理由がない。",
-		"x/a_test.go:18: @vanda:sensor に ID がない。",
-		"x/a_test.go:19: 1 行に @vanda: が 2 つ以上ある。",
-		"spec/A.tla:3: アノテーションの次の行（4 行目）が、Name ==・Name(…) ==・Name[…] == の定義でない。",
-		"spec/A.tla:5: アノテーションの後に定義がない。",
-		"db/a.sql: .vanda/config.toml の [[annotation]]（11 行目・15 行目）の 2 つ以上のパターンに当たる。",
-		"other/a.md: .vanda/config.toml の 13 行目の [[annotation]] のパターンに当たるが、使うアダプタが決まっていない。",
+		"x/a_test.go:3: @vanda:evidence に ID が 2 つ以上あります。",
+		"x/a_test.go:6: @vanda:claimx は決まった種類ではありません。",
+		"x/a_test.go:9: アノテーションが、func の宣言の直前のコメントにありません。",
+		"x/a_test.go:15: @vanda:internal に理由がありません。",
+		"x/a_test.go:18: @vanda:sensor に ID がありません。",
+		"x/a_test.go:19: 1 行に @vanda: が 2 つ以上あります。",
+		"spec/A.tla:3: アノテーションの次の行（4 行目）が、Name ==・Name(…) ==・Name[…] == の定義ではありません。",
+		"spec/A.tla:5: アノテーションの後に、定義がありません。",
+		"db/a.sql: .vanda/config.toml の [[annotation]]（11 行目・15 行目）の 2 つ以上のパターンに当たります。",
+		"other/a.md: .vanda/config.toml の 13 行目の [[annotation]] のパターンに当たりますが、使うアダプタが決まっていません。",
 	}
 	got := errs.Error()
 	for _, w := range want {
@@ -223,9 +223,9 @@ func TestReadは外部のコマンドのアダプタの失敗と返し漏れを�
 		{Paths: []string{"docs/b.md"}, Command: []string{"./fail.sh"}},
 	})
 	want := []string{
-		"docs/a.md: アダプタ（./partial.sh）が、アノテーションのない 5 行目の名前を返した。",
-		"docs/a.md:2: アダプタ（./partial.sh）が、このアノテーションの名前を返さなかった。",
-		"docs/b.md: アノテーションの読み取りのアダプタ（./fail.sh）が失敗した（わからない）。",
+		"docs/a.md: アダプタ（./partial.sh）が、アノテーションのない 5 行目の名前を返しました。",
+		"docs/a.md:2: アダプタ（./partial.sh）が、このアノテーションの名前を返しませんでした。",
+		"docs/b.md: アノテーションの読み取りのアダプタ（./fail.sh）が失敗しました（わからない）。",
 	}
 	got := errs.Error()
 	for _, w := range want {
@@ -256,10 +256,10 @@ func TestReadは言語ごとに決まった種類のほかを誤りにする(t *
 	}
 	as, errs := Read(root, files, rules)
 	want := []string{
-		"db/a.sql:1: @vanda:term は、sql のアダプタのファイルには書けない。書けるのは evidence。",
-		"e2e/a.txtar:1: @vanda:sensor は、txtar のアダプタのファイルには書けない。書けるのは evidence。",
-		"spec/A.tla:1: @vanda:evidence は、tla のアダプタのファイルには書けない。書けるのは term・feature・claim・internal。",
-		"x/a_test.go:3: @vanda:claim は、go のアダプタのファイルには書けない。書けるのは evidence・sensor。",
+		"db/a.sql:1: @vanda:term は、sql のアダプタのファイルには書けません。書けるのは evidence です。",
+		"e2e/a.txtar:1: @vanda:sensor は、txtar のアダプタのファイルには書けません。書けるのは evidence です。",
+		"spec/A.tla:1: @vanda:evidence は、tla のアダプタのファイルには書けません。書けるのは term・feature・claim・internal です。",
+		"x/a_test.go:3: @vanda:claim は、go のアダプタのファイルには書けません。書けるのは evidence・sensor です。",
 	}
 	got := errs.Error()
 	if got2 := strings.Join(want, ""); len(strings.Split(got, "\n")) != len(want) || got2 == "" {
