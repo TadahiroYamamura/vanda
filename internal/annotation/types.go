@@ -117,3 +117,34 @@ func identifiers(s string) []string {
 	}
 	return out
 }
+
+// TLADefinition は、TLA+ の中身 src の、行 annLine（1 から数える）のアノテーションが付いている定義の文を返す。
+// 定義の行から、次の最上位の定義か `====` の前までのうち、終わりの空行とコメントだけの行（次の定義のアノテーションなど）を除いたもの。
+func TLADefinition(src []byte, annLine int) (string, bool) {
+	rows := strings.Split(string(src), "\n")
+	code, _ := splitTLA(rows)
+	start := -1
+	for j := annLine; j < len(code); j++ {
+		if strings.TrimSpace(code[j]) != "" {
+			start = j
+			break
+		}
+	}
+	if start < 0 {
+		return "", false
+	}
+	if _, ok := tlaDefName(code[start]); !ok {
+		return "", false
+	}
+	end := len(code)
+	for j := start + 1; j < len(code); j++ {
+		if isTopLevelDef(code[j]) || strings.HasPrefix(strings.TrimSpace(code[j]), "====") {
+			end = j
+			break
+		}
+	}
+	for end > start+1 && strings.TrimSpace(code[end-1]) == "" {
+		end--
+	}
+	return strings.Join(rows[start:end], "\n"), true
+}

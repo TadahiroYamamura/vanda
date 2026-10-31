@@ -31,6 +31,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/context", s.read(s.context))
 	mux.HandleFunc("GET /api/review", s.read(s.review))
 	mux.HandleFunc("POST /api/agree", s.agree)
+	mux.HandleFunc("GET /api/claims/{id}", s.read(s.claim))
+	mux.HandleFunc("GET /api/file", s.read(s.file))
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, http.StatusNotFound, "この API はない", "")
 	})
@@ -63,6 +65,25 @@ func (s *Server) review(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, res)
+}
+
+func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
+	d, err := review.Claim(review.Options{Root: s.Root, Cfg: s.Cfg}, r.PathValue("id"))
+	if err != nil {
+		writeReviewError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, d)
+}
+
+func (s *Server) file(w http.ResponseWriter, r *http.Request) {
+	p := r.URL.Query().Get("path")
+	text, err := review.File(review.Options{Root: s.Root, Cfg: s.Cfg}, p)
+	if err != nil {
+		writeReviewError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"path": p, "text": text})
 }
 
 func writeReviewError(w http.ResponseWriter, e *review.Error) {
