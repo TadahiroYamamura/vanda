@@ -450,3 +450,76 @@ test("レビューの画面の1件の詳細に約束の由来と合意の履歴�
   await expect(now).toContainText(/合います/);
   await expect(rowOf(page, "テスト担当")).toContainText(/合いません/);
 });
+
+// CL-08。今の中身として画面に出ている版（約束の詳細では v4、レビューの画面では変更前の v1 と変更後の v4）は、選んで出たか
+// 見分けられないので、その画面で出ていない版だけを選ぶ。選ぶ前に出ていないことも確かめる
+const pages = [
+  { name: "約束の詳細の画面", open: async (page: Page) => page.goto(serve.url + "/claims/task-id-unique"), showsV1: false },
+  { name: "レビューの画面", open: openReviewDetail, showsV1: true },
+];
+
+for (const pg of pages) {
+  test(`${pg.name}で由来の各コミットを選ぶとそのコミットの時点の約束の中身が出る`, async ({ page }) => {
+    commitV3(repo);
+    repo.write(".vanda/promises.toml", promisesAt(v4));
+    commit(repo, "#24 文を直す");
+    await pg.open(page);
+    await expect(page.getByText(v4.statement).first()).toBeVisible();
+
+    const v3Marks = [v3.statement, v3.rationale!, v3.condition!, v3.plan!, "データベース"];
+    const choices: [string, string[]][] = [
+      ["#24 理由と条件を足す", v3Marks],
+      ["#24 約束を変え、題の約束を足す", [v2Statement]],
+    ];
+    if (!pg.showsV1) choices.push(["#1 はじめの約束を置く", [v1Statement]]);
+    for (const [, marks] of choices) {
+      for (const m of marks) await expect(page.getByText(m, { exact: false }), `選ぶ前から ${m} が出ている`).toHaveCount(0);
+    }
+    for (const [subject, marks] of choices) {
+      await choose(rowOf(page, subject));
+      for (const m of marks) await expect(page.getByText(m, { exact: false }).first(), `${subject} を選んでも ${m} が出ない`).toBeVisible();
+    }
+  });
+
+  test(`${pg.name}で約束を変える前の合意の記録を選ぶと今の中身でなく合意を書いたコミットの時点の中身が出る`, async ({ page }) => {
+    commitV3(repo);
+    // v3 のときに画面で合意し、その後に v4 へ変える
+    await openReviewDetail(page);
+    const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
+    await page.getByRole("button", { name: /合意する/ }).click();
+    expect((await res).status()).toBe(200);
+    repo.write(".vanda/promises.toml", promisesAt(v4));
+    commit(repo, "#24 文を直す");
+
+    await pg.open(page);
+    await expect(page.getByText(v4.statement).first()).toBeVisible();
+    for (const m of [v3.statement, v3.rationale!]) await expect(page.getByText(m)).toHaveCount(0);
+    await choose(rowOf(page, "合意する人"));
+    for (const m of [v3.statement, v3.rationale!, v3.condition!, v3.plan!]) {
+      await expect(page.getByText(m, { exact: false }).first(), `合意の記録を選んでも、合意した時点の ${m} が出ない`).toBeVisible();
+    }
+    // #1 の合意は、#1 のコミットで書いたので v1 の中身
+    if (!pg.showsV1) {
+      await expect(page.getByText(v1Statement, { exact: true })).toHaveCount(0);
+      await choose(rowOf(page, "テスト担当"));
+      await expect(page.getByText(v1Statement, { exact: true }).first()).toBeVisible();
+    }
+  });
+
+  test(`${pg.name}で合意を書いたコミットの時点に約束リストが読めない合意の記録を選ぶと理由が出る`, async ({ page }) => {
+    commitV3(repo);
+    // 合意の記録を足したコミットで、約束リストの形を壊す。次のコミットで直す
+    const agreements = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
+    repo.write(".vanda/agreements.toml", agreements + agreement("claim", "task-id-unique", sha(claimJSON(v3.statement)), null, "#24").replace("テスト担当", "壊れた時に合意した人"));
+    repo.write(".vanda/promises.toml", promisesAt(v3) + "\n[[claim]\n");
+    commit(repo, "#24 合意を書き約束リストを壊す");
+    repo.write(".vanda/promises.toml", promisesAt(v4));
+    commit(repo, "#24 文を直す");
+
+    await pg.open(page);
+    await expect(page.getByText(v4.statement).first()).toBeVisible();
+    await expect(page.getByText(/promises\.toml/)).toHaveCount(0);
+    await choose(rowOf(page, "壊れた時に合意した人"));
+    await expect(page.getByText(/promises\.toml/).first(), "その時点の約束リストが読めない理由が出ない").toBeVisible();
+  });
+}
