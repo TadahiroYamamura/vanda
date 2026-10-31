@@ -3,7 +3,7 @@ import { useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api, type ClaimContent, type Context, type Entry, type FeatureContent, type FileContent, type Review, type TermContent } from "../api";
-import { ErrorBox, FlagBadge, StateBadge, shortCommit, useLoad } from "../components/common";
+import { ErrorBox, FlagBadge, PresentIcon, StateBadge, shortCommit, useLoad } from "../components/common";
 import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
 import { LineDiff, Parts } from "../components/DiffView";
@@ -541,7 +541,9 @@ export function ClaimSections(props: { id: string; query?: string }) {
                     </div>
                   ))}
                 </td>
-                <td>{ev.present === null ? "アノテーションでは確かめません" : ev.present ? "揃っています" : "ありません"}</td>
+                <td>
+                  <PresentIcon present={ev.present} />
+                </td>
               </tr>
             ))}
           </tbody>

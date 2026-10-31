@@ -122,3 +122,20 @@ export function useLoad<T>(load: (() => Promise<T>) | null, key: string): { data
 export function shortCommit(c: string) {
   return c.slice(0, 7);
 }
+
+// PresentIcon は、エビデンスが揃っているか（API の present）を、アイコンで示す（RV-08）。依存を足さないよう、インラインの SVG で書く
+export function PresentIcon(props: { present: boolean | null }) {
+  const [label, cls, path] =
+    props.present === null
+      ? ["アノテーションでは確かめません", "present-none", "M4 8h8"]
+      : props.present
+        ? ["揃っています", "present-yes", "M3.5 8.5l3 3 6-7"]
+        : ["ありません", "present-no", "M4.5 4.5l7 7M11.5 4.5l-7 7"];
+  return (
+    <span className={`present-icon ${cls}`} role="img" aria-label={label} title={label}>
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d={path} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  );
+}
