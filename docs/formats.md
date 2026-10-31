@@ -601,6 +601,7 @@ base = "origin/develop"
 - 認証の鍵は設定に書かない。使うたびに、環境の変数 `GH_TOKEN` があればそれを、なければ `gh auth token` の出力を使う
 - `GET <api_url>/repos/<repository>/issues/<番号>` を呼ぶ。番号は、ストーリーの ID の数字の部分
 - 添付ファイルは、本文の中のリンクと画像（Markdown の `[名前](URL)`・`![名前](URL)` と、HTML の `<img src>`）のうち、URL が `https://github.com/user-attachments/`・`https://github.com/<repository>/assets/`・`https://user-images.githubusercontent.com/` で始まるもの。名前は、リンクの文字か画像の代わりの文字（なければ URL の最後の部分）
+- 添付ファイルの見分け方は、`github.com` の URL だけ。GitHub Enterprise の添付は、まだ見分けない
 
 ### 外部のコマンドのアダプタ（ストーリーの置き場所）
 
