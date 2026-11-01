@@ -257,3 +257,61 @@ func Test起動したvanda_serveは止めると止まりほかのHostの要求�
 		t.Errorf("vanda serve のプロセスが終わっていない")
 	}
 }
+
+// GET 以外の要求で、Origin があって http://<Host> でなければ 403 で断る（ブラウザーのほかのサイトからの書き込みを防ぐ）
+// @vanda:evidence serve-rejects-foreign-origin
+func Testほかのサイトから来たGETでない要求は403で断りOriginがないか同じなら断らない(t *testing.T) {
+	t.Parallel()
+	bin := buildVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := newReviewRepo(t, version)
+	s := startServe(t, bin, r.Root, r.Env)
+	head := r.git("rev-parse", "HEAD")
+	body := `{"kind":"claim","id":"task-id-unique","path":null,"fingerprint":"sha256:0","story":"#24"}`
+	send := func(method, origin string) int {
+		t.Helper()
+		var rd io.Reader
+		if method != http.MethodGet {
+			rd = strings.NewReader(body)
+		}
+		path := "/api/agree"
+		if method == http.MethodGet {
+			path = "/api/context"
+		}
+		req, err := http.NewRequest(method, s.URL+path, rd)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		if origin != "" {
+			req.Header.Set("Origin", origin)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	for _, origin := range []string{"http://example.com", "https://" + s.host, "http://" + s.host + ".example.com", "null"} {
+		if code := send(http.MethodPost, origin); code != http.StatusForbidden {
+			t.Errorf("Origin %s の POST に %d を返した（403 で断る）", origin, code)
+		}
+	}
+	// 同じ Origin か、Origin のない POST は断らない（指紋が違うので 409 になる）
+	for _, origin := range []string{"", "http://" + s.host} {
+		if code := send(http.MethodPost, origin); code == http.StatusForbidden {
+			t.Errorf("Origin %q の POST を 403 で断った", origin)
+		}
+	}
+	// GET は Origin がほかのサイトでも断らない
+	if code := send(http.MethodGet, "http://example.com"); code != http.StatusOK {
+		t.Errorf("ほかのサイトの Origin の GET に %d を返した（断らない）", code)
+	}
+	if r.git("rev-parse", "HEAD") != head {
+		t.Errorf("断った要求で、コミットができた")
+	}
+}

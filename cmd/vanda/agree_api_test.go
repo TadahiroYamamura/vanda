@@ -438,6 +438,7 @@ func revokeEntry(t *testing.T, s *vandaServer) (state string, possible *bool, re
 // RV-17
 // @vanda:evidence revoke-commits-and-keeps-flags
 // @vanda:evidence revoke-own-branch-only
+// @vanda:evidence revoke-returns-to-proposed
 func Test自分が今のブランチで書いた合意を取り消すとその記録と直前の空行だけが消え1つのコミットになりフラグは戻らない(t *testing.T) {
 	t.Parallel()
 	_, r, s, base := setupRevoke(t, func(base string) string {
@@ -481,13 +482,14 @@ func Test自分が今のブランチで書いた合意を取り消すとその�
 	if untracked := r.git("ls-files", "--others", "--exclude-standard"); untracked != "notes.md" {
 		t.Errorf("git が追っていないファイルが残っていない: %q", untracked)
 	}
-	if state, _, _ := revokeEntry(t, s); state == "agreed" {
-		t.Errorf("取り消した後も合意済のまま")
+	if state, _, _ := revokeEntry(t, s); state != "proposed" {
+		t.Errorf("取り消した後、ほかに合う記録がないのに提案中に戻らない（%q）", state)
 	}
 }
 
 // RV-17。人の違う記録は残り、同じ人の同じ記録が 2 つあれば両方消える。ほかのストーリーの記録も残る
 // @vanda:evidence revoke-own-branch-only
+// @vanda:evidence revoke-returns-to-proposed
 func Test取り消すと今の人の記録だけが消えほかの人とほかのストーリーの記録は残り合意済のままになる(t *testing.T) {
 	t.Parallel()
 	other := inlineRecord(reviewStory, "ほかの人", "other@example.com")
@@ -515,6 +517,7 @@ func Test取り消すと今の人の記録だけが消えほかの人とほか�
 
 // RV-17。誰が × どこで書いたか、の組み合わせを全部回す
 // @vanda:evidence revoke-own-branch-only
+// @vanda:evidence revoke-refused
 func Test取り消せるのは今の人が今のブランチで書いた合意だけでほかは一覧で取り消せないとなりAPIで断られる(t *testing.T) {
 	t.Parallel()
 	writers := []struct {
@@ -595,6 +598,7 @@ func Test取り消せるのは今の人が今のブランチで書いた合意�
 }
 
 // RV-17
+// @vanda:evidence revoke-commits-and-keeps-flags
 func Test合意の記録のファイルに書きかけの変更があると取り消しを断り理由を出し何も変えない(t *testing.T) {
 	t.Parallel()
 	_, r, s, _ := setupRevoke(t, func(base string) string {
@@ -645,5 +649,74 @@ func Test取り消すと段1の合意の審査で止まりもう一度合意す�
 	}
 	if code, out, errs := r.vanda(bin, "check", ".vanda/checks/merge.toml", "--base", "main"); code != 0 {
 		t.Errorf("もう一度合意しても審査が通らない（%d）\n%s%s", code, out, errs)
+	}
+}
+
+// RV-06 のガードレール: 合意の記録を書くファイルが決まらない（設定の agreements のパターンのどれにも当たるファイルがなく、
+// 最初のパターンにワイルドカードがある）ときは、ファイルを作らずに 409 で断る（docs/formats.md）
+// @vanda:evidence agree-writes-and-commits
+func Test合意の記録を書くファイルがパターンから決まらなければ合意を断りファイルを作らずコミットもしない(t *testing.T) {
+	t.Parallel()
+	_, r, s := setupAgree(t)
+	cfg := readFileString(t, r.Root, ".vanda/config.toml")
+	first, rest, ok := strings.Cut(cfg, "\n")
+	if !ok || !strings.HasPrefix(first, "version = ") {
+		t.Fatalf("設定の 1 行目が version でない: %q", first)
+	}
+	writeFile(t, r.Root, ".vanda/config.toml", first+"\nagreements = [\".vanda/agreements/*.toml\"]\n"+rest)
+	r.git("rm", "-q", ".vanda/agreements.toml")
+	r.git("commit", "-q", "-am", reviewStory+" 合意の記録をストーリーごとのファイルに分ける")
+	head := r.git("rev-parse", "HEAD")
+	promises := readFileString(t, r.Root, ".vanda/promises.toml")
+
+	for _, body := range []map[string]any{
+		agreeClaim("task-id-unique", reviewClaimFP),
+		agreeFile("e2e/add-task.txtar", reviewFileFP),
+	} {
+		if code, msg := s.post("/api/agree", body, nil); code != 409 || msg == "" {
+			t.Errorf("%v: %d（%q）を返した。409 で断り、理由を出す", body, code, msg)
+		}
+	}
+	if r.git("rev-parse", "HEAD") != head {
+		t.Errorf("断ったのに、コミットができた")
+	}
+	if readFileString(t, r.Root, ".vanda/promises.toml") != promises {
+		t.Errorf("断ったのに、約束リストが変わった（フラグを外した）")
+	}
+	if st := r.git("status", "--porcelain", "--untracked-files=all"); st != "" {
+		t.Errorf("断ったのに、作業ツリーにファイルができたか変わった: %q", st)
+	}
+}
+
+// RV-06 のガードレール: 合意でフラグを外すとき、外し方が決まっていない書き方（複数行の文字列の flags・guesses）で
+// 書いた約束リストは書き換えず、合意を 409 で断る。約束リストと合意の記録を壊さないため（docs/formats.md）
+// @vanda:evidence agree-removes-flags
+func Testフラグを複数行の文字列で書いた約束には合意を断り約束リストと合意の記録を書き換えない(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ name, from, to string }{
+		{"guessesが複数行の文字列", `guesses = ["タスクは消しても ID を使い回さない"]`, "guesses = [\"\"\"タスクは消しても\nID を使い回さない\"\"\"]"},
+		{"flagsが複数行の文字列", `flags = ["ai-proposal"]`, `flags = ["""ai-proposal"""]`},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			_, r, s := setupAgree(t)
+			text := readFileString(t, r.Root, ".vanda/promises.toml")
+			if !strings.Contains(text, c.from) {
+				t.Fatalf("約束リストに %q がない", c.from)
+			}
+			writeFile(t, r.Root, ".vanda/promises.toml", strings.Replace(text, c.from, c.to, 1))
+			r.git("commit", "-q", "-am", reviewStory+" 推測の書き方を変える")
+			promises := readFileString(t, r.Root, ".vanda/promises.toml")
+			agreements := readFileString(t, r.Root, ".vanda/agreements.toml")
+			head := r.git("rev-parse", "HEAD")
+			// flags・guesses は指紋に入らないので、見せていた指紋は前のまま
+			if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil); code != 409 || msg == "" {
+				t.Errorf("%d（%q）を返した。409 で断り、理由を出す", code, msg)
+			}
+			if r.git("rev-parse", "HEAD") != head || readFileString(t, r.Root, ".vanda/promises.toml") != promises || readFileString(t, r.Root, ".vanda/agreements.toml") != agreements {
+				t.Errorf("断ったのに、約束リストか合意の記録が変わったか、コミットができた")
+			}
+		})
 	}
 }

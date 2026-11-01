@@ -109,6 +109,7 @@ func checkFound(t *testing.T, typ string, got []claimFound, want []wantFound) {
 // @vanda:evidence claim-detail-evidence-content
 // @vanda:evidence claim-detail-origin
 // @vanda:evidence claim-detail-agreements
+// @vanda:evidence found-file-state-shown
 func Test約束の詳細は文とレイヤーと対象とエビデンスのタイプごとの中身と由来と合意の履歴を示す(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -276,6 +277,158 @@ func Testファイルの中身は合意の対象のファイルとアノテー�
 		}
 		if code, msg := s.get("/api/file?path="+q(path), &got); code != 200 || got.Path != path || got.Text != want {
 			t.Errorf("%s: %d（%q）、%+v", path, code, msg, got)
+		}
+	}
+}
+
+// CL-08: GET /api/claims/<ID>/at/<コミット> は、そのコミットの時点の約束の中身を返す（docs/formats.md）。
+// 期待する文は、newReviewRepo が main と story-24 に書いた約束リストから手で書いた。
+// @vanda:evidence claim-at-commit
+func Testその時点の約束の中身は由来のコミットと合意の記録のコミットの時点の文を返す(t *testing.T) {
+	t.Parallel()
+	_, r, s := setupAgree(t)
+	cases := []struct{ rev, want string }{
+		{"main", "タスクの ID は重ならない"},
+		{reviewBranch + "~1", "タスクの ID は、すべてのタスクを通して重ならない"},
+	}
+	for _, c := range cases {
+		commit := r.git("rev-parse", c.rev)
+		var got struct {
+			ID      string `json:"id"`
+			Commit  string `json:"commit"`
+			Content struct {
+				Statement string `json:"statement"`
+			} `json:"content"`
+		}
+		if code, msg := s.get("/api/claims/task-id-unique/at/"+commit, &got); code != 200 {
+			t.Fatalf("%s の時点の中身を読めない（%d）: %s", c.rev, code, msg)
+		}
+		if got.ID != "task-id-unique" || got.Commit != commit || got.Content.Statement != c.want {
+			t.Errorf("%s の時点: %+v（思った文 %q）", c.rev, got, c.want)
+		}
+		// 短いハッシュ（4 文字以上）でも同じものを返す
+		var short struct {
+			Content struct {
+				Statement string `json:"statement"`
+			} `json:"content"`
+		}
+		if code, msg := s.get("/api/claims/task-id-unique/at/"+commit[:7], &short); code != 200 || short.Content.Statement != c.want {
+			t.Errorf("短いハッシュで %s の時点を読めない（%d %q）: %+v", c.rev, code, msg, short)
+		}
+	}
+	// 合意の記録の commit（記録を書き足したコミット）を渡すと、その時点の中身を返す。#1 の合意は main のコミットで書いた
+	var detail struct {
+		Agreements []struct {
+			Commit *string `json:"commit"`
+			Story  string  `json:"story"`
+		} `json:"agreements"`
+	}
+	if code, msg := s.get("/api/claims/task-id-unique", &detail); code != 200 || len(detail.Agreements) == 0 || detail.Agreements[0].Commit == nil {
+		t.Fatalf("合意の履歴の commit を読めない（%d %q）: %+v", code, msg, detail)
+	}
+	if *detail.Agreements[0].Commit != r.git("rev-parse", "main") {
+		t.Errorf("#1 の合意の commit が main のコミットでない: %s", *detail.Agreements[0].Commit)
+	}
+}
+
+// CL-08: ハッシュでない形のコミットは 400、ないコミットとその時点にない約束は 404。どれも理由を出す
+// @vanda:evidence claim-at-commit-errors
+func Testその時点の約束の中身はハッシュでない形を400にしないコミットとその時点にない約束を404にする(t *testing.T) {
+	t.Parallel()
+	_, r, s := setupAgree(t)
+	main := r.git("rev-parse", "main")
+	cases := []struct {
+		name, path string
+		want       int
+	}{
+		{"ハッシュでない文字", "/api/claims/task-id-unique/at/main", 400},
+		{"短すぎるハッシュ", "/api/claims/task-id-unique/at/abc", 400},
+		{"16進でない文字", "/api/claims/task-id-unique/at/zzzzzzz", 400},
+		{"65 文字のハッシュ", "/api/claims/task-id-unique/at/" + strings.Repeat("a", 65), 400},
+		{"ないコミット", "/api/claims/task-id-unique/at/" + strings.Repeat("0", 40), 404},
+		// task-title-required は story-24 で足したので、main の時点にはない
+		{"その時点にない約束", "/api/claims/task-title-required/at/" + main, 404},
+	}
+	for _, c := range cases {
+		if code, msg := s.get(c.path, nil); code != c.want || msg == "" {
+			t.Errorf("%s: %d（%q）を返した。%d で理由を出す", c.name, code, msg, c.want)
+		}
+	}
+}
+
+// CL-08: その時点のレイヤーのうち今の設定にないものは名前を空にし、その時点の約束リストが読めなければ 500 で理由を出す。
+// どちらの時点も、コミットした後に今の約束リストを元に戻す（今の中身は読めるままにする）
+// @vanda:evidence claim-at-commit-unknown-layer
+// @vanda:evidence claim-at-commit-error-shown
+func Testその時点の約束の中身は今の設定にないレイヤーの名前を空にし読めない約束リストの時点を500にして理由を出す(t *testing.T) {
+	t.Parallel()
+	_, r, s := setupAgree(t)
+	now := readFileString(t, r.Root, ".vanda/promises.toml")
+	commitPromises := func(src, msg string) string {
+		writeFile(t, r.Root, ".vanda/promises.toml", src)
+		r.git("add", ".vanda/promises.toml")
+		r.git("commit", "-q", "-m", msg)
+		return r.git("rev-parse", "HEAD")
+	}
+	const layers = `layers = ["model", "db"]`
+	if strings.Count(now, layers) < 1 {
+		t.Fatalf("約束リストに %s がない", layers)
+	}
+	gone := commitPromises(strings.Replace(now, layers, `layers = ["gone", "model"]`, 1), "#24 今の設定にないレイヤーを書く")
+	broken := commitPromises(now+"\n[[claim]\n", "#24 約束リストを壊す")
+	commitPromises(now, "#24 約束リストを戻す")
+
+	var got struct {
+		Layers []struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		} `json:"layers"`
+		Content struct {
+			Layers []string `json:"layers"`
+		} `json:"content"`
+	}
+	if code, msg := s.get("/api/claims/task-id-unique/at/"+gone, &got); code != 200 {
+		t.Fatalf("今の設定にないレイヤーのある時点を読めない（%d）: %s", code, msg)
+	}
+	type layer = struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	}
+	want := []layer{{"gone", ""}, {"model", "モデル"}}
+	if !reflect.DeepEqual(got.Layers, want) || !reflect.DeepEqual(got.Content.Layers, []string{"gone", "model"}) {
+		t.Errorf("layers: %+v、content.layers: %v（思ったもの %+v と [gone model]）", got.Layers, got.Content.Layers, want)
+	}
+
+	code, msg := s.get("/api/claims/task-id-unique/at/"+broken, nil)
+	if code != 500 || msg == "" {
+		t.Errorf("読めない約束リストの時点: %d（%q）を返した。500 で理由を出す", code, msg)
+	}
+}
+
+// GET /api/file は、合意の対象のファイルとアノテーションを読むファイルの中身を返し、ほかのファイルは 404 にする
+// @vanda:evidence file-api
+func Testファイルの中身のAPIは合意の対象とアノテーションを読むファイルだけを返しほかを404にする(t *testing.T) {
+	t.Parallel()
+	_, r, s := setupAgree(t)
+	// 設定の txtar・tla・sql・go のパターンと、ガードレールの paths に当たるもの（中身は newReviewRepo が書いたもの）
+	for path, want := range map[string]string{
+		"e2e/add-task.txtar":         reviewScenarioStory,
+		"spec/Task.tla":              reviewTLA,
+		"db/schema.sql":              reviewSchema,
+		"internal/task/task_test.go": reviewGoTest,
+	} {
+		var got struct {
+			Path string `json:"path"`
+			Text string `json:"text"`
+		}
+		if code, msg := s.get("/api/file?path="+q(path), &got); code != 200 || got.Path != path || got.Text != want {
+			t.Errorf("%s: %d（%q）、%+v", path, code, msg, got)
+		}
+	}
+	writeFile(t, r.Root, "README.md", "どのパターンにも当たらない\n")
+	for _, path := range []string{".vanda/config.toml", ".vanda/promises.toml", "README.md", "e2e/none.txtar", "../e2e/add-task.txtar", "/etc/passwd"} {
+		if code, msg := s.get("/api/file?path="+q(path), nil); code != 404 || msg == "" {
+			t.Errorf("%s: %d（%q）を返した。404 で理由を出す", path, code, msg)
 		}
 	}
 }
