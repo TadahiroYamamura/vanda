@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/TadahiroYamamura/vanda/internal/annotation"
 	"github.com/TadahiroYamamura/vanda/internal/check"
 	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/glob"
@@ -27,20 +28,10 @@ var ErrEOF = errors.New("入力が終わったため、何も作りませんで�
 // ErrDeclined は、作るかの確かめに n と答えたため、何も作らなかったことを表す。
 var ErrDeclined = errors.New("作らないと答えたため、何も作りませんでした。")
 
-// Language は、アノテーションを読む言語。
+// Language は、見つかった言語と、読むファイルのパターン（Ask の後は、答えのパターン）。
 type Language struct {
-	Title   string // 問いかけに出す名前
-	Suffix  string // 見つけ方（git が追っているファイルの名前の終わり）
-	Pattern string // 既定のパターン
-	Adapter string
-}
-
-// Languages は、vanda の中に持つアノテーションの読み取りのアダプタで扱う言語（docs/plans/init-impl.md の表の順）。
-var Languages = []Language{
-	{Title: "Go のテスト（*_test.go）", Suffix: "_test.go", Pattern: "**/*_test.go", Adapter: "go"},
-	{Title: "シナリオ（*.txtar）", Suffix: ".txtar", Pattern: "**/*.txtar", Adapter: "txtar"},
-	{Title: "TLA+（*.tla）", Suffix: ".tla", Pattern: "**/*.tla", Adapter: "tla"},
-	{Title: "SQL（*.sql）", Suffix: ".sql", Pattern: "**/*.sql", Adapter: "sql"},
+	annotation.AdapterInfo
+	Pattern string
 }
 
 // Defaults は、リポジトリから読み取った、問いかけの既定の答え。
@@ -66,10 +57,10 @@ func Detect(root string) (Defaults, error) {
 		return d, fmt.Errorf("git が追っているファイルの一覧を読めません（%v）", err)
 	}
 	names := strings.Split(files, "\x00")
-	for _, l := range Languages {
+	for _, l := range annotation.Builtins {
 		for _, f := range names {
 			if strings.HasSuffix(f, l.Suffix) {
-				d.Languages = append(d.Languages, l)
+				d.Languages = append(d.Languages, Language{AdapterInfo: l, Pattern: l.DefaultPattern})
 				break
 			}
 		}
@@ -274,17 +265,11 @@ func Ask(root string, d Defaults, in *bufio.Reader, out io.Writer) (Answers, err
 	if len(d.Languages) == 0 {
 		fmt.Fprintln(out, "アノテーションを読む言語のファイルは、見つかりませんでした。")
 	}
+	// 見つかった言語は、いつも読む（読まないとエビデンスを集められないため）。読むファイルのパターンだけを聞く
 	for _, l := range d.Languages {
-		yes, err := p.yesNo(l.Title+"のアノテーションを読みますか", true)
-		if err != nil {
-			return a, err
-		}
-		if !yes {
-			continue
-		}
-		pat, err := p.askValid("  読むファイルのパターン", l.Pattern, func(s string) error {
+		pat, err := p.askValid(l.Title+"の、アノテーションを読むファイル", l.DefaultPattern, func(s string) error {
 			if err := glob.Validate(s); err != nil {
-				return errors.New("パターンの書き方が誤っています。リポジトリの直下からの / 区切りの場所で入れてください（例: " + l.Pattern + "）。")
+				return errors.New("パターンの書き方が誤っています。リポジトリの直下からの / 区切りの場所で入れてください（例: " + l.DefaultPattern + "）。")
 			}
 			return nil
 		})
@@ -308,7 +293,7 @@ func ConfigText(a Answers) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "version = %s\n", tomlwrite.String(version.Current))
 	for _, l := range a.Annotations {
-		fmt.Fprintf(&b, "\n[[annotation]]\npaths = [%s]\nadapter = %s\n", tomlwrite.String(l.Pattern), tomlwrite.String(l.Adapter))
+		fmt.Fprintf(&b, "\n[[annotation]]\npaths = [%s]\nadapter = %s\n", tomlwrite.String(l.Pattern), tomlwrite.String(l.Name))
 	}
 	b.WriteString("\n[story]\n")
 	switch a.Store {

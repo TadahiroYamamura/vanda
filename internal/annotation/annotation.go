@@ -13,6 +13,23 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/glob"
 )
 
+// AdapterInfo は、vanda の中に持つアノテーションの読み取りのアダプタの、言語の見つけ方と既定のパターン。
+// vanda init が、見つかった言語ごとに、読むファイルのパターンを問いかけるときに使う
+type AdapterInfo struct {
+	Name           string // 設定の [[annotation]] の adapter に書く名前
+	Title          string // 問いかけに出す、言語の名前
+	Suffix         string // 見つけ方（git が追っているファイルの名前の終わり）
+	DefaultPattern string // 読むファイルのパターンの既定
+}
+
+// Builtins は、vanda の中に持つアノテーションの読み取りのアダプタの一覧。アダプタを足したら、ここにも足す
+var Builtins = []AdapterInfo{
+	{Name: "go", Title: "Go のテスト（*_test.go）", Suffix: "_test.go", DefaultPattern: "**/*_test.go"},
+	{Name: "txtar", Title: "シナリオ（*.txtar）", Suffix: ".txtar", DefaultPattern: "**/*.txtar"},
+	{Name: "tla", Title: "TLA+（*.tla）", Suffix: ".tla", DefaultPattern: "**/*.tla"},
+	{Name: "sql", Title: "SQL（*.sql）", Suffix: ".sql", DefaultPattern: "**/*.sql"},
+}
+
 // Kinds は、アノテーションの種類。internal のほかは ID を 1 つ取る。
 var Kinds = []string{"term", "feature", "claim", "internal", "evidence", "sensor"}
 
