@@ -7,7 +7,8 @@ cp cases/config-one.toml .vanda/config.toml
 expand .vanda/config.toml
 exec vanda check .vanda/checks/links.toml
 
-# go と、外部のコマンドの両方に当たる
+# go と、利用者のアダプタの両方に当たる
+chmod 755 .vanda/adapters/names
 cp cases/config-two.toml .vanda/config.toml
 expand .vanda/config.toml
 ! exec vanda check .vanda/checks/links.toml
@@ -35,6 +36,10 @@ layers = ["model"]
 stage = "test"
 type = "unit-test"
 layers = ["model"]
+-- .vanda/adapters/names --
+#!/bin/sh
+cat >/dev/null
+printf '%s' '{"names":[{"line":5,"name":"x"}]}'
 -- task_test.go --
 package task
 
@@ -67,4 +72,4 @@ adapter = "go"
 
 [[annotation]]
 paths = ["*.go"]
-command = ["sh", "-c", "cat >/dev/null; printf '%s' '{\"names\":[{\"line\":5,\"name\":\"x\"}]}'"]
+adapter = "names"

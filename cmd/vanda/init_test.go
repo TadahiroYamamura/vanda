@@ -31,7 +31,7 @@ import (
 // 問いかけは擬似端末（pty）で vanda を動かし、問いを読んで答えを書く（docs/plans/init-test.md）。
 // vanda init は、必ずテストごとの一時ディレクトリの git のリポジトリで動かす。
 //
-// 問いの文言は決まっていないので、問いは計画の順（ベースブランチ、ストーリーの置き場所、リポジトリかコマンド、
+// 問いの文言は決まっていないので、問いは計画の順（ベースブランチ、ストーリーの置き場所、リポジトリか利用者のアダプタ、
 // ID の書き方、言語ごとのアノテーション、作るか）にたどり、それぞれの問いに出るはずの言葉で確かめる。
 // 既定の答えは、計画のとおり、問いの中の [ ] の中から読む。
 
@@ -542,7 +542,7 @@ func (s *initSession) wait() int {
 
 // ---- 問いをたどる ----
 
-var storyChoices = []string{"GitHub Issues", "外部のコマンド", "使わない"}
+var storyChoices = []string{"GitHub Issues", "利用者のアダプタ", "使わない"}
 
 var langNames = []string{"Go", "シナリオ", "TLA+", "SQL"}
 
@@ -557,13 +557,14 @@ func langOf(line string) string {
 
 // initPlan は、問いへの答え。空の文字列は、既定の答えのまま Enter を押すこと。
 type initPlan struct {
-	base      string
-	story     string // 選択肢の名前
-	detail    string // リポジトリかコマンド
-	idPattern string
-	toggle    []string          // 言語を選ぶ問いで、選びを切り替える言語
-	patterns  map[string]string // 言語 → 読むファイルのパターン
-	confirm   string            // y・n
+	base        string
+	story       string // 選択肢の名前
+	detail      string // リポジトリか、利用者のアダプタの名前
+	adapterArgs string // 利用者のアダプタに渡す引数
+	idPattern   string
+	toggle      []string          // 言語を選ぶ問いで、選びを切り替える言語
+	patterns    map[string]string // 言語 → 読むファイルのパターン
+	confirm     string            // y・n
 	// 形に合わない答え。問い（detail・id）ごとに、正しい答えの前に順に書く
 	invalid map[string][]string
 }
@@ -574,6 +575,8 @@ type initSeen struct {
 	storyOptions []string
 	detailAsked  bool
 	detailDef    string
+	argsAsked    bool
+	argsDef      string
 	idDefault    string
 	langOptions  []string
 	langSelected []string // 選ぶ問いが始まったときに選ばれていた言語
@@ -700,9 +703,11 @@ func (s *initSession) run(plan initPlan) initSeen {
 	case "GitHub Issues":
 		seen.detailAsked = true
 		seen.detailDef = s.input("リポジトリ", "リポジトリ", plan.invalid["detail"], plan.detail)
-	case "外部のコマンド":
+	case "利用者のアダプタ":
 		seen.detailAsked = true
-		seen.detailDef = s.input("コマンド", "コマンド", plan.invalid["detail"], plan.detail)
+		seen.detailDef = s.input("利用者のアダプタの名前", "名前", plan.invalid["detail"], plan.detail)
+		seen.argsAsked = true
+		seen.argsDef = s.input("利用者のアダプタの引数", "引数", nil, plan.adapterArgs)
 	}
 	seen.idDefault = s.input("ID の書き方", "ID", plan.invalid["id"], plan.idPattern)
 	var prev string
@@ -750,7 +755,9 @@ type initConfig struct {
 		IDPattern  string   `toml:"id_pattern"`
 		Adapter    string   `toml:"adapter"`
 		Repository string   `toml:"repository"`
-		Command    []string `toml:"command"`
+		Args       []string `toml:"args"`
+		// Command は、書かないはずの項目（command はなくなった）。書かれていないことを確かめるために読む
+		Command []string `toml:"command"`
 	} `toml:"story"`
 	Gui *struct {
 		Base string `toml:"base"`
@@ -950,41 +957,46 @@ func Testストーリーの置き場所の選択肢ごとに問いの出方と�
 	cases := []struct {
 		choice      string
 		detail      string
+		args        string
 		idPattern   string
-		detailAsked bool
+		detailAsked bool   // リポジトリか、利用者のアダプタの名前の問いが出るか
+		argsAsked   bool   // 利用者のアダプタの引数の問いが出るか
 		detailDef   string // 空なら既定なし
 		idDefault   string // 空なら既定なし
 		adapter     string
 		repository  string
-		command     []string
+		wantArgs    []string
 		wantPattern string
 	}{
-		{"GitHub Issues", "", "", true, "owner/app", "#[0-9]+", "github", "owner/app", nil, "#[0-9]+"},
-		// 外部のコマンドの答えは、空白で区切って引数に分ける（引用符は扱わない）
-		{"外部のコマンド", "tools/story-adapter --strict", "PROJ-[0-9]+", true, "", "", "", "", []string{"tools/story-adapter", "--strict"}, "PROJ-[0-9]+"},
-		{"使わない", "", "PROJ-[0-9]+", false, "", "", "", "", nil, "PROJ-[0-9]+"},
+		{"GitHub Issues", "", "", "", true, false, "owner/app", "#[0-9]+", "github", "owner/app", nil, "#[0-9]+"},
+		// 利用者のアダプタの引数は、空白で区切って分ける
+		{"利用者のアダプタ", "jira-story", "--project APP", "PROJ-[0-9]+", true, true, "", "", "jira-story", "", []string{"--project", "APP"}, "PROJ-[0-9]+"},
+		{"使わない", "", "", "PROJ-[0-9]+", false, false, "", "", "", "", nil, "PROJ-[0-9]+"},
 	}
 	for _, c := range cases {
 		t.Run(c.choice, func(t *testing.T) {
 			t.Parallel()
 			r := newInitRepo(t, "https://github.com/owner/app.git", true)
 			s := startInit(t, bin, r.root, r.g.env)
-			seen := s.run(initPlan{story: c.choice, detail: c.detail, idPattern: c.idPattern})
+			seen := s.run(initPlan{story: c.choice, detail: c.detail, adapterArgs: c.args, idPattern: c.idPattern})
 			if code := s.wait(); code != 0 {
 				t.Fatalf("vanda init が %d で終わった\n%s", code, s.screen())
 			}
-			if seen.detailAsked != c.detailAsked {
-				t.Errorf("リポジトリかコマンドの問いが出たか: %v（思ったもの %v）", seen.detailAsked, c.detailAsked)
+			if seen.detailAsked != c.detailAsked || seen.argsAsked != c.argsAsked {
+				t.Errorf("リポジトリか名前の問いが出たか %v・引数の問いが出たか %v（思ったもの %v・%v）", seen.detailAsked, seen.argsAsked, c.detailAsked, c.argsAsked)
 			}
 			if seen.detailDef != c.detailDef {
-				t.Errorf("リポジトリかコマンドの既定: %q（思ったもの %q）", seen.detailDef, c.detailDef)
+				t.Errorf("リポジトリか名前の既定: %q（思ったもの %q）", seen.detailDef, c.detailDef)
+			}
+			if seen.argsDef != "" {
+				t.Errorf("利用者のアダプタの引数に既定がある: %q", seen.argsDef)
 			}
 			if seen.idDefault != c.idDefault {
 				t.Errorf("ID の書き方の既定: %q（思ったもの %q。空は既定なし）", seen.idDefault, c.idDefault)
 			}
 			st := readInitConfig(t, r.root).Story
-			if st == nil || st.Adapter != c.adapter || st.Repository != c.repository || !reflect.DeepEqual(st.Command, c.command) || st.IDPattern != c.wantPattern {
-				t.Errorf("[story]: %+v（思ったもの adapter %q、repository %q、command %v、id_pattern %q）", st, c.adapter, c.repository, c.command, c.wantPattern)
+			if st == nil || st.Adapter != c.adapter || st.Repository != c.repository || !reflect.DeepEqual(st.Args, c.wantArgs) || st.Command != nil || st.IDPattern != c.wantPattern {
+				t.Errorf("[story]: %+v（思ったもの adapter %q、repository %q、args %v、command なし、id_pattern %q）", st, c.adapter, c.repository, c.wantArgs, c.wantPattern)
 			}
 		})
 	}
@@ -1025,7 +1037,7 @@ func newEmptyInitRepo(t *testing.T) *initRepo {
 }
 
 // CMD-11: 初期化した直後のリポジトリでも、言語を選んで [[annotation]] を書ける。1 つも選ばなければ、案内に
-// [[annotation]] を書くことが足される（外部のコマンドのアダプタのことは、いつも出る）
+// [[annotation]] を書くことが足される（利用者のアダプタを .vanda/adapters/ に置いて足せることは、いつも出る）
 func Test初期化した直後のリポジトリでも言語を選べ1つも選ばなければ案内にannotationを書くことが出る(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1072,15 +1084,15 @@ func Test初期化した直後のリポジトリでも言語を選べ1つも選�
 		}
 		without = s.guidance()
 	})
-	if !strings.Contains(withLangs, "外部のコマンド") || !strings.Contains(without, "外部のコマンド") {
-		t.Errorf("案内に、外部のコマンドのアダプタのことが出ていない\n--- 選んだとき\n%s\n--- 選ばないとき\n%s", withLangs, without)
+	if !strings.Contains(withLangs, ".vanda/adapters/") || !strings.Contains(without, ".vanda/adapters/") {
+		t.Errorf("案内に、利用者のアダプタを .vanda/adapters/ に置いて足せることが出ていない\n--- 選んだとき\n%s\n--- 選ばないとき\n%s", withLangs, without)
 	}
 	if annotationLines(without) <= annotationLines(withLangs) {
 		t.Errorf("1 つも選ばなかったときの案内に、[[annotation]] を書くことが足されていない\n--- 選んだとき\n%s\n--- 選ばないとき\n%s", withLangs, without)
 	}
 }
 
-// CMD-11: 答えを変えると、その値で書かれる（ベースブランチ、リポジトリ、ID の書き方、読むファイルのパターン。コマンドは
+// CMD-11: 答えを変えると、その値で書かれる（ベースブランチ、リポジトリ、ID の書き方、読むファイルのパターン。利用者のアダプタの名前と引数は
 // ストーリーの置き場所の選択肢のテストで変える）
 func Test答えを変えるとその値で書かれる(t *testing.T) {
 	t.Parallel()
@@ -1116,13 +1128,13 @@ func Test形に合わない答えは理由が出て同じ問いにとどまる(t
 		r := newInitRepo(t, "", false)
 		s := startInit(t, bin, r.root, r.g.env)
 		s.run(initPlan{
-			story: "外部のコマンド", detail: "tools/story-adapter", idPattern: "PROJ-[0-9]+",
+			story: "利用者のアダプタ", detail: "jira-story", idPattern: "PROJ-[0-9]+",
 			invalid: map[string][]string{"id": {"", "[", "a*"}},
 		})
 		if code := s.wait(); code != 0 {
 			t.Fatalf("vanda init が %d で終わった\n%s", code, s.screen())
 		}
-		if c := readInitConfig(t, r.root); c.Story == nil || c.Story.IDPattern != "PROJ-[0-9]+" || !reflect.DeepEqual(c.Story.Command, []string{"tools/story-adapter"}) {
+		if c := readInitConfig(t, r.root); c.Story == nil || c.Story.IDPattern != "PROJ-[0-9]+" || c.Story.Adapter != "jira-story" {
 			t.Errorf("聞き直した後の答えで書かれていない: %+v", c.Story)
 		}
 	})

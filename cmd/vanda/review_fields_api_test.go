@@ -491,7 +491,8 @@ func Test画面で選べるもののストーリーの置き場所は設定の�
 	t.Parallel()
 	for _, c := range []struct{ conf, want string }{
 		{"\n[story]\nadapter = \"github\"\nrepository = \"owner/app\"\n", "github"},
-		{"\n[story]\ncommand = [\"tools/story-adapter\"]\n", "command"},
+		// 利用者のアダプタは、その名前
+		{"\n[story]\nadapter = \"jira-story\"\nargs = [\"--project\", \"APP\"]\n", "jira-story"},
 	} {
 		t.Run(c.want, func(t *testing.T) {
 			t.Parallel()
@@ -502,7 +503,9 @@ func Test画面で選べるもののストーリーの置き場所は設定の�
 			}
 			r := newReviewRepo(t, version)
 			writeFile(t, r.Root, ".vanda/config.toml", fmt.Sprintf(reviewConfig, version)+c.conf)
-			r.git("commit", "-q", "-am", "設定にストーリーの置き場所を足す")
+			writeUserAdapter(t, r.Root, ".vanda/adapters/jira-story", "cat >/dev/null\necho '{\"title\":\"t\",\"body\":\"\",\"url\":\"\"}'\n")
+			r.git("add", "-A")
+			r.git("commit", "-q", "-m", "設定にストーリーの置き場所を足す")
 			s := startServe(t, bin, r.Root, r.Env)
 			var got contextResponse
 			if code, msg := s.get("/api/context", &got); code != 200 || got.StoryStore != c.want {
