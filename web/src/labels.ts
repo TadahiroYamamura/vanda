@@ -1,4 +1,4 @@
-// 画面に出す言葉（docs/terms.md の言葉）。
+// 画面に出す言葉（約束リストの用語の言葉）。
 import type { Change, FileType, Flag, Kind, State } from "./api";
 
 export const kindLabel: Record<Kind, string> = { claim: "約束", term: "用語", feature: "機能", file: "ファイル" };
