@@ -247,6 +247,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "ok"
+types = ["unit-test"]
 args = ["--mode", "check"]
 -- cases/config-ok-wrong-args.toml --
 version = "${VANDA_VERSION}"
@@ -259,6 +260,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "ok"
+types = ["unit-test"]
 args = ["--mode", "other"]
 -- cases/config-dir.toml --
 version = "${VANDA_VERSION}"
@@ -271,6 +273,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "okdir"
+types = ["unit-test"]
 args = ["--dir"]
 -- cases/config-go.toml --
 version = "${VANDA_VERSION}"
@@ -283,6 +286,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "go"
+types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]
 -- cases/config-wrong-line.toml --
 version = "${VANDA_VERSION}"
 
@@ -294,6 +298,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "wrong-line"
+types = ["unit-test"]
 -- cases/config-empty-name.toml --
 version = "${VANDA_VERSION}"
 
@@ -305,6 +310,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "empty-name"
+types = ["unit-test"]
 -- cases/config-reason.toml --
 version = "${VANDA_VERSION}"
 
@@ -316,6 +322,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "reason"
+types = ["unit-test"]
 -- cases/config-fail.toml --
 version = "${VANDA_VERSION}"
 
@@ -327,6 +334,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "fail"
+types = ["unit-test"]
 -- cases/config-not-json.toml --
 version = "${VANDA_VERSION}"
 
@@ -338,6 +346,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "not-json"
+types = ["unit-test"]
 -- cases/config-missing.toml --
 version = "${VANDA_VERSION}"
 
@@ -349,6 +358,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "no-such-adapter"
+types = ["unit-test"]
 -- cases/config-noexec.toml --
 version = "${VANDA_VERSION}"
 
@@ -360,6 +370,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "noexec"
+types = ["unit-test"]
 -- cases/config-norun.toml --
 version = "${VANDA_VERSION}"
 
@@ -371,6 +382,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "norun"
+types = ["unit-test"]
 -- cases/config-command.toml --
 version = "${VANDA_VERSION}"
 
@@ -392,6 +404,7 @@ description = "判定と状態の変化"
 
 [[annotation]]
 paths = ["ext/*.ext"]
+types = ["unit-test"]
 -- cases/config-name-empty.toml --
 version = "${VANDA_VERSION}"
 
@@ -403,6 +416,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = ""
+types = ["unit-test"]
 -- cases/config-name-slash.toml --
 version = "${VANDA_VERSION}"
 
@@ -414,6 +428,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "okdir/run"
+types = ["unit-test"]
 -- cases/config-name-backslash.toml --
 version = "${VANDA_VERSION}"
 
@@ -425,6 +440,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "ok\\x"
+types = ["unit-test"]
 -- cases/config-name-dot.toml --
 version = "${VANDA_VERSION}"
 
@@ -436,6 +452,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "."
+types = ["unit-test"]
 -- cases/config-name-dotdot.toml --
 version = "${VANDA_VERSION}"
 
@@ -447,6 +464,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = ".."
+types = ["unit-test"]
 -- cases/config-builtin-args.toml --
 version = "${VANDA_VERSION}"
 
@@ -458,4 +476,5 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["ext/*.ext"]
 adapter = "go"
+types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]
 args = ["--strict"]

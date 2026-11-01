@@ -63,18 +63,19 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["e2e/*.txtar"]
 adapter = "txtar"
-
+types = ["scenario-test"]
 [[annotation]]
 paths = ["spec/*.tla"]
 adapter = "tla"
-
+types = ["model-check"]
 [[annotation]]
 paths = ["db/*.sql"]
 adapter = "sql"
-
+types = ["guardrail"]
 [[annotation]]
 paths = ["**/*.go"]
 adapter = "go"
+types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]
 `, version))
 	writeFile(t, root, ".vanda/promises.toml", "[[term]]\nid = \"t\"\nname = \"n\"\ndefinition = \"d\"\n"+presentClaim("all-types")+presentClaim("no-types"))
 	writeFile(t, root, "e2e/all.txtar", "# @vanda:evidence all-types\n-- a --\n")

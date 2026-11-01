@@ -37,19 +37,19 @@ description = "保存"
 [[annotation]]
 paths = ["e2e/*.txtar"]
 adapter = "txtar"
-
+types = ["scenario-test"]
 [[annotation]]
 paths = ["spec/*.tla"]
 adapter = "tla"
-
+types = ["model-check"]
 [[annotation]]
 paths = ["db/*.sql"]
 adapter = "sql"
-
+types = ["guardrail"]
 [[annotation]]
 paths = ["**/*_test.go"]
 adapter = "go"
-
+types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]
 [[guardrail]]
 adapter = "file"
 paths = ["db/schema.sql"]

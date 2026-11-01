@@ -30,7 +30,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["e2e/*.txtar"]
 adapter = "txtar"
-
+types = ["scenario-test"]
 [gui]
 base = "main"
 `;
@@ -1348,7 +1348,7 @@ for (const pg of pages) {
 // （名前と title が「提案中」「合意済」）を付ける。Go の単体テストは合意の対象でないので付けない
 function withGoEvidence(r: Repo) {
   const cfg = readFileSync(join(r.root, ".vanda/config.toml"), "utf8");
-  r.write(".vanda/config.toml", cfg.replace("[gui]", '[[annotation]]\npaths = ["internal/task/*_test.go"]\nadapter = "go"\n\n[gui]'));
+  r.write(".vanda/config.toml", cfg.replace("[gui]", '[[annotation]]\npaths = ["internal/task/*_test.go"]\nadapter = "go"\ntypes = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]\n\n[gui]'));
   r.write("internal/task/task_test.go", "package task\n\nimport \"testing\"\n\n// @vanda:evidence task-id-unique\nfunc TestUnique(t *testing.T) {}\n");
   const text = readFileSync(join(r.root, ".vanda/promises.toml"), "utf8");
   r.write(

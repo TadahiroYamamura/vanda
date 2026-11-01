@@ -58,6 +58,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["**/*_test.go"]
 adapter = "go"
+types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]
 -- cases/config-two.toml --
 version = "${VANDA_VERSION}"
 
@@ -69,7 +70,8 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["**/*_test.go"]
 adapter = "go"
-
+types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]
 [[annotation]]
 paths = ["*.go"]
 adapter = "names"
+types = ["unit-test"]

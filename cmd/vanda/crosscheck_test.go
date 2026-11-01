@@ -326,6 +326,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["e2e/*.txtar"]
 adapter = "txtar"
+types = ["scenario-test"]
 `, version))
 	writeFile(t, root, ".vanda/checks/all.toml", "[[check]]\nname = \"agreement\"\nscope = \"all\"\n")
 	writeFile(t, root, ".vanda/checks/story.toml", "[[check]]\nname = \"agreement\"\nscope = \"story\"\n")

@@ -30,11 +30,12 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["**/*_test.go"]
 adapter = "go"
-
+types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]
 [[annotation]]
 paths = ["docs/*.md"]
 adapter = "md"
 args = ["--json"]
+types = ["unit-test"]
 
 [[guardrail]]
 adapter = "file"
@@ -91,6 +92,7 @@ name = "モデル"
 [[annotation]]
 paths = ["a/**/*.go"]
 adapter = "rust"
+types = ["unit-test"]
 
 [story]
 id_pattern = "("
@@ -102,7 +104,7 @@ id_pattern = "("
 		{".vanda/config.toml:6: ", `レイヤーの ID "Model"`, "決まった形"},
 		{".vanda/config.toml:5: ", `layer "Model" の description`, `description = "…"`},
 		{".vanda/config.toml:11: ", `アダプタ "rust"`, "組込み", ".vanda/adapters/rust"},
-		{".vanda/config.toml:14: ", "id_pattern", "正規表現"},
+		{".vanda/config.toml:15: ", "id_pattern", "正規表現"},
 		{".vanda/config.toml:3: ", "extra", "決まった項目"},
 	}
 	got := errs.Error()

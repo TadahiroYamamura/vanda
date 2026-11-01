@@ -40,11 +40,11 @@ description = "保存"
 [[annotation]]
 paths = ["e2e/*.txtar"]
 adapter = "txtar"
-
+types = ["scenario-test"]
 [[annotation]]
 paths = ["spec/*.tla"]
 adapter = "tla"
-
+types = ["model-check"]
 [[guardrail]]
 adapter = "file"
 paths = ["db/*.sql"]

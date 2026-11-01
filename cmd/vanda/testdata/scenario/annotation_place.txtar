@@ -282,18 +282,19 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["**/*.go"]
 adapter = "go"
-
+types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]
 [[annotation]]
 paths = ["scenarios/**/*.txtar"]
 adapter = "txtar"
-
+types = ["scenario-test"]
 [[annotation]]
 paths = ["spec/**/*.tla"]
 adapter = "tla"
-
+types = ["model-check"]
 [[annotation]]
 paths = ["db/**/*.sql"]
 adapter = "sql"
+types = ["guardrail"]
 -- .vanda/checks/links.toml --
 [[check]]
 name = "annotation-links"

@@ -152,19 +152,19 @@ description = "保存"
 [[annotation]]
 paths = ["**/*_test.go"]
 adapter = "go"
-
+types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]
 [[annotation]]
 paths = ["e2e/*.txtar"]
 adapter = "txtar"
-
+types = ["scenario-test"]
 [[annotation]]
 paths = ["spec/*.tla"]
 adapter = "tla"
-
+types = ["model-check"]
 [[annotation]]
 paths = ["db/*.sql"]
 adapter = "sql"
-
+types = ["guardrail"]
 [[guardrail]]
 adapter = "file"
 paths = ["db/schema.sql"]
@@ -392,9 +392,9 @@ func TestEvidencePresentはタイプに合うアノテーションのない予�
 	_, out, _ := r.run("[[check]]\nname = \"evidence-present\"\nscope = \"all\"\n", "", "")
 	expect(t, out, [][]string{
 		{"審査 evidence-present（all）: 失敗（3 件）"},
-		{".vanda/promises.toml:34: ", "約束 task-unique の guardrail のエビデンス", "sql のアダプタのファイル", "@vanda:evidence task-unique"},
+		{".vanda/promises.toml:34: ", "約束 task-unique の guardrail のエビデンス", "types に guardrail", "@vanda:evidence task-unique"},
 		{".vanda/promises.toml:44: ", "タイプ proof"},
-		{".vanda/promises.toml:49: ", "約束 task-unique の sensor のエビデンス", "go のアダプタのファイル", "@vanda:sensor task-unique"},
+		{".vanda/promises.toml:49: ", "約束 task-unique の sensor のエビデンス", "types に sensor", "@vanda:sensor task-unique"},
 	})
 }
 

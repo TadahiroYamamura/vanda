@@ -55,6 +55,7 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["e2e/*.txtar"]
 adapter = "txtar"
+types = ["scenario-test"]
 `
 
 const diffPromisesBase = `[[term]]

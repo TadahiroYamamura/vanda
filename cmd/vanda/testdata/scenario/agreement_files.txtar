@@ -71,15 +71,15 @@ description = "Decisions and state changes"
 [[annotation]]
 paths = ["scenarios/**/*.txtar"]
 adapter = "txtar"
-
+types = ["scenario-test"]
 [[annotation]]
 paths = ["spec/**/*.tla"]
 adapter = "tla"
-
+types = ["model-check"]
 [[annotation]]
 paths = ["**/*.go"]
 adapter = "go"
-
+types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]
 [[guardrail]]
 adapter = "file"
 paths = ["db/schema.sql"]
