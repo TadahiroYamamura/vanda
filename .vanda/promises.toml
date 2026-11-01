@@ -983,7 +983,6 @@ id = "annotation-links-tla-types"
 subjects = ["cmd-10", "annotation", "oracle"]
 statement = "annotation-links は、TLA+ の仕様の型（TypeOK で使う、同じモジュールの最上位の定義）に term か internal がなければ、または feature を付けていれば誤りにする"
 layers = ["cli"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
