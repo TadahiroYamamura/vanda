@@ -862,7 +862,6 @@ id = "annotation-go-func-doc"
 subjects = ["annotation-reading", "builtin-adapter"]
 statement = "go のアダプタは、func の宣言の直前のコメント（空行をはさまない）のアノテーションだけを受け付け、名前を func の名前（メソッドは 型.名前）とする"
 layers = ["cli"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
