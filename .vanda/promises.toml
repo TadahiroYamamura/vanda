@@ -840,7 +840,6 @@ id = "annotation-adapter-required"
 subjects = ["annotation-reading", "annotation", "adapter"]
 statement = "[[annotation]] のパターンに当たったのに、使うアダプタが決まっていないファイルがあれば、審査で止める"
 layers = ["cli"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
