@@ -1,5 +1,6 @@
 # CMD-10 読まれていないファイル: .vanda/ にあるのに、設定のどのパターンにも当たらないファイルがあると止まる。
-# .vanda/config.toml と .vanda/checks/*.toml は除く。パターンの ** は下のディレクトリにも当たる。
+# .vanda/config.toml と .vanda/checks/*.toml と、利用者のアダプタの置き場所 .vanda/adapters/ の下は除く。
+# パターンの ** は下のディレクトリにも当たる。
 
 exec git init -q -b main
 expand .vanda/config.toml
@@ -28,6 +29,38 @@ cp cases/stray.toml .vanda/sub/stray.toml
 stderr '\.vanda/sub/stray\.toml'
 ! stderr '(?m)^panic: '
 rm .vanda/sub
+
+# 利用者のアダプタの置き場所 .vanda/adapters/ の下は除く。TOML でも TOML でなくても、入れ子のディレクトリの下でも
+mkdir .vanda/adapters/nested/deep
+cp cases/adapter.sh .vanda/adapters/story-adapter
+cp cases/stray.toml .vanda/adapters/settings.toml
+cp cases/adapter.sh .vanda/adapters/nested/deep/md-annotation
+exec vanda check .vanda/checks/unread.toml
+! stderr 'adapters'
+
+# 名前が似ているだけの場所は除かない
+cp cases/stray.toml .vanda/adapters.toml
+! exec vanda check .vanda/checks/unread.toml
+stderr '\.vanda/adapters\.toml'
+! stderr '(?m)^panic: '
+rm .vanda/adapters.toml
+mkdir .vanda/my-adapters
+cp cases/adapter.sh .vanda/my-adapters/x
+! exec vanda check .vanda/checks/unread.toml
+stderr '\.vanda/my-adapters/x'
+rm .vanda/my-adapters
+mkdir .vanda/adapters2
+cp cases/adapter.sh .vanda/adapters2/x
+! exec vanda check .vanda/checks/unread.toml
+stderr '\.vanda/adapters2/x'
+rm .vanda/adapters2
+# .vanda の直下でない adapters は、置き場所ではない
+mkdir .vanda/sub/adapters
+cp cases/adapter.sh .vanda/sub/adapters/x
+! exec vanda check .vanda/checks/unread.toml
+stderr '\.vanda/sub/adapters/x'
+rm .vanda/sub
+rm .vanda/adapters
 
 # パターンを ** で書くと、下のディレクトリのファイルにも当たる
 cp cases/config-deep.toml .vanda/config.toml
@@ -76,6 +109,9 @@ name = "どこからも読まれない"
 definition = "どのパターンにも当たらない"
 -- cases/notes.md --
 メモ
+-- cases/adapter.sh --
+#!/bin/sh
+echo '{"names": []}'
 -- cases/config-deep.toml --
 version = "${VANDA_VERSION}"
 promises = [".vanda/promises/**/*.toml"]
