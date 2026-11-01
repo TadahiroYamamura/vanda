@@ -2,8 +2,14 @@
 package config
 
 import (
+	"context"
+	"errors"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
+	"syscall"
 
 	"github.com/TadahiroYamamura/vanda/internal/diag"
 	"github.com/TadahiroYamamura/vanda/internal/glob"
@@ -40,12 +46,32 @@ type Config struct {
 	GUIBase string
 }
 
-// StoryStore は、ストーリーの置き場所のアダプタ。Adapter と Command のどちらも空なら、置き場所につながない。
+// StoryStore は、ストーリーの置き場所のアダプタ。Adapter が空で User が nil なら、置き場所につながない。
 type StoryStore struct {
+	// Adapter は、中に持つアダプタの名前（github）。利用者のアダプタを使うなら空
 	Adapter    string
 	Repository string
 	APIURL     string
-	Command    []string
+	User       *UserAdapter
+}
+
+// Name は、設定の [story] の adapter に書いた名前。置き場所につながないなら空。
+func (s StoryStore) Name() string {
+	if s.User != nil {
+		return s.User.Name
+	}
+	return s.Adapter
+}
+
+// AdaptersDir は、利用者のアダプタを置くディレクトリ（リポジトリの直下から）
+const AdaptersDir = ".vanda/adapters"
+
+// UserAdapter は、.vanda/adapters/ の直下に置いた、利用者のアダプタ。
+type UserAdapter struct {
+	Name string
+	// Path は、実行するファイルの、リポジトリの直下からの場所。ファイルならそのもの、ディレクトリなら直下の run
+	Path string
+	Args []string
 }
 
 const DefaultGitHubAPI = "https://api.github.com"
@@ -56,11 +82,12 @@ type Layer struct {
 	Description string
 }
 
-// AnnotationRule は、読むファイルのパターンと、使うアダプタ。Adapter と Command のどちらも空なら、アダプタが決まっていない。
+// AnnotationRule は、読むファイルのパターンと、使うアダプタ。Adapter が空で User が nil なら、アダプタが決まっていない。
 type AnnotationRule struct {
-	Paths   []string
+	Paths []string
+	// Adapter は、中に持つアダプタの名前（go・txtar・tla・sql）。利用者のアダプタを使うなら空
 	Adapter string
-	Command []string
+	User    *UserAdapter
 	Line    int
 }
 
@@ -89,7 +116,7 @@ func Load(root string) (*Config, diag.Errors) {
 	if doc == nil {
 		return nil, errs
 	}
-	cfg := parse(doc.Top())
+	cfg := parse(root, doc.Top())
 	if len(errs) > 0 {
 		diag.Sort(errs)
 		return nil, errs
@@ -97,7 +124,7 @@ func Load(root string) (*Config, diag.Errors) {
 	return cfg, nil
 }
 
-func parse(top *tomlread.Table) *Config {
+func parse(root string, top *tomlread.Table) *Config {
 	cfg := &Config{}
 	if v, ok := top.Str("version", true); ok {
 		cfg.Version = v
@@ -132,23 +159,8 @@ func parse(top *tomlread.Table) *Config {
 	for _, t := range rules {
 		r := AnnotationRule{Line: t.Line("")}
 		r.Paths = patterns(t, "paths", "")
-		adapter, hasAdapter := t.Str("adapter", false)
-		command, hasCommand := t.Strs("command", false)
-		switch {
-		case hasAdapter && hasCommand:
-			t.ErrAt("command", "adapter と command の両方が書かれています", "vanda の中のアダプタを使うなら adapter だけを、外部のコマンドを使うなら command だけを書いてください")
-		case hasAdapter:
-			if !contains(BuiltinAdapters, adapter) {
-				t.ErrAt("adapter", "アダプタ "+quote(adapter)+" は vanda の中にありません", "adapter を "+strings.Join(BuiltinAdapters, "・")+" のどれかにするか、外部のコマンドを command = [\"…\"] で書いてください")
-			}
-			r.Adapter = adapter
-		case hasCommand:
-			if len(command) == 0 || command[0] == "" {
-				t.ErrAt("command", "command に、実行するコマンドがありません", `command = ["コマンド", "引数"] のように書いてください`)
-			}
-			r.Command = command
-		}
-		t.Unknown("paths, adapter, command")
+		r.Adapter, r.User = adapterOf(root, t, BuiltinAdapters, "adapter を "+strings.Join(BuiltinAdapters, "・")+" のどれかにするか")
+		t.Unknown("paths, adapter, args")
 		cfg.Annotations = append(cfg.Annotations, r)
 	}
 
@@ -182,8 +194,8 @@ func parse(top *tomlread.Table) *Config {
 				cfg.IDPattern = re
 			}
 		}
-		parseStoryStore(story, &cfg.Story)
-		story.Unknown("id_pattern, adapter, repository, api_url, command")
+		parseStoryStore(root, story, &cfg.Story)
+		story.Unknown("id_pattern, adapter, args, repository, api_url")
 	}
 	if gui, ok := top.Table("gui", false); ok {
 		cfg.GUIBase, _ = gui.Str("base", false)
@@ -218,25 +230,97 @@ func isRepository(s string) bool {
 	return ok && valid(owner) && valid(name)
 }
 
-func parseStoryStore(t *tomlread.Table, st *StoryStore) {
-	adapter, hasAdapter := t.Str("adapter", false)
-	command, hasCommand := t.Strs("command", false)
+// adapterOf は、表の adapter と args を読み、使うアダプタを決める。.vanda/adapters/ に同じ名前の利用者のアダプタがあれば、
+// 中に持つアダプタ（builtins）より先に使う。fix は、名前のアダプタがどこにもないときの直し方の前半。
+func adapterOf(root string, t *tomlread.Table, builtins []string, fix string) (string, *UserAdapter) {
+	name, hasAdapter := t.Str("adapter", false)
+	args, hasArgs := t.Strs("args", false)
+	if !hasAdapter {
+		if hasArgs {
+			t.ErrAt("args", "args は、利用者のアダプタのときだけ書けます", "adapter に利用者のアダプタの名前を書くか、args を消してください")
+		}
+		return "", nil
+	}
+	if name == "" || name == "." || name == ".." || strings.ContainsAny(name, `/\`) {
+		t.ErrAt("adapter", "アダプタの名前 "+quote(name)+" が誤っています（空の名前、/ か \\ を含む名前、. と .. は使えません）", "中に持つアダプタの名前か、.vanda/adapters/ の直下のファイルかディレクトリの名前を書いてください")
+		return "", nil
+	}
+	rel := AdaptersDir + "/" + name
+	info, err := os.Stat(filepath.Join(root, filepath.FromSlash(rel)))
+	switch {
+	case err == nil:
+		if info.IsDir() {
+			rel += "/run"
+		}
+		return "", &UserAdapter{Name: name, Path: rel, Args: args}
+	case !errors.Is(err, os.ErrNotExist):
+		t.ErrAt("adapter", rel+" を確かめられません（"+err.Error()+"）", rel+" を読めるようにしてください")
+		return "", nil
+	}
+	if !contains(builtins, name) {
+		t.ErrAt("adapter", "アダプタ "+quote(name)+" は、vanda の中にも "+AdaptersDir+"/ にもありません", fix+"、"+rel+" に利用者のアダプタを置いてください")
+		return "", nil
+	}
+	if hasArgs {
+		t.ErrAt("args", "args は、利用者のアダプタのときだけ書けます（"+quote(name)+" は vanda の中のアダプタです）", "args を消してください")
+	}
+	return name, nil
+}
+
+// AdapterError は、利用者のアダプタを動かせない理由（What）と直し方（Fix）。どちらも「。」で終えない。
+type AdapterError struct {
+	What, Fix string
+}
+
+func (e *AdapterError) Error() string { return e.What + "。" + e.Fix + "。" }
+
+// Check は、利用者のアダプタがあって実行できるかを確かめる。
+func (u *UserAdapter) Check(root string) *AdapterError {
+	info, err := os.Stat(filepath.Join(root, filepath.FromSlash(u.Path)))
+	switch {
+	case errors.Is(err, os.ErrNotExist):
+		return &AdapterError{u.Label() + "がありません", "ディレクトリのアダプタは、直下に実行するファイル run を置いてください"}
+	case err != nil:
+		return &AdapterError{u.Label() + "を確かめられません（" + err.Error() + "）", u.Path + " を読めるようにしてください"}
+	case !info.Mode().IsRegular():
+		return &AdapterError{u.Label() + "が、ふつうのファイルではありません", u.Path + " に実行するファイルを置いてください"}
+	case info.Mode().Perm()&0o111 == 0:
+		return &AdapterError{u.Label() + "に、実行の権限がありません", "chmod +x " + u.Path + " で権限を付けてください"}
+	}
+	return nil
+}
+
+// Label は、誤りの文で利用者のアダプタを指す言い方。
+func (u *UserAdapter) Label() string {
+	return "利用者のアダプタ " + u.Name + "（" + u.Path + "）"
+}
+
+// Cmd は、利用者のアダプタを、リポジトリの根を作業のディレクトリにして動かすコマンドを作る。
+func (u *UserAdapter) Cmd(ctx context.Context, root string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, filepath.Join(root, filepath.FromSlash(u.Path)), u.Args...)
+	cmd.Dir = root
+	return cmd
+}
+
+// StartError は、Cmd を動かせなかった（動いた後に失敗したのではない）なら、理由と直し方を返す。そうでなければ nil。
+func (u *UserAdapter) StartError(root string, err error) *AdapterError {
+	if cerr := u.Check(root); cerr != nil {
+		return cerr
+	}
+	if errors.Is(err, syscall.ENOEXEC) {
+		return &AdapterError{u.Label() + "を実行できません（" + err.Error() + "）", "1 行目に、動かし方（例: #!/usr/bin/env python3）を書いてください"}
+	}
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		return &AdapterError{u.Label() + "を実行できません（" + err.Error() + "）", u.Path + " を、動かせるファイルにしてください"}
+	}
+	return nil
+}
+
+func parseStoryStore(root string, t *tomlread.Table, st *StoryStore) {
 	repository, hasRepo := t.Str("repository", false)
 	apiURL, hasAPI := t.Str("api_url", false)
-	switch {
-	case hasAdapter && hasCommand:
-		t.ErrAt("command", "[story] に adapter と command の両方が書かれています", "vanda の中のアダプタを使うなら adapter だけを、外部のコマンドを使うなら command だけを書いてください")
-	case hasAdapter:
-		if adapter != "github" {
-			t.ErrAt("adapter", "ストーリーの置き場所のアダプタ "+quote(adapter)+" は vanda の中にありません", `adapter = "github" にするか、外部のコマンドを command = ["…"] で書いてください`)
-		}
-		st.Adapter = adapter
-	case hasCommand:
-		if len(command) == 0 || command[0] == "" {
-			t.ErrAt("command", "[story] の command に、実行するコマンドがありません", `command = ["コマンド", "引数"] のように書いてください`)
-		}
-		st.Command = command
-	}
+	st.Adapter, st.User = adapterOf(root, t, []string{"github"}, `adapter = "github" にするか`)
 	if st.Adapter == "github" {
 		if !hasRepo {
 			t.ErrAt("", `adapter = "github" なのに、repository がありません`, `repository = "<owner>/<repo>" を書いてください`)
@@ -254,10 +338,10 @@ func parseStoryStore(t *tomlread.Table, st *StoryStore) {
 		return
 	}
 	if hasRepo {
-		t.ErrAt("repository", `repository は、adapter = "github" のときだけ書けます`, `adapter = "github" を書くか、repository を消してください`)
+		t.ErrAt("repository", "repository は、vanda の中の github のアダプタを使うときだけ書けます", `adapter = "github" を書くか、repository を消してください（.vanda/adapters/ に github という名前の利用者のアダプタがあれば、そちらを使います）`)
 	}
 	if hasAPI {
-		t.ErrAt("api_url", `api_url は、adapter = "github" のときだけ書けます`, `adapter = "github" を書くか、api_url を消してください`)
+		t.ErrAt("api_url", "api_url は、vanda の中の github のアダプタを使うときだけ書けます", `adapter = "github" を書くか、api_url を消してください（.vanda/adapters/ に github という名前の利用者のアダプタがあれば、そちらを使います）`)
 	}
 }
 

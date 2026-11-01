@@ -2,6 +2,7 @@ package annotation
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,10 +10,10 @@ import (
 	"go/parser"
 	"go/scanner"
 	"go/token"
-	"os/exec"
 	"path"
 	"strings"
 
+	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/diag"
 )
 
@@ -345,10 +346,10 @@ func (sqlAdapter) names(file string, src []byte, lines []int) (map[int]string, [
 	return out, errs
 }
 
-// commandAdapter は、外部のコマンドのアダプタ。受け渡しの形は docs/formats.md の「外部のコマンドのアダプタ」。
-type commandAdapter struct {
-	root    string
-	command []string
+// userAdapter は、.vanda/adapters/ の利用者のアダプタ。受け渡しの形は docs/formats.md の「利用者のアダプタ」。
+type userAdapter struct {
+	root string
+	u    *config.UserAdapter
 }
 
 type adapterRequest struct {
@@ -369,11 +370,11 @@ type responseName struct {
 	Name string `json:"name"`
 }
 
-func (commandAdapter) kinds() []string { return nil }
+func (userAdapter) kinds() []string { return nil }
 
-func (commandAdapter) comments(string, []byte) ([]string, []diag.Error) { return nil, nil }
+func (userAdapter) comments(string, []byte) ([]string, []diag.Error) { return nil, nil }
 
-func (c commandAdapter) names(file string, _ []byte, lines []int) (map[int]string, []diag.Error) {
+func (c userAdapter) names(file string, _ []byte, lines []int) (map[int]string, []diag.Error) {
 	req := adapterRequest{Path: file}
 	for _, l := range lines {
 		req.Annotations = append(req.Annotations, requestLine{Line: l})
@@ -382,24 +383,26 @@ func (c commandAdapter) names(file string, _ []byte, lines []int) (map[int]strin
 	if err != nil {
 		return nil, []diag.Error{{File: file, What: "アダプタに渡す JSON を作れません（" + err.Error() + "）", Fix: "vanda の不具合です。開発者に知らせてください"}}
 	}
-	cmdline := strings.Join(c.command, " ")
-	cmd := exec.Command(c.command[0], c.command[1:]...)
-	cmd.Dir = c.root
+	label := c.u.Label()
+	cmd := c.u.Cmd(context.Background(), c.root)
 	cmd.Stdin = bytes.NewReader(in)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {
+		if e := c.u.StartError(c.root, err); e != nil {
+			return nil, []diag.Error{{File: file, What: "アノテーションの読み取りの" + e.What, Fix: e.Fix}}
+		}
 		msg := strings.TrimSpace(stderr.String())
 		if msg == "" {
 			msg = err.Error()
 		}
-		return nil, []diag.Error{{File: file, What: "アノテーションの読み取りのアダプタ（" + cmdline + "）が失敗しました（" + msg + "）", Fix: "アダプタが出したエラーに従って、直してください"}}
+		return nil, []diag.Error{{File: file, What: "アノテーションの読み取りの" + label + "が失敗しました（" + msg + "）", Fix: "アダプタが出したエラーに従って、直してください"}}
 	}
 	dec := json.NewDecoder(&stdout)
 	dec.DisallowUnknownFields()
 	var res adapterResponse
 	if err := dec.Decode(&res); err != nil {
-		return nil, []diag.Error{{File: file, What: "アノテーションの読み取りのアダプタ（" + cmdline + "）の出力が、決まった形の JSON ではありません（" + err.Error() + "）", Fix: `アダプタが {"names": [{"line": 行, "name": "名前"}]} を出すように直す`}}
+		return nil, []diag.Error{{File: file, What: "アノテーションの読み取りの" + label + "の出力が、決まった形の JSON ではありません（" + err.Error() + "）", Fix: `アダプタが {"names": [{"line": 行, "name": "名前"}]} を出すように直す`}}
 	}
 	asked := map[int]bool{}
 	for _, l := range lines {
@@ -410,18 +413,18 @@ func (c commandAdapter) names(file string, _ []byte, lines []int) (map[int]strin
 	for _, n := range res.Names {
 		switch {
 		case !asked[n.Line]:
-			errs = append(errs, diag.Error{File: file, What: fmt.Sprintf("アダプタ（%s）が、アノテーションのない %d 行目の名前を返しました", cmdline, n.Line), Fix: "渡された行の名前だけを返すように、アダプタを直してください"})
+			errs = append(errs, diag.Error{File: file, What: fmt.Sprintf("%sが、アノテーションのない %d 行目の名前を返しました", label, n.Line), Fix: "渡された行の名前だけを返すように、アダプタを直してください"})
 		case n.Name == "":
-			errs = append(errs, diag.Error{File: file, Line: n.Line, What: "アダプタ（" + cmdline + "）が空の名前を返しました", Fix: "名前を返すように、アダプタを直してください"})
+			errs = append(errs, diag.Error{File: file, Line: n.Line, What: label + "が空の名前を返しました", Fix: "名前を返すように、アダプタを直してください"})
 		case out[n.Line] != "":
-			errs = append(errs, diag.Error{File: file, Line: n.Line, What: "アダプタ（" + cmdline + "）が同じ行の名前を 2 つ以上返しました", Fix: "1 行に 1 つの名前を返すように、アダプタを直してください"})
+			errs = append(errs, diag.Error{File: file, Line: n.Line, What: label + "が同じ行の名前を 2 つ以上返しました", Fix: "1 行に 1 つの名前を返すように、アダプタを直してください"})
 		default:
 			out[n.Line] = n.Name
 		}
 	}
 	for _, l := range lines {
 		if _, ok := out[l]; !ok {
-			errs = append(errs, diag.Error{File: file, Line: l, What: "アダプタ（" + cmdline + "）が、このアノテーションの名前を返しませんでした", Fix: "渡された行のすべてに名前を返すように、アダプタを直してください"})
+			errs = append(errs, diag.Error{File: file, Line: l, What: label + "が、このアノテーションの名前を返しませんでした", Fix: "渡された行のすべてに名前を返すように、アダプタを直してください"})
 		}
 	}
 	return out, errs

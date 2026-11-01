@@ -41,13 +41,13 @@ type Annotation struct {
 	Kind  string
 	Value string // ID か、internal なら理由
 	Name  string // 付いているものの名前（アダプタが読み取ったもの）
-	// Adapter は、読み取ったアダプタ（go・txtar・tla・sql）。外部のコマンドのアダプタなら空
+	// Adapter は、読み取ったアダプタ（go・txtar・tla・sql）。利用者のアダプタなら空
 	Adapter string
 }
 
 // adapter は、ファイルの中身と、アノテーションのある行を受け取り、行ごとに付いているものの名前を返す。
 // comments は、行ごとに、その言語のコメントの中の文だけを返す（コメントの外の @vanda: を数えないため）。
-// nil を返せば、すべての行の全体を見る（言語を知らない外部のコマンドのアダプタ）。
+// nil を返せば、すべての行の全体を見る（言語を知らない利用者のアダプタ）。
 type adapter interface {
 	comments(file string, src []byte) ([]string, []diag.Error)
 	// kinds は、その言語に書けるアノテーションの種類。nil なら、すべて
@@ -82,7 +82,7 @@ func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotat
 		}
 		a := adapterFor(root, hit[0])
 		if a == nil {
-			errs = append(errs, diag.Error{File: f, What: fmt.Sprintf("%s の %d 行目の [[annotation]] のパターンに当たりますが、使うアダプタが決まっていません", config.File, hit[0].Line), Fix: "その [[annotation]] に、adapter か command を書いてください"})
+			errs = append(errs, diag.Error{File: f, What: fmt.Sprintf("%s の %d 行目の [[annotation]] のパターンに当たりますが、使うアダプタが決まっていません", config.File, hit[0].Line), Fix: "その [[annotation]] に、adapter（vanda の中のアダプタか、.vanda/adapters/ の利用者のアダプタの名前）を書いてください"})
 			continue
 		}
 		src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(f)))
@@ -133,6 +133,9 @@ func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotat
 }
 
 func adapterFor(root string, r config.AnnotationRule) adapter {
+	if r.User != nil {
+		return userAdapter{root: root, u: r.User}
+	}
 	switch r.Adapter {
 	case "go":
 		return goAdapter{}
@@ -142,9 +145,6 @@ func adapterFor(root string, r config.AnnotationRule) adapter {
 		return tlaAdapter{}
 	case "sql":
 		return sqlAdapter{}
-	}
-	if len(r.Command) > 0 {
-		return commandAdapter{root: root, command: r.Command}
 	}
 	return nil
 }
