@@ -555,6 +555,7 @@ describe("RV-02 一覧の 1 件を選ぶ", () => {
 describe("RV-18 詳細の画面から戻る", () => {
   // レビュー単位がストーリーのときはベースブランチを選ぶ所が出ないので、組は 3 つ。戻る経路（約束の詳細・ファイルの画面）と全部回す
   const states = [
+    { name: "何も付けない URL", url: "/", over: {} },
     { name: "ブランチでベースブランチがmain", url: "/?view=branch&base=main&story=%2324", over: {} },
     { name: "ブランチでベースブランチがrelease", url: "/?view=branch&base=release&story=%2324", over: { base: "release" } },
     { name: "ストーリー", url: "/?view=story&story=%2324", over: { view: "story", base: null, mergeBase: null } },
@@ -577,16 +578,15 @@ describe("RV-18 詳細の画面から戻る", () => {
         const nameButton = async (id: string) => (await screen.findAllByText(id)).map((el) => el.closest("button")).find((b) => b?.closest("li"))!;
         await user.click(await nameButton(rt.entry));
         await waitFor(async () => expect((await nameButton(rt.entry)).getAttribute("aria-current")).toBe("true"));
-        const before = new URLSearchParams(window.location.search);
+        const beforeURL = window.location.pathname + window.location.search;
         const reviewBefore = reviewRequests().at(-1)!.url.searchParams;
         await user.click(await screen.findByRole("link", { name: rt.link }));
         await user.click(await screen.findByRole("link", { name: "ストーリーのレビューへ戻る" }));
         await waitFor(async () => expect((await nameButton(rt.entry)).getAttribute("aria-current"), `${where}: 選んだ件に戻らない`).toBe("true"));
         expect(window.location.pathname).toBe("/");
-        const after = new URLSearchParams(window.location.search);
-        // レビュー単位がストーリーのときは、ベースブランチを選ぶ所が出ない（画面の状態に入らない）ので比べない
-        for (const k of before.get("view") === "story" ? ["view", "story"] : ["view", "base", "story"]) {
-          expect(after.get(k), `${where}: 画面の ${k}`).toBe(before.get(k));
+        // 戻った後の URL は、既定の値を書き足したりせず、行く前とちょうど同じ
+        expect(window.location.pathname + window.location.search, `${where}: 戻った後の URL`).toBe(beforeURL);
+        for (const k of ["view", "base", "story"]) {
           expect(reviewRequests().at(-1)!.url.searchParams.get(k), `${where}: 読み直した一覧の ${k}`).toBe(reviewBefore.get(k));
         }
         cleanup();

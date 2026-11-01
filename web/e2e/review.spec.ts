@@ -269,10 +269,12 @@ test("ベースブランチとレビュー単位を切り替えると一覧が�
 // ストーリー・選んでいた 1 件）に戻る。ブラウザーの「戻る」には頼らない（PO の報告では、こちらだけが選ぶ前に戻っていた）。
 // レビュー単位がストーリーのときはベースブランチを選ぶ所が出ないので、レビュー単位とベースブランチの組は 3 つ。それと戻る経路 3 つの
 // 組み合わせを全部回す。
-const states = [
+// url があるものは、画面で選ばずに、その URL を直に開く
+const states: { name: string; story: boolean; base: string; url?: string }[] = [
   { name: "レビュー単位がブランチのときにベースブランチを既定のmainにして", story: false, base: "main" },
   { name: "レビュー単位がブランチのときにベースブランチをreleaseに変えて", story: false, base: "release" },
   { name: "レビュー単位をストーリーに切り替えて", story: true, base: "main" },
+  { name: "レビュー単位がストーリーのURLを直に開いて", story: true, base: "main", url: "/?view=story&story=%2324" },
 ];
 const routes = [
   { name: "約束の詳細から直接", via: "claim" },
@@ -293,11 +295,13 @@ for (const v of states) {
         repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "-am", "#24 シナリオをエビデンスにする");
 
         // レビュー単位がブランチのときは、ブランチのコミットからストーリー #24 が決まり、選ぶ欄は出ない（RV-13）
-        await page.goto(serve.url + "/");
+        await page.goto(serve.url + (v.url ?? "/"));
         const baseSelect = page.getByRole("combobox", { name: "ベースブランチ" });
-        if (v.base !== "main") await baseSelect.selectOption(v.base);
+        if (v.base !== "main" && !v.url) await baseSelect.selectOption(v.base);
         const view = page.getByRole("combobox", { name: "レビュー単位" });
-        if (v.story) {
+        if (v.url) {
+          await expect(storyField(page)).toHaveValue("#24");
+        } else if (v.story) {
           await view.selectOption({ label: "ストーリー" });
           const value = (await storyField(page).locator("option", { hasText: "#24" }).first().getAttribute("value")) ?? "#24";
           await storyField(page).selectOption(value);
@@ -315,6 +319,8 @@ for (const v of states) {
           story: v.story ? await storyField(page).inputValue() : null,
         };
         if (!v.story) expect(before.base).toBe(v.base);
+        // 行く前の URL。戻った後は、既定の値を書き足したりせず、これとちょうど同じになる
+        const beforeURL = page.url();
 
         if (route.via === "review-file") {
           await page.getByRole("link", { name: /e2e\/add-task\.txtar:1/ }).first().click();
@@ -328,6 +334,7 @@ for (const v of states) {
           }
         }
         await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
+        await expect(page, "戻った後の URL が、行く前とちょうど同じでない").toHaveURL(beforeURL);
 
         await expect(page.getByRole("combobox", { name: "レビュー単位" })).toHaveValue(before.view);
         if (before.base !== null) await expect(page.getByRole("combobox", { name: "ベースブランチ" })).toHaveValue(before.base);
