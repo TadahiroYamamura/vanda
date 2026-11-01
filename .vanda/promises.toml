@@ -696,7 +696,6 @@ id = "old-agreements-kept-as-history"
 subjects = ["rv-06", "cm-03", "agreement-record"]
 statement = "指紋の合わない合意の記録は、消さずに履歴として残す"
 layers = ["model", "cli"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
