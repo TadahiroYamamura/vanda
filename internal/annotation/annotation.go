@@ -155,6 +155,7 @@ func scan(file string, texts []string) ([]Annotation, []diag.Error) {
 	var errs []diag.Error
 	for i, line := range texts {
 		n := i + 1
+		line = dropCodeSpans(line)
 		at := strings.Index(line, marker)
 		if at < 0 {
 			continue
@@ -200,6 +201,51 @@ func scan(file string, texts []string) ([]Annotation, []diag.Error) {
 		out = append(out, Annotation{File: file, Line: n, Kind: kind, Value: fields[0]})
 	}
 	return out, errs
+}
+
+// dropCodeSpans は、逆引用符で囲んだ所（Markdown のコードと同じく、同じ数の逆引用符で開いて閉じる）を空白 1 つに置き換える。
+// 説明の文で書き方に触れた `@vanda:term` を、アノテーションとして読まないため。閉じていない逆引用符は、そのまま残す。
+func dropCodeSpans(line string) string {
+	if !strings.Contains(line, "`") {
+		return line
+	}
+	var b strings.Builder
+	i := 0
+	for i < len(line) {
+		if line[i] != '`' {
+			b.WriteByte(line[i])
+			i++
+			continue
+		}
+		open := i
+		for i < len(line) && line[i] == '`' {
+			i++
+		}
+		run := i - open
+		closeAt := -1
+		for j := i; j < len(line); {
+			if line[j] != '`' {
+				j++
+				continue
+			}
+			k := j
+			for k < len(line) && line[k] == '`' {
+				k++
+			}
+			if k-j == run {
+				closeAt = k
+				break
+			}
+			j = k
+		}
+		if closeAt < 0 {
+			b.WriteString(line[open:i])
+			continue
+		}
+		b.WriteByte(' ')
+		i = closeAt
+	}
+	return b.String()
 }
 
 // trimCloser は、アノテーションと同じ行で閉じたブロックのコメントの閉じ（`*)`・`*/`・`-->`）を除く。

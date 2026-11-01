@@ -109,7 +109,7 @@ type txtarAdapter struct{}
 
 func (txtarAdapter) kinds() []string { return []string{"evidence"} }
 
-// comments は、最初のファイルの区切りより前の注釈の行だけを返す。区切りより後は、中のファイルの中身なので見ない。
+// comments は、最初のファイルの区切りより前の、# で始まるコメントの行だけを返す。区切りより後は、中のファイルの中身なので見ない。
 func (txtarAdapter) comments(file string, src []byte) ([]string, []diag.Error) {
 	rows := strings.Split(string(src), "\n")
 	texts := make([]string, len(rows))
@@ -117,7 +117,10 @@ func (txtarAdapter) comments(file string, src []byte) ([]string, []diag.Error) {
 		if isTxtarMarker(strings.TrimSuffix(line, "\r")) {
 			break
 		}
-		texts[i] = line
+		// 区切りより前は testscript の命令とコメント。命令の引数（exec の引数や stdout の正規表現）は読まない
+		if strings.HasPrefix(strings.TrimLeft(line, " \t"), "#") {
+			texts[i] = line
+		}
 	}
 	return texts, nil
 }
