@@ -967,7 +967,6 @@ id = "annotation-links-kinds"
 subjects = ["cmd-10", "annotation"]
 statement = "annotation-links は、term が用語を、feature が機能を、claim・evidence・sensor が約束を指していなければ誤りにする"
 layers = ["cli"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
