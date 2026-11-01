@@ -22,7 +22,9 @@ import (
 	"github.com/creack/pty"
 )
 
-// CMD-11 vanda init。問いかけは擬似端末（pty）で vanda を動かし、問いを読んで答えを書く（docs/plans/init-test.md）。
+// CMD-11 vanda init。テストは並べて動かす（問いごとに画面が落ち着くのを待つので、並べないと 1 つのパッケージの
+// テストが go test の既定の 10 分を超える）。どれもテストごとの一時ディレクトリで動くので、互いに関わらない。
+// 問いかけは擬似端末（pty）で vanda を動かし、問いを読んで答えを書く（docs/plans/init-test.md）。
 // vanda init は、必ずテストごとの一時ディレクトリの git のリポジトリで動かす。
 //
 // 問いの文言は決まっていないので、問いは計画の順（ベースブランチ、ストーリーの置き場所、リポジトリかコマンド、
@@ -845,6 +847,7 @@ func (f *fakeRepoAPI) called() bool {
 
 // CMD-11
 func Test既定の答えのまま進めると読み取った値で4つのファイルができdoctorとciの審査が通る(t *testing.T) {
+	t.Parallel()
 	bin, version := initSetup(t)
 	var files []string
 	for _, l := range initLangs {
@@ -932,6 +935,7 @@ func Test既定の答えのまま進めると読み取った値で4つのファ�
 
 // CMD-11: 審査の設定には、今ある審査を全部、docs/formats.md の「審査の種類」の順に、審査ごとに決まった範囲で書く
 func Test審査の設定には今ある審査が全部docs_formats_mdの順に決まった範囲で入る(t *testing.T) {
+	t.Parallel()
 	bin, _ := initSetup(t)
 	r := newInitRepo(t, "", false)
 	s := startInit(t, bin, r.root, r.g.env)
@@ -965,6 +969,7 @@ func Test審査の設定には今ある審査が全部docs_formats_mdの順に�
 
 // CMD-11: remote の URL の形ごとの、ストーリーの置き場所とリポジトリの既定の答え
 func Test_remoteのURLの形ごとにストーリーの置き場所とリポジトリの既定の答えが決まる(t *testing.T) {
+	t.Parallel()
 	bin, _ := initSetup(t)
 	cases := []struct {
 		name, url string
@@ -981,6 +986,7 @@ func Test_remoteのURLの形ごとにストーリーの置き場所とリポジ�
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
 			r := newInitRepo(t, c.url, c.url != "")
 			// 既定の置き場所を読んだ後、GitHub Issues を選んで、リポジトリの既定を見る
 			s := startInit(t, bin, r.root, r.g.env)
@@ -1016,6 +1022,7 @@ func Test_remoteのURLの形ごとにストーリーの置き場所とリポジ�
 
 // CMD-11: ストーリーの置き場所の選択肢の全部で、問い 3・4 の出方と既定と、書かれる [story] が合う
 func Testストーリーの置き場所の選択肢ごとに問いの出方と既定とstoryの中身が合う(t *testing.T) {
+	t.Parallel()
 	bin, _ := initSetup(t)
 	cases := []struct {
 		choice      string
@@ -1036,6 +1043,7 @@ func Testストーリーの置き場所の選択肢ごとに問いの出方と�
 	}
 	for _, c := range cases {
 		t.Run(c.choice, func(t *testing.T) {
+			t.Parallel()
 			r := newInitRepo(t, "https://github.com/owner/app.git", true)
 			s := startInit(t, bin, r.root, r.g.env)
 			seen := s.run(initPlan{story: c.choice, detail: c.detail, idPattern: c.idPattern})
@@ -1062,6 +1070,7 @@ func Testストーリーの置き場所の選択肢ごとに問いの出方と�
 // CMD-11: 言語のあるなしの 16 通りで、言語を選ぶ問いに 4 つの言語が出て、見つかった言語が選ばれた状態から始まり、
 // そのまま進めると、見つかった言語だけのパターンを聞かれ、その [[annotation]] が書かれる
 func Test言語のあるなしの16通りで見つかった言語が選ばれた状態から始まりそのまま進めるとそれが書かれる(t *testing.T) {
+	t.Parallel()
 	bin, _ := initSetup(t)
 	for mask := 0; mask < 1<<len(initLangs); mask++ {
 		var files, names, want []string
@@ -1077,6 +1086,7 @@ func Test言語のあるなしの16通りで見つかった言語が選ばれた
 			label = "なし"
 		}
 		t.Run(label, func(t *testing.T) {
+			t.Parallel()
 			r := newInitRepo(t, "", false, files...)
 			s := startInit(t, bin, r.root, r.g.env)
 			seen := s.run(initPlan{idPattern: "#[0-9]+"})
@@ -1108,6 +1118,7 @@ func Test言語のあるなしの16通りで見つかった言語が選ばれた
 
 // CMD-11: 見つからなかった言語を選ぶと書かれ、選びを外すと書かれない
 func Test言語を選ぶ問いで見つからなかった言語を選ぶと書かれ選びを外すと書かれない(t *testing.T) {
+	t.Parallel()
 	bin, _ := initSetup(t)
 	r := newInitRepo(t, "", false, "e2e/a.txtar", "db/schema.sql")
 	s := startInit(t, bin, r.root, r.g.env)
@@ -1142,6 +1153,7 @@ func newEmptyInitRepo(t *testing.T) *initRepo {
 // CMD-11: 初期化した直後のリポジトリでも、言語を選んで [[annotation]] を書ける。1 つも選ばなければ、案内に
 // [[annotation]] を書くことが足される（外部のコマンドのアダプタのことは、いつも出る）
 func Test初期化した直後のリポジトリでも言語を選べ1つも選ばなければ案内にannotationを書くことが出る(t *testing.T) {
+	t.Parallel()
 	bin, _ := initSetup(t)
 	annotationLines := func(g string) int {
 		n := 0
@@ -1197,6 +1209,7 @@ func Test初期化した直後のリポジトリでも言語を選べ1つも選�
 // CMD-11: 答えを変えると、その値で書かれる（ベースブランチ、リポジトリ、ID の書き方、読むファイルのパターン。コマンドは
 // ストーリーの置き場所の選択肢のテストで変える）
 func Test答えを変えるとその値で書かれる(t *testing.T) {
+	t.Parallel()
 	bin, _ := initSetup(t)
 	r := newInitRepo(t, "https://github.com/owner/app.git", true, "internal/x/x_test.go", "e2e/a.txtar")
 	r.g.run("branch", "develop")
@@ -1222,8 +1235,10 @@ func Test答えを変えるとその値で書かれる(t *testing.T) {
 
 // CMD-11: 形に合わない答えは、理由が出て同じ問いにとどまる（選択肢は矢印キーで選ぶので、選択肢にない番号は書けない）
 func Test形に合わない答えは理由が出て同じ問いにとどまる(t *testing.T) {
+	t.Parallel()
 	bin, _ := initSetup(t)
 	t.Run("既定のないIDの書き方の空と正規表現の誤りと空の文字列に当たる正規表現", func(t *testing.T) {
+		t.Parallel()
 		r := newInitRepo(t, "", false)
 		s := startInit(t, bin, r.root, r.g.env)
 		s.run(initPlan{
@@ -1238,6 +1253,7 @@ func Test形に合わない答えは理由が出て同じ問いにとどまる(t
 		}
 	})
 	t.Run("リポジトリの形", func(t *testing.T) {
+		t.Parallel()
 		r := newInitRepo(t, "https://github.com/owner/app.git", true)
 		s := startInit(t, bin, r.root, r.g.env)
 		s.run(initPlan{detail: "other/repo", invalid: map[string][]string{"detail": {"owner", "owner/", "/repo", "a/b/c"}}})
@@ -1252,6 +1268,7 @@ func Test形に合わない答えは理由が出て同じ問いにとどまる(t
 
 // CMD-11: 作る前の確かめで n と答えると、何も作られない
 func Test作る前の確かめでnと答えると何も作られない(t *testing.T) {
+	t.Parallel()
 	bin, _ := initSetup(t)
 	r := newInitRepo(t, "https://github.com/owner/app.git", true, "e2e/a.txtar")
 	s := startInit(t, bin, r.root, r.g.env)
@@ -1266,11 +1283,13 @@ func Test作る前の確かめでnと答えると何も作られない(t *testin
 
 // CMD-11: 途中で入力を終える（Ctrl+D）と、何も作られない。問いごとに回す
 func Test途中で入力を終えると何も作られない(t *testing.T) {
+	t.Parallel()
 	bin, _ := initSetup(t)
 	// 問いの題に出る言葉。remote が GitHub なのでリポジトリの問いが出る。シナリオだけが見つかる
 	steps := []string{"ベースブランチ", "ストーリーの置き場所", "リポジトリ", "ID", "言語", "読むファイル", "作りますか"}
 	for i, step := range steps {
 		t.Run(step+"で終える", func(t *testing.T) {
+			t.Parallel()
 			r := newInitRepo(t, "https://github.com/owner/app.git", true, "e2e/a.txtar")
 			s := startInit(t, bin, r.root, r.g.env)
 			for j := 0; j < i; j++ {
@@ -1292,6 +1311,7 @@ func Test途中で入力を終えると何も作られない(t *testing.T) {
 
 // CMD-11: 止める場合は、何も書かれず、理由が標準エラーに出て、終了コードが 1
 func Test止める場合は何も書かず理由を標準エラーに出し終了コード1で終わる(t *testing.T) {
+	t.Parallel()
 	bin, _ := initSetup(t)
 	expectStop := func(t *testing.T, r *initRepo, cmd *exec.Cmd, stderr *bytes.Buffer, wait func() int, keyword string, before map[string]string) {
 		t.Helper()
@@ -1312,6 +1332,7 @@ func Test止める場合は何も書かず理由を標準エラーに出し終�
 		stdin, stdout bool // 端末か
 	}{{"標準入力が端末でない", false, true}, {"標準出力が端末でない", true, false}, {"どちらも端末でない", false, false}} {
 		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
 			r := newInitRepo(t, "https://github.com/owner/app.git", true)
 			before := snapshotDir(t, r.root)
 			ptmx, tty, err := pty.Open()
@@ -1365,16 +1386,19 @@ func Test止める場合は何も書かず理由を標準エラーに出し終�
 		expectStop(t, r, s.cmd, &s.stderr, s.wait, keyword, before)
 	}
 	t.Run("gitの作業ツリーの中でない", func(t *testing.T) {
+		t.Parallel()
 		root := t.TempDir()
 		r := &initRepo{t: t, root: root, g: newRVGit(t, root)}
 		runPty(t, r, root, "git")
 	})
 	t.Run(".vanda_がディレクトリである", func(t *testing.T) {
+		t.Parallel()
 		r := newInitRepo(t, "https://github.com/owner/app.git", true)
 		writeFile(t, r.root, ".vanda/config.toml", "version = \"0.0.1\"\n")
 		runPty(t, r, r.root, ".vanda")
 	})
 	t.Run(".vanda_がファイルである", func(t *testing.T) {
+		t.Parallel()
 		r := newInitRepo(t, "https://github.com/owner/app.git", true)
 		writeFile(t, r.root, ".vanda", "ファイル\n")
 		runPty(t, r, r.root, ".vanda")
