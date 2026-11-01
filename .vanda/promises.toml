@@ -1121,7 +1121,6 @@ id = "adapter-name-unknown"
 subjects = ["cm-09", "adapter"]
 statement = "設定の adapter の名前のアダプタが、組込みにも .vanda/adapters/ にもなければ、設定の誤りにする"
 layers = ["cli"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
