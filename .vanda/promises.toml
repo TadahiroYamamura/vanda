@@ -816,7 +816,6 @@ subjects = ["annotation-reading", "annotation"]
 statement = "コメントの中で逆引用符で囲んだ @vanda: は、アノテーションとして数えない。同じ行に本物のアノテーションがあっても、1 行に 2 つ以上の @vanda: の誤りにしない（例: @vanda:internal の理由の文で、書き方に触れるとき）"
 rationale = "説明の文で書き方に触れられるようにするため（PO の決定）"
 layers = ["cli"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
