@@ -27,3 +27,8 @@ id_pattern = "#[0-9]+"
 
 [gui]
 base = "main"
+
+[[annotation]]
+paths = ["web/e2e/**/*.spec.ts"]
+adapter = "playwright"
+types = ["scenario-test"]

@@ -100,6 +100,31 @@ func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotat
 		if len(cerrs) > 0 {
 			continue
 		}
+		var asked map[int]string
+		if ua, ok := a.(userAdapter); ok {
+			// .vanda/adapters/ のアダプタは、vanda が言語を知らないので、@vanda: のある行を先に渡し、アダプタがアノテーションだと
+			// 答えた行だけを読む（コメントの外の @vanda: を、書き方の誤りにしないため）
+			rows := strings.Split(string(src), "\n")
+			var lines []int
+			for i, r := range rows {
+				if strings.Contains(dropCodeSpans(r), marker) {
+					lines = append(lines, i+1)
+				}
+			}
+			if len(lines) == 0 {
+				continue
+			}
+			names, _, aerrs := ua.ask(f, lines)
+			errs = append(errs, aerrs...)
+			if len(aerrs) > 0 {
+				continue
+			}
+			texts = make([]string, len(rows))
+			for l := range names {
+				texts[l-1] = rows[l-1]
+			}
+			asked = names
+		}
 		if texts == nil {
 			texts = strings.Split(string(src), "\n")
 		}
@@ -120,7 +145,10 @@ func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotat
 		for i, x := range found {
 			lines[i] = x.Line
 		}
-		names, nerrs := a.names(f, src, lines)
+		names, nerrs := asked, []diag.Error(nil)
+		if names == nil {
+			names, nerrs = a.names(f, src, lines)
+		}
 		errs = append(errs, nerrs...)
 		for _, x := range found {
 			if n, ok := names[x.Line]; ok {
