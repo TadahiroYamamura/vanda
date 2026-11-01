@@ -1,5 +1,5 @@
 // RV（ストーリーのレビュー）の画面が、API の結果を正しく見せるか。API は MSW で差し替える。
-// 画面に出す言葉は docs/spec.md と docs/terms.md の言葉（AI 案・推測・差分あり・提案中・合意済・合意する など）で探す。
+// 画面に出す言葉は、約束リスト（.vanda/promises.toml）の用語（AI 案・推測・差分あり・提案中・合意済・合意 など）で探す。
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
