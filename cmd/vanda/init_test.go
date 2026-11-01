@@ -544,7 +544,7 @@ func (s *initSession) wait() int {
 
 var storyChoices = []string{"GitHub Issues", ".vanda/adapters/ のアダプタ", "使わない"}
 
-var langNames = []string{"Go", "シナリオ", "TLA+", "SQL"}
+var langNames = []string{"Go", "シナリオ", "TLA+", "SQL", "TypeScript"}
 
 func langOf(line string) string {
 	for _, n := range langNames {
@@ -810,12 +810,15 @@ func checkDefaultTypes(t *testing.T, c initConfig) {
 
 // 計画の「問い 5 の言語の見つけ方と既定のパターン」の表
 var initLangs = []struct {
-	name, file, pattern, adapter string
+	name, file string
+	patterns   []string
+	adapter    string
 }{
-	{"Go", "internal/x/x_test.go", "**/*_test.go", "go"},
-	{"シナリオ", "e2e/a.txtar", "**/*.txtar", "txtar"},
-	{"TLA+", "spec/S.tla", "**/*.tla", "tla"},
-	{"SQL", "db/schema.sql", "**/*.sql", "sql"},
+	{"Go", "internal/x/x_test.go", []string{"**/*_test.go"}, "go"},
+	{"シナリオ", "e2e/a.txtar", []string{"**/*.txtar"}, "txtar"},
+	{"TLA+", "spec/S.tla", []string{"**/*.tla"}, "tla"},
+	{"SQL", "db/schema.sql", []string{"**/*.sql"}, "sql"},
+	{"TypeScript", "web/src/a.test.ts", []string{"**/*.test.ts", "**/*.test.tsx"}, "ts"},
 }
 
 // checkNoComments は、作った 4 つのファイルにコメントの行がないことを確かめる。
@@ -915,7 +918,7 @@ func Test既定の答えのまま進めると読み取った値で4つのファ�
 	}
 	var want []string
 	for _, l := range initLangs {
-		want = append(want, l.adapter+" "+l.pattern)
+		want = append(want, l.adapter+" "+strings.Join(l.patterns, ","))
 	}
 	sort.Strings(want)
 	if got := annotationsOf(c); !reflect.DeepEqual(got, want) {
@@ -1128,7 +1131,8 @@ func Test答えを変えるとその値で書かれる(t *testing.T) {
 	s := startInit(t, bin, r.root, r.g.env)
 	s.run(initPlan{
 		base: "develop", detail: "other/repo", idPattern: "[A-Z]+-[0-9]+",
-		patterns: map[string]string{"Go": "internal/**/*_test.go", "シナリオ": "e2e/**/*.txtar"},
+		// パターンは空白で区切って複数書ける
+		patterns: map[string]string{"Go": "internal/**/*_test.go cmd/**/*_test.go", "シナリオ": "e2e/**/*.txtar"},
 	})
 	if code := s.wait(); code != 0 {
 		t.Fatalf("vanda init が %d で終わった\n%s", code, s.screen())
@@ -1140,7 +1144,7 @@ func Test答えを変えるとその値で書かれる(t *testing.T) {
 	if c.Story == nil || c.Story.Repository != "other/repo" || c.Story.IDPattern != "[A-Z]+-[0-9]+" {
 		t.Errorf("[story]: %+v", c.Story)
 	}
-	if got, want := annotationsOf(c), []string{"go internal/**/*_test.go", "txtar e2e/**/*.txtar"}; !reflect.DeepEqual(got, want) {
+	if got, want := annotationsOf(c), []string{"go internal/**/*_test.go,cmd/**/*_test.go", "txtar e2e/**/*.txtar"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("[[annotation]]: %v（思ったもの %v）", got, want)
 	}
 }
@@ -1415,15 +1419,16 @@ func Test_remoteのURLの形ごとにストーリーの置き場所とリポジ�
 	})
 }
 
-// CMD-11: 言語のあるなしの 16 通りで、見つかる言語と、その既定のパターンが合う
-func Test言語のあるなしの16通りで見つかる言語と既定のパターンが合う(t *testing.T) {
+// CMD-11: 言語のあるなしの全部の組み合わせ（5 つの言語で 32 通り）で、見つかる言語と、その既定のパターンが合う。
+// パターンの問いは空白で区切って複数書けるので、既定のパターンも空白で区切って並べたものとして比べる
+func Test言語のあるなしの全部の組み合わせで見つかる言語と既定のパターンが合う(t *testing.T) {
 	t.Parallel()
 	for mask := 0; mask < 1<<len(initLangs); mask++ {
 		var files, want []string
 		for i, l := range initLangs {
 			if mask&(1<<i) != 0 {
 				files = append(files, l.file)
-				want = append(want, l.adapter+" "+l.pattern)
+				want = append(want, l.adapter+" "+strings.Join(l.patterns, " "))
 			}
 		}
 		label := strings.Join(want, "と")
@@ -1440,9 +1445,9 @@ func Test言語のあるなしの16通りで見つかる言語と既定のパタ
 			}
 			var got []string
 			for _, l := range d.Languages {
-				got = append(got, l.Name+" "+l.Pattern)
+				got = append(got, l.Name+" "+strings.Join(strings.Fields(l.Pattern), " "))
 			}
-			// 並びは言語の表の順（Go・シナリオ・TLA+・SQL）
+			// 並びは言語の表の順（Go・シナリオ・TLA+・SQL・TypeScript）
 			if !reflect.DeepEqual(got, want) && !(len(got) == 0 && len(want) == 0) {
 				t.Errorf("見つかった言語: %v（思ったもの %v）", got, want)
 			}
