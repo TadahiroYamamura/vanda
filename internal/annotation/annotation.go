@@ -20,14 +20,16 @@ type AdapterInfo struct {
 	Title          string // 問いかけに出す、言語の名前
 	Suffix         string // 見つけ方（git が追っているファイルの名前の終わり）
 	DefaultPattern string // 読むファイルのパターンの既定
+	// DefaultTypes は、満たすエビデンスのタイプの既定。vanda init が [[annotation]] の types にそのまま書く
+	DefaultTypes []string
 }
 
 // Builtins は、組込みのアノテーションの読み取りのアダプタの一覧。アダプタを足したら、ここにも足す
 var Builtins = []AdapterInfo{
-	{Name: "go", Title: "Go のテスト（*_test.go）", Suffix: "_test.go", DefaultPattern: "**/*_test.go"},
-	{Name: "txtar", Title: "シナリオ（*.txtar）", Suffix: ".txtar", DefaultPattern: "**/*.txtar"},
-	{Name: "tla", Title: "TLA+（*.tla）", Suffix: ".tla", DefaultPattern: "**/*.tla"},
-	{Name: "sql", Title: "SQL（*.sql）", Suffix: ".sql", DefaultPattern: "**/*.sql"},
+	{Name: "go", Title: "Go のテスト（*_test.go）", Suffix: "_test.go", DefaultPattern: "**/*_test.go", DefaultTypes: []string{"unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"}},
+	{Name: "txtar", Title: "シナリオ（*.txtar）", Suffix: ".txtar", DefaultPattern: "**/*.txtar", DefaultTypes: []string{"scenario-test"}},
+	{Name: "tla", Title: "TLA+（*.tla）", Suffix: ".tla", DefaultPattern: "**/*.tla", DefaultTypes: []string{"model-check"}},
+	{Name: "sql", Title: "SQL（*.sql）", Suffix: ".sql", DefaultPattern: "**/*.sql", DefaultTypes: []string{"guardrail"}},
 }
 
 // Kinds は、アノテーションの種類。internal のほかは ID を 1 つ取る。
@@ -43,6 +45,8 @@ type Annotation struct {
 	Name  string // 付いているものの名前（アダプタが読み取ったもの）
 	// Adapter は、読み取ったアダプタ（go・txtar・tla・sql）。.vanda/adapters/ のアダプタなら空
 	Adapter string
+	// Types は、読んだ [[annotation]] の types（このアノテーションが満たせるエビデンスのタイプ）
+	Types []string
 }
 
 // adapter は、ファイルの中身と、アノテーションのある行を受け取り、行ごとに付いているものの名前を返す。
@@ -121,6 +125,7 @@ func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotat
 			if n, ok := names[x.Line]; ok {
 				x.Name = n
 				x.Adapter = hit[0].Adapter
+				x.Types = hit[0].Types
 				out = append(out, x)
 			}
 		}
@@ -256,6 +261,11 @@ func trimCloser(s string) string {
 		}
 	}
 	return s
+}
+
+// Satisfies は、このアノテーションが、約束 id のタイプ typ のエビデンスに当たるかを返す（エビデンスが揃っている審査と画面で同じ判定にする）。
+func (a Annotation) Satisfies(id, typ string) bool {
+	return a.Value == id && contains(a.Types, typ) && a.Kind == config.EvidenceKind(typ)
 }
 
 func contains(xs []string, s string) bool {

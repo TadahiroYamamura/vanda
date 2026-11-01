@@ -10,7 +10,7 @@ import (
 
 	"github.com/TadahiroYamamura/vanda/internal/agreements"
 	"github.com/TadahiroYamamura/vanda/internal/annotation"
-	"github.com/TadahiroYamamura/vanda/internal/check"
+	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/glob"
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
 )
@@ -128,10 +128,9 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 	}
 	for _, ev := range content.Evidence {
 		ed := EvidenceDetail{EvidenceContent: ev, Found: []Found{}}
-		want, ok := check.EvidenceTypes[ev.Type]
-		if ok {
+		if config.EvidenceKind(ev.Type) != "" {
 			for _, a := range anns {
-				if a.Adapter != want[0] || a.Kind != want[1] || a.Value != c.ID {
+				if !a.Satisfies(c.ID, ev.Type) {
 					continue
 				}
 				f := Found{Adapter: a.Adapter, File: a.File, Name: a.Name}

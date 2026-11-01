@@ -28,6 +28,30 @@ const (
 // 組込みのアノテーションの読み取りのアダプタ
 var BuiltinAdapters = []string{"go", "txtar", "tla", "sql"}
 
+// EvidenceKinds は、[[annotation]] の types に書けるエビデンスのタイプ（書ける順）と、そのタイプのエビデンスとして
+// 揃っているとするアノテーションの種類。human-review・monitoring はアノテーションで確かめず、proof はまだ扱えないので、書けない
+var EvidenceKinds = []struct{ Type, Kind string }{
+	{"model-check", "claim"},
+	{"cross-check", "evidence"},
+	{"random-check", "evidence"},
+	{"scenario-test", "evidence"},
+	{"unit-test", "evidence"},
+	{"interface-test", "evidence"},
+	{"concurrency-test", "evidence"},
+	{"guardrail", "evidence"},
+	{"sensor", "sensor"},
+}
+
+// EvidenceKind は、types に書けるタイプ typ のエビデンスとして揃っているとするアノテーションの種類を返す。書けないタイプなら空。
+func EvidenceKind(typ string) string {
+	for _, e := range EvidenceKinds {
+		if e.Type == typ {
+			return e.Kind
+		}
+	}
+	return ""
+}
+
 type Config struct {
 	Version    string
 	Promises   []string
@@ -88,7 +112,9 @@ type AnnotationRule struct {
 	// Adapter は、組込みのアダプタの名前（go・txtar・tla・sql）。.vanda/adapters/ のアダプタを使うなら空
 	Adapter string
 	User    *UserAdapter
-	Line    int
+	// Types は、このパターンで読んだアノテーションが満たすエビデンスのタイプ
+	Types []string
+	Line  int
 }
 
 type GuardrailRule struct {
@@ -177,7 +203,8 @@ func parse(l *loader, top *tomlread.Table) *Config {
 		r := AnnotationRule{Line: t.Line("")}
 		r.Paths = patterns(t, "paths", "")
 		r.Adapter, r.User = adapterOf(l, t, BuiltinAdapters, "adapter を "+strings.Join(BuiltinAdapters, "・")+" のどれかにするか")
-		t.Unknown("paths, adapter, args")
+		r.Types = evidenceTypes(t)
+		t.Unknown("paths, adapter, args, types")
 		cfg.Annotations = append(cfg.Annotations, r)
 	}
 
@@ -245,6 +272,36 @@ func isRepository(s string) bool {
 		return true
 	}
 	return ok && valid(owner) && valid(name)
+}
+
+// evidenceTypes は、[[annotation]] の types を読む。
+func evidenceTypes(t *tomlread.Table) []string {
+	types, ok := t.Strs("types", true)
+	if !ok {
+		return nil
+	}
+	seen := map[string]bool{}
+	for _, typ := range types {
+		switch {
+		case EvidenceKind(typ) == "":
+			names := make([]string, len(EvidenceKinds))
+			for i, e := range EvidenceKinds {
+				names[i] = e.Type
+			}
+			why := "決まったタイプではありません"
+			switch typ {
+			case "human-review", "monitoring":
+				why = "アノテーションで確かめないタイプなので、書けません"
+			case "proof":
+				why = "まだ扱えないタイプなので、書けません"
+			}
+			t.ErrAt("types", "types の "+quote(typ)+" は、"+why, "types には "+strings.Join(names, "・")+" のどれかを書いてください")
+		case seen[typ]:
+			t.ErrAt("types", "types に "+quote(typ)+" が 2 つ以上あります", "1 つにしてください")
+		}
+		seen[typ] = true
+	}
+	return types
 }
 
 // adapterOf は、表の adapter と args を読み、使うアダプタを決める。.vanda/adapters/ に同じ名前のアダプタがあれば、

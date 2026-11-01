@@ -160,19 +160,6 @@ func (e *env) agreementTargets() []diag.Error {
 	return errs
 }
 
-// EvidenceTypes は、エビデンスのタイプと、揃っているとするアノテーション（アダプタと種類）。
-var EvidenceTypes = map[string][2]string{
-	"scenario-test":    {"txtar", "evidence"},
-	"model-check":      {"tla", "claim"},
-	"guardrail":        {"sql", "evidence"},
-	"unit-test":        {"go", "evidence"},
-	"cross-check":      {"go", "evidence"},
-	"random-check":     {"go", "evidence"},
-	"interface-test":   {"go", "evidence"},
-	"concurrency-test": {"go", "evidence"},
-	"sensor":           {"go", "sensor"},
-}
-
 // evidencePresent は、エビデンスが揃っているかの審査。
 func (e *env) evidencePresent(scope string) []diag.Error {
 	if e.listErrs != nil {
@@ -180,10 +167,6 @@ func (e *env) evidencePresent(scope string) []diag.Error {
 	}
 	if e.annErrs != nil {
 		return cannot("アノテーション", len(e.annErrs), "annotation-links")
-	}
-	have := map[string]bool{}
-	for _, a := range e.anns {
-		have[a.Adapter+"\x00"+a.Kind+"\x00"+a.Value] = true
 	}
 	var errs []diag.Error
 	for _, c := range e.list.Claims {
@@ -198,12 +181,19 @@ func (e *env) evidencePresent(scope string) []diag.Error {
 			case "human-review", "monitoring":
 				continue
 			}
-			want, ok := EvidenceTypes[ev.Type]
-			if !ok {
+			kind := config.EvidenceKind(ev.Type)
+			if kind == "" {
 				continue // 決まった値でないタイプは、約束リストの形の審査で出す
 			}
-			if !have[want[0]+"\x00"+want[1]+"\x00"+c.ID] {
-				errs = append(errs, ev.Table.Err("type", fmt.Sprintf("約束 %s の %s のエビデンスがありません（%s のアダプタのファイルに、@vanda:%s %s がありません）", c.ID, ev.Type, want[0], want[1], c.ID), fmt.Sprintf("エビデンスを作り、@vanda:%s %s を付けてください", want[1], c.ID)))
+			found := false
+			for _, a := range e.anns {
+				if a.Satisfies(c.ID, ev.Type) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				errs = append(errs, ev.Table.Err("type", fmt.Sprintf("約束 %s の %s のエビデンスがありません（types に %s を含む [[annotation]] で読んだファイルに、@vanda:%s %s がありません）", c.ID, ev.Type, ev.Type, kind, c.ID), fmt.Sprintf("エビデンスを作り、@vanda:%s %s を付けてください。そのファイルが、types に %s を含む [[annotation]] のパターンに当たるようにしてください", kind, c.ID, ev.Type)))
 			}
 		}
 	}

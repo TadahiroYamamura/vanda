@@ -3,14 +3,17 @@ version = "0.1.0"
 [[annotation]]
 paths = ["**/*_test.go"]
 adapter = "go"
+types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]
 
 [[annotation]]
 paths = ["**/*.txtar"]
 adapter = "txtar"
+types = ["scenario-test"]
 
 [[annotation]]
 paths = ["**/*.tla"]
 adapter = "tla"
+types = ["model-check"]
 
 [story]
 adapter = "github"

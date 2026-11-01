@@ -54,11 +54,13 @@ description = "判定と状態の変化"
 [[annotation]]
 paths = ["**/*_test.go", "cmd/**/*.go"]
 adapter = "go"
+types = ["unit-test", "sensor"]
 
 [[annotation]]
 paths = ["docs/**/*.md"]
 adapter = "md-annotation"
 args = ["--strict"]
+types = ["scenario-test"]
 
 [[guardrail]]
 adapter = "file"
@@ -74,7 +76,7 @@ id_pattern = "#[0-9]+"
 | `promises` | 文字列の配列 | 省いてよい | 約束リストのファイルのパターン。省けば `[".vanda/promises.toml"]` |
 | `agreements` | 文字列の配列 | 省いてよい | 合意の記録のファイルのパターン。省けば `[".vanda/agreements.toml"]` |
 | `[[layer]]` | 表の配列 | 省いてよい | レイヤーの一覧。`id`・`name`・`description`（どれも文字列で、必ず）。`id` は ID の形（英小文字で始め、英小文字・数字をハイフンでつないだ形）で、重ならない |
-| `[[annotation]]` | 表の配列 | 省いてよい | アノテーションを読むファイルと、使うアダプタ。`paths`（文字列の配列、必ず）、`adapter`（アダプタの名前。組込みの `go`・`txtar`・`tla`・`sql` か、`.vanda/adapters/` のアダプタ）、`args`（`.vanda/adapters/` のアダプタに渡す引数。省いてよい）。`adapter` を書かなければ、アダプタが決まっていないとみなし、当たったファイルを審査で止める。名前のアダプタが組込みにも `.vanda/adapters/` にもなければ誤り |
+| `[[annotation]]` | 表の配列 | 省いてよい | アノテーションを読むファイルと、使うアダプタ。`paths`（文字列の配列、必ず）、`adapter`（アダプタの名前。組込みの `go`・`txtar`・`tla`・`sql` か、`.vanda/adapters/` のアダプタ）、`args`（`.vanda/adapters/` のアダプタに渡す引数。省いてよい）、`types`（文字列の配列、必ず。そのパターンで読んだアノテーションが満たすエビデンスのタイプ。下の「エビデンスが揃っている審査」の表のタイプだけを書ける。空の配列なら、どのタイプも満たさない）。`adapter` を書かなければ、アダプタが決まっていないとみなし、当たったファイルを審査で止める。名前のアダプタが組込みにも `.vanda/adapters/` にもなければ誤り |
 | `[[guardrail]]` | 表の配列 | 省いてよい | ガードレールの定義の取り出し。`adapter`（今は `file` だけ。ファイルを読むだけ）と `paths`（文字列の配列）。ガードレールの定義と約束の結びつけは、アノテーション（SQL なら `--` のコメントの中の `@vanda:evidence <ID>`）で行う |
 | `[story]` の `id_pattern` | 文字列 | 省いてよい | コミットのメッセージの中のストーリーの ID の書き方。ID 全体に当たる正規表現（Go の RE2）。省けば `#[0-9]+`（GitHub Issues）。空の文字列に当たるものは書けない |
 
@@ -322,17 +324,24 @@ scope = "story"
 
 ### エビデンスが揃っている審査（`evidence-present`）
 
-予定したエビデンスの 1 件ごとに、その約束を指す、タイプに合うアダプタのアノテーションが 1 つ以上あれば揃っているとする。1 つのアノテーションが、同じ約束の複数の予定を満たしてよい。
+予定したエビデンスの 1 件ごとに、その約束を指す、タイプに合うアノテーションが 1 つ以上あれば揃っているとする。タイプに合うアノテーションは、`types` にそのタイプを含む `[[annotation]]` で読んだ、下の表の種類のもの。1 つのアノテーションが、同じ約束の複数の予定を満たしてよい。
 
-| タイプ | 揃っているとするアノテーション |
+| タイプ | 揃っているとするアノテーションの種類 |
 |---|---|
-| `scenario-test` | `txtar` の `@vanda:evidence` |
-| `model-check` | `tla` の `@vanda:claim` |
-| `guardrail` | `sql` の `@vanda:evidence` |
-| `unit-test`・`cross-check`・`random-check`・`interface-test`・`concurrency-test` | `go` の `@vanda:evidence` |
-| `sensor` | `go` の `@vanda:sensor` |
-| `proof` | 段 1 では扱えない（予定に書いたら誤り） |
-| `human-review`・`monitoring` | 確かめない |
+| `model-check` | `@vanda:claim` |
+| `sensor` | `@vanda:sensor` |
+| `cross-check`・`random-check`・`scenario-test`・`unit-test`・`interface-test`・`concurrency-test`・`guardrail` | `@vanda:evidence` |
+| `proof` | 今は扱えない（予定に書いたら誤り。`types` に書けない） |
+| `human-review`・`monitoring` | 確かめない（`types` に書けない） |
+
+組込みのアダプタは、既定のタイプを持つ（`vanda init` が `types` にそのまま書く）。
+
+| `adapter` | 既定のタイプ |
+|---|---|
+| `go` | `unit-test`・`cross-check`・`random-check`・`interface-test`・`concurrency-test`・`sensor` |
+| `txtar` | `scenario-test` |
+| `tla` | `model-check` |
+| `sql` | `guardrail` |
 
 ## CLI
 

@@ -319,7 +319,11 @@ func ConfigText(a Answers) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "version = %s\n", tomlwrite.String(version.Current))
 	for _, l := range a.Annotations {
-		fmt.Fprintf(&b, "\n[[annotation]]\npaths = [%s]\nadapter = %s\n", tomlwrite.String(l.Pattern), tomlwrite.String(l.Name))
+		types := make([]string, len(l.DefaultTypes))
+		for i, t := range l.DefaultTypes {
+			types[i] = tomlwrite.String(t)
+		}
+		fmt.Fprintf(&b, "\n[[annotation]]\npaths = [%s]\nadapter = %s\ntypes = [%s]\n", tomlwrite.String(l.Pattern), tomlwrite.String(l.Name), strings.Join(types, ", "))
 	}
 	b.WriteString("\n[story]\n")
 	switch a.Store {
