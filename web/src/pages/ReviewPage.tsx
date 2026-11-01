@@ -3,7 +3,7 @@ import { useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api, type ClaimContent, type User, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FileContent, type Review, type TermContent } from "../api";
-import { ErrorBox, FlagBadge, PresentIcon, StateBadge, shortCommit, useLoad } from "../components/common";
+import { AgreementIcon, ErrorBox, FlagBadge, PresentIcon, StateBadge, shortCommit, useLoad } from "../components/common";
 import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
 import { LineDiff, Parts } from "../components/DiffView";
@@ -609,7 +609,8 @@ export function ClaimSections(props: { id: string; query?: string }) {
                       {f.name}{" "}
                       <Link className="note" to={`/files?${props.query ? `${props.query}&` : ""}path=${encodeURIComponent(f.file)}`}>
                         {f.file}:{f.line}
-                      </Link>
+                      </Link>{" "}
+                      <AgreementIcon state={f.state} />
                     </li>
                   ))}
                 </ul>

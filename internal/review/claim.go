@@ -55,6 +55,9 @@ type Found struct {
 	Line    int     `json:"line"`
 	Name    string  `json:"name"`
 	Text    *string `json:"text"`
+	// State は、ファイルが合意の対象（シナリオ・オラクルの定義・ガードレールの定義）のとき、今の中身の指紋に合う合意の記録があるか
+	// （agreed・proposed。ストーリーによらない）。合意の対象でないもの（Go のテストなど）は nil
+	State *string `json:"state"`
 }
 
 type OriginRef struct {
@@ -134,6 +137,13 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 				f := Found{Adapter: a.Adapter, File: a.File, Name: a.Name}
 				text, line, err := evidenceText(o.Root, a)
 				f.Line = line
+				if _, target := s.cur.types[a.File]; target {
+					fp, err := s.cur.fileFP(a.File)
+					if err != nil {
+						return nil, internalErr(err)
+					}
+					f.State = ptr(stateName(s.recs.Agreed("file", fp, fp)))
+				}
 				if err != nil {
 					return nil, internalErr(err)
 				}

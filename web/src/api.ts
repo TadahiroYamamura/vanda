@@ -154,6 +154,7 @@ export interface Found {
   line: number;
   name: string;
   text: string | null;
+  state?: State | null;
 }
 
 export interface EvidenceDetail extends EvidenceContent {
