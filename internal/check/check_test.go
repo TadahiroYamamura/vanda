@@ -59,6 +59,12 @@ func (r *repoT) commit(subject, story string) {
 	if story != "" {
 		msg += "\n\nStory: " + story
 	}
+	r.commitMsg(msg)
+}
+
+// commitMsg は、作業ツリーのすべてを、メッセージ msg のままでコミットする。読み直させる理由は commit と同じ
+func (r *repoT) commitMsg(msg string) {
+	r.t.Helper()
 	r.git("rm", "-r", "-q", "--cached", "--ignore-unmatch", ".")
 	r.git("add", "-A")
 	r.git("commit", "-q", "--allow-empty", "-m", msg)

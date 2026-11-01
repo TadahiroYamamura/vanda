@@ -2,6 +2,7 @@
 # @vanda:evidence check-config-required
 # @vanda:evidence check-base-required-for-story
 # @vanda:evidence check-story-from-commits
+# @vanda:evidence story-id-from-trailer
 # 範囲を「1 つのストーリー」にする審査を含む設定では、--base も必須。範囲が全部の審査だけなら、渡さなくてよい。
 
 exec git init -q -b main
@@ -44,9 +45,9 @@ commit 'メモを足す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 exec vanda check .vanda/checks/mixed.toml --base main
 
-# 分かれた点より後のコミットに、ID のないものが混じっても、ID が 1 つなら通る
+# 分かれた点より後のコミットに、トレーラーのないものが混じっても、ID が 1 つなら通る。subject に書いた #9 は数えない
 cp cases/note-2.txt note.txt
-commit 'メモを直す'
+commit '#9 メモを直す'
 exec vanda check .vanda/checks/story.toml --base main
 
 # ID が 2 つ以上だと、--story を求めて止まる。--story を渡せば通る
