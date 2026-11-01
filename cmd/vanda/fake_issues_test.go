@@ -201,6 +201,7 @@ func fakeGet(t *testing.T, url, auth string) (int, map[string]any, error) {
 }
 
 func Test偽のストーリーの置き場所は正しい鍵でだけIssueを返し誤りをGitHubと同じ形で返す(t *testing.T) {
+	t.Parallel()
 	f := newFakeIssues(t)
 	f.setIssue("owner/app", 24, "タスクの ID", fakeIssueBodyWithAttachments)
 	url := f.URL + "/repos/owner/app/issues/24"
@@ -241,6 +242,7 @@ func Test偽のストーリーの置き場所は正しい鍵でだけIssueを返
 }
 
 func Test偽のghはauth_tokenに鍵を出しログインしていなければ失敗する(t *testing.T) {
+	t.Parallel()
 	dir := fakeGH(t, "gho_abc")
 	out, err := exec.Command(filepath.Join(dir, "gh"), "auth", "token").Output()
 	if err != nil || string(out) != "gho_abc\n" {

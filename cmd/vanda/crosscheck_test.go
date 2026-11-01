@@ -451,6 +451,7 @@ func (r *xcheckRepo) check(args ...string) (bool, []string, string) {
 }
 
 func Test合意の判定をTLAのモデルと本物のvandaで1歩ずつ比べると一致する(t *testing.T) {
+	t.Parallel()
 	tlc := lookTLC(t)
 	seed := xcheckSeed(t)
 	traces := envInt(t, "VANDA_XCHECK_TRACES", xcheckDefaultTraces)

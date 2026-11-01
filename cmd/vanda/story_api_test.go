@@ -96,6 +96,7 @@ func attachmentList(got storyResponse) []string {
 
 // CM-08
 func Testストーリーの置き場所から題と本文と添付ファイルへのリンクを読める(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name   string
 		ghTok  string // 偽の gh が出す鍵（空ならログインしていない）
@@ -107,6 +108,7 @@ func Testストーリーの置き場所から題と本文と添付ファイル�
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
 			st := newStorySetup(t, "")
 			if c.viaGH {
 				st.gh = fakeGH(t, st.fake.Token)
@@ -150,6 +152,7 @@ func Testストーリーの置き場所から題と本文と添付ファイル�
 
 // CM-08: 添付ファイルの決まりの、当たるものと当たらないもの
 func Testストーリーの添付ファイルは決まったURLで始まるリンクと画像だけで名前はリンクの文字かURLの最後の部分(t *testing.T) {
+	t.Parallel()
 	st := newStorySetup(t, "")
 	s := startServe(t, st.bin, st.r.Root, st.env(st.fake.Token))
 	var got storyResponse
@@ -169,6 +172,7 @@ func Testストーリーの添付ファイルは決まったURLで始まるリ�
 
 // CM-08: 誤りは、黙って空にせず、理由を出す
 func Testストーリーの置き場所の誤りは理由を画面に出す(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name     string
 		ghTok    string
@@ -186,6 +190,7 @@ func Testストーリーの置き場所の誤りは理由を画面に出す(t *t
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
 			st := newStorySetup(t, c.ghTok)
 			s := startServe(t, st.bin, st.r.Root, st.env(c.envTok(st.fake)))
 			if c.cut {

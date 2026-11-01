@@ -61,9 +61,15 @@ func (s *vandaServer) Output() string {
 	return s.output.String()
 }
 
+// serveSlots は、同時に動かす vanda serve の数の上限。テストを並べて動かすので、サーバーが一度に立ちすぎないよう抑える。
+var serveSlots = make(chan struct{}, 4)
+
 // startServe は、dir で vanda serve を起動し、標準出力に出た URL を読んで返す。
 func startServe(t serveTB, bin, dir string, env []string) *vandaServer {
 	helper(t)
+	serveSlots <- struct{}{}
+	// 後に足した Cleanup ほど先に動くので、止めた（s.stop）後に枠を返す
+	t.Cleanup(func() { <-serveSlots })
 	s := &vandaServer{t: t, done: make(chan error, 1)}
 	s.cmd = exec.Command(bin, "serve", "--port", "0", "--no-open")
 	s.cmd.Dir = dir
@@ -220,6 +226,7 @@ func q(v string) string { return url.QueryEscape(v) }
 // テストの中で起動したサーバーが、テストの終わりに止まることを確かめる（stop が確かめる）。
 // あわせて、ほかのホストの名前で来た要求を断ることも確かめる（CM-01: 自分のマシンの中でだけ開く）。
 func Test起動したvanda_serveは止めると止まりほかのHostの要求を断る(t *testing.T) {
+	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
 	if err != nil {

@@ -271,6 +271,7 @@ func parseTraceFile(src string) ([]map[string]any, error) {
 }
 
 func TestTLAの値の読み取りは手で書いた例を読める(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		src  string
 		want any
@@ -310,6 +311,7 @@ func TestTLAの値の読み取りは手で書いた例を読める(t *testing.T)
 }
 
 func TestTLAの値の読み取りは形の誤りをエラーにする(t *testing.T) {
+	t.Parallel()
 	for _, src := range []string{``, `{1, 2`, `[a |-> 1`, `(i1 :> 1 @@)`, `"abc`, `<<1 2>>`, `{1} x`, `[ |-> 1]`, `?`} {
 		if v, err := parseTLA(src); err == nil {
 			t.Errorf("%q を誤りにしない: %#v", src, v)
@@ -318,6 +320,7 @@ func TestTLAの値の読み取りは形の誤りをエラーにする(t *testing
 }
 
 func Testトレースの読み取りは状態ごとに複数行の値も含めて変数を読む(t *testing.T) {
+	t.Parallel()
 	src := `---------------- MODULE tr_0_0 -----------------
 \* <InitT line 4, col 10 to line 4, col 34 of module AgreementTrace>
 STATE_1 ==

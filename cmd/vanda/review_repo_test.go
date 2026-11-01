@@ -330,6 +330,7 @@ func (r *reviewRepo) vanda(bin string, args ...string) (int, string, string) {
 // 用意したリポジトリが、段 1 の審査から見て思ったとおりの中身であることを確かめる。
 // main では審査が通り、story-24 では #24 の変えたものだけが合意の審査で止まり、それらに手で合意すれば通る。
 func Test段2のテストで使うリポジトリはmainで審査が通りストーリーの変えたものだけが止まる(t *testing.T) {
+	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
 	if err != nil {

@@ -264,8 +264,10 @@ func rvSet(es []rvEntry) map[rvEntry]bool {
 
 // RV-01・RV-13
 func TestRV01の期待値の数え方は手で作った例と合う(t *testing.T) {
+	t.Parallel()
 	for _, ex := range rvExamples {
 		t.Run(ex.name, func(t *testing.T) {
+			t.Parallel()
 			r := newRVRepo(t, t.TempDir(), "0.1.0", "#1", pickFirst)
 			ex.build(r)
 			for base, want := range ex.branch {

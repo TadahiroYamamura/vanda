@@ -135,6 +135,7 @@ func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]b
 
 // RV-01・RV-02・RV-13
 func TestRV01の一覧はAPIで手で作った例と合う(t *testing.T) {
+	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
 	if err != nil {
@@ -142,6 +143,7 @@ func TestRV01の一覧はAPIで手で作った例と合う(t *testing.T) {
 	}
 	for _, ex := range rvExamples {
 		t.Run(ex.name, func(t *testing.T) {
+			t.Parallel()
 			root := t.TempDir()
 			r := newRVRepo(t, root, version, "#1", pickFirst)
 			ex.build(r)
@@ -172,6 +174,7 @@ func TestRV01の一覧はAPIで手で作った例と合う(t *testing.T) {
 
 // RV-01 のランダムチェック。無作為な操作の列を当てたリポジトリで、一覧がテストの中で数えたものとちょうど一致する。
 func TestRV01の一覧は無作為な操作の列を当ててもテストの中で数えたものとちょうど一致する(t *testing.T) {
+	t.Parallel()
 	runRV01Random(t, func(rt *rapid.T, bin string, r *rvRepo, branch map[rvEntry]bool, stories map[string]map[rvEntry]bool) {
 		s := startServe(rt, bin, r.root, r.g.env)
 		defer s.stop()
@@ -192,6 +195,7 @@ func TestRV01の一覧は無作為な操作の列を当ててもテストの中�
 
 // RV-13・CM-06 の引数の誤り。
 func TestRV01の一覧はないベースブランチや足りない引数や形の誤ったストーリーのIDを400で断る(t *testing.T) {
+	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
 	if err != nil {

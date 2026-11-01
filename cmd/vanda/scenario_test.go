@@ -20,6 +20,7 @@ import (
 // シナリオは、ビルドした vanda の実行ファイルを外から動かして確かめる。
 // testscript.RunMain で main を直に呼ぶ形にしないのは、実装の内部の関数（main の入口の形）に頼らずに書くため。
 func TestScenario(t *testing.T) {
+	t.Parallel()
 	bin := buildVanda(t)
 	binDir := filepath.Dir(bin)
 

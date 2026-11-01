@@ -87,6 +87,7 @@ func expectedOverlaps(items []overlapItem, locs map[int]overlapLoc) map[overlapL
 }
 
 func Test分けたファイルをまたいでも重なったIDは後に出てきたものの場所だけを誤りにする(t *testing.T) {
+	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
 	if err != nil {

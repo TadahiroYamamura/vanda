@@ -106,6 +106,7 @@ func checkFound(t *testing.T, typ string, got []claimFound, want []wantFound) {
 
 // CL-01・02・04・05
 func Test約束の詳細は文とレイヤーと対象とエビデンスのタイプごとの中身と由来と合意の履歴を示す(t *testing.T) {
+	t.Parallel()
 	_, r, s := setupAgree(t)
 	// 推測だけを書き換えたコミット。指紋が変わらないので、由来には出ない
 	writeFile(t, r.Root, ".vanda/promises.toml", strings.Replace(reviewPromisesStory,
@@ -224,6 +225,7 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 
 // CL-02: エビデンスの予定があっても、指すアノテーションがなければ found は空
 func Test約束の詳細は指すアノテーションのないエビデンスの予定をfoundが空のものとして示す(t *testing.T) {
+	t.Parallel()
 	_, _, s := setupAgree(t)
 	var got claimDetail
 	if code, msg := s.get("/api/claims/task-title-required", &got); code != 200 {
@@ -238,6 +240,7 @@ func Test約束の詳細は指すアノテーションのないエビデンス�
 }
 
 func Test約束の詳細とファイルの中身はないものを404にする(t *testing.T) {
+	t.Parallel()
 	_, _, s := setupAgree(t)
 	for _, path := range []string{
 		"/api/claims/no-such-claim",
@@ -253,6 +256,7 @@ func Test約束の詳細とファイルの中身はないものを404にする(t
 }
 
 func Testファイルの中身は合意の対象のファイルとアノテーションを読むファイルを返す(t *testing.T) {
+	t.Parallel()
 	_, _, s := setupAgree(t)
 	for path, want := range map[string]string{
 		"spec/Task.tla":              reviewTLA,

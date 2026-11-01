@@ -87,6 +87,7 @@ func committedFiles(r *reviewRepo, rev string) []string {
 
 // RV-06・RV-04
 func Test合意すると合意の記録が1件増えその約束のフラグだけが外れほかの行は変わらず1つのコミットになる(t *testing.T) {
+	t.Parallel()
 	_, r, s := setupAgree(t)
 	head := r.git("rev-parse", "HEAD")
 	before := readAgreements(t, r.Root)
@@ -150,6 +151,7 @@ func Test合意すると合意の記録が1件増えその約束のフラグだ�
 
 // RV-06・CMD-10
 func Test全部に合意すると段1の由来と合意の審査が通る(t *testing.T) {
+	t.Parallel()
 	bin, r, s := setupAgree(t)
 	if code, _, _ := r.vanda(bin, "check", ".vanda/checks/merge.toml", "--base", "main"); code != 1 {
 		t.Fatalf("合意する前から、合意の審査が通っている")
@@ -177,6 +179,7 @@ func Test全部に合意すると段1の由来と合意の審査が通る(t *tes
 
 // RV-06
 func Test合意と関係のない書きかけの変更は索引に足したものも合意のコミットに入らず残る(t *testing.T) {
+	t.Parallel()
 	_, r, s := setupAgree(t)
 	writeFile(t, r.Root, "db/schema.sql", reviewSchema+"-- 書きかけ\n")
 	writeFile(t, r.Root, "spec/Task.tla", strings.Replace(reviewTLA, "====", "\\* 書きかけ\n====", 1))
@@ -202,6 +205,7 @@ func Test合意と関係のない書きかけの変更は索引に足したも�
 
 // RV-06
 func Test合意で変えるファイルに書きかけの変更があると合意を断り理由を出し何も変えない(t *testing.T) {
+	t.Parallel()
 	dirtyScenario := reviewScenarioStory + "# 書きかけ\n"
 	cases := []struct {
 		name string
@@ -218,6 +222,7 @@ func Test合意で変えるファイルに書きかけの変更があると合�
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
 			_, r, s := setupAgree(t)
 			data, err := os.ReadFile(filepath.Join(r.Root, c.file))
 			if err != nil {
@@ -250,8 +255,10 @@ func Test合意で変えるファイルに書きかけの変更があると合�
 
 // RV-06
 func Test合意する人のgitのuser_nameかuser_emailがないと合意できず理由を出す(t *testing.T) {
+	t.Parallel()
 	for _, key := range []string{"user.name", "user.email"} {
 		t.Run(key, func(t *testing.T) {
+			t.Parallel()
 			bin := buildVanda(t)
 			version, err := runningVersion(bin)
 			if err != nil {
@@ -283,6 +290,7 @@ func Test合意する人のgitのuser_nameかuser_emailがないと合意でき�
 
 // RV-06
 func Testファイルにも合意でき合意の記録だけが1つのコミットになる(t *testing.T) {
+	t.Parallel()
 	_, r, s := setupAgree(t)
 	head := r.git("rev-parse", "HEAD")
 	before := readAgreements(t, r.Root)
@@ -316,6 +324,7 @@ func Testファイルにも合意でき合意の記録だけが1つのコミッ�
 
 // RV-06: 同じストーリーで、今の中身にもう合意していれば断る
 func Test同じストーリーで今の中身にもう合意していれば合意を断る(t *testing.T) {
+	t.Parallel()
 	_, r, s := setupAgree(t)
 	if code, msg := s.post("/api/agree", agreeFile("e2e/add-task.txtar", reviewFileFP), nil); code != 200 {
 		t.Fatalf("合意できない（%d）: %s", code, msg)
@@ -332,6 +341,7 @@ func Test同じストーリーで今の中身にもう合意していれば合�
 
 // RV-06: 画面に見せていた中身と今の中身が違えば断る
 func Test見せていた中身の指紋が今の中身と違うと合意を断る(t *testing.T) {
+	t.Parallel()
 	_, r, s := setupAgree(t)
 	head := r.git("rev-parse", "HEAD")
 	old := sha256Hex([]byte(reviewItemJSON["claim task-id-unique"]))
@@ -418,6 +428,7 @@ func revokeEntry(t *testing.T, s *vandaServer) (state string, possible *bool, re
 
 // RV-17
 func Test自分が今のブランチで書いた合意を取り消すとその記録と直前の空行だけが消え1つのコミットになりフラグは戻らない(t *testing.T) {
+	t.Parallel()
 	_, r, s, base := setupRevoke(t, func(base string) string {
 		return base + "\n# 以下は #24 の合意\n" + inlineRecord(reviewStory, reviewUserName, reviewUserEmail) + "\n# 終わりのコメント\n"
 	})
@@ -466,6 +477,7 @@ func Test自分が今のブランチで書いた合意を取り消すとその�
 
 // RV-17。人の違う記録は残り、同じ人の同じ記録が 2 つあれば両方消える。ほかのストーリーの記録も残る
 func Test取り消すと今の人の記録だけが消えほかの人とほかのストーリーの記録は残り合意済のままになる(t *testing.T) {
+	t.Parallel()
 	other := inlineRecord(reviewStory, "ほかの人", "other@example.com")
 	story30 := inlineRecord("#30", reviewUserName, reviewUserEmail)
 	self := inlineRecord(reviewStory, reviewUserName, reviewUserEmail)
@@ -491,6 +503,7 @@ func Test取り消すと今の人の記録だけが消えほかの人とほか�
 
 // RV-17。誰が × どこで書いたか、の組み合わせを全部回す
 func Test取り消せるのは今の人が今のブランチで書いた合意だけでほかは一覧で取り消せないとなりAPIで断られる(t *testing.T) {
+	t.Parallel()
 	writers := []struct {
 		name, user, email string
 		self              bool
@@ -507,6 +520,7 @@ func Test取り消せるのは今の人が今のブランチで書いた合意�
 				place = "ベースブランチ"
 			}
 			t.Run(w.name+"が"+place+"で書いた", func(t *testing.T) {
+				t.Parallel()
 				bin := buildVanda(t)
 				version, err := runningVersion(bin)
 				if err != nil {
@@ -569,6 +583,7 @@ func Test取り消せるのは今の人が今のブランチで書いた合意�
 
 // RV-17
 func Test合意の記録のファイルに書きかけの変更があると取り消しを断り理由を出し何も変えない(t *testing.T) {
+	t.Parallel()
 	_, r, s, _ := setupRevoke(t, func(base string) string {
 		return base + inlineRecord(reviewStory, reviewUserName, reviewUserEmail)
 	})
@@ -585,6 +600,7 @@ func Test合意の記録のファイルに書きかけの変更があると取�
 
 // RV-17・CMD-10
 func Test取り消すと段1の合意の審査で止まりもう一度合意すると通る(t *testing.T) {
+	t.Parallel()
 	bin, r, s := setupAgree(t)
 	for _, body := range []map[string]any{
 		agreeClaim("task-id-unique", reviewClaimFP),

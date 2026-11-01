@@ -180,6 +180,7 @@ func rvRandomOps(rt *rapid.T, r *rvRepo, label string, max int, mayLeave bool, l
 
 // RV-01・RV-13
 func TestRV01の操作の列をリポジトリに当てると期待する一覧を数えられる(t *testing.T) {
+	t.Parallel()
 	runRV01Random(t, nil)
 }
 

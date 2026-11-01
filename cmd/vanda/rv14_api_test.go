@@ -144,6 +144,7 @@ func checkDetached(t *testing.T, where string, got reviewResponse) {
 
 // RV-14
 func TestRV14はストーリーの合意が外れたものをレビュー単位がブランチのときもストーリーのときも変えたストーリーと一緒に示す(t *testing.T) {
+	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
 	if err != nil {

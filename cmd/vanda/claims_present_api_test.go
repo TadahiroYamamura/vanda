@@ -44,6 +44,7 @@ func presentClaim(id string) string {
 }
 
 func Test約束の詳細はエビデンスのタイプごとに揃っているかを示す(t *testing.T) {
+	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
 	if err != nil {
