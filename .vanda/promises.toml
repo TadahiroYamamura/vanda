@@ -718,7 +718,6 @@ id = "detached-agreement"
 subjects = ["rv-14", "agreement", "story"]
 statement = "ストーリー s が合意したことがあり、今の中身に s の合意がないものを、s の外れた合意とする（誰が変えたかを問わない）"
 layers = ["model", "cli"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
