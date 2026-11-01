@@ -977,11 +977,6 @@ stage = "test"
 type = "unit-test"
 layers = ["cli"]
 
-[[claim.evidence]]
-stage = "test"
-type = "scenario-test"
-layers = ["cli"]
-
 [[claim]]
 id = "annotation-ts-test-call"
 subjects = ["annotation-reading", "builtin-adapter"]
