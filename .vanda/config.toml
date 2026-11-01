@@ -52,3 +52,8 @@ base = "main"
 paths = ["web/e2e/**/*.spec.ts"]
 adapter = "playwright"
 types = ["scenario-test"]
+
+[[annotation]]
+paths = ["cmd/vanda/testdata/expect/*.exp"]
+adapter = "expect"
+types = ["scenario-test"]

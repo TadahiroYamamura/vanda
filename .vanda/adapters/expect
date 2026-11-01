@@ -1,0 +1,51 @@
+#!/usr/bin/env node
+// vanda の .vanda/adapters/ のアダプタ（受け渡しの形は docs/formats.md の「.vanda/adapters/ のアダプタ」）。
+// Expect のシナリオ（cmd/vanda/testdata/expect/*.exp）のアノテーションを読む。読み方は組込みの txtar のアダプタに倣う:
+// - 書けるのは、ファイルの冒頭のコメント（最初の命令の行より前の、# で始まる行）の中の @vanda:evidence だけ。ファイル全体に付く
+// - 名前は、ファイルの名前から .exp を除いたもの
+// - 冒頭より後のコメントと、ほかの種類は誤り。コメントの外（命令の引数や文字列の中）の @vanda: は、アノテーションでないと答える
+"use strict";
+
+const fs = require("fs");
+const path = require("path");
+
+function main() {
+  const req = JSON.parse(fs.readFileSync(0, "utf8"));
+  const rows = fs.readFileSync(req.path, "utf8").split("\n");
+  // 冒頭のコメントは、1 行目の #! と空行をはさんでよく、最初の命令の行（# でも空でもない行）の前で終わる
+  let headEnd = rows.length;
+  for (let i = 0; i < rows.length; i++) {
+    const t = rows[i].trim();
+    if (t !== "" && !t.startsWith("#")) {
+      headEnd = i;
+      break;
+    }
+  }
+  const name = path.basename(req.path).replace(/\.exp$/, "");
+  const names = [];
+  const errors = [];
+  for (const { line: l } of req.annotations) {
+    const t = rows[l - 1].trim();
+    const at = `${req.path}:${l}: `;
+    if (!t.startsWith("#")) {
+      names.push({ line: l, annotation: false });
+      continue;
+    }
+    if (l - 1 >= headEnd) {
+      errors.push(at + "アノテーションが、ファイルの冒頭のコメント（最初の命令の行より前）にありません。ファイルの冒頭のコメントに移してください");
+      continue;
+    }
+    if (!/@vanda:evidence\b/.test(t)) {
+      errors.push(at + "Expect のシナリオには、@vanda:evidence だけを書けます。種類を直すか、アノテーションを別のファイルに移してください");
+      continue;
+    }
+    names.push({ line: l, name });
+  }
+  if (errors.length > 0) {
+    process.stderr.write(errors.join("\n") + "\n");
+    process.exit(1);
+  }
+  process.stdout.write(JSON.stringify({ names }) + "\n");
+}
+
+main();
