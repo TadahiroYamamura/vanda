@@ -280,13 +280,15 @@ type initSession struct {
 	vt     vtScreen
 	stderr bytes.Buffer
 	done   chan struct{}
-	err    error
+	// readDone は、擬似端末の出力を読み切った（vanda が終わって読めなくなった）ときに閉じる
+	readDone chan struct{}
+	err      error
 }
 
 // startInit は、標準入力と標準出力を擬似端末にして vanda init を動かす。標準エラーは別に受ける。
 func startInit(t *testing.T, bin, dir string, env []string) *initSession {
 	t.Helper()
-	s := &initSession{t: t, done: make(chan struct{})}
+	s := &initSession{t: t, done: make(chan struct{}), readDone: make(chan struct{})}
 	s.cmd = exec.Command(bin, "init")
 	s.cmd.Dir = dir
 	s.cmd.Env = append(append([]string(nil), env...), "TERM=xterm-256color")
@@ -297,6 +299,7 @@ func startInit(t *testing.T, bin, dir string, env []string) *initSession {
 	}
 	s.ptmx = ptmx
 	go func() {
+		defer close(s.readDone)
 		buf := make([]byte, 4096)
 		for {
 			n, err := ptmx.Read(buf)
@@ -392,7 +395,7 @@ func (s *initSession) waitFor(what string, cond func(string) bool) string {
 			s.t.Fatalf("%s を待ったが、%v たってもならない\n--- 画面\n%s\n--- 標準エラー\n%s", what, waitLimit, sc, s.stderr.String())
 		}
 		if s.finished() {
-			time.Sleep(50 * time.Millisecond) // 終わった後に残った出力を読み切る
+			s.drain()
 			if sc := s.screen(); cond(sc) {
 				return sc
 			}
@@ -508,6 +511,16 @@ func (s *initSession) waitField(what, keyword string) initField {
 	return f
 }
 
+// drain は、vanda が終わった後に、擬似端末に残った出力を読み切るまで待つ。
+func (s *initSession) drain() {
+	s.t.Helper()
+	select {
+	case <-s.readDone:
+	case <-time.After(waitLimit):
+		s.t.Fatalf("vanda init が終わった後も、擬似端末の出力が読み終わらない")
+	}
+}
+
 // wait は、vanda init が終わるのを待ち、終了コードを返す。
 func (s *initSession) wait() int {
 	s.t.Helper()
@@ -516,7 +529,7 @@ func (s *initSession) wait() int {
 	case <-time.After(waitLimit):
 		s.t.Fatalf("vanda init が終わらない\n--- 画面\n%s", s.screen())
 	}
-	time.Sleep(50 * time.Millisecond) // 終わった後に残った出力を読み切る
+	s.drain()
 	var exitErr *exec.ExitError
 	if errors.As(s.err, &exitErr) {
 		return exitErr.ExitCode()
