@@ -4,7 +4,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { spawn, execFileSync, type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { chmodSync, mkdtempSync, writeFileSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -214,6 +214,8 @@ async function agreeAll(page: Page, items: string[]) {
 const items = ["task-id-unique", "task-title-required", "e2e/add-task.txtar"];
 
 // @vanda:evidence context-base-always-shown
+// @vanda:evidence agree-on-screen
+// @vanda:evidence review-numbering
 test("ブランチのコミットからストーリーが決まるブランチで一覧を見て全部に合意するとvanda checkの合意の審査が通る", async ({ page }) => {
   expect(repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main").code, "合意する前から審査が通っている").toBe(1);
   await page.goto(serve.url + "/");
@@ -280,6 +282,7 @@ const routes = [
 
 for (const v of states) {
   for (const route of routes) {
+      // @vanda:evidence back-restores-state
       test(`${v.name}選んだ約束で${route.name}ストーリーのレビューへ戻ると行く前と同じ状態に戻る`, async ({ page }) => {
         // シナリオに task-id-unique のエビデンスを付け、約束の文も変える。release は、このコミットの直前から分かれたことに
         // する（release と比べても task-id-unique が一覧に出て、main と比べたときとは一覧が変わる）
@@ -469,6 +472,7 @@ const pages = [
 ];
 
 for (const pg of pages) {
+  // @vanda:evidence claim-at-commit
   test(`${pg.name}で由来の各コミットを選ぶとそのコミットの時点の約束の中身が出る`, async ({ page }) => {
     commitV3(repo);
     repo.write(".vanda/promises.toml", promisesAt(v4));
@@ -510,6 +514,7 @@ for (const pg of pages) {
     await expect(page.getByText("データベース")).toHaveCount(0);
   });
 
+  // @vanda:evidence claim-at-commit
   test(`${pg.name}で約束を変える前の合意の記録を選ぶと今の中身でなく合意を書いたコミットの時点の中身が出る`, async ({ page }) => {
     commitV3(repo);
     // v3 のときに画面で合意し、その後に v4 へ変える
@@ -722,6 +727,7 @@ function decorateAgreements(r: Repo) {
   commit(r, "#24 合意の記録にコメントを足す");
 }
 
+// @vanda:evidence revoke-on-screen
 test("合意済の約束で合意を取り消すとストーリーの今の中身への合意の記録だけが1つのコミットで消え提案中に戻り審査で止まりもう一度合意すると通る", async ({ page }) => {
   decorateAgreements(repo);
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
@@ -856,6 +862,7 @@ async function agreeTaskIdUnique(page: Page) {
   expect((await res).status()).toBe(200);
 }
 
+// @vanda:evidence review-story-choice
 test("レビュー単位がブランチでブランチのコミットからストーリーが1つに決まるときは選ぶ欄を出さずに示しそのストーリーで合意できる", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main");
   await expect(page.getByText(/ストーリー\s*[:：]\s*#24/).first(), "決まったストーリーが示されない").toBeVisible();
@@ -864,6 +871,7 @@ test("レビュー単位がブランチでブランチのコミットからス�
   expect(repo.git("log", "-1", "--format=%s")).toContain("#24 で");
 });
 
+// @vanda:evidence review-story-choice
 test("レビュー単位がブランチでブランチに2つ以上のストーリーのコミットがあるときはそのブランチのストーリーだけを1度ずつ選ばせる", async ({ page }) => {
   repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "#30 で直す");
   await page.goto(serve.url + "/?view=branch&base=main");
@@ -872,6 +880,7 @@ test("レビュー単位がブランチでブランチに2つ以上のストー�
   await expect.poll(async () => (await storyChoices(page)).sort()).toEqual(["#24", "#30"]);
 });
 
+// @vanda:evidence review-story-choice
 test("レビュー単位がブランチでストーリーのIDを持つコミットがないときはすべてのストーリーから1度ずつ選ばせる", async ({ page }) => {
   // story-24 から ID のないコミットだけのブランチを作り、story-24 と比べる（設定の既定のベースブランチ main とは別）
   repo.git("switch", "-q", "-c", "plain");
@@ -1385,6 +1394,7 @@ async function expectFileStates(page: Page, scenario: "提案中" | "合意済",
 }
 
 for (const pg of pages) {
+  // @vanda:evidence found-file-state-shown
   test(`${pg.name}の実際のエビデンスのシナリオには合意の状態のアイコンが付き合意すると合意済に合意してから変えると提案中になりGoの単体テストには付かない`, async ({ page }) => {
     withGoEvidence(repo);
     await pg.open(page);
@@ -1411,4 +1421,96 @@ test("エビデンスのファイルの画面で合意して戻るとエビデ�
   await agreeHere(page, /\/files\?/);
   await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
   await expectFileStates(page, "合意済", "ファイルの画面で合意して戻った後");
+});
+
+// CL-01: 約束の詳細に、文・理由・条件・レイヤーを示す（レイヤーは設定の名前で）
+// @vanda:evidence claim-detail-fields
+test("約束の詳細の画面に文と理由と条件とレイヤーの名前が出る", async ({ page }) => {
+  repo.write(".vanda/promises.toml", promisesAt(v4));
+  commit(repo, "#24 理由と条件を書く");
+  await page.goto(serve.url + "/claims/task-id-unique");
+  for (const t of [v4.statement, v4.rationale!, v4.condition!, "モデル"]) {
+    await expect(page.getByText(t, { exact: false }).first(), `約束の詳細に「${t}」が出ない`).toBeVisible();
+  }
+});
+
+// RV-05: 変更したものは、変更前と変更後の中身を示す（約束は文の差分、ファイルは行）
+// @vanda:evidence review-before-after
+test("レビューの画面で変えた約束とファイルの変更前と変更後の中身が出る", async ({ page }) => {
+  await page.goto(serve.url + "/");
+  await select(page, "task-id-unique");
+  // #24 で、文に「、すべてのタスクを通して」を足した。足した所は ins に出て、変わらない所も見える
+  await expect(page.locator("ins").filter({ hasText: "すべてのタスクを通して" }).first(), "文の足した所が出ない").toBeVisible();
+  await expect(page.getByText("重ならない", { exact: false }).first()).toBeVisible();
+  await select(page, "e2e/add-task.txtar");
+  // シナリオの 2 行目を「exec」から「! exec」に変えた。変更前と変更後の行が両方出る
+  await expect(page.getByText("! exec vanda-task add a").first(), "ファイルの変更後の行が出ない").toBeVisible();
+  await expect(page.getByText(/^exec vanda-task add a$/).first(), "ファイルの変更前の行が出ない").toBeVisible();
+});
+
+// RV-14: そのストーリーが合意した後に中身が変わったものを「合意が外れた」と示す
+// @vanda:evidence review-detached-shown
+test("ストーリーが合意した約束を変えると一覧に合意が外れたと出る", async ({ page }) => {
+  await page.goto(serve.url + "/");
+  await agreeAll(page, ["task-id-unique"]);
+  const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
+  repo.write(".vanda/promises.toml", text.replace("すべてのタスクを通して重ならない", "どのタスクとも重ならない"));
+  commit(repo, "#24 文を直す");
+  await page.reload();
+  await expect(page.getByText(/合意が外れた/).first(), "合意が外れたと出ない").toBeVisible();
+  await select(page, "task-id-unique");
+  await expect(page.getByText(/#24/).first()).toBeVisible();
+});
+
+// RV-10・RV-02: 一覧は約束のレイヤー・用語と機能・ファイルのまとまりに分け、たたむとたたんだ件数を示す。1 件ごとに通し番号と総数
+// @vanda:evidence review-groups-fold
+// @vanda:evidence review-numbering
+test("一覧はまとまりに分かれ通し番号と総数が出てまとまりをたたむと件数が出て中が隠れる", async ({ page }) => {
+  await page.goto(serve.url + "/");
+  await expect(page.getByText(/全 3 件/).first()).toBeVisible();
+  for (const [no, name] of [["1", "task-id-unique"], ["2", "task-title-required"], ["3", "e2e/add-task.txtar"]]) {
+    await expect(listItem(page, name), `${name} に通し番号 ${no} がない`).toContainText(no);
+  }
+  const group = page.getByRole("button", { name: /約束.*2 件/ }).first();
+  await expect(group, "約束のまとまりの見出し（2 件）がない").toBeVisible();
+  await group.click();
+  await expect(page.getByRole("listitem").filter({ hasText: "task-title-required" }), "たたんでも約束が見えている").toHaveCount(0);
+  await expect(group, "たたんだまとまりに件数が出ていない").toContainText("2 件");
+  await expect(listItem(page, "e2e/add-task.txtar"), "ほかのまとまりまで隠れた").toBeVisible();
+  await group.click();
+  await expect(listItem(page, "task-title-required")).toBeVisible();
+});
+
+// CM-08: ストーリーの置き場所が設定にあれば、題・本文・添付ファイルへのリンクを出す。置き場所は .vanda/adapters/ のアダプタにする
+// @vanda:evidence story-shown-on-screen
+test("ストーリーの置き場所のアダプタから読んだ題と本文と添付ファイルへのリンクがレビューの画面に出る", async ({ page }) => {
+  const cfg = readFileSync(join(repo.root, ".vanda/config.toml"), "utf8");
+  repo.write(".vanda/config.toml", cfg + '\n[story]\nadapter = "story"\n');
+  repo.write(".vanda/adapters/story", `#!/bin/sh
+cat >/dev/null
+printf '%s' '{"title":"タスクの ID を重ならないようにする","body":"本文の **太字** です","url":"https://example.com/issues/24","attachments":[{"name":"画面の案","url":"https://example.com/a.png"}]}'
+`);
+  chmodSync(join(repo.root, ".vanda/adapters/story"), 0o755);
+  commit(repo, "#24 ストーリーの置き場所を設定する");
+  await page.goto(serve.url + "/");
+  await expect(page.getByText("タスクの ID を重ならないようにする").first(), "ストーリーの題が出ない").toBeVisible();
+  await expect(page.getByText("太字").first(), "ストーリーの本文が出ない").toBeVisible();
+  await expect(page.getByRole("link", { name: /画面の案/ }).first()).toHaveAttribute("href", "https://example.com/a.png");
+});
+
+// CL-07: TLA+ の定義は記号で見せ、コピーしたときはリポジトリの文字のまま（ASCII）にする
+// @vanda:evidence tla-copy-ascii
+test("約束の詳細の画面でTLAの定義をコピーするとリポジトリの文字のままになる", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  const def = "Unique == \\A a, b \\in Ids : a = b => a = b";
+  const cfg = readFileSync(join(repo.root, ".vanda/config.toml"), "utf8");
+  repo.write(".vanda/config.toml", cfg.replace("[gui]", '[[annotation]]\npaths = ["spec/*.tla"]\nadapter = "tla"\ntypes = ["model-check"]\n\n[gui]'));
+  repo.write("spec/Task.tla", "---- MODULE Task ----\nIds == {1, 2}\n\n\\* @vanda:claim task-id-unique\n" + def + "\n====\n");
+  repo.write(".vanda/promises.toml", promisesAt(v4));
+  commit(repo, "#24 モデルを足す");
+  await page.goto(serve.url + "/claims/task-id-unique");
+  await expect(page.getByText("∀", { exact: false }).first(), "TLA+ の定義が記号で出ていない").toBeVisible();
+  await page.getByRole("button", { name: /コピー/ }).first().click();
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText()), { message: "コピーした文字がリポジトリの文字のままでない" }).toContain(def);
+  expect(await page.evaluate(() => navigator.clipboard.readText())).not.toMatch(/[∀∈⇒≜]/);
 });

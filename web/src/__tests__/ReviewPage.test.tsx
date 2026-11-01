@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { App } from "../App";
 import type { Entry } from "../api";
-import { apiError, claimEntry, ctx, defaultHandlers, fileEntry, requests, review, server, story } from "./fixtures";
+import { apiError, claimDetail, claimEntry, ctx, defaultHandlers, fileEntry, requests, review, server, story } from "./fixtures";
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterAll(() => server.close());
@@ -90,11 +90,18 @@ describe("RV-01・RV-02・RV-05 一覧と中身", () => {
     expect(await screen.findByText(/c-modified の後の文/)).toBeTruthy();
   });
 
-  it("合意の状態を提案中と合意済で示す", async () => {
-    open([claimEntry(1, "c-proposed"), claimEntry(2, "c-agreed", { state: "agreed" })]);
-    await screen.findAllByText(/c-agreed/);
-    expect(screen.getAllByText(/提案中/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/合意済/).length).toBeGreaterThan(0);
+  // @vanda:evidence review-state-shown
+  it("一覧の1件ごとに合意の状態を提案中か合意済かで示す", async () => {
+    const states = [["proposed", "提案中"], ["agreed", "合意済"]] as const;
+    open(states.flatMap(([st], i) => [claimEntry(2 * i + 1, `c-${st}`, { state: st }), fileEntry(2 * i + 2, `e2e/${st}.txtar`, { state: st })]));
+    for (const [st, label] of states) {
+      for (const name of [`c-${st}`, `e2e/${st}.txtar`]) {
+        const [item] = await screen.findAllByText(name);
+        const li = item.closest("li")!;
+        expect(li, `${name} の一覧の 1 件がない`).toBeTruthy();
+        for (const [, l] of states) expect((li.textContent ?? "").includes(l), `${name} の「${l}」`).toBe(l === label);
+      }
+    }
   });
 
   // @vanda:evidence tla-math-symbols
@@ -125,6 +132,7 @@ describe("RV-10 長い一覧をたたむ", () => {
 });
 
 describe("RV-06 合意する", () => {
+  // @vanda:evidence agree-on-screen
   it("合意すると見せていた中身の指紋とストーリーを送り一覧を読み直す", async () => {
     const e = claimEntry(1, "task-id-unique");
     open([e]);
@@ -148,6 +156,7 @@ describe("RV-06 合意する", () => {
     await waitFor(() => expect(reviewRequests().length).toBeGreaterThan(before));
   });
 
+  // @vanda:evidence agree-refusal-shown
   it("合意を断られたら理由を出す", async () => {
     open([claimEntry(1, "task-id-unique")]);
     server.use(http.post("/api/agree", () => apiError(409, "約束リストに書きかけの変更がある。先にコミットする")));
@@ -210,6 +219,7 @@ describe("RV-13・RV-14 レビュー単位と外れた合意", () => {
   });
 
   // @vanda:evidence context-default-base
+  // @vanda:evidence context-base-always-shown
   it("今比べているベースブランチを示し選び直すとそのベースブランチで読み直す", async () => {
     open([claimEntry(1, "c-one")]);
     await screen.findAllByText(/c-one/);
@@ -223,6 +233,7 @@ describe("RV-13・RV-14 レビュー単位と外れた合意", () => {
 });
 
 describe("CM-08 ストーリーの置き場所", () => {
+  // @vanda:evidence story-shown-on-screen
   it("ストーリーの題と本文と添付ファイルへのリンクを見せる", async () => {
     open([claimEntry(1, "c-one")]);
     expect(await screen.findByText(/タスクの ID を重ならないようにする/)).toBeTruthy();
@@ -231,6 +242,7 @@ describe("CM-08 ストーリーの置き場所", () => {
     expect(link.href).toBe("https://github.com/user-attachments/assets/1");
   });
 
+  // @vanda:evidence story-error-shown-on-screen
   it("ストーリーの置き場所の誤りは黙って空にせず理由を出す", async () => {
     open([claimEntry(1, "c-one")], {}, http.get("/api/story", () => apiError(502, "Bad credentials")));
     expect(await screen.findByText(/Bad credentials/)).toBeTruthy();
@@ -246,6 +258,7 @@ describe("CM-08 ストーリーの置き場所", () => {
     expect(document.body.textContent).toMatch(/置き場所/);
   });
 
+  // @vanda:evidence review-error-shown
   it("一覧を読めないときは理由を出す", async () => {
     server.use(http.get("/api/context", () => HttpResponse.json(ctx)));
     server.use(http.get("/api/story", () => HttpResponse.json(story)));
@@ -279,6 +292,7 @@ describe("CM-08 ストーリーの本文の Markdown", () => {
     '<img src="x" onerror="window.__pwned = true">',
   ].join("\n");
 
+  // @vanda:evidence story-body-markdown
   it("本文の見出しと箇条書きと表とコードとリンクを描き生のHTMLは要素にしない", async () => {
     open([claimEntry(1, "c-one")], {}, http.get("/api/story", () => HttpResponse.json({ ...story, body })));
     await screen.findByText(/タスクの ID を重ならないようにする/);
@@ -300,6 +314,7 @@ describe("CM-08 ストーリーの本文の Markdown", () => {
     expect(danger?.getAttribute("href") ?? "").toBe("");
   });
 
+  // @vanda:evidence story-links-new-tab
   it("本文のリンクと置き場所で開くリンクと添付のリンクは新しいタブで開き開いた先から戻れないようにする", async () => {
     open([claimEntry(1, "c-one")], {}, http.get("/api/story", () => HttpResponse.json({ ...story, body: "[資料](https://example.com/doc)" })));
     await screen.findByText(/タスクの ID を重ならないようにする/);
@@ -419,5 +434,164 @@ describe("RV-05 変更前と変更後の差分", () => {
     for (const el of document.querySelectorAll("del, ins")) expect(el.textContent).not.toMatch(/タスクの ID は|重ならない/);
     // 変わっていない項目は、中身を 1 回だけ出す（変更前と変更後の 2 列に分けない）
     expect(bodyText().split("消す相手を決めるため").length - 1, "変わっていない理由が 1 回でない").toBe(1);
+  });
+});
+
+describe("RV-16・RV-17 1 件の詳細の由来と合意の履歴・取り消し", () => {
+  // @vanda:evidence detail-origin-and-history
+  it("約束の1件の詳細に由来のコミットと合意の履歴を見せる", async () => {
+    open([claimEntry(1, "task-id-unique")], {}, http.get("/api/claims/:id", () =>
+      HttpResponse.json(claimDetail({
+        origin: [{ commit: "1".repeat(40), date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" }],
+        agreements: [{ user: { name: "前に合意した人", email: "a@example.com" }, agreedAt: "2026-10-02T12:00:00+09:00", story: "#1", fingerprint: "sha256:" + "b".repeat(64), current: false }],
+      })),
+    ));
+    await openEntry(/task-id-unique/);
+    await waitFor(() => expect(bodyText()).toContain("#1 はじめの約束を置く"));
+    expect(bodyText()).toContain("前に合意した人");
+  });
+
+  // @vanda:evidence revoke-on-screen
+  it("合意済の件で取り消すと今の中身の指紋とストーリーとベースブランチで取り消しを求め一覧を読み直す", async () => {
+    const e = claimEntry(1, "task-id-unique", { state: "agreed", revoke: { possible: true, reason: null, others: [] } });
+    let posted: unknown = null;
+    open([e], {}, http.post("/api/revoke", async ({ request }) => {
+      posted = await request.json();
+      return HttpResponse.json({ commit: "c".repeat(40), stillAgreed: false, removed: 1 });
+    }));
+    await openEntry(/task-id-unique/);
+    const button = await screen.findByRole("button", { name: /取り消/ });
+    const before = reviewRequests().length;
+    await userEvent.setup().click(button);
+    await waitFor(() => expect(posted).toMatchObject({ kind: "claim", id: "task-id-unique", fingerprint: e.fingerprint, story: "#24", base: "main" }));
+    await waitFor(() => expect(reviewRequests().length).toBeGreaterThan(before));
+  });
+
+  // @vanda:evidence revoke-on-screen
+  it("取り消せない件には取り消しのボタンを出さない", async () => {
+    open([claimEntry(1, "task-id-unique", { state: "agreed", revoke: { possible: false, reason: "ほかの人が書いた合意です", others: [] } })]);
+    await openEntry(/task-id-unique/);
+    await screen.findAllByText(/合意済/);
+    expect(screen.queryByRole("button", { name: /取り消/ })).toBeNull();
+  });
+});
+
+describe("RV-06 合意した後に読み直す", () => {
+  // @vanda:evidence agree-on-screen-reloads
+  it("画面で合意した後に一覧を読み直し合意した後の状態を見せる", async () => {
+    let agreed = false;
+    server.use(...defaultHandlers(review([])));
+    server.use(
+      http.get("/api/review", () => HttpResponse.json(review([claimEntry(1, "task-id-unique", { state: agreed ? "agreed" : "proposed" })]))),
+      http.post("/api/agree", () => {
+        agreed = true;
+        return HttpResponse.json({ commit: "c".repeat(40), agreement: {} });
+      }),
+    );
+    render(<App />);
+    const user = userEvent.setup();
+    const [item] = await screen.findAllByText(/task-id-unique/);
+    const li = () => screen.getAllByText(/task-id-unique/).map((el) => el.closest("li")).find((x) => x)!;
+    expect(li().textContent).toContain("提案中");
+    if (!screen.queryAllByRole("button", { name: /合意する/ })[0]) await user.click(item);
+    await user.click(await screen.findByRole("button", { name: /合意する/ }));
+    await waitFor(() => expect(li().textContent, "合意した後の一覧が合意済にならない").toContain("合意済"));
+    expect(li().textContent).not.toContain("提案中");
+  });
+});
+
+describe("RV-13 ストーリーの示し方", () => {
+  const storySelect = () =>
+    screen.queryAllByRole("combobox").find((s) => Array.from((s as HTMLSelectElement).options).some((o) => o.value.startsWith("#"))) as HTMLSelectElement | undefined;
+  const optionIds = (s: HTMLSelectElement) => Array.from(s.options).map((o) => o.value).filter((v) => v !== "");
+
+  // @vanda:evidence review-story-choice
+  it("ブランチのコミットからストーリーが1つに決まれば選ばせずに示し2つ以上ならブランチのストーリーから見つからなければすべてのストーリーから選ばせる", async () => {
+    const cases = [
+      { name: "1 つに決まる", over: { storyChoice: "fixed", story: "#24", branchStories: ["#24"] }, url: "/?view=branch&base=main", want: null },
+      { name: "2 つ以上", over: { storyChoice: "branch", story: null, branchStories: ["#30", "#31"] }, url: "/?view=branch&base=main", want: ["#30", "#31"] },
+      { name: "見つからない", over: { storyChoice: "all", story: null, branchStories: [] }, url: "/?view=branch&base=main", want: ctx.stories.map((s) => s.id) },
+    ] as const;
+    for (const c of cases) {
+      window.history.pushState({}, "", c.url);
+      open([claimEntry(1, "c-one")], c.over);
+      await screen.findAllByText(/c-one/);
+      const sel = storySelect();
+      if (c.want === null) {
+        expect(sel, `${c.name}: 選ぶ欄が出ている`).toBeUndefined();
+        expect(bodyText(), `${c.name}: 決まったストーリーを示さない`).toContain("#24");
+      } else {
+        expect(sel, `${c.name}: 選ぶ欄がない`).toBeTruthy();
+        expect(optionIds(sel!).sort(), `${c.name}: 選べるストーリー`).toEqual([...c.want].sort());
+      }
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+});
+
+describe("RV-02 一覧の 1 件を選ぶ", () => {
+  // @vanda:evidence entry-select-anywhere
+  it("一覧の1件は名前のほか番号と状態の札とフラグの札と枠の端を押しても選ばれる", async () => {
+    open([claimEntry(1, "c-one"), claimEntry(2, "c-two", { flags: ["ai-proposal"] })]);
+    const user = userEvent.setup();
+    const nameButton = async (id: string) => (await screen.findAllByText(id)).map((el) => el.closest("button")).find((b) => b?.closest("li"))!;
+    const frame = async () => (await nameButton("c-two")).closest("li")! as HTMLElement;
+    const spots: [string, () => Promise<HTMLElement>][] = [
+      ["番号", async () => within(await frame()).getByText("2", { exact: true })],
+      ["状態の札", async () => within(await frame()).getByText(/提案中/)],
+      ["フラグの札", async () => within(await frame()).getAllByText(/^AI\s?案/, { selector: "*:not([role=tooltip])" })[0]],
+      ["枠の端", frame],
+    ];
+    for (const [spot, target] of spots) {
+      await user.click(await nameButton("c-one"));
+      await waitFor(() => expect((async () => (await nameButton("c-one")).getAttribute("aria-current"))()).resolves.toBe("true"));
+      await user.click(await target());
+      await waitFor(async () => expect((await nameButton("c-two")).getAttribute("aria-current"), `${spot}を押しても選ばれない`).toBe("true"));
+    }
+  });
+});
+
+describe("RV-18 詳細の画面から戻る", () => {
+  // レビュー単位がストーリーのときはベースブランチを選ぶ所が出ないので、組は 3 つ。戻る経路（約束の詳細・ファイルの画面）と全部回す
+  const states = [
+    { name: "ブランチでベースブランチがmain", url: "/?view=branch&base=main&story=%2324", over: {} },
+    { name: "ブランチでベースブランチがrelease", url: "/?view=branch&base=release&story=%2324", over: { base: "release" } },
+    { name: "ストーリー", url: "/?view=story&story=%2324", over: { view: "story", base: null, mergeBase: null } },
+  ];
+  const routes = [
+    { name: "約束の詳細", entry: "task-id-unique", link: "約束の詳細を開く" },
+    { name: "ファイルの画面", entry: "e2e/add-task.txtar", link: "ファイルの画面を開く" },
+  ];
+  // @vanda:evidence back-restores-state
+  it("約束の詳細とファイルの画面からストーリーのレビューへ戻ると行く前と同じベースブランチとレビュー単位とストーリーと選んだ件に戻る", async () => {
+    for (const st of states) {
+      for (const rt of routes) {
+        const where = `${st.name}・${rt.name}`;
+        window.history.pushState({}, "", st.url);
+        requests.length = 0;
+        open([claimEntry(1, "task-id-unique"), fileEntry(2, "e2e/add-task.txtar"), claimEntry(3, "c-other")], st.over,
+          http.get("/api/claims/:id", () => HttpResponse.json(claimDetail())),
+          http.get("/api/file", () => HttpResponse.json({ path: "e2e/add-task.txtar", text: "exec vanda add 買い物\n" })));
+        const user = userEvent.setup();
+        const nameButton = async (id: string) => (await screen.findAllByText(id)).map((el) => el.closest("button")).find((b) => b?.closest("li"))!;
+        await user.click(await nameButton(rt.entry));
+        await waitFor(async () => expect((await nameButton(rt.entry)).getAttribute("aria-current")).toBe("true"));
+        const before = new URLSearchParams(window.location.search);
+        const reviewBefore = reviewRequests().at(-1)!.url.searchParams;
+        await user.click(await screen.findByRole("link", { name: rt.link }));
+        await user.click(await screen.findByRole("link", { name: "ストーリーのレビューへ戻る" }));
+        await waitFor(async () => expect((await nameButton(rt.entry)).getAttribute("aria-current"), `${where}: 選んだ件に戻らない`).toBe("true"));
+        expect(window.location.pathname).toBe("/");
+        const after = new URLSearchParams(window.location.search);
+        // レビュー単位がストーリーのときは、ベースブランチを選ぶ所が出ない（画面の状態に入らない）ので比べない
+        for (const k of before.get("view") === "story" ? ["view", "story"] : ["view", "base", "story"]) {
+          expect(after.get(k), `${where}: 画面の ${k}`).toBe(before.get(k));
+          expect(reviewRequests().at(-1)!.url.searchParams.get(k), `${where}: 読み直した一覧の ${k}`).toBe(reviewBefore.get(k));
+        }
+        cleanup();
+        server.resetHandlers();
+      }
+    }
   });
 });

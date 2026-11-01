@@ -57,6 +57,27 @@ describe("ファイルの行の差分", () => {
     for (const i of [0, 3, 4]) expect(rows[i].querySelector(".diff-part:is(del, ins)")).toBeNull();
   });
 
+  // @vanda:evidence diff-whitespace-marked
+  it("空白だけを足した所と消した所にも足した消した印を付ける", () => {
+    // 足した空白・消した空白は、半角の続いた空白・全角の空白・タブを全部回す
+    const spaces = ["  ", "　", "\t"];
+    const ws: DiffLine[] = spaces.flatMap((sp, i) => [
+      { op: "delete", before: i + 1, after: null, text: `a${sp}b`, parts: [{ op: "equal", text: "a" }, { op: "delete", text: sp }, { op: "equal", text: "b" }] },
+      { op: "insert", before: null, after: i + 1, text: `c${sp}d`, parts: [{ op: "equal", text: "c" }, { op: "insert", text: sp }, { op: "equal", text: "d" }] },
+    ] as DiffLine[]);
+    const { container } = render(<LineDiff lines={ws} lang={null} />);
+    const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>("tr.diff-line"));
+    expect(rows.length).toBe(ws.length);
+    spaces.forEach((sp, i) => {
+      const del = rows[2 * i];
+      const ins = rows[2 * i + 1];
+      expect(Array.from(del.querySelectorAll("del.diff-part")).map((e) => e.textContent), `${JSON.stringify(sp)} を消した所`).toEqual([sp]);
+      expect(Array.from(ins.querySelectorAll("ins.diff-part")).map((e) => e.textContent), `${JSON.stringify(sp)} を足した所`).toEqual([sp]);
+      expect(del.querySelector("td.diff-text")?.textContent).toBe(`a${sp}b`);
+      expect(ins.querySelector("td.diff-text")?.textContent).toBe(`c${sp}d`);
+    });
+  });
+
   // @vanda:evidence review-file-diff-lines
   it("改行のない最後の行にだけ印を付ける", () => {
     const { container } = render(<LineDiff lines={lines} lang={null} />);
@@ -103,6 +124,7 @@ describe("色付け", () => {
     expect(copyContents(pre!).replace(/\n$/, "")).toBe(tla.replace(/\n$/, ""));
   }, 20000);
 
+  // @vanda:evidence highlight-fallback
   it("色付けを読み込めないときも文字は全部見える", async () => {
     // 時間で待たず、色付けが断られたことを画面の部品が受け取るまで待つ。断りを見るこちらの then を先に付けるので、
     // それが済んだ後に act の中でもう一度待てば、画面の部品の側の後始末も済んでいる
