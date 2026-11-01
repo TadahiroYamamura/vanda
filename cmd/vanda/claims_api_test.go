@@ -17,6 +17,18 @@ type claimFound struct {
 	Line    int     `json:"line"`
 	Name    string  `json:"name"`
 	Text    *string `json:"text"`
+	State   *string `json:"state"`
+}
+
+// foundStates は、エビデンスの found の場所ごとの合意の状態（null は ""）を返す。
+func foundStates(d claimDetail) map[string]string {
+	out := map[string]string{}
+	for _, e := range d.Evidence {
+		for _, f := range e.Found {
+			out[f.File] = str(f.State)
+		}
+	}
+	return out
 }
 
 type claimDetail struct {
@@ -139,6 +151,12 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 		}
 		checkFound(t, w.typ, g.Found, w.found)
 	}
+	// 合意の対象のファイルは、今の中身の指紋に合う合意の記録があれば agreed、なければ proposed。Go のテストは null。
+	// シナリオは #24 で変えたので、#1 の合意は今の中身に合わない。TLA+ と SQL は #1 のまま
+	wantStates := map[string]string{"e2e/add-task.txtar": "proposed", "spec/Task.tla": "agreed", "db/schema.sql": "agreed", "internal/task/task_test.go": ""}
+	if got := foundStates(got); !reflect.DeepEqual(got, wantStates) {
+		t.Errorf("found の合意の状態: %v（思ったもの %v）", got, wantStates)
+	}
 
 	first := r.git("rev-parse", "main")
 	changed := r.git("log", "-1", "--format=%H", "--fixed-strings", "--grep=タスクの ID の約束を変え", reviewBranch)
@@ -179,6 +197,28 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 	// 合意の履歴は合意した日時の新しい順。agreementTOML はどれも同じ日時なので、ファイルで後に書いた #24 の合意が先
 	if len(again.Agreements) != 2 || !again.Agreements[0].Current || again.Agreements[0].Story != reviewStory || again.Agreements[1].Current {
 		t.Errorf("合意した後の合意の履歴: %+v", again.Agreements)
+	}
+
+	// シナリオの今の中身に、#24 でないストーリー（#30）で合意しても、合意の状態は agreed になる（ストーリーによらない）
+	f, err = os.OpenFile(filepath.Join(r.Root, ".vanda", "agreements.toml"), os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = f.WriteString(agreementTOML("file", reviewFileFP, reviewFileFP, "e2e/add-task.txtar", "#30", reviewUserName, reviewUserEmail))
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.git("commit", "-q", "-am", "#30 でシナリオに合意する")
+	var agreedFile claimDetail
+	if code, msg := s.get("/api/claims/task-id-unique", &agreedFile); code != 200 {
+		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
+	}
+	wantStates["e2e/add-task.txtar"] = "agreed"
+	if got := foundStates(agreedFile); !reflect.DeepEqual(got, wantStates) {
+		t.Errorf("シナリオに合意した後の found の合意の状態: %v（思ったもの %v）", got, wantStates)
 	}
 }
 
