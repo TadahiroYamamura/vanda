@@ -220,7 +220,8 @@ function main() {
   for (const { line: l } of req.annotations) {
     const at = `${req.path}:${l}: `;
     if (!comments[l - 1].includes("@vanda:")) {
-      errors.push(at + "@vanda: が、コメントの外にあります。アノテーションは // か /* */ のコメントに書いてください");
+      // 文字列の中などコメントの外の @vanda: は、アノテーションでないと答える（組込みのアダプタと同じく数えない）
+      names.push({ line: l, annotation: false });
       continue;
     }
     let m = 0;
