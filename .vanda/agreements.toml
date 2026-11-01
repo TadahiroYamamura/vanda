@@ -6,3 +6,11 @@ path = "spec/Agreement.tla"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-02T01:41:34+09:00
 story = "#4"
+
+[[agreement]]
+kind = "claim"
+key = "agreed-when-fingerprint-matches"
+fingerprint = "sha256:a73bc4b1997a2c0c124681e4750592309b0f076aa6c2c9c362ad38f8379dabd9"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-02T01:41:50+09:00
+story = "#4"

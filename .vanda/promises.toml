@@ -675,7 +675,6 @@ id = "agreed-when-fingerprint-matches"
 subjects = ["rv-06", "agreement", "agreed", "proposed"]
 statement = "今の中身の指紋に合う合意の記録が 1 つでもあれば合意済、なければ提案中とする"
 layers = ["model", "cli"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
