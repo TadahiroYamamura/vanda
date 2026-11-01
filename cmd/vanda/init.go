@@ -125,6 +125,5 @@ func report(out io.Writer, root string, files [][2]string) error {
 	fmt.Fprintln(out, "\n次にすること:")
 	fmt.Fprintln(out, "  1. "+config.File+" に、約束のレイヤーを [[layer]] で書いてください（id・name・description）。")
 	fmt.Fprintf(out, "  2. CI で vanda check .vanda/checks/ci.toml --base %s を動かすよう、CI の設定に足してください。\n", cfg.GUIBase)
-	fmt.Fprintln(out, "  3. 作ったファイルを確かめて、コミットしてください（vanda init はコミットしません）。")
 	return nil
 }
