@@ -491,7 +491,7 @@ func Test画面で選べるもののストーリーの置き場所は設定の�
 	t.Parallel()
 	for _, c := range []struct{ conf, want string }{
 		{"\n[story]\nadapter = \"github\"\nrepository = \"owner/app\"\n", "github"},
-		// 利用者のアダプタは、その名前
+		// .vanda/adapters/ のアダプタは、その名前
 		{"\n[story]\nadapter = \"jira-story\"\nargs = [\"--project\", \"APP\"]\n", "jira-story"},
 	} {
 		t.Run(c.want, func(t *testing.T) {

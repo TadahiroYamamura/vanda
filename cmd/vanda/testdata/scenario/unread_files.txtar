@@ -1,5 +1,5 @@
 # CMD-10 読まれていないファイル: .vanda/ にあるのに、設定のどのパターンにも当たらないファイルがあると止まる。
-# .vanda/config.toml と .vanda/checks/*.toml と、利用者のアダプタの置き場所 .vanda/adapters/ の下は除く。
+# .vanda/config.toml と .vanda/checks/*.toml と、アダプタの置き場所 .vanda/adapters/ の下は除く。
 # パターンの ** は下のディレクトリにも当たる。
 
 exec git init -q -b main
@@ -30,7 +30,7 @@ stderr '\.vanda/sub/stray\.toml'
 ! stderr '(?m)^panic: '
 rm .vanda/sub
 
-# 利用者のアダプタの置き場所 .vanda/adapters/ の下は除く。TOML でも TOML でなくても、入れ子のディレクトリの下でも
+# アダプタの置き場所 .vanda/adapters/ の下は除く。TOML でも TOML でなくても、入れ子のディレクトリの下でも
 mkdir .vanda/adapters/nested/deep
 cp cases/adapter.sh .vanda/adapters/story-adapter
 cp cases/stray.toml .vanda/adapters/settings.toml

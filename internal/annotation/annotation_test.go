@@ -191,7 +191,7 @@ func TestReadはその言語のコメントの外にあるアノテーション�
 	}
 }
 
-func TestReadは利用者のアダプタとJSONで受け渡す(t *testing.T) {
+func TestReadはvanda_adaptersのアダプタとJSONで受け渡す(t *testing.T) {
 	root, files := setup(t, map[string]string{
 		"docs/a.md": "x\n<!-- @vanda:evidence a -->\n<!-- @vanda:evidence b -->\n",
 		"adapter.sh": `#!/bin/sh
@@ -211,7 +211,7 @@ esac
 	}
 }
 
-func TestReadは利用者のアダプタの失敗と返し漏れを誤りにする(t *testing.T) {
+func TestReadはvanda_adaptersのアダプタの失敗と返し漏れを誤りにする(t *testing.T) {
 	root, files := setup(t, map[string]string{
 		"docs/a.md":  "<!-- @vanda:evidence a -->\n<!-- @vanda:evidence b -->\n",
 		"docs/b.md":  "<!-- @vanda:evidence a -->\n",
@@ -272,7 +272,7 @@ func TestReadは言語ごとに決まった種類のほかを誤りにする(t *
 		}
 	}
 	if len(as) != 1 || as[0].File != "docs/a.md" {
-		t.Errorf("利用者のアダプタでは、どの種類も書ける: %v", as)
+		t.Errorf(".vanda/adapters/ のアダプタでは、どの種類も書ける: %v", as)
 	}
 }
 

@@ -1,9 +1,9 @@
-# アノテーションの読み取り: 利用者のアダプタ（.vanda/adapters/ の直下のファイルか、ディレクトリの直下の run）。
+# アノテーションの読み取り: .vanda/adapters/ のアダプタ（.vanda/adapters/ の直下のファイルか、ディレクトリの直下の run）。
 # 設定には adapter = "<名前>" と args だけを書く。args はそのまま引数として渡る。
 # アダプタが失敗したとき、返したものが JSON として読めないときは、審査が止まる。
 # 読むファイルのパターンに当たったのに、アダプタが決まっていないファイルがあると、審査で止まる。
 #
-# 受け渡しの形は docs/formats.md の「利用者のアダプタ」。
+# 受け渡しの形は docs/formats.md の「`.vanda/adapters/` のアダプタ」。
 # ok は、引数（--mode check）と、標準入力にファイルの場所と行が来ていることを確かめ、決まった名前を返す。
 
 exec git init -q -b main
@@ -34,7 +34,7 @@ cp cases/config-dir.toml .vanda/config.toml
 expand .vanda/config.toml
 exec vanda check .vanda/checks/links.toml
 
-# 名前で指したアノテーションの ID は、中に持つアダプタと同じく、約束リストとのつながりを審査する
+# 名前で指したアノテーションの ID は、組込みのアダプタと同じく、約束リストとのつながりを審査する
 cp cases/config-ok.toml .vanda/config.toml
 expand .vanda/config.toml
 cp cases/a-no-such.ext ext/a.ext
@@ -43,8 +43,8 @@ stderr 'ext/a\.ext:1: '
 ! stderr '(?m)^panic: '
 cp cases/a.ext ext/a.ext
 
-# 中に持つアダプタ（go）と同じ名前の利用者のアダプタがあれば、利用者のものを使う。
-# 中に持つ go なら ext/a.ext を Go として読めずに止まるが、利用者の go は名前を返すので通る
+# 組込みのアダプタ（go）と同じ名前のアダプタが .vanda/adapters/ にあれば、そちらを使う。
+# 組込みの go なら ext/a.ext を Go として読めずに止まるが、.vanda/adapters/go は名前を返すので通る
 cp cases/config-go.toml .vanda/config.toml
 expand .vanda/config.toml
 exec vanda check .vanda/checks/links.toml
@@ -136,7 +136,7 @@ expand .vanda/config.toml
 stderr '\.vanda/config\.toml'
 ! stderr '(?m)^panic: '
 
-# 中に持つアダプタには args を書けない
+# 組込みのアダプタには args を書けない
 cp cases/config-builtin-args.toml .vanda/config.toml
 expand .vanda/config.toml
 rm .vanda/adapters/go
@@ -203,7 +203,7 @@ printf '%s' '{"names":[{"line":1,"name":"a の手順"}]}'
 -- .vanda/adapters/go --
 #!/bin/sh
 cat >/dev/null
-printf '%s' '{"names":[{"line":1,"name":"利用者の go"}]}'
+printf '%s' '{"names":[{"line":1,"name":".vanda/adapters/ の go"}]}'
 -- .vanda/adapters/wrong-line --
 #!/bin/sh
 cat >/dev/null

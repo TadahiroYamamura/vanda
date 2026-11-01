@@ -1,4 +1,4 @@
-# CMD-01: vanda doctor は、ストーリーの置き場所が利用者のアダプタなら、.vanda/adapters/ にあって実行できるかを確かめる。
+# CMD-01: vanda doctor は、ストーリーの置き場所が.vanda/adapters/ のアダプタなら、.vanda/adapters/ にあって実行できるかを確かめる。
 # アダプタは、直下のファイルか、ディレクトリの直下の run。ないとき、実行できないときは、場所と直し方を出して止まる。
 
 exec git init -q -b main
@@ -42,7 +42,7 @@ stderr '\.vanda/adapters/empty-dir/run'
 stderr 'ください。'
 ! stderr '(?m)^panic: '
 
-# 中に持つ github には args を書けない
+# 組込みの github には args を書けない
 cp cases/config-github-args.toml .vanda/config.toml
 expand .vanda/config.toml
 ! exec vanda doctor

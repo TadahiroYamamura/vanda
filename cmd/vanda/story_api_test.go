@@ -206,7 +206,7 @@ func Testストーリーの置き場所の誤りは理由を画面に出す(t *t
 	}
 }
 
-// writeUserAdapter は、利用者のアダプタ（シェルのスクリプト）を、実行の権限を付けて書く。
+// writeUserAdapter は、.vanda/adapters/ のアダプタ（シェルのスクリプト）を、実行の権限を付けて書く。
 func writeUserAdapter(t *testing.T, root, path, body string) {
 	t.Helper()
 	writeFile(t, root, path, "#!/bin/sh\n"+body)
@@ -215,15 +215,15 @@ func writeUserAdapter(t *testing.T, root, path, body string) {
 	}
 }
 
-// 利用者のストーリーの置き場所のアダプタ。標準入力をそのまま本文に、引数を題に入れて返す（何が渡ったかを見るため）
+// ストーリーの置き場所の、.vanda/adapters/ のアダプタ。標準入力をそのまま本文に、引数を題に入れて返す（何が渡ったかを見るため）
 const userStoryAdapter = `in=$(cat)
 in=$(printf '%s' "$in" | sed 's/"/\\"/g')
 printf '{"title":"args: %s","body":"%s","url":""}' "$*" "$in"
 `
 
-// CM-08: ストーリーの置き場所の利用者のアダプタは、ファイルの形でもディレクトリの形（直下の run）でも動き、args が渡る。
-// 中に持つアダプタ（github）と同じ名前なら、利用者のものを使う
-func Testストーリーの置き場所の利用者のアダプタはファイルとディレクトリの形で動きargsが渡り中に持つものより先に使われる(t *testing.T) {
+// CM-08: ストーリーの置き場所の.vanda/adapters/ のアダプタは、ファイルの形でもディレクトリの形（直下の run）でも動き、args が渡る。
+// 組込みのアダプタ（github）と同じ名前なら、.vanda/adapters/ のものを使う
+func Testストーリーの置き場所のvanda_adaptersのアダプタはファイルとディレクトリの形で動きargsが渡り組込みのものより先に使われる(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name, adapter, path, args, wantTitle string
@@ -231,8 +231,8 @@ func Testストーリーの置き場所の利用者のアダプタはファイ�
 		{"ファイルの形", "jira-story", ".vanda/adapters/jira-story", `args = ["--project", "APP"]`, "args: --project APP"},
 		{"ディレクトリの形", "jira-dir", ".vanda/adapters/jira-dir/run", `args = ["--dir"]`, "args: --dir"},
 		{"argsなし", "jira-story", ".vanda/adapters/jira-story", "", "args: "},
-		// 中に持つ github を使うなら、repository がないので誤りになるか、GitHub に繋ぎに行く
-		{"中に持つgithubと同じ名前", "github", ".vanda/adapters/github", `args = ["--mine"]`, "args: --mine"},
+		// 組込みの github を使うなら、repository がないので誤りになるか、GitHub に繋ぎに行く
+		{"組込みのgithubと同じ名前", "github", ".vanda/adapters/github", `args = ["--mine"]`, "args: --mine"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -247,18 +247,18 @@ func Testストーリーの置き場所の利用者のアダプタはファイ�
 			writeFile(t, r.Root, ".vanda/config.toml", cfg)
 			writeUserAdapter(t, r.Root, c.path, userStoryAdapter)
 			r.git("add", "-A")
-			r.git("commit", "-q", "-m", "利用者のアダプタを置く")
+			r.git("commit", "-q", "-m", ".vanda/adapters/ のアダプタを置く")
 			s := startServe(t, bin, r.Root, r.Env)
 			var got storyResponse
 			if code, msg := s.get("/api/story?id="+q("#24"), &got); code != 200 {
 				t.Fatalf("ストーリーを読めない（%d）: %s", code, msg)
 			}
 			if got.Title != c.wantTitle {
-				t.Errorf("題: %q（思ったもの %q。利用者のアダプタに args が渡っていない）", got.Title, c.wantTitle)
+				t.Errorf("題: %q（思ったもの %q。.vanda/adapters/ のアダプタに args が渡っていない）", got.Title, c.wantTitle)
 			}
 			// 標準入力には、docs/formats.md の形で、読むストーリーの ID が来る
 			if !strings.Contains(got.Body, `"action"`) || !strings.Contains(got.Body, `"read"`) || !strings.Contains(got.Body, `#24`) {
-				t.Errorf("利用者のアダプタの標準入力: %q", got.Body)
+				t.Errorf(".vanda/adapters/ のアダプタの標準入力: %q", got.Body)
 			}
 		})
 	}
