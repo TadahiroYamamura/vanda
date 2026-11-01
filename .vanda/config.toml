@@ -1,0 +1,21 @@
+version = "0.1.0"
+
+[[annotation]]
+paths = ["**/*_test.go"]
+adapter = "go"
+
+[[annotation]]
+paths = ["**/*.txtar"]
+adapter = "txtar"
+
+[[annotation]]
+paths = ["**/*.tla"]
+adapter = "tla"
+
+[story]
+adapter = "github"
+repository = "TadahiroYamamura/vanda"
+id_pattern = "#[0-9]+"
+
+[gui]
+base = "main"
