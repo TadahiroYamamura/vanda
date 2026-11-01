@@ -115,12 +115,14 @@ func GitHubRepository(url string) string {
 type Answers struct {
 	// Base は、ベースブランチ（config.toml の [gui] base）
 	Base string
-	// Store は、ストーリーの置き場所。"github"（GitHub Issues）・"command"（外部のコマンド）・"none"（使わない）
+	// Store は、ストーリーの置き場所。"github"（GitHub Issues）・"user"（利用者のアダプタ）・"none"（使わない）
 	Store string
 	// Repository は、Store が "github" のときの <owner>/<repo>。ほかの置き場所では使わない
 	Repository string
-	// Command は、Store が "command" のときの、外部のコマンドと引数。ほかの置き場所では使わない
-	Command []string
+	// Adapter は、Store が "user" のときの、利用者のアダプタの名前（.vanda/adapters/ の下に置く名前）。ほかの置き場所では使わない
+	Adapter string
+	// Args は、Store が "user" のときの、利用者のアダプタに渡す引数。空なら args を書かない。ほかの置き場所では使わない
+	Args []string
 	// IDPattern は、ストーリーの ID の書き方（Go の正規表現）。置き場所によらず書く
 	IDPattern string
 	// Annotations は、選んだ言語と、言語ごとの読むファイルのパターン。並べた順に [[annotation]] を書く。
@@ -135,13 +137,13 @@ type storeChoice struct {
 	key, title, defaultIDPattern string
 }
 
-// storeChoices は、ストーリーの置き場所の選択肢。vanda の中に持つアダプタの一覧から作り、外部のコマンドと使わないを足す
+// storeChoices は、ストーリーの置き場所の選択肢。vanda の中に持つアダプタの一覧から作り、利用者のアダプタと使わないを足す
 func storeChoices() []storeChoice {
 	var out []storeChoice
 	for _, a := range story.Builtins {
 		out = append(out, storeChoice{key: a.Name, title: a.Title, defaultIDPattern: a.DefaultIDPattern})
 	}
-	return append(out, storeChoice{key: "command", title: "外部のコマンド"}, storeChoice{key: "none", title: "使わない"})
+	return append(out, storeChoice{key: "user", title: "利用者のアダプタ"}, storeChoice{key: "none", title: "使わない"})
 }
 
 // asker は、huh の問いを 1 つずつ出す。問いの答えで次の問いが変わるので、まとめた 1 つの形でなく、問いごとに出す
@@ -228,15 +230,19 @@ func Ask(root string, d Defaults, t *Terminal) (Answers, error) {
 			}
 			return nil
 		})
-	case "command":
-		var line string
-		line, err = q.input("外部のコマンドと引数（空白で区切る）", "", func(s string) error {
-			if len(strings.Fields(s)) == 0 {
-				return errors.New("コマンドを入れてください。")
+	case "user":
+		a.Adapter, err = q.input("利用者のアダプタの名前（.vanda/adapters/ の下に置く名前）", "", func(s string) error {
+			if s == "" || s == "." || s == ".." || strings.ContainsAny(s, "/\\ \t") {
+				return errors.New("アダプタの名前を入れてください（空白・/・\\ を含まない名前。. と .. は使えません）。")
 			}
 			return nil
 		})
-		a.Command = strings.Fields(line)
+		if err != nil {
+			return a, err
+		}
+		var line string
+		line, err = q.input("利用者のアダプタに渡す引数（空白で区切る。なくてよい）", "", func(string) error { return nil })
+		a.Args = strings.Fields(line)
 	}
 	if err != nil {
 		return a, err
@@ -317,12 +323,15 @@ func ConfigText(a Answers) string {
 	}
 	b.WriteString("\n[story]\n")
 	switch a.Store {
-	case "command":
-		parts := make([]string, len(a.Command))
-		for i, c := range a.Command {
-			parts[i] = tomlwrite.String(c)
+	case "user":
+		fmt.Fprintf(&b, "adapter = %s\n", tomlwrite.String(a.Adapter))
+		if len(a.Args) > 0 {
+			parts := make([]string, len(a.Args))
+			for i, c := range a.Args {
+				parts[i] = tomlwrite.String(c)
+			}
+			fmt.Fprintf(&b, "args = [%s]\n", strings.Join(parts, ", "))
 		}
-		fmt.Fprintf(&b, "command = [%s]\n", strings.Join(parts, ", "))
 	case "none":
 	default:
 		fmt.Fprintf(&b, "adapter = %s\nrepository = %s\n", tomlwrite.String(a.Store), tomlwrite.String(a.Repository))

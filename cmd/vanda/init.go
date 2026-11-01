@@ -90,8 +90,9 @@ func runInit(cmd *cobra.Command, root string, d initcmd.Defaults) error {
 }
 
 // report は、作った設定を vanda doctor と同じく確かめ、作ったファイルと次にすることを出す。
+// 利用者のアダプタは .vanda/ を作った後にしか置けないので、まだないことだけは誤りにせず、置くよう案内する。
 func report(out io.Writer, root string, files [][2]string, noAnnotations bool) error {
-	cfg, errs := config.Load(root)
+	cfg, missing, errs := config.LoadAllowingMissingAdapters(root)
 	if errs != nil {
 		return fmt.Errorf(".vanda/ を作りましたが、設定を読めません。次の誤りを直してください。\n%s", errs.Error())
 	}
@@ -103,9 +104,15 @@ func report(out io.Writer, root string, files [][2]string, noAnnotations bool) e
 	fmt.Fprintln(out, "\n次にすること:")
 	fmt.Fprintln(out, "  1. "+config.File+" に、約束のレイヤーを [[layer]] で書いてください（id・name・description）。")
 	fmt.Fprintf(out, "  2. CI で vanda check .vanda/checks/ci.toml --base %s を動かすよう、CI の設定に足してください。\n", cfg.GUIBase)
+	n := 3
 	if noAnnotations {
-		fmt.Fprintln(out, "  3. "+config.File+" に、アノテーションを読むファイルを [[annotation]] で書いてください（paths と adapter）。")
+		fmt.Fprintf(out, "  %d. %s に、アノテーションを読むファイルを [[annotation]] で書いてください（paths と adapter）。\n", n, config.File)
+		n++
 	}
-	fmt.Fprintln(out, "vanda の中にアダプタがない言語（TypeScript など）は、[[annotation]] の command に外部のコマンドのアダプタを書くと足せます。")
+	for _, name := range missing {
+		fmt.Fprintf(out, "  %d. %s/%s に利用者のアダプタを置いてください。\n", n, config.AdaptersDir, name)
+		n++
+	}
+	fmt.Fprintln(out, "vanda の中にアダプタがない言語（TypeScript など）は、利用者のアダプタを .vanda/adapters/ に置いて足せます。")
 	return nil
 }

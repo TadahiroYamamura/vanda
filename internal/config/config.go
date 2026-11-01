@@ -111,20 +111,37 @@ func IsID(s string) bool {
 
 // Load は、root の下の .vanda/config.toml を読み、確かめる。エラーがあれば、すべてを集めて返す。
 func Load(root string) (*Config, diag.Errors) {
-	var errs []diag.Error
-	doc := tomlread.Load(root, File, &errs)
-	if doc == nil {
-		return nil, errs
-	}
-	cfg := parse(root, doc.Top())
-	if len(errs) > 0 {
-		diag.Sort(errs)
-		return nil, errs
-	}
-	return cfg, nil
+	cfg, _, errs := load(&loader{root: root})
+	return cfg, errs
 }
 
-func parse(root string, top *tomlread.Table) *Config {
+// LoadAllowingMissingAdapters は、Load と同じく読み、確かめる。ただし、名前のアダプタが中にも .vanda/adapters/ にもないことは
+// 誤りにせず、その名前を missing に返す（.vanda/ を作った直後で、利用者のアダプタをまだ置いていないときに使う）。
+func LoadAllowingMissingAdapters(root string) (cfg *Config, missing []string, errs diag.Errors) {
+	return load(&loader{root: root, allowMissing: true})
+}
+
+type loader struct {
+	root         string
+	allowMissing bool
+	missing      []string
+}
+
+func load(l *loader) (*Config, []string, diag.Errors) {
+	var errs []diag.Error
+	doc := tomlread.Load(l.root, File, &errs)
+	if doc == nil {
+		return nil, nil, errs
+	}
+	cfg := parse(l, doc.Top())
+	if len(errs) > 0 {
+		diag.Sort(errs)
+		return nil, nil, errs
+	}
+	return cfg, l.missing, nil
+}
+
+func parse(l *loader, top *tomlread.Table) *Config {
 	cfg := &Config{}
 	if v, ok := top.Str("version", true); ok {
 		cfg.Version = v
@@ -159,7 +176,7 @@ func parse(root string, top *tomlread.Table) *Config {
 	for _, t := range rules {
 		r := AnnotationRule{Line: t.Line("")}
 		r.Paths = patterns(t, "paths", "")
-		r.Adapter, r.User = adapterOf(root, t, BuiltinAdapters, "adapter を "+strings.Join(BuiltinAdapters, "・")+" のどれかにするか")
+		r.Adapter, r.User = adapterOf(l, t, BuiltinAdapters, "adapter を "+strings.Join(BuiltinAdapters, "・")+" のどれかにするか")
 		t.Unknown("paths, adapter, args")
 		cfg.Annotations = append(cfg.Annotations, r)
 	}
@@ -194,7 +211,7 @@ func parse(root string, top *tomlread.Table) *Config {
 				cfg.IDPattern = re
 			}
 		}
-		parseStoryStore(root, story, &cfg.Story)
+		parseStoryStore(l, story, &cfg.Story)
 		story.Unknown("id_pattern, adapter, args, repository, api_url")
 	}
 	if gui, ok := top.Table("gui", false); ok {
@@ -232,7 +249,7 @@ func isRepository(s string) bool {
 
 // adapterOf は、表の adapter と args を読み、使うアダプタを決める。.vanda/adapters/ に同じ名前の利用者のアダプタがあれば、
 // 中に持つアダプタ（builtins）より先に使う。fix は、名前のアダプタがどこにもないときの直し方の前半。
-func adapterOf(root string, t *tomlread.Table, builtins []string, fix string) (string, *UserAdapter) {
+func adapterOf(l *loader, t *tomlread.Table, builtins []string, fix string) (string, *UserAdapter) {
 	name, hasAdapter := t.Str("adapter", false)
 	args, hasArgs := t.Strs("args", false)
 	if !hasAdapter {
@@ -246,7 +263,7 @@ func adapterOf(root string, t *tomlread.Table, builtins []string, fix string) (s
 		return "", nil
 	}
 	rel := AdaptersDir + "/" + name
-	info, err := os.Stat(filepath.Join(root, filepath.FromSlash(rel)))
+	info, err := os.Stat(filepath.Join(l.root, filepath.FromSlash(rel)))
 	switch {
 	case err == nil:
 		if info.IsDir() {
@@ -258,6 +275,10 @@ func adapterOf(root string, t *tomlread.Table, builtins []string, fix string) (s
 		return "", nil
 	}
 	if !contains(builtins, name) {
+		if l.allowMissing {
+			l.missing = append(l.missing, name)
+			return "", &UserAdapter{Name: name, Path: rel, Args: args}
+		}
 		t.ErrAt("adapter", "アダプタ "+quote(name)+" は、vanda の中にも "+AdaptersDir+"/ にもありません", fix+"、"+rel+" に利用者のアダプタを置いてください")
 		return "", nil
 	}
@@ -317,10 +338,10 @@ func (u *UserAdapter) StartError(root string, err error) *AdapterError {
 	return nil
 }
 
-func parseStoryStore(root string, t *tomlread.Table, st *StoryStore) {
+func parseStoryStore(l *loader, t *tomlread.Table, st *StoryStore) {
 	repository, hasRepo := t.Str("repository", false)
 	apiURL, hasAPI := t.Str("api_url", false)
-	st.Adapter, st.User = adapterOf(root, t, []string{"github"}, `adapter = "github" にするか`)
+	st.Adapter, st.User = adapterOf(l, t, []string{"github"}, `adapter = "github" にするか`)
 	if st.Adapter == "github" {
 		if !hasRepo {
 			t.ErrAt("", `adapter = "github" なのに、repository がありません`, `repository = "<owner>/<repo>" を書いてください`)
