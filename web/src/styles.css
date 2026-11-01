@@ -250,6 +250,12 @@ ul.evidence-found { margin: 4px 0 0; padding-left: 18px; font-size: 13px; overfl
 .agreement-agreed { color: var(--accent); }
 .agreement-proposed { color: #c26a00; }
 
+/* 文字ではない印（札・アイコン）は、触れても文字選択の形のカーソルにしない。押せる行・枠の中では、行と同じ指の形にする */
+.chip, .badge, .present-icon, .agreement-icon, .change { cursor: default; }
+.badge.flag { cursor: help; }
+li.entry .chip, li.entry .badge, li.entry .badge.flag, li.entry .change,
+tr.at-toggle-row .chip, tr.at-toggle-row .badge, tr.at-toggle-row .present-icon, tr.at-toggle-row .agreement-icon { cursor: pointer; }
+
 /* 狭い画面では、一覧と 1 件の中身を縦に並べ、ページ全体をスクロールして読む。
    一覧を画面に貼り付けたまま（sticky）にすると、縦に並べたときに 1 件の中身の上に重なるため、ここでは外す */
 @media (max-width: 1000px) {
