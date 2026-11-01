@@ -1003,7 +1003,7 @@ layers = ["cli"]
 id = "annotation-ts-fixed-name"
 subjects = ["annotation-reading", "builtin-adapter"]
 statement = "ts のアダプタは、名前が文字列でもテンプレート文字列でもなければ誤りにし、テンプレート文字列なら書いてあるとおりの文字（${…} を含む）を名前にする"
-rationale = "PO の決定"
+rationale = "vanda はコードを動かさずに読むので、名前を決まった文字から取れないと、どのテストのエビデンスかを決められないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1016,7 +1016,7 @@ layers = ["cli"]
 id = "annotation-ts-hooks-rejected"
 subjects = ["annotation-reading", "builtin-adapter"]
 statement = "ts のアダプタは、beforeEach・afterEach・beforeAll・afterAll・step の呼び出しの直前のアノテーションを誤りにする"
-rationale = "PO の決定"
+rationale = "フックは多くのテストで動くので、どのテストのエビデンスかが決まらないため。test.step はテストの中の一部で、それだけで通ったか落ちたかが分からないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1147,7 +1147,7 @@ layers = ["cli"]
 id = "project-adapter-args-only-for-project"
 subjects = ["project-adapters", "cm-09"]
 statement = "args は .vanda/adapters/ のアダプタのときだけ書け、組込みのアダプタに書けば設定の誤りにする"
-rationale = "監督の了承"
+rationale = "組込みのアダプタは引数を受け取らないので、書いても黙って無視され、効いているように見えてしまうため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
