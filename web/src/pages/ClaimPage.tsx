@@ -1,6 +1,6 @@
 import { api, type Context, type Found } from "../api";
 import { ReviewAgree } from "../components/ReviewAgree";
-import { ErrorBox, PresentIcon, StateBadge, useLoad } from "../components/common";
+import { AgreementIcon, ErrorBox, PresentIcon, StateBadge, useLoad } from "../components/common";
 import { LayerChips } from "../components/Chips";
 import { EvidenceGroups } from "../components/EvidenceGroups";
 import { ClaimHistory } from "../components/ClaimHistory";
@@ -86,7 +86,7 @@ function FoundView(props: { f: Found; params?: URLSearchParams }) {
   return (
     <div className="found">
       <p>
-        <strong>{f.name}</strong> {fileLink}
+        <strong>{f.name}</strong> {fileLink} <AgreementIcon state={f.state} />
         {f.adapter === "tla" && (
           <>
             {" "}

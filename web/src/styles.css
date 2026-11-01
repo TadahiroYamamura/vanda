@@ -246,6 +246,10 @@ ul.evidence-found { margin: 4px 0 0; padding-left: 18px; font-size: 13px; overfl
 .diff-part.ws { outline: 1px dashed currentColor; outline-offset: -1px; padding-right: 0.25em; }
 .diff-part.nl::before { content: "↵"; color: var(--muted); font-size: 11px; }
 
+.agreement-icon { display: inline-flex; vertical-align: middle; margin-left: 4px; }
+.agreement-agreed { color: var(--accent); }
+.agreement-proposed { color: #c26a00; }
+
 /* 狭い画面では、一覧と 1 件の中身を縦に並べ、ページ全体をスクロールして読む。
    一覧を画面に貼り付けたまま（sticky）にすると、縦に並べたときに 1 件の中身の上に重なるため、ここでは外す */
 @media (max-width: 1000px) {
