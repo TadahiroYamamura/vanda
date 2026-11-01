@@ -34,6 +34,7 @@
 | `github.com/spf13/cobra` | CLI |
 | `github.com/rogpeppe/go-internal`（`testscript`） | シナリオテスト |
 | `pgregory.net/rapid` | ランダムチェック |
+| `github.com/creack/pty` | `vanda init` の問いかけのテストで擬似端末を作る（テストだけで使う） |
 | `github.com/sergi/go-diff` | 一覧の変更前と変更後の差分（行の単位と文字の単位） |
 | `react`、`react-dom` | 画面（`web/`） |
 | `shiki` | コードの色付け（Go・SQL は Shiki の文法、TLA+ は `web/src/grammars/tlaplus/`（vscode-tlaplus の MIT の文法）、シナリオは `web/src/grammars/txtar.json`） |
