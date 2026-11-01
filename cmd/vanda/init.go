@@ -56,9 +56,10 @@ func isTerminal(f *os.File) bool {
 // runInit は、問いかけて確かめ、.vanda/ を作る。
 func runInit(cmd *cobra.Command, root string, d initcmd.Defaults) error {
 	out := cmd.OutOrStdout()
-	in := cmd.InOrStdin()
+	// 端末かを確かめたのは os.Stdin なので、問いかけも os.Stdin から読む
+	t := initcmd.NewTerminal(os.Stdin, out)
 	fmt.Fprintf(out, "%s に .vanda/ を作ります。問いに答えてください（既定の答えが入った状態から始まります）。\n\n", root)
-	a, err := initcmd.Ask(root, d, in, out)
+	a, err := initcmd.Ask(root, d, t)
 	if err != nil {
 		return err
 	}
@@ -75,7 +76,7 @@ func runInit(cmd *cobra.Command, root string, d initcmd.Defaults) error {
 		}
 	}
 	fmt.Fprintln(out)
-	yes, err := initcmd.Confirm(in, out)
+	yes, err := initcmd.Confirm(t)
 	if err != nil {
 		return err
 	}

@@ -146,20 +146,21 @@ func storeChoices() []storeChoice {
 
 // asker は、huh の問いを 1 つずつ出す。問いの答えで次の問いが変わるので、まとめた 1 つの形でなく、問いごとに出す
 type asker struct {
-	in   io.Reader
-	out  io.Writer
+	t    *Terminal
 	keys *huh.KeyMap
 }
 
-func newAsker(in io.Reader, out io.Writer) *asker {
+func newAsker(t *Terminal) *asker {
 	keys := huh.NewDefaultKeyMap()
 	// Ctrl+D（入力を終える）でも、Ctrl+C と同じく中断する
 	keys.Quit = key.NewBinding(key.WithKeys("ctrl+c", "ctrl+d"))
-	return &asker{in: in, out: out, keys: keys}
+	return &asker{t: t, keys: keys}
 }
 
 func (a *asker) run(fields ...huh.Field) error {
-	err := huh.NewForm(huh.NewGroup(fields...)).WithInput(a.in).WithOutput(a.out).WithKeyMap(a.keys).WithShowHelp(true).Run()
+	err := a.t.with(func(in io.Reader) error {
+		return huh.NewForm(huh.NewGroup(fields...)).WithInput(in).WithOutput(a.t.out).WithKeyMap(a.keys).WithShowHelp(true).Run()
+	})
 	if errors.Is(err, huh.ErrUserAborted) {
 		return ErrInterrupted
 	}
@@ -176,9 +177,9 @@ func (a *asker) input(title, def string, check func(string) error) (string, erro
 	return strings.TrimSpace(v), err
 }
 
-// Ask は、d を既定の答えにして問いかけ、答えを集める。
-func Ask(root string, d Defaults, in io.Reader, out io.Writer) (Answers, error) {
-	q := newAsker(in, out)
+// Ask は、d を既定の答えにして、t で問いかけ、答えを集める。
+func Ask(root string, d Defaults, t *Terminal) (Answers, error) {
+	q := newAsker(t)
 	var a Answers
 	var err error
 
@@ -290,9 +291,9 @@ func Ask(root string, d Defaults, in io.Reader, out io.Writer) (Answers, error) 
 	return a, nil
 }
 
-// Confirm は、作るかを聞く。
-func Confirm(in io.Reader, out io.Writer) (bool, error) {
-	q := newAsker(in, out)
+// Confirm は、t で、作るかを聞く。
+func Confirm(t *Terminal) (bool, error) {
+	q := newAsker(t)
 	yes := true
 	err := q.run(huh.NewConfirm().Title("この内容で .vanda/ を作りますか").Affirmative("作る").Negative("作らない").Value(&yes))
 	return yes, err
