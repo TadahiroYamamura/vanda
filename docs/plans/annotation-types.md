@@ -17,7 +17,7 @@
 | そのほか（`scenario-test`・`unit-test`・`guardrail` など） | `@vanda:evidence` |
 
 - 組込みのアダプタは、既定のタイプを持つ（`go`: `unit-test`・`cross-check`・`random-check`・`interface-test`・`concurrency-test`・`sensor`、`txtar`: `scenario-test`、`tla`: `model-check`、`sql`: `guardrail`、`ts`: `unit-test`）。`vanda init` は、選んだ言語のアダプタの既定のタイプをそのまま書く（問いかけない）
-- 組込みのアダプタに、書けない種類でしか満たせないタイプを `types` に書いたとき（例: `tla` に `unit-test`）は、設定の誤りにする。`.vanda/adapters/` のアダプタは、どの種類も書けるので誤りにしない。`types = []` は、どのタイプも満たさないとする
+- 組込みのアダプタに、書けない種類でしか満たせないタイプを `types` に書いても（例: `tla` に `unit-test`）、誤りにしない（エビデンスが揃わずに審査で止まるので害がない）。`types = []` は、どのタイプも満たさないとする
 - vanda のリポジトリの `.vanda/config.toml` に `types` を書き足す
 
 ## 2. 組込みの TypeScript のアダプタ（`ts`）
