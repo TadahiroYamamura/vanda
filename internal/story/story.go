@@ -39,13 +39,27 @@ type Error struct {
 	Fix     string
 }
 
-func (e *Error) Error() string { return e.Message + "。" + e.Fix }
+// Error は、文言の決まりで「。」で終わる message と fix を、そのままつなぐ
+func (e *Error) Error() string { return e.Message + e.Fix }
 
 func storeErr(msg, fix string) *Error {
 	return &Error{Status: http.StatusBadGateway, Message: msg, Fix: fix}
 }
 
 const timeout = 20 * time.Second
+
+// AdapterInfo は、vanda の中に持つストーリーの置き場所のアダプタ。vanda init の選択肢と、ID の書き方の既定に使う
+type AdapterInfo struct {
+	Name  string // 設定の [story] の adapter に書く名前
+	Title string // 画面や問いかけに出す名前
+	// DefaultIDPattern は、コミットのメッセージの中のストーリーの ID の書き方の既定
+	DefaultIDPattern string
+}
+
+// Builtins は、vanda の中に持つストーリーの置き場所のアダプタの一覧。アダプタを足したら、ここにも足す
+var Builtins = []AdapterInfo{
+	{Name: "github", Title: "GitHub Issues", DefaultIDPattern: config.DefaultIDPattern},
+}
 
 // Read は、ストーリー id を、設定の置き場所から読む。
 func Read(root string, cfg *config.Config, id string) (*Story, *Error) {

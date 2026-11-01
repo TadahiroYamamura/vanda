@@ -21,7 +21,8 @@ type Error struct {
 	Fix     string
 }
 
-func (e *Error) Error() string { return e.Message + "。" + e.Fix }
+// Error は、文言の決まりで「。」で終わる message と fix を、そのままつなぐ
+func (e *Error) Error() string { return e.Message + e.Fix }
 
 func internalErr(err error) *Error {
 	return &Error{Status: http.StatusInternalServerError, Message: err.Error() + "。", Fix: "git の状態を確かめてください。"}
