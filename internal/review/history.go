@@ -102,6 +102,8 @@ type commit struct {
 	Date    time.Time
 	Subject string
 	Stories []string
+	// StoryErr は、Story: のトレーラーの誤り（2 つ以上、id_pattern に合わない）。誤りなら Stories は空
+	StoryErr string
 }
 
 // history は、コミットごとの時点を読み、使い回す。
@@ -139,8 +141,8 @@ func (h *history) sideAt(rev string) (*side, error) {
 }
 
 // storyIDs は、コミットのメッセージの末尾の Story: のトレーラーにあるストーリーの ID を返す（0 か 1 つ）。
-// トレーラーの誤り（2 つ以上、id_pattern に合わない）は、画面ではストーリーの分からないコミットとして扱う。
-// 誤りは審査（vanda check）が出すので、履歴に 1 つ誤ったコミットがあるだけで画面を開けなくならないようにする
+// トレーラーの誤り（2 つ以上、id_pattern に合わない）のコミットは、ストーリーを空にする。履歴に 1 つ誤ったコミットがあるだけで
+// 画面を開けなくならないよう、誤りで止めずに、理由を /api/context の trailerErrors で画面に出す
 func storyIDs(cfg *config.Config, msg string) []string {
 	id, err := cfg.StoryTrailer(msg)
 	if err != nil || id == "" {
@@ -205,7 +207,11 @@ func (h *history) loadCommits() ([]commit, error) {
 		parent, _, _ := strings.Cut(f[1], " ")
 		msg := strings.TrimSpace(f[3])
 		subject, _, _ := strings.Cut(msg, "\n")
-		h.commits = append(h.commits, commit{Hash: f[0], Parent: parent, Date: date, Subject: subject, Stories: storyIDs(h.cfg, msg)})
+		c := commit{Hash: f[0], Parent: parent, Date: date, Subject: subject, Stories: storyIDs(h.cfg, msg)}
+		if _, err := h.cfg.StoryTrailer(msg); err != nil {
+			c.StoryErr = err.Error() + "。"
+		}
+		h.commits = append(h.commits, c)
 	}
 	return h.commits, nil
 }

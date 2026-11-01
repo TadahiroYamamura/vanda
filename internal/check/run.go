@@ -122,13 +122,11 @@ func (e *env) prepare(o Options) error {
 	return e.findChanges()
 }
 
+// decideStory は、範囲 story の審査のストーリーを決める。--story（given）を渡しても、分かれた点より後のコミットのトレーラーの誤りは、
+// 審査を始める前の誤りにする（--story はストーリーを選ぶためのもので、トレーラーの確かめを飛ばすためのものではない。手元と CI で結果をそろえるため）
 func (e *env) decideStory(given string, checks []string) error {
-	if given != "" {
-		if e.cfg.IDFull == nil || !e.cfg.IDFull.MatchString(given) {
-			return fmt.Errorf("--story %s が、ストーリーの ID の書き方（%s）に合いません。設定の id_pattern に合う ID を渡してください。", given, e.cfg.IDPattern)
-		}
-		e.story = given
-		return nil
+	if given != "" && (e.cfg.IDFull == nil || !e.cfg.IDFull.MatchString(given)) {
+		return fmt.Errorf("--story %s が、ストーリーの ID の書き方（%s）に合いません。設定の id_pattern に合う ID を渡してください。", given, e.cfg.IDPattern)
 	}
 	commits, err := e.cfg.CommitStories(e.root, e.mergeBase+"..HEAD")
 	if err != nil {
@@ -144,6 +142,10 @@ func (e *env) decideStory(given string, checks []string) error {
 			seen[c.Story] = true
 			ids = append(ids, c.Story)
 		}
+	}
+	if given != "" {
+		e.story = given
+		return nil
 	}
 	sort.Strings(ids)
 	switch len(ids) {

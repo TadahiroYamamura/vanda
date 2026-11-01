@@ -3250,8 +3250,8 @@ layers = ["cli"]
 [[claim]]
 id = "story-trailer-at-most-one"
 subjects = ["cmd-03", "cmd-10", "story"]
-statement = "1 つのコミットに Story: のトレーラーが 2 つ以上あれば、範囲 story の審査のストーリーを決めるときは審査を始める前の誤りにし、story-origin ではその審査の失敗にする"
-rationale = "1 つのブランチは 1 つのストーリーに当たり、コミットは 1 つのブランチで作るため（PO の決定）"
+statement = "分かれた点より後のコミットに Story: のトレーラーが 2 つ以上あるものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡したときも審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
+rationale = "1 つのブランチは 1 つのストーリーに当たり、コミットは 1 つのブランチで作るため（PO の決定）。--story はストーリーを選ぶためのもので、トレーラーの確かめを飛ばすためのものではなく、手元と CI で結果をそろえるため（PO の決定）"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -3263,8 +3263,8 @@ layers = ["cli"]
 [[claim]]
 id = "story-trailer-matches-pattern"
 subjects = ["cmd-03", "cmd-10", "story"]
-statement = "Story: のトレーラーの値が id_pattern に全体で当たらなければ、範囲 story の審査のストーリーを決めるときは審査を始める前の誤りにし、story-origin ではその審査の失敗にする"
-rationale = "PO の決定"
+statement = "分かれた点より後のコミットに、Story: のトレーラーの値が id_pattern に全体で当たらないものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡したときも審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
+rationale = "PO の決定。--story を渡したときも誤りにするのは、--story はストーリーを選ぶためのもので、トレーラーの確かめを飛ばすためのものではなく、手元と CI で結果をそろえるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -3274,17 +3274,22 @@ type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
-id = "story-trailer-errors-ignored-on-screen"
+id = "story-trailer-errors-shown"
 subjects = ["rv-13", "story"]
-statement = "画面（API）は、Story: のトレーラーが誤ったコミットを、ストーリーの分からないコミットとして扱う"
-rationale = "誤りは審査が出すので、履歴に 1 つ誤ったコミットがあるだけで、画面を開けなくならないようにするため"
-layers = ["api"]
+statement = "Story: のトレーラーが誤ったコミットがあっても、API は誤りで止めずに 200 で返し、そのコミットのストーリーを空にしたうえで、どのコミットの何が誤りかを返し、画面に出す"
+rationale = "履歴に 1 つ誤ったコミットがあるだけで画面を開けなくならないようにし、そのうえで、段 2 で決めた「誤りは画面にそのまま理由を出す（黙って空にしない）」に沿うため（監督の判断）"
+layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
 type = "unit-test"
 layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
 
 [[claim]]
 id = "agree-commit-has-story-trailer"

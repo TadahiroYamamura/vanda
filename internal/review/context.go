@@ -20,6 +20,14 @@ type Context struct {
 	Layers      []LayerRef `json:"layers"`
 	// StoryStore は、設定の [story] の adapter に書いたアダプタの名前。設定になければ空
 	StoryStore string `json:"storyStore"`
+	// TrailerErrors は、HEAD の履歴の、Story: のトレーラーが誤ったコミット（新しい順）。そのコミットのストーリーは空にしている
+	TrailerErrors []TrailerError `json:"trailerErrors"`
+}
+
+type TrailerError struct {
+	Commit  string `json:"commit"`
+	Subject string `json:"subject"`
+	Message string `json:"message"`
 }
 
 type User struct {
@@ -45,7 +53,7 @@ func GitUser(root string) *User {
 
 // LoadContext は、今の設定と、画面で選べるもの（ベースブランチ、ストーリー）を返す。
 func LoadContext(root string, cfg *config.Config) (*Context, *Error) {
-	c := &Context{Version: version.Current, DefaultBase: cfg.GUIBase, Bases: []string{}, Stories: []StoryRef{}, Layers: []LayerRef{}, User: GitUser(root)}
+	c := &Context{Version: version.Current, DefaultBase: cfg.GUIBase, Bases: []string{}, Stories: []StoryRef{}, Layers: []LayerRef{}, TrailerErrors: []TrailerError{}, User: GitUser(root)}
 	c.StoryStore = cfg.Story.Name()
 	for _, l := range cfg.Layers {
 		c.Layers = append(c.Layers, LayerRef{ID: l.ID, Name: l.Name})
@@ -89,6 +97,9 @@ func LoadContext(root string, cfg *config.Config) (*Context, *Error) {
 	}
 	seen := map[string]bool{}
 	for i := len(commits) - 1; i >= 0; i-- {
+		if commits[i].StoryErr != "" {
+			c.TrailerErrors = append(c.TrailerErrors, TrailerError{Commit: commits[i].Hash, Subject: commits[i].Subject, Message: commits[i].StoryErr})
+		}
 		for _, id := range commits[i].Stories {
 			if !seen[id] {
 				seen[id] = true

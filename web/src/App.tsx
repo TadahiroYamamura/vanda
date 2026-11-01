@@ -29,6 +29,19 @@ export function App() {
       <LayerNames.Provider value={ctx.data?.layers ?? []}>
       <main>
         {ctx.error != null && <ErrorBox error={ctx.error} title="vanda の設定を読めません" />}
+        {(ctx.data?.trailerErrors ?? []).length > 0 && (
+          <section className="error" role="alert" aria-label="Story: のトレーラーの誤り">
+            <strong>次のコミットの Story: のトレーラーに誤りがあるため、ストーリーの分からないコミットとして扱っています。</strong>
+            <ul>
+              {(ctx.data?.trailerErrors ?? []).map((t) => (
+                <li key={t.commit}>
+                  <code>{t.commit.slice(0, 7)}</code>「{t.subject}」: {t.message}
+                </li>
+              ))}
+            </ul>
+            <div className="fix">コミットのメッセージの末尾の Story: を、1 つだけ、設定の id_pattern に合う形で書いてください。</div>
+          </section>
+        )}
         {route.page === "claim" && <ClaimPage id={route.id} params={route.params} ctx={ctx.data} />}
         {route.page === "file" && <FilePage path={route.path} params={route.params} ctx={ctx.data} />}
         {route.page === "review" && ctx.data && <ReviewPage ctx={ctx.data} params={route.params} onAgreed={ctx.reload} />}
