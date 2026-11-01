@@ -33,12 +33,20 @@ adapter = "go"
 
 [[annotation]]
 paths = ["docs/*.md"]
-command = ["./adapter", "--json"]
+adapter = "md"
+args = ["--json"]
 
 [[guardrail]]
 adapter = "file"
 paths = ["db/schema.sql"]
 `)
+	// .vanda/adapters/ のアダプタ md は、.vanda/adapters/ の直下のファイル
+	if err := os.MkdirAll(filepath.Join(root, ".vanda", "adapters"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".vanda", "adapters", "md"), []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	cfg, errs := Load(root)
 	if errs != nil {
 		t.Fatal(errs)
@@ -55,8 +63,10 @@ paths = ["db/schema.sql"]
 	if len(cfg.Layers) != 1 || cfg.Layers[0].ID != "model" || cfg.Layers[0].Description != "判定と状態の変化" {
 		t.Errorf("layer: %+v", cfg.Layers)
 	}
-	if len(cfg.Annotations) != 2 || cfg.Annotations[0].Adapter != "go" || cfg.Annotations[1].Command[1] != "--json" {
+	if len(cfg.Annotations) != 2 || cfg.Annotations[0].Adapter != "go" || cfg.Annotations[0].User != nil {
 		t.Errorf("annotation: %+v", cfg.Annotations)
+	} else if u := cfg.Annotations[1].User; cfg.Annotations[1].Adapter != "" || u == nil || u.Name != "md" || u.Path != ".vanda/adapters/md" || strings.Join(u.Args, ",") != "--json" {
+		t.Errorf(".vanda/adapters/ のアダプタの annotation: %+v（User %+v）", cfg.Annotations[1], u)
 	}
 	if len(cfg.Guardrails) != 1 || cfg.Guardrails[0].Paths[0] != "db/schema.sql" {
 		t.Errorf("guardrail: %+v", cfg.Guardrails)

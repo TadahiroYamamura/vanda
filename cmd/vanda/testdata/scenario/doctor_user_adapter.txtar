@@ -1,0 +1,112 @@
+# CMD-01: vanda doctor は、ストーリーの置き場所が.vanda/adapters/ のアダプタなら、.vanda/adapters/ にあって実行できるかを確かめる。
+# アダプタは、直下のファイルか、ディレクトリの直下の run。ないとき、実行できないときは、場所と直し方を出して止まる。
+
+exec git init -q -b main
+chmod 755 .vanda/adapters/jira-story
+chmod 755 .vanda/adapters/jira-dir/run
+chmod 755 .vanda/adapters/empty-dir/other
+
+# ファイルの形: あって実行できれば通り、確かめたことを同じ行に書き足す
+cp cases/config-file.toml .vanda/config.toml
+expand .vanda/config.toml
+exec vanda doctor
+stdout 'jira-story'
+
+# ディレクトリの形: 直下の run があって実行できれば通る
+cp cases/config-dir.toml .vanda/config.toml
+expand .vanda/config.toml
+exec vanda doctor
+stdout 'jira-dir'
+
+# 名前のアダプタがない
+cp cases/config-missing.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda doctor
+stderr '\.vanda/adapters/no-such-story'
+stderr 'ください。'
+! stderr '(?m)^panic: '
+
+# 実行の権限がない
+cp cases/config-noexec.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda doctor
+stderr '\.vanda/adapters/noexec-story'
+stderr 'ください。'
+! stderr '(?m)^panic: '
+
+# ディレクトリの直下に run がない
+cp cases/config-norun.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda doctor
+stderr '\.vanda/adapters/empty-dir/run'
+stderr 'ください。'
+! stderr '(?m)^panic: '
+
+# 組込みの github には args を書けない
+cp cases/config-github-args.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda doctor
+stderr '\.vanda/config\.toml.*args'
+! stderr '(?m)^panic: '
+
+# [story] の command は、ほかの決まっていない項目と同じく誤りになる
+cp cases/config-command.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda doctor
+stderr '\.vanda/config\.toml.*command'
+! stderr '(?m)^panic: '
+
+-- .vanda/config.toml --
+-- .vanda/adapters/jira-story --
+#!/bin/sh
+cat >/dev/null
+echo '{"title":"t","body":"","url":""}'
+-- .vanda/adapters/jira-dir/run --
+#!/bin/sh
+cat >/dev/null
+echo '{"title":"t","body":"","url":""}'
+-- .vanda/adapters/noexec-story --
+#!/bin/sh
+cat >/dev/null
+echo '{"title":"t","body":"","url":""}'
+-- .vanda/adapters/empty-dir/other --
+#!/bin/sh
+echo '{"title":"t","body":"","url":""}'
+-- cases/config-file.toml --
+version = "${VANDA_VERSION}"
+
+[story]
+adapter = "jira-story"
+args = ["--project", "APP"]
+-- cases/config-dir.toml --
+version = "${VANDA_VERSION}"
+
+[story]
+adapter = "jira-dir"
+-- cases/config-missing.toml --
+version = "${VANDA_VERSION}"
+
+[story]
+adapter = "no-such-story"
+-- cases/config-noexec.toml --
+version = "${VANDA_VERSION}"
+
+[story]
+adapter = "noexec-story"
+-- cases/config-norun.toml --
+version = "${VANDA_VERSION}"
+
+[story]
+adapter = "empty-dir"
+-- cases/config-command.toml --
+version = "${VANDA_VERSION}"
+
+[story]
+command = ["sh", ".vanda/adapters/jira-story"]
+-- cases/config-github-args.toml --
+version = "${VANDA_VERSION}"
+
+[story]
+adapter = "github"
+repository = "owner/app"
+args = ["--strict"]
