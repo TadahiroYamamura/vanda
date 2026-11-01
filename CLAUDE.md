@@ -34,6 +34,7 @@
 | `github.com/spf13/cobra` | CLI |
 | `github.com/rogpeppe/go-internal`（`testscript`） | シナリオテスト |
 | `pgregory.net/rapid` | ランダムチェック |
+| `github.com/charmbracelet/huh`（v2 からは `charm.land/huh/v2`。キーの割り当てに使う `charm.land/bubbles/v2` と、それが使う charmbracelet の部品） | `vanda init` の問いかけ（選ぶ・複数選ぶ・入力・確認） |
 | `github.com/creack/pty` | `vanda init` の問いかけのテストで擬似端末を作る（テストだけで使う） |
 | `github.com/sergi/go-diff` | 一覧の変更前と変更後の差分（行の単位と文字の単位） |
 | `react`、`react-dom` | 画面（`web/`） |

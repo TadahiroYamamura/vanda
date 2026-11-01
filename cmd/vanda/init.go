@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"strings"
 
@@ -55,64 +53,43 @@ func isTerminal(f *os.File) bool {
 	return err == nil && st.Mode()&os.ModeCharDevice != 0
 }
 
-// runInit は、問いかけて確かめ、.vanda/ を作る。問いかけの途中の Ctrl+C は、何も作らずに止める。
+// runInit は、問いかけて確かめ、.vanda/ を作る。
 func runInit(cmd *cobra.Command, root string, d initcmd.Defaults) error {
 	out := cmd.OutOrStdout()
-	in := bufio.NewReader(cmd.InOrStdin())
-	fmt.Fprintf(out, "%s に .vanda/ を作ります。問いに答えてください（[ ] の中は既定の答えで、空のまま Enter で使います）。\n\n", root)
-
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, os.Interrupt)
-	defer signal.Stop(sig)
-	type result struct {
-		files [][2]string
-		err   error
-	}
-	done := make(chan result, 1)
-	go func() {
-		a, err := initcmd.Ask(root, d, in, out)
-		if err != nil {
-			done <- result{err: err}
-			return
-		}
-		files := initcmd.Files(a)
-		fmt.Fprintln(out, "\n次のファイルを作ります。")
-		for _, f := range files {
-			if f[1] == "" {
-				fmt.Fprintf(out, "\n%s（空）\n", f[0])
-				continue
-			}
-			fmt.Fprintf(out, "\n%s:\n", f[0])
-			for _, l := range strings.Split(strings.TrimRight(f[1], "\n"), "\n") {
-				fmt.Fprintln(out, strings.TrimRight("  "+l, " "))
-			}
-		}
-		fmt.Fprintln(out)
-		yes, err := initcmd.Confirm(in, out)
-		if err == nil && !yes {
-			err = initcmd.ErrDeclined
-		}
-		done <- result{files: files, err: err}
-	}()
-	var r result
-	select {
-	case <-sig:
-		fmt.Fprintln(out)
-		return errors.New("中断したため、何も作りませんでした。")
-	case r = <-done:
-	}
-	if r.err != nil {
-		return r.err
-	}
-	// 書き始めた後の Ctrl+C では止めない（作りかけの .vanda/ を残さないため。書くのはすぐに終わる）
-	if err := initcmd.Write(root, r.files); err != nil {
+	in := cmd.InOrStdin()
+	fmt.Fprintf(out, "%s に .vanda/ を作ります。問いに答えてください（既定の答えが入った状態から始まります）。\n\n", root)
+	a, err := initcmd.Ask(root, d, in, out)
+	if err != nil {
 		return err
 	}
-	return report(out, root, r.files)
+	files := initcmd.Files(a)
+	fmt.Fprintln(out, "\n次のファイルを作ります。")
+	for _, f := range files {
+		if f[1] == "" {
+			fmt.Fprintf(out, "\n%s（空）\n", f[0])
+			continue
+		}
+		fmt.Fprintf(out, "\n%s:\n", f[0])
+		for _, l := range strings.Split(strings.TrimRight(f[1], "\n"), "\n") {
+			fmt.Fprintln(out, strings.TrimRight("  "+l, " "))
+		}
+	}
+	fmt.Fprintln(out)
+	yes, err := initcmd.Confirm(in, out)
+	if err != nil {
+		return err
+	}
+	if !yes {
+		return initcmd.ErrDeclined
+	}
+	if err := initcmd.Write(root, files); err != nil {
+		return err
+	}
+	return report(out, root, files, len(a.Annotations) == 0)
 }
 
 // report は、作った設定を vanda doctor と同じく確かめ、作ったファイルと次にすることを出す。
-func report(out io.Writer, root string, files [][2]string) error {
+func report(out io.Writer, root string, files [][2]string, noAnnotations bool) error {
 	cfg, errs := config.Load(root)
 	if errs != nil {
 		return fmt.Errorf(".vanda/ を作りましたが、設定を読めません。次の誤りを直してください。\n%s", errs.Error())
@@ -125,6 +102,9 @@ func report(out io.Writer, root string, files [][2]string) error {
 	fmt.Fprintln(out, "\n次にすること:")
 	fmt.Fprintln(out, "  1. "+config.File+" に、約束のレイヤーを [[layer]] で書いてください（id・name・description）。")
 	fmt.Fprintf(out, "  2. CI で vanda check .vanda/checks/ci.toml --base %s を動かすよう、CI の設定に足してください。\n", cfg.GUIBase)
-	fmt.Fprintln(out, "  3. 作ったファイルを確かめて、コミットしてください（vanda init はコミットしません）。")
+	if noAnnotations {
+		fmt.Fprintln(out, "  3. "+config.File+" に、アノテーションを読むファイルを [[annotation]] で書いてください（paths と adapter）。")
+	}
+	fmt.Fprintln(out, "vanda の中にアダプタがない言語（TypeScript など）は、[[annotation]] の command に外部のコマンドのアダプタを書くと足せます。")
 	return nil
 }

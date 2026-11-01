@@ -2,14 +2,12 @@
 package initcmd
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/TadahiroYamamura/vanda/internal/annotation"
@@ -20,10 +18,10 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/story"
 	"github.com/TadahiroYamamura/vanda/internal/tomlwrite"
 	"github.com/TadahiroYamamura/vanda/internal/version"
-)
 
-// ErrEOF は、問いかけの途中で入力が終わった（Ctrl+D）ため、何も作らなかったことを表す。
-var ErrEOF = errors.New("入力が終わったため、何も作りませんでした。")
+	"charm.land/bubbles/v2/key"
+	"charm.land/huh/v2"
+)
 
 // ErrDeclined は、作るかの確かめに n と答えたため、何も作らなかったことを表す。
 var ErrDeclined = errors.New("作らないと答えたため、何も作りませんでした。")
@@ -110,63 +108,8 @@ type Answers struct {
 	Annotations []Language // Pattern は答えのもの
 }
 
-// prompter は、1 行ずつ読む問いかけ。
-type prompter struct {
-	in  *bufio.Reader
-	out io.Writer
-}
-
-// ask は、問いを出して 1 行を読む。空なら既定を返す。入力が終わったら ErrEOF を返す。
-func (p *prompter) ask(question, def string) (string, error) {
-	if def != "" {
-		fmt.Fprintf(p.out, "%s [%s]: ", question, def)
-	} else {
-		fmt.Fprintf(p.out, "%s: ", question)
-	}
-	line, err := p.in.ReadString('\n')
-	if err != nil && !(errors.Is(err, io.EOF) && line != "") {
-		fmt.Fprintln(p.out)
-		return "", ErrEOF
-	}
-	line = strings.TrimSpace(line)
-	if line == "" {
-		return def, nil
-	}
-	return line, nil
-}
-
-// askValid は、check が誤りを返すあいだ、理由を出して同じ問いを聞き直す。
-func (p *prompter) askValid(question, def string, check func(string) error) (string, error) {
-	for {
-		a, err := p.ask(question, def)
-		if err != nil {
-			return "", err
-		}
-		if err := check(a); err != nil {
-			fmt.Fprintln(p.out, "  "+err.Error())
-			continue
-		}
-		return a, nil
-	}
-}
-
-func (p *prompter) yesNo(question string, def bool) (bool, error) {
-	d := "n"
-	if def {
-		d = "y"
-	}
-	a, err := p.askValid(question+"（y/n）", d, func(s string) error {
-		switch strings.ToLower(s) {
-		case "y", "yes", "n", "no":
-			return nil
-		}
-		return errors.New("y か n で答えてください。")
-	})
-	if err != nil {
-		return false, err
-	}
-	return strings.HasPrefix(strings.ToLower(a), "y"), nil
-}
+// ErrInterrupted は、問いかけの途中で中断した（Ctrl+C・Ctrl+D）ため、何も作らなかったことを表す。
+var ErrInterrupted = errors.New("中断したため、何も作りませんでした。")
 
 type storeChoice struct {
 	key, title, defaultIDPattern string
@@ -181,15 +124,55 @@ func storeChoices() []storeChoice {
 	return append(out, storeChoice{key: "command", title: "外部のコマンド"}, storeChoice{key: "none", title: "使わない"})
 }
 
+// asker は、huh の問いを 1 つずつ出す。問いの答えで次の問いが変わるので、まとめた 1 つの形でなく、問いごとに出す
+type asker struct {
+	in   io.Reader
+	out  io.Writer
+	keys *huh.KeyMap
+}
+
+func newAsker(in io.Reader, out io.Writer) *asker {
+	keys := huh.NewDefaultKeyMap()
+	// Ctrl+D（入力を終える）でも、Ctrl+C と同じく中断する
+	keys.Quit = key.NewBinding(key.WithKeys("ctrl+c", "ctrl+d"))
+	return &asker{in: in, out: out, keys: keys}
+}
+
+func (a *asker) run(fields ...huh.Field) error {
+	err := huh.NewForm(huh.NewGroup(fields...)).WithInput(a.in).WithOutput(a.out).WithKeyMap(a.keys).WithShowHelp(true).Run()
+	if errors.Is(err, huh.ErrUserAborted) {
+		return ErrInterrupted
+	}
+	if err != nil {
+		return fmt.Errorf("問いかけを出せませんでした（%v）。", err)
+	}
+	return nil
+}
+
+// input は、既定の答えを入れた状態から始める入力。check は、形に合わない答えのときに、その場で理由を出す
+func (a *asker) input(title, def string, check func(string) error) (string, error) {
+	v := def
+	err := a.run(huh.NewInput().Title(title).Value(&v).Validate(func(s string) error { return check(strings.TrimSpace(s)) }))
+	return strings.TrimSpace(v), err
+}
+
 // Ask は、問いかけて答えを集める。
-func Ask(root string, d Defaults, in *bufio.Reader, out io.Writer) (Answers, error) {
-	p := &prompter{in: in, out: out}
+func Ask(root string, d Defaults, in io.Reader, out io.Writer) (Answers, error) {
+	q := newAsker(in, out)
 	var a Answers
 	var err error
 
-	a.Base, err = p.askValid("ベースブランチ", d.Base, func(s string) error {
+	current := ""
+	if b, err := repo.Git(root, "branch", "--show-current"); err == nil {
+		current = strings.TrimSpace(b)
+	}
+	a.Base, err = q.input("ベースブランチ", d.Base, func(s string) error {
 		if s == "" {
 			return errors.New("ベースブランチを入れてください。")
+		}
+		// 初期化した直後でコミットがないリポジトリでは、今のブランチはまだ git の中にないので、名前が同じなら受け付ける
+		if s == current {
+			return nil
 		}
 		if _, err := repo.Git(root, "rev-parse", "--verify", "-q", s+"^{commit}"); err != nil {
 			return fmt.Errorf("%s というブランチ（コミット）が見つかりません。あるブランチの名前を入れてください。", s)
@@ -201,31 +184,22 @@ func Ask(root string, d Defaults, in *bufio.Reader, out io.Writer) (Answers, err
 	}
 
 	choices := storeChoices()
-	def := len(choices) // 使わない
+	choice := choices[len(choices)-1] // 使わない
 	if d.GitHubRepo != "" {
-		def = 1
+		choice = choices[0]
 	}
-	fmt.Fprintln(out, "ストーリーの置き場所を、番号で選んでください。")
-	for i, c := range choices {
-		fmt.Fprintf(out, "  %d. %s\n", i+1, c.title)
+	var opts []huh.Option[storeChoice]
+	for _, c := range choices {
+		opts = append(opts, huh.NewOption(c.title, c))
 	}
-	n, err := p.askValid("番号", strconv.Itoa(def), func(s string) error {
-		i, err := strconv.Atoi(s)
-		if err != nil || i < 1 || i > len(choices) {
-			return fmt.Errorf("1 から %d の番号を入れてください。", len(choices))
-		}
-		return nil
-	})
-	if err != nil {
+	if err := q.run(huh.NewSelect[storeChoice]().Title("ストーリーの置き場所").Options(opts...).Value(&choice)); err != nil {
 		return a, err
 	}
-	i, _ := strconv.Atoi(n)
-	choice := choices[i-1]
 	a.Store = choice.key
 
 	switch choice.key {
 	case "github":
-		a.Repository, err = p.askValid("GitHub のリポジトリ", d.GitHubRepo, func(s string) error {
+		a.Repository, err = q.input("GitHub のリポジトリ", d.GitHubRepo, func(s string) error {
 			if GitHubRepository("https://github.com/"+s) != s || strings.ContainsAny(s, " \t") {
 				return errors.New("<owner>/<repo> の形（例: TadahiroYamamura/vanda）で入れてください。")
 			}
@@ -233,7 +207,7 @@ func Ask(root string, d Defaults, in *bufio.Reader, out io.Writer) (Answers, err
 		})
 	case "command":
 		var line string
-		line, err = p.askValid("外部のコマンドと引数（空白で区切る）", "", func(s string) error {
+		line, err = q.input("外部のコマンドと引数（空白で区切る）", "", func(s string) error {
 			if len(strings.Fields(s)) == 0 {
 				return errors.New("コマンドを入れてください。")
 			}
@@ -245,7 +219,7 @@ func Ask(root string, d Defaults, in *bufio.Reader, out io.Writer) (Answers, err
 		return a, err
 	}
 
-	a.IDPattern, err = p.askValid("ストーリーの ID の書き方（正規表現）", choice.defaultIDPattern, func(s string) error {
+	a.IDPattern, err = q.input("ストーリーの ID の書き方（正規表現）", choice.defaultIDPattern, func(s string) error {
 		if s == "" {
 			return errors.New("ストーリーの ID の書き方を入れてください（例: #[0-9]+）。")
 		}
@@ -262,13 +236,26 @@ func Ask(root string, d Defaults, in *bufio.Reader, out io.Writer) (Answers, err
 		return a, err
 	}
 
-	if len(d.Languages) == 0 {
-		fmt.Fprintln(out, "アノテーションを読む言語のファイルは、見つかりませんでした。")
-	}
-	// 見つかった言語は、いつも読む（読まないとエビデンスを集められないため）。読むファイルのパターンだけを聞く
+	// 読む言語は、vanda の中のアダプタを全部並べて選ばせる（初期化した直後でファイルがないリポジトリでも選べるように）。
+	// リポジトリで見つかった言語は、選んだ状態から始める
+	found := map[string]bool{}
 	for _, l := range d.Languages {
-		pat, err := p.askValid(l.Title+"の、アノテーションを読むファイル", l.DefaultPattern, func(s string) error {
-			if err := glob.Validate(s); err != nil {
+		found[l.Name] = true
+	}
+	var langOpts []huh.Option[string]
+	for _, l := range annotation.Builtins {
+		langOpts = append(langOpts, huh.NewOption(l.Title, l.Name).Selected(found[l.Name]))
+	}
+	var picked []string
+	if err := q.run(huh.NewMultiSelect[string]().Title("アノテーションを読む言語（スペースで選ぶ）").Options(langOpts...).Value(&picked)); err != nil {
+		return a, err
+	}
+	for _, l := range annotation.Builtins {
+		if !contains(picked, l.Name) {
+			continue
+		}
+		pat, err := q.input(l.Title+"の、アノテーションを読むファイル", l.DefaultPattern, func(s string) error {
+			if s == "" || glob.Validate(s) != nil {
 				return errors.New("パターンの書き方が誤っています。リポジトリの直下からの / 区切りの場所で入れてください（例: " + l.DefaultPattern + "）。")
 			}
 			return nil
@@ -276,16 +263,26 @@ func Ask(root string, d Defaults, in *bufio.Reader, out io.Writer) (Answers, err
 		if err != nil {
 			return a, err
 		}
-		l.Pattern = pat
-		a.Annotations = append(a.Annotations, l)
+		a.Annotations = append(a.Annotations, Language{AdapterInfo: l, Pattern: pat})
 	}
 	return a, nil
 }
 
 // Confirm は、作るかを聞く。
-func Confirm(in *bufio.Reader, out io.Writer) (bool, error) {
-	p := &prompter{in: in, out: out}
-	return p.yesNo("作りますか", true)
+func Confirm(in io.Reader, out io.Writer) (bool, error) {
+	q := newAsker(in, out)
+	yes := true
+	err := q.run(huh.NewConfirm().Title("この内容で .vanda/ を作りますか").Affirmative("作る").Negative("作らない").Value(&yes))
+	return yes, err
+}
+
+func contains(xs []string, s string) bool {
+	for _, x := range xs {
+		if x == s {
+			return true
+		}
+	}
+	return false
 }
 
 // ConfigText は、.vanda/config.toml の中身。値だけを書き、コメントは入れない。
