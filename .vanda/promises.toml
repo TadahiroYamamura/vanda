@@ -759,7 +759,6 @@ id = "revoke-returns-to-proposed"
 subjects = ["rv-17", "agreement", "proposed"]
 statement = "合意を取り消した後、今の中身に合う合意の記録がほかに残っていなければ、提案中に戻る"
 layers = ["model", "cli", "api"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
