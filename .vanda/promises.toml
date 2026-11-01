@@ -776,7 +776,6 @@ id = "agreements-point-to-existing-items"
 subjects = ["cm-03", "cmd-10", "agreement-record"]
 statement = "kind が claim・term・feature の合意の記録が、約束リストにない項目を指していれば、agreement-targets の誤りにする"
 layers = ["cli"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"

@@ -71,3 +71,11 @@ path = "cmd/vanda/testdata/scenario/agreement_targets.txtar"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-02T02:06:18+09:00
 story = "#4"
+
+[[agreement]]
+kind = "claim"
+key = "agreements-point-to-existing-items"
+fingerprint = "sha256:7b368eca4b7c3f30b4e69352ebeca4fc62433715125362f764414a78f7e63d87"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-02T02:06:35+09:00
+story = "#4"
