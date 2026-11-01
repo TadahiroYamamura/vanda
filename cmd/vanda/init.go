@@ -33,7 +33,8 @@ func newInitCommand() *cobra.Command {
 			}
 			root, rerr := repo.Root(wd)
 			if rerr != nil {
-				return rerr
+				// repo.Root の直し方は「.vanda/ のある」リポジトリを前提にしているので、init では言い方を変える
+				return errors.New("git のリポジトリの外で動かしています。vanda init は、git のリポジトリの中で動かしてください。")
 			}
 			if _, err := os.Lstat(filepath.Join(root, ".vanda")); err == nil {
 				return errors.New(".vanda/ がすでにあります。何も書き換えませんでした。")
