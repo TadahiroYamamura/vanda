@@ -368,9 +368,6 @@ const (
 const (
 	pollEvery = 5 * time.Millisecond
 	waitLimit = 5 * time.Second
-	// resendAfter は、キーを送っても画面が変わらないときに、送り直すまでの時間。問いが入れ替わる間に送ったキーを、
-	// vanda 側が読み落とすことがあるため
-	resendAfter = 300 * time.Millisecond
 )
 
 func (s *initSession) finished() bool {
@@ -394,7 +391,7 @@ func (s *initSession) waitFor(what string, cond func(string) bool) string {
 		if time.Now().After(deadline) {
 			s.t.Fatalf("%s を待ったが、%v たってもならない\n--- 画面\n%s\n--- 標準エラー\n%s", what, waitLimit, sc, s.stderr.String())
 		}
-		if s.finished() && !cond(s.screen()) {
+		if s.finished() {
 			time.Sleep(50 * time.Millisecond) // 終わった後に残った出力を読み切る
 			if sc := s.screen(); cond(sc) {
 				return sc
@@ -405,30 +402,12 @@ func (s *initSession) waitFor(what string, cond func(string) bool) string {
 	}
 }
 
-// press は、キーを送り、画面が cond を満たすまで待つ。resendAfter たっても画面が変わらなければ、送り直す。
-// vanda init が終わったら、それも待ち終わりとみなす。
+// press は、キーを 1 回だけ送り、画面が cond を満たすまで待つ（vanda init が終わったら、それも待ち終わりとみなす）。
+// 送り直さない。問いが出た後に送ったキーを vanda が読み落とすなら、それは不具合なので、隠さずに落とす。
 func (s *initSession) press(what, k string, cond func(string) bool) string {
 	s.t.Helper()
-	before := s.screen()
-	deadline := time.Now().Add(waitLimit)
-	for {
-		s.keys(k)
-		resend := time.Now().Add(resendAfter)
-		for time.Now().Before(resend) {
-			sc := s.screen()
-			if cond(sc) || s.finished() {
-				return sc
-			}
-			time.Sleep(pollEvery)
-		}
-		if sc := s.screen(); sc != before {
-			// 画面は変わったが、まだ cond にならない。送り直さずに待つ
-			return s.waitFor(what, func(sc string) bool { return cond(sc) || s.finished() })
-		}
-		if time.Now().After(deadline) {
-			s.t.Fatalf("%s: キー %q を送っても画面が変わらない\n--- 画面\n%s", what, k, s.screen())
-		}
-	}
+	s.keys(k)
+	return s.waitFor(what, func(sc string) bool { return cond(sc) || s.finished() })
 }
 
 // initField は、画面の一番下の問い（行の頭が ┃ のまとまり）。
@@ -1540,5 +1519,29 @@ func Test審査の設定には今ある審査が全部docs_formats_mdの順に�
 		if strings.HasPrefix(strings.TrimSpace(line), "#") {
 			t.Errorf("審査の設定の %d 行目がコメント: %q", i+1, line)
 		}
+	}
+}
+
+// initRepeat は、読み落としを見つけやすくするために、同じ流れを回す回数。1 回 1〜2 秒で、並べて動かす
+const initRepeat = 30
+
+// CMD-11: 問いが出るのを待ってから答えを 1 回だけ送ると、2 問目以降の答えも読み落とされずに最後まで進む。
+// 読み落としはときどきしか起きないので、同じ流れを initRepeat 回まわす
+func Test問いが出てから1回だけ答えを送ると2問目以降の答えも読み落とされずに最後まで進む(t *testing.T) {
+	t.Parallel()
+	bin, _ := initSetup(t)
+	for i := 0; i < initRepeat; i++ {
+		t.Run(fmt.Sprintf("%02d", i+1), func(t *testing.T) {
+			t.Parallel()
+			r := newInitRepo(t, "https://github.com/owner/app.git", true, "e2e/a.txtar")
+			s := startInit(t, bin, r.root, r.g.env)
+			s.run(initPlan{})
+			if code := s.wait(); code != 0 {
+				t.Fatalf("vanda init が %d で終わった\n%s\n%s", code, s.screen(), s.stderr.String())
+			}
+			if !r.exists(".vanda/config.toml") {
+				t.Errorf(".vanda/config.toml ができていない\n%s", s.screen())
+			}
+		})
 	}
 }
