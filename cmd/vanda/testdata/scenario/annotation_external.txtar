@@ -109,6 +109,41 @@ stderr '\.vanda/adapters/norun/run'
 stderr 'ください。'
 ! stderr '(?m)^panic: '
 
+# アダプタの名前に、空・/・\・.・.. は書けない（.vanda/adapters/ の外を指せないように）
+cp cases/config-name-empty.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr '\.vanda/config\.toml'
+! stderr '(?m)^panic: '
+cp cases/config-name-slash.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr '\.vanda/config\.toml.*okdir/run'
+! stderr '(?m)^panic: '
+cp cases/config-name-backslash.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr '\.vanda/config\.toml'
+! stderr '(?m)^panic: '
+cp cases/config-name-dot.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr '\.vanda/config\.toml'
+! stderr '(?m)^panic: '
+cp cases/config-name-dotdot.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr '\.vanda/config\.toml'
+! stderr '(?m)^panic: '
+
+# 中に持つアダプタには args を書けない
+cp cases/config-builtin-args.toml .vanda/config.toml
+expand .vanda/config.toml
+rm .vanda/adapters/go
+! exec vanda check .vanda/checks/links.toml
+stderr '\.vanda/config\.toml.*args'
+! stderr '(?m)^panic: '
+
 # command は、ほかの決まっていない項目と同じく誤りになる
 cp cases/config-command.toml .vanda/config.toml
 expand .vanda/config.toml
@@ -357,3 +392,70 @@ description = "判定と状態の変化"
 
 [[annotation]]
 paths = ["ext/*.ext"]
+-- cases/config-name-empty.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+adapter = ""
+-- cases/config-name-slash.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+adapter = "okdir/run"
+-- cases/config-name-backslash.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+adapter = "ok\\x"
+-- cases/config-name-dot.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+adapter = "."
+-- cases/config-name-dotdot.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+adapter = ".."
+-- cases/config-builtin-args.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+adapter = "go"
+args = ["--strict"]

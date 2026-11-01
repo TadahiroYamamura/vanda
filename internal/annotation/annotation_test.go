@@ -191,7 +191,7 @@ func TestReadはその言語のコメントの外にあるアノテーション�
 	}
 }
 
-func TestReadは外部のコマンドのアダプタとJSONで受け渡す(t *testing.T) {
+func TestReadは利用者のアダプタとJSONで受け渡す(t *testing.T) {
 	root, files := setup(t, map[string]string{
 		"docs/a.md": "x\n<!-- @vanda:evidence a -->\n<!-- @vanda:evidence b -->\n",
 		"adapter.sh": `#!/bin/sh
@@ -202,7 +202,7 @@ case "$in" in
 esac
 `,
 	})
-	as, errs := Read(root, files, []config.AnnotationRule{{Paths: []string{"docs/*.md"}, Command: []string{"./adapter.sh"}}})
+	as, errs := Read(root, files, []config.AnnotationRule{{Paths: []string{"docs/*.md"}, User: &config.UserAdapter{Name: "adapter", Path: "adapter.sh"}}})
 	if errs != nil {
 		t.Fatal(errs)
 	}
@@ -211,7 +211,7 @@ esac
 	}
 }
 
-func TestReadは外部のコマンドのアダプタの失敗と返し漏れを誤りにする(t *testing.T) {
+func TestReadは利用者のアダプタの失敗と返し漏れを誤りにする(t *testing.T) {
 	root, files := setup(t, map[string]string{
 		"docs/a.md":  "<!-- @vanda:evidence a -->\n<!-- @vanda:evidence b -->\n",
 		"docs/b.md":  "<!-- @vanda:evidence a -->\n",
@@ -219,13 +219,14 @@ func TestReadは外部のコマンドのアダプタの失敗と返し漏れを�
 		"fail.sh":    "#!/bin/sh\ncat >/dev/null\necho 'わからない' >&2\nexit 2\n",
 	})
 	_, errs := Read(root, files, []config.AnnotationRule{
-		{Paths: []string{"docs/a.md"}, Command: []string{"./partial.sh"}},
-		{Paths: []string{"docs/b.md"}, Command: []string{"./fail.sh"}},
+		{Paths: []string{"docs/a.md"}, User: &config.UserAdapter{Name: "partial", Path: "partial.sh"}},
+		{Paths: []string{"docs/b.md"}, User: &config.UserAdapter{Name: "fail", Path: "fail.sh"}},
 	})
 	want := [][]string{
-		{"docs/a.md: ", "アダプタ（./partial.sh）", "アノテーションのない 5 行目の名前"},
-		{"docs/a.md:2: ", "アダプタ（./partial.sh）", "このアノテーションの名前"},
-		{"docs/b.md: ", "アダプタ（./fail.sh）", "（わからない）"},
+		// アダプタは名前で指す（指し方の細かい文言は決まっていないので、名前が入ることだけを見る）
+		{"docs/a.md: ", "partial", "アノテーションのない 5 行目の名前"},
+		{"docs/a.md:2: ", "partial", "このアノテーションの名前"},
+		{"docs/b.md: ", "fail", "（わからない）"},
 	}
 	got := errs.Error()
 	for _, w := range want {
@@ -252,7 +253,7 @@ func TestReadは言語ごとに決まった種類のほかを誤りにする(t *
 		{Paths: []string{"e2e/*.txtar"}, Adapter: "txtar"},
 		{Paths: []string{"spec/*.tla"}, Adapter: "tla"},
 		{Paths: []string{"db/*.sql"}, Adapter: "sql"},
-		{Paths: []string{"docs/*.md"}, Command: []string{"./adapter.sh"}},
+		{Paths: []string{"docs/*.md"}, User: &config.UserAdapter{Name: "adapter", Path: "adapter.sh"}},
 	}
 	as, errs := Read(root, files, rules)
 	want := [][]string{
@@ -271,7 +272,7 @@ func TestReadは言語ごとに決まった種類のほかを誤りにする(t *
 		}
 	}
 	if len(as) != 1 || as[0].File != "docs/a.md" {
-		t.Errorf("外部のコマンドのアダプタでは、どの種類も書ける: %v", as)
+		t.Errorf("利用者のアダプタでは、どの種類も書ける: %v", as)
 	}
 }
 

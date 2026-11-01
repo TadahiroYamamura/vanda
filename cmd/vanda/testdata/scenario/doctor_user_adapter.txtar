@@ -42,6 +42,13 @@ stderr '\.vanda/adapters/empty-dir/run'
 stderr 'ください。'
 ! stderr '(?m)^panic: '
 
+# 中に持つ github には args を書けない
+cp cases/config-github-args.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda doctor
+stderr '\.vanda/config\.toml.*args'
+! stderr '(?m)^panic: '
+
 # [story] の command は、ほかの決まっていない項目と同じく誤りになる
 cp cases/config-command.toml .vanda/config.toml
 expand .vanda/config.toml
@@ -96,3 +103,10 @@ version = "${VANDA_VERSION}"
 
 [story]
 command = ["sh", ".vanda/adapters/jira-story"]
+-- cases/config-github-args.toml --
+version = "${VANDA_VERSION}"
+
+[story]
+adapter = "github"
+repository = "owner/app"
+args = ["--strict"]
