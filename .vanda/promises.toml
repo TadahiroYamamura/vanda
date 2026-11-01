@@ -1930,7 +1930,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "unit-test"
+type = "sensor"
 layers = ["api"]
 
 [[claim]]
