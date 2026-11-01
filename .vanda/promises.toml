@@ -1609,7 +1609,7 @@ layers = ["cli"]
 id = "doctor-project-adapter"
 subjects = ["cmd-01", "project-adapters"]
 statement = "vanda doctor は、置き場所が .vanda/adapters/ のアダプタなら、そこにあって実行できるかを確かめる"
-rationale = "監督の了承。アノテーションの .vanda/adapters/ のアダプタは、doctor では確かめない"
+rationale = "vanda doctor は、今効いている設定と、ストーリーの置き場所などとのつながりを確かめる機能（CMD-01）で、.vanda/adapters/ のアダプタでは、そこにあって実行できることが、つながることに当たるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
