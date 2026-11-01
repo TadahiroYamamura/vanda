@@ -6,12 +6,12 @@ definition = "AI がソースコードを書き、人はソースコードを読
 [[term]]
 id = "promise-list"
 name = "約束リスト"
-definition = "約束・用語・機能をまとめた一覧（quenta では spec/assurance.toml。quenta の規則では「保証の台帳」）"
+definition = "約束・用語・機能をまとめた一覧（既定は .vanda/promises.toml）。作ったものが何をするかの正"
 
 [[term]]
 id = "promise"
 name = "約束"
-definition = "ソフトウェアが成り立たせると決めたこと（quenta の規則では「主張」）"
+definition = "ソフトウェアが成り立たせると決めたこと"
 
 [[term]]
 id = "core-feature"
@@ -26,27 +26,27 @@ definition = "オラクル（TLA+）で確かめる機能。約束リストの�
 [[term]]
 id = "term"
 name = "用語"
-definition = "ものや概念（例: タスク、タスクの ID）。約束の対象の 1 つ"
+definition = "ものや概念（例: 合意の記録、指紋）。約束の対象の 1 つ"
 
 [[term]]
 id = "feature"
 name = "機能"
-definition = "利用者が行う操作（例: タスクの登録）。約束の対象の 1 つ"
+definition = "利用者が行う操作（例: 審査の実行）。約束の対象の 1 つ"
 
 [[term]]
 id = "layer"
 name = "レイヤー"
-definition = "約束がソフトウェアのどの部分の話か。モデル（判定と状態の変化）・CLI（引数と出力の形）・DB（保存）"
+definition = "約束がソフトウェアのどの部分の話か。設定で決める（vanda では、モデル・CLI・API・画面）"
 
 [[term]]
 id = "origin"
 name = "由来"
-definition = "約束が作られ・変わった履歴。1 件ごとに、ストーリーと、そのきっかけになった判断を結ぶ（「出どころ」はこれにまとめた）"
+definition = "約束が作られ・変わった履歴。約束リストを変えたコミットごとに、そのコミットの Story: のトレーラーのストーリーと結ぶ"
 
 [[term]]
 id = "evidence"
 name = "エビデンス"
-definition = "約束が成り立っていることの裏付け（quenta の規則では「裏付け」）"
+definition = "約束が成り立っていることの裏付け"
 
 [[term]]
 id = "stage"
@@ -57,7 +57,7 @@ part_of = "evidence"
 [[term]]
 id = "evidence-type"
 name = "タイプ"
-definition = "エビデンスの種類（オラクル、クロスチェック、シナリオなど）。約束リストの項目は type"
+definition = "エビデンスの種類（単体テスト、モデル検査、シナリオテストなど）。約束リストの項目は type"
 part_of = "evidence"
 
 [[term]]
@@ -76,11 +76,6 @@ name = "証明"
 definition = "エビデンスのタイプ（proof）。すべての値で性質が成り立つことを示す（Dafny）"
 
 [[term]]
-id = "oracle-reading"
-name = "読み下し"
-definition = "オラクルを自然言語に訳したもの（quenta の規則では「逆翻訳」）"
-
-[[term]]
 id = "cross-check"
 name = "クロスチェック"
 definition = "オラクルと実装に同じ操作を送り、結果を比べるテスト（モデルベーステスト）。タイプの値は cross-check"
@@ -91,35 +86,9 @@ name = "ランダムチェック"
 definition = "無作為な入力で性質を確かめるテスト（プロパティベーステスト）"
 
 [[term]]
-id = "decoy-test"
-name = "デコイテスト"
-definition = "わざと不具合を仕込み、テストが捕まえるかを試すもの（変異テスト）"
-
-[[term]]
-id = "no-catch-reason"
-name = "キャッチしない理由"
-definition = "デコイテストで、テストがキャッチしないデコイと、その理由の一覧。1 件ごとに理由の種類と文を持つ（「対象外」から改名した）"
-part_of = "decoy-test"
-
-[[term]]
-id = "equivalent-decoy"
-name = "等価デコイ"
-definition = "仕込んでも振る舞いが変わらないデコイ（等価ミュータントにあたる）。どんなテストでもキャッチできない"
-
-[[term]]
-id = "out-of-promise-decoy"
-name = "約束外デコイ"
-definition = "約束していない振る舞いだけを変えるデコイ（例: エラーの文言）。キャッチするテストを書けるが、書かない"
-
-[[term]]
-id = "catch-rate"
-name = "キャッチ率"
-definition = "デコイテストで、仕込んだ不具合のうちテストが捕まえた割合（検出力）"
-
-[[term]]
 id = "scenario"
 name = "シナリオ"
-definition = "CLI のコマンドの並びで約束を確かめる台本（エビデンスの本体）"
+definition = "利用者の操作の流れで約束を確かめる台本（エビデンスの本体）。CLI は txtar、端末で問いかけるものは Expect、画面は E2E で書く"
 
 [[term]]
 id = "scenario-test"
@@ -137,25 +106,14 @@ name = "センサー"
 definition = "実装のコードの中で、操作の後に約束が成り立っているかを確かめ、破れていたら見つけて知らせる仕組み（事後条件の確認）。拒むのではなく見つける。例: 操作の後の状態を確かめ、破れていればエラーを返して記録する。実装のコードの外で拒むものはガードレール、開発中に確かめるものはテスト"
 
 [[term]]
-id = "run-result"
-name = "実行の結果"
-definition = "エビデンスを実行したときの、日時・版・合格したか・ログ"
-
-[[term]]
-id = "run-trace"
-name = "実行の記録"
-definition = "ランダムチェックとクロスチェックで、実際に流した値と結果"
-part_of = "run-result"
-
-[[term]]
 id = "story"
 name = "ストーリー"
-definition = "開発の単位。ストーリーの置き場所（GitHub Issues など）で管理する"
+definition = "開発の単位。ストーリーの置き場所（GitHub Issues など）で管理し、コミットとは Story: のトレーラーで結ぶ"
 
 [[term]]
 id = "agreement"
 name = "合意"
-definition = "約束などの今の中身が要求どおりかを人が確かめ、認めること。動作は「合意する」（「了承」から改名した）"
+definition = "約束などの今の中身が要求どおりかを人が確かめ、認めること。動作は「合意する」"
 
 [[term]]
 id = "agreement-record"
@@ -175,7 +133,7 @@ definition = "今の中身に合意している状態"
 [[term]]
 id = "base-branch"
 name = "ベースブランチ"
-definition = "差分を出すときに比べるブランチ。ブランチごとのレビュー（RV-13）では、そのブランチが分かれた点と比べる。画面でその場で選ぶ（「比べる元」から改名した）"
+definition = "差分を出すときに比べるブランチ。そのブランチから分かれた点と比べる。審査では --base で渡し、画面ではその場で選ぶ"
 
 [[term]]
 id = "ai-proposal"
@@ -193,49 +151,9 @@ name = "差分あり"
 definition = "フラグ（注意して読む手がかり）。前の合意から中身が変わったもの"
 
 [[term]]
-id = "basis"
-name = "根拠"
-definition = "調査やインタビューで分かり、判断の根拠にしたこと"
-
-[[term]]
-id = "decision"
-name = "判断"
-definition = "決めたこと。合意、差し戻し、方針の決定"
-
-[[term]]
-id = "blocker"
-name = "阻害要因"
-definition = "判断できない理由と、何が分かれば判断できるか"
-
-[[term]]
-id = "send-back"
-name = "差し戻し"
-definition = "「このままでは合意しない」という判断"
-
-[[term]]
-id = "sent-back"
-name = "差し戻し中"
-definition = "最後の判断が差し戻しで、まだ直していない状態"
-
-[[term]]
-id = "waiting"
-name = "待機中"
-definition = "エージェントが、レビュー・質問への回答・入力を待っている状態"
-
-[[term]]
-id = "interrupt"
-name = "中断"
-definition = "エージェントの今の作業だけを止めること（コンソールで Esc を押すのに当たる）"
-
-[[term]]
 id = "check"
 name = "審査"
-definition = "CLI の vanda check が行う、約束リスト・合意・エビデンス・オラクルなどの点検。証拠を見て、間違いや矛盾がなく基準を満たすかを判断する（「確かめ」から改名した）"
-
-[[term]]
-id = "export"
-name = "エクスポート"
-definition = "読み取り専用の頁を作ること"
+definition = "CLI の vanda check が行う、約束リスト・合意・エビデンス・オラクルなどの点検。証拠を見て、間違いや矛盾がなく基準を満たすかを判断する"
 
 [[term]]
 id = "flag"
@@ -245,17 +163,52 @@ definition = "注意して読む手がかりとして、約束などに立てる
 [[term]]
 id = "annotation"
 name = "アノテーション"
-definition = "仕様・テスト・本番のコードに書く注釈。約束などの ID を指す（例: @vanda:evidence <約束の ID>）。quenta の規則では「印」"
+definition = "仕様・テスト・本番のコードに書く注釈。約束などの ID を指す（例: @vanda:evidence <約束の ID>）"
 
 [[term]]
 id = "adapter"
 name = "アダプタ"
-definition = "vanda と、言語や道具・ストーリーの置き場所とのあいだを受け渡す部品。vanda が組込みで持つもの（組込みのアダプタ）と、プロジェクトが .vanda/adapters/ に置くものがある"
+definition = "vanda と、言語や道具・ストーリーの置き場所・ガードレールの定義とのあいだを受け渡す部品。vanda が組込みで持つもの（組込みのアダプタ）と、プロジェクトが .vanda/adapters/ に置くものがある"
 
 [[term]]
 id = "builtin-adapter"
 name = "組込みのアダプタ"
-definition = "vanda が中に持つアダプタ（アノテーションの go・txtar・tla・sql・ts、ストーリーの置き場所の github）。同じ名前のアダプタを .vanda/adapters/ に置くと、そちらが使われる"
+definition = "vanda が中に持つアダプタ（アノテーションの go・txtar・tla・sql・ts、ストーリーの置き場所の github、ガードレールの定義の file）。同じ名前のアダプタを .vanda/adapters/ に置くと、そちらが使われる"
+
+[[term]]
+id = "fingerprint"
+name = "指紋"
+definition = "中身が同じかを比べるための値（sha256: に続く 64 文字）。約束・用語・機能は flags と guesses を除いた項目から、ファイルは中身のバイト列から作る。合意の記録は、合意したときの指紋を持つ"
+
+[[term]]
+id = "story-trailer"
+name = "Story: のトレーラー"
+definition = "コミットのメッセージの末尾に書く Story: <ID>（Co-Authored-By: と同じ Git のトレーラー）。そのコミットがどのストーリーのものかを表す。1 つのコミットに 1 つまで"
+
+[[term]]
+id = "check-config"
+name = "審査の設定"
+definition = "どの審査を、どの範囲で行うかを書いたファイル（.vanda/checks/<名前>.toml）。vanda check に渡す"
+
+[[term]]
+id = "check-scope"
+name = "範囲"
+definition = "審査が見るもの。all（全部）か story（1 つのストーリーで変わったもの）"
+
+[[term]]
+id = "branch-point"
+name = "分かれた点"
+definition = "今のブランチがベースブランチから分かれたコミット（git merge-base）。範囲 story の審査は、ここからの変化を見る"
+
+[[term]]
+id = "detached"
+name = "外れた合意"
+definition = "ストーリーが合意したことがあり、今の中身にそのストーリーの合意がないもの。誰が変えたかを問わない"
+
+[[term]]
+id = "evidence-plan"
+name = "エビデンスの予定"
+definition = "約束ごとに、どのステージで、どのタイプのエビデンスを、どのレイヤーで得るかを書いたもの（約束リストの項目は evidence）"
 
 [[feature]]
 id = "cm-01"
