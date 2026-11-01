@@ -25,7 +25,7 @@ const (
 	DefaultIDPattern  = "#[0-9]+"
 )
 
-// 中に持つアノテーションの読み取りのアダプタ
+// 組込みのアノテーションの読み取りのアダプタ
 var BuiltinAdapters = []string{"go", "txtar", "tla", "sql"}
 
 type Config struct {
@@ -48,7 +48,7 @@ type Config struct {
 
 // StoryStore は、ストーリーの置き場所のアダプタ。Adapter が空で User が nil なら、置き場所につながない。
 type StoryStore struct {
-	// Adapter は、中に持つアダプタの名前（github）。利用者のアダプタを使うなら空
+	// Adapter は、組込みのアダプタの名前（github）。.vanda/adapters/ のアダプタを使うなら空
 	Adapter    string
 	Repository string
 	APIURL     string
@@ -63,10 +63,10 @@ func (s StoryStore) Name() string {
 	return s.Adapter
 }
 
-// AdaptersDir は、利用者のアダプタを置くディレクトリ（リポジトリの直下から）
+// AdaptersDir は、組込みのほかのアダプタを置くディレクトリ（リポジトリの直下から）
 const AdaptersDir = ".vanda/adapters"
 
-// UserAdapter は、.vanda/adapters/ の直下に置いた、利用者のアダプタ。
+// UserAdapter は、.vanda/adapters/ の直下に置いたアダプタ。
 type UserAdapter struct {
 	Name string
 	// Path は、実行するファイルの、リポジトリの直下からの場所。ファイルならそのもの、ディレクトリなら直下の run
@@ -85,7 +85,7 @@ type Layer struct {
 // AnnotationRule は、読むファイルのパターンと、使うアダプタ。Adapter が空で User が nil なら、アダプタが決まっていない。
 type AnnotationRule struct {
 	Paths []string
-	// Adapter は、中に持つアダプタの名前（go・txtar・tla・sql）。利用者のアダプタを使うなら空
+	// Adapter は、組込みのアダプタの名前（go・txtar・tla・sql）。.vanda/adapters/ のアダプタを使うなら空
 	Adapter string
 	User    *UserAdapter
 	Line    int
@@ -115,8 +115,8 @@ func Load(root string) (*Config, diag.Errors) {
 	return cfg, errs
 }
 
-// LoadAllowingMissingAdapters は、Load と同じく読み、確かめる。ただし、名前のアダプタが中にも .vanda/adapters/ にもないことは
-// 誤りにせず、その名前を missing に返す（.vanda/ を作った直後で、利用者のアダプタをまだ置いていないときに使う）。
+// LoadAllowingMissingAdapters は、Load と同じく読み、確かめる。ただし、名前のアダプタが組込みにも .vanda/adapters/ にもないことは
+// 誤りにせず、その名前を missing に返す（.vanda/ を作った直後で、アダプタをまだ置いていないときに使う）。
 func LoadAllowingMissingAdapters(root string) (cfg *Config, missing []string, errs diag.Errors) {
 	return load(&loader{root: root, allowMissing: true})
 }
@@ -186,7 +186,7 @@ func parse(l *loader, top *tomlread.Table) *Config {
 		var g GuardrailRule
 		if a, ok := t.Str("adapter", true); ok {
 			if a != "file" {
-				t.ErrAt("adapter", "ガードレールの定義の取り出しのアダプタ "+quote(a)+" は vanda の中にありません", `adapter = "file" にしてください（今は、ファイルを読むだけのアダプタしかありません）`)
+				t.ErrAt("adapter", "ガードレールの定義の取り出しのアダプタ "+quote(a)+" は組込みにありません", `adapter = "file" にしてください（今は、ファイルを読むだけのアダプタしかありません）`)
 			}
 			g.Adapter = a
 		}
@@ -247,19 +247,19 @@ func isRepository(s string) bool {
 	return ok && valid(owner) && valid(name)
 }
 
-// adapterOf は、表の adapter と args を読み、使うアダプタを決める。.vanda/adapters/ に同じ名前の利用者のアダプタがあれば、
-// 中に持つアダプタ（builtins）より先に使う。fix は、名前のアダプタがどこにもないときの直し方の前半。
+// adapterOf は、表の adapter と args を読み、使うアダプタを決める。.vanda/adapters/ に同じ名前のアダプタがあれば、
+// 組込みのアダプタ（builtins）より先に使う。fix は、名前のアダプタがどこにもないときの直し方の前半。
 func adapterOf(l *loader, t *tomlread.Table, builtins []string, fix string) (string, *UserAdapter) {
 	name, hasAdapter := t.Str("adapter", false)
 	args, hasArgs := t.Strs("args", false)
 	if !hasAdapter {
 		if hasArgs {
-			t.ErrAt("args", "args は、利用者のアダプタのときだけ書けます", "adapter に利用者のアダプタの名前を書くか、args を消してください")
+			t.ErrAt("args", "args は、.vanda/adapters/ のアダプタのときだけ書けます", "adapter に .vanda/adapters/ のアダプタの名前を書くか、args を消してください")
 		}
 		return "", nil
 	}
 	if name == "" || name == "." || name == ".." || strings.ContainsAny(name, `/\`) {
-		t.ErrAt("adapter", "アダプタの名前 "+quote(name)+" が誤っています（空の名前、/ か \\ を含む名前、. と .. は使えません）", "中に持つアダプタの名前か、.vanda/adapters/ の直下のファイルかディレクトリの名前を書いてください")
+		t.ErrAt("adapter", "アダプタの名前 "+quote(name)+" が誤っています（空の名前、/ か \\ を含む名前、. と .. は使えません）", "組込みのアダプタの名前か、.vanda/adapters/ の直下のファイルかディレクトリの名前を書いてください")
 		return "", nil
 	}
 	rel := AdaptersDir + "/" + name
@@ -279,23 +279,23 @@ func adapterOf(l *loader, t *tomlread.Table, builtins []string, fix string) (str
 			l.missing = append(l.missing, name)
 			return "", &UserAdapter{Name: name, Path: rel, Args: args}
 		}
-		t.ErrAt("adapter", "アダプタ "+quote(name)+" は、vanda の中にも "+AdaptersDir+"/ にもありません", fix+"、"+rel+" に利用者のアダプタを置いてください")
+		t.ErrAt("adapter", "アダプタ "+quote(name)+" は、組込みにも "+AdaptersDir+"/ にもありません", fix+"、"+rel+" にアダプタを置いてください")
 		return "", nil
 	}
 	if hasArgs {
-		t.ErrAt("args", "args は、利用者のアダプタのときだけ書けます（"+quote(name)+" は vanda の中のアダプタです）", "args を消してください")
+		t.ErrAt("args", "args は、.vanda/adapters/ のアダプタのときだけ書けます（"+quote(name)+" は組込みのアダプタです）", "args を消してください")
 	}
 	return name, nil
 }
 
-// AdapterError は、利用者のアダプタを動かせない理由（What）と直し方（Fix）。どちらも「。」で終えない。
+// AdapterError は、.vanda/adapters/ のアダプタを動かせない理由（What）と直し方（Fix）。どちらも「。」で終えない。
 type AdapterError struct {
 	What, Fix string
 }
 
 func (e *AdapterError) Error() string { return e.What + "。" + e.Fix + "。" }
 
-// Check は、利用者のアダプタがあって実行できるかを確かめる。
+// Check は、.vanda/adapters/ のアダプタがあって実行できるかを確かめる。
 func (u *UserAdapter) Check(root string) *AdapterError {
 	info, err := os.Stat(filepath.Join(root, filepath.FromSlash(u.Path)))
 	switch {
@@ -311,12 +311,12 @@ func (u *UserAdapter) Check(root string) *AdapterError {
 	return nil
 }
 
-// Label は、誤りの文で利用者のアダプタを指す言い方。
+// Label は、誤りの文で .vanda/adapters/ のアダプタを指す言い方。
 func (u *UserAdapter) Label() string {
-	return "利用者のアダプタ " + u.Name + "（" + u.Path + "）"
+	return "アダプタ " + u.Name + "（" + u.Path + "）"
 }
 
-// Cmd は、利用者のアダプタを、リポジトリの根を作業のディレクトリにして動かすコマンドを作る。
+// Cmd は、.vanda/adapters/ のアダプタを、リポジトリの根を作業のディレクトリにして動かすコマンドを作る。
 func (u *UserAdapter) Cmd(ctx context.Context, root string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, filepath.Join(root, filepath.FromSlash(u.Path)), u.Args...)
 	cmd.Dir = root
@@ -359,10 +359,10 @@ func parseStoryStore(l *loader, t *tomlread.Table, st *StoryStore) {
 		return
 	}
 	if hasRepo {
-		t.ErrAt("repository", "repository は、vanda の中の github のアダプタを使うときだけ書けます", `adapter = "github" を書くか、repository を消してください（.vanda/adapters/ に github という名前の利用者のアダプタがあれば、そちらを使います）`)
+		t.ErrAt("repository", "repository は、組込みの github のアダプタを使うときだけ書けます", `adapter = "github" を書くか、repository を消してください（.vanda/adapters/ に github という名前のアダプタがあれば、そちらを使います）`)
 	}
 	if hasAPI {
-		t.ErrAt("api_url", "api_url は、vanda の中の github のアダプタを使うときだけ書けます", `adapter = "github" を書くか、api_url を消してください（.vanda/adapters/ に github という名前の利用者のアダプタがあれば、そちらを使います）`)
+		t.ErrAt("api_url", "api_url は、組込みの github のアダプタを使うときだけ書けます", `adapter = "github" を書くか、api_url を消してください（.vanda/adapters/ に github という名前のアダプタがあれば、そちらを使います）`)
 	}
 }
 

@@ -26,7 +26,7 @@ import (
 // ErrDeclined は、作るかの確かめに n と答えたため、何も作らなかったことを表す。
 var ErrDeclined = errors.New("作らないと答えたため、何も作りませんでした。")
 
-// Language は、アノテーションを読む言語（vanda の中のアダプタ）と、読むファイルのパターン。
+// Language は、アノテーションを読む言語（組込みのアダプタ）と、読むファイルのパターン。
 // Detect が返すものでは Pattern はアダプタの既定、Answers の中では答えのパターン。
 type Language struct {
 	annotation.AdapterInfo
@@ -115,13 +115,13 @@ func GitHubRepository(url string) string {
 type Answers struct {
 	// Base は、ベースブランチ（config.toml の [gui] base）
 	Base string
-	// Store は、ストーリーの置き場所。"github"（GitHub Issues）・"user"（利用者のアダプタ）・"none"（使わない）
+	// Store は、ストーリーの置き場所。"github"（GitHub Issues）・"user"（.vanda/adapters/ のアダプタ）・"none"（使わない）
 	Store string
 	// Repository は、Store が "github" のときの <owner>/<repo>。ほかの置き場所では使わない
 	Repository string
-	// Adapter は、Store が "user" のときの、利用者のアダプタの名前（.vanda/adapters/ の下に置く名前）。ほかの置き場所では使わない
+	// Adapter は、Store が "user" のときの、アダプタの名前（.vanda/adapters/ の下に置く名前）。ほかの置き場所では使わない
 	Adapter string
-	// Args は、Store が "user" のときの、利用者のアダプタに渡す引数。空なら args を書かない。ほかの置き場所では使わない
+	// Args は、Store が "user" のときの、アダプタに渡す引数。空なら args を書かない。ほかの置き場所では使わない
 	Args []string
 	// IDPattern は、ストーリーの ID の書き方（Go の正規表現）。置き場所によらず書く
 	IDPattern string
@@ -137,13 +137,13 @@ type storeChoice struct {
 	key, title, defaultIDPattern string
 }
 
-// storeChoices は、ストーリーの置き場所の選択肢。vanda の中に持つアダプタの一覧から作り、利用者のアダプタと使わないを足す
+// storeChoices は、ストーリーの置き場所の選択肢。組込みのアダプタの一覧から作り、.vanda/adapters/ のアダプタと使わないを足す
 func storeChoices() []storeChoice {
 	var out []storeChoice
 	for _, a := range story.Builtins {
 		out = append(out, storeChoice{key: a.Name, title: a.Title, defaultIDPattern: a.DefaultIDPattern})
 	}
-	return append(out, storeChoice{key: "user", title: "利用者のアダプタ"}, storeChoice{key: "none", title: "使わない"})
+	return append(out, storeChoice{key: "user", title: ".vanda/adapters/ のアダプタ"}, storeChoice{key: "none", title: "使わない"})
 }
 
 // asker は、huh の問いを 1 つずつ出す。問いの答えで次の問いが変わるので、まとめた 1 つの形でなく、問いごとに出す
@@ -231,7 +231,7 @@ func Ask(root string, d Defaults, t *Terminal) (Answers, error) {
 			return nil
 		})
 	case "user":
-		a.Adapter, err = q.input("利用者のアダプタの名前（.vanda/adapters/ の下に置く名前）", "", func(s string) error {
+		a.Adapter, err = q.input("アダプタの名前（.vanda/adapters/ の下に置く名前）", "", func(s string) error {
 			if s == "" || s == "." || s == ".." || strings.ContainsAny(s, "/\\ \t") {
 				return errors.New("アダプタの名前を入れてください（空白・/・\\ を含まない名前。. と .. は使えません）。")
 			}
@@ -241,7 +241,7 @@ func Ask(root string, d Defaults, t *Terminal) (Answers, error) {
 			return a, err
 		}
 		var line string
-		line, err = q.input("利用者のアダプタに渡す引数（空白で区切る。なくてよい）", "", func(string) error { return nil })
+		line, err = q.input("アダプタに渡す引数（空白で区切る。なくてよい）", "", func(string) error { return nil })
 		a.Args = strings.Fields(line)
 	}
 	if err != nil {
@@ -265,7 +265,7 @@ func Ask(root string, d Defaults, t *Terminal) (Answers, error) {
 		return a, err
 	}
 
-	// 読む言語は、vanda の中のアダプタを全部並べて選ばせる（初期化した直後でファイルがないリポジトリでも選べるように）。
+	// 読む言語は、組込みのアダプタを全部並べて選ばせる（初期化した直後でファイルがないリポジトリでも選べるように）。
 	// リポジトリで見つかった言語は、選んだ状態から始める
 	found := map[string]bool{}
 	for _, l := range d.Languages {

@@ -13,7 +13,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/glob"
 )
 
-// AdapterInfo は、vanda の中に持つアノテーションの読み取りのアダプタの、言語の見つけ方と既定のパターン。
+// AdapterInfo は、組込みのアノテーションの読み取りのアダプタの、言語の見つけ方と既定のパターン。
 // vanda init が、見つかった言語ごとに、読むファイルのパターンを問いかけるときに使う
 type AdapterInfo struct {
 	Name           string // 設定の [[annotation]] の adapter に書く名前
@@ -22,7 +22,7 @@ type AdapterInfo struct {
 	DefaultPattern string // 読むファイルのパターンの既定
 }
 
-// Builtins は、vanda の中に持つアノテーションの読み取りのアダプタの一覧。アダプタを足したら、ここにも足す
+// Builtins は、組込みのアノテーションの読み取りのアダプタの一覧。アダプタを足したら、ここにも足す
 var Builtins = []AdapterInfo{
 	{Name: "go", Title: "Go のテスト（*_test.go）", Suffix: "_test.go", DefaultPattern: "**/*_test.go"},
 	{Name: "txtar", Title: "シナリオ（*.txtar）", Suffix: ".txtar", DefaultPattern: "**/*.txtar"},
@@ -41,13 +41,13 @@ type Annotation struct {
 	Kind  string
 	Value string // ID か、internal なら理由
 	Name  string // 付いているものの名前（アダプタが読み取ったもの）
-	// Adapter は、読み取ったアダプタ（go・txtar・tla・sql）。利用者のアダプタなら空
+	// Adapter は、読み取ったアダプタ（go・txtar・tla・sql）。.vanda/adapters/ のアダプタなら空
 	Adapter string
 }
 
 // adapter は、ファイルの中身と、アノテーションのある行を受け取り、行ごとに付いているものの名前を返す。
 // comments は、行ごとに、その言語のコメントの中の文だけを返す（コメントの外の @vanda: を数えないため）。
-// nil を返せば、すべての行の全体を見る（言語を知らない利用者のアダプタ）。
+// nil を返せば、すべての行の全体を見る（言語を知らない .vanda/adapters/ のアダプタ）。
 type adapter interface {
 	comments(file string, src []byte) ([]string, []diag.Error)
 	// kinds は、その言語に書けるアノテーションの種類。nil なら、すべて
@@ -82,7 +82,7 @@ func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotat
 		}
 		a := adapterFor(root, hit[0])
 		if a == nil {
-			errs = append(errs, diag.Error{File: f, What: fmt.Sprintf("%s の %d 行目の [[annotation]] のパターンに当たりますが、使うアダプタが決まっていません", config.File, hit[0].Line), Fix: "その [[annotation]] に、adapter（vanda の中のアダプタか、.vanda/adapters/ の利用者のアダプタの名前）を書いてください"})
+			errs = append(errs, diag.Error{File: f, What: fmt.Sprintf("%s の %d 行目の [[annotation]] のパターンに当たりますが、使うアダプタが決まっていません", config.File, hit[0].Line), Fix: "その [[annotation]] に、adapter（組込みのアダプタか、.vanda/adapters/ のアダプタの名前）を書いてください"})
 			continue
 		}
 		src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(f)))

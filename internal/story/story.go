@@ -48,7 +48,7 @@ func storeErr(msg, fix string) *Error {
 
 const timeout = 20 * time.Second
 
-// AdapterInfo は、vanda の中に持つストーリーの置き場所のアダプタ。vanda init の選択肢と、ID の書き方の既定に使う
+// AdapterInfo は、組込みのストーリーの置き場所のアダプタ。vanda init の選択肢と、ID の書き方の既定に使う
 type AdapterInfo struct {
 	Name  string // 設定の [story] の adapter に書く名前
 	Title string // 画面や問いかけに出す名前
@@ -56,7 +56,7 @@ type AdapterInfo struct {
 	DefaultIDPattern string
 }
 
-// Builtins は、vanda の中に持つストーリーの置き場所のアダプタの一覧。アダプタを足したら、ここにも足す
+// Builtins は、組込みのストーリーの置き場所のアダプタの一覧。アダプタを足したら、ここにも足す
 var Builtins = []AdapterInfo{
 	{Name: "github", Title: "GitHub Issues", DefaultIDPattern: config.DefaultIDPattern},
 }
@@ -72,7 +72,7 @@ func Read(root string, cfg *config.Config, id string) (*Story, *Error) {
 	case cfg.Story.Adapter == "github":
 		return readGitHub(cfg.Story, id)
 	}
-	return nil, &Error{Status: http.StatusNotFound, Message: "ストーリーの置き場所が設定されていません。", Fix: `.vanda/config.toml の [story] に、adapter = "github" と repository を書くか、.vanda/adapters/ に置いた利用者のアダプタの名前を adapter に書いてください。`}
+	return nil, &Error{Status: http.StatusNotFound, Message: "ストーリーの置き場所が設定されていません。", Fix: `.vanda/config.toml の [story] に、adapter = "github" と repository を書くか、.vanda/adapters/ に置いたアダプタの名前を adapter に書いてください。`}
 }
 
 // Token は、GitHub の認証の鍵を、使うたびに読む。環境の変数 GH_TOKEN があればそれを、なければ gh auth token の出力を使う。
@@ -262,7 +262,7 @@ type userResponse struct {
 func readUser(root string, u *config.UserAdapter, id string) (*Story, *Error) {
 	in, err := json.Marshal(userRequest{Action: "read", Story: id})
 	if err != nil {
-		return nil, storeErr("利用者のアダプタに渡す JSON を作れません（"+err.Error()+"）。", "vanda の不具合です。開発者に知らせてください。")
+		return nil, storeErr("アダプタに渡す JSON を作れません（"+err.Error()+"）。", "vanda の不具合です。開発者に知らせてください。")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
