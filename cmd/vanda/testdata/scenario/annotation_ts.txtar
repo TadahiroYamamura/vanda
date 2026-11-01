@@ -1,0 +1,182 @@
+# アノテーションの読み取り: 組込みの TypeScript のアダプタ（ts。docs/plans/annotation-types.md の 2）。
+# 書けるのは `@vanda:evidence` だけ。数えるのは // と /* */ のコメントの中だけで、文字列・テンプレート文字列の中は数えない。
+# 書ける所は test(・it(・describe(（.skip・.only・.each などが付いたものを含む）の呼び出しの直前のコメント（空行をはさまない）だけ。
+# 付いているものの名前は、呼び出しの最初の引数の文字列。文字列の決まった値でなければ誤り。
+
+exec git init -q -b main
+expand .vanda/config.toml
+
+# 元のファイルでは通り、unit-test の予定が揃う
+exec vanda check .vanda/checks/links.toml
+exec vanda check .vanda/checks/present.toml
+
+# 書ける所: test・it・describe と、.skip・.only・.each が付いたものの直前のコメント。// でも /* */ でもよい
+cp cases/places-ok.ts web/a.test.ts
+exec vanda check .vanda/checks/links.toml
+exec vanda check .vanda/checks/present.toml
+cp orig/a.test.ts web/a.test.ts
+
+# .test.tsx のファイルも読む
+cp cases/places-ok.ts web/b.test.tsx
+exec vanda check .vanda/checks/links.toml
+rm web/b.test.tsx
+
+# アノテーションがなければ、unit-test の予定が揃わない（上の確かめが、ts のアノテーションで揃っていることを見るため）
+cp cases/none.ts web/a.test.ts
+! exec vanda check .vanda/checks/present.toml
+stderr 'unit-test'
+! stderr '(?m)^panic: '
+cp orig/a.test.ts web/a.test.ts
+
+# evidence のほかの種類は書けない
+cp cases/kind-claim.ts web/a.test.ts
+! exec vanda check .vanda/checks/links.toml
+stderr 'web/a\.test\.ts:3: '
+! stderr '(?m)^panic: '
+cp orig/a.test.ts web/a.test.ts
+
+# 書けない所: 変数の宣言の前
+cp cases/place-const.ts web/a.test.ts
+! exec vanda check .vanda/checks/links.toml
+stderr 'web/a\.test\.ts:3: '
+! stderr '(?m)^panic: '
+cp orig/a.test.ts web/a.test.ts
+
+# 書けない所: test( でない呼び出し（expect）の前
+cp cases/place-expect.ts web/a.test.ts
+! exec vanda check .vanda/checks/links.toml
+stderr 'web/a\.test\.ts:5: '
+! stderr '(?m)^panic: '
+cp orig/a.test.ts web/a.test.ts
+
+# 書けない所: コメントと test( のあいだに空行がある
+cp cases/place-gap.ts web/a.test.ts
+! exec vanda check .vanda/checks/links.toml
+stderr 'web/a\.test\.ts:3: '
+! stderr '(?m)^panic: '
+cp orig/a.test.ts web/a.test.ts
+
+# 最初の引数が文字列の決まった値でない（変数）と誤り
+cp cases/name-variable.ts web/a.test.ts
+! exec vanda check .vanda/checks/links.toml
+stderr 'web/a\.test\.ts:[45]: '
+! stderr '(?m)^panic: '
+cp orig/a.test.ts web/a.test.ts
+
+# 文字列とテンプレート文字列の中の `@vanda:` は数えず、誤りにもしない
+cp cases/strings.ts web/a.test.ts
+exec vanda check .vanda/checks/links.toml
+cp orig/a.test.ts web/a.test.ts
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["**/*.test.ts", "**/*.test.tsx"]
+adapter = "ts"
+types = ["unit-test"]
+-- .vanda/checks/links.toml --
+[[check]]
+name = "annotation-links"
+scope = "all"
+-- .vanda/checks/present.toml --
+[[check]]
+name = "evidence-present"
+scope = "all"
+-- .vanda/agreements.toml --
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "やること"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["model"]
+-- web/a.test.ts --
+import { test } from "vitest";
+
+// @vanda:evidence task-id-unique
+test("ID は重ならない", () => {});
+-- orig/a.test.ts --
+import { test } from "vitest";
+
+// @vanda:evidence task-id-unique
+test("ID は重ならない", () => {});
+-- cases/none.ts --
+import { test } from "vitest";
+
+// ID は重ならない
+test("ID は重ならない", () => {});
+-- cases/places-ok.ts --
+import { describe, it, test } from "vitest";
+
+// @vanda:evidence task-id-unique
+describe("タスク", () => {
+  // @vanda:evidence task-id-unique
+  it("ID は重ならない", () => {});
+
+  /* @vanda:evidence task-id-unique */
+  test.skip("飛ばす", () => {});
+
+  // @vanda:evidence task-id-unique
+  it.only("これだけ", () => {});
+
+  // @vanda:evidence task-id-unique
+  test.each([1, 2])("番号 %i", (n) => {});
+
+  // @vanda:evidence task-id-unique
+  describe.skip("飛ばすまとまり", () => {});
+});
+-- cases/kind-claim.ts --
+import { test } from "vitest";
+
+// @vanda:claim task-id-unique
+test("ID は重ならない", () => {});
+-- cases/place-const.ts --
+import { test } from "vitest";
+
+// @vanda:evidence task-id-unique
+const ids = ["a", "b"];
+test("ID は重ならない", () => {});
+-- cases/place-expect.ts --
+import { expect, test } from "vitest";
+
+test("ID は重ならない", () => {
+  const ids = ["a", "b"];
+  // @vanda:evidence task-id-unique
+  expect(ids).toHaveLength(2);
+});
+-- cases/place-gap.ts --
+import { test } from "vitest";
+
+// @vanda:evidence task-id-unique
+
+test("ID は重ならない", () => {});
+-- cases/name-variable.ts --
+import { test } from "vitest";
+
+const name = "ID は重ならない";
+// @vanda:evidence task-id-unique
+test(name, () => {});
+-- cases/strings.ts --
+import { test } from "vitest";
+
+const usage = "@vanda:foo two ids";
+const help = `書き方は @vanda:evidence no-such-id のとおり。${usage}`;
+const quoted = '@vanda:claim no-such-id';
+
+// @vanda:evidence task-id-unique
+test("ID は重ならない", () => {});

@@ -1,0 +1,140 @@
+package main_test
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
+	"sort"
+	"strings"
+	"testing"
+)
+
+// 組込みの ts のアダプタと、vanda のリポジトリの .vanda/adapters/playwright が付ける名前
+// （docs/plans/annotation-types.md の 2・3）。名前は、呼び出しの最初の引数の文字列で、describe の中なら外側の
+// describe の名前から順に " > " でつなぐ。約束の詳細（GET /api/claims/<ID>）の found の名前で確かめる。
+
+// tsNamesFile は、入れ子の describe と、.skip・.only を含むテストのファイル。期待する名前は tsNamesWant
+const tsNamesFile = `import { describe, it, test } from "vitest";
+
+// @vanda:evidence task-id-unique
+test("いちばん外", () => {});
+
+describe("ReviewPage", () => {
+  // @vanda:evidence task-id-unique
+  it("一覧を出す", () => {});
+
+  describe("合意", () => {
+    // @vanda:evidence task-id-unique
+    test.skip("合意すると合意済になる", () => {});
+
+    /* @vanda:evidence task-id-unique */
+    it.only("取り消すと提案中に戻る", () => {});
+  });
+});
+
+// @vanda:evidence task-id-unique
+describe("まとまり", () => {});
+`
+
+var tsNamesWant = []string{
+	"いちばん外",
+	"ReviewPage > 一覧を出す",
+	"ReviewPage > 合意 > 合意すると合意済になる",
+	"ReviewPage > 合意 > 取り消すと提案中に戻る",
+	"まとまり",
+}
+
+// foundNames は、annotation の設定と、ファイル path に中身 body を置いたリポジトリを作り、約束の詳細の found の名前を返す。
+func foundNames(t *testing.T, annotation string, files map[string]string, adapters map[string]string) ([]string, string) {
+	t.Helper()
+	bin := buildVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	g := newRVGit(t, root)
+	g.run("init", "-q", "-b", "main")
+	writeFile(t, root, ".vanda/config.toml", fmt.Sprintf("version = %q\n\n[[layer]]\nid = \"model\"\nname = \"モデル\"\ndescription = \"判定と状態の変化\"\n\n%s", version, annotation))
+	writeFile(t, root, ".vanda/promises.toml", "[[term]]\nid = \"task\"\nname = \"タスク\"\ndefinition = \"やること\"\n\n[[claim]]\nid = \"task-id-unique\"\nsubjects = [\"task\"]\nstatement = \"タスクの ID は重ならない\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"test\"\ntype = \"scenario-test\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"test\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n")
+	writeFile(t, root, ".vanda/agreements.toml", "")
+	for p, b := range files {
+		writeFile(t, root, p, b)
+	}
+	for p, src := range adapters {
+		data, err := os.ReadFile(src)
+		if err != nil {
+			t.Fatalf("アダプタ %s を読めない: %v", src, err)
+		}
+		writeFile(t, root, p, string(data))
+		if err := os.Chmod(filepath.Join(root, p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	g.run("add", "-A")
+	g.run("commit", "-q", "-m", "#1 はじめ")
+	s := startServe(t, bin, root, g.env)
+	var got claimDetail
+	if code, msg := s.get("/api/claims/task-id-unique", &got); code != 200 {
+		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
+	}
+	var names []string
+	for _, e := range got.Evidence {
+		for _, f := range e.Found {
+			names = append(names, f.Name)
+		}
+	}
+	sort.Strings(names)
+	return names, root
+}
+
+// 組込みの ts は、入れ子の describe の名前を " > " でつなぐ
+func Test組込みのtsのアダプタは呼び出しの最初の引数を名前にし入れ子のdescribeをつなぐ(t *testing.T) {
+	t.Parallel()
+	names, _ := foundNames(t, "[[annotation]]\npaths = [\"**/*.test.ts\"]\nadapter = \"ts\"\ntypes = [\"unit-test\"]\n",
+		map[string]string{"web/src/a.test.ts": tsNamesFile}, nil)
+	want := append([]string(nil), tsNamesWant...)
+	sort.Strings(want)
+	if !reflect.DeepEqual(names, want) {
+		t.Errorf("名前: %v（思ったもの %v）", names, want)
+	}
+}
+
+// vanda のリポジトリの .vanda/adapters/playwright は、E2E にアノテーションを付けるとシナリオテストとして揃え、
+// 組込みの ts と同じく名前を " > " でつなぐ
+func Test_vanda_adaptersのplaywrightはE2Eのアノテーションをシナリオテストとして揃え名前をつなぐ(t *testing.T) {
+	t.Parallel()
+	adapter := filepath.Join("..", "..", ".vanda", "adapters", "playwright")
+	e2e := `import { test, expect } from "@playwright/test";
+
+test.describe("レビューの画面", () => {
+  // @vanda:evidence task-id-unique
+  test("合意する", async ({ page }) => {});
+});
+`
+	cfg := "[[annotation]]\npaths = [\"web/e2e/**/*.spec.ts\"]\nadapter = \"playwright\"\ntypes = [\"scenario-test\"]\n"
+	names, root := foundNames(t, cfg, map[string]string{"web/e2e/review.spec.ts": e2e}, map[string]string{".vanda/adapters/playwright": adapter})
+	if want := []string{"レビューの画面 > 合意する"}; !reflect.DeepEqual(names, want) {
+		t.Errorf("名前: %v（思ったもの %v）", names, want)
+	}
+	// シナリオテストの予定は、E2E のアノテーションで揃う（unit-test の予定は揃わない）
+	writeFile(t, root, ".vanda/checks/present.toml", "[[check]]\nname = \"evidence-present\"\nscope = \"all\"\n")
+	bin := buildVanda(t)
+	code, out := runCheck(t, bin, root, ".vanda/checks/present.toml")
+	if code == 0 {
+		t.Fatalf("unit-test の予定まで揃った\n%s", out)
+	}
+	if !containsLine(out, "unit-test") || containsLine(out, "scenario-test") {
+		t.Errorf("揃わないのが unit-test だけでない（scenario-test は E2E で揃うはず）\n%s", out)
+	}
+}
+
+func containsLine(out, s string) bool {
+	for _, l := range strings.Split(out, "\n") {
+		if strings.Contains(l, s) {
+			return true
+		}
+	}
+	return false
+}
