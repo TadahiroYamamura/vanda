@@ -28,14 +28,6 @@ const (
 // 組込みのアノテーションの読み取りのアダプタ
 var BuiltinAdapters = []string{"go", "txtar", "tla", "sql"}
 
-// BuiltinKinds は、組込みのアノテーションの読み取りのアダプタごとの、書けるアノテーションの種類
-var BuiltinKinds = map[string][]string{
-	"go":    {"evidence", "sensor"},
-	"txtar": {"evidence"},
-	"tla":   {"term", "feature", "claim", "internal"},
-	"sql":   {"evidence"},
-}
-
 // EvidenceKinds は、[[annotation]] の types に書けるエビデンスのタイプ（書ける順）と、そのタイプのエビデンスとして
 // 揃っているとするアノテーションの種類。human-review・monitoring はアノテーションで確かめず、proof はまだ扱えないので、書けない
 var EvidenceKinds = []struct{ Type, Kind string }{
@@ -211,7 +203,7 @@ func parse(l *loader, top *tomlread.Table) *Config {
 		r := AnnotationRule{Line: t.Line("")}
 		r.Paths = patterns(t, "paths", "")
 		r.Adapter, r.User = adapterOf(l, t, BuiltinAdapters, "adapter を "+strings.Join(BuiltinAdapters, "・")+" のどれかにするか")
-		r.Types = evidenceTypes(t, r.Adapter)
+		r.Types = evidenceTypes(t)
 		t.Unknown("paths, adapter, args, types")
 		cfg.Annotations = append(cfg.Annotations, r)
 	}
@@ -282,9 +274,8 @@ func isRepository(s string) bool {
 	return ok && valid(owner) && valid(name)
 }
 
-// evidenceTypes は、[[annotation]] の types を読む。組込みのアダプタ builtin（.vanda/adapters/ のアダプタなら空）が
-// 書けない種類でしか満たせないタイプは、そのパターンで読むアノテーションでは決して揃わないので、誤りにする。
-func evidenceTypes(t *tomlread.Table, builtin string) []string {
+// evidenceTypes は、[[annotation]] の types を読む。
+func evidenceTypes(t *tomlread.Table) []string {
 	types, ok := t.Strs("types", true)
 	if !ok {
 		return nil
@@ -307,8 +298,6 @@ func evidenceTypes(t *tomlread.Table, builtin string) []string {
 			t.ErrAt("types", "types の "+quote(typ)+" は、"+why, "types には "+strings.Join(names, "・")+" のどれかを書いてください")
 		case seen[typ]:
 			t.ErrAt("types", "types に "+quote(typ)+" が 2 つ以上あります", "1 つにしてください")
-		case builtin != "" && !contains(BuiltinKinds[builtin], EvidenceKind(typ)):
-			t.ErrAt("types", "types の "+quote(typ)+" は @vanda:"+EvidenceKind(typ)+" で満たすタイプですが、"+builtin+" のアダプタのファイルには @vanda:"+EvidenceKind(typ)+" を書けません", "types から "+quote(typ)+" を消すか、そのエビデンスを、書けるアダプタのファイルで作ってください")
 		}
 		seen[typ] = true
 	}
