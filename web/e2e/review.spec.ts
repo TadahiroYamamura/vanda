@@ -1343,3 +1343,62 @@ for (const pg of pages) {
     }
   });
 }
+
+// 実際のエビデンスのうち合意の対象になるファイルには、合意の状態（今の中身の指紋に合う合意の記録があるか）のアイコン
+// （名前と title が「提案中」「合意済」）を付ける。Go の単体テストは合意の対象でないので付けない
+function withGoEvidence(r: Repo) {
+  const cfg = readFileSync(join(r.root, ".vanda/config.toml"), "utf8");
+  r.write(".vanda/config.toml", cfg.replace("[gui]", '[[annotation]]\npaths = ["internal/task/*_test.go"]\nadapter = "go"\n\n[gui]'));
+  r.write("internal/task/task_test.go", "package task\n\nimport \"testing\"\n\n// @vanda:evidence task-id-unique\nfunc TestUnique(t *testing.T) {}\n");
+  const text = readFileSync(join(r.root, ".vanda/promises.toml"), "utf8");
+  r.write(
+    ".vanda/promises.toml",
+    text.replace(
+      '[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n',
+      '[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "test"\ntype = "unit-test"\nlayers = ["model"]\n',
+    ),
+  );
+  r.write("e2e/add-task.txtar", annotatedScenario);
+  commit(r, "#24 シナリオと単体テストをエビデンスにする");
+}
+async function expectFileStates(page: Page, scenario: "提案中" | "合意済", where: string) {
+  const sc = typeGroup(page, "シナリオテスト");
+  const icon = sc.getByRole("img", { name: scenario, exact: true });
+  await expect(icon, `${where}: シナリオに「${scenario}」のアイコンがない`).toBeVisible();
+  await expect(icon).toHaveAttribute("title", scenario);
+  await expect(sc.getByRole("img", { name: scenario === "提案中" ? "合意済" : "提案中", exact: true }), `${where}: シナリオに逆のアイコンがある`).toHaveCount(0);
+  const unit = typeGroup(page, "単体テスト");
+  await expect(unit.getByText("TestUnique").first()).toBeVisible();
+  for (const name of ["提案中", "合意済"]) {
+    await expect(unit.getByRole("img", { name, exact: true }), `${where}: Go の単体テストに「${name}」のアイコンがある`).toHaveCount(0);
+  }
+}
+
+for (const pg of pages) {
+  test(`${pg.name}の実際のエビデンスのシナリオには合意の状態のアイコンが付き合意すると合意済に合意してから変えると提案中になりGoの単体テストには付かない`, async ({ page }) => {
+    withGoEvidence(repo);
+    await pg.open(page);
+    await expectFileStates(page, "提案中", "合意する前");
+
+    await page.goto(serve.url + "/");
+    await agreeAll(page, ["e2e/add-task.txtar"]);
+    await pg.open(page);
+    await expectFileStates(page, "合意済", "合意した後");
+
+    repo.write("e2e/add-task.txtar", annotatedScenario + "-- b.txt --\nb\n");
+    commit(repo, "#24 シナリオを足す");
+    await pg.open(page);
+    await expectFileStates(page, "提案中", "合意してから中身を変えた後");
+  });
+}
+
+test("エビデンスのファイルの画面で合意して戻るとエビデンスの予定と実際のシナリオのアイコンが合意済になる", async ({ page }) => {
+  withGoEvidence(repo);
+  await page.goto(serve.url + "/");
+  await select(page, "task-id-unique");
+  await expectFileStates(page, "提案中", "合意する前");
+  await page.getByRole("link", { name: /e2e\/add-task\.txtar:1/ }).first().click();
+  await agreeHere(page, /\/files\?/);
+  await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
+  await expectFileStates(page, "合意済", "ファイルの画面で合意して戻った後");
+});
