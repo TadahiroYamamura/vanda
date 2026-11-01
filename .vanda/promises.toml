@@ -850,7 +850,6 @@ id = "annotation-kinds-per-builtin-adapter"
 subjects = ["annotation-reading", "builtin-adapter"]
 statement = "組込みのアダプタのファイルに、そのアダプタで書けない種類のアノテーションを書いたら、誤りにする（go は evidence・sensor、txtar・sql・ts は evidence、tla は term・feature・claim・internal）"
 layers = ["cli"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
