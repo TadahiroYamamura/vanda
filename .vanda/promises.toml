@@ -173,7 +173,7 @@ definition = "vanda と、言語や道具・ストーリーの置き場所・ガ
 [[term]]
 id = "builtin-adapter"
 name = "組込みのアダプタ"
-definition = "vanda が中に持つアダプタ（アノテーションの go・txtar・tla・sql・ts、ストーリーの置き場所の github、ガードレールの定義の file）。同じ名前のアダプタを .vanda/adapters/ に置くと、そちらが使われる"
+definition = "vanda が中に持つアダプタ（アノテーションの go・txtar・tla・sql・ts、ストーリーの置き場所の github、ガードレールの定義の file）。アノテーションとストーリーの置き場所では、同じ名前のアダプタを .vanda/adapters/ に置くと、そちらが使われる"
 
 [[term]]
 id = "fingerprint"
