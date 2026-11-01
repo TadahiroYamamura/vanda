@@ -15,6 +15,11 @@ paths = ["**/*.tla"]
 adapter = "tla"
 types = ["model-check"]
 
+[[annotation]]
+paths = ["web/src/**/*.test.ts", "web/src/**/*.test.tsx"]
+adapter = "ts"
+types = ["unit-test"]
+
 [story]
 adapter = "github"
 repository = "TadahiroYamamura/vanda"

@@ -27,10 +27,10 @@ import (
 var ErrDeclined = errors.New("作らないと答えたため、何も作りませんでした。")
 
 // Language は、アノテーションを読む言語（組込みのアダプタ）と、読むファイルのパターン。
-// Detect が返すものでは Pattern はアダプタの既定、Answers の中では答えのパターン。
+// Detect が返すものでは Patterns はアダプタの既定、Answers の中では答えのパターン（書いた順）。
 type Language struct {
 	annotation.AdapterInfo
-	Pattern string
+	Patterns []string
 }
 
 // Defaults は、リポジトリから読み取った、問いかけの既定の答え。
@@ -69,10 +69,13 @@ func Detect(root string) (Defaults, error) {
 	}
 	names := strings.Split(files, "\x00")
 	for _, l := range annotation.Builtins {
+	found:
 		for _, f := range names {
-			if strings.HasSuffix(f, l.Suffix) {
-				d.Languages = append(d.Languages, Language{AdapterInfo: l, Pattern: l.DefaultPattern})
-				break
+			for _, suffix := range l.Suffixes {
+				if strings.HasSuffix(f, suffix) {
+					d.Languages = append(d.Languages, Language{AdapterInfo: l, Patterns: l.DefaultPatterns})
+					break found
+				}
 			}
 		}
 	}
@@ -283,16 +286,22 @@ func Ask(root string, d Defaults, t *Terminal) (Answers, error) {
 		if !contains(picked, l.Name) {
 			continue
 		}
-		pat, err := q.input(l.Title+"の、アノテーションを読むファイル", l.DefaultPattern, func(s string) error {
-			if s == "" || glob.Validate(s) != nil {
-				return errors.New("パターンの書き方が誤っています。リポジトリの直下からの / 区切りの場所で入れてください（例: " + l.DefaultPattern + "）。")
+		example := strings.Join(l.DefaultPatterns, " ")
+		line, err := q.input(l.Title+"の、アノテーションを読むファイル（空白で区切って複数書ける）", example, func(s string) error {
+			pats := strings.Fields(s)
+			bad := len(pats) == 0
+			for _, p := range pats {
+				bad = bad || glob.Validate(p) != nil
+			}
+			if bad {
+				return errors.New("パターンの書き方が誤っています。リポジトリの直下からの / 区切りの場所で、複数なら空白で区切って入れてください（例: " + example + "）。")
 			}
 			return nil
 		})
 		if err != nil {
 			return a, err
 		}
-		a.Annotations = append(a.Annotations, Language{AdapterInfo: l, Pattern: pat})
+		a.Annotations = append(a.Annotations, Language{AdapterInfo: l, Patterns: strings.Fields(line)})
 	}
 	return a, nil
 }
@@ -323,7 +332,11 @@ func ConfigText(a Answers) string {
 		for i, t := range l.DefaultTypes {
 			types[i] = tomlwrite.String(t)
 		}
-		fmt.Fprintf(&b, "\n[[annotation]]\npaths = [%s]\nadapter = %s\ntypes = [%s]\n", tomlwrite.String(l.Pattern), tomlwrite.String(l.Name), strings.Join(types, ", "))
+		paths := make([]string, len(l.Patterns))
+		for i, p := range l.Patterns {
+			paths[i] = tomlwrite.String(p)
+		}
+		fmt.Fprintf(&b, "\n[[annotation]]\npaths = [%s]\nadapter = %s\ntypes = [%s]\n", strings.Join(paths, ", "), tomlwrite.String(l.Name), strings.Join(types, ", "))
 	}
 	b.WriteString("\n[story]\n")
 	switch a.Store {

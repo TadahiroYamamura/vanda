@@ -26,7 +26,7 @@ const (
 )
 
 // 組込みのアノテーションの読み取りのアダプタ
-var BuiltinAdapters = []string{"go", "txtar", "tla", "sql"}
+var BuiltinAdapters = []string{"go", "txtar", "tla", "sql", "ts"}
 
 // EvidenceKinds は、[[annotation]] の types に書けるエビデンスのタイプ（書ける順）と、そのタイプのエビデンスとして
 // 揃っているとするアノテーションの種類。human-review・monitoring はアノテーションで確かめず、proof はまだ扱えないので、書けない

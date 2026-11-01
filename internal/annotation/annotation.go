@@ -16,20 +16,21 @@ import (
 // AdapterInfo は、組込みのアノテーションの読み取りのアダプタの、言語の見つけ方と既定のパターン。
 // vanda init が、見つかった言語ごとに、読むファイルのパターンを問いかけるときに使う
 type AdapterInfo struct {
-	Name           string // 設定の [[annotation]] の adapter に書く名前
-	Title          string // 問いかけに出す、言語の名前
-	Suffix         string // 見つけ方（git が追っているファイルの名前の終わり）
-	DefaultPattern string // 読むファイルのパターンの既定
+	Name            string   // 設定の [[annotation]] の adapter に書く名前
+	Title           string   // 問いかけに出す、言語の名前
+	Suffixes        []string // 見つけ方（git が追っているファイルの名前の終わり。どれかで終われば見つかったとする）
+	DefaultPatterns []string // 読むファイルのパターンの既定
 	// DefaultTypes は、満たすエビデンスのタイプの既定。vanda init が [[annotation]] の types にそのまま書く
 	DefaultTypes []string
 }
 
 // Builtins は、組込みのアノテーションの読み取りのアダプタの一覧。アダプタを足したら、ここにも足す
 var Builtins = []AdapterInfo{
-	{Name: "go", Title: "Go のテスト（*_test.go）", Suffix: "_test.go", DefaultPattern: "**/*_test.go", DefaultTypes: []string{"unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"}},
-	{Name: "txtar", Title: "シナリオ（*.txtar）", Suffix: ".txtar", DefaultPattern: "**/*.txtar", DefaultTypes: []string{"scenario-test"}},
-	{Name: "tla", Title: "TLA+（*.tla）", Suffix: ".tla", DefaultPattern: "**/*.tla", DefaultTypes: []string{"model-check"}},
-	{Name: "sql", Title: "SQL（*.sql）", Suffix: ".sql", DefaultPattern: "**/*.sql", DefaultTypes: []string{"guardrail"}},
+	{Name: "go", Title: "Go のテスト（*_test.go）", Suffixes: []string{"_test.go"}, DefaultPatterns: []string{"**/*_test.go"}, DefaultTypes: []string{"unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"}},
+	{Name: "txtar", Title: "シナリオ（*.txtar）", Suffixes: []string{".txtar"}, DefaultPatterns: []string{"**/*.txtar"}, DefaultTypes: []string{"scenario-test"}},
+	{Name: "tla", Title: "TLA+（*.tla）", Suffixes: []string{".tla"}, DefaultPatterns: []string{"**/*.tla"}, DefaultTypes: []string{"model-check"}},
+	{Name: "sql", Title: "SQL（*.sql）", Suffixes: []string{".sql"}, DefaultPatterns: []string{"**/*.sql"}, DefaultTypes: []string{"guardrail"}},
+	{Name: "ts", Title: "TypeScript のテスト（*.test.ts・*.test.tsx）", Suffixes: []string{".test.ts", ".test.tsx"}, DefaultPatterns: []string{"**/*.test.ts", "**/*.test.tsx"}, DefaultTypes: []string{"unit-test"}},
 }
 
 // Kinds は、アノテーションの種類。internal のほかは ID を 1 つ取る。
@@ -150,6 +151,8 @@ func adapterFor(root string, r config.AnnotationRule) adapter {
 		return tlaAdapter{}
 	case "sql":
 		return sqlAdapter{}
+	case "ts":
+		return tsAdapter{}
 	}
 	return nil
 }

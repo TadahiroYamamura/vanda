@@ -218,7 +218,7 @@ func evidenceText(root string, a annotation.Annotation) (*string, int, error) {
 	}
 	line := annotation.TargetLine(a.Adapter, a.File, src, a.Line)
 	switch a.Adapter {
-	case "go":
+	case "go", "ts":
 		return nil, line, nil
 	case "tla":
 		def, ok := annotation.TLADefinition(src, a.Line)
