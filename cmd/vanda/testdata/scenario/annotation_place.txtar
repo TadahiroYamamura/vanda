@@ -1,7 +1,7 @@
 # アノテーションの読み取り: 決まっていない種類と、ID を 2 つ以上書いたものは、どの言語でもその行で止まる。
-# ID がない、理由のない internal、1 行に 2 つの @vanda: も、どの言語でも止まる。
+# ID がない、理由のない internal、1 行に 2 つの `@vanda:` も、どの言語でも止まる。
 # 付ける所の決まり: Go は func の宣言の直前のコメントだけ。txtar は最初の -- name -- より前だけを数える（後は中のファイルの中身）。
-# 文字列の中の @vanda: は数えず、誤りにもしない。
+# 文字列の中の `@vanda:` は数えず、誤りにもしない。
 # TLA+ は、次の空行でもコメントでもない行が Name == か Name(...) == でなければ止まる。
 
 exec git init -q -b main
@@ -97,24 +97,24 @@ cp cases/go-method.case task.go
 exec vanda check .vanda/checks/links.toml
 cp orig/task.go.orig task.go
 
-# txtar で最初の -- name -- より後の @vanda: は数えず、誤りにもしない
+# txtar で最初の -- name -- より後の `@vanda:` は数えず、誤りにもしない
 cp cases/txtar-after.case scenarios/add.txtar
 unquote scenarios/add.txtar
 exec vanda check .vanda/checks/links.toml
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
 
-# Go の文字列の中の @vanda: は数えず、誤りにもしない
+# Go の文字列の中の `@vanda:` は数えず、誤りにもしない
 cp cases/go-string.case task.go
 exec vanda check .vanda/checks/links.toml
 cp orig/task.go.orig task.go
 
-# TLA+ の文字列の中の @vanda: は数えず、誤りにもしない
+# TLA+ の文字列の中の `@vanda:` は数えず、誤りにもしない
 cp cases/tla-string.case spec/Task.tla
 exec vanda check .vanda/checks/links.toml
 cp orig/Task.tla.orig spec/Task.tla
 
-# SQL の文字列の中の @vanda: は数えず、誤りにもしない
+# SQL の文字列の中の `@vanda:` は数えず、誤りにもしない
 cp cases/sql-string.case db/schema.sql
 exec vanda check .vanda/checks/links.toml
 cp orig/schema.sql.orig db/schema.sql

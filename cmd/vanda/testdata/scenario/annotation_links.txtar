@@ -10,70 +10,70 @@ unquote scenarios/add.txtar
 # 元のファイル（どの種類も合う先を指す）では通る
 exec vanda check .vanda/checks/links.toml
 
-# @vanda:term が機能の ID（task-add）を指すと止まる
+# `@vanda:term` が機能の ID（task-add）を指すと止まる
 cp cases/term-to-feature.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:2: .*task-add'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
-# @vanda:term が約束の ID（task-id-unique）を指すと止まる
+# `@vanda:term` が約束の ID（task-id-unique）を指すと止まる
 cp cases/term-to-claim.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:2: .*task-id-unique'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
-# @vanda:feature が用語の ID（task）を指すと止まる
+# `@vanda:feature` が用語の ID（task）を指すと止まる
 cp cases/feature-to-term.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: .*task'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
-# @vanda:feature が約束の ID（task-id-unique）を指すと止まる
+# `@vanda:feature` が約束の ID（task-id-unique）を指すと止まる
 cp cases/feature-to-claim.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: .*task-id-unique'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
-# @vanda:claim が用語の ID（task）を指すと止まる
+# `@vanda:claim` が用語の ID（task）を指すと止まる
 cp cases/claim-to-term.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:10: .*task'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
-# @vanda:claim が機能の ID（task-add）を指すと止まる
+# `@vanda:claim` が機能の ID（task-add）を指すと止まる
 cp cases/claim-to-feature.case spec/Task.tla
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:10: .*task-add'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
-# @vanda:evidence が用語の ID（task）を指すと止まる
+# `@vanda:evidence` が用語の ID（task）を指すと止まる
 cp cases/evidence-to-term.case task_test.go
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task_test\.go:5: .*task'
 ! stderr '(?m)^panic: '
 cp orig/task_test.go.orig task_test.go
 
-# @vanda:evidence が機能の ID（task-add）を指すと止まる
+# `@vanda:evidence` が機能の ID（task-add）を指すと止まる
 cp cases/evidence-to-feature.case task_test.go
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task_test\.go:5: .*task-add'
 ! stderr '(?m)^panic: '
 cp orig/task_test.go.orig task_test.go
 
-# @vanda:sensor が用語の ID（task）を指すと止まる
+# `@vanda:sensor` が用語の ID（task）を指すと止まる
 cp cases/sensor-to-term.case task.go
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: .*task'
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
-# @vanda:sensor が機能の ID（task-add）を指すと止まる
+# `@vanda:sensor` が機能の ID（task-add）を指すと止まる
 cp cases/sensor-to-feature.case task.go
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: .*task-add'
