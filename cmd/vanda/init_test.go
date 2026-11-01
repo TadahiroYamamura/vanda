@@ -16,6 +16,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/BurntSushi/toml"
 	"github.com/creack/pty"
@@ -69,6 +70,199 @@ func (r *initRepo) exists(path string) bool {
 	return err == nil
 }
 
+// ---- 擬似端末の画面 ----
+
+// vtScreen は、擬似端末に書かれた文字から、今の画面の文字を組み立てる小さな端末。huh は、問いを書くたびに
+// カーソルを上へ戻して消し（CSI A・CSI J）、描き直すので、書かれた文字を並べただけでは今の問いが読めない。
+// 扱うのは、改行・復帰・後退・カーソルの移動・消去だけ。色などほかの制御は読み捨てる。行は捨てずに下へ伸ばす。
+type vtScreen struct {
+	lines              [][]rune
+	row                int
+	col                int
+	savedRow, savedCol int
+	pending            []byte
+}
+
+// cellWidth は、端末で文字が占める桁の数の見積もり。日本語などの全角は 2 桁にする（行の中のカーソルの移動のため）。
+func cellWidth(r rune) int {
+	if r >= 0x1100 && (r <= 0x115f || (r >= 0x2e80 && r <= 0xa4cf) || (r >= 0xac00 && r <= 0xd7a3) ||
+		(r >= 0xf900 && r <= 0xfaff) || (r >= 0xfe30 && r <= 0xfe4f) || (r >= 0xff00 && r <= 0xff60) || (r >= 0xffe0 && r <= 0xffe6)) {
+		return 2
+	}
+	return 1
+}
+
+func (v *vtScreen) line() []rune {
+	for len(v.lines) <= v.row {
+		v.lines = append(v.lines, nil)
+	}
+	return v.lines[v.row]
+}
+
+// put は、今の行の col 桁目に文字を書く。全角の 2 桁目は 0 で埋める。
+func (v *vtScreen) put(r rune) {
+	l := v.line()
+	w := cellWidth(r)
+	for len(l) < v.col+w {
+		l = append(l, ' ')
+	}
+	l[v.col] = r
+	if w == 2 {
+		l[v.col+1] = 0
+	}
+	v.lines[v.row] = l
+	v.col += w
+}
+
+func (v *vtScreen) feed(b []byte) {
+	data := append(v.pending, b...)
+	v.pending = nil
+	for i := 0; i < len(data); {
+		c := data[i]
+		switch {
+		case c == 0x1b:
+			n, ok := v.escape(data[i:])
+			if !ok {
+				v.pending = append([]byte(nil), data[i:]...)
+				return
+			}
+			i += n
+			continue
+		case c == '\r':
+			v.col = 0
+		case c == '\n':
+			v.row++
+			v.line()
+		case c == '\b':
+			if v.col > 0 {
+				v.col--
+			}
+		case c == '\t':
+			v.col = (v.col/8 + 1) * 8
+		case c < 0x20 || c == 0x7f:
+		default:
+			r, size := utf8.DecodeRune(data[i:])
+			if r == utf8.RuneError && size == 1 && !utf8.FullRune(data[i:]) {
+				v.pending = append([]byte(nil), data[i:]...)
+				return
+			}
+			v.put(r)
+			i += size
+			continue
+		}
+		i++
+	}
+}
+
+var csiPattern = regexp.MustCompile(`^\x1b\[([0-9;?<>=$!]*)([ -/]*)([@-~])`)
+
+// escape は、ESC から始まる制御を 1 つ読み、使った長さを返す。まだ終わりまで届いていなければ ok が false。
+func (v *vtScreen) escape(d []byte) (int, bool) {
+	if len(d) < 2 {
+		return 0, false
+	}
+	switch d[1] {
+	case '[':
+		m := csiPattern.FindSubmatch(d)
+		if m == nil {
+			if len(d) > 64 {
+				return 2, true // 読めない制御は ESC [ だけ捨てる
+			}
+			return 0, false
+		}
+		v.csi(string(m[1]), string(m[2]), m[3][0])
+		return len(m[0]), true
+	case ']', 'P', '_', '^': // OSC・DCS など。BEL か ST（ESC \）まで捨てる
+		for j := 2; j < len(d); j++ {
+			if d[j] == 0x07 {
+				return j + 1, true
+			}
+			if d[j] == 0x1b && j+1 < len(d) && d[j+1] == '\\' {
+				return j + 2, true
+			}
+		}
+		return 0, false
+	case 'M': // 1 行上へ（逆の改行）。huh は、選択肢のカーソルを動かすときに使う
+		if v.row > 0 {
+			v.row--
+		}
+		return 2, true
+	case '7':
+		v.savedRow, v.savedCol = v.row, v.col
+		return 2, true
+	case '8':
+		v.row, v.col = v.savedRow, v.savedCol
+		return 2, true
+	default:
+		return 2, true
+	}
+}
+
+func (v *vtScreen) csi(params, inter string, final byte) {
+	if inter != "" || strings.ContainsAny(params, "?<>=$!") {
+		return // 端末の動きの切り替えと問い合わせは、画面の文字に関わらない
+	}
+	n := 1
+	if p := strings.Split(params, ";")[0]; p != "" {
+		fmt.Sscanf(p, "%d", &n)
+	}
+	switch final {
+	case 'A':
+		v.row = max(0, v.row-n)
+	case 'B':
+		v.row += n
+	case 'C':
+		v.col += n
+	case 'D':
+		v.col = max(0, v.col-n)
+	case 'G':
+		v.col = max(0, n-1)
+	case 'J':
+		mode := 0
+		fmt.Sscanf(params, "%d", &mode)
+		if mode == 2 || mode == 3 {
+			v.lines = nil
+			return
+		}
+		l := v.line()
+		if v.col < len(l) {
+			v.lines[v.row] = l[:v.col]
+		}
+		if mode == 0 && v.row+1 < len(v.lines) {
+			v.lines = v.lines[:v.row+1]
+		}
+	case 'K':
+		mode := 0
+		fmt.Sscanf(params, "%d", &mode)
+		l := v.line()
+		switch mode {
+		case 0:
+			if v.col < len(l) {
+				v.lines[v.row] = l[:v.col]
+			}
+		case 2:
+			v.lines[v.row] = nil
+		}
+	}
+}
+
+func (v *vtScreen) text() string {
+	var b strings.Builder
+	for i, l := range v.lines {
+		if i > 0 {
+			b.WriteByte('\n')
+		}
+		var s strings.Builder
+		for _, r := range l {
+			if r != 0 {
+				s.WriteRune(r)
+			}
+		}
+		b.WriteString(strings.TrimRight(s.String(), " "))
+	}
+	return b.String()
+}
+
 // ---- 擬似端末で動かす ----
 
 type initSession struct {
@@ -77,7 +271,7 @@ type initSession struct {
 	cmd    *exec.Cmd
 	mu     sync.Mutex
 	out    bytes.Buffer
-	read   int
+	vt     vtScreen
 	stderr bytes.Buffer
 	done   chan struct{}
 	err    error
@@ -89,9 +283,9 @@ func startInit(t *testing.T, bin, dir string, env []string) *initSession {
 	s := &initSession{t: t, done: make(chan struct{})}
 	s.cmd = exec.Command(bin, "init")
 	s.cmd.Dir = dir
-	s.cmd.Env = append(env, "TERM=dumb")
+	s.cmd.Env = append(append([]string(nil), env...), "TERM=xterm-256color")
 	s.cmd.Stderr = &lockedWriter{mu: &s.mu, w: &s.stderr}
-	ptmx, err := pty.Start(s.cmd)
+	ptmx, err := pty.StartWithSize(s.cmd, &pty.Winsize{Rows: 50, Cols: 120})
 	if err != nil {
 		t.Fatalf("擬似端末で vanda init を動かせない: %v", err)
 	}
@@ -103,6 +297,7 @@ func startInit(t *testing.T, bin, dir string, env []string) *initSession {
 			if n > 0 {
 				s.mu.Lock()
 				s.out.Write(buf[:n])
+				s.vt.feed(buf[:n])
 				s.mu.Unlock()
 			}
 			if err != nil {
@@ -137,61 +332,154 @@ func (l *lockedWriter) Write(p []byte) (int, error) {
 	return l.w.Write(p)
 }
 
-func (s *initSession) all() string {
+func (s *initSession) screen() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.out.String()
+	return s.vt.text()
 }
 
-// prompt は、前に読んだ所より後に出た文字を、出力が 300 ミリ秒止まるまで待って返す。問いを出して答えを待っている所とみなす。
-func (s *initSession) prompt(what string) string {
+// all は、画面に出た文字を返す（消された問いは残らないが、作った後の案内は残る）。
+func (s *initSession) all() string { return s.screen() }
+
+func (s *initSession) keys(k string) {
+	s.t.Helper()
+	if _, err := s.ptmx.Write([]byte(k)); err != nil {
+		s.t.Fatalf("キー %q を送れない: %v", k, err)
+	}
+}
+
+const (
+	keyEnter = "\r"
+	keyUp    = "\x1b[A"
+	keyDown  = "\x1b[B"
+	keySpace = " "
+	keyClear = "\x15" // Ctrl+U。入力の欄の、カーソルより前を消す
+	keyEOF   = "\x04" // Ctrl+D
+)
+
+// press は、キーを送り、画面が変わるのを 1 秒待つ。変わらなければ、送り直す（3 度まで）。問いが入れ替わる間に
+// 送ったキーを、vanda 側が読み落とすことがあるため。画面が変わったかを返す。
+func (s *initSession) press(k string) bool {
+	s.t.Helper()
+	before := s.settle()
+	for try := 0; try < 3; try++ {
+		s.keys(k)
+		deadline := time.Now().Add(time.Second)
+		for time.Now().Before(deadline) {
+			select {
+			case <-s.done:
+				return true
+			default:
+			}
+			if s.screen() != before {
+				return true
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+	}
+	return false
+}
+
+// initField は、画面の一番下の問い（行の頭が ┃ のまとまり）。
+type initField struct {
+	title string
+	lines []string // 2 行目から。行の頭の ┃ と、続く空白 1 つを除いたもの
+}
+
+func fieldOf(screen string) (initField, bool) {
+	ls := strings.Split(screen, "\n")
+	end := -1
+	for i := len(ls) - 1; i >= 0; i-- {
+		if strings.HasPrefix(ls[i], "┃") {
+			end = i
+			break
+		}
+	}
+	if end < 0 {
+		return initField{}, false
+	}
+	start := end
+	for start > 0 && strings.HasPrefix(ls[start-1], "┃") {
+		start--
+	}
+	var f initField
+	for i := start; i <= end; i++ {
+		l := strings.TrimPrefix(strings.TrimPrefix(ls[i], "┃"), " ")
+		if i == start {
+			f.title = strings.TrimSpace(l)
+		} else {
+			f.lines = append(f.lines, l)
+		}
+	}
+	return f, true
+}
+
+// cursorLine は、カーソルのある行（> の付いた行）の、> を除いた中身を返す。
+func (f initField) cursorLine() (string, bool) {
+	for _, l := range f.lines {
+		if t := strings.TrimSpace(l); strings.HasPrefix(t, ">") {
+			return strings.TrimSpace(strings.TrimPrefix(t, ">")), true
+		}
+	}
+	return "", false
+}
+
+// errorText は、画面の一番下の問いより後に出た、理由（* で始まり。を含む行）を返す。
+func errorText(screen string) string {
+	ls := strings.Split(screen, "\n")
+	last := -1
+	for i, l := range ls {
+		if strings.HasPrefix(l, "┃") {
+			last = i
+		}
+	}
+	for _, l := range ls[last+1:] {
+		if t := strings.TrimSpace(l); strings.HasPrefix(t, "*") && strings.Contains(t, "。") {
+			return t
+		}
+	}
+	return ""
+}
+
+// waitField は、題に keyword を含む問いが画面の一番下に出て、200 ミリ秒描き直されなくなるまで待つ。
+func (s *initSession) waitField(what, keyword string) initField {
 	s.t.Helper()
 	deadline := time.Now().Add(15 * time.Second)
-	last, since := -1, time.Now()
+	last, since := "", time.Now()
 	for time.Now().Before(deadline) {
-		s.mu.Lock()
-		n := s.out.Len()
-		s.mu.Unlock()
-		if n != last {
-			last, since = n, time.Now()
-		} else if n > s.read && time.Since(since) > 300*time.Millisecond {
-			break
+		sc := s.screen()
+		if sc != last {
+			last, since = sc, time.Now()
+		} else if f, ok := fieldOf(sc); ok && strings.Contains(f.title, keyword) && time.Since(since) > 200*time.Millisecond {
+			return f
 		}
 		select {
 		case <-s.done:
-			s.mu.Lock()
-			n = s.out.Len()
-			s.mu.Unlock()
-			if n == s.read {
-				s.t.Fatalf("%s の問いを待っている間に vanda init が終わった\n--- 出力\n%s\n--- 標準エラー\n%s", what, s.all(), s.stderr.String())
+			if f, ok := fieldOf(s.screen()); !ok || !strings.Contains(f.title, keyword) {
+				s.t.Fatalf("%s の問いを待っている間に vanda init が終わった\n--- 画面\n%s\n--- 標準エラー\n%s", what, s.screen(), s.stderr.String())
 			}
 		default:
 		}
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(30 * time.Millisecond)
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.out.Len() == s.read {
-		s.t.Fatalf("%s の問いが出ない\n--- 出力\n%s", what, s.out.String())
-	}
-	chunk := s.out.String()[s.read:]
-	s.read = s.out.Len()
-	return chunk
+	s.t.Fatalf("%s の問い（題に「%s」）が出ない\n--- 画面\n%s", what, keyword, s.screen())
+	return initField{}
 }
 
-func (s *initSession) answer(a string) {
-	s.t.Helper()
-	if _, err := s.ptmx.Write([]byte(a + "\r")); err != nil {
-		s.t.Fatalf("答え %q を書けない: %v", a, err)
+// settle は、画面が 200 ミリ秒描き直されなくなるまで待つ。
+func (s *initSession) settle() string {
+	deadline := time.Now().Add(5 * time.Second)
+	last, since := s.screen(), time.Now()
+	for time.Now().Before(deadline) {
+		time.Sleep(30 * time.Millisecond)
+		sc := s.screen()
+		if sc != last {
+			last, since = sc, time.Now()
+		} else if time.Since(since) > 200*time.Millisecond {
+			return sc
+		}
 	}
-}
-
-// eof は、行の頭で入力を終える（Ctrl+D）。
-func (s *initSession) eof() {
-	s.t.Helper()
-	if _, err := s.ptmx.Write([]byte{4}); err != nil {
-		s.t.Fatalf("Ctrl+D を書けない: %v", err)
-	}
+	return last
 }
 
 // wait は、vanda init が終わるのを待ち、終了コードを返す。
@@ -200,9 +488,8 @@ func (s *initSession) wait() int {
 	select {
 	case <-s.done:
 	case <-time.After(15 * time.Second):
-		s.t.Fatalf("vanda init が終わらない\n--- 出力\n%s", s.all())
+		s.t.Fatalf("vanda init が終わらない\n--- 画面\n%s", s.screen())
 	}
-	// 終わった後に残った出力を読み切る
 	time.Sleep(100 * time.Millisecond)
 	var exitErr *exec.ExitError
 	if errors.As(s.err, &exitErr) {
@@ -216,42 +503,17 @@ func (s *initSession) wait() int {
 
 // ---- 問いをたどる ----
 
-// promptLine は、問いの最後の空でない行（答えを待っている行）を返す。
-func promptLine(chunk string) string {
-	lines := strings.Split(strings.ReplaceAll(chunk, "\r", ""), "\n")
-	for i := len(lines) - 1; i >= 0; i-- {
-		if strings.TrimSpace(lines[i]) != "" {
-			return strings.TrimSpace(lines[i])
+var storyChoices = []string{"GitHub Issues", "外部のコマンド", "使わない"}
+
+var langNames = []string{"Go", "シナリオ", "TLA+", "SQL"}
+
+func langOf(line string) string {
+	for _, n := range langNames {
+		if strings.Contains(line, n) {
+			return n
 		}
 	}
 	return ""
-}
-
-// defaultOf は、答えを待っている行の [ ] の中を返す。既定の答え（#[0-9]+ など）に [ ] が入ることがあるので、
-// 行の最初の [ から最後の ] までをとる。ないときは ok が false。
-func defaultOf(chunk string) (string, bool) {
-	line := promptLine(chunk)
-	i, j := strings.Index(line, "["), strings.LastIndex(line, "]")
-	if i < 0 || j <= i {
-		return "", false
-	}
-	return strings.TrimSpace(line[i+1 : j]), true
-}
-
-var storyChoices = []string{"GitHub Issues", "外部のコマンド", "使わない"}
-
-// choiceNumbers は、選択肢の名前から、問いに出た番号を読む。
-func choiceNumbers(t *testing.T, chunk string) map[string]string {
-	t.Helper()
-	out := map[string]string{}
-	for _, c := range storyChoices {
-		m := regexp.MustCompile(`(\d+)\D{0,3}` + regexp.QuoteMeta(c)).FindStringSubmatch(chunk)
-		if m == nil {
-			t.Fatalf("ストーリーの置き場所の問いに、選択肢「%s」と番号がない\n%s", c, chunk)
-		}
-		out[c] = m[1]
-	}
-	return out
 }
 
 // initPlan は、問いへの答え。空の文字列は、既定の答えのまま Enter を押すこと。
@@ -260,111 +522,206 @@ type initPlan struct {
 	story     string // 選択肢の名前
 	detail    string // リポジトリかコマンド
 	idPattern string
-	langs     map[string]string // 言語の名前（Go・シナリオ・TLA+・SQL）→ 読むファイルのパターン
-	confirm   string
-	// 形に合わない答え。問いの名前（story・detail・id）ごとに、正しい答えの前に順に書く
+	toggle    []string          // 言語を選ぶ問いで、選びを切り替える言語
+	patterns  map[string]string // 言語 → 読むファイルのパターン
+	confirm   string            // y・n
+	// 形に合わない答え。問い（detail・id）ごとに、正しい答えの前に順に書く
 	invalid map[string][]string
 }
 
 type initSeen struct {
 	baseDefault  string
 	storyDefault string // 選択肢の名前
+	storyOptions []string
 	detailAsked  bool
 	detailDef    string
-	detailHasDef bool
 	idDefault    string
-	idHasDefault bool
-	langsAsked   []string
-	patterns     map[string]string // 言語 → 既定のパターン
+	langOptions  []string
+	langSelected []string // 選ぶ問いが始まったときに選ばれていた言語
+	langsAsked   []string // パターンを聞かれた言語
+	patterns     map[string]string
 }
 
-var langNames = []string{"Go", "シナリオ", "TLA+", "SQL"}
-
-// ask は、keyword を含む問いを読み、形に合わない答えを順に書いて、そのたびに理由と同じ問いが出ることを確かめ、最後に a を書く。
-func (s *initSession) ask(what, keyword string, chunk string, invalid []string, a string) {
+// input は、入力の問いで、欄に入っている既定の答えを読み、形に合わない答えを順に書いて、そのたびに理由が出て
+// 同じ問いにとどまることを確かめ、最後に a を書く（空なら既定のまま）。
+func (s *initSession) input(what, keyword string, invalid []string, a string) string {
 	s.t.Helper()
-	if !strings.Contains(chunk, keyword) {
-		s.t.Fatalf("%s の問いに「%s」がない\n%s", what, keyword, chunk)
-	}
-	line := promptLine(chunk)
+	f := s.waitField(what, keyword)
+	def, _ := f.cursorLine()
 	for _, bad := range invalid {
-		s.answer(bad)
-		again := s.prompt(what + "（聞き直し）")
-		if promptLine(again) != line {
-			s.t.Errorf("%s に形に合わない答え %q を書いても、同じ問い（%q）に戻らない\n%s", what, bad, line, again)
+		if cur, _ := f.cursorLine(); cur != "" {
+			s.press(keyClear)
 		}
-		if !strings.Contains(again, "。") {
-			s.t.Errorf("%s に形に合わない答え %q を書いても、理由が出ない\n%s", what, bad, again)
+		if bad != "" {
+			s.press(bad)
+		}
+		s.press(keyEnter)
+		s.settle()
+		f, _ = fieldOf(s.screen())
+		again, ok := fieldOf(s.screen())
+		if !ok || !strings.Contains(again.title, keyword) {
+			s.t.Errorf("%s に形に合わない答え %q を書いても、同じ問いにとどまらない\n%s", what, bad, s.screen())
+		} else if errorText(s.screen()) == "" {
+			s.t.Errorf("%s に形に合わない答え %q を書いても、理由が出ない\n%s", what, bad, s.screen())
 		}
 	}
-	s.answer(a)
+	if a != "" {
+		if cur, _ := f.cursorLine(); cur != "" {
+			s.press(keyClear)
+		}
+		s.press(a)
+	}
+	if !s.press(keyEnter) {
+		s.t.Fatalf("%s で Enter を押しても先へ進まない\n%s", what, s.screen())
+	}
+	return def
+}
+
+// selectOne は、1 つ選ぶ問いで、カーソルのある選択肢（既定）を読み、want を選ぶ（空なら既定のまま）。
+func (s *initSession) selectOne(what, keyword string, options []string, want string) (string, []string) {
+	s.t.Helper()
+	f := s.waitField(what, keyword)
+	def, _ := f.cursorLine()
+	var shown []string
+	for _, l := range f.lines {
+		for _, o := range options {
+			if strings.Contains(l, o) {
+				shown = append(shown, o)
+			}
+		}
+	}
+	// 選択肢は、一番下で下へ動かすと一番上へ戻る。今のカーソルから下へ動かして want を探す
+	if want != "" {
+		for i := 0; i <= len(options); i++ {
+			f, _ := fieldOf(s.settle())
+			if cur, _ := f.cursorLine(); strings.Contains(cur, want) {
+				break
+			}
+			s.press(keyDown)
+		}
+	}
+	s.press(keyEnter)
+	return def, shown
+}
+
+// multiSelect は、複数選ぶ問いで、カーソルを一番上へ動かしてから一番下まで動かして、選択肢と選ばれているか（✓）を
+// 読み、toggle にある言語の選びをスペースで切り替える。問いの題も返す。複数選ぶ問いは、1 つ選ぶ問いと違い、
+// 端で止まる（一番下で下へ動かしても一番上へ戻らない）。カーソルは、はじめに選ばれていた言語から始まる。
+func (s *initSession) multiSelect(what, keyword string, toggle []string) (title string, options, selected []string) {
+	s.t.Helper()
+	title = s.waitField(what, keyword).title
+	for i := 0; i <= len(langNames) && s.press(keyUp); i++ {
+	}
+	seen := map[string]bool{}
+	for i := 0; i < len(langNames)+2; i++ {
+		f, _ := fieldOf(s.settle())
+		cur, _ := f.cursorLine()
+		lang := langOf(cur)
+		if lang == "" || seen[lang] {
+			break
+		}
+		seen[lang] = true
+		options = append(options, lang)
+		if strings.Contains(cur, "✓") {
+			selected = append(selected, lang)
+		}
+		for _, tg := range toggle {
+			if tg == lang {
+				s.press(keySpace)
+			}
+		}
+		if !s.press(keyDown) {
+			break
+		}
+	}
+	// 並びは langNames の中の順に直す（読んだ順は画面の上からの順と同じだが、比べやすくするため）
+	order := func(xs []string) []string {
+		var out []string
+		for _, n := range langNames {
+			for _, x := range xs {
+				if x == n {
+					out = append(out, n)
+				}
+			}
+		}
+		return out
+	}
+	s.press(keyEnter)
+	return title, order(options), order(selected)
+}
+
+// waitNext は、題が prev でない問いが画面の一番下に出て、描き直されなくなるまで待つ。
+func (s *initSession) waitNext(what, prev string) initField {
+	s.t.Helper()
+	deadline := time.Now().Add(15 * time.Second)
+	for time.Now().Before(deadline) {
+		if f, ok := fieldOf(s.settle()); ok && f.title != prev {
+			return f
+		}
+		select {
+		case <-s.done:
+			s.t.Fatalf("%s の問いを待っている間に vanda init が終わった\n--- 画面\n%s\n--- 標準エラー\n%s", what, s.screen(), s.stderr.String())
+		default:
+		}
+	}
+	s.t.Fatalf("%s の問いが出ない\n--- 画面\n%s", what, s.screen())
+	return initField{}
 }
 
 // run は、計画の順に問いをたどり、plan の答えを書く。作るかの問いに答えたところで返す。
 func (s *initSession) run(plan initPlan) initSeen {
 	s.t.Helper()
 	seen := initSeen{patterns: map[string]string{}}
-
-	c := s.prompt("ベースブランチ")
-	seen.baseDefault, _ = defaultOf(c)
-	s.ask("ベースブランチ", "ベースブランチ", c, nil, plan.base)
-
-	c = s.prompt("ストーリーの置き場所")
-	nums := choiceNumbers(s.t, c)
-	if d, ok := defaultOf(c); ok {
-		seen.storyDefault = d
-		for name, n := range nums {
-			if d == n || d == name {
-				seen.storyDefault = name
-			}
+	seen.baseDefault = s.input("ベースブランチ", "ベースブランチ", nil, plan.base)
+	def, shown := s.selectOne("ストーリーの置き場所", "ストーリーの置き場所", storyChoices, plan.story)
+	seen.storyOptions = shown
+	for _, o := range storyChoices {
+		if strings.Contains(def, o) {
+			seen.storyDefault = o
 		}
 	}
 	chosen := plan.story
 	if chosen == "" {
 		chosen = seen.storyDefault
 	}
-	a := ""
-	if plan.story != "" {
-		a = nums[plan.story]
-	}
-	s.ask("ストーリーの置き場所", "ストーリーの置き場所", c, plan.invalid["story"], a)
-
 	switch chosen {
-	case "GitHub Issues", "外部のコマンド":
-		kw := "リポジトリ"
-		if chosen == "外部のコマンド" {
-			kw = "コマンド"
-		}
-		c = s.prompt(kw)
+	case "GitHub Issues":
 		seen.detailAsked = true
-		seen.detailDef, seen.detailHasDef = defaultOf(c)
-		s.ask(kw, kw, c, plan.invalid["detail"], plan.detail)
+		seen.detailDef = s.input("リポジトリ", "リポジトリ", plan.invalid["detail"], plan.detail)
+	case "外部のコマンド":
+		seen.detailAsked = true
+		seen.detailDef = s.input("コマンド", "コマンド", plan.invalid["detail"], plan.detail)
 	}
-
-	c = s.prompt("ID の書き方")
-	seen.idDefault, seen.idHasDefault = defaultOf(c)
-	s.ask("ID の書き方", "ID", c, plan.invalid["id"], plan.idPattern)
-
+	seen.idDefault = s.input("ID の書き方", "ID", plan.invalid["id"], plan.idPattern)
+	var prev string
+	prev, seen.langOptions, seen.langSelected = s.multiSelect("言語", "言語", plan.toggle)
 	for {
-		c = s.prompt("言語か作るか")
-		if strings.Contains(c, ".vanda/config.toml") {
-			s.ask("作るか", "作", c, nil, plan.confirm)
+		f := s.waitNext("言語のパターンか作るか", prev)
+		if strings.Contains(f.title, "作りますか") {
+			if plan.confirm == "n" {
+				s.press("n")
+			} else {
+				s.press("y")
+			}
 			return seen
 		}
-		lang := ""
-		for _, n := range langNames {
-			if strings.Contains(c, n) {
-				lang = n
-			}
+		lang := langOf(f.title)
+		if lang == "" || !strings.Contains(f.title, "読むファイル") {
+			s.t.Fatalf("言語ごとのパターンの問いでも、作るかの問いでもない\n%s", s.screen())
 		}
-		if lang == "" {
-			s.t.Fatalf("言語の問いに、どの言語かが出ていない\n%s", c)
-		}
-		// 見つかった言語はいつも読む。問いは読むファイルのパターンだけ
 		seen.langsAsked = append(seen.langsAsked, lang)
-		seen.patterns[lang], _ = defaultOf(c)
-		s.ask(lang+" のパターン", "読むファイル", c, nil, plan.langs[lang])
+		seen.patterns[lang] = s.input(lang+" のパターン", f.title, nil, plan.patterns[lang])
+		prev = f.title
 	}
+}
+
+// guidance は、作った後の案内（「次にすること」から後）を返す。
+func (s *initSession) guidance() string {
+	sc := s.screen()
+	if i := strings.Index(sc, "次にすること"); i >= 0 {
+		return sc[i:]
+	}
+	return ""
 }
 
 // ---- 作ったファイル ----
@@ -497,7 +854,7 @@ func Test既定の答えのまま進めると読み取った値で4つのファ�
 	s := startInit(t, bin, r.root, r.g.env)
 	seen := s.run(initPlan{})
 	if code := s.wait(); code != 0 {
-		t.Fatalf("vanda init が %d で終わった\n%s\n%s", code, s.all(), s.stderr.String())
+		t.Fatalf("vanda init が %d で終わった\n%s\n%s", code, s.screen(), s.stderr.String())
 	}
 	if seen.baseDefault != "origin/main" || seen.storyDefault != "GitHub Issues" || seen.detailDef != "owner/app" || seen.idDefault != "#[0-9]+" {
 		t.Errorf("既定の答え: %+v", seen)
@@ -532,11 +889,12 @@ func Test既定の答えのまま進めると読み取った値で4つのファ�
 	}
 	checkNoComments(t, r.root)
 	// 作った後の案内に、[[layer]] を書くことと、CI に足す vanda check が出る
-	if !strings.Contains(s.all(), "[[layer]]") {
-		t.Errorf("案内に [[layer]] を書くことが出ていない\n%s", s.all())
+	g := s.guidance()
+	if !strings.Contains(g, "[[layer]]") {
+		t.Errorf("案内に [[layer]] を書くことが出ていない\n%s", s.screen())
 	}
-	if !strings.Contains(s.all(), "vanda check .vanda/checks/ci.toml --base origin/main") {
-		t.Errorf("案内に、CI に足す vanda check が出ていない\n%s", s.all())
+	if !strings.Contains(g, "vanda check .vanda/checks/ci.toml --base origin/main") {
+		t.Errorf("案内に、CI に足す vanda check が出ていない\n%s", s.screen())
 	}
 	// コミットはしない
 	if n := r.g.run("rev-list", "--count", "HEAD"); n != "1" {
@@ -545,8 +903,7 @@ func Test既定の答えのまま進めると読み取った値で4つのファ�
 
 	// vanda doctor は GitHub に繋がるかを確かめるので、作った設定の api_url だけを偽の GitHub に向ける
 	gh := newFakeRepoAPI(t, "owner/app")
-	cfgPath := filepath.Join(r.root, ".vanda", "config.toml")
-	cfgText, err := os.ReadFile(cfgPath)
+	cfgText, err := os.ReadFile(filepath.Join(r.root, ".vanda", "config.toml"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -580,7 +937,7 @@ func Test審査の設定には今ある審査が全部docs_formats_mdの順に�
 	s := startInit(t, bin, r.root, r.g.env)
 	s.run(initPlan{idPattern: "#[0-9]+"})
 	if code := s.wait(); code != 0 {
-		t.Fatalf("vanda init が %d で終わった\n%s", code, s.all())
+		t.Fatalf("vanda init が %d で終わった\n%s", code, s.screen())
 	}
 	var doc struct {
 		Check []struct {
@@ -625,10 +982,9 @@ func Test_remoteのURLの形ごとにストーリーの置き場所とリポジ�
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			r := newInitRepo(t, c.url, c.url != "")
-			// 既定の置き場所のまま進める。GitHub でないときは、GitHub Issues を選び直して、リポジトリに既定がないことを見る
+			// 既定の置き場所を読んだ後、GitHub Issues を選んで、リポジトリの既定を見る
 			s := startInit(t, bin, r.root, r.g.env)
-			plan := initPlan{story: "GitHub Issues", detail: "owner/app"}
-			seen := s.run(plan)
+			seen := s.run(initPlan{story: "GitHub Issues", detail: "owner/app"})
 			s.wait()
 			wantStory := "使わない"
 			if c.github {
@@ -637,11 +993,15 @@ func Test_remoteのURLの形ごとにストーリーの置き場所とリポジ�
 			if seen.storyDefault != wantStory {
 				t.Errorf("ストーリーの置き場所の既定: %q（思ったもの %q）", seen.storyDefault, wantStory)
 			}
-			if c.github && (!seen.detailHasDef || seen.detailDef != "owner/app") {
-				t.Errorf("リポジトリの既定: %q（思ったもの owner/app）", seen.detailDef)
+			if !reflect.DeepEqual(seen.storyOptions, storyChoices) {
+				t.Errorf("ストーリーの置き場所の選択肢: %v（思ったもの %v）", seen.storyOptions, storyChoices)
 			}
-			if !c.github && seen.detailHasDef {
-				t.Errorf("GitHub でない remote なのに、リポジトリに既定がある: %q", seen.detailDef)
+			wantDetail := ""
+			if c.github {
+				wantDetail = "owner/app"
+			}
+			if seen.detailDef != wantDetail {
+				t.Errorf("リポジトリの既定: %q（思ったもの %q。空は既定なし）", seen.detailDef, wantDetail)
 			}
 			wantBase := "main"
 			if c.url != "" {
@@ -662,15 +1022,16 @@ func Testストーリーの置き場所の選択肢ごとに問いの出方と�
 		detail      string
 		idPattern   string
 		detailAsked bool
-		detailKind  string
+		detailDef   string // 空なら既定なし
 		idDefault   string // 空なら既定なし
 		adapter     string
 		repository  string
 		command     []string
 		wantPattern string
 	}{
-		{"GitHub Issues", "", "", true, "リポジトリ", "#[0-9]+", "github", "owner/app", nil, "#[0-9]+"},
-		{"外部のコマンド", "tools/story-adapter --strict", "PROJ-[0-9]+", true, "コマンド", "", "", "", []string{"tools/story-adapter", "--strict"}, "PROJ-[0-9]+"},
+		{"GitHub Issues", "", "", true, "owner/app", "#[0-9]+", "github", "owner/app", nil, "#[0-9]+"},
+		// 外部のコマンドの答えは、空白で区切って引数に分ける（引用符は扱わない）
+		{"外部のコマンド", "tools/story-adapter --strict", "PROJ-[0-9]+", true, "", "", "", "", []string{"tools/story-adapter", "--strict"}, "PROJ-[0-9]+"},
 		{"使わない", "", "PROJ-[0-9]+", false, "", "", "", "", nil, "PROJ-[0-9]+"},
 	}
 	for _, c := range cases {
@@ -679,22 +1040,18 @@ func Testストーリーの置き場所の選択肢ごとに問いの出方と�
 			s := startInit(t, bin, r.root, r.g.env)
 			seen := s.run(initPlan{story: c.choice, detail: c.detail, idPattern: c.idPattern})
 			if code := s.wait(); code != 0 {
-				t.Fatalf("vanda init が %d で終わった\n%s", code, s.all())
+				t.Fatalf("vanda init が %d で終わった\n%s", code, s.screen())
 			}
 			if seen.detailAsked != c.detailAsked {
 				t.Errorf("リポジトリかコマンドの問いが出たか: %v（思ったもの %v）", seen.detailAsked, c.detailAsked)
 			}
-			if c.choice == "外部のコマンド" && seen.detailHasDef {
-				t.Errorf("外部のコマンドの問いに既定がある: %q", seen.detailDef)
+			if seen.detailDef != c.detailDef {
+				t.Errorf("リポジトリかコマンドの既定: %q（思ったもの %q）", seen.detailDef, c.detailDef)
 			}
-			if c.idDefault == "" && seen.idHasDefault {
-				t.Errorf("ID の書き方に既定がある: %q（%s は既定を持たない）", seen.idDefault, c.choice)
+			if seen.idDefault != c.idDefault {
+				t.Errorf("ID の書き方の既定: %q（思ったもの %q。空は既定なし）", seen.idDefault, c.idDefault)
 			}
-			if c.idDefault != "" && seen.idDefault != c.idDefault {
-				t.Errorf("ID の書き方の既定: %q（思ったもの %q）", seen.idDefault, c.idDefault)
-			}
-			cfg := readInitConfig(t, r.root)
-			st := cfg.Story
+			st := readInitConfig(t, r.root).Story
 			if st == nil || st.Adapter != c.adapter || st.Repository != c.repository || !reflect.DeepEqual(st.Command, c.command) || st.IDPattern != c.wantPattern {
 				t.Errorf("[story]: %+v（思ったもの adapter %q、repository %q、command %v、id_pattern %q）", st, c.adapter, c.repository, c.command, c.wantPattern)
 			}
@@ -702,8 +1059,9 @@ func Testストーリーの置き場所の選択肢ごとに問いの出方と�
 	}
 }
 
-// CMD-11: 言語のあるなしの 16 通りで、問いに出る言語と書かれる [[annotation]] が合う
-func Test言語のあるなしの16通りで問いに出る言語と書かれるannotationが合う(t *testing.T) {
+// CMD-11: 言語のあるなしの 16 通りで、言語を選ぶ問いに 4 つの言語が出て、見つかった言語が選ばれた状態から始まり、
+// そのまま進めると、見つかった言語だけのパターンを聞かれ、その [[annotation]] が書かれる
+func Test言語のあるなしの16通りで見つかった言語が選ばれた状態から始まりそのまま進めるとそれが書かれる(t *testing.T) {
 	bin, _ := initSetup(t)
 	for mask := 0; mask < 1<<len(initLangs); mask++ {
 		var files, names, want []string
@@ -723,14 +1081,17 @@ func Test言語のあるなしの16通りで問いに出る言語と書かれる
 			s := startInit(t, bin, r.root, r.g.env)
 			seen := s.run(initPlan{idPattern: "#[0-9]+"})
 			if code := s.wait(); code != 0 {
-				t.Fatalf("vanda init が %d で終わった\n%s", code, s.all())
+				t.Fatalf("vanda init が %d で終わった\n%s", code, s.screen())
 			}
-			asked := append([]string(nil), seen.langsAsked...)
-			sort.Strings(asked)
-			wantNames := append([]string(nil), names...)
-			sort.Strings(wantNames)
-			if !reflect.DeepEqual(asked, wantNames) {
-				t.Errorf("問いに出た言語: %v（思ったもの %v）", asked, wantNames)
+			if !reflect.DeepEqual(seen.langOptions, langNames) {
+				t.Errorf("言語を選ぶ問いの選択肢: %v（思ったもの %v）", seen.langOptions, langNames)
+			}
+			sorted := func(xs []string) []string { ys := append([]string(nil), xs...); sort.Strings(ys); return ys }
+			if !reflect.DeepEqual(sorted(seen.langSelected), sorted(names)) {
+				t.Errorf("はじめから選ばれていた言語: %v（思ったもの %v）", seen.langSelected, names)
+			}
+			if !reflect.DeepEqual(sorted(seen.langsAsked), sorted(names)) {
+				t.Errorf("パターンを聞かれた言語: %v（思ったもの %v）", seen.langsAsked, names)
 			}
 			for _, l := range initLangs {
 				if p, ok := seen.patterns[l.name]; ok && p != l.pattern {
@@ -745,7 +1106,95 @@ func Test言語のあるなしの16通りで問いに出る言語と書かれる
 	}
 }
 
-// CMD-11: 答えを変えると、その値で書かれる（ベースブランチ、リポジトリ、ID の書き方、言語ごとのパターン。コマンドは
+// CMD-11: 見つからなかった言語を選ぶと書かれ、選びを外すと書かれない
+func Test言語を選ぶ問いで見つからなかった言語を選ぶと書かれ選びを外すと書かれない(t *testing.T) {
+	bin, _ := initSetup(t)
+	r := newInitRepo(t, "", false, "e2e/a.txtar", "db/schema.sql")
+	s := startInit(t, bin, r.root, r.g.env)
+	// シナリオと SQL が見つかる。Go を選び、シナリオの選びを外す
+	seen := s.run(initPlan{idPattern: "#[0-9]+", toggle: []string{"Go", "シナリオ"}})
+	if code := s.wait(); code != 0 {
+		t.Fatalf("vanda init が %d で終わった\n%s", code, s.screen())
+	}
+	if got := append([]string(nil), seen.langsAsked...); !reflect.DeepEqual(sortedCopy(got), []string{"Go", "SQL"}) {
+		t.Errorf("パターンを聞かれた言語: %v（思ったもの Go と SQL）", got)
+	}
+	if got, want := annotationsOf(readInitConfig(t, r.root)), []string{"go **/*_test.go", "sql **/*.sql"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("[[annotation]]: %v（思ったもの %v）", got, want)
+	}
+}
+
+func sortedCopy(xs []string) []string {
+	ys := append([]string(nil), xs...)
+	sort.Strings(ys)
+	return ys
+}
+
+// newEmptyInitRepo は、git init しただけの（コミットもファイルもない）リポジトリを作る。
+func newEmptyInitRepo(t *testing.T) *initRepo {
+	t.Helper()
+	root := t.TempDir()
+	r := &initRepo{t: t, root: root, g: newRVGit(t, root)}
+	r.g.run("init", "-q", "-b", "main")
+	return r
+}
+
+// CMD-11: 初期化した直後のリポジトリでも、言語を選んで [[annotation]] を書ける。1 つも選ばなければ、案内に
+// [[annotation]] を書くことが足される（外部のコマンドのアダプタのことは、いつも出る）
+func Test初期化した直後のリポジトリでも言語を選べ1つも選ばなければ案内にannotationを書くことが出る(t *testing.T) {
+	bin, _ := initSetup(t)
+	annotationLines := func(g string) int {
+		n := 0
+		for _, l := range strings.Split(g, "\n") {
+			if strings.Contains(l, "[[annotation]]") {
+				n++
+			}
+		}
+		return n
+	}
+	var withLangs, without string
+	t.Run("GoとTLA+を選ぶ", func(t *testing.T) {
+		r := newEmptyInitRepo(t)
+		s := startInit(t, bin, r.root, r.g.env)
+		seen := s.run(initPlan{idPattern: "#[0-9]+", toggle: []string{"Go", "TLA+"}})
+		if code := s.wait(); code != 0 {
+			t.Fatalf("vanda init が %d で終わった\n%s", code, s.screen())
+		}
+		if seen.baseDefault != "main" {
+			t.Errorf("ベースブランチの既定: %q（思ったもの main。今のブランチ）", seen.baseDefault)
+		}
+		if len(seen.langSelected) != 0 {
+			t.Errorf("ファイルがないのに、はじめから選ばれていた言語がある: %v", seen.langSelected)
+		}
+		if got, want := annotationsOf(readInitConfig(t, r.root)), []string{"go **/*_test.go", "tla **/*.tla"}; !reflect.DeepEqual(got, want) {
+			t.Errorf("[[annotation]]: %v（思ったもの %v）", got, want)
+		}
+		if c := readInitConfig(t, r.root); c.Gui == nil || c.Gui.Base != "main" {
+			t.Errorf("[gui] の base: %+v", c.Gui)
+		}
+		withLangs = s.guidance()
+	})
+	t.Run("1つも選ばない", func(t *testing.T) {
+		r := newEmptyInitRepo(t)
+		s := startInit(t, bin, r.root, r.g.env)
+		s.run(initPlan{idPattern: "#[0-9]+"})
+		if code := s.wait(); code != 0 {
+			t.Fatalf("vanda init が %d で終わった\n%s", code, s.screen())
+		}
+		if got := annotationsOf(readInitConfig(t, r.root)); len(got) != 0 {
+			t.Errorf("言語を選んでいないのに [[annotation]] がある: %v", got)
+		}
+		without = s.guidance()
+	})
+	if !strings.Contains(withLangs, "外部のコマンド") || !strings.Contains(without, "外部のコマンド") {
+		t.Errorf("案内に、外部のコマンドのアダプタのことが出ていない\n--- 選んだとき\n%s\n--- 選ばないとき\n%s", withLangs, without)
+	}
+	if annotationLines(without) <= annotationLines(withLangs) {
+		t.Errorf("1 つも選ばなかったときの案内に、[[annotation]] を書くことが足されていない\n--- 選んだとき\n%s\n--- 選ばないとき\n%s", withLangs, without)
+	}
+}
+
+// CMD-11: 答えを変えると、その値で書かれる（ベースブランチ、リポジトリ、ID の書き方、読むファイルのパターン。コマンドは
 // ストーリーの置き場所の選択肢のテストで変える）
 func Test答えを変えるとその値で書かれる(t *testing.T) {
 	bin, _ := initSetup(t)
@@ -754,10 +1203,10 @@ func Test答えを変えるとその値で書かれる(t *testing.T) {
 	s := startInit(t, bin, r.root, r.g.env)
 	s.run(initPlan{
 		base: "develop", detail: "other/repo", idPattern: "[A-Z]+-[0-9]+",
-		langs: map[string]string{"Go": "internal/**/*_test.go", "シナリオ": "e2e/**/*.txtar"},
+		patterns: map[string]string{"Go": "internal/**/*_test.go", "シナリオ": "e2e/**/*.txtar"},
 	})
 	if code := s.wait(); code != 0 {
-		t.Fatalf("vanda init が %d で終わった\n%s", code, s.all())
+		t.Fatalf("vanda init が %d で終わった\n%s", code, s.screen())
 	}
 	c := readInitConfig(t, r.root)
 	if c.Gui == nil || c.Gui.Base != "develop" {
@@ -771,18 +1220,18 @@ func Test答えを変えるとその値で書かれる(t *testing.T) {
 	}
 }
 
-// CMD-11: 形に合わない答えは、理由が出て同じ問いに戻る
-func Test形に合わない答えは理由が出て同じ問いに戻る(t *testing.T) {
+// CMD-11: 形に合わない答えは、理由が出て同じ問いにとどまる（選択肢は矢印キーで選ぶので、選択肢にない番号は書けない）
+func Test形に合わない答えは理由が出て同じ問いにとどまる(t *testing.T) {
 	bin, _ := initSetup(t)
-	t.Run("選択肢にない番号と既定のないIDの書き方の空と正規表現の誤りと空の文字列に当たる正規表現", func(t *testing.T) {
+	t.Run("既定のないIDの書き方の空と正規表現の誤りと空の文字列に当たる正規表現", func(t *testing.T) {
 		r := newInitRepo(t, "", false)
 		s := startInit(t, bin, r.root, r.g.env)
 		s.run(initPlan{
 			story: "外部のコマンド", detail: "tools/story-adapter", idPattern: "PROJ-[0-9]+",
-			invalid: map[string][]string{"story": {"9", "0"}, "id": {"", "[", "a*"}},
+			invalid: map[string][]string{"id": {"", "[", "a*"}},
 		})
 		if code := s.wait(); code != 0 {
-			t.Fatalf("vanda init が %d で終わった\n%s", code, s.all())
+			t.Fatalf("vanda init が %d で終わった\n%s", code, s.screen())
 		}
 		if c := readInitConfig(t, r.root); c.Story == nil || c.Story.IDPattern != "PROJ-[0-9]+" || !reflect.DeepEqual(c.Story.Command, []string{"tools/story-adapter"}) {
 			t.Errorf("聞き直した後の答えで書かれていない: %+v", c.Story)
@@ -793,7 +1242,7 @@ func Test形に合わない答えは理由が出て同じ問いに戻る(t *test
 		s := startInit(t, bin, r.root, r.g.env)
 		s.run(initPlan{detail: "other/repo", invalid: map[string][]string{"detail": {"owner", "owner/", "/repo", "a/b/c"}}})
 		if code := s.wait(); code != 0 {
-			t.Fatalf("vanda init が %d で終わった\n%s", code, s.all())
+			t.Fatalf("vanda init が %d で終わった\n%s", code, s.screen())
 		}
 		if c := readInitConfig(t, r.root); c.Story == nil || c.Story.Repository != "other/repo" {
 			t.Errorf("聞き直した後の答えで書かれていない: %+v", c.Story)
@@ -818,17 +1267,18 @@ func Test作る前の確かめでnと答えると何も作られない(t *testin
 // CMD-11: 途中で入力を終える（Ctrl+D）と、何も作られない。問いごとに回す
 func Test途中で入力を終えると何も作られない(t *testing.T) {
 	bin, _ := initSetup(t)
-	steps := []string{"ベースブランチ", "ストーリーの置き場所", "リポジトリ", "ID の書き方", "言語", "作るか"}
+	// 問いの題に出る言葉。remote が GitHub なのでリポジトリの問いが出る。シナリオだけが見つかる
+	steps := []string{"ベースブランチ", "ストーリーの置き場所", "リポジトリ", "ID", "言語", "読むファイル", "作りますか"}
 	for i, step := range steps {
 		t.Run(step+"で終える", func(t *testing.T) {
 			r := newInitRepo(t, "https://github.com/owner/app.git", true, "e2e/a.txtar")
 			s := startInit(t, bin, r.root, r.g.env)
 			for j := 0; j < i; j++ {
-				s.prompt(steps[j])
-				s.answer("")
+				s.waitField(steps[j], steps[j])
+				s.press(keyEnter)
 			}
-			s.prompt(step)
-			s.eof()
+			s.waitField(step, step)
+			s.press(keyEOF)
 			code := s.wait()
 			if r.exists(".vanda") {
 				t.Errorf("%s で入力を終えたのに .vanda/ ができた", step)
