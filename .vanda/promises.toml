@@ -2940,3 +2940,291 @@ layers = ["api"]
 stage = "test"
 type = "interface-test"
 layers = ["api"]
+
+[[claim]]
+id = "claim-detail-error-shown"
+subjects = ["cl-01"]
+statement = "約束の詳細を読めないときは、API が返した理由を画面に出す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "agree-refusal-shown"
+subjects = ["rv-06", "agreement"]
+statement = "合意を断られたら、断られた理由を画面に出す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "review-error-shown"
+subjects = ["rv-01"]
+statement = "変わったものの一覧を読めないときは、API が返した理由を画面に出す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "review-state-shown"
+subjects = ["rv-01", "proposed", "agreed"]
+statement = "変わったものの一覧の 1 件ごとに、合意の状態を提案中か合意済かで示す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "agree-on-screen-reloads"
+subjects = ["rv-06", "agreement"]
+statement = "画面で合意した後に、変わったものの一覧を読み直し、合意した後の状態を見せる"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "story-body-markdown"
+subjects = ["cm-08", "story"]
+statement = "ストーリーの本文を Markdown として描き（見出し・箇条書き・表・コード・リンク）、生の HTML は要素にしない"
+rationale = "置き場所から読んだ本文の HTML を、vanda の画面の中で動かさないため（CLAUDE.md の依存の表の react-markdown の行）"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "story-links-new-tab"
+subjects = ["cm-08", "story"]
+statement = "ストーリーの本文のリンク・置き場所で開くリンク・添付ファイルのリンクは新しいタブで開き、開いた先から vanda の画面に戻って操れないようにする"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）", "開いた先から戻れないようにするのは、開いた頁に vanda の画面を操らせないためだと推し量った"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "highlight-fallback"
+subjects = ["rv-05", "cl-02"]
+statement = "コードの色付けを読み込めないときも、ファイルの文字は全部見せる"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "config-file-required"
+subjects = ["cm-09"]
+statement = ".vanda/config.toml がなければ、vanda doctor と vanda check は誤りで止まる"
+layers = ["cli"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "back-restores-state"
+subjects = ["rv-13", "cl-01"]
+statement = "約束の詳細やファイルの画面からストーリーのレビューへ戻ると、行く前と同じ状態（ベースブランチ、レビュー単位、ストーリー、選んだ件）に戻る"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）", "戻す状態に、ベースブランチ・レビュー単位・ストーリー・選んだ件を含めるのは、E2E の場合分けから推し量った"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
+
+[[claim]]
+id = "keep-user-whitespace"
+subjects = ["cl-01", "rv-05"]
+statement = "利用者が書いた文（約束の文・理由・条件、その時点の中身、差分）の続いた空白・全角の空白・改行を、そのまま保って出す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "diff-whitespace-marked"
+subjects = ["rv-05"]
+statement = "差分で、空白だけを足した所と消した所にも、足した・消した印を付ける"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "entry-select-anywhere"
+subjects = ["rv-01"]
+statement = "変わったものの一覧の 1 件は、名前のほか、番号・状態の札・フラグの札・枠の端を押しても選ばれる"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "evidence-presence-three-states"
+subjects = ["rv-08", "evidence"]
+statement = "エビデンスの予定と実際の表で、揃っている・ない・アノテーションでは確かめないを見分けて示す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "evidence-detail-no-truncate"
+subjects = ["rv-08", "evidence"]
+statement = "エビデンスの予定と実際の詳細は、長い文も改行も省略せずに全部出し、幅 400px でもページが横にスクロールしない"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "human-review"
+layers = ["gui"]
+
+[[claim]]
+id = "claim-at-commit-unknown-layer"
+subjects = ["cl-08", "layer"]
+statement = "その時点の約束の中身のレイヤーのうち、今の設定にないものは ID のまま出す"
+layers = ["api", "gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "claim-at-commit-multiple-open"
+subjects = ["cl-08"]
+statement = "その時点の中身を 2 つ以上開くと、それぞれが同時に出たままになり、1 つをたたんでもほかは開いたままにする"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "claim-at-commit-toggle"
+subjects = ["cl-08", "origin"]
+statement = "由来と合意の履歴の行を押すとその時点の中身が開き、もう一度押すとたたまる"
+layers = ["gui"]
+flags = ["ai-proposal"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "claim-at-commit-error-shown"
+subjects = ["cl-08"]
+statement = "その時点の約束リストが読めない合意の記録を選ぶと、理由を出す"
+layers = ["api", "gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "found-file-state-shown"
+subjects = ["cl-02", "rv-08", "agreement"]
+statement = "実際のエビデンスのうち合意の対象のファイル（シナリオ・オラクルの定義・ガードレールの定義）には、そのファイルの今の中身が合意済か提案中かを示す"
+layers = ["api", "gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
