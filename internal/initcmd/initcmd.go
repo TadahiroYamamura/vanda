@@ -196,7 +196,7 @@ func Ask(root string, d Defaults, in *bufio.Reader, out io.Writer) (Answers, err
 	var a Answers
 	var err error
 
-	a.Base, err = p.askValid("ベースブランチ（差分を比べる元）", d.Base, func(s string) error {
+	a.Base, err = p.askValid("ベースブランチ", d.Base, func(s string) error {
 		if s == "" {
 			return errors.New("ベースブランチを入れてください。")
 		}
@@ -234,7 +234,7 @@ func Ask(root string, d Defaults, in *bufio.Reader, out io.Writer) (Answers, err
 
 	switch choice.key {
 	case "github":
-		a.Repository, err = p.askValid("GitHub のリポジトリ（<owner>/<repo>）", d.GitHubRepo, func(s string) error {
+		a.Repository, err = p.askValid("GitHub のリポジトリ", d.GitHubRepo, func(s string) error {
 			if GitHubRepository("https://github.com/"+s) != s || strings.ContainsAny(s, " \t") {
 				return errors.New("<owner>/<repo> の形（例: TadahiroYamamura/vanda）で入れてください。")
 			}
