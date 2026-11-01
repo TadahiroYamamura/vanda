@@ -3274,17 +3274,22 @@ type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
-id = "story-trailer-errors-ignored-on-screen"
+id = "story-trailer-errors-shown"
 subjects = ["rv-13", "story"]
-statement = "画面（API）は、Story: のトレーラーが誤ったコミットを、ストーリーの分からないコミットとして扱う"
-rationale = "誤りは審査が出すので、履歴に 1 つ誤ったコミットがあるだけで、画面を開けなくならないようにするため"
-layers = ["api"]
+statement = "Story: のトレーラーが誤ったコミットがあっても、API は誤りで止めずに 200 で返し、そのコミットのストーリーを空にしたうえで、どのコミットの何が誤りかを返し、画面に出す"
+rationale = "履歴に 1 つ誤ったコミットがあるだけで画面を開けなくならないようにし、そのうえで、段 2 で決めた「誤りは画面にそのまま理由を出す（黙って空にしない）」に沿うため（監督の判断）"
+layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
 type = "unit-test"
 layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
 
 [[claim]]
 id = "agree-commit-has-story-trailer"
