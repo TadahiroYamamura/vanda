@@ -17,6 +17,7 @@
 | そのほか（`scenario-test`・`unit-test`・`guardrail` など） | `@vanda:evidence` |
 
 - 組込みのアダプタは、既定のタイプを持つ（`go`: `unit-test`・`cross-check`・`random-check`・`interface-test`・`concurrency-test`・`sensor`、`txtar`: `scenario-test`、`tla`: `model-check`、`sql`: `guardrail`、`ts`: `unit-test`）。`vanda init` は、選んだ言語のアダプタの既定のタイプをそのまま書く（問いかけない）
+- 組込みのアダプタに、書けない種類でしか満たせないタイプを `types` に書いたとき（例: `tla` に `unit-test`）は、設定の誤りにする。`.vanda/adapters/` のアダプタは、どの種類も書けるので誤りにしない。`types = []` は、どのタイプも満たさないとする
 - vanda のリポジトリの `.vanda/config.toml` に `types` を書き足す
 
 ## 2. 組込みの TypeScript のアダプタ（`ts`）
@@ -25,9 +26,9 @@
 |---|---|
 | 書ける種類 | `evidence` |
 | 数える所 | `//`・`/* */` のコメントの中だけ。文字列・テンプレート文字列の中は数えない |
-| 書ける所 | `test(`・`it(`・`describe(`（`.skip`・`.only`・`.each` などが付いたものを含む）の呼び出しの直前のコメント（空行をはさまない）。ほかの所のコメントは誤り |
-| 付いているものの名前 | 呼び出しの最初の引数の文字列。`describe` の中なら、外側の `describe` の名前から順に ` > ` でつなぐ（例: `ReviewPage > 一覧を出す`）。最初の引数が文字列の決まった値でなければ誤り |
-| 見つけ方と既定のパターン | `.test.ts`・`.test.tsx` で終わるファイル。既定のパターンは `**/*.test.ts` と `**/*.test.tsx` |
+| 書ける所 | `test`・`it`・`describe` から始まる呼び出し（後ろに付く修飾は名前を決めずにすべて受け付ける。`.skip`・`.only`・`.todo`・`.each(…)(…)`、Playwright の `test.describe`・`test.describe.serial` など）の直前のコメント（空行をはさまない）。`beforeEach`・`afterEach`・`beforeAll`・`afterAll`・`test.step` と、ほかの所のコメントは誤り |
+| 付いているものの名前 | 最後の呼び出しの最初の引数（`.each(表)("名前", …)` なら `"名前"`）。文字列か、テンプレート文字列なら書いてあるとおりの文字（`${op} を…` はそのまま）。`describe`（`test.describe` を含む）の中なら、外側から順に ` > ` でつなぐ（例: `ReviewPage > 一覧を出す`）。名前が変数などで決まった文字でなければ誤り |
+| 見つけ方と既定のパターン | `.test.ts`・`.test.tsx` で終わるファイル。既定のパターンは `**/*.test.ts` と `**/*.test.tsx`。`vanda init` のパターンの問いは、どの言語でも空白で区切って複数書ける形にする |
 
 ## 3. `.vanda/adapters/playwright`（vanda のリポジトリだけで使う）
 
