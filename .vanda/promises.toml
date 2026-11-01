@@ -430,6 +430,16 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -442,7 +452,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -455,7 +465,12 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
 layers = ["cli"]
 
 [[claim]]
@@ -467,7 +482,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -476,6 +491,11 @@ subjects = ["cm-02", "cmd-10", "promise-list"]
 statement = "約束リストの表に必須の項目がなければ、promise-list-shape の誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -491,7 +511,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -503,7 +523,12 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "random-check"
 layers = ["cli"]
 
 [[claim]]
@@ -515,7 +540,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -527,7 +552,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -539,7 +564,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -551,7 +576,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -563,7 +588,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -575,7 +600,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -588,7 +613,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -614,6 +639,11 @@ flags = ["ai-proposal"]
 [[claim.evidence]]
 stage = "test"
 type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "random-check"
 layers = ["cli"]
 
 [[claim]]
@@ -649,6 +679,11 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "model-check"
 layers = ["model"]
 
@@ -663,6 +698,11 @@ subjects = ["rv-06", "cm-03", "agreement-record"]
 statement = "指紋の合わない合意の記録は、消さずに履歴として残す"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -683,6 +723,11 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "model-check"
 layers = ["model"]
 
@@ -700,6 +745,11 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "model-check"
 layers = ["model"]
 
@@ -712,8 +762,18 @@ layers = ["cli"]
 id = "revoke-returns-to-proposed"
 subjects = ["rv-17", "agreement", "proposed"]
 statement = "合意を取り消した後、今の中身に合う合意の記録がほかに残っていなければ、提案中に戻る"
-layers = ["model", "cli"]
+layers = ["model", "cli", "api"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
 
 [[claim.evidence]]
 stage = "test"
@@ -735,7 +795,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -748,7 +808,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -760,7 +820,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -769,6 +829,11 @@ subjects = ["cm-03", "cmd-10", "agreement-record"]
 statement = "kind が claim・term・feature の合意の記録が、約束リストにない項目を指していれば、agreement-targets の誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -784,7 +849,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -796,7 +861,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -809,7 +874,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -821,7 +886,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -833,7 +898,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -845,7 +910,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -854,6 +919,11 @@ subjects = ["annotation-reading", "builtin-adapter"]
 statement = "go のアダプタは、func の宣言の直前のコメント（空行をはさまない）のアノテーションだけを受け付け、名前を func の名前（メソッドは 型.名前）とする"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -870,6 +940,11 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -879,6 +954,11 @@ subjects = ["annotation-reading", "builtin-adapter", "oracle"]
 statement = "tla のアダプタは、アノテーションの後の、空行でもコメントでもない最初の行の定義の名前を名前とし、その行が定義でなければ誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -894,6 +974,11 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -903,6 +988,11 @@ subjects = ["annotation-reading", "builtin-adapter"]
 statement = "ts のアダプタは、test・it・describe から始まる呼び出しの直前のコメント（空行をはさまない）のアノテーションだけを受け付け、名前を最後の呼び出しの最初の引数とし、describe の中なら外側から ' > ' でつなぐ"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -919,7 +1009,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -932,7 +1022,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -941,6 +1031,11 @@ subjects = ["cmd-10", "annotation"]
 statement = "annotation-links は、term が用語を、feature が機能を、claim・evidence・sensor が約束を指していなければ誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -956,7 +1051,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -969,7 +1064,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -982,7 +1077,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -994,7 +1089,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1003,6 +1098,16 @@ subjects = ["project-adapters", "adapter"]
 statement = ".vanda/adapters/ の直下のファイルの名前、またはディレクトリの名前をアダプタの名前とし、ファイルならそれを、ディレクトリなら直下の run を実行する"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -1018,7 +1123,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1030,19 +1135,25 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
 layers = ["cli"]
 
 [[claim]]
 id = "project-adapter-args-only-for-project"
 subjects = ["project-adapters", "cm-09"]
-statement = "args は .vanda/adapters/ のアダプタのときだけ書け、組込みのアダプタや adapter のない表に書けば設定の誤りにする"
+statement = "args は .vanda/adapters/ のアダプタのときだけ書け、組込みのアダプタに書けば設定の誤りにする"
+rationale = "監督の了承"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1054,7 +1165,12 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1066,7 +1182,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1079,7 +1195,12 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1091,7 +1212,12 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1103,7 +1229,12 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1116,7 +1247,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1129,7 +1260,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1141,7 +1272,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1151,6 +1282,11 @@ statement = "審査の設定に書いた順に審査を行い、どれかが失�
 rationale = "審査は、どれも失敗したら止める（「知らせるだけ」の段は設けない）"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -1166,7 +1302,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1175,6 +1311,11 @@ subjects = ["cmd-03", "check"]
 statement = "審査ごとに「審査 <名前>（<範囲>）: 通った」か「失敗（<件数> 件）」の行を標準出力に出し、誤りの中身を標準エラーに 1 件 1 行で出す"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -1190,7 +1331,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1202,7 +1343,12 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "human-review"
 layers = ["cli"]
 
 [[claim]]
@@ -1214,7 +1360,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1226,7 +1372,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1238,7 +1384,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1248,6 +1394,11 @@ statement = "story-origin は、分かれた点より後の、合流でないコ
 rationale = "履歴を書き換えないと直せない古いコミットは見ない"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -1264,6 +1415,11 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1277,19 +1433,29 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
 id = "check-agreement-story-scope"
 subjects = ["cmd-10", "agreement", "story"]
 statement = "範囲を story にした agreement は、そのストーリーで変わったものだけを見て、さらにそのストーリーの外れた合意も誤りにする"
-layers = ["cli"]
+layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "model-check"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "cross-check"
 layers = ["cli"]
 
 [[claim]]
@@ -1298,6 +1464,11 @@ subjects = ["cmd-10", "evidence", "evidence-type"]
 statement = "evidence-present は、予定したエビデンスの 1 件ごとに、そのタイプを types に含む [[annotation]] で読んだ、タイプに合う種類のアノテーションがその約束を指していなければ誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -1314,7 +1485,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1323,6 +1494,11 @@ subjects = ["cmd-10", "check"]
 statement = "unread-files は、.vanda/ のファイル（.vanda/config.toml、.vanda/checks/*.toml、.vanda/adapters/ の下を除く）が promises か agreements のパターンに当たらなければ誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -1338,6 +1514,11 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1350,7 +1531,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1362,7 +1543,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1374,7 +1555,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1387,7 +1568,7 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1396,6 +1577,11 @@ subjects = ["cmd-01"]
 statement = "vanda doctor は、設定と版に誤りがなければ、標準出力に 1 行を出して終了コード 0 で終わる"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -1411,7 +1597,12 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1424,7 +1615,12 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "scenario-test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1433,6 +1629,11 @@ subjects = ["show-version"]
 statement = "vanda version は、.vanda/ がなくても、設定の版が合わなくても、動いている vanda の版を 1 行で出す"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -1452,12 +1653,22 @@ stage = "test"
 type = "unit-test"
 layers = ["api"]
 
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["api"]
+
 [[claim]]
 id = "serve-prints-url"
 subjects = ["cm-01"]
 statement = "vanda serve は、開いた URL を、--no-open のときも標準出力に 1 行で出す"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -1477,6 +1688,11 @@ stage = "test"
 type = "unit-test"
 layers = ["api"]
 
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["api"]
+
 [[claim]]
 id = "serve-rejects-foreign-origin"
 subjects = ["cm-01"]
@@ -1490,6 +1706,11 @@ stage = "test"
 type = "unit-test"
 layers = ["api"]
 
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["api"]
+
 [[claim]]
 id = "api-error-shape"
 subjects = ["cm-01"]
@@ -1500,6 +1721,11 @@ flags = ["ai-proposal"]
 [[claim.evidence]]
 stage = "test"
 type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
 layers = ["api"]
 
 [[claim]]
@@ -1537,6 +1763,11 @@ subjects = ["cm-06", "base-branch"]
 statement = "画面は、今どのベースブランチと比べているかを常に示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
 
 [[claim.evidence]]
 stage = "test"
@@ -1590,6 +1821,11 @@ stage = "test"
 type = "unit-test"
 layers = ["api"]
 
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["api"]
+
 [[claim]]
 id = "story-github-attachments"
 subjects = ["cm-08", "story"]
@@ -1601,6 +1837,11 @@ flags = ["ai-proposal"]
 [[claim.evidence]]
 stage = "test"
 type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
 layers = ["api"]
 
 [[claim]]
@@ -1616,6 +1857,11 @@ stage = "test"
 type = "unit-test"
 layers = ["api"]
 
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["api"]
+
 [[claim]]
 id = "story-errors"
 subjects = ["cm-08", "story"]
@@ -1626,6 +1872,11 @@ flags = ["ai-proposal"]
 [[claim.evidence]]
 stage = "test"
 type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
 layers = ["api"]
 
 [[claim]]
@@ -1640,6 +1891,11 @@ stage = "test"
 type = "unit-test"
 layers = ["api"]
 
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["api"]
+
 [[claim]]
 id = "review-no-omission-no-duplicate"
 subjects = ["rv-01", "story"]
@@ -1649,12 +1905,12 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
-type = "random-check"
+type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
 stage = "test"
-type = "unit-test"
+type = "random-check"
 layers = ["api"]
 
 [[claim]]
@@ -1697,6 +1953,11 @@ layers = ["api"]
 [[claim.evidence]]
 stage = "test"
 type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
 layers = ["gui"]
 
 [[claim]]
@@ -1757,6 +2018,11 @@ stage = "test"
 type = "unit-test"
 layers = ["gui"]
 
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
+
 [[claim]]
 id = "review-detached-shown"
 subjects = ["rv-14", "agreement", "story"]
@@ -1773,6 +2039,11 @@ layers = ["api"]
 [[claim.evidence]]
 stage = "test"
 type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
 layers = ["gui"]
 
 [[claim]]
@@ -1816,6 +2087,11 @@ stage = "test"
 type = "unit-test"
 layers = ["gui"]
 
+[[claim.evidence]]
+stage = "test"
+type = "human-review"
+layers = ["gui"]
+
 [[claim]]
 id = "review-before-after"
 subjects = ["rv-05"]
@@ -1831,6 +2107,11 @@ layers = ["api"]
 [[claim.evidence]]
 stage = "test"
 type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
 layers = ["gui"]
 
 [[claim]]
@@ -1849,6 +2130,11 @@ layers = ["api"]
 stage = "test"
 type = "unit-test"
 layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "random-check"
+layers = ["api"]
 
 [[claim]]
 id = "review-evidence-diff-pairing"
@@ -1875,6 +2161,11 @@ stage = "test"
 type = "unit-test"
 layers = ["gui"]
 
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
+
 [[claim]]
 id = "agree-writes-and-commits"
 subjects = ["rv-06", "agreement"]
@@ -1886,6 +2177,16 @@ flags = ["ai-proposal"]
 [[claim.evidence]]
 stage = "test"
 type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "guardrail"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "sensor"
 layers = ["api"]
 
 [[claim]]
@@ -1913,6 +2214,16 @@ stage = "test"
 type = "unit-test"
 layers = ["api"]
 
+[[claim.evidence]]
+stage = "test"
+type = "guardrail"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "sensor"
+layers = ["api"]
+
 [[claim]]
 id = "agree-rejects-uncommitted"
 subjects = ["rv-06", "agreement"]
@@ -1924,6 +2235,16 @@ flags = ["ai-proposal"]
 [[claim.evidence]]
 stage = "test"
 type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "guardrail"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "sensor"
 layers = ["api"]
 
 [[claim]]
@@ -1981,6 +2302,16 @@ stage = "test"
 type = "unit-test"
 layers = ["api"]
 
+[[claim.evidence]]
+stage = "test"
+type = "guardrail"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "sensor"
+layers = ["api"]
+
 [[claim]]
 id = "detail-origin-and-history"
 subjects = ["rv-16", "origin"]
@@ -2003,6 +2334,11 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -2015,7 +2351,17 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
 type = "scenario-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "human-review"
 layers = ["gui"]
 
 [[claim]]
@@ -2024,6 +2370,11 @@ subjects = ["rv-18"]
 statement = "約束の詳細の画面とファイルの画面で合意・取り消しをした後も、その画面にとどまる"
 layers = ["gui"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
 
 [[claim.evidence]]
 stage = "test"
@@ -2045,6 +2396,11 @@ layers = ["api"]
 [[claim.evidence]]
 stage = "test"
 type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
 layers = ["gui"]
 
 [[claim]]
@@ -2123,6 +2479,11 @@ stage = "test"
 type = "unit-test"
 layers = ["gui"]
 
+[[claim.evidence]]
+stage = "test"
+type = "human-review"
+layers = ["gui"]
+
 [[claim]]
 id = "tla-copy-ascii"
 subjects = ["cl-07", "oracle"]
@@ -2170,6 +2531,11 @@ stage = "test"
 type = "unit-test"
 layers = ["gui"]
 
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
+
 [[claim]]
 id = "claim-at-commit-errors"
 subjects = ["cl-08"]
@@ -2192,6 +2558,11 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "interface-test"
 layers = ["cli"]
 
@@ -2204,7 +2575,22 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "interface-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "guardrail"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "sensor"
 layers = ["cli"]
 
 [[claim]]
@@ -2213,6 +2599,11 @@ subjects = ["cmd-11", "base-branch"]
 statement = "問いかけの既定の答えは、リポジトリから読み取った値（ベースブランチ、GitHub の remote、アノテーションを読む言語）にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -2225,6 +2616,11 @@ subjects = ["cmd-11", "cm-08"]
 statement = "ストーリーの置き場所は、GitHub Issues・.vanda/adapters/ のアダプタ・使わない から選ばせ、ID の書き方の既定は選んだアダプタが持つものにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -2241,6 +2637,11 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "interface-test"
 layers = ["cli"]
 
@@ -2251,6 +2652,11 @@ statement = "選んだ言語ごとに、読むファイルのパターンを、�
 rationale = "ts の既定のパターンが 2 つあるため（PO の決定）"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -2266,6 +2672,11 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "interface-test"
 layers = ["cli"]
 
@@ -2275,6 +2686,11 @@ subjects = ["cmd-11"]
 statement = "形に合わない答えは、その場で理由を出し、同じ問いにとどまる"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -2290,6 +2706,11 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "interface-test"
 layers = ["cli"]
 
@@ -2302,7 +2723,17 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "interface-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
 layers = ["cli"]
 
 [[claim]]
@@ -2311,6 +2742,11 @@ subjects = ["cmd-11"]
 statement = "作るかの確かめで作らないと答えるか、途中で中断したら、何も作らずに終了コード 1 で終わる"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -2327,7 +2763,17 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "interface-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "human-review"
 layers = ["cli"]
 
 [[claim]]
@@ -2337,6 +2783,11 @@ statement = ".vanda/adapters/ のアダプタを選んだとき、作った後�
 rationale = ".vanda/adapters/ のアダプタは .vanda/ を作った後にしか置けないため（PO の決定）"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -2350,6 +2801,11 @@ statement = ".vanda/adapters/ のアダプタの名前に、組込みのアダ�
 rationale = "PO の決定。.vanda/adapters/ に置かなければ組込みのものが使われ、作った後の確かめで足りない項目の誤りになる"
 layers = ["cli"]
 flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
 
 [[claim.evidence]]
 stage = "test"
@@ -2367,6 +2823,11 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "interface-test"
 layers = ["cli"]
 
@@ -2379,5 +2840,103 @@ flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
 type = "interface-test"
 layers = ["cli"]
+
+[[claim]]
+id = "story-shown-on-screen"
+subjects = ["cm-08", "story"]
+statement = "ストーリーの置き場所が設定にあれば、レビューの画面に、ストーリーの題・本文・添付ファイルへのリンクを出す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
+
+[[claim]]
+id = "story-error-shown-on-screen"
+subjects = ["cm-08", "story"]
+statement = "ストーリーを読めないとき（ネットワークや認証の誤りなど）は、画面に置き場所が返した理由をそのまま出し、黙って空にしない"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "agree-on-screen"
+subjects = ["rv-06", "agreement"]
+statement = "レビューの画面で 1 件に合意すると、画面に見せていた中身の指紋と、合意するストーリーの ID で合意を求める"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
+
+[[claim]]
+id = "revoke-on-screen"
+subjects = ["rv-17", "agreement"]
+statement = "レビューの画面で、合意済の件への今の人の合意を取り消せる"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
+
+[[claim]]
+id = "revoke-refused"
+subjects = ["rv-17", "agreement"]
+statement = "取り消せる件の判定（今の人が今のブランチで書いた、このストーリーの今の中身への合意か）に当たらなければ、取り消しを 409 で断り、理由を出す"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
+id = "file-api"
+subjects = ["cl-02", "oracle", "scenario"]
+statement = "合意の対象のファイルとアノテーションを読むファイルの中身を返し、ほかのファイルは 404 にする"
+rationale = "約束の詳細から、TLA+ のファイル全体へリンクするため"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["api"]
