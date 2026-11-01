@@ -1,4 +1,4 @@
-.PHONY: web build vet test web-test e2e tla check
+.PHONY: web build vet test web-test e2e expect tla check
 
 # 画面（web/）を作る。作った結果（web/dist/app/）を、build で Go に埋め込む
 web:
@@ -30,7 +30,16 @@ else
 	cd web && pnpm e2e
 endif
 
+# Expect のシナリオ（vanda init のように、端末で問いを待って答える流れ）を、1 つずつ新しい一時のディレクトリで動かす。
+# 作った vanda を PATH の先頭に置く。シナリオの中で git のリポジトリを作るので、vanda のリポジトリの中では動かさない
+EXPECT_SCENARIOS = $(wildcard cmd/vanda/testdata/expect/*.exp)
+expect: build
+	@set -e; for f in $(EXPECT_SCENARIOS); do \
+		d=$$(mktemp -d); echo "Expect のシナリオ $$f"; \
+		if (cd "$$d" && PATH="$(CURDIR):$$PATH" expect -f "$(CURDIR)/$$f"); then rm -rf "$$d"; else rm -rf "$$d"; exit 1; fi; \
+	done
+
 tla:
 	spec/check.sh
 
-check: build vet test e2e tla
+check: build vet test e2e expect tla
