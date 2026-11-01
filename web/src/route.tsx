@@ -23,8 +23,13 @@ export function reviewQuery(params?: URLSearchParams): string {
   return p.toString();
 }
 
+// BACK は、移る前のレビューの画面のクエリを持つ項目。移った先へは既定の値も書いて引き継ぐ（RV-18）が、
+// 戻るときは書き足した既定の値を URL に残さず、移る前と同じ URL に戻すため
+export const BACK = "back";
+
 export function reviewURL(params?: URLSearchParams): string {
-  const q = reviewQuery(params);
+  const back = params?.get(BACK);
+  const q = back ?? reviewQuery(params);
   return q ? `/?${q}` : "/";
 }
 

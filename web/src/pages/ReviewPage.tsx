@@ -13,7 +13,7 @@ import { EvidenceList } from "../components/EvidenceList";
 import { langOf } from "../highlight";
 import { TlaCode } from "../components/TlaCode";
 import { changeLabel, changeMark, fileTypeLabel, kindLabel, stageLabel, typeLabel } from "../labels";
-import { Link, navigate, reviewQuery } from "../route";
+import { BACK, Link, navigate, reviewQuery } from "../route";
 
 // まとまりの件数がこれを超えたら、開いたときにたたんでおく（RV-10）
 const FOLD_OVER = 10;
@@ -49,6 +49,9 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
   // いつも書く。移った先（約束の詳細・ファイルの画面）が、同じ一覧を引いて合意の部品を出すため（RV-18）
   const carried = (() => {
     const q = new URLSearchParams(params);
+    const before = new URLSearchParams(params);
+    before.delete(BACK);
+    q.set(BACK, reviewQuery(before));
     q.set("view", view);
     if (base) q.set("base", base);
     if (story) q.set("story", story);
