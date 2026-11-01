@@ -1435,7 +1435,6 @@ id = "check-agreement-story-scope"
 subjects = ["cmd-10", "agreement", "story"]
 statement = "範囲を story にした agreement は、そのストーリーで変わったものだけを見て、さらにそのストーリーの外れた合意も誤りにする"
 layers = ["model", "cli"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
