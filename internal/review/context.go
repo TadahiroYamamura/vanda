@@ -18,7 +18,7 @@ type Context struct {
 	User        *User      `json:"user"`
 	Stories     []StoryRef `json:"stories"`
 	Layers      []LayerRef `json:"layers"`
-	// StoryStore は、ストーリーの置き場所のアダプタ。github、外部のコマンドなら command、設定になければ空
+	// StoryStore は、設定の [story] の adapter に書いたアダプタの名前。設定になければ空
 	StoryStore string `json:"storyStore"`
 }
 
@@ -46,12 +46,7 @@ func GitUser(root string) *User {
 // LoadContext は、今の設定と、画面で選べるもの（ベースブランチ、ストーリー）を返す。
 func LoadContext(root string, cfg *config.Config) (*Context, *Error) {
 	c := &Context{Version: version.Current, DefaultBase: cfg.GUIBase, Bases: []string{}, Stories: []StoryRef{}, Layers: []LayerRef{}, User: GitUser(root)}
-	switch {
-	case cfg.Story.Adapter != "":
-		c.StoryStore = cfg.Story.Adapter
-	case len(cfg.Story.Command) > 0:
-		c.StoryStore = "command"
-	}
+	c.StoryStore = cfg.Story.Name()
 	for _, l := range cfg.Layers {
 		c.Layers = append(c.Layers, LayerRef{ID: l.ID, Name: l.Name})
 	}

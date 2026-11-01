@@ -67,12 +67,12 @@ func Read(root string, cfg *config.Config, id string) (*Story, *Error) {
 		return nil, &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("ストーリーの ID %s が、書き方（%s）に合いません。", id, cfg.IDPattern), Fix: "設定の id_pattern に合う ID を渡してください。"}
 	}
 	switch {
+	case cfg.Story.User != nil:
+		return readUser(root, cfg.Story.User, id)
 	case cfg.Story.Adapter == "github":
 		return readGitHub(cfg.Story, id)
-	case len(cfg.Story.Command) > 0:
-		return readCommand(root, cfg.Story.Command, id)
 	}
-	return nil, &Error{Status: http.StatusNotFound, Message: "ストーリーの置き場所が設定されていません。", Fix: `.vanda/config.toml の [story] に、adapter = "github" と repository、または command を書いてください。`}
+	return nil, &Error{Status: http.StatusNotFound, Message: "ストーリーの置き場所が設定されていません。", Fix: `.vanda/config.toml の [story] に、adapter = "github" と repository を書くか、.vanda/adapters/ に置いた利用者のアダプタの名前を adapter に書いてください。`}
 }
 
 // Token は、GitHub の認証の鍵を、使うたびに読む。環境の変数 GH_TOKEN があればそれを、なければ gh auth token の出力を使う。
@@ -247,43 +247,44 @@ func Attachments(repository, body string) ([]Attachment, error) {
 	return out, nil
 }
 
-type commandRequest struct {
+type userRequest struct {
 	Action string `json:"action"`
 	Story  string `json:"story"`
 }
 
-type commandResponse struct {
+type userResponse struct {
 	Title       *string      `json:"title"`
 	Body        *string      `json:"body"`
 	URL         *string      `json:"url"`
 	Attachments []Attachment `json:"attachments"`
 }
 
-func readCommand(root string, command []string, id string) (*Story, *Error) {
-	in, err := json.Marshal(commandRequest{Action: "read", Story: id})
+func readUser(root string, u *config.UserAdapter, id string) (*Story, *Error) {
+	in, err := json.Marshal(userRequest{Action: "read", Story: id})
 	if err != nil {
-		return nil, storeErr("外部のアダプタに渡す JSON を作れません（"+err.Error()+"）。", "vanda の不具合です。開発者に知らせてください。")
+		return nil, storeErr("利用者のアダプタに渡す JSON を作れません（"+err.Error()+"）。", "vanda の不具合です。開発者に知らせてください。")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, command[0], command[1:]...)
-	cmd.Dir = root
+	cmd := u.Cmd(ctx, root)
 	cmd.Stdin = bytes.NewReader(in)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
-	name := strings.Join(command, " ")
 	if err := cmd.Run(); err != nil {
+		if e := u.StartError(root, err); e != nil {
+			return nil, storeErr("ストーリーの置き場所の"+e.What+"。", e.Fix+"。")
+		}
 		msg := strings.TrimSpace(stderr.String())
 		if msg == "" {
 			msg = err.Error()
 		}
-		return nil, storeErr("ストーリーの置き場所のアダプタ（"+name+"）が "+id+" を読めませんでした（"+msg+"）。", "アダプタが返した理由を確かめてください。")
+		return nil, storeErr("ストーリーの置き場所の"+u.Label()+"が "+id+" を読めませんでした（"+msg+"）。", "アダプタが返した理由を確かめてください。")
 	}
-	var resp commandResponse
+	var resp userResponse
 	dec := json.NewDecoder(&stdout)
 	dec.DisallowUnknownFields()
 	bad := func(what string) *Error {
-		return storeErr("ストーリーの置き場所のアダプタ（"+name+"）が返した JSON の形が誤っています（"+what+"）。", "アダプタを docs/formats.md の形に合わせて直してください。")
+		return storeErr("ストーリーの置き場所の"+u.Label()+"が返した JSON の形が誤っています（"+what+"）。", "アダプタを docs/formats.md の形に合わせて直してください。")
 	}
 	if err := dec.Decode(&resp); err != nil {
 		return nil, bad(err.Error())
@@ -313,6 +314,11 @@ func readCommand(root string, command []string, id string) (*Story, *Error) {
 func Check(root string, cfg *config.Config) (string, error) {
 	st := cfg.Story
 	switch {
+	case st.User != nil:
+		if e := st.User.Check(root); e != nil {
+			return "", fmt.Errorf("ストーリーの置き場所の%w", e)
+		}
+		return "ストーリーの置き場所の" + st.User.Label() + "があり、実行できます", nil
 	case st.Adapter == "github":
 		var repo struct {
 			HasIssues bool `json:"has_issues"`
@@ -325,19 +331,6 @@ func Check(root string, cfg *config.Config) (string, error) {
 			return "", errors.New("GitHub の " + st.Repository + " で Issues が使えません。リポジトリの設定で Issues を有効にしてください。")
 		}
 		return "ストーリーの置き場所 GitHub Issues（" + st.Repository + "）に繋がりました", nil
-	case len(st.Command) > 0:
-		if _, err := exec.LookPath(command0(root, st.Command[0])); err != nil {
-			return "", fmt.Errorf("ストーリーの置き場所のアダプタ %s が見つかりません（%v）。[story] の command を直してください。", st.Command[0], err)
-		}
-		return "ストーリーの置き場所のアダプタ " + st.Command[0] + " があります", nil
 	}
 	return "", nil
-}
-
-// command0 は、/ を含む相対の場所のコマンドを、リポジトリの根からの場所にする（アダプタはリポジトリの根で動かすため）。
-func command0(root, c string) string {
-	if strings.Contains(c, "/") && !strings.HasPrefix(c, "/") {
-		return root + "/" + c
-	}
-	return c
 }
