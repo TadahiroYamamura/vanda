@@ -72,5 +72,6 @@
 ## Git
 
 - コミットのメッセージは日本語で、`(type) subject` の形にする。type は `feat`・`fix`・`test`・`docs`・`refactor`・`chore`。subject は「〜を追加する」「〜を修正する」の形
+- ストーリーの中のコミットには、メッセージの末尾に、そのストーリーの `Story: <ID>` のトレーラー（例: `Story: #4`）を書く。vanda はトレーラーからストーリーを読み、subject と本文の ID は数えない。subject にストーリーの ID は入れない
 - 目的の違う変更は、コミットを分ける
 - プッシュはしない（監督が、PO の指示を受けて行う）。`git push --force`、`git reset --hard`、履歴の書き換えをしない
