@@ -1,0 +1,8 @@
+[[agreement]]
+kind = "file"
+key = "sha256:c7ad661c2e44a6bf6722774e5f01a85fd8008ea1cfe032d094a465ea3ed43e34"
+fingerprint = "sha256:c7ad661c2e44a6bf6722774e5f01a85fd8008ea1cfe032d094a465ea3ed43e34"
+path = "spec/Agreement.tla"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-02T01:41:34+09:00
+story = "#4"
