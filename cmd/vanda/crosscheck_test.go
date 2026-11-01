@@ -352,6 +352,10 @@ func (r *xcheckRepo) git(args ...string) {
 
 func (r *xcheckRepo) commit(msg string) {
 	r.t.Helper()
+	// 中身の版だけが違うファイルは大きさが同じで、同じ時刻のうちに書き換えると、git add -A が stat の一致から
+	// 変わっていないとみなし、書き換えをコミットに入れないことがある（トレースが偶然そうなったときだけ不一致になる）。
+	// 索引から一度外して、毎回すべてを読み直させる
+	r.git("rm", "-r", "-q", "--cached", "--ignore-unmatch", ".")
 	r.git("add", "-A")
 	r.git("commit", "-q", "--allow-empty", "-m", msg)
 }
