@@ -303,6 +303,12 @@ func Revoke(o Options, req RevokeRequest) (*RevokeResult, *Error) {
 	if err != nil {
 		return nil, internalErr(err)
 	}
+	if Hooks.AfterRevokeCommit != nil {
+		Hooks.AfterRevokeCommit(o.Root)
+	}
+	if err := checkRevokeCommit(o.Root, files); err != nil {
+		return nil, sensorErr("取り消し", strings.TrimSpace(head), err)
+	}
 	return &RevokeResult{Commit: strings.TrimSpace(head), StillAgreed: after.Agreed(kind, key, fp), Removed: len(remove)}, nil
 }
 

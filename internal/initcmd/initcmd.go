@@ -390,7 +390,7 @@ func Files(a Answers) [][2]string {
 	}
 }
 
-// Write は、.vanda/ を作り、ファイルを書く。途中で失敗したら、作った .vanda/ を消す。
+// Write は、.vanda/ を作り、ファイルを書く。途中で失敗したら、作った .vanda/ を消す。書き終えたら、.vanda/ の中が書いたものとちょうど同じかを確かめる。
 func Write(root string, files [][2]string) error {
 	dir := filepath.Join(root, ".vanda")
 	if err := os.Mkdir(dir, 0o755); err != nil {
@@ -409,5 +409,8 @@ func Write(root string, files [][2]string) error {
 			return fmt.Errorf("%s を書けませんでした（%v）。作りかけの .vanda/ は消しました。", f[0], err)
 		}
 	}
-	return nil
+	if Hooks.AfterWrite != nil {
+		Hooks.AfterWrite(root)
+	}
+	return checkCreated(root, files)
 }

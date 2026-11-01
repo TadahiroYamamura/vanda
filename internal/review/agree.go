@@ -6,15 +6,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"time"
 
-	"github.com/TadahiroYamamura/vanda/internal/agreements"
 	"github.com/TadahiroYamamura/vanda/internal/glob"
 	"github.com/TadahiroYamamura/vanda/internal/promises"
 	"github.com/TadahiroYamamura/vanda/internal/repo"
-	"github.com/TadahiroYamamura/vanda/internal/snapshot"
 	"github.com/TadahiroYamamura/vanda/internal/tomlwrite"
 )
 
@@ -187,6 +184,9 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	if err := os.WriteFile(abs, appendRecord(originals[agreementsFile], rec), 0o644); err != nil {
 		return nil, fail(err)
 	}
+	if Hooks.AfterAgreeWrite != nil {
+		Hooks.AfterAgreeWrite(o.Root)
+	}
 	if err := s.verify(rec, claim); err != nil {
 		return nil, fail(err)
 	}
@@ -203,6 +203,12 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	head, err := repo.Git(o.Root, "rev-parse", "HEAD")
 	if err != nil {
 		return nil, internalErr(err)
+	}
+	if Hooks.AfterAgreeCommit != nil {
+		Hooks.AfterAgreeCommit(o.Root)
+	}
+	if err := checkAgreeCommit(o.Root, files, source); err != nil {
+		return nil, sensorErr("合意", strings.TrimSpace(head), err)
 	}
 	return &AgreeResult{Commit: strings.TrimSpace(head), Agreement: rec}, nil
 }
@@ -222,42 +228,6 @@ func (s *state) agreementsFile() (string, bool, *Error) {
 		return "", false, conflict("合意の記録のファイルがなく、設定の agreements の最初のパターン "+first+" にワイルドカードがあるため、どこに作るかを決められません。", "合意の記録のファイルを作ってから、合意してください。")
 	}
 	return first, true, nil
-}
-
-// verify は、書いた後の合意の記録と約束リストを読み直し、合意が今の中身に合い、フラグが外れたかを確かめる。
-func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
-	snap, err := snapshot.Working(s.o.Root, s.o.Cfg)
-	if err != nil {
-		return err
-	}
-	if snap.ListErrs != nil {
-		return fmt.Errorf("フラグを外した後の約束リストを読めません（%s）", snap.ListErrs[0].Error())
-	}
-	recs, rerrs := agreements.Load(s.o.Root, snap.Files, s.o.Cfg.Agreements, s.o.Cfg.AgreementsDefault)
-	if rerrs != nil {
-		return fmt.Errorf("書き足した後の合意の記録を読めません（%s）", rerrs[0].Error())
-	}
-	if !recs.AgreedBy(rec.Kind, rec.Key, rec.Fingerprint, rec.Story) {
-		return errors.New("書き足した合意が、読み直した合意の記録に見つかりません")
-	}
-	if claim == nil {
-		return nil
-	}
-	after := newSide(snap)
-	key := "claim:" + claim.ID
-	if after.itemFP[key] != rec.Fingerprint {
-		return errors.New("フラグを外したら、約束の指紋が変わりました")
-	}
-	want := map[string]any{}
-	for k, v := range claim.Raw {
-		if k != "flags" && k != "guesses" {
-			want[k] = v
-		}
-	}
-	if !reflect.DeepEqual(after.items[key].Raw, want) {
-		return errors.New("フラグを外したら、flags・guesses のほかの項目まで変わりました")
-	}
-	return nil
 }
 
 // removeFlags は、約束の表から flags と guesses の行（複数行の配列なら、その全部の行）を消す。ほかの行は変えない。

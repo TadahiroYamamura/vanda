@@ -25,6 +25,12 @@ paths = ["**/*_test.go"]
 adapter = "go"
 types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "guardrail", "sensor"]
 
+# 本番のコードのうち、事後条件の確かめ（センサー）を持つファイル。**/*_test.go と同じファイルに当たらないよう、名前で分ける
+[[annotation]]
+paths = ["**/*_sensor.go"]
+adapter = "go"
+types = ["sensor"]
+
 [[annotation]]
 paths = ["**/*.txtar"]
 adapter = "txtar"
