@@ -80,6 +80,9 @@ paths = ["db/schema.sql"]
 	}
 }
 
+// @vanda:evidence adapter-name-unknown
+// @vanda:evidence config-unknown-entries-rejected
+// @vanda:evidence config-version-mismatch
 func TestLoadはエラーを行の付いた1件1行で全部返す(t *testing.T) {
 	root := writeConfig(t, `version = "0.2.0"
 promises = []
@@ -118,6 +121,7 @@ id_pattern = "("
 	}
 }
 
+// @vanda:evidence config-version-mismatch
 func TestLoadは設定の版が動いているvandaより古いと移行を知らせる(t *testing.T) {
 	root := writeConfig(t, `version = "0.0.9"`)
 	_, errs := Load(root)
@@ -126,6 +130,7 @@ func TestLoadは設定の版が動いているvandaより古いと移行を知�
 	}
 }
 
+// @vanda:evidence promise-list-id-shape
 func TestIsID(t *testing.T) {
 	for s, want := range map[string]bool{"task": true, "task-id-2": true, "2a": false, "a2": true, "": false, "Task": false, "-a": false, "a-": false, "a--b": false, "a_b": false, "タスク": false} {
 		if IsID(s) != want {
@@ -134,6 +139,7 @@ func TestIsID(t *testing.T) {
 	}
 }
 
+// @vanda:evidence config-id-pattern-not-empty-match
 func TestLoadは空の文字列に当たるid_patternを受け付けない(t *testing.T) {
 	root := writeConfig(t, "version = \"0.1.0\"\n[story]\nid_pattern = \"[0-9]*\"\n")
 	_, errs := Load(root)
@@ -163,4 +169,149 @@ func lineWith(got, prefix string, frags ...string) bool {
 		}
 	}
 	return false
+}
+
+// ---- 約束の文から作ったテスト ----
+
+// annConfig は、[[annotation]] を 1 つだけ書いた設定。
+func annConfig(body string) string {
+	return "version = \"0.1.0\"\n\n[[annotation]]\npaths = [\"x/*\"]\n" + body
+}
+
+// @vanda:evidence annotation-types-required
+// @vanda:evidence annotation-types-empty
+// @vanda:evidence annotation-types-unsatisfiable-allowed
+func TestLoadはtypesがないか書けないタイプを書いた設定を誤りにし空と満たせないタイプは受け付ける(t *testing.T) {
+	bad := map[string]string{
+		"typesがない":     "adapter = \"go\"\n",
+		"human-review": "adapter = \"go\"\ntypes = [\"human-review\"]\n",
+		"monitoring":   "adapter = \"go\"\ntypes = [\"monitoring\"]\n",
+		"proof":        "adapter = \"go\"\ntypes = [\"proof\"]\n",
+		"決まっていないタイプ":   "adapter = \"go\"\ntypes = [\"smoke-test\"]\n",
+	}
+	for name, body := range bad {
+		t.Run(name, func(t *testing.T) {
+			if _, errs := Load(writeConfig(t, annConfig(body))); errs == nil || !strings.Contains(errs.Error(), "types") && !strings.Contains(errs.Error(), name) {
+				t.Errorf("誤りにならない: %v", errs)
+			}
+		})
+	}
+	// 空の配列と、組込みのアダプタが書けない種類でしか満たせないタイプ（tla に unit-test、go に model-check）は誤りにしない
+	for _, body := range []string{"adapter = \"go\"\ntypes = []\n", "adapter = \"tla\"\ntypes = [\"unit-test\"]\n", "adapter = \"go\"\ntypes = [\"model-check\"]\n"} {
+		cfg, errs := Load(writeConfig(t, annConfig(body)))
+		if errs != nil {
+			t.Errorf("%q が誤りになった: %v", body, errs)
+			continue
+		}
+		if strings.Contains(body, "[]") && len(cfg.Annotations[0].Types) != 0 {
+			t.Errorf("types = [] が空でない: %v", cfg.Annotations[0].Types)
+		}
+	}
+}
+
+// @vanda:evidence config-github-only-fields
+func TestLoadはstoryのrepositoryとapi_urlを組込みのgithubのときだけ受け付ける(t *testing.T) {
+	ok := "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"o/r\"\napi_url = \"https://example.com\"\n"
+	if _, errs := Load(writeConfig(t, ok)); errs != nil {
+		t.Fatalf("github で誤りになった: %v", errs)
+	}
+	for name, body := range map[string]string{
+		"使わないのにrepository":  "version = \"0.1.0\"\n[story]\nrepository = \"o/r\"\n",
+		"使わないのにapi_url":     "version = \"0.1.0\"\n[story]\napi_url = \"https://example.com\"\n",
+		"アダプタなのにrepository": "version = \"0.1.0\"\n[story]\nadapter = \"jira\"\nrepository = \"o/r\"\n",
+		"アダプタなのにapi_url":    "version = \"0.1.0\"\n[story]\nadapter = \"jira\"\napi_url = \"https://example.com\"\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			root := writeConfig(t, body)
+			writeAdapter(t, root, "jira", "#!/bin/sh\n")
+			if _, errs := Load(root); errs == nil || !strings.Contains(errs.Error(), ".vanda/config.toml") {
+				t.Errorf("誤りにならない: %v", errs)
+			}
+		})
+	}
+}
+
+func writeAdapter(t *testing.T, root, path, body string) {
+	t.Helper()
+	p := filepath.Join(root, ".vanda", "adapters", filepath.FromSlash(path))
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// @vanda:evidence project-adapter-args-only-for-project
+func TestLoadはargsを組込みのアダプタとadapterのない表に書けば誤りにする(t *testing.T) {
+	for name, body := range map[string]string{
+		"組込みのgo":      "adapter = \"go\"\ntypes = [\"unit-test\"]\nargs = [\"x\"]\n",
+		"組込みのtxtar":   "adapter = \"txtar\"\ntypes = [\"scenario-test\"]\nargs = [\"x\"]\n",
+		"組込みのtla":     "adapter = \"tla\"\ntypes = [\"model-check\"]\nargs = [\"x\"]\n",
+		"組込みのsql":     "adapter = \"sql\"\ntypes = [\"guardrail\"]\nargs = [\"x\"]\n",
+		"組込みのts":      "adapter = \"ts\"\ntypes = [\"unit-test\"]\nargs = [\"x\"]\n",
+		"adapterのない表": "types = [\"unit-test\"]\nargs = [\"x\"]\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			if _, errs := Load(writeConfig(t, annConfig(body))); errs == nil || !strings.Contains(errs.Error(), "args") {
+				t.Errorf("誤りにならない: %v", errs)
+			}
+		})
+	}
+	root := writeConfig(t, "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"o/r\"\nargs = [\"x\"]\n")
+	if _, errs := Load(root); errs == nil || !strings.Contains(errs.Error(), "args") {
+		t.Errorf("組込みの github の args が誤りにならない: %v", errs)
+	}
+}
+
+// @vanda:evidence project-adapter-name
+// @vanda:evidence project-adapter-overrides-builtin
+func TestLoadはvanda_adaptersの直下のファイルとディレクトリのrunを名前で指し組込みと同じ名前ならそちらを使う(t *testing.T) {
+	root := writeConfig(t, "version = \"0.1.0\"\n\n[[annotation]]\npaths = [\"a/*\"]\nadapter = \"md\"\ntypes = [\"unit-test\"]\n\n[[annotation]]\npaths = [\"b/*\"]\nadapter = \"rs\"\ntypes = [\"unit-test\"]\n\n[[annotation]]\npaths = [\"c/*\"]\nadapter = \"go\"\ntypes = [\"unit-test\"]\n\n[[annotation]]\npaths = [\"d/*\"]\nadapter = \"txtar\"\ntypes = [\"scenario-test\"]\n")
+	writeAdapter(t, root, "md", "#!/bin/sh\n")
+	writeAdapter(t, root, "rs/run", "#!/bin/sh\n")
+	writeAdapter(t, root, "go", "#!/bin/sh\n")
+	cfg, errs := Load(root)
+	if errs != nil {
+		t.Fatal(errs)
+	}
+	a := cfg.Annotations
+	if a[0].User == nil || a[0].User.Path != ".vanda/adapters/md" {
+		t.Errorf("ファイルの形: %+v", a[0].User)
+	}
+	if a[1].User == nil || a[1].User.Path != ".vanda/adapters/rs/run" {
+		t.Errorf("ディレクトリの形: %+v", a[1].User)
+	}
+	if a[2].Adapter != "" || a[2].User == nil || a[2].User.Path != ".vanda/adapters/go" {
+		t.Errorf("組込みと同じ名前の go が .vanda/adapters/ のものにならない: %+v %+v", a[2], a[2].User)
+	}
+	if a[3].Adapter != "txtar" || a[3].User != nil {
+		t.Errorf("同じ名前がなければ組込みのまま: %+v", a[3])
+	}
+}
+
+// 1 行目に動かし方がないものは、動かしたときに分かるので、annotation の Read のテストで確かめる
+//
+// @vanda:evidence project-adapter-not-runnable
+func TestUserAdapterのCheckはない実行できないrunがないアダプタを場所と直し方の誤りにする(t *testing.T) {
+	root := t.TempDir()
+	writeAdapter(t, root, "ok", "#!/bin/sh\n")
+	writeAdapter(t, root, "norun/other", "#!/bin/sh\n")
+	p := filepath.Join(root, ".vanda", "adapters", "noexec")
+	if err := os.WriteFile(p, []byte("#!/bin/sh\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if e := (&UserAdapter{Name: "ok", Path: ".vanda/adapters/ok"}).Check(root); e != nil {
+		t.Errorf("動かせるアダプタが誤りになった: %v", e)
+	}
+	for _, u := range []UserAdapter{
+		{Name: "missing", Path: ".vanda/adapters/missing"},
+		{Name: "noexec", Path: ".vanda/adapters/noexec"},
+		{Name: "norun", Path: ".vanda/adapters/norun/run"},
+	} {
+		e := u.Check(root)
+		if e == nil || !strings.Contains(e.Error(), u.Path) || e.Fix == "" {
+			t.Errorf("%s: 場所と直し方の誤りにならない: %v", u.Name, e)
+		}
+	}
 }

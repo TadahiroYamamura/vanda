@@ -1633,3 +1633,157 @@ func Test問いが出てから1回だけ答えを送ると2問目以降の答え
 		})
 	}
 }
+
+// ---- 端末の状態を戻すことと、組込みと同じ名前のアダプタ ----
+
+// sttyOf は、端末 tty の今の設定を、stty -g の形で返す。
+func sttyOf(t *testing.T, tty *os.File) string {
+	t.Helper()
+	cmd := exec.Command("stty", "-g")
+	cmd.Stdin = tty
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("stty で端末の設定を読めない: %v", err)
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// startInitOnTTY は、startInit と同じく vanda init を擬似端末で動かすが、端末の側（tty）と、動かす前の端末の設定を返す。
+func startInitOnTTY(t *testing.T, bin, dir string, env []string) (*initSession, *os.File, string) {
+	t.Helper()
+	ptmx, tty, err := pty.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := pty.Setsize(ptmx, &pty.Winsize{Rows: 50, Cols: 120}); err != nil {
+		t.Fatal(err)
+	}
+	s := &initSession{t: t, done: make(chan struct{}), readDone: make(chan struct{}), ptmx: ptmx}
+	s.cmd = exec.Command(bin, "init")
+	s.cmd.Dir = dir
+	s.cmd.Env = append(append([]string(nil), env...), "TERM=xterm-256color")
+	s.cmd.Stdin, s.cmd.Stdout = tty, tty
+	s.cmd.Stderr = &lockedWriter{mu: &s.mu, w: &s.stderr}
+	before := sttyOf(t, tty)
+	if err := s.cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	// tty をこちらで開いたままにするので、vanda が終わっても擬似端末の読み取りは終わらない（EOF が来ない）。
+	// 終わった後の画面は見ないので、終わったら読み切ったものとする
+	go func() {
+		<-s.done
+		close(s.readDone)
+	}()
+	go func() {
+		buf := make([]byte, 4096)
+		for {
+			n, err := ptmx.Read(buf)
+			if n > 0 {
+				s.mu.Lock()
+				s.out.Write(buf[:n])
+				s.vt.feed(buf[:n])
+				s.mu.Unlock()
+			}
+			if err != nil {
+				return
+			}
+		}
+	}()
+	go func() {
+		s.err = s.cmd.Wait()
+		close(s.done)
+	}()
+	t.Cleanup(func() {
+		select {
+		case <-s.done:
+		default:
+			_ = s.cmd.Process.Kill()
+			<-s.done
+		}
+		_ = tty.Close()
+		_ = ptmx.Close()
+	})
+	return s, tty, before
+}
+
+// CMD-11: 中断・作らないの答え・誤りのどれで終わっても、vanda init は端末を始める前の状態に戻す
+// @vanda:evidence init-restores-terminal
+func Test_vanda_initは中断や作らないの答えや誤りで終わっても端末を始める前の状態に戻す(t *testing.T) {
+	t.Parallel()
+	bin, _ := initSetup(t)
+	cases := []struct {
+		name string
+		end  func(t *testing.T, s *initSession, r *initRepo)
+	}{
+		{"Ctrl+Cで中断する", func(t *testing.T, s *initSession, r *initRepo) {
+			s.waitField("ベースブランチ", "ベースブランチ")
+			s.press("中断する", "\x03", func(string) bool { return false })
+		}},
+		{"Ctrl+Dで入力を終える", func(t *testing.T, s *initSession, r *initRepo) {
+			s.waitField("ベースブランチ", "ベースブランチ")
+			s.press("入力を終える", keyEOF, func(string) bool { return false })
+		}},
+		{"作らないと答える", func(t *testing.T, s *initSession, r *initRepo) {
+			s.run(initPlan{confirm: "n"})
+		}},
+		// 作るときにリポジトリの根に書けないと、誤りで終わる
+		{"書けずに誤りで終わる", func(t *testing.T, s *initSession, r *initRepo) {
+			if err := os.Chmod(r.root, 0o555); err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = os.Chmod(r.root, 0o755) })
+			s.run(initPlan{})
+		}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			r := newInitRepo(t, "https://github.com/owner/app.git", true, "e2e/a.txtar")
+			// vanda を動かす前の端末の設定と比べる
+			s, tty, before := startInitOnTTY(t, bin, r.root, r.g.env)
+			// 問いかけの間は端末を raw にしている（戻すことの確かめが、何もしていないから通るのでないことを見る）
+			s.waitField("ベースブランチ", "ベースブランチ")
+			if during := sttyOf(t, tty); during == before {
+				t.Errorf("問いかけの間も、端末の設定が始める前と同じ")
+			}
+			c.end(t, s, r)
+			code := s.wait()
+			if code == 0 {
+				t.Errorf("終了コードが 0（作らずに終わったはず）")
+			}
+			if after := sttyOf(t, tty); after != before {
+				t.Errorf("端末の設定が始める前に戻っていない\n前 %s\n後 %s", before, after)
+			}
+			if r.exists(".vanda") {
+				t.Errorf(".vanda/ ができた")
+			}
+		})
+	}
+}
+
+// CMD-11: .vanda/adapters/ のアダプタの名前に、組込みのアダプタと同じ名前（github・go など）を答えても断らない
+// @vanda:evidence init-accepts-builtin-name
+func Test_vanda_adaptersのアダプタの名前に組込みのアダプタと同じ名前を答えても断らない(t *testing.T) {
+	t.Parallel()
+	bin, _ := initSetup(t)
+	builtins := []string{"github", "go", "txtar", "tla", "sql", "ts"}
+	// 答えから作るファイル（問いかけを通さない）
+	for _, name := range builtins {
+		a := initcmd.Answers{Base: "main", Store: "user", Adapter: name, Args: []string{"--x"}, IDPattern: "PROJ-[0-9]+"}
+		root := filesToDir(t, initcmd.Files(a))
+		st := readInitConfig(t, root).Story
+		if st == nil || st.Adapter != name || !reflect.DeepEqual(st.Args, []string{"--x"}) || st.Repository != "" {
+			t.Errorf("名前 %s の [story]: %+v", name, st)
+		}
+	}
+	// 端末で問いかけて、名前に github と答える
+	r := newInitRepo(t, "", false)
+	s := startInit(t, bin, r.root, r.g.env)
+	// 名前の問いで断らず（聞き直さず）次の問いへ進み、答えたとおりに書く。作った後の確かめで、組込みの github の
+	// 設定として読まれて誤りになるか（終了コード）は、約束の文に書いていないので見ない
+	s.run(initPlan{story: ".vanda/adapters/ のアダプタ", detail: "github", adapterArgs: "--project APP", idPattern: "PROJ-[0-9]+"})
+	s.wait()
+	if st := readInitConfig(t, r.root).Story; st == nil || st.Adapter != "github" || !reflect.DeepEqual(st.Args, []string{"--project", "APP"}) || st.Repository != "" {
+		t.Errorf("名前に github と答えたときの [story]: %+v", st)
+	}
+}

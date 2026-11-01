@@ -24,6 +24,7 @@ func write(t *testing.T, files map[string]string) (string, []string) {
 	return root, names
 }
 
+// @vanda:evidence promise-list-reads-all-patterns
 func TestLoadは複数のファイルから用語と機能と約束を読む(t *testing.T) {
 	root, files := write(t, map[string]string{
 		".vanda/promises/a.toml": `[[term]]
@@ -104,6 +105,9 @@ func TestLoadはcoreでない機能のformalを省けば偽とみなす(t *testi
 	}
 }
 
+// @vanda:evidence promise-list-required-fields
+// @vanda:evidence promise-list-unknown-entries-rejected
+// @vanda:evidence promise-list-explicit-file-must-exist
 func TestLoadは型の違いと足りない項目と決まっていない項目を行の付いたエラーで全部返す(t *testing.T) {
 	root, files := write(t, map[string]string{".vanda/promises.toml": `[[claim]]
 id = "c"
@@ -190,6 +194,7 @@ layers = ["model"]
 	}
 }
 
+// @vanda:evidence promise-list-required-fields
 func TestLoadはsubjectsとevidenceが空なら誤りにする(t *testing.T) {
 	root, files := write(t, map[string]string{".vanda/promises.toml": "[[claim]]\nid = \"c\"\nsubjects = []\nstatement = \"s\"\nlayers = [\"m\"]\nevidence = []\n"})
 	_, errs := Load(root, files, []string{".vanda/promises.toml"}, false)
@@ -200,6 +205,7 @@ func TestLoadはsubjectsとevidenceが空なら誤りにする(t *testing.T) {
 	}
 }
 
+// @vanda:evidence promise-list-default-file-may-be-absent
 func TestLoadは既定のファイルがなければ空とみなす(t *testing.T) {
 	root, files := write(t, map[string]string{"README.md": "x"})
 	l, errs := Load(root, files, []string{".vanda/promises.toml"}, true)

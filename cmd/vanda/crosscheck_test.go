@@ -460,6 +460,7 @@ func (r *xcheckRepo) check(args ...string) (bool, []string, string) {
 // @vanda:evidence detached-agreement
 // @vanda:evidence detached-until-story-reagrees
 // @vanda:evidence revoke-returns-to-proposed
+// @vanda:evidence check-agreement-story-scope
 func Test合意の判定をTLAのモデルと本物のvandaで1歩ずつ比べると一致する(t *testing.T) {
 	t.Parallel()
 	tlc := lookTLC(t)

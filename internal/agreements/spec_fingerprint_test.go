@@ -643,6 +643,7 @@ func Test指紋に入る項目のどれを変えても指紋が変わりflagsと
 	}
 }
 
+// @vanda:evidence changed-id-is-new
 func Test約束リストのIDを変えると指紋が変わる(t *testing.T) {
 	root := t.TempDir()
 	before := load(t, root, render(plainStyle{}, baseList()))

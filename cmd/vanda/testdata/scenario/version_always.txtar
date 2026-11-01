@@ -1,0 +1,31 @@
+# CMD-01: vanda version は、.vanda/ がなくても、設定の版が合わなくても、動いている vanda の版を 1 行で出す。
+# @vanda:evidence version-always-runs
+# 版の値は、テストの外で読んだ動いている vanda の版（VANDA_VERSION）と比べる（版の中の . は、どの文字にも当たる）。
+
+# git のリポジトリの外で、.vanda/ もない
+exec vanda version
+stdout ^v?${VANDA_VERSION}\n$
+! stderr .
+
+# git のリポジトリの中で、.vanda/ がない
+exec git init -q -b main
+exec vanda version
+stdout ^v?${VANDA_VERSION}\n$
+
+# 設定の版が新しい・古い（vanda check と vanda doctor は止まる）
+mkdir .vanda
+expand cases/newer.toml
+cp cases/newer.toml .vanda/config.toml
+! exec vanda doctor
+exec vanda version
+stdout ^v?${VANDA_VERSION}\n$
+expand cases/older.toml
+cp cases/older.toml .vanda/config.toml
+! exec vanda doctor
+exec vanda version
+stdout ^v?${VANDA_VERSION}\n$
+
+-- cases/newer.toml --
+version = "${VANDA_VERSION_NEWER}"
+-- cases/older.toml --
+version = "${VANDA_VERSION_OLDER}"

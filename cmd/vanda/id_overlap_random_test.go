@@ -86,6 +86,7 @@ func expectedOverlaps(items []overlapItem, locs map[int]overlapLoc) map[overlapL
 	return want
 }
 
+// @vanda:evidence promise-list-id-unique
 func Test分けたファイルをまたいでも重なったIDは後に出てきたものの場所だけを誤りにする(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)

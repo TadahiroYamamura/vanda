@@ -109,6 +109,7 @@ func TestFileFingerprintは中身そのものから作る(t *testing.T) {
 const fpA = "sha256:5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03"
 const fpB = "sha256:ead0b1ff85473e3117de7dfb1514f5d4d749cc30a0eb431c015014c47a59bbe5"
 
+// @vanda:evidence changed-id-is-new
 func TestAgreedは種類と鍵と指紋がすべて合う合意があるときだけ真(t *testing.T) {
 	root, files := writeFiles(t, map[string]string{".vanda/agreements.toml": `[[agreement]]
 kind = "claim"
