@@ -15,6 +15,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/promises"
 	"github.com/TadahiroYamamura/vanda/internal/repo"
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
+	"github.com/TadahiroYamamura/vanda/internal/tomlwrite"
 )
 
 type AgreeRequest struct {
@@ -346,38 +347,14 @@ func appendRecord(src []byte, rec AgreementRecord) []byte {
 		b.WriteString("\n")
 	}
 	b.WriteString("[[agreement]]\n")
-	fmt.Fprintf(&b, "kind = %s\n", tomlString(rec.Kind))
-	fmt.Fprintf(&b, "key = %s\n", tomlString(rec.Key))
-	fmt.Fprintf(&b, "fingerprint = %s\n", tomlString(rec.Fingerprint))
+	fmt.Fprintf(&b, "kind = %s\n", tomlwrite.String(rec.Kind))
+	fmt.Fprintf(&b, "key = %s\n", tomlwrite.String(rec.Key))
+	fmt.Fprintf(&b, "fingerprint = %s\n", tomlwrite.String(rec.Fingerprint))
 	if rec.Path != nil {
-		fmt.Fprintf(&b, "path = %s\n", tomlString(*rec.Path))
+		fmt.Fprintf(&b, "path = %s\n", tomlwrite.String(*rec.Path))
 	}
-	fmt.Fprintf(&b, "user = { name = %s, email = %s }\n", tomlString(rec.User.Name), tomlString(rec.User.Email))
+	fmt.Fprintf(&b, "user = { name = %s, email = %s }\n", tomlwrite.String(rec.User.Name), tomlwrite.String(rec.User.Email))
 	fmt.Fprintf(&b, "agreed_at = %s\n", rec.AgreedAt)
-	fmt.Fprintf(&b, "story = %s\n", tomlString(rec.Story))
+	fmt.Fprintf(&b, "story = %s\n", tomlwrite.String(rec.Story))
 	return []byte(b.String())
-}
-
-// tomlString は、TOML の基本の文字列（"…"）にする。
-func tomlString(s string) string {
-	var b strings.Builder
-	b.WriteByte('"')
-	for _, r := range s {
-		switch {
-		case r == '"':
-			b.WriteString(`\"`)
-		case r == '\\':
-			b.WriteString(`\\`)
-		case r == '\n':
-			b.WriteString(`\n`)
-		case r == '\t':
-			b.WriteString(`\t`)
-		case r < 0x20 || r == 0x7f:
-			fmt.Fprintf(&b, `\u%04X`, r)
-		default:
-			b.WriteRune(r)
-		}
-	}
-	b.WriteByte('"')
-	return b.String()
 }
