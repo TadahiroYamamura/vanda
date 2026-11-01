@@ -157,6 +157,8 @@ func TargetLine(adapter, file string, src []byte, annLine int) int {
 	switch adapter {
 	case "txtar":
 		return 1
+	case "ts":
+		return tsTargetLine(src, annLine)
 	case "go":
 		fset, f, errs := parseGo(file, src)
 		if errs != nil {
