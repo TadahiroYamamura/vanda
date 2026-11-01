@@ -269,7 +269,7 @@ func removeFlags(src []byte, claim *promises.Claim) ([]byte, error) {
 			continue
 		}
 		start := claim.Table.Line(key)
-		if start == 0 || !strings.HasPrefix(strings.TrimLeft(lines[start-1], " \t"), key) {
+		if start == 0 || !startsWithKey(lines[start-1], key) {
 			return nil, fmt.Errorf("%s: 約束 %s の %s がインラインの表の中にあるため、消せません。", claim.Table.Doc.File, claim.ID, key)
 		}
 		end, err := valueEnd(lines, start-1)
@@ -287,6 +287,18 @@ func removeFlags(src []byte, claim *promises.Claim) ([]byte, error) {
 		}
 	}
 	return []byte(b.String()), nil
+}
+
+// startsWithKey は、行が key の項目（key = …。キーを引用符で囲んだ "key" = … と 'key' = … を含む）から始まるかを返す。
+// インラインの表の中に書いた項目は、行が key で始まらない
+func startsWithKey(line, key string) bool {
+	t := strings.TrimLeft(line, " \t")
+	for _, k := range []string{key, `"` + key + `"`, "'" + key + "'"} {
+		if rest, ok := strings.CutPrefix(t, k); ok && strings.HasPrefix(strings.TrimLeft(rest, " \t"), "=") {
+			return true
+		}
+	}
+	return false
 }
 
 // valueEnd は、行 i（0 から数える）の `key = [ … ]` の値が終わる行を返す。文字列とコメントの中の括弧は数えない。
