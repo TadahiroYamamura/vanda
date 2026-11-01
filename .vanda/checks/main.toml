@@ -1,0 +1,23 @@
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+
+[[check]]
+name = "annotation-links"
+scope = "all"
+
+[[check]]
+name = "agreement"
+scope = "all"
+
+[[check]]
+name = "agreement-targets"
+scope = "all"
+
+[[check]]
+name = "evidence-present"
+scope = "all"
+
+[[check]]
+name = "unread-files"
+scope = "all"
