@@ -4,6 +4,7 @@ package config
 import (
 	"context"
 	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -365,7 +366,46 @@ func (u *UserAdapter) Check(root string) *AdapterError {
 	case info.Mode().Perm()&0o111 == 0:
 		return &AdapterError{u.Label() + "に、実行の権限がありません", "chmod +x " + u.Path + " で権限を付けてください"}
 	}
+	head, err := readHead(filepath.Join(root, filepath.FromSlash(u.Path)), 4)
+	if err != nil {
+		return &AdapterError{u.Label() + "を読めません（" + err.Error() + "）", u.Path + " を読めるようにしてください"}
+	}
+	if !runnableHead(head) {
+		return &AdapterError{u.Label() + "の 1 行目に、動かし方がありません", "1 行目に、動かし方（例: #!/usr/bin/env python3）を書いてください"}
+	}
 	return nil
+}
+
+// runnableHead は、ファイルの先頭のバイト列が、OS がそのまま動かせる形（#! の 1 行目か、実行の形式のファイル）かを返す。
+// 動かしてみて exec format error を見分けるだけでは、vanda doctor のように動かさずに確かめる所で見落とすため、先頭を見る
+func runnableHead(b []byte) bool {
+	magics := [][]byte{
+		[]byte("#!"),
+		{0x7f, 'E', 'L', 'F'},                                                                                  // ELF
+		{0xfe, 0xed, 0xfa, 0xce}, {0xfe, 0xed, 0xfa, 0xcf}, {0xce, 0xfa, 0xed, 0xfe}, {0xcf, 0xfa, 0xed, 0xfe}, // Mach-O
+		{0xca, 0xfe, 0xba, 0xbe}, // Mach-O（複数の CPU 向け）
+		[]byte("MZ"),             // Windows の実行の形式
+	}
+	for _, m := range magics {
+		if len(b) >= len(m) && string(b[:len(m)]) == string(m) {
+			return true
+		}
+	}
+	return false
+}
+
+func readHead(path string, n int) ([]byte, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	buf := make([]byte, n)
+	k, err := f.Read(buf)
+	if err != nil && k == 0 && !errors.Is(err, io.EOF) {
+		return nil, err
+	}
+	return buf[:k], nil
 }
 
 // Label は、誤りの文で .vanda/adapters/ のアダプタを指す言い方。
