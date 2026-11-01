@@ -764,7 +764,6 @@ id = "agreements-unknown-entries-rejected"
 subjects = ["cm-03", "cmd-10", "agreement-record"]
 statement = "合意の記録に決まっていない表か項目があれば、agreement-targets の誤りにする"
 layers = ["cli"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
