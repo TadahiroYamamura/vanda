@@ -1,0 +1,5 @@
+# CMD-11: 端末でないところから vanda init を動かすと、端末で動かすよう伝えて止め、何も書かない
+exec git init -q
+! exec vanda init
+stderr '端末'
+! exists .vanda

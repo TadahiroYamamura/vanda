@@ -4,6 +4,7 @@ go 1.26.10
 
 require (
 	github.com/BurntSushi/toml v1.6.0
+	github.com/creack/pty v1.1.24
 	github.com/rogpeppe/go-internal v1.16.0
 	github.com/sergi/go-diff v1.4.0
 	github.com/spf13/cobra v1.10.2
