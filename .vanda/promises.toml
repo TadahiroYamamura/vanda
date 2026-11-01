@@ -1349,7 +1349,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-story-from-commits"
 subjects = ["cmd-03", "check", "story"]
-statement = "story の範囲の agreement・evidence-present は、分かれた点より後のコミットのメッセージにあるストーリーの ID が 1 つならそれを使い、0 個か 2 つ以上なら --story を求める誤りにする"
+statement = "story の範囲の agreement・evidence-present は、分かれた点より後のコミットの Story: のトレーラーにあるストーリーの ID が 1 つならそれを使い、0 個か 2 つ以上なら --story を求める誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1385,7 +1385,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-story-origin"
 subjects = ["cmd-10", "origin", "story"]
-statement = "story-origin は、分かれた点より後の、合流でないコミットのうち、約束リストのファイルを変えたもののメッセージにストーリーの ID がなければ誤りにする"
+statement = "story-origin は、分かれた点より後の、合流でないコミットのうち、約束リストのファイルを変えたものに Story: のトレーラーがなければ誤りにする"
 rationale = "履歴を書き換えないと直せない古いコミットは見ない"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -1970,7 +1970,7 @@ layers = ["api"]
 [[claim]]
 id = "review-view-story"
 subjects = ["rv-13", "story"]
-statement = "レビュー単位がストーリーなら、そのストーリーの ID を持つコミットで変わったものすべてを、ストーリーで最初に変える直前の中身と今の中身で比べる"
+statement = "レビュー単位がストーリーなら、Story: のトレーラーがそのストーリーの ID のコミットで変わったものすべてを、ストーリーで最初に変える直前の中身と今の中身で比べる"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -1999,7 +1999,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-story-choice"
 subjects = ["rv-13", "story"]
-statement = "レビュー単位がブランチのとき、ブランチのコミットからストーリーが 1 つに決まれば選ばせずに示し、2 つ以上ならブランチのストーリーから、見つからなければすべてのストーリーから選ばせる"
+statement = "レビュー単位がブランチのとき、ブランチのコミットの Story: のトレーラーからストーリーが 1 つに決まれば選ばせずに示し、2 つ以上ならブランチのストーリーから、見つからなければすべてのストーリーから選ばせる"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3223,3 +3223,78 @@ layers = ["gui"]
 stage = "test"
 type = "scenario-test"
 layers = ["gui"]
+
+[[claim]]
+id = "story-id-from-trailer"
+subjects = ["cmd-03", "rv-13", "story"]
+statement = "コミットのストーリーの ID は、メッセージの末尾の Story: のトレーラーから読み、subject と本文の中の ID は数えない"
+rationale = "本文で Issue の番号に触れても、ストーリーとして数えないため（PO の決定）。数えると、1 つのブランチのストーリーが決まらなくなる"
+layers = ["cli", "api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["cli"]
+
+[[claim]]
+id = "story-trailer-at-most-one"
+subjects = ["cmd-03", "cmd-10", "story"]
+statement = "1 つのコミットに Story: のトレーラーが 2 つ以上あれば、範囲 story の審査のストーリーを決めるときは審査を始める前の誤りにし、story-origin ではその審査の失敗にする"
+rationale = "1 つのブランチは 1 つのストーリーに当たり、コミットは 1 つのブランチで作るため（PO の決定）"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "story-trailer-matches-pattern"
+subjects = ["cmd-03", "cmd-10", "story"]
+statement = "Story: のトレーラーの値が id_pattern に全体で当たらなければ、範囲 story の審査のストーリーを決めるときは審査を始める前の誤りにし、story-origin ではその審査の失敗にする"
+rationale = "PO の決定"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "story-trailer-errors-ignored-on-screen"
+subjects = ["rv-13", "story"]
+statement = "画面（API）は、Story: のトレーラーが誤ったコミットを、ストーリーの分からないコミットとして扱う"
+rationale = "誤りは審査が出すので、履歴に 1 つ誤ったコミットがあるだけで、画面を開けなくならないようにするため"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
+id = "agree-commit-has-story-trailer"
+subjects = ["rv-06", "rv-17", "story"]
+statement = "合意と取り消しのコミットのメッセージの末尾に、Story: <ストーリーの ID> のトレーラーを書く"
+rationale = "合意のコミットは約束リストを変えることがあり、story-origin で止まらないようにするため"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]

@@ -46,11 +46,14 @@ func (e *env) storyOrigin() []diag.Error {
 		if err != nil {
 			return append(errs, diag.Error{What: "コミット " + short(c) + " のメッセージを読めません（" + err.Error() + "）", Fix: "git の状態を確かめてください"})
 		}
-		if e.cfg.IDPattern.MatchString(msg) {
-			continue
-		}
 		subject := strings.SplitN(strings.TrimSpace(msg), "\n", 2)[0]
-		errs = append(errs, diag.Error{What: fmt.Sprintf("コミット %s「%s」が約束リスト（%s）を変えていますが、メッセージにストーリーの ID（%s の形）がありません", short(c), subject, strings.Join(touched, "・"), e.cfg.IDPattern), Fix: "そのコミットのメッセージに、ストーリーの ID を書いてください"})
+		id, terr := e.cfg.StoryTrailer(msg)
+		switch {
+		case terr != nil:
+			errs = append(errs, diag.Error{What: fmt.Sprintf("コミット %s「%s」の %v", short(c), subject, terr), Fix: "そのコミットのメッセージの末尾の " + config.StoryTrailerKey + ": を直してください"})
+		case id == "":
+			errs = append(errs, diag.Error{What: fmt.Sprintf("コミット %s「%s」が約束リスト（%s）を変えていますが、メッセージの末尾に %s: <ストーリーの ID>（%s の形）のトレーラーがありません", short(c), subject, strings.Join(touched, "・"), config.StoryTrailerKey, e.cfg.IDPattern), Fix: "そのコミットのメッセージの末尾に、" + config.StoryTrailerKey + ": <ストーリーの ID> のトレーラーを書いてください"})
+		}
 	}
 	return errs
 }

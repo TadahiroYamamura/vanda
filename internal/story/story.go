@@ -52,7 +52,7 @@ const timeout = 20 * time.Second
 type AdapterInfo struct {
 	Name  string // 設定の [story] の adapter に書く名前
 	Title string // 画面や問いかけに出す名前
-	// DefaultIDPattern は、コミットのメッセージの中のストーリーの ID の書き方の既定
+	// DefaultIDPattern は、ストーリーの ID の書き方（コミットの Story: のトレーラーの値に当てる）の既定
 	DefaultIDPattern string
 }
 

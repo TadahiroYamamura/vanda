@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/TadahiroYamamura/vanda/internal/agreements"
+	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/glob"
 	"github.com/TadahiroYamamura/vanda/internal/repo"
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
@@ -296,7 +297,7 @@ func Revoke(o Options, req RevokeRequest) (*RevokeResult, *Error) {
 		return nil, fail(err)
 	}
 	msg := fmt.Sprintf("(chore) %s で %s の合意を取り消す", req.Story, target)
-	if _, err := repo.Git(o.Root, append([]string{"commit", "-q", "-m", msg, "--"}, files...)...); err != nil {
+	if _, err := repo.Git(o.Root, append([]string{"commit", "-q", "-m", msg, "-m", config.StoryTrailerKey + ": " + req.Story, "--"}, files...)...); err != nil {
 		return nil, fail(err)
 	}
 	head, err := repo.Git(o.Root, "rev-parse", "HEAD")

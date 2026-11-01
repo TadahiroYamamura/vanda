@@ -36,7 +36,7 @@ type Result struct {
 	Total     int     `json:"total"`
 	Entries   []Entry `json:"entries"`
 	Detached  []Entry `json:"detached"`
-	// BranchStories は、レビュー単位がブランチのとき、分かれた点より後のコミットのメッセージにあるストーリーの ID（名前の順）。ストーリーのときは nil
+	// BranchStories は、レビュー単位がブランチのとき、分かれた点より後のコミットの Story: のトレーラーにあるストーリーの ID（名前の順）。ストーリーのときは nil
 	BranchStories []string `json:"branchStories"`
 	// StoryFrom は、story をどう決めたか。query（story= で名指しした）・branch（ブランチのコミットから 1 つに決まった）。決まっていなければ空
 	StoryFrom string `json:"storyFrom"`
@@ -217,13 +217,12 @@ func (s *state) checkStory(id string) *Error {
 	return nil
 }
 
-// branchStory は、レビュー単位がブランチのときのストーリーを、vanda check と同じく決める。渡されていればそれを、なければ分かれた点より後のコミットのメッセージにある ID が 1 つのときだけそれを使う。
+// branchStory は、レビュー単位がブランチのときのストーリーを、vanda check と同じく決める。渡されていればそれを、なければ分かれた点より後のコミットの Story: のトレーラーにある ID が 1 つのときだけそれを使う。
 func (s *state) branchStory(mb string) (string, []string, *Error) {
-	msgs, err := repo.Git(s.o.Root, "log", "--format=%B", mb+"..HEAD")
+	ids, err := storyIDsIn(s.o.Root, s.o.Cfg, mb+"..HEAD")
 	if err != nil {
 		return "", nil, internalErr(fmt.Errorf("コミットのメッセージを読めません（%v）", err))
 	}
-	ids := storyIDs(s.o.Cfg, msgs)
 	sort.Strings(ids)
 	if s.o.Story != "" {
 		return s.o.Story, ids, s.checkStory(s.o.Story)

@@ -138,17 +138,32 @@ func (h *history) sideAt(rev string) (*side, error) {
 	return sd, nil
 }
 
-// storyIDs は、コミットのメッセージにあるストーリーの ID を、出てきた順に、重ねずに返す。
+// storyIDs は、コミットのメッセージの末尾の Story: のトレーラーにあるストーリーの ID を返す（0 か 1 つ）。
+// トレーラーの誤り（2 つ以上、id_pattern に合わない）は、画面ではストーリーの分からないコミットとして扱う。
+// 誤りは審査（vanda check）が出すので、履歴に 1 つ誤ったコミットがあるだけで画面を開けなくならないようにする
 func storyIDs(cfg *config.Config, msg string) []string {
+	id, err := cfg.StoryTrailer(msg)
+	if err != nil || id == "" {
+		return nil
+	}
+	return []string{id}
+}
+
+// storyIDsIn は、revRange のコミットのトレーラーにあるストーリーの ID を、出てきた順に、重ねずに返す（誤りの扱いは storyIDs と同じ）。
+func storyIDsIn(root string, cfg *config.Config, revRange string) ([]string, error) {
+	commits, err := cfg.CommitStories(root, revRange)
+	if err != nil {
+		return nil, err
+	}
 	seen := map[string]bool{}
 	var out []string
-	for _, id := range cfg.IDPattern.FindAllString(msg, -1) {
-		if !seen[id] {
-			seen[id] = true
-			out = append(out, id)
+	for _, c := range commits {
+		if c.Err == nil && c.Story != "" && !seen[c.Story] {
+			seen[c.Story] = true
+			out = append(out, c.Story)
 		}
 	}
-	return out
+	return out, nil
 }
 
 func hasStory(c commit, story string) bool {

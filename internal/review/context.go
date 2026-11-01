@@ -78,11 +78,11 @@ func LoadContext(root string, cfg *config.Config) (*Context, *Error) {
 	inBranch := map[string]bool{}
 	if c.DefaultBase != "" && c.Head != "" {
 		if mb, err := repo.Git(root, "merge-base", c.DefaultBase, "HEAD"); err == nil {
-			msgs, err := repo.Git(root, "log", "--format=%B", strings.TrimSpace(mb)+"..HEAD")
+			ids, err := storyIDsIn(root, cfg, strings.TrimSpace(mb)+"..HEAD")
 			if err != nil {
 				return nil, internalErr(err)
 			}
-			for _, id := range storyIDs(cfg, msgs) {
+			for _, id := range ids {
 				inBranch[id] = true
 			}
 		}

@@ -130,16 +130,19 @@ func (e *env) decideStory(given string, checks []string) error {
 		e.story = given
 		return nil
 	}
-	msgs, err := repo.Git(e.root, "log", "--format=%B", e.mergeBase+"..HEAD")
+	commits, err := e.cfg.CommitStories(e.root, e.mergeBase+"..HEAD")
 	if err != nil {
 		return fmt.Errorf("コミットのメッセージを読めません（%v）。", err)
 	}
 	seen := map[string]bool{}
 	var ids []string
-	for _, id := range e.cfg.IDPattern.FindAllString(msgs, -1) {
-		if !seen[id] {
-			seen[id] = true
-			ids = append(ids, id)
+	for _, c := range commits {
+		if c.Err != nil {
+			return fmt.Errorf("コミット %s「%s」の %v。コミットのメッセージの末尾の %s: を直してください。", short(c.Hash), c.Subject, c.Err, config.StoryTrailerKey)
+		}
+		if c.Story != "" && !seen[c.Story] {
+			seen[c.Story] = true
+			ids = append(ids, c.Story)
 		}
 	}
 	sort.Strings(ids)
@@ -148,9 +151,9 @@ func (e *env) decideStory(given string, checks []string) error {
 		e.story = ids[0]
 		return nil
 	case 0:
-		return fmt.Errorf("範囲 story の審査（%s）のストーリーが分かりません（分かれた点より後のコミットのメッセージに、ストーリーの ID がありません）。--story <ID> を渡してください。", strings.Join(checks, "・"))
+		return fmt.Errorf("範囲 story の審査（%s）のストーリーが分かりません（分かれた点より後のコミットに、Story: のトレーラーがありません）。--story <ID> を渡してください。", strings.Join(checks, "・"))
 	default:
-		return fmt.Errorf("範囲 story の審査（%s）のストーリーが 1 つに決まりません（分かれた点より後のコミットのメッセージに、ストーリーの ID が %s とあります）。--story <ID> で 1 つを渡してください。", strings.Join(checks, "・"), strings.Join(ids, "・"))
+		return fmt.Errorf("範囲 story の審査（%s）のストーリーが 1 つに決まりません（分かれた点より後のコミットの Story: のトレーラーに、ストーリーの ID が %s とあります）。--story <ID> で 1 つを渡してください。", strings.Join(checks, "・"), strings.Join(ids, "・"))
 	}
 }
 

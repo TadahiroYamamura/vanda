@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/glob"
 	"github.com/TadahiroYamamura/vanda/internal/promises"
 	"github.com/TadahiroYamamura/vanda/internal/repo"
@@ -197,7 +198,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	}
 	msg := fmt.Sprintf("(chore) %s で %s に合意する", req.Story, target)
 	// パスを渡すと、索引に足してあるほかのファイルの変更を入れず、渡したファイルだけをコミットする
-	if _, err := repo.Git(o.Root, append([]string{"commit", "-q", "-m", msg, "--"}, files...)...); err != nil {
+	if _, err := repo.Git(o.Root, append([]string{"commit", "-q", "-m", msg, "-m", config.StoryTrailerKey + ": " + req.Story, "--"}, files...)...); err != nil {
 		return nil, fail(err)
 	}
 	head, err := repo.Git(o.Root, "rev-parse", "HEAD")

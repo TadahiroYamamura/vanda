@@ -84,7 +84,7 @@ func newCheckCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&base, "base", "", `ベースブランチ（scope = "story" の審査があるときに必要です）`)
-	cmd.Flags().StringVar(&story, "story", "", "ストーリーの ID（コミットのメッセージから決まらないときに渡します）")
+	cmd.Flags().StringVar(&story, "story", "", "ストーリーの ID（コミットの Story: のトレーラーから決まらないときに渡します）")
 	return cmd
 }
 
