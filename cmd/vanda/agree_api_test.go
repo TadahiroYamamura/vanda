@@ -85,9 +85,18 @@ func committedFiles(r *reviewRepo, rev string) []string {
 	return files
 }
 
+// wantStoryTrailer は、HEAD のコミットのメッセージの末尾に、Story: <story> のトレーラーがちょうど 1 つあるかを、git のトレーラーの読み方で確かめる。
+func wantStoryTrailer(t *testing.T, r *reviewRepo, story string) {
+	t.Helper()
+	if got := r.git("log", "-1", "--format=%(trailers:key=Story,valueonly)"); got != story {
+		t.Errorf("コミットの Story: のトレーラーが %q（%s のはず）\n%s", got, story, r.git("log", "-1", "--format=%B"))
+	}
+}
+
 // RV-06・RV-04
 // @vanda:evidence agree-writes-and-commits
 // @vanda:evidence agree-removes-flags
+// @vanda:evidence agree-commit-has-story-trailer
 func Test合意すると合意の記録が1件増えその約束のフラグだけが外れほかの行は変わらず1つのコミットになる(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -111,6 +120,7 @@ func Test合意すると合意の記録が1件増えその約束のフラグだ�
 	if subject := r.git("log", "-1", "--format=%s"); subject != "(chore) #24 で 約束 task-id-unique に合意する" {
 		t.Errorf("コミットのメッセージ: %q", subject)
 	}
+	wantStoryTrailer(t, r, reviewStory)
 	if status := r.git("status", "--porcelain"); status != "" {
 		t.Errorf("合意の後に、コミットしていない変更が残った:\n%s", status)
 	}
@@ -438,6 +448,7 @@ func revokeEntry(t *testing.T, s *vandaServer) (state string, possible *bool, re
 // @vanda:evidence revoke-commits-and-keeps-flags
 // @vanda:evidence revoke-own-branch-only
 // @vanda:evidence revoke-returns-to-proposed
+// @vanda:evidence agree-commit-has-story-trailer
 func Test自分が今のブランチで書いた合意を取り消すとその記録と直前の空行だけが消え1つのコミットになりフラグは戻らない(t *testing.T) {
 	t.Parallel()
 	_, r, s, base := setupRevoke(t, func(base string) string {
@@ -469,6 +480,7 @@ func Test自分が今のブランチで書いた合意を取り消すとその�
 	if subject := r.git("log", "-1", "--format=%s"); subject != "(chore) #24 で 約束 task-id-unique の合意を取り消す" {
 		t.Errorf("コミットのメッセージ: %q", subject)
 	}
+	wantStoryTrailer(t, r, reviewStory)
 	if now := readFileString(t, r.Root, ".vanda/agreements.toml"); now != want {
 		t.Errorf("合意の記録のファイルが、その記録と直前の空行だけを消したものでない\n--- 今\n%s\n--- 思ったもの\n%s", now, want)
 	}

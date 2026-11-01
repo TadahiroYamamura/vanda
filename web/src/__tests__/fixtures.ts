@@ -20,6 +20,7 @@ export const ctx: Context = {
     { id: "db", name: "DB" },
   ],
   storyStore: "github",
+  trailerErrors: [],
 };
 
 export function claimEntry(no: number, id: string, over: Partial<Entry> = {}): Entry {

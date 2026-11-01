@@ -595,3 +595,32 @@ describe("RV-18 詳細の画面から戻る", () => {
     }
   });
 });
+
+describe("Story: のトレーラーの誤り", () => {
+  const errors = [
+    { commit: "1111111aaaaaaa1111111aaaaaaa1111111aaaaa", subject: "トレーラーが書き方に合わない", message: "Story: のトレーラーの値 PROJ-1 が、ストーリーの ID の書き方（#[0-9]+）に合いません。" },
+    { commit: "2222222bbbbbbb2222222bbbbbbb2222222bbbbb", subject: "トレーラーが 2 つ", message: "Story: のトレーラーが 2 つあります（#77・#78）。1 つのコミットに書けるのは 1 つだけです。" },
+  ];
+  // @vanda:evidence story-trailer-errors-shown
+  it("文脈にトレーラーの誤りがあると画面の上に知らせを出しコミットの短いハッシュとsubjectと理由を並べなければ出さない", async () => {
+    for (const trailerErrors of [errors, []]) {
+      open([claimEntry(1, "c-one")], {}, http.get("/api/context", () => HttpResponse.json({ ...ctx, trailerErrors })));
+      await screen.findAllByText(/c-one/);
+      const alert = screen.queryByRole("alert", { name: "Story: のトレーラーの誤り" });
+      if (trailerErrors.length === 0) {
+        expect(alert, "誤りがないのに知らせが出た").toBeNull();
+      } else {
+        expect(alert, "誤りがあるのに知らせが出ない").not.toBeNull();
+        const items = within(alert!).getAllByRole("listitem");
+        expect(items).toHaveLength(errors.length);
+        errors.forEach((e, i) => {
+          const text = items[i].textContent ?? "";
+          for (const part of [e.commit.slice(0, 7), e.subject, e.message]) expect(text, `${i + 1} 件目に ${part} がない`).toContain(part);
+          expect(text, `${i + 1} 件目に長いハッシュが出た`).not.toContain(e.commit.slice(0, 8));
+        });
+      }
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+});
