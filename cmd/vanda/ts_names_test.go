@@ -35,6 +35,14 @@ describe("ReviewPage", () => {
 
 // @vanda:evidence task-id-unique
 describe("まとまり", () => {});
+
+test.describe("Playwright の形", () => {
+  // @vanda:evidence task-id-unique
+  test.each(["合意", "取り消し"])("%s をする", (op) => {});
+
+  // @vanda:evidence task-id-unique
+  test(` + "`${op} を合意する`" + `, () => {});
+});
 `
 
 var tsNamesWant = []string{
@@ -43,6 +51,10 @@ var tsNamesWant = []string{
 	"ReviewPage > 合意 > 合意すると合意済になる",
 	"ReviewPage > 合意 > 取り消すと提案中に戻る",
 	"まとまり",
+	// .each(表)("名前", …) は、最後の呼び出しの最初の引数
+	"Playwright の形 > %s をする",
+	// テンプレート文字列は、書いてあるとおりの文字
+	"Playwright の形 > ${op} を合意する",
 }
 
 // foundNames は、annotation の設定と、ファイル path に中身 body を置いたリポジトリを作り、約束の詳細の found の名前を返す。
