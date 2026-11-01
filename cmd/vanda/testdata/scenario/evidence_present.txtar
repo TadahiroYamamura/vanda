@@ -78,13 +78,11 @@ stderr 'promises\.toml.*proof'
 
 # 範囲を 1 つのストーリーにすると、分かれた点より後に変わった約束だけを見る
 cp cases/promises-main.toml .vanda/promises.toml
-exec git add -A
-exec git commit -q -m '#1 約束を足す'
+commit '約束を足す' '#1'
 exec git checkout -q -b story-2
 cp cases/promises-story.toml .vanda/promises.toml
 cp cases/title_test.go.case title_test.go
-exec git add -A
-exec git commit -q -m '#2 約束を足す'
+commit '約束を足す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 ! exec vanda check .vanda/checks/all.toml
 stderr 'task-reviewed-no-annotation'

@@ -1,4 +1,4 @@
-# CMD-10 由来: ベースブランチから分かれた点より後の、約束リストを変えたコミットには、ストーリーの ID がある。
+# CMD-10 由来: ベースブランチから分かれた点より後の、約束リストを変えたコミットには、ストーリーの ID の Story: のトレーラーがある。
 # @vanda:evidence check-story-origin
 # 分かれた点より前のコミットは見ない（履歴を書き換えないと直せないため）。約束リストを変えていないコミットには、ID がなくてよい。
 # ID の書き方は、設定に書かなければ #<数>。
@@ -7,51 +7,44 @@
 
 exec git init -q -b main
 expand .vanda/config.toml
-exec git add -A
-exec git commit -q -m '約束リストを足す'
+commit '約束リストを足す'
 
 # 分かれた点より前の、ID のないコミットは見ない
 exec git checkout -q -b story-2
 exec vanda check .vanda/checks/origin.toml --base main
 
-# 約束リストを変えたコミットに ID があれば通る
+# 約束リストを変えたコミットに Story: のトレーラーがあれば通る
 cp cases/promises-2.toml .vanda/promises.toml
-exec git add -A
-exec git commit -q -m '#2 約束の文を変える'
+commit '約束の文を変える' '#2'
 exec vanda check .vanda/checks/origin.toml --base main
 
 # 約束リスト以外（合意の記録、ほかのファイル）を変えたコミットには、ID がなくてよい
 cp cases/note.txt note.txt
 cp cases/agreements.toml .vanda/agreements.toml
-exec git add -A
-exec git commit -q -m 'メモと合意の記録を変える'
+commit 'メモと合意の記録を変える'
 exec vanda check .vanda/checks/origin.toml --base main
 
 # 分かれた点より後のコミットに、別のストーリーの ID が混じっても、--story なしで行う
 cp cases/note-3.txt note.txt
-exec git add -A
-exec git commit -q -m '#3 メモを直す'
+commit 'メモを直す' '#3'
 exec vanda check .vanda/checks/origin.toml --base main
 
-# 約束リストを変えたコミットに ID がないと止まる
+# 約束リストを変えたコミットに Story: のトレーラーがないと止まる
 cp cases/promises-3.toml .vanda/promises.toml
-exec git add -A
-exec git commit -q -m '約束の文をまた変える'
+commit '約束の文をまた変える'
 ! exec vanda check .vanda/checks/origin.toml --base main
 ! stderr '(?m)^panic: '
 
-# ID の書き方を設定で変えると、その書き方だけを ID とみなす
+# ID の書き方を設定で変えると、その書き方のトレーラーで通る。subject に書いた #3 は数えない
 exec git checkout -q main
 exec git checkout -q -b story-proj
 cp cases/config-proj.toml .vanda/config.toml
 expand .vanda/config.toml
 cp cases/promises-2.toml .vanda/promises.toml
-exec git add -A
-exec git commit -q -m 'PROJ-12 約束の文を変える'
+commit '約束の文を変える' 'PROJ-12'
 exec vanda check .vanda/checks/origin.toml --base main
 cp cases/promises-3.toml .vanda/promises.toml
-exec git add -A
-exec git commit -q -m '#3 約束の文をまた変える'
+commit '#3 約束の文をまた変える'
 ! exec vanda check .vanda/checks/origin.toml --base main
 ! stderr '(?m)^panic: '
 

@@ -255,8 +255,7 @@ func newFieldsRepo(t *testing.T, version string) *fieldsRepo {
 	writeFile(t, root, "e2e/b.txtar", fieldsScenarioBase)
 	writeFile(t, root, "db/a.sql", fieldsSQLBase)
 	writeFile(t, root, "spec/M.tla", fieldsTLA)
-	r.g.run("add", "-A")
-	r.g.run("commit", "-q", "-m", "#1 はじめの約束を置く")
+	r.g.commitAll("はじめの約束を置く", "#1")
 
 	r.g.run("switch", "-q", "-c", reviewBranch)
 	writeFile(t, root, ".vanda/promises.toml", story.String())
@@ -266,8 +265,7 @@ func newFieldsRepo(t *testing.T, version string) *fieldsRepo {
 	writeFile(t, root, "e2e/a.txtar", fieldsNewScenario)
 	writeFile(t, root, "db/a.sql", fieldsSQLStory)
 	r.g.run("rm", "-q", "spec/M.tla")
-	r.g.run("add", "-A")
-	r.g.run("commit", "-q", "-m", "#24 約束と用語と機能とファイルを変える")
+	r.g.commitAll("約束と用語と機能とファイルを変える", "#24")
 	return &fieldsRepo{r}
 }
 
@@ -453,7 +451,7 @@ func Test画面で選べるものは今の設定とブランチと履歴から�
 	r.git("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
 	r.git("branch", "release", "main")
 	r.git("commit", "-q", "--allow-empty", "-m", "ID のないコミット")
-	r.git("commit", "-q", "--allow-empty", "-m", "#30 で直す")
+	r.git("commit", "-q", "--allow-empty", "-m", storyMessage("直す", "#30"))
 
 	var got contextResponse
 	if code, msg := s.get("/api/context", &got); code != 200 {
@@ -510,8 +508,7 @@ func Test画面で選べるもののストーリーの置き場所は設定の�
 			r := newReviewRepo(t, version)
 			writeFile(t, r.Root, ".vanda/config.toml", fmt.Sprintf(reviewConfig, version)+c.conf)
 			writeUserAdapter(t, r.Root, ".vanda/adapters/jira-story", "cat >/dev/null\necho '{\"title\":\"t\",\"body\":\"\",\"url\":\"\"}'\n")
-			r.git("add", "-A")
-			r.git("commit", "-q", "-m", "設定にストーリーの置き場所を足す")
+			r.g.commitAll("設定にストーリーの置き場所を足す", "")
 			s := startServe(t, bin, r.Root, r.Env)
 			var got contextResponse
 			if code, msg := s.get("/api/context", &got); code != 200 || got.StoryStore != c.want {
@@ -535,14 +532,14 @@ func Testレビュー単位がブランチのときストーリーはブラン�
 	}{
 		{"ブランチのコミットに#24だけがある", func(r *reviewRepo) {}, "main", "", "#24"},
 		{"ブランチのコミットに#24と#30がある", func(r *reviewRepo) {
-			r.git("commit", "-q", "--allow-empty", "-m", "#30 で直す")
+			r.git("commit", "-q", "--allow-empty", "-m", storyMessage("直す", "#30"))
 		}, "main", "", ""},
 		{"ブランチにストーリーのIDを持つコミットがない", func(r *reviewRepo) {
 			r.git("switch", "-q", "-c", "plain")
 			r.git("commit", "-q", "--allow-empty", "-m", "ID のないコミット")
 		}, reviewBranch, "", ""},
 		{"#24と#30があるときに#30を名指しする", func(r *reviewRepo) {
-			r.git("commit", "-q", "--allow-empty", "-m", "#30 で直す")
+			r.git("commit", "-q", "--allow-empty", "-m", storyMessage("直す", "#30"))
 		}, "main", "#30", "#30"},
 		{"#24だけがあるときにブランチにない#1を名指しする", func(r *reviewRepo) {}, "main", "#1", "#1"},
 		{"IDを持つコミットがないときに#24を名指しする", func(r *reviewRepo) {

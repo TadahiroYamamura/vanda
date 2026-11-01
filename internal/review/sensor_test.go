@@ -80,6 +80,15 @@ func (r *sensorRepo) git(args ...string) string {
 	return strings.TrimSpace(string(out))
 }
 
+// commit は、作業ツリーのすべてを、ストーリー story のコミット（末尾に Story: のトレーラー）にする。同じ大きさの書き換えも
+// コミットに入るよう、索引から一度外して読み直させる（git add -A は stat の一致から変わっていないとみなすことがある）
+func (r *sensorRepo) commit(subject, story string) {
+	r.t.Helper()
+	r.git("rm", "-r", "-q", "--cached", "--ignore-unmatch", ".")
+	r.git("add", "-A")
+	r.git("commit", "-q", "--allow-empty", "-m", subject+"\n\nStory: "+story)
+}
+
 func (r *sensorRepo) write(path, body string) {
 	r.t.Helper()
 	p := filepath.Join(r.root, filepath.FromSlash(path))
@@ -113,12 +122,11 @@ func newSensorRepo(t *testing.T) *sensorRepo {
 	r.write(".vanda/promises.toml", sensorPromisesBase)
 	r.write(".vanda/agreements.toml", "")
 	r.write("e2e/s.txtar", sensorScenarioBase)
-	r.git("add", "-A")
-	r.git("commit", "-q", "-m", "#1 はじめ")
+	r.commit("はじめ", "#1")
 	r.git("switch", "-q", "-c", "story-2")
 	r.write(".vanda/promises.toml", sensorPromisesStory)
 	r.write("e2e/s.txtar", sensorScenarioStory)
-	r.git("commit", "-q", "-am", sensorStory+" 変える")
+	r.commit("変える", sensorStory)
 	cfg, errs := config.Load(r.root)
 	if errs != nil {
 		t.Fatal(errs)

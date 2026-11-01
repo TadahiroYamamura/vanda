@@ -84,8 +84,7 @@ func foundNames(t *testing.T, annotation string, files map[string]string, adapte
 			t.Fatal(err)
 		}
 	}
-	g.run("add", "-A")
-	g.run("commit", "-q", "-m", "#1 はじめ")
+	g.commitAll("はじめ", "#1")
 	s := startServe(t, bin, root, g.env)
 	var got claimDetail
 	if code, msg := s.get("/api/claims/task-id-unique", &got); code != 200 {

@@ -122,14 +122,12 @@ func Testファイルの差分は無作為な変更前と変更後でもすべ�
 			files[path] = pair{before, after}
 			writeFile(rt, root, path, files[path].before)
 		}
-		g.run("add", "-A")
-		g.run("commit", "-q", "-m", "#1 はじめ")
+		g.commitAll("はじめ", "#1")
 		g.run("switch", "-q", "-c", "story-24")
 		for path, p := range files {
 			writeFile(rt, root, path, p.after)
 		}
-		g.run("add", "-A")
-		g.run("commit", "-q", "--allow-empty", "-m", "#24 変える")
+		g.commitAll("変える", "#24")
 
 		s := startServe(rt, bin, root, g.env)
 		var got reviewResponse

@@ -116,7 +116,7 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 	// 推測だけを書き換えたコミット。指紋が変わらないので、由来には出ない
 	writeFile(t, r.Root, ".vanda/promises.toml", strings.Replace(reviewPromisesStory,
 		"guesses = [\"タスクは消しても ID を使い回さない\"]", "guesses = [\"消したタスクの ID は使い回さない\"]", 1))
-	r.git("commit", "-q", "-am", "#25 推測を書き換える")
+	r.g.commitTracked("推測を書き換える", "#25")
 
 	var got claimDetail
 	if code, msg := s.get("/api/claims/task-id-unique", &got); code != 200 {
@@ -174,7 +174,7 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 	if o0.Commit != changed || !reflect.DeepEqual(o0.Stories, []string{"#24"}) || o0.Change != "modified" {
 		t.Errorf("由来の 1 件目: %+v", o0)
 	}
-	if o1.Commit != first || o1.Subject != "#1 はじめの約束を置く" || !reflect.DeepEqual(o1.Stories, []string{"#1"}) || o1.Change != "added" {
+	if o1.Commit != first || o1.Subject != "はじめの約束を置く" || !reflect.DeepEqual(o1.Stories, []string{"#1"}) || o1.Change != "added" {
 		t.Errorf("由来の 2 件目: %+v", o1)
 	}
 
@@ -195,7 +195,7 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 	if err != nil {
 		t.Fatal(err)
 	}
-	r.git("commit", "-q", "-am", "#24 で合意する")
+	r.g.commitTracked("合意する", "#24")
 	var again claimDetail
 	if code, msg := s.get("/api/claims/task-id-unique", &again); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
@@ -217,7 +217,7 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 	if err != nil {
 		t.Fatal(err)
 	}
-	r.git("commit", "-q", "-am", "#30 でシナリオに合意する")
+	r.g.commitTracked("シナリオに合意する", "#30")
 	var agreedFile claimDetail
 	if code, msg := s.get("/api/claims/task-id-unique", &agreedFile); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
@@ -364,19 +364,18 @@ func Testその時点の約束の中身は今の設定にないレイヤーの�
 	t.Parallel()
 	_, r, s := setupAgree(t)
 	now := readFileString(t, r.Root, ".vanda/promises.toml")
-	commitPromises := func(src, msg string) string {
+	commitPromises := func(src, subject string) string {
 		writeFile(t, r.Root, ".vanda/promises.toml", src)
-		r.git("add", ".vanda/promises.toml")
-		r.git("commit", "-q", "-m", msg)
+		r.g.commitTracked(subject, reviewStory)
 		return r.git("rev-parse", "HEAD")
 	}
 	const layers = `layers = ["model", "db"]`
 	if strings.Count(now, layers) < 1 {
 		t.Fatalf("約束リストに %s がない", layers)
 	}
-	gone := commitPromises(strings.Replace(now, layers, `layers = ["gone", "model"]`, 1), "#24 今の設定にないレイヤーを書く")
-	broken := commitPromises(now+"\n[[claim]\n", "#24 約束リストを壊す")
-	commitPromises(now, "#24 約束リストを戻す")
+	gone := commitPromises(strings.Replace(now, layers, `layers = ["gone", "model"]`, 1), "今の設定にないレイヤーを書く")
+	broken := commitPromises(now+"\n[[claim]\n", "約束リストを壊す")
+	commitPromises(now, "約束リストを戻す")
 
 	var got struct {
 		Layers []struct {

@@ -58,11 +58,10 @@ func (r *rv14Repo) agree(id string, v int, story string, minute int) {
 }
 
 // commit は、minute 分の日時（作者とコミットした人の両方）でコミットする。
-func (r *rv14Repo) commit(msg string, minute int) {
-	r.g.run("add", "-A")
+func (r *rv14Repo) commit(subject, story string, minute int) {
 	at := rv14Time(time.Duration(minute) * time.Minute)
 	g := &rvGit{t: r.t, root: r.root, env: append(append([]string{}, r.g.env...), "GIT_AUTHOR_DATE="+at, "GIT_COMMITTER_DATE="+at)}
-	g.run("commit", "-q", "-m", msg)
+	g.commitAll(subject, story)
 }
 
 // newRV14Repo は、次の履歴を作る（分は、コミットの日時）。
@@ -88,20 +87,20 @@ func newRV14Repo(t *testing.T, version string) *rv14Repo {
 	writeFile(t, root, ".vanda/agreements.toml", agreementTOML("term", "t", sha256Hex([]byte(`{"definition":"d","id":"t","name":"n"}`)), "", "#9", "テスト担当", "tester@example.com"))
 	r.agree("item-a", 0, "#9", 0)
 	r.agree("item-b", 0, "#9", 0)
-	r.commit("#9 はじめ", 0)
+	r.commit("はじめ", "#9", 0)
 	r.agree("item-b", 0, "#24", 1)
-	r.commit("#24 で item-b に合意する", 1)
+	r.commit("item-b に合意する", "#24", 1)
 	writeFile(t, root, ".vanda/promises.toml", rv14Promises(0, 1))
-	r.commit("#30 で item-b を変える", 2)
+	r.commit("item-b を変える", "#30", 2)
 	r.agree("item-b", 1, "#30", 3)
-	r.commit("#30 で item-b に合意する", 3)
+	r.commit("item-b に合意する", "#30", 3)
 	r.g.run("switch", "-q", "-c", "story-24")
 	writeFile(t, root, ".vanda/promises.toml", rv14Promises(1, 1))
-	r.commit("#24 で item-a を変える", 4)
+	r.commit("item-a を変える", "#24", 4)
 	r.agree("item-a", 1, "#24", 5)
-	r.commit("#24 で item-a に合意する", 5)
+	r.commit("item-a に合意する", "#24", 5)
 	writeFile(t, root, ".vanda/promises.toml", rv14Promises(2, 1))
-	r.commit("#30 で item-a を変える", 6)
+	r.commit("item-a を変える", "#30", 6)
 	return r
 }
 
@@ -178,7 +177,7 @@ func TestRV14はストーリーの合意が外れたものをレビュー単位�
 	}
 	checkDetached(t, "レビュー単位がストーリーのとき", story)
 	if a := findEntry(story.Entries, "item-a"); a != nil {
-		if len(a.OtherCommits) != 1 || !reflect.DeepEqual(a.OtherCommits[0].Stories, []string{"#30"}) || a.OtherCommits[0].Subject != "#30 で item-a を変える" {
+		if len(a.OtherCommits) != 1 || !reflect.DeepEqual(a.OtherCommits[0].Stories, []string{"#30"}) || a.OtherCommits[0].Subject != "item-a を変える" {
 			t.Errorf("レビュー単位がストーリーのときの item-a の otherCommits が、#30 のコミット 1 つでない: %+v", a.OtherCommits)
 		}
 	}
@@ -186,7 +185,7 @@ func TestRV14はストーリーの合意が外れたものをレビュー単位�
 	// #24 が今の中身に合意し直すと、外れた合意ではなくなる
 	r.agree("item-a", 2, "#24", 7)
 	r.agree("item-b", 1, "#24", 7)
-	r.commit("#24 で合意し直す", 7)
+	r.commit("合意し直す", "#24", 7)
 	var again reviewResponse
 	if code, msg := s.get("/api/review?view=branch&base=main&story="+q("#24"), &again); code != 200 {
 		t.Fatalf("一覧を読めない（%d）: %s", code, msg)

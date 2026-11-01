@@ -10,16 +10,14 @@ exec git init -q -b main
 expand .vanda/config.toml
 agree .vanda/agreements/base.toml '#9' term task fp/term-task.json
 agree .vanda/agreements/base.toml '#9' claim task-id-unique fp/claim-v1.json
-exec git add -A
-exec git commit -q -m '#9 約束を足す'
+commit '約束を足す' '#9'
 exec vanda check .vanda/checks/all.toml
 
 # ストーリー 1: 約束の文を変えて、今の中身に合意する
 exec git checkout -q -b story-1
 cp cases/a-v2.toml .vanda/promises/a.toml
 agree .vanda/agreements/story-1.toml '#1' claim task-id-unique fp/claim-v2.json
-exec git add -A
-exec git commit -q -m '#1 約束の文を変える'
+commit '約束の文を変える' '#1'
 exec vanda check .vanda/checks/story.toml --base main
 
 # ストーリー 2: 変える前の中身に合意し、別の約束を足して合意する
@@ -28,8 +26,7 @@ exec git checkout -q -b story-2
 cp cases/b.toml .vanda/promises/b.toml
 agree .vanda/agreements/story-2.toml '#2' claim task-id-unique fp/claim-v1.json
 agree .vanda/agreements/story-2.toml '#2' claim task-title-required fp/claim-b.json
-exec git add -A
-exec git commit -q -m '#2 約束を足す'
+commit '約束を足す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 
 # ストーリー 1 が先に合流し、ストーリー 2 が main を取り込む
@@ -49,21 +46,18 @@ stderr 'task-id-unique'
 
 # ストーリー 2 が今の中身に合意し直すと通る
 agree .vanda/agreements/story-2.toml '#2' claim task-id-unique fp/claim-v2.json
-exec git add -A
-exec git commit -q -m '#2 変わった約束に合意し直す'
+commit '変わった約束に合意し直す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 stdout '^審査 agreement（story #2）: 通った$'
 
 # ストーリー 2 が、前に合意した約束を自分で変えても、合意し直すまで止まる（誰が変えたかを問わない）
 cp cases/b-v2.toml .vanda/promises/b.toml
-exec git add -A
-exec git commit -q -m '#2 題の約束の文を変える'
+commit '題の約束の文を変える' '#2'
 ! exec vanda check .vanda/checks/story.toml --base main
 stderr 'task-title-required'
 ! stderr '(?m)^panic: '
 agree .vanda/agreements/story-2.toml '#2' claim task-title-required fp/claim-b2.json
-exec git add -A
-exec git commit -q -m '#2 変えた約束に合意し直す'
+commit '変えた約束に合意し直す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 
 -- .vanda/config.toml --

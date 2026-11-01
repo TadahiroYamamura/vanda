@@ -57,7 +57,7 @@ func newStorySetup(t *testing.T, ghToken string) *storySetup {
 		t.Fatal(err)
 	}
 	writeFile(t, r.Root, ".vanda/config.toml", string(cfg)+"\n[story]\nadapter = \"github\"\nrepository = \"owner/app\"\napi_url = \""+fake.URL+"\"\n")
-	r.git("commit", "-q", "-am", "設定にストーリーの置き場所を足す")
+	r.g.commitTracked("設定にストーリーの置き場所を足す", "")
 	return &storySetup{bin: bin, r: r, fake: fake, gh: fakeGH(t, ghToken)}
 }
 
@@ -251,8 +251,7 @@ func Testストーリーの置き場所のvanda_adaptersのアダプタはファ
 			cfg := fmt.Sprintf(reviewConfig, version) + "\n[story]\nadapter = \"" + c.adapter + "\"\n" + c.args + "\n"
 			writeFile(t, r.Root, ".vanda/config.toml", cfg)
 			writeUserAdapter(t, r.Root, c.path, userStoryAdapter)
-			r.git("add", "-A")
-			r.git("commit", "-q", "-m", ".vanda/adapters/ のアダプタを置く")
+			r.g.commitAll(".vanda/adapters/ のアダプタを置く", "")
 			s := startServe(t, bin, r.Root, r.Env)
 			var got storyResponse
 			if code, msg := s.get("/api/story?id="+q("#24"), &got); code != 200 {

@@ -50,8 +50,16 @@ func (r *repoT) write(files map[string]string) {
 	}
 }
 
-func (r *repoT) commit(msg string) {
+// commit は、作業ツリーのすべてを 1 つのコミットにする。story が空でなければ、メッセージの末尾に Story: のトレーラーを書く。
+// 同じ大きさのファイルを同じ時刻のうちに書き換えると、git add -A が stat の一致から変わっていないとみなし、書き換えを
+// コミットに入れないことがあるので、索引から一度外して、毎回すべてを読み直させる
+func (r *repoT) commit(subject, story string) {
 	r.t.Helper()
+	msg := subject
+	if story != "" {
+		msg += "\n\nStory: " + story
+	}
+	r.git("rm", "-r", "-q", "--cached", "--ignore-unmatch", ".")
 	r.git("add", "-A")
 	r.git("commit", "-q", "--allow-empty", "-m", msg)
 }
@@ -246,7 +254,7 @@ func goodRepo(t *testing.T) *repoT {
 	r := newRepo(t)
 	r.write(baseFiles)
 	r.agreeAll("#1", r.config(), "")
-	r.commit("(feat) はじめ #1")
+	r.commit("(feat) はじめ", "#1")
 	return r
 }
 
@@ -428,13 +436,13 @@ func TestStoryOriginは約束リストを変えたコミットにストーリー
 	r := goodRepo(t)
 	r.git("checkout", "-q", "-b", "work")
 	r.write(map[string]string{"README.md": "x"})
-	r.commit("(docs) ID のないコミット（約束リストを変えない）")
+	r.commit("(docs) ID のないコミット（約束リストを変えない）", "")
 	r.write(map[string]string{".vanda/promises.toml": basePromises + "\n"})
-	r.commit("(feat) ID のないコミット")
+	r.commit("(feat) ID のないコミット", "")
 	r.write(map[string]string{".vanda/promises.toml": basePromises + "\n\n"})
-	r.commit("(feat) ID のあるコミット #2")
+	r.commit("(feat) ID のあるコミット", "#2")
 	_, out, _ := r.run("[[check]]\nname = \"story-origin\"\nscope = \"story\"\n", "main", "")
-	expect(t, out, [][]string{{"審査 story-origin（story）: 失敗（1 件）"}, {"", "「(feat) ID のないコミット」", "約束リスト（.vanda/promises.toml）", "ストーリーの ID（#[0-9]+ の形）"}})
+	expect(t, out, [][]string{{"審査 story-origin（story）: 失敗（1 件）"}, {"", "「(feat) ID のないコミット」", "約束リスト（.vanda/promises.toml）", "Story:", "（#[0-9]+ の形）"}})
 }
 
 const storyAgreement = "[[check]]\nname = \"agreement\"\nscope = \"story\"\n"
@@ -445,7 +453,7 @@ func TestAgreementの範囲storyはそのストーリーで変わったものだ
 	r.git("checkout", "-q", "-b", "work")
 	// 範囲の外（分かれた点より前から提案中）のものは見ない
 	r.write(map[string]string{".vanda/agreements.toml": ""})
-	r.commit("(chore) 合意を消す #2")
+	r.commit("(chore) 合意を消す", "#2")
 	pass, out, err := r.run(storyAgreement, "main", "")
 	if err != nil || !pass {
 		t.Fatalf("pass=%v err=%v\n%s", pass, err, out)
@@ -468,7 +476,7 @@ func TestAgreementの範囲storyはほかのストーリーが合意してもそ
 		t.Fatal(err)
 	}
 	r.agreeAll("#2", cfg, string(old))
-	r.commit("(feat) 用語を変える #2")
+	r.commit("(feat) 用語を変える", "#2")
 	pass, out, _ := r.run(storyAgreement, "main", "")
 	if !pass {
 		t.Fatalf("#2 の範囲は通るはず:\n%s", out)
@@ -508,7 +516,7 @@ func Test指紋の合わない合意の記録は誤りにせず外れた合意�
 	if !pass {
 		t.Fatalf("#2 の合意で全部の範囲が通るはず:\n%s", out)
 	}
-	r.commit("(feat) 用語を変える #2")
+	r.commit("(feat) 用語を変える", "#2")
 	// #1 は前に合意し、今の中身に #1 の合意がないので外れたまま（#2 が合意していても）
 	_, out, _ = r.run(storyAgreement, "main", "#1")
 	expect(t, out, [][]string{{"審査 agreement（story #1）: 失敗（1 件）"}, {".vanda/promises.toml:2: ", "用語 task の", "ストーリー #1 の合意が外れ"}})
@@ -539,11 +547,12 @@ func TestRunは範囲storyのストーリーが決まらなければ止める(t 
 	if _, _, err := r.run(storyAgreement, "", ""); err == nil || !lineWith(err.Error(), "", "ベースブランチ", "--base <ブランチ>") {
 		t.Errorf("--base なし: %v", err)
 	}
-	r.commit("(chore) ID なし")
-	if _, _, err := r.run(storyAgreement, "main", ""); err == nil || !lineWith(err.Error(), "", "ストーリーの ID", "--story <ID>") {
+	r.commit("(chore) ID なし", "")
+	if _, _, err := r.run(storyAgreement, "main", ""); err == nil || !lineWith(err.Error(), "", "Story: のトレーラー", "--story <ID>") {
 		t.Errorf("ID 0 個: %v", err)
 	}
-	r.commit("(chore) 2 つ #3 #4")
+	r.commit("(chore) 直す", "#3")
+	r.commit("(chore) さらに直す", "#4")
 	if _, _, err := r.run(storyAgreement, "main", ""); err == nil || !lineWith(err.Error(), "", "ストーリーの ID が #3・#4", "--story <ID>") {
 		t.Errorf("ID 2 個: %v", err)
 	}

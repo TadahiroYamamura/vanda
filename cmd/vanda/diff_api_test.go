@@ -132,8 +132,7 @@ func setupDiff(t *testing.T) reviewResponse {
 	}
 	writeFile(t, root, "e2e/r.txtar", "名前だけ変える\n")
 	writeFile(t, root, "e2e/del.txtar", "消す\n")
-	g.run("add", "-A")
-	g.run("commit", "-q", "-m", "#1 はじめ")
+	g.commitAll("はじめ", "#1")
 	g.run("switch", "-q", "-c", "story-24")
 	writeFile(t, root, ".vanda/promises.toml", diffPromisesStory)
 	for _, f := range diffFiles {
@@ -142,8 +141,7 @@ func setupDiff(t *testing.T) reviewResponse {
 	g.run("mv", "e2e/r.txtar", "e2e/r2.txtar")
 	g.run("rm", "-q", "e2e/del.txtar")
 	writeFile(t, root, "e2e/new.txtar", "足す\n")
-	g.run("add", "-A")
-	g.run("commit", "-q", "-m", "#24 変える")
+	g.commitAll("変える", "#24")
 
 	s := startServe(t, bin, root, g.env)
 	var got reviewResponse
@@ -459,12 +457,10 @@ func Test約束のエビデンスの予定の差分はステージとタイプ�
 	g.run("init", "-q", "-b", "main")
 	writeFile(t, root, ".vanda/config.toml", fmt.Sprintf(diffConfig, version)+"\n[[layer]]\nid = \"db\"\nname = \"DB\"\ndescription = \"保存\"\n")
 	writeFile(t, root, ".vanda/promises.toml", before)
-	g.run("add", "-A")
-	g.run("commit", "-q", "-m", "#1 はじめ")
+	g.commitAll("はじめ", "#1")
 	g.run("switch", "-q", "-c", "story-24")
 	writeFile(t, root, ".vanda/promises.toml", after)
-	g.run("add", "-A")
-	g.run("commit", "-q", "-m", "#24 エビデンスを変える")
+	g.commitAll("エビデンスを変える", "#24")
 	s := startServe(t, bin, root, g.env)
 	var got reviewResponse
 	if code, msg := s.get("/api/review?view=branch&base=main", &got); code != 200 {

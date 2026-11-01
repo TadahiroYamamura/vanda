@@ -55,6 +55,7 @@ func TestScenario(t *testing.T) {
 			"expand": cmdExpand,
 			"order":  cmdOrder,
 			"agree":  cmdAgree,
+			"commit": cmdCommit,
 		},
 	})
 }
@@ -163,6 +164,30 @@ func cmdOrder(ts *testscript.TestScript, neg bool, args []string) {
 
 // agree <合意の記録のファイル> <ストーリーの ID> <claim|term|feature> <ID> <指紋の元の JSON のファイル>
 // agree <合意の記録のファイル> <ストーリーの ID> file <ファイルの場所>
+// commit <subject> [<ストーリーの ID>] は、作業ツリーのすべてを 1 つのコミットにする。ストーリーの ID を渡せば、メッセージの末尾に
+// Story: のトレーラーを書く（vanda はストーリーの ID をトレーラーからだけ読む）。
+// 同じ大きさのファイルを同じ時刻のうちに書き換えると、git add -A が stat の一致から変わっていないとみなし、書き換えを
+// コミットに入れないことがあるので、索引から一度外して、毎回すべてを読み直させる
+func cmdCommit(ts *testscript.TestScript, neg bool, args []string) {
+	if neg {
+		ts.Fatalf("commit は ! を付けて使えない")
+	}
+	if len(args) < 1 || len(args) > 2 {
+		ts.Fatalf("使い方: commit <subject> [<ストーリーの ID>]")
+	}
+	msg := args[0]
+	if len(args) == 2 {
+		msg += "\n\nStory: " + args[1]
+	}
+	for _, a := range [][]string{
+		{"rm", "-r", "-q", "--cached", "--ignore-unmatch", "."},
+		{"add", "-A"},
+		{"commit", "-q", "--allow-empty", "-m", msg},
+	} {
+		ts.Check(ts.Exec("git", a...))
+	}
+}
+
 // 合意の記録に 1 件を書き足す。
 // 約束・用語・機能の指紋は、テストの中で手で書いた JSON（キーを名前の順に並べ、空白なし）の SHA-256 から作る。
 // 約束リストの TOML を読んで JSON を作らないのは、読み込みを実装と同じ作りにすると、実装と同じ誤りに気づけないため。

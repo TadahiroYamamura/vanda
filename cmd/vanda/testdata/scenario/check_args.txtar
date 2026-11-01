@@ -6,8 +6,7 @@
 
 exec git init -q -b main
 expand .vanda/config.toml
-exec git add -A
-exec git commit -q -m '#1 約束リストを足す'
+commit '約束リストを足す' '#1'
 
 # 審査の設定のファイルを渡さない
 ! exec vanda check
@@ -31,7 +30,7 @@ stderr '--base'
 stderr '--base'
 ! stderr '(?m)^panic: '
 
-# ストーリーは、分かれた点より後のコミットのメッセージの ID から決める。
+# ストーリーは、分かれた点より後のコミットの Story: のトレーラーの ID から決める（subject・本文の ID は数えない）。
 # 分かれた点より後にコミットがない（ID が 0 個）と、--story を求めて止まる
 exec git checkout -q -b story-2
 ! exec vanda check .vanda/checks/story.toml --base main
@@ -41,21 +40,18 @@ exec vanda check .vanda/checks/story.toml --base main --story '#2'
 
 # ID が 1 つなら、それを使って通る
 cp cases/note-1.txt note.txt
-exec git add -A
-exec git commit -q -m '#2 メモを足す'
+commit 'メモを足す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 exec vanda check .vanda/checks/mixed.toml --base main
 
 # 分かれた点より後のコミットに、ID のないものが混じっても、ID が 1 つなら通る
 cp cases/note-2.txt note.txt
-exec git add -A
-exec git commit -q -m 'メモを直す'
+commit 'メモを直す'
 exec vanda check .vanda/checks/story.toml --base main
 
 # ID が 2 つ以上だと、--story を求めて止まる。--story を渡せば通る
 cp cases/note-3.txt note.txt
-exec git add -A
-exec git commit -q -m '#3 メモを足す'
+commit 'メモを足す' '#3'
 ! exec vanda check .vanda/checks/story.toml --base main
 stderr '--story'
 ! stderr '(?m)^panic: '

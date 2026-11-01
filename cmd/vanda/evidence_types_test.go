@@ -78,8 +78,7 @@ layers = ["model"]
 		ann = "@vanda:internal 小さな数の集合"
 	}
 	writeFile(t, root, "ext/a.ext", ann+"\n")
-	g.run("add", "-A")
-	g.run("commit", "-q", "-m", "#1 はじめ")
+	g.commitAll("はじめ", "#1")
 	return root
 }
 

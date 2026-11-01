@@ -4,15 +4,13 @@
 
 exec git init -q -b main
 expand .vanda/config.toml
-exec git add -A
-exec git commit -q -m '#9 約束を足す'
+commit '約束を足す' '#9'
 
 exec git checkout -q -b story-2
 
 # ストーリー 2 で足した約束に合意していなければ、ストーリー 2 の範囲でも止まる
 cp cases/b.toml .vanda/promises/b.toml
-exec git add -A
-exec git commit -q -m '#2 約束を足す'
+commit '約束を足す' '#2'
 ! exec vanda check .vanda/checks/story.toml --base main
 stderr 'b\.toml.*task-title-required'
 ! stderr 'task-id-unique'
@@ -20,8 +18,7 @@ stderr 'b\.toml.*task-title-required'
 
 # 合意すれば、ストーリー 2 の範囲では通る
 agree .vanda/agreements/story-2.toml '#2' claim task-title-required fp/claim-b.json
-exec git add -A
-exec git commit -q -m '#2 約束に合意する'
+commit '約束に合意する' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 
 # 全部の範囲では、main の合意していない約束で止まる

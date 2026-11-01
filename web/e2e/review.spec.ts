@@ -129,15 +129,12 @@ function buildRepo(): Repo {
       agreement("claim", "task-id-unique", sha(claimJSON("タスクの ID は重ならない")), null, "#1") +
       agreement("file", sha(scenarioBase), sha(scenarioBase), "e2e/add-task.txtar", "#1"),
   );
-  r.git("add", "-A");
-  r.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "-m", "#1 はじめの約束を置く");
+  commit(r, "はじめの約束を置く", "#1");
   r.git("switch", "-q", "-c", "story-24");
   r.write(".vanda/promises.toml", promises("タスクの ID は、すべてのタスクを通して重ならない", true, true));
-  r.git("add", "-A");
-  r.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "-m", "#24 約束を変え、題の約束を足す");
+  commit(r, "約束を変え、題の約束を足す", "#24");
   r.write("e2e/add-task.txtar", scenarioStory);
-  r.git("add", "-A");
-  r.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "-m", "#24 シナリオを変える");
+  commit(r, "シナリオを変える", "#24");
   return r;
 }
 
@@ -239,7 +236,7 @@ test("合意した約束を変えると一覧に差分ありとして戻る", as
   await agreeAll(page, ["task-id-unique"]);
   const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
   repo.write(".vanda/promises.toml", text.replace("すべてのタスクを通して重ならない", "どのタスクとも重ならない"));
-  repo.git("commit", "-q", "-am", "#24 文を直す");
+  commit(repo, "文を直す", "#24");
   await page.reload();
   await select(page, "task-id-unique");
   await expect(page.getByText(/差分あり/).first()).toBeVisible();
@@ -292,7 +289,7 @@ for (const v of states) {
         repo.write("e2e/add-task.txtar", "# シナリオ\n# @vanda:evidence task-id-unique\n! exec vanda-task add a\n-- a.txt --\na\n");
         const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
         repo.write(".vanda/promises.toml", text.replace("すべてのタスクを通して重ならない", "どのタスクとも重ならない"));
-        repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "-am", "#24 シナリオをエビデンスにする");
+        commit(repo, "シナリオをエビデンスにする", "#24");
 
         // レビュー単位がブランチのときは、ブランチのコミットからストーリー #24 が決まり、選ぶ欄は出ない（RV-13）
         await page.goto(serve.url + (v.url ?? "/"));
@@ -395,10 +392,15 @@ layers = ["model"]
 detail = "${c.plan}"
 ` : ""}`;
 
+// commit は、作業ツリーのすべてを 1 つのコミットにする。story を渡せば、メッセージの末尾に Story: のトレーラーを書く
+// （vanda はストーリーの ID をトレーラーからだけ読む）。同じ大きさのファイルを同じ時刻のうちに書き換えると、git add -A が
+// stat の一致から変わっていないとみなし、書き換えをコミットに入れないことがあるので、索引から一度外して読み直させる。
 // date を渡せば、作者とコミッターの日時をそれにする
-function commit(r: Repo, subject: string, date?: string): string {
+function commit(r: Repo, subject: string, story: string | null, date?: string): string {
+  r.git("rm", "-r", "-q", "--cached", "--ignore-unmatch", ".");
   r.git("add", "-A");
-  execFileSync("git", ["-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "-m", subject], {
+  const msg = story ? `${subject}\n\nStory: ${story}` : subject;
+  execFileSync("git", ["-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", msg], {
     cwd: r.root,
     env: date ? { ...r.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date } : r.env,
   });
@@ -410,7 +412,7 @@ function commitV3(r: Repo, date?: string): string {
   const cfg = readFileSync(join(r.root, ".vanda/config.toml"), "utf8");
   r.write(".vanda/config.toml", cfg.replace("[[annotation]]", '[[layer]]\nid = "db"\nname = "データベース"\ndescription = "保存の制約"\n\n[[annotation]]'));
   r.write(".vanda/promises.toml", promisesAt(v3));
-  return commit(r, "#24 理由と条件を足す", date);
+  return commit(r, "理由と条件を足す", "#24", date);
 }
 
 // 由来の行と合意の記録の行は、CL の約束の詳細と同じく表の行として探す。その時点の中身は、行の中の開く・たたむを
@@ -444,16 +446,16 @@ test("レビューの画面の1件の詳細に約束の由来と合意の履歴�
 
   // 由来: 約束を作り・変えたコミットだけ。シナリオだけを変えたコミットは出ない
   for (const [hash, subject, story] of [
-    [c1, "#1 はじめの約束を置く", "#1"],
-    [c2, "#24 約束を変え、題の約束を足す", "#24"],
-    [c3, "#24 理由と条件を足す", "#24"],
+    [c1, "はじめの約束を置く", "#1"],
+    [c2, "約束を変え、題の約束を足す", "#24"],
+    [c3, "理由と条件を足す", "#24"],
   ]) {
     const row = rowOf(page, subject);
     await expect(row, `由来に ${subject} がない`).toBeVisible();
     await expect(row).toContainText(hash.slice(0, 7));
     await expect(row).toContainText(story);
   }
-  await expect(page.getByText("#24 シナリオを変える")).toHaveCount(0);
+  await expect(page.getByText("シナリオを変える")).toHaveCount(0);
 
   // 合意の履歴: #1 の合意は v1 への合意なので、今の中身に合わない
   const old = rowOf(page, "テスト担当");
@@ -483,17 +485,17 @@ for (const pg of pages) {
   test(`${pg.name}で由来の各コミットを選ぶとそのコミットの時点の約束の中身が出る`, async ({ page }) => {
     commitV3(repo);
     repo.write(".vanda/promises.toml", promisesAt(v4));
-    commit(repo, "#24 文を直す");
+    commit(repo, "文を直す", "#24");
     await pg.open(page);
     await expect(page.getByText(v4.statement).first()).toBeVisible();
 
     // その時点のレイヤーは、今の中身と同じく名前で出す。db はそのコミットで設定に足したので、名前がある
     const v3Marks: (string | RegExp)[] = [v3.statement, v3.rationale!, v3.condition!, v3.plan!, "データベース"];
     const choices: [string, (string | RegExp)[]][] = [
-      ["#24 理由と条件を足す", v3Marks],
-      ["#24 約束を変え、題の約束を足す", [v2Statement]],
+      ["理由と条件を足す", v3Marks],
+      ["約束を変え、題の約束を足す", [v2Statement]],
     ];
-    if (!pg.showsV1) choices.push(["#1 はじめの約束を置く", [v1Statement]]);
+    if (!pg.showsV1) choices.push(["はじめの約束を置く", [v1Statement]]);
     for (const [, marks] of choices) {
       for (const m of marks) await expect(page.getByText(m), `選ぶ前から ${m} が出ている`).toHaveCount(0);
     }
@@ -509,13 +511,13 @@ for (const pg of pages) {
     const cfg = readFileSync(join(repo.root, ".vanda/config.toml"), "utf8");
     repo.write(".vanda/config.toml", cfg.replace('[[layer]]\nid = "db"\nname = "データベース"\ndescription = "保存の制約"\n\n', ""));
     repo.write(".vanda/promises.toml", promisesAt(v4));
-    commit(repo, "#24 文を直す");
+    commit(repo, "文を直す", "#24");
     expect(readFileSync(join(repo.root, ".vanda/config.toml"), "utf8")).not.toContain('id = "db"');
 
     await pg.open(page);
     await expect(page.getByText(v4.statement).first()).toBeVisible();
     await expect(page.getByText(/\bdb\b/), "選ぶ前から db が出ている").toHaveCount(0);
-    await choose(rowOf(page, "#24 理由と条件を足す"));
+    await choose(rowOf(page, "理由と条件を足す"));
     await expect(page.getByText(v3.statement).first()).toBeVisible();
     await expect(page.getByText(/\bdb\b/).first(), "今の設定にないレイヤー db が、ID のまま出ない（黙って消えている）").toBeVisible();
     await expect(page.getByText("データベース")).toHaveCount(0);
@@ -530,7 +532,7 @@ for (const pg of pages) {
     await page.getByRole("button", { name: /合意する/ }).click();
     expect((await res).status()).toBe(200);
     repo.write(".vanda/promises.toml", promisesAt(v4));
-    commit(repo, "#24 文を直す");
+    commit(repo, "文を直す", "#24");
 
     await pg.open(page);
     await expect(page.getByText(v4.statement).first()).toBeVisible();
@@ -568,15 +570,15 @@ layers = ["model"]
 `;
     const oldGuess = "消したタスクの ID は 30 日たてば使い回せるかもしれない";
     repo.write(".vanda/promises.toml", at("タスクの ID は、前の名前とも重ならない", "task-old", oldGuess, true));
-    commit(repo, "#24 推測を書く");
+    commit(repo, "推測を書く", "#24");
     repo.write(".vanda/promises.toml", at(v4.statement, "task-id", "ID は数字だけかもしれない", false));
-    commit(repo, "#24 推測と対象を変える");
+    commit(repo, "推測と対象を変える", "#24");
 
     await pg.open(page);
     await expect(page.getByText(v4.statement).first()).toBeVisible();
     await expect(page.getByText(oldGuess), "開く前から前の推測が出ている").toHaveCount(0);
     await expect(page.getByText(/task-old|古いタスクの名前/), "開く前から前の対象が出ている").toHaveCount(0);
-    await choose(rowOf(page, "#24 推測を書く"));
+    await choose(rowOf(page, "推測を書く"));
     await expect(page.getByText("タスクの ID は、前の名前とも重ならない").first()).toBeVisible();
     await expect(page.getByText(oldGuess).first(), "その時点の推測が出ない").toBeVisible();
     await expect(page.getByText(/task-old|古いタスクの名前/).first(), "その時点の対象が出ない").toBeVisible();
@@ -589,15 +591,15 @@ layers = ["model"]
     await page.getByRole("button", { name: /合意する/ }).click();
     expect((await res).status()).toBe(200);
     repo.write(".vanda/promises.toml", promisesAt(v4));
-    commit(repo, "#24 文を直す");
+    commit(repo, "文を直す", "#24");
 
     await pg.open(page);
     await expect(page.getByText(v4.statement).first()).toBeVisible();
     // 開くもの: 由来の #1（v1）と #24 の最初のコミット（v2）、v3 のときの合意（v3）。レビューの画面では v1 の文が
     // 変更前として出ているので、出ている数が 1 つ増えるかで見る
     const opened: [string, string][] = [
-      ["#1 はじめの約束を置く", v1Statement],
-      ["#24 約束を変え、題の約束を足す", v2Statement],
+      ["はじめの約束を置く", v1Statement],
+      ["約束を変え、題の約束を足す", v2Statement],
       ["合意する人", v3.statement],
     ];
     const count = (text: string) => page.getByText(text, { exact: false }).count();
@@ -607,7 +609,7 @@ layers = ["model"]
     for (const [rowText, text] of opened) {
       await expect.poll(() => count(text), { message: `${rowText} の時点の中身が、ほかを開いた後に出ていない` }).toBe(before.get(text)! + 1);
     }
-    await collapse(rowOf(page, "#24 約束を変え、題の約束を足す"));
+    await collapse(rowOf(page, "約束を変え、題の約束を足す"));
     await expect.poll(() => count(v2Statement), { message: "たたんだ時点の中身が消えない" }).toBe(before.get(v2Statement)!);
     for (const [rowText, text] of [opened[0], opened[2]]) {
       await expect.poll(() => count(text), { message: `1 つをたたむと、${rowText} の時点の中身も消えた` }).toBe(before.get(text)! + 1);
@@ -618,14 +620,14 @@ layers = ["model"]
   test(`${pg.name}で由来と合意の履歴の行を押すとその時点の中身が開きもう一度押すとたたまり山形のボタンを押しても1回だけ切り替わる`, async ({ page }) => {
     commitV3(repo);
     repo.write(".vanda/promises.toml", promisesAt(v4));
-    commit(repo, "#24 文を直す");
+    commit(repo, "文を直す", "#24");
     await pg.open(page);
     await expect(page.getByText(v4.statement).first()).toBeVisible();
 
     // 由来の v3 のコミットの行と、合意の履歴の #1 の合意（v1）の行。レビューの画面では v1 の文が変更前として出ているので、
     // 出ている数が 1 つ増えるか・戻るかで見る
     const count = (text: string) => page.getByText(text, { exact: false }).count();
-    for (const [rowText, text] of [["#24 理由と条件を足す", v3.statement], ["テスト担当", v1Statement]]) {
+    for (const [rowText, text] of [["理由と条件を足す", v3.statement], ["テスト担当", v1Statement]]) {
       const row = rowOf(page, rowText);
       const cell = row.getByRole("cell").filter({ hasText: rowText }).first();
       const toggle = row.getByRole("button", { name: /その時点の中身を(開く|たたむ)/ });
@@ -662,19 +664,19 @@ layers = ["model"]
         .replace("テスト担当", who)
         .replace("agreed_at = 2026-01-01T10:00:00+09:00", `agreed_at = ${at}`);
     repo.write(".vanda/agreements.toml", agreements + rec("三月に合意した人", "2026-03-01T10:00:00+09:00") + rec("二月に合意した人", "2026-02-01T10:00:00+09:00"));
-    commit(repo, "#24 文を直す", later(2));
+    commit(repo, "文を直す", "#24", later(2));
 
     await pg.open(page);
-    await expect(rowOf(page, "#24 文を直す")).toBeVisible();
+    await expect(rowOf(page, "文を直す")).toBeVisible();
     const rows = await page.getByRole("row").allTextContents();
     const at = (text: string) => {
       const i = rows.findIndex((r) => r.includes(text));
       expect(i, `${text} の行がない`).toBeGreaterThanOrEqual(0);
       return i;
     };
-    const oldest = Math.min(at("#1 はじめの約束を置く"), at("#24 約束を変え、題の約束を足す"));
-    expect(at("#24 文を直す"), "由来の 2 時間後のコミットが、1 時間後のコミットより下にある").toBeLessThan(at("#24 理由と条件を足す"));
-    expect(at("#24 理由と条件を足す"), "由来の 1 時間後のコミットが、はじめのコミットより下にある").toBeLessThan(oldest);
+    const oldest = Math.min(at("はじめの約束を置く"), at("約束を変え、題の約束を足す"));
+    expect(at("文を直す"), "由来の 2 時間後のコミットが、1 時間後のコミットより下にある").toBeLessThan(at("理由と条件を足す"));
+    expect(at("理由と条件を足す"), "由来の 1 時間後のコミットが、はじめのコミットより下にある").toBeLessThan(oldest);
     expect(at("三月に合意した人"), "合意の履歴の三月の合意が、二月の合意より下にある").toBeLessThan(at("二月に合意した人"));
     expect(at("二月に合意した人"), "合意の履歴の二月の合意が、一月の合意より下にある").toBeLessThan(at("テスト担当"));
   });
@@ -685,9 +687,9 @@ layers = ["model"]
     const agreements = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
     repo.write(".vanda/agreements.toml", agreements + agreement("claim", "task-id-unique", sha(claimJSON(v3.statement)), null, "#24").replace("テスト担当", "壊れた時に合意した人"));
     repo.write(".vanda/promises.toml", promisesAt(v3) + "\n[[claim]\n");
-    commit(repo, "#24 合意を書き約束リストを壊す");
+    commit(repo, "合意を書き約束リストを壊す", "#24");
     repo.write(".vanda/promises.toml", promisesAt(v4));
-    commit(repo, "#24 文を直す");
+    commit(repo, "文を直す", "#24");
 
     await pg.open(page);
     await expect(page.getByText(v4.statement).first()).toBeVisible();
@@ -731,7 +733,7 @@ function decorateAgreements(r: Repo) {
   const parts = text.split("\n[[agreement]]");
   r.write(".vanda/agreements.toml", "# 合意の記録（E2E の例）\n\n" + parts[0] + "\n[[agreement]]" + parts[1] + "\n# 用語の次は約束\n\n\n[[agreement]]" + parts.slice(2).join("\n[[agreement]]") + "\n# 終わりのコメント\n");
   r.write("README.md", "# 例\n");
-  commit(r, "#24 合意の記録にコメントを足す");
+  commit(r, "合意の記録にコメントを足す", "#24");
 }
 
 // @vanda:evidence revoke-on-screen
@@ -819,18 +821,18 @@ for (const w of writers) {
       // task-id-unique のフラグを外し、今の中身（#24 の文）への合意の記録を手で書く。ベースブランチなら main に書いて
       // story-24 に取り込み、分かれた点より前にする
       repo.write(".vanda/promises.toml", promises(v2Statement, false, true));
-      commit(repo, "#24 フラグを外す");
+      commit(repo, "フラグを外す", "#24");
       const record = agreement("claim", "task-id-unique", sha(claimJSON(v2Statement)), null, "#24")
         .replace('user = { name = "テスト担当", email = "tester@example.com" }', `user = { name = "${w.user.name}", email = "${w.user.email}" }`);
       if (pl.onBase) {
         repo.git("switch", "-q", "main");
         repo.write(".vanda/agreements.toml", readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + record);
-        commit(repo, "#24 合意の記録を書く");
+        commit(repo, "合意の記録を書く", "#24");
         repo.git("switch", "-q", "story-24");
         repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "merge", "-q", "--no-edit", "main");
       } else {
         repo.write(".vanda/agreements.toml", readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + record);
-        commit(repo, "#24 合意の記録を書く");
+        commit(repo, "合意の記録を書く", "#24");
       }
       const agreementsBefore = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
       const promisesBefore = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
@@ -880,7 +882,7 @@ test("レビュー単位がブランチでブランチのコミットからス�
 
 // @vanda:evidence review-story-choice
 test("レビュー単位がブランチでブランチに2つ以上のストーリーのコミットがあるときはそのブランチのストーリーだけを1度ずつ選ばせる", async ({ page }) => {
-  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "#30 で直す");
+  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "直す\n\nStory: #30");
   await page.goto(serve.url + "/?view=branch&base=main");
   await expect(storyField(page)).toBeVisible();
   // #1 は main のコミットにしかない。#24 は 2 つのコミットにある
@@ -898,14 +900,14 @@ test("レビュー単位がブランチでストーリーのIDを持つコミッ
 });
 
 test("レビュー単位がブランチでURLのstoryでストーリーを名指ししたときはそれを使う", async ({ page }) => {
-  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "#30 で直す");
+  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "直す\n\nStory: #30");
   await page.goto(serve.url + "/?view=branch&base=main&story=%2330");
   await agreeTaskIdUnique(page);
   expect(repo.git("log", "-1", "--format=%s"), "名指ししたストーリーで合意していない").toContain("#30 で");
 });
 
 test("レビュー単位がストーリーのときはすべてのストーリーから1度ずつ選ばせる", async ({ page }) => {
-  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "#30 で直す");
+  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "直す\n\nStory: #30");
   await page.goto(serve.url + "/?view=story&story=%2324");
   await expect(storyField(page)).toBeVisible();
   await expect.poll(async () => (await storyChoices(page)).sort()).toEqual(["#1", "#24", "#30"]);
@@ -917,7 +919,7 @@ test("レビュー単位がブランチでベースブランチを既定から�
   repo.git("branch", "rel", "story-24");
   const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
   repo.write(".vanda/promises.toml", text.replace("すべてのタスクを通して重ならない", "どのタスクとも重ならない"));
-  repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "-am", "#30 で直す");
+  commit(repo, "直す", "#30");
   await page.goto(serve.url + "/?view=branch&base=main");
   await expect(storyField(page)).toBeVisible();
   await expect.poll(async () => (await storyChoices(page)).sort()).toEqual(["#24", "#30"]);
@@ -942,7 +944,7 @@ test("エビデンスの予定と実際の揃っているかは揃っている�
       '[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "plan"\ntype = "model-check"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "release"\ntype = "human-review"\nlayers = ["model"]\n',
     ),
   );
-  commit(repo, "#24 エビデンスの予定を足す");
+  commit(repo, "エビデンスの予定を足す", "#24");
   await openReviewDetail(page);
   for (const [type, name] of [
     ["シナリオテスト", "揃っています"],
@@ -981,7 +983,7 @@ test("エビデンスの予定と実際の詳細は長い文も改行も省略�
       `[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "plan"\ntype = "model-check"\nlayers = ["model"]\ndetail = ${JSON.stringify(detail)}\n`,
     ),
   );
-  commit(repo, "#24 長い詳細を書く");
+  commit(repo, "長い詳細を書く", "#24");
   await page.setViewportSize({ width: 400, height: 900 });
   await openReviewDetail(page);
   const group = typeGroup(page, "モデル検査");
@@ -1071,7 +1073,7 @@ for (const pg of pages) {
   for (const [label, ev] of [["5つのステージ全部", allStagesEvidence], ["計画とテストのステージだけ", twoStagesEvidence]] as const) {
     test(`${pg.name}のエビデンスは${label}にエビデンスがあるときステージの見出しを決まった順に並べその下にそのステージのタイプの見出しだけを出す`, async ({ page }) => {
       repo.write(".vanda/promises.toml", promisesWithEvidence(v4.statement, [...ev]));
-      commit(repo, "#24 エビデンスの予定を書く");
+      commit(repo, "エビデンスの予定を書く", "#24");
       await pg.open(page);
       await expect(page.getByText(v4.statement).first()).toBeVisible();
       await expect.poll(() => evidenceHeadings(page), { message: "エビデンスの見出しが出ない" }).not.toEqual([]);
@@ -1082,15 +1084,15 @@ for (const pg of pages) {
 
 test("約束の詳細の画面で由来のコミットを開くとその時点のエビデンスもステージとタイプの見出しで分けて出る", async ({ page }) => {
   repo.write(".vanda/promises.toml", promisesWithEvidence(v3.statement, allStagesEvidence));
-  commit(repo, "#24 エビデンスの予定を書く");
+  commit(repo, "エビデンスの予定を書く", "#24");
   repo.write(".vanda/promises.toml", promisesWithEvidence(v4.statement, twoStagesEvidence));
-  commit(repo, "#24 エビデンスの予定を減らす");
+  commit(repo, "エビデンスの予定を減らす", "#24");
   await page.goto(serve.url + "/claims/task-id-unique");
   await expect(page.getByText(v4.statement).first()).toBeVisible();
   await expect.poll(() => evidenceHeadings(page)).not.toEqual([]);
   const before = await evidenceHeadings(page);
   checkHeadings(before, twoStagesEvidence, "今の中身");
-  await choose(rowOf(page, "#24 エビデンスの予定を書く"));
+  await choose(rowOf(page, "エビデンスの予定を書く"));
   await expect(page.getByText(v3.statement).first()).toBeVisible();
   // 開いたその時点の中身の分だけ、見出しが増える。今の中身にない実装・リリース・運用の見出しが、その時点の中身から出る
   await expect.poll(async () => (await evidenceHeadings(page)).filter((t) => ["実装", "リリース", "運用"].includes(t)).sort()).toEqual(["リリース", "実装", "運用"].sort());
@@ -1156,7 +1158,7 @@ test("レビューの画面から約束の詳細へ移って合意すると1コ�
 // @vanda:evidence agree-from-detail-pages-stay
 test("エビデンスのファイルのリンクからファイルの画面へ移って合意すると1コミットで記録が増えその画面で合意済になり戻ると一覧でも合意済でその画面で取り消せる", async ({ page }) => {
   repo.write("e2e/add-task.txtar", annotatedScenario);
-  commit(repo, "#24 シナリオをエビデンスにする");
+  commit(repo, "シナリオをエビデンスにする", "#24");
   const fp = sha(annotatedScenario);
   await page.goto(serve.url + "/");
   await select(page, "task-id-unique");
@@ -1205,18 +1207,18 @@ for (const w of writers) {
     // @vanda:evidence agree-from-detail-pages
     test(`約束の詳細の画面で${w.name}が${pl.name}で書いた合意の記録は${can ? "取り消せる" : "取り消せず取り消しのボタンが出ない"}`, async ({ page }) => {
       repo.write(".vanda/promises.toml", promises(v2Statement, false, true));
-      commit(repo, "#24 フラグを外す");
+      commit(repo, "フラグを外す", "#24");
       const record = agreement("claim", "task-id-unique", sha(claimJSON(v2Statement)), null, "#24")
         .replace('user = { name = "テスト担当", email = "tester@example.com" }', `user = { name = "${w.user.name}", email = "${w.user.email}" }`);
       if (pl.onBase) {
         repo.git("switch", "-q", "main");
         repo.write(".vanda/agreements.toml", readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + record);
-        commit(repo, "#24 合意の記録を書く");
+        commit(repo, "合意の記録を書く", "#24");
         repo.git("switch", "-q", "story-24");
         repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "merge", "-q", "--no-edit", "main");
       } else {
         repo.write(".vanda/agreements.toml", readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + record);
-        commit(repo, "#24 合意の記録を書く");
+        commit(repo, "合意の記録を書く", "#24");
       }
       await page.goto(serve.url + "/");
       await select(page, "task-id-unique");
@@ -1306,10 +1308,10 @@ detail = ${q2(w.detail)}
 // wsRepo は、空白を書いた版のコミット（wsbase はそこを指す）と、それを変えた今のコミットを作る
 function wsRepo() {
   repo.write(".vanda/promises.toml", wsPromises(ws));
-  commit(repo, "#24 空白を書く");
+  commit(repo, "空白を書く", "#24");
   repo.git("branch", "wsbase", "story-24");
   repo.write(".vanda/promises.toml", wsPromises(wsAfter));
-  commit(repo, "#24 空白を変える");
+  commit(repo, "空白を変える", "#24");
 }
 const shown = async (page: Page) => page.locator("body").innerText();
 const occurrences = (text: string, s: string) => text.split(s).length - 1;
@@ -1357,10 +1359,10 @@ for (const pg of pages) {
     await expect(page.getByText("（後）").first()).toBeVisible();
     // エビデンスと由来は後から読み込まれるので、出そろってから数える
     await expect(page.getByRole("heading", { name: "シナリオテスト", exact: true }).first()).toBeVisible();
-    await expect(rowOf(page, "#24 空白を書く")).toBeVisible();
+    await expect(rowOf(page, "空白を書く")).toBeVisible();
     const fields = { 文: ws.statement, 条件: ws.condition, 理由: ws.rationale, 推測: ws.guess, 詳細: ws.detail };
     const before = await shown(page);
-    await choose(rowOf(page, "#24 空白を書く"));
+    await choose(rowOf(page, "空白を書く"));
     await expect(page.getByText("理由の 2 行目").first()).toBeVisible();
     await expect.poll(async () => occurrences(await shown(page), ws.rationale), { message: "その時点の理由の空白か改行が保たれていない" }).toBe(occurrences(before, ws.rationale) + 1);
     const after = await shown(page);
@@ -1385,7 +1387,7 @@ function withGoEvidence(r: Repo) {
     ),
   );
   r.write("e2e/add-task.txtar", annotatedScenario);
-  commit(r, "#24 シナリオと単体テストをエビデンスにする");
+  commit(r, "シナリオと単体テストをエビデンスにする", "#24");
 }
 async function expectFileStates(page: Page, scenario: "提案中" | "合意済", where: string) {
   const sc = typeGroup(page, "シナリオテスト");
@@ -1413,7 +1415,7 @@ for (const pg of pages) {
     await expectFileStates(page, "合意済", "合意した後");
 
     repo.write("e2e/add-task.txtar", annotatedScenario + "-- b.txt --\nb\n");
-    commit(repo, "#24 シナリオを足す");
+    commit(repo, "シナリオを足す", "#24");
     await pg.open(page);
     await expectFileStates(page, "提案中", "合意してから中身を変えた後");
   });
@@ -1434,7 +1436,7 @@ test("エビデンスのファイルの画面で合意して戻るとエビデ�
 // @vanda:evidence claim-detail-fields
 test("約束の詳細の画面に文と理由と条件とレイヤーの名前が出る", async ({ page }) => {
   repo.write(".vanda/promises.toml", promisesAt(v4));
-  commit(repo, "#24 理由と条件を書く");
+  commit(repo, "理由と条件を書く", "#24");
   await page.goto(serve.url + "/claims/task-id-unique");
   for (const t of [v4.statement, v4.rationale!, v4.condition!, "モデル"]) {
     await expect(page.getByText(t, { exact: false }).first(), `約束の詳細に「${t}」が出ない`).toBeVisible();
@@ -1462,7 +1464,7 @@ test("ストーリーが合意した約束を変えると一覧に合意が外�
   await agreeAll(page, ["task-id-unique"]);
   const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
   repo.write(".vanda/promises.toml", text.replace("すべてのタスクを通して重ならない", "どのタスクとも重ならない"));
-  commit(repo, "#24 文を直す");
+  commit(repo, "文を直す", "#24");
   await page.reload();
   await expect(page.getByText(/合意が外れた/).first(), "合意が外れたと出ない").toBeVisible();
   await select(page, "task-id-unique");
@@ -1498,7 +1500,7 @@ cat >/dev/null
 printf '%s' '{"title":"タスクの ID を重ならないようにする","body":"本文の **太字** です","url":"https://example.com/issues/24","attachments":[{"name":"画面の案","url":"https://example.com/a.png"}]}'
 `);
   chmodSync(join(repo.root, ".vanda/adapters/story"), 0o755);
-  commit(repo, "#24 ストーリーの置き場所を設定する");
+  commit(repo, "ストーリーの置き場所を設定する", "#24");
   await page.goto(serve.url + "/");
   await expect(page.getByText("タスクの ID を重ならないようにする").first(), "ストーリーの題が出ない").toBeVisible();
   await expect(page.getByText("太字").first(), "ストーリーの本文が出ない").toBeVisible();
@@ -1514,7 +1516,7 @@ test("約束の詳細の画面でTLAの定義をコピーするとリポジト�
   repo.write(".vanda/config.toml", cfg.replace("[gui]", '[[annotation]]\npaths = ["spec/*.tla"]\nadapter = "tla"\ntypes = ["model-check"]\n\n[gui]'));
   repo.write("spec/Task.tla", "---- MODULE Task ----\nIds == {1, 2}\n\n\\* @vanda:claim task-id-unique\n" + def + "\n====\n");
   repo.write(".vanda/promises.toml", promisesAt(v4));
-  commit(repo, "#24 モデルを足す");
+  commit(repo, "モデルを足す", "#24");
   await page.goto(serve.url + "/claims/task-id-unique");
   await expect(page.getByText("∀", { exact: false }).first(), "TLA+ の定義が記号で出ていない").toBeVisible();
   await page.getByRole("button", { name: /コピー/ }).first().click();

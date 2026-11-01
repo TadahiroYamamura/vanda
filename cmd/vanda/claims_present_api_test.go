@@ -84,8 +84,7 @@ types = ["unit-test", "cross-check", "random-check", "interface-test", "concurre
 	writeFile(t, root, "db/all.sql", "-- @vanda:evidence all-types\nCREATE TABLE x (id INTEGER);\n")
 	writeFile(t, root, "internal/all/all_test.go", "package all\n\nimport \"testing\"\n\n// @vanda:evidence all-types\nfunc TestAll(t *testing.T) {}\n")
 	writeFile(t, root, "internal/all/all.go", "package all\n\n// @vanda:sensor all-types\nfunc Check() error { return nil }\n")
-	g.run("add", "-A")
-	g.run("commit", "-q", "-m", "#1 はじめ")
+	g.commitAll("はじめ", "#1")
 	s := startServe(t, bin, root, g.env)
 
 	for _, id := range []string{"all-types", "no-types"} {

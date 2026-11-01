@@ -286,16 +286,13 @@ func newReviewRepo(t *testing.T, version string) *reviewRepo {
 		agreements.WriteString(agreementTOML("file", fp, fp, path, "#1", "テスト担当", "tester@example.com"))
 	}
 	writeFile(t, root, ".vanda/agreements.toml", agreements.String())
-	r.g.run("add", "-A")
-	r.g.run("commit", "-q", "-m", "#1 はじめの約束を置く")
+	r.g.commitAll("はじめの約束を置く", "#1")
 
 	r.g.run("switch", "-q", "-c", reviewBranch)
 	writeFile(t, root, ".vanda/promises.toml", reviewPromisesStory)
-	r.g.run("add", "-A")
-	r.g.run("commit", "-q", "-m", reviewStory+" タスクの ID の約束を変え、題の約束を足す")
+	r.g.commitAll("タスクの ID の約束を変え、題の約束を足す", reviewStory)
 	writeFile(t, root, "e2e/add-task.txtar", reviewScenarioStory)
-	r.g.run("add", "-A")
-	r.g.run("commit", "-q", "-m", reviewStory+" 重なった ID を拒むシナリオにする")
+	r.g.commitAll("重なった ID を拒むシナリオにする", reviewStory)
 	return r
 }
 

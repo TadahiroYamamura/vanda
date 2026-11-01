@@ -240,13 +240,8 @@ func (r *rvRepo) deleteFile(n int) {
 
 // commit は、作業ツリーのすべてをコミットする。story が空なら、メッセージにストーリーの ID を入れない。
 func (r *rvRepo) commit(story string) {
-	r.g.run("add", "-A")
 	// メッセージを毎回違うものにして、git の履歴で見分けやすくする
-	msg := fmt.Sprintf("中身を変える（%d）", r.next())
-	if story != "" {
-		msg = story + " で" + msg
-	}
-	r.g.run("commit", "-q", "--allow-empty", "-m", msg)
+	r.g.commitAll(fmt.Sprintf("中身を変える（%d）", r.next()), story)
 	parent := -1
 	if h, ok := r.heads[r.branch]; ok {
 		parent = h

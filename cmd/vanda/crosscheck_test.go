@@ -336,7 +336,7 @@ types = ["scenario-test"]
 	writeFile(t, root, ".vanda/agreements/story-9.toml", agreementTOML("term", "t",
 		sha256Hex([]byte(`{"definition":"d","id":"t","name":"n"}`)), "", "#9", "テスト担当", "tester@example.com"))
 	r.git("init", "-q", "-b", "main")
-	r.commit("#9 はじめの中身")
+	r.commit("はじめの中身", "#9")
 	return r
 }
 
@@ -350,14 +350,10 @@ func (r *xcheckRepo) git(args ...string) {
 	}
 }
 
-func (r *xcheckRepo) commit(msg string) {
+// commit は、作業ツリーのすべてを、ストーリー story のコミットにする。
+func (r *xcheckRepo) commit(subject, story string) {
 	r.t.Helper()
-	// 中身の版だけが違うファイルは大きさが同じで、同じ時刻のうちに書き換えると、git add -A が stat の一致から
-	// 変わっていないとみなし、書き換えをコミットに入れないことがある（トレースが偶然そうなったときだけ不一致になる）。
-	// 索引から一度外して、毎回すべてを読み直させる
-	r.git("rm", "-r", "-q", "--cached", "--ignore-unmatch", ".")
-	r.git("add", "-A")
-	r.git("commit", "-q", "--allow-empty", "-m", msg)
+	(&rvGit{t: r.t, root: r.root, env: r.env}).commitAll(subject, story)
 }
 
 // apply は、モデルの 1 歩（step）を、次の状態の中身（next）に合わせて vanda の側に写す。
@@ -402,7 +398,7 @@ func (r *xcheckRepo) apply(k int, next xcheckState) {
 	default:
 		r.t.Fatalf("知らない操作 %q", op)
 	}
-	r.commit(fmt.Sprintf("%s %s %s", story, op, i))
+	r.commit(fmt.Sprintf("%s %s", op, i), story)
 }
 
 func (r *xcheckRepo) agreementsPath(story string) string {

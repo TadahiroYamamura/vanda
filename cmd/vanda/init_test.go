@@ -59,8 +59,7 @@ func newInitRepo(t *testing.T, remote string, originHEAD bool, files ...string) 
 		}
 		writeFile(t, root, f, content)
 	}
-	r.g.run("add", "-A")
-	r.g.run("commit", "-q", "-m", "はじめ")
+	r.g.commitAll("はじめ", "")
 	if remote != "" {
 		r.g.run("remote", "add", "origin", remote)
 	}

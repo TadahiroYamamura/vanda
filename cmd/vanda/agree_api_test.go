@@ -400,8 +400,7 @@ func setupRevoke(t *testing.T, extra func(base string) string) (string, *reviewR
 	}
 	text := extra(base)
 	writeFile(t, r.Root, ".vanda/agreements.toml", text)
-	r.git("add", "-A")
-	r.git("commit", "-q", "-m", reviewStory+" 合意の記録を書き直す")
+	r.g.commitAll("合意の記録を書き直す", reviewStory)
 	return bin, r, s, base
 }
 
@@ -547,20 +546,17 @@ func Test取り消せるのは今の人が今のブランチで書いた合意�
 				promises := readFileString(t, r.Root, ".vanda/promises.toml")
 				promises = strings.Replace(strings.Replace(promises, "flags = [\"ai-proposal\"]\n", "", 1), "guesses = [\"タスクは消しても ID を使い回さない\"]\n", "", 1)
 				writeFile(t, r.Root, ".vanda/promises.toml", promises)
-				r.git("add", "-A")
-				r.git("commit", "-q", "-m", reviewStory+" フラグを外す")
+				r.g.commitAll("フラグを外す", reviewStory)
 				rec := inlineRecord(reviewStory, w.user, w.email)
 				if onBase {
 					r.git("switch", "-q", "main")
 					writeFile(t, r.Root, ".vanda/agreements.toml", readFileString(t, r.Root, ".vanda/agreements.toml")+rec)
-					r.git("add", "-A")
-					r.git("commit", "-q", "-m", reviewStory+" 合意を書く")
+					r.g.commitAll("合意を書く", reviewStory)
 					r.git("switch", "-q", reviewBranch)
 					r.git("merge", "-q", "--no-edit", "main")
 				} else {
 					writeFile(t, r.Root, ".vanda/agreements.toml", readFileString(t, r.Root, ".vanda/agreements.toml")+rec)
-					r.git("add", "-A")
-					r.git("commit", "-q", "-m", reviewStory+" 合意を書く")
+					r.g.commitAll("合意を書く", reviewStory)
 				}
 				s := startServe(t, bin, r.Root, r.Env)
 				can := w.self && !onBase
@@ -664,7 +660,7 @@ func Test引用符で囲んだキーのflagsとguessesの約束にも合意で�
 		t.Fatalf("約束リストのキーを引用符で囲めない:\n%s", quoted)
 	}
 	writeFile(t, r.Root, ".vanda/promises.toml", quoted)
-	r.git("commit", "-q", "-am", reviewStory+" キーを引用符で囲む")
+	r.g.commitTracked("キーを引用符で囲む", reviewStory)
 
 	if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil); code != 200 {
 		t.Fatalf("合意できない（%d）: %s", code, msg)
@@ -691,7 +687,7 @@ func Test合意の記録を書くファイルがパターンから決まらな�
 	}
 	writeFile(t, r.Root, ".vanda/config.toml", first+"\nagreements = [\".vanda/agreements/*.toml\"]\n"+rest)
 	r.git("rm", "-q", ".vanda/agreements.toml")
-	r.git("commit", "-q", "-am", reviewStory+" 合意の記録をストーリーごとのファイルに分ける")
+	r.g.commitTracked("合意の記録をストーリーごとのファイルに分ける", reviewStory)
 	head := r.git("rev-parse", "HEAD")
 	promises := readFileString(t, r.Root, ".vanda/promises.toml")
 
@@ -732,7 +728,7 @@ func Testフラグを複数行の文字列で書いた約束には合意を断�
 				t.Fatalf("約束リストに %q がない", c.from)
 			}
 			writeFile(t, r.Root, ".vanda/promises.toml", strings.Replace(text, c.from, c.to, 1))
-			r.git("commit", "-q", "-am", reviewStory+" 推測の書き方を変える")
+			r.g.commitTracked("推測の書き方を変える", reviewStory)
 			promises := readFileString(t, r.Root, ".vanda/promises.toml")
 			agreements := readFileString(t, r.Root, ".vanda/agreements.toml")
 			head := r.git("rev-parse", "HEAD")
