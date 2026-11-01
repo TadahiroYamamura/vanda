@@ -10,8 +10,9 @@ The name comes from the Quenya word *vanda*, "oath, solemn promise".
 
 The documents are written in Japanese for now.
 
-- [docs/spec.md](docs/spec.md): features and data formats
-- [docs/terms.md](docs/terms.md): terms used in the specification and the code
+- [.vanda/promises.toml](.vanda/promises.toml): the promise list (terms, features, and claims of what vanda does)
+- [docs/spec.md](docs/spec.md): features not built yet
+- [docs/formats.md](docs/formats.md): file and interface formats
 
 ## License
 
