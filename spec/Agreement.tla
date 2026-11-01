@@ -33,6 +33,7 @@ Broken(s) ==
         /\ ~ \E a \in agreements : a.item = i /\ a.story = s /\ a.fp = content[i]}
 
 (* s の範囲の合意の審査が通る: s が変えた項目がすべて合意済で、s の外れた合意がない *)
+\* @vanda:claim check-agreement-story-scope
 StoryPass(s) ==
     /\ \A i \in Items : s \in changedBy[i] => Agreed(i)
     /\ Broken(s) = {}
@@ -48,7 +49,6 @@ Init ==
     /\ last = "none"
 
 (* ストーリー s が項目 i の中身を変える *)
-\* @vanda:claim old-agreements-kept-as-history
 Change(s, i) ==
     /\ content[i] < MaxVer
     /\ content' = [content EXCEPT ![i] = @ + 1]
@@ -99,6 +99,11 @@ OnlyOwnAgreementRepairs ==
     [][\A s, t \in Stories, i \in Items :
           /\ (Agree(t, i) /\ t # s /\ i \in Broken(s)) => i \in Broken(s)'
           /\ Agree(s, i) => i \notin Broken(s)']_vars
+
+(* 性質 5: 取り消しのほかの操作（中身の変更・合意）は、合意の記録を消さない。指紋の合わなくなった記録も履歴として残る *)
+\* @vanda:claim old-agreements-kept-as-history
+OnlyRevokeRemovesAgreements ==
+    [][\A s \in Stories, i \in Items : (Change(s, i) \/ Agree(s, i)) => agreements \subseteq agreements']_vars
 
 (* どの操作も一度は起きることを確かめるため、違反が見つかるはずの不変条件 *)
 NeverChange == last # "Change"

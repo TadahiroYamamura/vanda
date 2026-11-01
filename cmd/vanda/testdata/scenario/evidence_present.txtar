@@ -1,10 +1,12 @@
-# CMD-10 エビデンスが揃っている（段 1）: 予定したエビデンスの 1 件ごとに、そのタイプに合うアダプタのアノテーションが 1 つ以上ある。
+# CMD-10 エビデンスが揃っている: 予定したエビデンスの 1 件ごとに、そのタイプを types に含む [[annotation]] で読んだ、
+# タイプに合う種類のアノテーションが 1 つ以上ある。
 # @vanda:evidence check-evidence-present
 # @vanda:evidence check-evidence-proof-and-unchecked
-# タイプとアノテーションの対応（監督の決定）:
-#   scenario-test は txtar の evidence、model-check は TLA+ の claim、guardrail は SQL の evidence、
-#   unit-test・cross-check・random-check・interface-test・concurrency-test は Go の evidence、sensor は Go の sensor。
-# 1 つのアノテーションが、同じ約束の複数の予定を満たしてよい。proof は段 1 では扱えない誤りにする。
+# この台本の設定は、組込みのアダプタの既定のタイプを types に書く（go は unit-test・cross-check・random-check・
+# interface-test・concurrency-test・sensor、txtar は scenario-test、tla は model-check、sql は guardrail）。
+# タイプに合う種類は、model-check が claim、sensor が sensor、ほかは evidence。種類とタイプの全部の組み合わせと、
+# types の書き方は evidence_types_test.go で確かめる。
+# 1 つのアノテーションが、同じ約束の複数の予定を満たしてよい。proof は今は扱えない誤りにする。
 # 実行しないタイプ（human-review・monitoring）は確かめない（detail に書いたファイルがなくても止めない）。
 # 範囲を 1 つのストーリーにすると、分かれた点より後に変わった約束だけを見る。
 #
