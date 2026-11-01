@@ -26,8 +26,7 @@ export interface Context {
   stories: { id: string; inBranch: boolean }[];
   layers: LayerRef[];
   storyStore: string;
-  // 古い vanda の応答や、テストの作り置きの文脈にはないことがある
-  trailerErrors?: { commit: string; subject: string; message: string }[];
+  trailerErrors: { commit: string; subject: string; message: string }[];
 }
 
 export interface EvidenceContent {

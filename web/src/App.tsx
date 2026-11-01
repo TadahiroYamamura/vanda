@@ -29,11 +29,11 @@ export function App() {
       <LayerNames.Provider value={ctx.data?.layers ?? []}>
       <main>
         {ctx.error != null && <ErrorBox error={ctx.error} title="vanda の設定を読めません" />}
-        {(ctx.data?.trailerErrors ?? []).length > 0 && (
+        {ctx.data && ctx.data.trailerErrors.length > 0 && (
           <section className="error" role="alert" aria-label="Story: のトレーラーの誤り">
             <strong>次のコミットの Story: のトレーラーに誤りがあるため、ストーリーの分からないコミットとして扱っています。</strong>
             <ul>
-              {(ctx.data?.trailerErrors ?? []).map((t) => (
+              {ctx.data.trailerErrors.map((t) => (
                 <li key={t.commit}>
                   <code>{t.commit.slice(0, 7)}</code>「{t.subject}」: {t.message}
                 </li>
