@@ -739,7 +739,6 @@ id = "detached-until-story-reagrees"
 subjects = ["rv-14", "agreement", "story"]
 statement = "外れた合意は、ほかのストーリーが今の中身に合意しても、s が今の中身に合意し直すまで外れたままにする"
 layers = ["model", "cli"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
