@@ -1,4 +1,5 @@
 # CMD-10 合意: 範囲を 1 つのストーリーにすると、ベースブランチから分かれた点より後に変わったものだけが対象になる。
+# @vanda:evidence check-agreement-story-scope
 # main には合意していない約束（task-id-unique）が残っているが、ストーリー 2 で変えていないので、ストーリー 2 の範囲の審査では止めない。
 
 exec git init -q -b main

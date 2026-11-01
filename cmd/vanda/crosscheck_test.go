@@ -451,6 +451,11 @@ func (r *xcheckRepo) check(args ...string) (bool, []string, string) {
 	return err == nil, out, stdout.String() + stderr.String()
 }
 
+// @vanda:evidence agreed-when-fingerprint-matches
+// @vanda:evidence old-agreements-kept-as-history
+// @vanda:evidence detached-agreement
+// @vanda:evidence detached-until-story-reagrees
+// @vanda:evidence revoke-returns-to-proposed
 func Test合意の判定をTLAのモデルと本物のvandaで1歩ずつ比べると一致する(t *testing.T) {
 	t.Parallel()
 	tlc := lookTLC(t)

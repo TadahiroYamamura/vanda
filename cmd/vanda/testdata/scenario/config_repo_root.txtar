@@ -1,4 +1,6 @@
 # CMD-01: .vanda/ は git のリポジトリの根で探す。リポジトリの中のどこで動かしても同じ .vanda/ を使い、リポジトリの外では誤りになる。
+# @vanda:evidence outside-git-repository
+# @vanda:evidence doctor-ok-line
 
 # リポジトリの外
 ! exec vanda doctor

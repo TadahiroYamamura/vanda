@@ -213,6 +213,7 @@ async function agreeAll(page: Page, items: string[]) {
 
 const items = ["task-id-unique", "task-title-required", "e2e/add-task.txtar"];
 
+// @vanda:evidence context-base-always-shown
 test("ブランチのコミットからストーリーが決まるブランチで一覧を見て全部に合意するとvanda checkの合意の審査が通る", async ({ page }) => {
   expect(repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main").code, "合意する前から審査が通っている").toBe(1);
   await page.goto(serve.url + "/");
@@ -1109,6 +1110,8 @@ async function revokeHere(page: Page, url: RegExp) {
 
 // RV-18 の画面の移り方は、クエリのない / から始めて画面の操作だけで移る。ストーリーは URL で名指しせず、
 // ブランチのコミットから決まる（#24）
+// @vanda:evidence agree-from-detail-pages
+// @vanda:evidence agree-from-detail-pages-stay
 test("レビューの画面から約束の詳細へ移って合意すると1コミットで記録が増えその画面で合意済になり履歴に足され戻ると一覧でも合意済でその画面で取り消せる", async ({ page }) => {
   await page.goto(serve.url + "/");
   await select(page, "task-id-unique");
@@ -1133,6 +1136,8 @@ test("レビューの画面から約束の詳細へ移って合意すると1コ�
   await expect(listItem(page, "task-id-unique")).toContainText("提案中");
 });
 
+// @vanda:evidence agree-from-detail-pages
+// @vanda:evidence agree-from-detail-pages-stay
 test("エビデンスのファイルのリンクからファイルの画面へ移って合意すると1コミットで記録が増えその画面で合意済になり戻ると一覧でも合意済でその画面で取り消せる", async ({ page }) => {
   repo.write("e2e/add-task.txtar", annotatedScenario);
   commit(repo, "#24 シナリオをエビデンスにする");
@@ -1155,6 +1160,8 @@ test("エビデンスのファイルのリンクからファイルの画面へ�
   expect(recordsOf(fp, "#24"), "取り消してもファイルへの合意の記録が残っている").toBe(0);
 });
 
+// @vanda:evidence agree-from-detail-pages
+// @vanda:evidence agree-from-detail-pages-stay
 test("レビューの画面の一覧のファイルからファイルの画面へ移って合意すると1コミットで記録が増えその画面で合意済になり戻ると一覧でも合意済でその画面で取り消せる", async ({ page }) => {
   const fp = sha(scenarioStory);
   await page.goto(serve.url + "/");
@@ -1179,6 +1186,7 @@ test("レビューの画面の一覧のファイルからファイルの画面�
 for (const w of writers) {
   for (const pl of places) {
     const can = w.self && !pl.onBase;
+    // @vanda:evidence agree-from-detail-pages
     test(`約束の詳細の画面で${w.name}が${pl.name}で書いた合意の記録は${can ? "取り消せる" : "取り消せず取り消しのボタンが出ない"}`, async ({ page }) => {
       repo.write(".vanda/promises.toml", promises(v2Statement, false, true));
       commit(repo, "#24 フラグを外す");
@@ -1207,6 +1215,7 @@ for (const w of writers) {
   }
 }
 
+// @vanda:evidence agree-from-detail-pages-notes
 test("ストーリーのレビューから一覧にないファイルや約束を開くと合意のボタンがなくこのストーリーでは変わっていないと示す", async ({ page }) => {
   // release は story-24 の今と同じ。release と比べると一覧は空なので、どのファイルも約束も一覧にない
   repo.git("branch", "release", "story-24");
@@ -1230,6 +1239,7 @@ test("ストーリーのレビューから一覧にないファイルや約束�
   await expect(page.getByRole("button", { name: /合意する/ })).toHaveCount(0);
 });
 
+// @vanda:evidence agree-from-detail-pages-notes
 test("約束の詳細とファイルの画面をURLで直接開くと合意のボタンがなくストーリーのレビューから開くと合意できると示す", async ({ page }) => {
   for (const path of ["/claims/task-id-unique", "/files?path=" + encodeURIComponent("e2e/add-task.txtar")]) {
     await page.goto(serve.url + path);

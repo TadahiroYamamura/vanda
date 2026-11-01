@@ -1,4 +1,7 @@
 # CMD-03: 審査は、審査の設定のファイルに並べた順に行う。どれかの審査が失敗すると、終了コードが失敗になる。
+# @vanda:evidence check-runs-in-order-and-fails
+# @vanda:evidence check-output-lines
+# @vanda:evidence check-error-order
 #
 # 2 つの審査が、それぞれ別のファイルを指すエラーを出すようにしておき、並べる順を入れ替えると、エラーの出る順も入れ替わることを確かめる。
 # - 約束リストの形: .vanda/promises/aaa.toml の 2 行目（ID の形）、.vanda/promises/qqq-broken.toml の 3 行目（subjects の先がない）と 9 行目（決まった値にないステージ）

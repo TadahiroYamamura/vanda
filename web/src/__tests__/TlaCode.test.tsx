@@ -105,6 +105,8 @@ function copyAll(container: HTMLElement, shown: string): string {
 
 describe("TLA+ の表の書き方を数学の記号で見せコピーするとリポジトリの文字に戻る", () => {
   for (const [op, src, shown] of table) {
+    // @vanda:evidence tla-math-symbols
+    // @vanda:evidence tla-copy-ascii
     it(`${op} を見せるときは記号にしコピーすると元の文字に戻る`, async () => {
       const { container } = render(<TlaCode source={src} />);
       expect(container.textContent).toContain(shown);
@@ -113,6 +115,8 @@ describe("TLA+ の表の書き方を数学の記号で見せコピーすると�
   }
 });
 
+// 名前を変数で付けた it には付けられないので、まとまりの describe に付ける
+// @vanda:evidence tla-no-replace-in-strings-comments
 describe("TLA+ の置き換えない所と長いものから当てる決まり", () => {
   for (const [name, src, shown] of rules) {
     it(name, async () => {
@@ -123,6 +127,7 @@ describe("TLA+ の置き換えない所と長いものから当てる決まり",
   }
 });
 
+// @vanda:evidence tla-copy-ascii
 it("TLA+ の一部だけを選んでコピーしても選んだ所がリポジトリの文字に戻る", () => {
   const shown = "S ≜ a ∧ b";
   const { container } = render(<TlaCode source={"S == a /\\ b"} />);
@@ -146,6 +151,7 @@ it("TLA+ の一部だけを選んでコピーしても選んだ所がリポジ�
   expect(copyRange(range)).toBe("a /\\ b");
 });
 
+// @vanda:evidence tla-copy-ascii
 it("TLA+ のコピーのボタンを押すとリポジトリの文字のままクリップボードに入る", async () => {
   const user = userEvent.setup();
   const src = "S == \\A x \\in T : x' # x";

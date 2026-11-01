@@ -105,6 +105,10 @@ func checkFound(t *testing.T, typ string, got []claimFound, want []wantFound) {
 }
 
 // CL-01・02・04・05
+// @vanda:evidence claim-detail-fields
+// @vanda:evidence claim-detail-evidence-content
+// @vanda:evidence claim-detail-origin
+// @vanda:evidence claim-detail-agreements
 func Test約束の詳細は文とレイヤーと対象とエビデンスのタイプごとの中身と由来と合意の履歴を示す(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -224,6 +228,7 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 }
 
 // CL-02: エビデンスの予定があっても、指すアノテーションがなければ found は空
+// @vanda:evidence claim-detail-evidence-content
 func Test約束の詳細は指すアノテーションのないエビデンスの予定をfoundが空のものとして示す(t *testing.T) {
 	t.Parallel()
 	_, _, s := setupAgree(t)
@@ -239,6 +244,7 @@ func Test約束の詳細は指すアノテーションのないエビデンス�
 	}
 }
 
+// @vanda:evidence api-error-shape
 func Test約束の詳細とファイルの中身はないものを404にする(t *testing.T) {
 	t.Parallel()
 	_, _, s := setupAgree(t)

@@ -48,6 +48,7 @@ const detail = claimDetail({
 });
 
 // CL-01
+// @vanda:evidence claim-detail-fields
 it("約束の詳細は文と理由と条件とレイヤーと対象を見せる", async () => {
   open(detail);
   expect(await screen.findByText(/タスクの ID は重ならない/)).toBeTruthy();
@@ -57,6 +58,8 @@ it("約束の詳細は文と理由と条件とレイヤーと対象を見せる"
 });
 
 // CL-02・CL-07・RV-08
+// @vanda:evidence claim-detail-evidence-content
+// @vanda:evidence tla-math-symbols
 it("エビデンスをタイプごとにシナリオは本文をTLAは定義を記号でガードレールは定義をテストは名前と場所で見せる", async () => {
   open(detail);
   await screen.findByText(/タスクの ID は重ならない/);
@@ -72,6 +75,8 @@ it("エビデンスをタイプごとにシナリオは本文をTLAは定義を�
 });
 
 // CL-04・CL-05
+// @vanda:evidence claim-detail-origin
+// @vanda:evidence claim-detail-agreements
 it("由来にコミットとストーリーを合意の履歴に合意した人とストーリーと今の中身に合うかを見せる", async () => {
   open(detail);
   await screen.findByText(/タスクの ID は重ならない/);

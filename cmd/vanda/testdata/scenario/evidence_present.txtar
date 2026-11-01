@@ -1,4 +1,6 @@
 # CMD-10 エビデンスが揃っている（段 1）: 予定したエビデンスの 1 件ごとに、そのタイプに合うアダプタのアノテーションが 1 つ以上ある。
+# @vanda:evidence check-evidence-present
+# @vanda:evidence check-evidence-proof-and-unchecked
 # タイプとアノテーションの対応（監督の決定）:
 #   scenario-test は txtar の evidence、model-check は TLA+ の claim、guardrail は SQL の evidence、
 #   unit-test・cross-check・random-check・interface-test・concurrency-test は Go の evidence、sensor は Go の sensor。

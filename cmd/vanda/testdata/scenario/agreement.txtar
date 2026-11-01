@@ -1,4 +1,7 @@
 # CMD-10 合意: 今の中身がすべて合意済で、フラグ（flags・guesses）が残っていないと通る。
+# @vanda:evidence changed-id-is-new
+# @vanda:evidence check-agreement-flags-left
+# @vanda:evidence check-agreement-targets
 # CM-03: 指紋は flags と guesses を除いた中身から作る。同じ中身に 2 つのストーリーが合意しても合意済。約束の ID を変えると提案中。
 #
 # 指紋の元の JSON（fp/ の下）は、約束リストの項目から手で書いた（キーを名前の順に並べ、空白なし）。

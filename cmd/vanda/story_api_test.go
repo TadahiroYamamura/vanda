@@ -96,6 +96,8 @@ func attachmentList(got storyResponse) []string {
 }
 
 // CM-08
+// @vanda:evidence story-github-read
+// @vanda:evidence story-github-token
 func Testストーリーの置き場所から題と本文と添付ファイルへのリンクを読める(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -152,6 +154,7 @@ func Testストーリーの置き場所から題と本文と添付ファイル�
 }
 
 // CM-08: 添付ファイルの決まりの、当たるものと当たらないもの
+// @vanda:evidence story-github-attachments
 func Testストーリーの添付ファイルは決まったURLで始まるリンクと画像だけで名前はリンクの文字かURLの最後の部分(t *testing.T) {
 	t.Parallel()
 	st := newStorySetup(t, "")
@@ -172,6 +175,7 @@ func Testストーリーの添付ファイルは決まったURLで始まるリ�
 }
 
 // CM-08: 誤りは、黙って空にせず、理由を出す
+// @vanda:evidence story-errors
 func Testストーリーの置き場所の誤りは理由を画面に出す(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -223,6 +227,7 @@ printf '{"title":"args: %s","body":"%s","url":""}' "$*" "$in"
 
 // CM-08: ストーリーの置き場所の.vanda/adapters/ のアダプタは、ファイルの形でもディレクトリの形（直下の run）でも動き、args が渡る。
 // 組込みのアダプタ（github）と同じ名前なら、.vanda/adapters/ のものを使う
+// @vanda:evidence story-project-adapter
 func Testストーリーの置き場所のvanda_adaptersのアダプタはファイルとディレクトリの形で動きargsが渡り組込みのものより先に使われる(t *testing.T) {
 	t.Parallel()
 	cases := []struct {

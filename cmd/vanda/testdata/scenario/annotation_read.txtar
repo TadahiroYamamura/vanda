@@ -1,4 +1,5 @@
 # アノテーションの読み取り: 6 つの種類 × Go・シナリオ（txtar）・TLA+・SQL を全部回す。
+# @vanda:evidence annotation-kinds-per-builtin-adapter
 # 書ける組み合わせ（Go: evidence・sensor、txtar: evidence、TLA+: term・feature・claim・internal、SQL: evidence）は、
 # 約束リストにない ID（no-such-id）を指すと、アノテーションのつながりの審査がその行で止まることで、読んだことを確かめる。
 # 書けない組み合わせは、種類に合う ID を書いても、その行で止まる。

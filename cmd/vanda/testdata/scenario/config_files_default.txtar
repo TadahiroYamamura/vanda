@@ -1,4 +1,7 @@
 # CM-09: 設定に読むファイルのパターンを書かないとき、約束リストは .vanda/promises.toml を、
+# @vanda:evidence promise-list-default-file-may-be-absent
+# @vanda:evidence promise-list-explicit-file-must-exist
+# @vanda:evidence doctor-ok-line
 # 合意の記録は .vanda/agreements.toml を読む。
 # 既定のファイルがないときは空とみなし、誤りにしない。設定にはっきり書いた、ワイルドカードのないパターンのファイルがないときは誤り。
 

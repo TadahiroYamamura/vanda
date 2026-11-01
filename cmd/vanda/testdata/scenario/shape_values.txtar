@@ -1,4 +1,6 @@
 # CMD-10 約束リストの形: ステージ・タイプ・レイヤーが決まった値の中にある。flags は ai-proposal だけ。
+# @vanda:evidence promise-list-layers-known
+# @vanda:evidence promise-list-fixed-values
 # 決まった値は全部を使って通ることを、決まった値の外の値は止まることを確かめる。
 #
 # ステージの値（plan・implementation・test・release・operation）は仮の値。計画に TOML に書く値がないため（報告済み）。

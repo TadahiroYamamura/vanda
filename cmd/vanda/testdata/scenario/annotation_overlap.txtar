@@ -1,4 +1,5 @@
 # アノテーションの読み取り: 1 つのファイルが 2 つ以上の [[annotation]] のパターンに当たると止まる。
+# @vanda:evidence annotation-one-rule-per-file
 
 exec git init -q -b main
 

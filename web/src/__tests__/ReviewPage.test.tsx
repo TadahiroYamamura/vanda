@@ -1,5 +1,5 @@
 // RV（ストーリーのレビュー）の画面が、API の結果を正しく見せるか。API は MSW で差し替える。
-// 画面に出す言葉は docs/spec.md と docs/terms.md の言葉（AI 案・推測・差分あり・提案中・合意済・合意する など）で探す。
+// 画面に出す言葉は、約束リスト（.vanda/promises.toml）の用語（AI 案・推測・差分あり・提案中・合意済・合意 など）で探す。
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -37,6 +37,7 @@ const bodyText = () => document.body.textContent ?? "";
 const reviewRequests = () => requests.filter((r) => r.url.pathname === "/api/review");
 
 describe("RV-04 フラグ", () => {
+  // @vanda:evidence review-flag-labels
   it("フラグは短い言葉の札で出し説明は札に触れたときかフォーカスしたときに出す", async () => {
     open([claimEntry(1, "task-id-unique", { flags: ["ai-proposal", "guess", "changed-since-agreement"] })]);
     const user = userEvent.setup();
@@ -54,6 +55,7 @@ describe("RV-04 フラグ", () => {
     }
   });
 
+  // @vanda:evidence review-flag-labels
   it("フラグのないものには札を出さない", async () => {
     open([claimEntry(1, "plain-claim")]);
     await screen.findAllByText(/plain-claim/);
@@ -62,6 +64,7 @@ describe("RV-04 フラグ", () => {
 });
 
 describe("RV-01・RV-02・RV-05 一覧と中身", () => {
+  // @vanda:evidence review-numbering
   it("通し番号と総数を出し追加と変更と削除と名前の変更を区別して見せる", async () => {
     open([
       claimEntry(1, "c-added", { change: "added", before: null }),
@@ -77,6 +80,7 @@ describe("RV-01・RV-02・RV-05 一覧と中身", () => {
     expect(bodyText()).toContain("e2e/old.txtar");
   });
 
+  // @vanda:evidence review-before-after
   it("変更したものは変更前と変更後の中身を見せる", async () => {
     open([claimEntry(1, "c-modified")]);
     const user = userEvent.setup();
@@ -93,6 +97,7 @@ describe("RV-01・RV-02・RV-05 一覧と中身", () => {
     expect(screen.getAllByText(/合意済/).length).toBeGreaterThan(0);
   });
 
+  // @vanda:evidence tla-math-symbols
   it("オラクルの定義のファイルの中身は数学の記号で見せる", async () => {
     open([fileEntry(1, "spec/Task.tla", { fileType: "oracle", before: { text: "S == a /\\ b\n" }, after: { text: "S == a \\/ b\n" } })]);
     await openEntry(/spec\/Task\.tla/);
@@ -104,6 +109,7 @@ describe("RV-01・RV-02・RV-05 一覧と中身", () => {
 });
 
 describe("RV-10 長い一覧をたたむ", () => {
+  // @vanda:evidence review-groups-fold
   it("長いまとまりはたたんでたたんだ件数を示し開くと中が見える", async () => {
     const files = Array.from({ length: 60 }, (_, i) => fileEntry(i + 2, `e2e/s${String(i).padStart(2, "0")}.txtar`));
     open([claimEntry(1, "c-one"), ...files]);
@@ -156,6 +162,7 @@ describe("RV-06 合意する", () => {
     expect(await screen.findByText(/約束リストに書きかけの変更がある/)).toBeTruthy();
   });
 
+  // @vanda:evidence context-no-user-cannot-agree
   it("合意できない人のときは合意のボタンを押せず理由を出す", async () => {
     server.use(http.get("/api/context", () => HttpResponse.json({ ...ctx, user: null })));
     server.use(http.get("/api/review", () => HttpResponse.json(review([claimEntry(1, "task-id-unique")]))));
@@ -170,6 +177,8 @@ describe("RV-06 合意する", () => {
 });
 
 describe("RV-13・RV-14 レビュー単位と外れた合意", () => {
+  // @vanda:evidence review-detached-shown
+  // @vanda:evidence review-detached-unchanged-shown
   it("外れた合意をそれを外したストーリーと一緒に示す", async () => {
     const detached = claimEntry(0, "c-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
     open([claimEntry(1, "c-changed", { detachedAgreement: { by: ["#31"] } })], { detached: [detached] });
@@ -182,6 +191,7 @@ describe("RV-13・RV-14 レビュー単位と外れた合意", () => {
     await waitFor(() => expect(bodyText()).toContain("#30"));
   });
 
+  // @vanda:evidence review-other-commits
   it("レビュー単位がストーリーのときはほかのストーリーが途中で変えたことを示す", async () => {
     window.history.pushState({}, "", "/?view=story&story=%2324");
     open(
@@ -199,6 +209,7 @@ describe("RV-13・RV-14 レビュー単位と外れた合意", () => {
     expect(req.url.searchParams.get("story")).toBe("#24");
   });
 
+  // @vanda:evidence context-default-base
   it("今比べているベースブランチを示し選び直すとそのベースブランチで読み直す", async () => {
     open([claimEntry(1, "c-one")]);
     await screen.findAllByText(/c-one/);
@@ -225,6 +236,7 @@ describe("CM-08 ストーリーの置き場所", () => {
     expect(await screen.findByText(/Bad credentials/)).toBeTruthy();
   });
 
+  // @vanda:evidence context-story-store
   it("ストーリーの置き場所が設定にないときは読みに行かず注記で出す", async () => {
     server.use(http.get("/api/context", () => HttpResponse.json({ ...ctx, storyStore: "" })));
     server.use(http.get("/api/review", () => HttpResponse.json(review([claimEntry(1, "c-one")]))));
@@ -304,6 +316,7 @@ describe("CM-08 ストーリーの本文の Markdown", () => {
 });
 
 describe("RV-05 変更前と変更後の差分", () => {
+  // @vanda:evidence review-file-diff-lines
   it("ファイルの差分は消した所と足した所を変わらない所と見分けられるように見せる", async () => {
     open([
       fileEntry(1, "e2e/w.txtar", {
@@ -329,6 +342,7 @@ describe("RV-05 変更前と変更後の差分", () => {
     expect(look(del[0])).not.toBe(look(ins[0]));
   });
 
+  // @vanda:evidence review-before-after
   it("エビデンスの予定はエビデンスごとに足したものと消したものに札を付け変わったものは中の差分を見せる", async () => {
     const ev = (stage: string, type: string, detail: string | null) => ({ stage, type, layers: ["model"], detail });
     const detail = [
@@ -377,6 +391,7 @@ describe("RV-05 変更前と変更後の差分", () => {
     expect(del[0].tagName + del[0].className).not.toBe(ins[0].tagName + ins[0].className);
   });
 
+  // @vanda:evidence review-before-after
   it("約束の項目の差分は1列で消した語をdelに足した語をinsに出し変わっていない項目は中身を1回だけ出す", async () => {
     open([
       claimEntry(1, "c-diff", {

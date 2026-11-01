@@ -1,4 +1,6 @@
 # CMD-10 約束リストの形: 読める（TOML の誤りがない）。決まった表と項目だけがある。
+# @vanda:evidence promise-list-unknown-entries-rejected
+# @vanda:evidence check-error-form
 # 誤りがあれば止まり、エラーにファイルと行が出る。
 #
 # エラーは 1 件 1 行の <パス>:<行>: の形（監督が決めた形）。
