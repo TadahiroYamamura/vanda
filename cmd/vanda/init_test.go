@@ -749,6 +749,7 @@ type initConfig struct {
 	Annotation []struct {
 		Paths   []string `toml:"paths"`
 		Adapter string   `toml:"adapter"`
+		Types   []string `toml:"types"`
 		Command []string `toml:"command"`
 	} `toml:"annotation"`
 	Story *struct {
@@ -786,6 +787,25 @@ func annotationsOf(c initConfig) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// 組込みのアダプタの既定のタイプ（docs/plans/annotation-types.md の 1）。vanda init は、選んだ言語のものをそのまま書く
+var defaultTypes = map[string][]string{
+	"go":    {"unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"},
+	"txtar": {"scenario-test"},
+	"tla":   {"model-check"},
+	"sql":   {"guardrail"},
+	"ts":    {"unit-test"},
+}
+
+// checkDefaultTypes は、設定の [[annotation]] のそれぞれに、そのアダプタの既定のタイプが書かれているかを確かめる。
+func checkDefaultTypes(t *testing.T, c initConfig) {
+	t.Helper()
+	for _, a := range c.Annotation {
+		if want := defaultTypes[a.Adapter]; !reflect.DeepEqual(sortedCopy(a.Types), sortedCopy(want)) {
+			t.Errorf("[[annotation]] adapter %s の types: %v（思ったもの %v）", a.Adapter, a.Types, want)
+		}
+	}
 }
 
 // 計画の「問い 5 の言語の見つけ方と既定のパターン」の表
@@ -901,6 +921,8 @@ func Test既定の答えのまま進めると読み取った値で4つのファ�
 	if got := annotationsOf(c); !reflect.DeepEqual(got, want) {
 		t.Errorf("[[annotation]]: %v（思ったもの %v）", got, want)
 	}
+	// 既定のタイプは問いかけずに書く
+	checkDefaultTypes(t, c)
 	for _, f := range []string{"promises.toml", "agreements.toml"} {
 		data, err := os.ReadFile(filepath.Join(r.root, ".vanda", f))
 		if err != nil || strings.TrimSpace(string(data)) != "" {
@@ -1505,6 +1527,7 @@ func Test答えから作る4つのファイルは置き場所と言語の答え�
 			if got := annotationsOf(cfg); !reflect.DeepEqual(got, c.anns) && !(len(got) == 0 && len(c.anns) == 0) {
 				t.Errorf("[[annotation]]: %v（思ったもの %v）", got, c.anns)
 			}
+			checkDefaultTypes(t, cfg)
 			for _, f := range []string{"promises.toml", "agreements.toml"} {
 				if data, err := os.ReadFile(filepath.Join(root, ".vanda", f)); err != nil || strings.TrimSpace(string(data)) != "" {
 					t.Errorf(".vanda/%s が空でない（%v）: %q", f, err, data)
