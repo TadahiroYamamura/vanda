@@ -2,7 +2,7 @@
 // 要素とクラスの名前は、開発者が監督に報告した画面の作り（table.diff-lines、tr.diff-line、td.diff-no-before など）に従う。
 // 期待値（行の種類・番号・文）は、テストの中で手で書いた diff.lines から作る。
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, waitFor } from "@testing-library/react";
+import { act, cleanup, render, waitFor } from "@testing-library/react";
 import { CodeBlock } from "../components/Code";
 import { LineDiff } from "../components/DiffView";
 import type { DiffLine } from "../api";
@@ -104,14 +104,30 @@ describe("色付け", () => {
   }, 20000);
 
   it("色付けを読み込めないときも文字は全部見える", async () => {
+    // 時間で待たず、色付けが断られたことを画面の部品が受け取るまで待つ。断りを見るこちらの then を先に付けるので、
+    // それが済んだ後に act の中でもう一度待てば、画面の部品の側の後始末も済んでいる
+    let refused: Promise<void> | undefined;
     vi.doMock("../highlight", async (importOriginal) => {
       const real = await importOriginal<typeof import("../highlight")>();
-      return { ...real, tokenize: () => Promise.reject(new Error("色付けを読み込めない")) };
+      return {
+        ...real,
+        tokenize: () => {
+          const p = Promise.reject(new Error("色付けを読み込めない"));
+          refused = p.then(
+            () => undefined,
+            () => undefined,
+          );
+          return p;
+        },
+      };
     });
     const { CodeBlock: Block } = await import("../components/Code");
     const sql = "-- @vanda:evidence task-id-unique\nCREATE UNIQUE INDEX t ON task (id);\n";
     const { container } = render(<Block source={sql} lang="sql" />);
-    await new Promise((r) => setTimeout(r, 200));
+    await waitFor(() => expect(refused, "色付けを求めていない").toBeDefined());
+    await act(async () => {
+      await refused;
+    });
     const pre = container.querySelector<HTMLElement>("pre.code[data-lang=sql]");
     expect(pre, "pre.code[data-lang=sql] がない").toBeTruthy();
     expect(pre!.querySelectorAll(".code-line").length).toBeGreaterThanOrEqual(2);
