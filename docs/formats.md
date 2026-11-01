@@ -14,6 +14,8 @@
 
 `.vanda/` は、git のリポジトリの根（`git rev-parse --show-toplevel`）で探す。git のリポジトリの外で動かしたら誤りにする。
 
+利用者が作った外部のコマンドのアダプタ（アノテーション、ストーリーの置き場所）は、`.vanda/adapters/` の下に置く。設定の `command` には、リポジトリの直下からの場所で書く（例: `command = [".vanda/adapters/md-annotation", "--strict"]`、`command = ["python3", ".vanda/adapters/jira-story.py"]`）。`.vanda/adapters/` の下のファイルは、vanda の版を上げるときの移行のコマンドが書き換えない。
+
 ## 版
 
 `.vanda/config.toml` の `version` が動いている vanda の版と合わないときは、`vanda check` も `vanda doctor` も止まる。`vanda version` だけは止まらない。
@@ -296,7 +298,7 @@ scope = "story"
 | `agreement` | 合意の対象（約束・用語・機能と、`txtar`・`tla` のアノテーションのパターンに当たるファイルと、`[[guardrail]]` の `paths` に当たるファイル。Go のファイルは対象にしない）の今の中身が合意済。約束に `flags`・`guesses` が残っていない。範囲 `story` では、そのストーリーで変わったものだけを見て、さらに、そのストーリーの外れた合意（下）も誤りにする |
 | `agreement-targets` | 合意の記録の読み込みの誤り。`kind` が `claim`・`term`・`feature` の合意が、約束リストにある項目を指す |
 | `evidence-present` | 下の「エビデンスが揃っている審査」。範囲 `story` では、そのストーリーで変わった約束だけを見る |
-| `unread-files` | `.vanda/` のファイル（`.vanda/config.toml` と `.vanda/checks/*.toml` を除く）が、`promises` か `agreements` のパターンに当たる |
+| `unread-files` | `.vanda/` のファイル（`.vanda/config.toml`、`.vanda/checks/*.toml`、`.vanda/adapters/` の下を除く）が、`promises` か `agreements` のパターンに当たる |
 
 ### 外れた合意
 
@@ -309,7 +311,7 @@ scope = "story"
 
 `tla` のアダプタのファイルで、`TypeOK ==` から次の最上位の定義（行の先頭から書いた定義）か `====` までのうち、`\in`・`\subseteq` の右で、次の `/\`・`\/` か行の終わりまでに出てくる識別子で、同じモジュールの最上位の定義の名前のものを、仕様の型とする。`CONSTANT` の集合は対象にしない。`TypeOK` のないファイルには、何も求めない。
 
-- 読まれていないファイルの審査（`unread-files`）は、`.vanda/config.toml` と `.vanda/checks/*.toml` を除く
+- 読まれていないファイルの審査（`unread-files`）は、`.vanda/config.toml`、`.vanda/checks/*.toml`、`.vanda/adapters/` の下を除く
 
 ### エビデンスが揃っている審査（`evidence-present`）
 
