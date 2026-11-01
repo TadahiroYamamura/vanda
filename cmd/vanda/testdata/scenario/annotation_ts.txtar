@@ -16,7 +16,7 @@ exec vanda check .vanda/checks/present.toml
 cp cases/places-ok.ts web/a.test.ts
 exec vanda check .vanda/checks/links.toml
 exec vanda check .vanda/checks/present.toml
-cp orig/a.test.ts web/a.test.ts
+cp orig/a.test.ts.orig web/a.test.ts
 
 # .test.tsx のファイルも読む
 cp cases/places-ok.ts web/b.test.tsx
@@ -28,42 +28,42 @@ cp cases/none.ts web/a.test.ts
 ! exec vanda check .vanda/checks/present.toml
 stderr 'unit-test'
 ! stderr '(?m)^panic: '
-cp orig/a.test.ts web/a.test.ts
+cp orig/a.test.ts.orig web/a.test.ts
 
 # evidence のほかの種類は書けない
 cp cases/kind-claim.ts web/a.test.ts
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:3: '
 ! stderr '(?m)^panic: '
-cp orig/a.test.ts web/a.test.ts
+cp orig/a.test.ts.orig web/a.test.ts
 
 # 書けない所: 変数の宣言の前
 cp cases/place-const.ts web/a.test.ts
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:3: '
 ! stderr '(?m)^panic: '
-cp orig/a.test.ts web/a.test.ts
+cp orig/a.test.ts.orig web/a.test.ts
 
 # 書けない所: test( でない呼び出し（expect）の前
 cp cases/place-expect.ts web/a.test.ts
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:5: '
 ! stderr '(?m)^panic: '
-cp orig/a.test.ts web/a.test.ts
+cp orig/a.test.ts.orig web/a.test.ts
 
 # 書けない所: コメントと test( のあいだに空行がある
 cp cases/place-gap.ts web/a.test.ts
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:3: '
 ! stderr '(?m)^panic: '
-cp orig/a.test.ts web/a.test.ts
+cp orig/a.test.ts.orig web/a.test.ts
 
 # 最初の引数が文字列の決まった値でない（変数）と誤り
 cp cases/name-variable.ts web/a.test.ts
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:[45]: '
 ! stderr '(?m)^panic: '
-cp orig/a.test.ts web/a.test.ts
+cp orig/a.test.ts.orig web/a.test.ts
 
 # 書けない所: フック（beforeEach・afterEach・beforeAll・afterAll）と test.step の直前
 cp cases/hook-beforeEach.ts web/a.test.ts
@@ -86,12 +86,12 @@ cp cases/step.ts web/a.test.ts
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:[45]: '
 ! stderr '(?m)^panic: '
-cp orig/a.test.ts web/a.test.ts
+cp orig/a.test.ts.orig web/a.test.ts
 
 # 文字列とテンプレート文字列の中の `@vanda:` は数えず、誤りにもしない
 cp cases/strings.ts web/a.test.ts
 exec vanda check .vanda/checks/links.toml
-cp orig/a.test.ts web/a.test.ts
+cp orig/a.test.ts.orig web/a.test.ts
 
 -- .vanda/config.toml --
 version = "${VANDA_VERSION}"
@@ -135,7 +135,7 @@ import { test } from "vitest";
 
 // @vanda:evidence task-id-unique
 test("ID は重ならない", () => {});
--- orig/a.test.ts --
+-- orig/a.test.ts.orig --
 import { test } from "vitest";
 
 // @vanda:evidence task-id-unique

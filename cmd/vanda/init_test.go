@@ -1420,7 +1420,7 @@ func Test_remoteのURLの形ごとにストーリーの置き場所とリポジ�
 }
 
 // CMD-11: 言語のあるなしの全部の組み合わせ（5 つの言語で 32 通り）で、見つかる言語と、その既定のパターンが合う。
-// パターンの問いは空白で区切って複数書けるので、既定のパターンも空白で区切って並べたものとして比べる
+// 既定のパターンは、言語ごとに書いた順に比べる（ts は 2 つ）
 func Test言語のあるなしの全部の組み合わせで見つかる言語と既定のパターンが合う(t *testing.T) {
 	t.Parallel()
 	for mask := 0; mask < 1<<len(initLangs); mask++ {
@@ -1445,7 +1445,7 @@ func Test言語のあるなしの全部の組み合わせで見つかる言語�
 			}
 			var got []string
 			for _, l := range d.Languages {
-				got = append(got, l.Name+" "+strings.Join(strings.Fields(l.Pattern), " "))
+				got = append(got, l.Name+" "+strings.Join(l.Patterns, " "))
 			}
 			// 並びは言語の表の順（Go・シナリオ・TLA+・SQL・TypeScript）
 			if !reflect.DeepEqual(got, want) && !(len(got) == 0 && len(want) == 0) {
@@ -1460,7 +1460,7 @@ func initLanguage(t *testing.T, name, pattern string) initcmd.Language {
 	t.Helper()
 	for _, b := range annotation.Builtins {
 		if b.Name == name {
-			return initcmd.Language{AdapterInfo: b, Pattern: pattern}
+			return initcmd.Language{AdapterInfo: b, Patterns: strings.Fields(pattern)}
 		}
 	}
 	t.Fatalf("アダプタ %s がない", name)
