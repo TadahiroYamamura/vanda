@@ -26,7 +26,8 @@ import (
 // ErrDeclined は、作るかの確かめに n と答えたため、何も作らなかったことを表す。
 var ErrDeclined = errors.New("作らないと答えたため、何も作りませんでした。")
 
-// Language は、見つかった言語と、読むファイルのパターン（Ask の後は、答えのパターン）。
+// Language は、アノテーションを読む言語（vanda の中のアダプタ）と、読むファイルのパターン。
+// Detect が返すものでは Pattern はアダプタの既定、Answers の中では答えのパターン。
 type Language struct {
 	annotation.AdapterInfo
 	Pattern string
@@ -34,12 +35,20 @@ type Language struct {
 
 // Defaults は、リポジトリから読み取った、問いかけの既定の答え。
 type Defaults struct {
-	Base       string // 空なら既定なし
-	GitHubRepo string // remote origin が GitHub のときの <owner>/<repo>。そうでなければ空
-	Languages  []Language
+	// Base は、ベースブランチ。origin/HEAD が指すブランチ（例: origin/main）、なければ今のブランチの名前。
+	// コミットのないリポジトリでも、今のブランチの名前（例: main）が入る。どちらも読めなければ空
+	Base string
+	// Store は、ストーリーの置き場所。remote origin が GitHub なら "github"、そうでなければ（origin がないときも）"none"
+	Store string
+	// GitHubRepo は、remote origin が GitHub のときの <owner>/<repo>。そうでなければ空
+	GitHubRepo string
+	// Languages は、git が追っているファイルに見つかった言語。annotation.Builtins の順で、Pattern はアダプタの既定。
+	// 見つからなければ空
+	Languages []Language
 }
 
-// Detect は、リポジトリから既定の答えを読み取る。
+// Detect は、root（git のリポジトリの直下のディレクトリ）から、問いかけの既定の答えを読み取る。
+// 問いかけはしない。git が追っているファイルの一覧を読めないときだけ、エラーを返す。
 func Detect(root string) (Defaults, error) {
 	var d Defaults
 	if out, err := repo.Git(root, "symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD"); err == nil && strings.TrimSpace(out) != "" {
@@ -49,6 +58,10 @@ func Detect(root string) (Defaults, error) {
 	}
 	if out, err := repo.Git(root, "remote", "get-url", "origin"); err == nil {
 		d.GitHubRepo = GitHubRepository(strings.TrimSpace(out))
+	}
+	d.Store = "none"
+	if d.GitHubRepo != "" {
+		d.Store = "github"
 	}
 	files, err := repo.Git(root, "ls-files", "-z")
 	if err != nil {
@@ -98,14 +111,21 @@ func GitHubRepository(url string) string {
 	return parts[0] + "/" + parts[1]
 }
 
-// Answers は、問いかけの答え。
+// Answers は、問いかけの答え。Files に渡すと、作るファイルの中身になる。
 type Answers struct {
-	Base        string
-	Store       string // github・command・none
-	Repository  string
-	Command     []string
-	IDPattern   string
-	Annotations []Language // Pattern は答えのもの
+	// Base は、ベースブランチ（config.toml の [gui] base）
+	Base string
+	// Store は、ストーリーの置き場所。"github"（GitHub Issues）・"command"（外部のコマンド）・"none"（使わない）
+	Store string
+	// Repository は、Store が "github" のときの <owner>/<repo>。ほかの置き場所では使わない
+	Repository string
+	// Command は、Store が "command" のときの、外部のコマンドと引数。ほかの置き場所では使わない
+	Command []string
+	// IDPattern は、ストーリーの ID の書き方（Go の正規表現）。置き場所によらず書く
+	IDPattern string
+	// Annotations は、選んだ言語と、言語ごとの読むファイルのパターン。並べた順に [[annotation]] を書く。
+	// 空なら [[annotation]] を書かない
+	Annotations []Language
 }
 
 // ErrInterrupted は、問いかけの途中で中断した（Ctrl+C・Ctrl+D）ため、何も作らなかったことを表す。
@@ -156,7 +176,7 @@ func (a *asker) input(title, def string, check func(string) error) (string, erro
 	return strings.TrimSpace(v), err
 }
 
-// Ask は、問いかけて答えを集める。
+// Ask は、d を既定の答えにして問いかけ、答えを集める。
 func Ask(root string, d Defaults, in io.Reader, out io.Writer) (Answers, error) {
 	q := newAsker(in, out)
 	var a Answers
@@ -185,8 +205,10 @@ func Ask(root string, d Defaults, in io.Reader, out io.Writer) (Answers, error) 
 
 	choices := storeChoices()
 	choice := choices[len(choices)-1] // 使わない
-	if d.GitHubRepo != "" {
-		choice = choices[0]
+	for _, c := range choices {
+		if c.key == d.Store {
+			choice = c
+		}
 	}
 	var opts []huh.Option[storeChoice]
 	for _, c := range choices {
@@ -328,7 +350,10 @@ func ChecksText() string {
 	return b.String()
 }
 
-// Files は、作るファイルの場所（リポジトリの直下から）と中身。
+// Files は、答え a から、作る 4 つのファイルを作る。問いかけも、ファイルの書き込みもしない。
+// 戻り値の要素は {場所, 中身}。場所はリポジトリの直下からの / 区切り（例: .vanda/config.toml）。
+// 順は .vanda/config.toml・.vanda/promises.toml・.vanda/agreements.toml・.vanda/checks/ci.toml で、
+// promises.toml と agreements.toml の中身は空。
 func Files(a Answers) [][2]string {
 	return [][2]string{
 		{config.File, ConfigText(a)},
