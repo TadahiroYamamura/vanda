@@ -224,8 +224,8 @@ func TestReadはvanda_adaptersのアダプタの失敗と返し漏れを誤り�
 	})
 	want := [][]string{
 		// アダプタは名前で指す（指し方の細かい文言は決まっていないので、名前が入ることだけを見る）
-		{"docs/a.md: ", "partial", "アノテーションのない 5 行目の名前"},
-		{"docs/a.md:2: ", "partial", "このアノテーションの名前"},
+		{"docs/a.md: ", "partial", "渡していない 5 行目"},
+		{"docs/a.md:2: ", "partial", "答えを返しませんでした"},
 		{"docs/b.md: ", "fail", "（わからない）"},
 	}
 	got := errs.Error()

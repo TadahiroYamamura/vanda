@@ -84,6 +84,61 @@ expand .vanda/config.toml
 stderr 'ext/a\.ext'
 ! stderr '(?m)^panic: '
 
+# 行ごとに "annotation": false を返した行は、アノテーションとして数えず、書き方が誤っていても（ID が 2 つ）誤りにしない。
+# 名前を返した行は、今までどおり確かめる（2 行目は約束リストの用語を指すので通る）
+chmod 755 .vanda/adapters/not-annotation
+cp cases/two-lines.ext ext/a.ext
+cp cases/config-not-annotation.toml .vanda/config.toml
+expand .vanda/config.toml
+exec vanda check .vanda/checks/links.toml
+
+# 名前を返した行は、書き方を確かめる（ID が 2 つで止まる）
+chmod 755 .vanda/adapters/both-named
+cp cases/config-both-named.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr 'ext/a\.ext:1: '
+! stderr '(?m)^panic: '
+cp cases/a.ext ext/a.ext
+
+# 誤りになる返し方: 渡した行に何も返さない、同じ行に 2 つ、名前と annotation の両方、annotation に false 以外、名前も annotation もない
+chmod 755 .vanda/adapters/no-answer
+chmod 755 .vanda/adapters/twice
+chmod 755 .vanda/adapters/name-and-false
+chmod 755 .vanda/adapters/annotation-true
+chmod 755 .vanda/adapters/annotation-string
+cp cases/config-no-answer.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr 'ext/a\.ext'
+! stderr '(?m)^panic: '
+cp cases/config-twice.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr 'ext/a\.ext'
+! stderr '(?m)^panic: '
+cp cases/config-name-and-false.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr 'ext/a\.ext'
+! stderr '(?m)^panic: '
+cp cases/config-annotation-true.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr 'ext/a\.ext'
+! stderr '(?m)^panic: '
+cp cases/config-annotation-string.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr 'ext/a\.ext'
+! stderr '(?m)^panic: '
+chmod 755 .vanda/adapters/neither
+cp cases/config-neither.toml .vanda/config.toml
+expand .vanda/config.toml
+! exec vanda check .vanda/checks/links.toml
+stderr 'ext/a\.ext'
+! stderr '(?m)^panic: '
+
 # 名前のアダプタが、中にも .vanda/adapters/ にもない。場所と直し方が出る
 cp cases/config-missing.toml .vanda/config.toml
 expand .vanda/config.toml
@@ -478,3 +533,134 @@ paths = ["ext/*.ext"]
 adapter = "go"
 types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]
 args = ["--strict"]
+-- .vanda/adapters/not-annotation --
+#!/bin/sh
+cat >/dev/null
+printf '%s' '{"names":[{"line":1,"annotation":false},{"line":2,"name":"用語の説明"}]}'
+-- cases/config-not-annotation.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+types = ["unit-test"]
+adapter = "not-annotation"
+-- .vanda/adapters/both-named --
+#!/bin/sh
+cat >/dev/null
+printf '%s' '{"names":[{"line":1,"name":"誤った書き方"},{"line":2,"name":"用語の説明"}]}'
+-- cases/config-both-named.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+types = ["unit-test"]
+adapter = "both-named"
+-- .vanda/adapters/no-answer --
+#!/bin/sh
+cat >/dev/null
+printf '%s' '{"names":[]}'
+-- cases/config-no-answer.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+types = ["unit-test"]
+adapter = "no-answer"
+-- .vanda/adapters/twice --
+#!/bin/sh
+cat >/dev/null
+printf '%s' '{"names":[{"line":1,"name":"a"},{"line":1,"annotation":false}]}'
+-- cases/config-twice.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+types = ["unit-test"]
+adapter = "twice"
+-- .vanda/adapters/name-and-false --
+#!/bin/sh
+cat >/dev/null
+printf '%s' '{"names":[{"line":1,"name":"a","annotation":false}]}'
+-- cases/config-name-and-false.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+types = ["unit-test"]
+adapter = "name-and-false"
+-- .vanda/adapters/annotation-true --
+#!/bin/sh
+cat >/dev/null
+printf '%s' '{"names":[{"line":1,"annotation":true}]}'
+-- cases/config-annotation-true.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+types = ["unit-test"]
+adapter = "annotation-true"
+-- .vanda/adapters/annotation-string --
+#!/bin/sh
+cat >/dev/null
+printf '%s' '{"names":[{"line":1,"annotation":"false"}]}'
+-- cases/config-annotation-string.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+types = ["unit-test"]
+adapter = "annotation-string"
+-- cases/two-lines.ext --
+@vanda:evidence a b
+@vanda:term task
+-- .vanda/adapters/neither --
+#!/bin/sh
+cat >/dev/null
+printf '%s' '{"names":[{"line":1}]}'
+-- cases/config-neither.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["ext/*.ext"]
+types = ["unit-test"]
+adapter = "neither"

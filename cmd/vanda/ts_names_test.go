@@ -150,3 +150,24 @@ func containsLine(out, s string) bool {
 	}
 	return false
 }
+
+// .vanda/adapters/playwright は、E2E の文字列の中の `@vanda:` に "annotation": false を返すので、それは数えられず、
+// 書き方が誤っていても誤りにならない。vanda の E2E（web/e2e/review.spec.ts）を、そのまま読ませても止まらない
+func Test_vanda_adaptersのplaywrightはE2Eの文字列の中の書き方をアノテーションとしないのでvandaのE2Eで止まらない(t *testing.T) {
+	t.Parallel()
+	adapter := filepath.Join("..", "..", ".vanda", "adapters", "playwright")
+	strs := "import { test } from \"@playwright/test\";\n\nconst bad = \"@vanda:foo two ids\";\nconst tpl = `# @vanda:evidence no-such-id ${bad}`;\n\n// @vanda:evidence task-id-unique\ntest(\"合意する\", async () => {});\n"
+	spec, err := os.ReadFile(filepath.Join("..", "..", "web", "e2e", "review.spec.ts"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := "[[annotation]]\npaths = [\"web/e2e/**/*.spec.ts\"]\nadapter = \"playwright\"\ntypes = [\"scenario-test\"]\n"
+	names, root := foundNames(t, cfg, map[string]string{"web/e2e/strings.spec.ts": strs, "web/e2e/review.spec.ts": string(spec)}, map[string]string{".vanda/adapters/playwright": adapter})
+	if want := []string{"合意する"}; !reflect.DeepEqual(names, want) {
+		t.Errorf("名前: %v（思ったもの %v。文字列の中の @vanda: を数えている）", names, want)
+	}
+	writeFile(t, root, ".vanda/checks/links.toml", "[[check]]\nname = \"annotation-links\"\nscope = \"all\"\n")
+	if code, out := runCheck(t, buildVanda(t), root, ".vanda/checks/links.toml"); code != 0 {
+		t.Errorf("E2E の文字列の中の @vanda: で、アノテーションのつながりの審査が止まった\n%s", out)
+	}
+}
