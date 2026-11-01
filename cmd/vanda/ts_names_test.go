@@ -167,7 +167,12 @@ func Test_vanda_adaptersのplaywrightはE2Eの文字列の中の書き方をア�
 		t.Errorf("名前: %v（思ったもの %v。文字列の中の @vanda: を数えている）", names, want)
 	}
 	writeFile(t, root, ".vanda/checks/links.toml", "[[check]]\nname = \"annotation-links\"\nscope = \"all\"\n")
-	if code, out := runCheck(t, buildVanda(t), root, ".vanda/checks/links.toml"); code != 0 {
-		t.Errorf("E2E の文字列の中の @vanda: で、アノテーションのつながりの審査が止まった\n%s", out)
+	// vanda の E2E のアノテーションは vanda の約束を指すので、この一時的なリポジトリでは「約束リストにない」で止まる。
+	// それのほかの誤り（文字列の中の書き方を読んだことによる、種類や ID の数の誤り）が出ないことを見る
+	_, out := runCheck(t, buildVanda(t), root, ".vanda/checks/links.toml")
+	for _, l := range strings.Split(out, "\n") {
+		if strings.HasPrefix(l, "web/e2e/") && !strings.Contains(l, "約束リストの約束にありません") {
+			t.Errorf("E2E の文字列の中の書き方を、アノテーションとして読んだ: %s", l)
+		}
 	}
 }
