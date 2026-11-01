@@ -1,0 +1,62 @@
+# @vanda:evidence init-writes-four-files
+# vanda init の問いに答え、作るかの確かめに「作る」と答えると、.vanda/ に設定・約束リスト・合意の記録・
+# 審査の設定（.vanda/checks/ci.toml）の 4 つのファイルだけができる。確かめに答えるまでは何も作らない。
+# remote のないリポジトリなので、ストーリーの置き場所の既定は「使わない」（GitHub に繋ぎに行かない）。
+# 問いは、題が出てから 1 度だけ答えを送る。待つのは画面の文字が出るまでで、時間では待たない（timeout は止まったときの上限）
+
+set timeout 30
+# 画面の描き直しの制御文字が多いので、落ちたときだけ、そこまでの画面の出力を出す
+log_user 0
+
+exec git init -q -b main
+exec git -c user.name=テスト担当 -c user.email=tester@example.com commit -q --allow-empty -m "はじめ"
+
+# expect の擬似端末は、既定では大きさが 0 で、問いが描かれないので大きさを決める
+set stty_init "rows 40 cols 120"
+spawn vanda init
+# expect_after は今の spawn_id に付くので、spawn の後に置く（前に置くと、expect 自身の標準入力の終わりで落ちる）
+expect_after {
+    timeout { puts stderr "\n待っていた画面が 30 秒で出なかった:\n$expect_out(buffer)"; exit 1 }
+    eof { puts stderr "\n待っていた画面が出る前に vanda init が終わった:\n$expect_out(buffer)"; exit 1 }
+}
+
+expect "ベースブランチ"
+send "\r"
+expect "ストーリーの置き場所"
+send "\r"
+expect "ストーリーの ID の書き方"
+send "#\[0-9\]+\r"
+expect "アノテーションを読む言語"
+send "\r"
+expect "この内容で .vanda/ を作りますか"
+if {[file exists .vanda]} {
+    puts stderr "\n作るかの確かめに答える前に .vanda/ ができた"
+    exit 1
+}
+send "y"
+expect "次にすること"
+expect_after
+expect eof
+lassign [wait] pid spawnid oserr code
+if {$code != 0} {
+    puts stderr "\nvanda init が終了コード $code で終わった"
+    exit 1
+}
+
+set got [lsort [split [exec find .vanda -type f] "\n"]]
+set want [list .vanda/agreements.toml .vanda/checks/ci.toml .vanda/config.toml .vanda/promises.toml]
+if {$got ne $want} {
+    puts stderr "\n.vanda/ のファイルが $got（思ったもの $want）"
+    exit 1
+}
+set cfg [exec cat .vanda/config.toml]
+if {![string match "*id_pattern = \"#\\\[0-9\\\]+\"*" $cfg]} {
+    puts stderr "\n設定に、答えた ID の書き方がない:\n$cfg"
+    exit 1
+}
+set ci [exec cat .vanda/checks/ci.toml]
+if {![string match {*name = "agreement"*} $ci]} {
+    puts stderr "\n審査の設定に agreement の審査がない:\n$ci"
+    exit 1
+}
+puts "\nvanda init で 4 つのファイルができた"
