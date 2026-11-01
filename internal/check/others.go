@@ -214,7 +214,8 @@ func (e *env) evidencePresent(scope string) []diag.Error {
 func (e *env) unreadFiles() []diag.Error {
 	var errs []diag.Error
 	for _, f := range e.files {
-		if !strings.HasPrefix(f, ".vanda/") || f == config.File || glob.Match(".vanda/checks/*.toml", f) {
+		// 外部のコマンドのアダプタ（.vanda/adapters/ の下）は、設定の command から動かすもので、パターンで読むものではない
+		if !strings.HasPrefix(f, ".vanda/") || f == config.File || glob.Match(".vanda/checks/*.toml", f) || strings.HasPrefix(f, ".vanda/adapters/") {
 			continue
 		}
 		read := false
