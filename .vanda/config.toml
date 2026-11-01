@@ -23,7 +23,7 @@ description = "画面の部品と、ブラウザーでの操作"
 [[annotation]]
 paths = ["**/*_test.go"]
 adapter = "go"
-types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]
+types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "guardrail", "sensor"]
 
 [[annotation]]
 paths = ["**/*.txtar"]
