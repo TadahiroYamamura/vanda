@@ -46,6 +46,7 @@
 | `vitest`、`@testing-library/react`、`@testing-library/dom`、`@testing-library/user-event`、`jsdom` | 画面の部品のテスト（`@testing-library/dom` は `@testing-library/react` が求めるもの） |
 | `msw` | 画面の部品のテストで API を差し替える |
 | `@playwright/test` | E2E のテスト（Chrome を動かす）。版は flake の nixpkgs の `playwright-driver` と同じにする |
+| `expect`（nix の flake の packages） | `vanda init` のシナリオテスト（問いを待って答える流れを、端末で動かす） |
 
 - コメントは、なぜこの形なのか（制約、選ばなかった案、直感に反する点）だけを書く。何をしているかは、コードで分かるようにする
 
