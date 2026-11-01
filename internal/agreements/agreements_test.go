@@ -27,6 +27,8 @@ func writeFiles(t *testing.T, files map[string]string) (string, []string) {
 }
 
 // 期待値の指紋は、手で書いた JSON を sha256sum に通して作った
+// @vanda:evidence fingerprint-ignores-formatting
+// @vanda:evidence fingerprint-excludes-flags
 func TestItemFingerprintは書き方の違いで変わらずflagsとguessesを含めない(t *testing.T) {
 	const want = "sha256:ead0b1ff85473e3117de7dfb1514f5d4d749cc30a0eb431c015014c47a59bbe5"
 	srcs := []string{
@@ -49,6 +51,7 @@ func TestItemFingerprintは書き方の違いで変わらずflagsとguessesを�
 	}
 }
 
+// @vanda:evidence fingerprint-excludes-flags
 func TestItemFingerprintは約束のエビデンスを含めフラグを除く(t *testing.T) {
 	const want = "sha256:e6b2ed903b3426210fb3ef2b666199300db863e4ee9ca95bb0ca12f6ecef6f62"
 	root, files := writeFiles(t, map[string]string{".vanda/promises.toml": `[[claim]]
@@ -96,6 +99,7 @@ func TestCanonicalJSONは制御文字だけをエスケープする(t *testing.T
 	}
 }
 
+// @vanda:evidence fingerprint-file-content
 func TestFileFingerprintは中身そのものから作る(t *testing.T) {
 	if got := FileFingerprint([]byte("hello\n")); got != "sha256:5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03" {
 		t.Errorf("got %s", got)

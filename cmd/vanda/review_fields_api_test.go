@@ -290,6 +290,7 @@ func setupFields(t *testing.T) (string, *fieldsRepo, *vandaServer, reviewRespons
 }
 
 // RV-04
+// @vanda:evidence review-flags
 func Testフラグは約束のflagsとguessesと前の合意から決まった順に立つ(t *testing.T) {
 	t.Parallel()
 	_, _, _, got := setupFields(t)
@@ -334,6 +335,7 @@ func Testフラグは約束のflagsとguessesと前の合意から決まった�
 }
 
 // RV-10・RV-02
+// @vanda:evidence review-numbering
 func Test一覧は設定のレイヤーの順の約束と用語と機能とファイルのまとまりに分かれその中はIDか場所の順に並ぶ(t *testing.T) {
 	t.Parallel()
 	_, _, _, got := setupFields(t)
@@ -370,6 +372,7 @@ func jsonEqual(t *testing.T, where string, got json.RawMessage, want string) {
 }
 
 // RV-05
+// @vanda:evidence review-before-after
 func Test変更前と変更後の中身は約束リストに書いたとおりの項目で省いたものはnullになる(t *testing.T) {
 	t.Parallel()
 	_, _, _, got := setupFields(t)
@@ -436,6 +439,8 @@ type contextResponse struct {
 }
 
 // CM-06・CM-09
+// @vanda:evidence context-default-base
+// @vanda:evidence context-bases
 func Test画面で選べるものは今の設定とブランチと履歴から決まる(t *testing.T) {
 	t.Parallel()
 	bin, r, s, _ := setupFields(t)
@@ -487,6 +492,7 @@ func Test画面で選べるものは今の設定とブランチと履歴から�
 }
 
 // CM-08・CM-09: storyStore は、設定のストーリーの置き場所のアダプタ
+// @vanda:evidence context-story-store
 func Test画面で選べるもののストーリーの置き場所は設定のアダプタを示す(t *testing.T) {
 	t.Parallel()
 	for _, c := range []struct{ conf, want string }{
@@ -517,6 +523,7 @@ func Test画面で選べるもののストーリーの置き場所は設定の�
 
 // RV-13: レビュー単位がブランチで story を省いたときは、分かれた点より後のコミットのメッセージにある ID が 1 つなら
 // それを使い、0 か 2 つ以上なら null にする。story を名指ししたときは、それを使う
+// @vanda:evidence review-story-choice
 func Testレビュー単位がブランチのときストーリーはブランチのコミットから1つに決まるときだけ決まり名指ししたものはそのまま使う(t *testing.T) {
 	t.Parallel()
 	cases := []struct {

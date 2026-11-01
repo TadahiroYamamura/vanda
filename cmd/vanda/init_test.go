@@ -886,6 +886,11 @@ func (f *fakeRepoAPI) called() bool {
 }
 
 // CMD-11
+// @vanda:evidence init-defaults-from-repository
+// @vanda:evidence init-writes-four-files
+// @vanda:evidence init-values-only
+// @vanda:evidence init-default-types
+// @vanda:evidence init-guide
 func Test既定の答えのまま進めると読み取った値で4つのファイルができdoctorとciの審査が通る(t *testing.T) {
 	t.Parallel()
 	bin, version := initSetup(t)
@@ -976,6 +981,8 @@ func Test既定の答えのまま進めると読み取った値で4つのファ�
 }
 
 // CMD-11: ストーリーの置き場所の選択肢の全部で、問い 3・4 の出方と既定と、書かれる [story] が合う
+// @vanda:evidence init-store-choices
+// @vanda:evidence init-missing-project-adapter
 func Testストーリーの置き場所の選択肢ごとに問いの出方と既定とstoryの中身が合う(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1032,6 +1039,7 @@ func Testストーリーの置き場所の選択肢ごとに問いの出方と�
 }
 
 // CMD-11: 見つからなかった言語を選ぶと書かれ、選びを外すと書かれない
+// @vanda:evidence init-language-choices
 func Test言語を選ぶ問いで見つからなかった言語を選ぶと書かれ選びを外すと書かれない(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1067,6 +1075,8 @@ func newEmptyInitRepo(t *testing.T) *initRepo {
 
 // CMD-11: 初期化した直後のリポジトリでも、言語を選んで [[annotation]] を書ける。1 つも選ばなければ、案内に
 // [[annotation]] を書くことが足される（.vanda/adapters/ のアダプタを .vanda/adapters/ に置いて足せることは、いつも出る）
+// @vanda:evidence init-language-choices
+// @vanda:evidence init-guide
 func Test初期化した直後のリポジトリでも言語を選べ1つも選ばなければ案内にannotationを書くことが出る(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1123,6 +1133,7 @@ func Test初期化した直後のリポジトリでも言語を選べ1つも選�
 
 // CMD-11: 答えを変えると、その値で書かれる（ベースブランチ、リポジトリ、ID の書き方、読むファイルのパターン。.vanda/adapters/ のアダプタの名前と引数は
 // ストーリーの置き場所の選択肢のテストで変える）
+// @vanda:evidence init-patterns
 func Test答えを変えるとその値で書かれる(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1150,6 +1161,7 @@ func Test答えを変えるとその値で書かれる(t *testing.T) {
 }
 
 // CMD-11: 形に合わない答えは、理由が出て同じ問いにとどまる（選択肢は矢印キーで選ぶので、選択肢にない番号は書けない）
+// @vanda:evidence init-validates-answers
 func Test形に合わない答えは理由が出て同じ問いにとどまる(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1183,6 +1195,7 @@ func Test形に合わない答えは理由が出て同じ問いにとどまる(t
 }
 
 // CMD-11: 作る前の確かめで n と答えると、何も作られない
+// @vanda:evidence init-decline-creates-nothing
 func Test作る前の確かめでnと答えると何も作られない(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1198,6 +1211,7 @@ func Test作る前の確かめでnと答えると何も作られない(t *testin
 }
 
 // CMD-11: 途中で入力を終える（Ctrl+D）と、何も作られない。問いごとに回す
+// @vanda:evidence init-decline-creates-nothing
 func Test途中で入力を終えると何も作られない(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1226,6 +1240,8 @@ func Test途中で入力を終えると何も作られない(t *testing.T) {
 }
 
 // CMD-11: 止める場合は、何も書かれず、理由が標準エラーに出て、終了コードが 1
+// @vanda:evidence init-requires-terminal
+// @vanda:evidence init-keeps-existing
 func Test止める場合は何も書かず理由を標準エラーに出し終了コード1で終わる(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1353,6 +1369,7 @@ func snapshotDir(t *testing.T, dir string) map[string]string {
 // ---- 擬似端末を通さないテスト（initcmd の公開の関数を直に呼ぶ） ----
 
 // CMD-11: remote の URL の形ごとに、GitHub のリポジトリが読めるか
+// @vanda:evidence init-defaults-from-repository
 func Test_remoteのURLの形ごとにGitHubのリポジトリが読めるかが決まる(t *testing.T) {
 	t.Parallel()
 	for _, c := range initRemotes {
@@ -1385,6 +1402,7 @@ var initRemotes = []struct {
 }
 
 // CMD-11: remote の URL の形ごとに、ストーリーの置き場所・リポジトリ・ベースブランチの既定の答えが決まる
+// @vanda:evidence init-defaults-from-repository
 func Test_remoteのURLの形ごとにストーリーの置き場所とリポジトリとベースブランチの既定の答えが決まる(t *testing.T) {
 	t.Parallel()
 	for _, c := range initRemotes {
@@ -1421,6 +1439,8 @@ func Test_remoteのURLの形ごとにストーリーの置き場所とリポジ�
 
 // CMD-11: 言語のあるなしの全部の組み合わせ（5 つの言語で 32 通り）で、見つかる言語と、その既定のパターンが合う。
 // 既定のパターンは、言語ごとに書いた順に比べる（ts は 2 つ）
+// @vanda:evidence init-defaults-from-repository
+// @vanda:evidence init-patterns
 func Test言語のあるなしの全部の組み合わせで見つかる言語と既定のパターンが合う(t *testing.T) {
 	t.Parallel()
 	for mask := 0; mask < 1<<len(initLangs); mask++ {
@@ -1478,6 +1498,9 @@ func filesToDir(t *testing.T, files [][2]string) string {
 }
 
 // CMD-11: 答えから作る 4 つのファイル。置き場所の選択肢の全部と、言語の選び方で、書かれる [story] と [[annotation]] が合う
+// @vanda:evidence init-writes-four-files
+// @vanda:evidence init-values-only
+// @vanda:evidence init-default-types
 func Test答えから作る4つのファイルは置き場所と言語の答えのとおりに値だけで書かれる(t *testing.T) {
 	t.Parallel()
 	bin, version := initSetup(t)
@@ -1554,6 +1577,7 @@ func Test答えから作る4つのファイルは置き場所と言語の答え�
 }
 
 // CMD-11: 審査の設定には、今ある審査を全部、docs/formats.md の「審査の種類」の順に、審査ごとに決まった範囲で書く
+// @vanda:evidence init-writes-four-files
 func Test審査の設定には今ある審査が全部docs_formats_mdの順に決まった範囲で入る(t *testing.T) {
 	t.Parallel()
 	var doc struct {
@@ -1590,6 +1614,7 @@ const initRepeat = 30
 
 // CMD-11: 問いが出るのを待ってから答えを 1 回だけ送ると、2 問目以降の答えも読み落とされずに最後まで進む。
 // 読み落としはときどきしか起きないので、同じ流れを initRepeat 回まわす
+// @vanda:evidence init-reads-answers-sent-after-prompt
 func Test問いが出てから1回だけ答えを送ると2問目以降の答えも読み落とされずに最後まで進む(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)

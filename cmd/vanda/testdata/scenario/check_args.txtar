@@ -1,4 +1,7 @@
 # CMD-03: vanda check は、審査の設定のファイルを必須の引数で受け取る。既定の審査は持たない。
+# @vanda:evidence check-config-required
+# @vanda:evidence check-base-required-for-story
+# @vanda:evidence check-story-from-commits
 # 範囲を「1 つのストーリー」にする審査を含む設定では、--base も必須。範囲が全部の審査だけなら、渡さなくてよい。
 
 exec git init -q -b main

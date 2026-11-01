@@ -20,6 +20,7 @@ import (
 // CM-03 の指紋のテスト。期待値は docs/formats.md の「指紋」から作る。
 // 決まった形の JSON は、実装の CanonicalJSON を使わず、このファイルの canonical で作る。
 
+// @vanda:evidence fingerprint-file-content
 func TestFileFingerprintはファイルの中身そのもののSHA256に接頭辞を付ける(t *testing.T) {
 	// 期待値は sha256sum で作った値
 	cases := map[string]string{
@@ -72,6 +73,7 @@ func TestCanonicalJSONは浮動小数点数と日時をエラーにする(t *tes
 	}
 }
 
+// @vanda:evidence fingerprint-excludes-flags
 func TestItemFingerprintは手で作った例と同じ値になりflagsとguessesを除く(t *testing.T) {
 	// docs/formats.md の例。期待値は {"definition":"やること","id":"task","name":"タスク"} を sha256sum にかけた値
 	want := "sha256:8d0b08167c5bf0bbb777f239b51dc94e46f55369dce46bea2ff4dfb23325832d"
@@ -519,6 +521,7 @@ func listGen(t *rapid.T) promiseList {
 	return promiseList{terms: []termM{term}, features: []featureM{feature}, claims: []claimM{claim}}
 }
 
+// @vanda:evidence fingerprint-ignores-formatting
 func Test約束リストの項目の順と空白と引用符とコメントの違いでは指紋が変わらず決まった形のJSONの指紋になる(t *testing.T) {
 	root := t.TempDir()
 	rapid.Check(t, func(rt *rapid.T) {
@@ -576,6 +579,7 @@ func baseList() promiseList {
 	}
 }
 
+// @vanda:evidence fingerprint-excludes-flags
 func Test指紋に入る項目のどれを変えても指紋が変わりflagsとguessesでは変わらない(t *testing.T) {
 	type change struct {
 		name    string
@@ -650,6 +654,7 @@ func Test約束リストのIDを変えると指紋が変わる(t *testing.T) {
 	}
 }
 
+// @vanda:evidence fingerprint-as-written
 func Test_formalを省いたものとformalをtrueと書いたものは別の指紋になる(t *testing.T) {
 	root := t.TempDir()
 	a := baseList()

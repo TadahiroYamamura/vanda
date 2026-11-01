@@ -1,4 +1,5 @@
 # CMD-01、CM-09: 設定の version と、動いている vanda の版を比べる。
+# @vanda:evidence config-version-mismatch
 # version が動いている vanda と同じなら通り、新しい・古い・ないときはエラーで止まる。
 # 審査（vanda check）も、版が合わなければ止まる。
 #

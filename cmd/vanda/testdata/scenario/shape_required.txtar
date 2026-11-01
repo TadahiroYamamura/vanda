@@ -1,4 +1,5 @@
 # CMD-10 約束リストの形: 必須の項目がある。
+# @vanda:evidence promise-list-required-fields
 # 表（term・feature・claim・claim.evidence）ごとに、必須の項目を 1 つずつ消すと止まる。
 #
 # 項目がないときは、その項目を持つべき表の見出しの行を指す（docs/formats.md）。

@@ -225,6 +225,9 @@ func q(v string) string { return url.QueryEscape(v) }
 
 // テストの中で起動したサーバーが、テストの終わりに止まることを確かめる（stop が確かめる）。
 // あわせて、ほかのホストの名前で来た要求を断ることも確かめる（CM-01: 自分のマシンの中でだけ開く）。
+// @vanda:evidence serve-rejects-foreign-host
+// @vanda:evidence serve-listens-localhost
+// @vanda:evidence serve-prints-url
 func Test起動したvanda_serveは止めると止まりほかのHostの要求を断る(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)

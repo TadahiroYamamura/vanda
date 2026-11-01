@@ -43,6 +43,7 @@ func presentClaim(id string) string {
 	return b.String()
 }
 
+// @vanda:evidence evidence-presence-shown
 func Test約束の詳細はエビデンスのタイプごとに揃っているかを示す(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)

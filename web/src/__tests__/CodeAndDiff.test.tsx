@@ -24,6 +24,7 @@ const lines: DiffLine[] = [
 ];
 
 describe("ファイルの行の差分", () => {
+  // @vanda:evidence review-file-diff-lines
   it("行の種類と変更前と変更後の番号と文がAPIのdiff.linesと合う", () => {
     const { container } = render(<LineDiff lines={lines} lang={null} />);
     const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>("table.diff-lines tr.diff-line"));
@@ -40,6 +41,7 @@ describe("ファイルの行の差分", () => {
     });
   });
 
+  // @vanda:evidence review-file-diff-lines
   it("書き換えた行の消した所と足した所をつなげると変更前と変更後の行になる", () => {
     const { container } = render(<LineDiff lines={lines} lang={null} />);
     const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>("tr.diff-line"));
@@ -55,6 +57,7 @@ describe("ファイルの行の差分", () => {
     for (const i of [0, 3, 4]) expect(rows[i].querySelector(".diff-part:is(del, ins)")).toBeNull();
   });
 
+  // @vanda:evidence review-file-diff-lines
   it("改行のない最後の行にだけ印を付ける", () => {
     const { container } = render(<LineDiff lines={lines} lang={null} />);
     const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>("tr.diff-line"));
@@ -84,6 +87,8 @@ function copyContents(el: HTMLElement): string {
 const tla = "---- MODULE M ----\n\\* 置き換えないコメント a == b\nS == \\A x \\in T : x' # x /\\ <<a, b>> # <<>>\n====\n";
 
 describe("色付け", () => {
+  // @vanda:evidence tla-math-symbols
+  // @vanda:evidence tla-copy-ascii
   it("色付けを読み込んだ後もTLAは記号で見えコピーするとリポジトリの文字に戻る", async () => {
     const { container } = render(<CodeBlock source={tla} lang="tlaplus" />);
     const pre = container.querySelector<HTMLElement>("pre.code[data-lang=tlaplus]");

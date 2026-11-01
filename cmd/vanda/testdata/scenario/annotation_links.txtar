@@ -1,4 +1,6 @@
 # アノテーションのつながり: アノテーションが指す ID が約束リストにあり、種類が合う
+# @vanda:evidence annotation-links-kinds
+# @vanda:evidence annotation-links-tla-types
 # （term には用語、feature には機能、claim・evidence・sensor には約束）。合わない組み合わせを全部回す。
 # 仕様の型の宣言（TLA+ の TypeOK の中で \in・\subseteq の右に書いた定義）には term か internal があり、feature がない。
 # Go の型（task.go の Task）には term を求めないので、付けなくても通る。

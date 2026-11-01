@@ -134,6 +134,12 @@ func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]b
 }
 
 // RV-01・RV-02・RV-13
+// @vanda:evidence review-no-omission-no-duplicate
+// @vanda:evidence review-renamed-file
+// @vanda:evidence review-numbering
+// @vanda:evidence review-view-branch
+// @vanda:evidence review-view-story
+// @vanda:evidence review-other-commits
 func TestRV01の一覧はAPIで手で作った例と合う(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -173,6 +179,7 @@ func TestRV01の一覧はAPIで手で作った例と合う(t *testing.T) {
 }
 
 // RV-01 のランダムチェック。無作為な操作の列を当てたリポジトリで、一覧がテストの中で数えたものとちょうど一致する。
+// @vanda:evidence review-no-omission-no-duplicate
 func TestRV01の一覧は無作為な操作の列を当ててもテストの中で数えたものとちょうど一致する(t *testing.T) {
 	t.Parallel()
 	runRV01Random(t, func(rt *rapid.T, bin string, r *rvRepo, branch map[rvEntry]bool, stories map[string]map[rvEntry]bool) {
@@ -194,6 +201,7 @@ func TestRV01の一覧は無作為な操作の列を当ててもテストの中�
 }
 
 // RV-13・CM-06 の引数の誤り。
+// @vanda:evidence api-error-shape
 func TestRV01の一覧はないベースブランチや足りない引数や形の誤ったストーリーのIDを400で断る(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)

@@ -1,4 +1,14 @@
 # アノテーションの読み取り: .vanda/adapters/ のアダプタ（.vanda/adapters/ の直下のファイルか、ディレクトリの直下の run）。
+# @vanda:evidence annotation-adapter-required
+# @vanda:evidence project-adapter-name
+# @vanda:evidence project-adapter-overrides-builtin
+# @vanda:evidence project-adapter-args-and-cwd
+# @vanda:evidence project-adapter-args-only-for-project
+# @vanda:evidence project-adapter-not-runnable
+# @vanda:evidence adapter-name-unknown
+# @vanda:evidence project-adapter-not-annotation
+# @vanda:evidence project-adapter-response-errors
+# @vanda:evidence project-adapter-failure-reason
 # 設定には adapter = "<名前>" と args だけを書く。args はそのまま引数として渡る。
 # アダプタが失敗したとき、返したものが JSON として読めないときは、審査が止まる。
 # 読むファイルのパターンに当たったのに、アダプタが決まっていないファイルがあると、審査で止まる。

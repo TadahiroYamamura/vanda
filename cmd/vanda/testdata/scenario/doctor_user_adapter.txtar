@@ -1,4 +1,6 @@
 # CMD-01: vanda doctor は、ストーリーの置き場所が.vanda/adapters/ のアダプタなら、.vanda/adapters/ にあって実行できるかを確かめる。
+# @vanda:evidence doctor-project-adapter
+# @vanda:evidence project-adapter-args-only-for-project
 # アダプタは、直下のファイルか、ディレクトリの直下の run。ないとき、実行できないときは、場所と直し方を出して止まる。
 
 exec git init -q -b main

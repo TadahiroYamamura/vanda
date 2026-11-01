@@ -1,4 +1,6 @@
 # CMD-10 約束リストの形: part_of の先が用語としてあり、循環しない。subjects の先が約束リストにある。
+# @vanda:evidence promise-list-part-of
+# @vanda:evidence promise-list-subjects-exist
 # 循環していても、vanda は止まらずに回り続けることなく、エラーで止まる（回り続けると go test の時間切れで落ちる）。
 #
 # part_of は 1 つの ID の文字列として書いた。配列も書けるのかは計画にないため（報告済み）。
