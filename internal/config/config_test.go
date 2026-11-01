@@ -101,7 +101,7 @@ id_pattern = "("
 		{".vanda/config.toml:2: ", "promises", "パターン"},
 		{".vanda/config.toml:6: ", `レイヤーの ID "Model"`, "決まった形"},
 		{".vanda/config.toml:5: ", `layer "Model" の description`, `description = "…"`},
-		{".vanda/config.toml:11: ", `アダプタ "rust"`, "vanda の中"},
+		{".vanda/config.toml:11: ", `アダプタ "rust"`, "組込み", ".vanda/adapters/rust"},
 		{".vanda/config.toml:14: ", "id_pattern", "正規表現"},
 		{".vanda/config.toml:3: ", "extra", "決まった項目"},
 	}
