@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/charmbracelet/x/term"
-	"github.com/charmbracelet/x/termios"
 )
 
 // Terminal は、問いかけの間の端末。標準入力は 1 つの goroutine で読み続け、今出している問いのプログラムにだけ渡す。
@@ -106,11 +105,7 @@ func (t *Terminal) with(f func(in io.Reader) error) error {
 		return fmt.Errorf("端末を問いかけの状態にできません（%v）。", err)
 	}
 	// 入力が端末のファイルでないとき、bubbletea は端末が改行を CR LF に直す前提で出力するので、出力の処理は戻す
-	cur, err := termios.GetTermios(int(t.in.Fd()))
-	if err == nil {
-		err = termios.SetTermios(int(t.in.Fd()), cur.Ispeed, cur.Ospeed, nil, nil, map[termios.O]bool{termios.OPOST: true, termios.ONLCR: true}, nil, nil)
-	}
-	if err != nil {
+	if err := keepOutputProcessing(t.in.Fd()); err != nil {
 		_ = term.Restore(t.in.Fd(), state)
 		return fmt.Errorf("端末を問いかけの状態にできません（%v）。", err)
 	}
