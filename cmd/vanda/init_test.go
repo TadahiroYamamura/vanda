@@ -1779,10 +1779,19 @@ func Test_vanda_adaptersのアダプタの名前に組込みのアダプタと�
 	// 端末で問いかけて、名前に github と答える
 	r := newInitRepo(t, "", false)
 	s := startInit(t, bin, r.root, r.g.env)
-	// 名前の問いで断らず（聞き直さず）次の問いへ進み、答えたとおりに書く。作った後の確かめで、組込みの github の
-	// 設定として読まれて誤りになるか（終了コード）は、約束の文に書いていないので見ない
+	// 名前の問いで断らず（聞き直さず）次の問いへ進み、答えたとおりに書く。.vanda/adapters/github がないので組込みの github が
+	// 使われ、作った後の確かめで、組込みの github に要る repository がない誤りになり、終了コード 1 で終わる（PO の決定）
 	s.run(initPlan{story: ".vanda/adapters/ のアダプタ", detail: "github", adapterArgs: "--project APP", idPattern: "PROJ-[0-9]+"})
-	s.wait()
+	if code := s.wait(); code != 1 {
+		t.Errorf("終了コードが %d（組込みの github の確かめで誤りになり 1 のはず）\n%s", code, s.stderr.String())
+	}
+	found := false
+	for _, l := range strings.Split(s.stderr.String(), "\n") {
+		found = found || (strings.HasPrefix(l, ".vanda/config.toml:") && strings.Contains(l, "repository がありません"))
+	}
+	if !found {
+		t.Errorf("標準エラーに、組込みの github に repository がない誤りが出ていない\n%s", s.stderr.String())
+	}
 	if st := readInitConfig(t, r.root).Story; st == nil || st.Adapter != "github" || !reflect.DeepEqual(st.Args, []string{"--project", "APP"}) || st.Repository != "" {
 		t.Errorf("名前に github と答えたときの [story]: %+v", st)
 	}

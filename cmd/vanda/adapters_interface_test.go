@@ -342,6 +342,7 @@ func Test_vanda_doctorはGitHubのリポジトリを読んでIssuesが使える�
 
 // CMD-01: vanda doctor は、置き場所が .vanda/adapters/ のアダプタなら、そこにあって実行できるかを確かめる
 // @vanda:evidence doctor-project-adapter
+// @vanda:evidence project-adapter-not-runnable
 func Test_vanda_doctorはストーリーの置き場所のアダプタがあって実行できるかを確かめる(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -356,12 +357,16 @@ func Test_vanda_doctorはストーリーの置き場所のアダプタがあっ�
 		noexec   bool
 		ok       bool
 		where    string
+		// noShebang は、アダプタを 1 行目の動かし方（#!）なしで、実行の権限を付けて置き直す
+		noShebang bool
+		reason    string
 	}{
-		{"ファイルがあって実行できる", map[string]string{"jira": story}, false, true, ""},
-		{"ディレクトリのrunがあって実行できる", map[string]string{"jira/run": story}, false, true, ""},
-		{"ない", nil, false, false, ".vanda/adapters/jira"},
-		{"実行の権限がない", map[string]string{"jira": story}, true, false, ".vanda/adapters/jira"},
-		{"ディレクトリにrunがない", map[string]string{"jira/other": story}, false, false, ".vanda/adapters/jira/run"},
+		{"ファイルがあって実行できる", map[string]string{"jira": story}, false, true, "", false, ""},
+		{"ディレクトリのrunがあって実行できる", map[string]string{"jira/run": story}, false, true, "", false, ""},
+		{"ない", nil, false, false, ".vanda/adapters/jira", false, ""},
+		{"実行の権限がない", map[string]string{"jira": story}, true, false, ".vanda/adapters/jira", false, ""},
+		{"ディレクトリにrunがない", map[string]string{"jira/other": story}, false, false, ".vanda/adapters/jira/run", false, ""},
+		{"1行目に動かし方がない", map[string]string{"jira": story}, false, false, ".vanda/adapters/jira", true, "1 行目に、動かし方がありません"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -372,7 +377,15 @@ func Test_vanda_doctorはストーリーの置き場所のアダプタがあっ�
 					t.Fatal(err)
 				}
 			}
+			if c.noShebang {
+				if err := os.WriteFile(filepath.Join(root, ".vanda/adapters/jira"), []byte(story), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			}
 			code, out, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "doctor")
+			if c.reason != "" && !strings.Contains(errs, c.reason) {
+				t.Errorf("誤りに「%s」が出ていない\n%s", c.reason, errs)
+			}
 			if (code == 0) != c.ok {
 				t.Errorf("終了コード %d（通るのは %v のはず）\n%s%s", code, c.ok, out, errs)
 			}

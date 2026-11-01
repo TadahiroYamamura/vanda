@@ -652,6 +652,32 @@ func Test取り消すと段1の合意の審査で止まりもう一度合意す�
 	}
 }
 
+// RV-06: キーを引用符で囲んだ flags・guesses（"flags"・'guesses'）も、合意でその行だけが消える
+// @vanda:evidence agree-removes-flags
+func Test引用符で囲んだキーのflagsとguessesの約束にも合意できその行だけが消える(t *testing.T) {
+	t.Parallel()
+	_, r, s := setupAgree(t)
+	text := readFileString(t, r.Root, ".vanda/promises.toml")
+	flags, guesses := "flags = [\"ai-proposal\"]\n", "guesses = [\"タスクは消しても ID を使い回さない\"]\n"
+	quoted := strings.Replace(strings.Replace(text, flags, "\"flags\" = [\"ai-proposal\"]\n", 1), guesses, "'guesses' = [\"タスクは消しても ID を使い回さない\"]\n", 1)
+	if quoted == text || strings.Count(quoted, "\"flags\" = ") != 1 || strings.Count(quoted, "'guesses' = ") != 1 {
+		t.Fatalf("約束リストのキーを引用符で囲めない:\n%s", quoted)
+	}
+	writeFile(t, r.Root, ".vanda/promises.toml", quoted)
+	r.git("commit", "-q", "-am", reviewStory+" キーを引用符で囲む")
+
+	if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil); code != 200 {
+		t.Fatalf("合意できない（%d）: %s", code, msg)
+	}
+	want := strings.Replace(strings.Replace(quoted, "\"flags\" = [\"ai-proposal\"]\n", "", 1), "'guesses' = [\"タスクは消しても ID を使い回さない\"]\n", "", 1)
+	if now := readFileString(t, r.Root, ".vanda/promises.toml"); now != want {
+		t.Errorf("約束リストが、引用符で囲んだ flags と guesses の行だけを消したものでない\n--- 今\n%s\n--- 思ったもの\n%s", now, want)
+	}
+	if files := committedFiles(r, "HEAD"); !reflect.DeepEqual(files, []string{".vanda/agreements.toml", ".vanda/promises.toml"}) {
+		t.Errorf("コミットに入ったファイル: %v", files)
+	}
+}
+
 // RV-06 のガードレール: 合意の記録を書くファイルが決まらない（設定の agreements のパターンのどれにも当たるファイルがなく、
 // 最初のパターンにワイルドカードがある）ときは、ファイルを作らずに 409 で断る（docs/formats.md）
 // @vanda:evidence agree-writes-and-commits
