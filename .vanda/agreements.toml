@@ -62,3 +62,12 @@ fingerprint = "sha256:a2977754db74e408b7e17401085807643662bb157ef8500fcf16fa06dc
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-02T02:03:04+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:a241c8ca3930b122633e695c222f9d6135f65b451de58badf62f57f4467ca561"
+fingerprint = "sha256:a241c8ca3930b122633e695c222f9d6135f65b451de58badf62f57f4467ca561"
+path = "cmd/vanda/testdata/scenario/agreement_targets.txtar"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-02T02:06:18+09:00
+story = "#4"
