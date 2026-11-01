@@ -1,5 +1,25 @@
 version = "0.1.0"
 
+[[layer]]
+id = "model"
+name = "モデル"
+description = "合意の判定の TLA+ のモデル"
+
+[[layer]]
+id = "cli"
+name = "CLI"
+description = "vanda の命令（check・doctor・init・serve の起動）"
+
+[[layer]]
+id = "api"
+name = "API"
+description = "vanda serve の HTTP の API"
+
+[[layer]]
+id = "gui"
+name = "画面"
+description = "画面の部品と、ブラウザーでの操作"
+
 [[annotation]]
 paths = ["**/*_test.go"]
 adapter = "go"
