@@ -1015,8 +1015,8 @@ layers = ["cli"]
 [[claim]]
 id = "deleted-item-needs-agreement"
 subjects = ["rv-06", "cmd-10", "agreement"]
-statement = "agreement は、合意したことのある約束・用語・機能・合意の対象のファイルが今はなく、それを消したことへの合意の記録がなければ誤りにする。範囲 story では、比べる元にあって今にないものだけを見る"
-rationale = "AI が約束とテストを一緒に消しても、PO が気づけるようにするため"
+statement = "agreement は、合意したことのある約束・用語・機能・合意の対象のファイルが今はなく、それを消したことへの合意の記録がなければ誤りにする。範囲 story では、比べる元にあって今にないものを、合意したことがあるかどうかによらず見る"
+rationale = "AI が約束とテストを一緒に消しても、PO が気づけるようにするため。範囲 story では、合意したことのないものを消しても、そのストーリーで変えたものなので、PO が見ないまま合流させない（story-pass-only-when-seen）"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
