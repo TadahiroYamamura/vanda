@@ -21,7 +21,7 @@ definition = "失敗すると著しい損害があるので、十分に確かめ
 [[term]]
 id = "formal-feature"
 name = "形式手法を使う機能"
-definition = "オラクル（TLA+）で確かめる機能。約束リストの項目は formal。コア機能は、理由を書いて合意しない限り形式手法を使う"
+definition = "オラクル（TLA+）で確かめる機能。約束リストの項目は formal。コア機能は、理由を書いて合意しない限り形式手法を使う。形式手法を使う機能の約束は、どれも TLA+ で確かめるか、確かめない理由を書く"
 
 [[term]]
 id = "term"
@@ -397,6 +397,29 @@ type = "scenario-test"
 layers = ["cli"]
 
 [[claim]]
+id = "reads-committed-files-only"
+subjects = ["cmd-03", "rv-01", "check"]
+statement = "審査とレビューの画面は、設定・約束リスト・合意の記録・アノテーションを読むファイルを、HEAD のコミットの中身で読み、コミットしていないファイルと変更（索引に足したものを含む）は読まない"
+rationale = "コミットしていないものは、提出される保証がなく、ないのと同じため。手元と CI で結果が変わらないようにする"
+layers = ["cli", "api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
 id = "promise-list-default-file-may-be-absent"
 subjects = ["cm-02", "promise-list"]
 statement = "設定に promises を書かず、既定の .vanda/promises.toml がなければ、空の約束リストとみなす"
@@ -570,6 +593,24 @@ type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
+id = "promise-list-formal-claims"
+subjects = ["cm-02", "cmd-10", "formal-feature", "model-check"]
+statement = "形式手法を使う機能（formal が真。省けば core と同じ）を subjects に持つ約束に、model-check の予定も model_check_waiver（TLA+ で確かめない理由）もなければ、また model-check の予定と model_check_waiver を両方書けば、promise-list-shape の誤りにする"
+rationale = "コア機能で、仕様の書き忘れや、新しい約束が形式手法を通らないことを、人が見落としても止めるため。確かめない理由は約束の項目なので、合意の対象になる"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["cli"]
+
+[[claim]]
 id = "fingerprint-excludes-flags"
 subjects = ["cm-03", "flag", "agreement"]
 statement = "約束の指紋は、約束リストの項目から flags と guesses を除いたものから作る"
@@ -624,10 +665,59 @@ type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
+id = "fingerprint-form"
+subjects = ["cm-03", "fingerprint"]
+statement = "指紋は、sha256: に続けて、元のバイト列の SHA-256 の値を 16 進の小文字 64 文字で書いたもの。約束・用語・機能の元は、flags と guesses を除いた項目の表を決まった形の JSON（キーを UTF-8 のバイトの順に並べ、配列は書いた順、区切りの前後に空白を入れず、最後に改行を付けない）にした UTF-8 のバイト列。ファイルの元は、中身のバイト列そのもの"
+rationale = "作り方が変わると、今までの合意がすべて外れるか、違う中身を合意済とみなすため。期待する指紋は、実装とは別の源（手で書いた JSON を sha256sum に通したもの）から作る"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "fingerprint-json-strings"
+subjects = ["cm-03", "fingerprint"]
+statement = "決まった形の JSON の文字列でエスケープするのは、\" → \\\"、\\ → \\\\、改行 → \\n、復帰 → \\r、タブ → \\t、そのほかの U+0000〜U+001F → \\u00xx（16 進の小文字）だけで、日本語などの文字と <・>・& は UTF-8 のまま書く。真偽は true・false、整数は 10 進で書く"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
 id = "agreed-when-fingerprint-matches"
 subjects = ["rv-06", "agreement", "agreed", "proposed"]
-statement = "今の中身の指紋に合う合意の記録が 1 つでもあれば合意済、なければ提案中とする"
+statement = "今の中身の指紋に合う合意の記録（ファイルなら、場所も合うもの）が 1 つでもあれば合意済、なければ提案中とする"
 layers = ["model", "cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "model-check"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "cross-check"
+layers = ["cli"]
+
+[[claim]]
+id = "renamed-file-needs-agreement"
+subjects = ["cm-03", "agreement", "scenario"]
+statement = "ファイルの名前を変えたら、中身が同じでも、新しい場所のファイルを提案中とし、古い場所を消したものとする"
+rationale = "ファイルは場所で見分けるため。中身だけで見分けると、合意済のファイルを写した先が、誰も読まないまま合意済になる"
+layers = ["model", "cli"]
+flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
@@ -734,19 +824,6 @@ type = "cross-check"
 layers = ["cli"]
 
 [[claim]]
-id = "renamed-file-stays-agreed"
-subjects = ["cm-03", "agreement", "scenario"]
-statement = "ファイルの名前を変えただけで中身が同じなら、合意済のままにする"
-rationale = "ファイルは中身の指紋で合意を探すため"
-layers = ["cli"]
-flags = ["ai-proposal"]
-
-[[claim.evidence]]
-stage = "test"
-type = "unit-test"
-layers = ["cli"]
-
-[[claim]]
 id = "changed-id-is-new"
 subjects = ["cm-03", "agreement", "promise"]
 statement = "約束・用語・機能の ID を変えたら、新しいものとみなし、合意し直しにする"
@@ -773,8 +850,10 @@ layers = ["cli"]
 [[claim]]
 id = "agreements-point-to-existing-items"
 subjects = ["cm-03", "cmd-10", "agreement-record"]
-statement = "kind が claim・term・feature の合意の記録が、約束リストにない項目を指していれば、agreement-targets の誤りにする"
+statement = "kind が claim・term・feature の合意の記録が、約束リストにない項目を指していて、その項目を消したことへの合意の記録がなければ、agreement-targets の誤りにする"
+rationale = "合意の記録は消さずに履歴として残すため、消した項目を指す記録は、消したことへの合意で解く"
 layers = ["cli"]
+flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
@@ -785,6 +864,68 @@ layers = ["cli"]
 stage = "test"
 type = "scenario-test"
 layers = ["cli"]
+
+[[claim]]
+id = "deleted-item-needs-agreement"
+subjects = ["rv-06", "cmd-10", "agreement"]
+statement = "agreement は、合意したことのある約束・用語・機能・合意の対象のファイルが今はなく、それを消したことへの合意の記録がなければ誤りにする。範囲 story では、比べる元にあって今にないものだけを見る"
+rationale = "AI が約束とテストを一緒に消しても、PO が気づけるようにするため"
+layers = ["model", "cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "model-check"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "cross-check"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["cli"]
+
+[[claim]]
+id = "deletion-agreement-record"
+subjects = ["rv-06", "cm-03", "agreement-record"]
+statement = "消したことへの合意の記録は、ほかの合意の記録と同じ kind・key（ファイルなら path）・user・agreed_at・story に、fingerprint の代わりに deleted = true を持つ"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "review-deleted-shown"
+subjects = ["rv-01", "rv-06", "agreement"]
+statement = "レビューの一覧に、比べる元にあって今にない約束・用語・機能・合意の対象のファイルを「削除」として出し、消す前の中身を示し、消したことに合意できるようにする"
+layers = ["api", "gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
 
 [[claim]]
 id = "annotation-syntax-errors"
@@ -960,6 +1101,42 @@ flags = ["ai-proposal"]
 [[claim.evidence]]
 stage = "test"
 type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "annotation-ts-skipped-not-counted"
+subjects = ["annotation-reading", "builtin-adapter", "evidence"]
+statement = "ts のアダプタは、test・it・describe に .skip か .todo を付けた呼び出しと、その中の呼び出しのアノテーションを、エビデンスとして数えない"
+rationale = "実行しないテストは、何も確かめていないため"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["cli"]
+
+[[claim]]
+id = "annotation-ts-only-rejected"
+subjects = ["annotation-reading", "builtin-adapter"]
+statement = "ts のアダプタは、test・it・describe に .only を付けた呼び出しがあれば、その行を指して annotation-links の誤りにする"
+rationale = ".only は、同じファイルのほかのテストを黙って実行しなくするため"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1342,8 +1519,9 @@ layers = ["cli"]
 [[claim]]
 id = "check-agreement-targets"
 subjects = ["cmd-10", "agreement", "proposed"]
-statement = "agreement は、合意の対象（約束・用語・機能と、txtar・tla のアノテーションのパターンに当たるファイルと、[[guardrail]] の paths に当たるファイル）の今の中身が合意済でなければ誤りにする"
-condition = "Go のファイルは合意の対象にしない"
+statement = "agreement は、合意の対象（約束・用語・機能と、types に scenario-test か model-check を含む [[annotation]] のパターンに当たるファイルと、[[guardrail]] の paths に当たるファイル）の今の中身が合意済でなければ誤りにする"
+rationale = "シナリオとオラクルとガードレールの定義は、PO が読んで正とするもので、どのアダプタで読むかによらないため。E2E・Expect のシナリオも、合意しないまま審査を通さない"
+condition = "types が scenario-test・model-check のどちらも含まないパターン（Go のテストなど）だけに当たるファイルは、合意の対象にしない"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1395,6 +1573,24 @@ layers = ["cli"]
 id = "check-evidence-present"
 subjects = ["cmd-10", "evidence", "evidence-type"]
 statement = "evidence-present は、予定したエビデンスの 1 件ごとに、そのタイプを types に含む [[annotation]] で読んだ、タイプに合う種類のアノテーションがその約束を指していなければ誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["cli"]
+
+[[claim]]
+id = "check-evidence-guardrail-needs-definition"
+subjects = ["cmd-10", "evidence", "guardrail"]
+statement = "evidence-present は、タイプが guardrail の予定を、[[guardrail]] の paths に当たるファイルにその約束を指すアノテーションがあるときだけ揃ったとみなす。[[annotation]] のパターンで読んだ guardrail のアノテーション（Go のテストなど）は、ガードレールが拒むことを確かめるエビデンスとして重ねるもので、それだけでは揃わない"
+rationale = "ガードレールそのものがないのに、テストだけでガードレールの予定が揃わないようにするため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1780,8 +1976,8 @@ layers = ["api"]
 [[claim]]
 id = "story-github-token"
 subjects = ["cm-08", "cm-09"]
-statement = "GitHub の認証の鍵は、使うたびに、環境の変数 GH_TOKEN を、なければ gh auth token の出力を使う"
-rationale = "認証の鍵は設定に書かず、使うたびに読めるものを使うため"
+statement = "GitHub の認証の鍵は、使うたびに、api_url のホストに合うものを使う。ホストが api.github.com なら環境の変数 GH_TOKEN を、なければ gh auth token --hostname github.com の出力を使い、ほかのホストなら GH_ENTERPRISE_TOKEN を、なければ gh auth token --hostname <そのホスト> の出力を使う"
+rationale = "認証の鍵は設定に書かず、使うたびに読めるものを使うため。api_url はチームで共有する設定なので、github.com の鍵を、設定に書かれたほかのホストへ送らない"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -1793,6 +1989,31 @@ layers = ["api"]
 [[claim.evidence]]
 stage = "test"
 type = "interface-test"
+layers = ["api"]
+
+[[claim]]
+id = "story-github-token-missing"
+subjects = ["cm-08", "story"]
+statement = "api_url のホストに合う鍵が見つからなければ、GitHub への要求を送らずに、置き場所の誤りにする"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
+id = "story-github-http-warning"
+subjects = ["cm-08", "cm-09"]
+statement = "api_url が http:// で始まるなら、鍵を送るたびに、鍵が暗号化されずに流れることを標準エラーに出す"
+rationale = "サンドボックスなどでは http で送ることがあるので認めるが、鍵が平文で流れることに気づけるようにするため"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
 layers = ["api"]
 
 [[claim]]
@@ -2114,11 +2335,6 @@ layers = ["api"]
 
 [[claim.evidence]]
 stage = "test"
-type = "guardrail"
-layers = ["api"]
-
-[[claim.evidence]]
-stage = "test"
 type = "sensor"
 layers = ["api"]
 
@@ -2149,11 +2365,6 @@ layers = ["api"]
 
 [[claim.evidence]]
 stage = "test"
-type = "guardrail"
-layers = ["api"]
-
-[[claim.evidence]]
-stage = "test"
 type = "sensor"
 layers = ["api"]
 
@@ -2168,11 +2379,6 @@ flags = ["ai-proposal"]
 [[claim.evidence]]
 stage = "test"
 type = "unit-test"
-layers = ["api"]
-
-[[claim.evidence]]
-stage = "test"
-type = "guardrail"
 layers = ["api"]
 
 [[claim.evidence]]
@@ -2233,11 +2439,6 @@ flags = ["ai-proposal"]
 [[claim.evidence]]
 stage = "test"
 type = "unit-test"
-layers = ["api"]
-
-[[claim.evidence]]
-stage = "test"
-type = "guardrail"
 layers = ["api"]
 
 [[claim.evidence]]
@@ -2514,11 +2715,6 @@ layers = ["cli"]
 [[claim.evidence]]
 stage = "test"
 type = "interface-test"
-layers = ["cli"]
-
-[[claim.evidence]]
-stage = "test"
-type = "guardrail"
 layers = ["cli"]
 
 [[claim.evidence]]
