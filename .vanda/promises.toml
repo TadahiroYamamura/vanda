@@ -4178,6 +4178,37 @@ type = "unit-test"
 layers = ["gui"]
 
 [[claim]]
+id = "review-list-icons"
+subjects = ["rv-01", "rv-04", "proposed", "agreed", "detached"]
+statement = "変わったものの一覧では、状態とフラグを、言葉の札でなくアイコンで、名前の下の行に並べる。状態のアイコンは 1 件に 1 つ（合意が外れたものは、提案中でなく合意が外れたことを示す）で、続けて立っているフラグのアイコンを並べる。状態のアイコンは丸の形、フラグのアイコンは丸のない形にし、色だけに頼らずに見分けられるようにする"
+rationale = "一覧は幅が狭く、言葉の札を名前の横に並べると折り返して崩れるため（PO の決定）"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
+
+[[claim]]
+id = "review-icon-names"
+subjects = ["rv-01", "rv-04"]
+statement = "一覧のアイコンに触れたときか、キーボードでフォーカスしたときに、そのアイコンの言葉（合意済・提案中・合意が外れた・AI 案・推測・差分あり）を出し、読み上げにも同じ言葉を渡す"
+rationale = "アイコンだけでは意味を覚えていない人が読めないため"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
 id = "agree-on-screen-reloads"
 subjects = ["rv-06", "agreement"]
 statement = "画面で合意した後に、変わったものの一覧を読み直し、合意した後の状態を見せる"
