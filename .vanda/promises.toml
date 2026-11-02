@@ -247,7 +247,7 @@ part_of = "adapter"
 [[term]]
 id = "fingerprint"
 name = "指紋"
-definition = "中身が同じかを比べるための値（sha256: に続く 64 文字）。約束・用語・機能は flags と guesses を除いた項目から、ファイルは中身のバイト列から作る。合意の記録は、合意したときの指紋を持つ"
+definition = "中身が同じかを比べるための値。合意の記録は、合意したときの指紋を持つ"
 
 [[term]]
 id = "story-trailer"
@@ -784,7 +784,20 @@ layers = ["cli"]
 [[claim]]
 id = "fingerprint-form"
 subjects = ["store-agreements", "fingerprint"]
-statement = "指紋は、sha256: に続けて、元のバイト列の SHA-256 の値を 16 進の小文字 64 文字で書いたもの。約束・用語・機能の元は、flags と guesses を除いた項目の表を決まった形の JSON（キーを UTF-8 のバイトの順に並べ、配列は書いた順、区切りの前後に空白を入れず、最後に改行を付けない）にした UTF-8 のバイト列。ファイルの元は、中身のバイト列そのもの"
+statement = "指紋は、元のバイト列の SHA-256 の値を、sha256: に続けて 16 進の小文字 64 文字で書いたもの"
+rationale = "作り方が変わると、今までの合意がすべて外れるか、違う中身を合意済とみなすため。期待する指紋は、実装とは別の源（手で書いた JSON を sha256sum に通したもの）から作る"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "fingerprint-item-json"
+subjects = ["store-agreements", "fingerprint"]
+statement = "約束・用語・機能の指紋の元は、項目の表を決まった形の JSON（キーを UTF-8 のバイトの順に並べ、配列は書いた順、区切りの前後に空白を入れず、最後に改行を付けない）にした UTF-8 のバイト列"
 rationale = "作り方が変わると、今までの合意がすべて外れるか、違う中身を合意済とみなすため。期待する指紋は、実装とは別の源（手で書いた JSON を sha256sum に通したもの）から作る"
 layers = ["cli"]
 flags = ["ai-proposal"]
