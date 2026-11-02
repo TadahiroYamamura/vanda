@@ -9,6 +9,11 @@ name = "ソフトウェア"
 definition = "vanda で開発するもの。.vanda/ を置いた git のリポジトリで作っているもの"
 
 [[term]]
+id = "vanda-server"
+name = "vanda サーバー"
+definition = "vanda serve が自分のマシンで起動する Web サーバー。画面と、画面が使う API を出す。自分のマシンの中からだけ開ける"
+
+[[term]]
 id = "promise-list"
 name = "約束リスト"
 definition = "ソフトウェアについて、使う言葉（用語）、利用者が行う操作（機能）、そこで成り立たせると決めたこと（約束）をまとめた一覧（既定は .vanda/promises.toml）。ソフトウェアの正とする"
@@ -158,7 +163,7 @@ definition = "フラグ（注意して読む手がかり）。前の合意から
 [[term]]
 id = "check"
 name = "審査"
-definition = "CLI の vanda check が行う、約束リスト・アノテーション・Story: のトレーラー・合意・エビデンスの予定などの点検。証拠を見て、間違いや矛盾がなく基準を満たすかを判断する。オラクルそのもの（モデル検査など）は動かさない"
+definition = "CLI の vanda check が行う点検。約束リスト・アノテーション・Story: のトレーラー・合意・エビデンスの予定などの証拠を集めて、間違いや矛盾がなく基準を満たすかを判断する。オラクルそのもの（モデル検査など）は動かさない"
 
 [[term]]
 id = "mistake"
@@ -227,8 +232,8 @@ definition = "約束ごとに、どのステージで、どのタイプのエビ
 
 [[feature]]
 id = "cm-01"
-name = "手元のサーバーの起動（vanda serve）"
-definition = "手元のサーバーを起動し、ブラウザで開く。自分のマシンの中でだけ開く（CM-01・CMD-04）"
+name = "vanda サーバーの起動（vanda serve）"
+definition = "vanda サーバーを起動し、ブラウザで開く。自分のマシンの中でだけ開く（CM-01・CMD-04）"
 
 [[feature]]
 id = "cm-02"
@@ -2352,7 +2357,7 @@ subjects = ["cm-01"]
 statement = "Host が 127.0.0.1:<ポート>・localhost:<ポート> でない要求を 403 で断る"
 layers = ["api"]
 flags = ["ai-proposal"]
-guesses = ["DNS の名前を差し替えて手元のサーバーを読ませる攻撃を防ぐための決まりだと推し量った"]
+guesses = ["DNS の名前を差し替えてvanda サーバーを読ませる攻撃を防ぐための決まりだと推し量った"]
 
 [[claim.evidence]]
 stage = "test"
