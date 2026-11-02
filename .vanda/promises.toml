@@ -1474,6 +1474,41 @@ type = "interface-test"
 layers = ["cli"]
 
 [[claim]]
+id = "project-adapter-annotation-timeout"
+subjects = ["project-adapters", "annotation-reading", "cm-09"]
+statement = ".vanda/adapters/ のアノテーションのアダプタが、[[annotation]] の timeout（秒。省けば 20）を過ぎても終わらなければ、アダプタを止めて、どのアダプタが時間を過ぎたかを書いた誤りにする"
+rationale = "アダプタが止まると、審査も画面も止まり、画面では合意のロックを握ったままになるため。構文解析が遅いアダプタもあるので、設定で変えられるようにする（PO の決定）"
+layers = ["cli", "api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
+id = "config-annotation-timeout"
+subjects = ["cm-09", "project-adapters"]
+statement = "[[annotation]] の timeout は、1 以上の整数（秒）でなければ誤りにし、.vanda/adapters/ のアダプタを使わない [[annotation]] に書けば誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
 id = "unread-files-excludes-adapters"
 subjects = ["cmd-10", "project-adapters"]
 statement = "読まれていないファイルの審査は、.vanda/adapters/ の下のファイルを除く"
