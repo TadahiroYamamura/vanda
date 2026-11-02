@@ -624,3 +624,204 @@ describe("Story: のトレーラーの誤り", () => {
     }
   });
 });
+
+describe("RV-01 一覧の絞り込み", () => {
+  const list = () => screen.getByRole("region", { name: "変わったものの一覧" });
+  // shown は、一覧に名前 name の 1 件が出ているか
+  const shown = (name: string) => within(list()).queryByText(name, { exact: true }) !== null;
+  const searchBox = () => within(list()).getByRole("searchbox", { name: "絞り込み" });
+  const notAgreedBox = () => within(list()).getByRole("checkbox", { name: "合意済でないものだけ" });
+
+  const term = (no: number, id: string, name: string, definition: string, over: Partial<Entry> = {}) =>
+    claimEntry(no, id, { kind: "term", group: "terms-features", before: { name, definition, partOf: null }, after: { name, definition, partOf: null }, ...over });
+  const feature = (no: number, id: string, name: string, definition: string) =>
+    claimEntry(no, id, { kind: "feature", group: "terms-features", before: { name, definition, core: null, formal: null, formalWaiver: null }, after: { name, definition, core: null, formal: null, formalWaiver: null } });
+  // 一覧の API は、まとまりごとに続けて返す（まとまりが飛び飛びだと、同じまとまりが 2 つ出る）
+  const byGroup = (es: Entry[]) => ["layer:model", "terms-features", "files"].flatMap((g) => es.filter((e) => e.group === g));
+  const statementOf = (statement: string, rationale: string | null = null) => ({
+    statement,
+    rationale,
+    condition: null,
+    subjects: ["task-id"],
+    layers: ["model"],
+    evidence: [],
+    flags: [],
+    guesses: [],
+  });
+
+  // 書く文字は大文字と小文字を混ぜ、当たる側も、見る所ごとに大文字・小文字を変える
+  const textEntries = () => {
+    const hits: [string, Entry][] = [
+      ["約束の ID", claimEntry(1, "apple-claim")],
+      ["約束の文", claimEntry(2, "c-statement", { after: statementOf("APPLE を数える") })],
+      ["消した約束の前の文", claimEntry(3, "c-deleted", { change: "deleted", after: null, state: null, fingerprint: null, before: statementOf("apple を消す") })],
+      ["用語の ID", term(4, "t-apple", "果物", "食べるもの")],
+      ["用語の名前", term(5, "t-name", "りんご ApPlE", "食べるもの")],
+      ["用語の定義", term(6, "t-def", "果物", "赤い aPPLE のこと")],
+      ["機能の名前", feature(7, "f-name", "Apple を並べる", "並べる")],
+      ["機能の定義", feature(8, "f-def", "並べる", "APPLE を並べる")],
+      ["ファイルのパス", fileEntry(9, "e2e/APPLE.txtar")],
+    ];
+    const misses: [string, Entry][] = [
+      ["文にも ID にもない約束", claimEntry(10, "c-miss")],
+      ["理由にだけある約束", claimEntry(11, "c-rationale", { after: statementOf("数える", "apple のため") })],
+      ["中身にだけあるファイル", fileEntry(12, "e2e/other.txtar", { after: { text: "apple\n" } })],
+      ["名前と定義にない用語", term(13, "t-miss", "果物", "食べるもの")],
+    ];
+    return { hits, misses };
+  };
+
+  // @vanda:evidence review-filter-text
+  it("書いた文字で絞り込むと約束と用語と機能はIDと名前と文と定義にファイルはパスにその文字を大文字と小文字を区別せずに含むものだけを出す", async () => {
+    const { hits, misses } = textEntries();
+    const detachedHit = claimEntry(0, "apple-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
+    const detachedMiss = claimEntry(0, "c-detached-miss", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
+    open(byGroup([...hits, ...misses].map(([, e]) => e)), { detached: [detachedHit, detachedMiss] });
+    const name = (e: Entry) => (e.kind === "file" ? e.path! : e.id!);
+    await waitFor(() => expect(shown("apple-claim")).toBe(true));
+    // 絞り込む前は全部出る
+    for (const [what, e] of [...hits, ...misses]) expect(shown(name(e)), `絞り込む前に${what}が出ない`).toBe(true);
+    await userEvent.setup().type(searchBox(), "aPpLe");
+    await waitFor(() => expect(shown("c-miss")).toBe(false));
+    for (const [what, e] of hits) expect(shown(name(e)), `${what}に文字があるのに出ない`).toBe(true);
+    for (const [what, e] of misses) expect(shown(name(e)), `${what}が出ている`).toBe(false);
+    // 合意が外れたものも、同じく絞り込む
+    expect(shown("apple-detached"), "合意が外れたもので文字があるものが出ない").toBe(true);
+    expect(shown("c-detached-miss"), "合意が外れたもので文字がないものが出ている").toBe(false);
+  });
+
+  // 合意済でないもの（提案中と、合意が外れたもの）。消したものは合意できず、状態がない
+  const stateEntries = () => {
+    const kept: [string, Entry][] = [
+      ["提案中の約束", claimEntry(1, "c-proposed", { state: "proposed" })],
+      ["提案中のファイル", fileEntry(2, "e2e/proposed.txtar", { state: "proposed" })],
+      ["合意が外れた提案中の約束", claimEntry(3, "c-detached-proposed", { state: "proposed", detachedAgreement: { by: ["#31"] } })],
+      ["ほかのストーリーの合意で合意済だが合意が外れた約束", claimEntry(4, "c-detached-agreed", { state: "agreed", detachedAgreement: { by: ["#31"] } })],
+    ];
+    const dropped: [string, Entry][] = [
+      ["合意済の約束", claimEntry(5, "c-agreed", { state: "agreed" })],
+      ["合意済のファイル", fileEntry(6, "e2e/agreed.txtar", { state: "agreed" })],
+      ["消した約束", claimEntry(7, "c-deleted", { change: "deleted", after: null, state: null, fingerprint: null })],
+    ];
+    const detached = [
+      claimEntry(0, "u-detached-proposed", { no: null, change: "unchanged", before: null, state: "proposed", detachedAgreement: { by: ["#30"] } }),
+      fileEntry(0, "e2e/u-detached-agreed.txtar", { no: null, change: "unchanged", before: null, state: "agreed", detachedAgreement: { by: ["#30"] } }),
+    ];
+    return { kept, dropped, detached };
+  };
+
+  // @vanda:evidence review-filter-not-agreed
+  it("合意済でないものだけにすると提案中のものと合意が外れたものだけを出し合意済のものと消したものは出さない", async () => {
+    const { kept, dropped, detached } = stateEntries();
+    open(byGroup([...kept, ...dropped].map(([, e]) => e)), { detached });
+    const name = (e: Entry) => (e.kind === "file" ? e.path! : e.id!);
+    await waitFor(() => expect(shown("c-proposed")).toBe(true));
+    const user = userEvent.setup();
+    expect((notAgreedBox() as HTMLInputElement).checked).toBe(false);
+    await user.click(notAgreedBox());
+    await waitFor(() => expect(shown("c-agreed")).toBe(false));
+    for (const [what, e] of kept) expect(shown(name(e)), `${what}が出ない`).toBe(true);
+    for (const [what, e] of dropped) expect(shown(name(e)), `${what}が出ている`).toBe(false);
+    for (const e of detached) expect(shown(name(e)), `合意が外れたもの ${name(e)} が出ない`).toBe(true);
+    // 外すと全部に戻る
+    await user.click(notAgreedBox());
+    await waitFor(() => expect(shown("c-agreed")).toBe(true));
+    for (const [what, e] of [...kept, ...dropped]) expect(shown(name(e)), `外した後に${what}が出ない`).toBe(true);
+  });
+
+  // @vanda:evidence review-filter-not-agreed
+  it("合意済でないものだけにするのと文字の絞り込みを重ねると両方に当たるものだけを出す", async () => {
+    open([
+      claimEntry(1, "pear-proposed", { state: "proposed" }),
+      claimEntry(2, "pear-agreed", { state: "agreed" }),
+      claimEntry(3, "plum-proposed", { state: "proposed" }),
+      claimEntry(4, "plum-agreed", { state: "agreed" }),
+    ]);
+    await waitFor(() => expect(shown("pear-proposed")).toBe(true));
+    const user = userEvent.setup();
+    await user.type(searchBox(), "pear");
+    await user.click(notAgreedBox());
+    await waitFor(() => expect(shown("pear-agreed")).toBe(false));
+    expect(shown("pear-proposed"), "両方に当たるものが出ない").toBe(true);
+    expect(shown("plum-proposed"), "文字に当たらないものが出ている").toBe(false);
+    expect(shown("plum-agreed"), "どちらにも当たらないものが出ている").toBe(false);
+  });
+
+  // @vanda:evidence review-filter-count
+  it("絞り込んでいるあいだは全体の件数に加えて絞り込んだ後の件数を示し絞り込んでいないときは全体の件数だけを示す", async () => {
+    open([claimEntry(1, "pear-a"), claimEntry(2, "pear-b", { state: "agreed" }), claimEntry(3, "plum-c"), claimEntry(4, "fig-e"), fileEntry(5, "e2e/pear.txtar")]);
+    const heading = () => within(list()).getByRole("heading", { level: 2 }).textContent ?? "";
+    await waitFor(() => expect(heading()).toMatch(/全 5 件/));
+    expect(heading()).not.toMatch(/絞り込/);
+    const user = userEvent.setup();
+    await user.type(searchBox(), "pear");
+    await waitFor(() => expect(heading()).toMatch(/絞り込んだ後 3 件/));
+    expect(heading()).toMatch(/全 5 件/);
+    await user.click(notAgreedBox());
+    await waitFor(() => expect(heading()).toMatch(/絞り込んだ後 2 件/));
+    expect(heading()).toMatch(/全 5 件/);
+    // 文字を消しても、合意済でないものだけにしているあいだは絞り込んでいる
+    await user.clear(searchBox());
+    await waitFor(() => expect(heading()).toMatch(/絞り込んだ後 4 件/));
+    await user.click(notAgreedBox());
+    await waitFor(() => expect(heading()).not.toMatch(/絞り込/));
+    expect(heading()).toMatch(/全 5 件/);
+  });
+
+  // @vanda:evidence review-filter-count
+  it("絞り込みで1件もなければその旨を示し1件でも当たれば示さない", async () => {
+    const detached = claimEntry(0, "kiwi-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
+    open([claimEntry(1, "pear-a"), claimEntry(2, "plum-b")], { detached: [detached] });
+    const none = () => within(list()).queryByText(/絞り込みの条件に当たるものはありません/) !== null;
+    await waitFor(() => expect(shown("pear-a")).toBe(true));
+    expect(none(), "絞り込む前から 0 件と示している").toBe(false);
+    const user = userEvent.setup();
+    await user.type(searchBox(), "melon");
+    await waitFor(() => expect(none(), "1 件もないのに示さない").toBe(true));
+    await user.clear(searchBox());
+    await user.type(searchBox(), "pear");
+    await waitFor(() => expect(shown("pear-a")).toBe(true));
+    expect(none(), "当たるものがあるのに 0 件と示している").toBe(false);
+    // 総数に数えない合意が外れたものだけが当たるときも、一覧に出るものがあるので示さない
+    await user.clear(searchBox());
+    await user.type(searchBox(), "kiwi");
+    await waitFor(() => expect(shown("kiwi-detached")).toBe(true));
+    expect(none(), "合意が外れたものが出ているのに 0 件と示している").toBe(false);
+  });
+
+  // @vanda:evidence review-filter-kept
+  it("絞り込みの条件をURLに残し読み込み直しても約束の詳細から戻っても同じ条件で絞り込む", async () => {
+    const entries = [claimEntry(1, "pear-a"), claimEntry(2, "pear-b", { state: "agreed" }), claimEntry(3, "plum-c")];
+    const detail = http.get("/api/claims/:id", () => HttpResponse.json(claimDetail({ id: "pear-a" })));
+    open(entries, {}, detail);
+    await waitFor(() => expect(shown("plum-c")).toBe(true));
+    const user = userEvent.setup();
+    await user.type(searchBox(), "PEAR");
+    await user.click(notAgreedBox());
+    await waitFor(() => expect(shown("pear-b")).toBe(false));
+    const filtered = () => {
+      expect(shown("pear-a"), "条件に当たるものが出ない").toBe(true);
+      expect(shown("pear-b"), "合意済のものが出ている").toBe(false);
+      expect(shown("plum-c"), "文字に当たらないものが出ている").toBe(false);
+      expect((searchBox() as HTMLInputElement).value, "絞り込みの欄の文字").toBe("PEAR");
+      expect((notAgreedBox() as HTMLInputElement).checked, "合意済でないものだけの印").toBe(true);
+    };
+    filtered();
+    const url = window.location.pathname + window.location.search;
+    expect(url).toContain("PEAR");
+
+    // 読み込み直す（同じ URL で画面を開き直す）
+    cleanup();
+    server.resetHandlers();
+    open(entries, {}, detail);
+    await waitFor(() => expect(shown("pear-a")).toBe(true));
+    filtered();
+
+    // 約束の詳細へ移って戻る
+    await user.click(within(list()).getByText("pear-a", { exact: true }));
+    await user.click(await screen.findByRole("link", { name: "約束の詳細を開く" }));
+    await user.click(await screen.findByRole("link", { name: "ストーリーのレビューへ戻る" }));
+    await waitFor(() => expect(shown("pear-a")).toBe(true));
+    filtered();
+  });
+});
