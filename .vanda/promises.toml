@@ -2239,7 +2239,7 @@ layers = ["cli"]
 [[claim]]
 id = "outside-git-repository"
 subjects = ["store-config", "diagnose-setup", "run-checks", "create-vanda-dir", "start-server"]
-statement = "vanda check・vanda doctor・vanda serve・vanda init は、git のリポジトリの外で動かしたら誤りにする"
+statement = "vanda check・vanda doctor・vanda serve・vanda init は、git のリポジトリの外で動かしたらエラーにする"
 rationale = "由来・合意の取り消し・範囲 story の審査など、vanda の判定は git の履歴に拠っていて、履歴のない所では正しく判定できないため"
 condition = "vanda version は、git のリポジトリの外でも動く"
 layers = ["cli"]
@@ -2253,7 +2253,7 @@ layers = ["cli"]
 [[claim]]
 id = "doctor-ok-line"
 subjects = ["diagnose-setup"]
-statement = "vanda doctor は、設定と版に誤りがなく、かつ（ストーリーの置き場所が設定にあれば）そこにつながった時だけ、標準出力に 1 行を出して終了コード 0 で終わる。どれかに誤りがあれば、誤りを標準エラーに出して終了コード 1 で終わる"
+statement = "vanda doctor は、設定と版に誤りがなく、かつ（ストーリーの置き場所が設定にあれば）そこにつながった時だけ、標準出力に 1 行を出して終了コード 0 で終わる。どれかに誤りかエラーがあれば、それを標準エラーに出して終了コード 1 で終わる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
