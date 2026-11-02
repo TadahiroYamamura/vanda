@@ -26,12 +26,37 @@ function entryName(e: Entry) {
   return e.kind === "file" ? (e.path ?? "") : (e.id ?? "");
 }
 
+export interface Filter {
+  text: string;
+  notAgreed: boolean;
+}
+
+// 文字の絞り込みで見る所。消したものは今の中身がないので、前の中身で見る
+function searchable(e: Entry): string[] {
+  if (e.kind === "file") return [e.path ?? ""];
+  const c = e.after ?? e.before;
+  const out = [e.id ?? ""];
+  if (c && "statement" in c) out.push(c.statement);
+  if (c && "definition" in c) out.push(c.name, c.definition);
+  return out;
+}
+
+// 合意済でないものは、提案中と、合意が外れたもの。合意が外れたものは、ほかのストーリーの合意で合意済のこともあるので、状態とは別に見る。
+// 消したものは合意できない（状態がない）ので、どちらにも当たらない
+export function matchesFilter(e: Entry, f: Filter): boolean {
+  if (f.notAgreed && e.state !== "proposed" && !e.detachedAgreement) return false;
+  if (f.text === "") return true;
+  const t = f.text.toLowerCase();
+  return searchable(e).some((s) => s.toLowerCase().includes(t));
+}
+
 export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgreed: () => void }) {
   const { ctx, params } = props;
   const view = params.get("view") === "story" ? "story" : "branch";
   const base = params.get("base") ?? (ctx.defaultBase || null);
   const storyParam = params.get("story");
   const sel = params.get("sel");
+  const filter: Filter = { text: params.get("filter") ?? "", notAgreed: params.get("unagreed") === "1" };
 
   const set = (changes: Record<string, string | null>, replace = false) => {
     const p = new URLSearchParams(params);
@@ -111,7 +136,18 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
         <section className="list" aria-label="変わったものの一覧">
           {review.loading && <p className="note">読み込んでいます…</p>}
           {review.error != null && <ErrorBox error={review.error} title="一覧を作れません" />}
-          {review.data && <EntryList review={review.data} ctx={ctx} selected={sel} onSelect={(k) => set({ sel: k }, true)} />}
+          {review.data && (
+            <EntryList
+              review={review.data}
+              ctx={ctx}
+              selected={sel}
+              onSelect={(k) => set({ sel: k }, true)}
+              filter={filter}
+              // 打つたびに履歴を積むと、ブラウザーの「戻る」が 1 文字ずつ戻るため、置き換える
+              onFilterText={(v) => set({ filter: v }, true)}
+              onFilterNotAgreed={(v) => set({ unagreed: v ? "1" : null }, true)}
+            />
+          )}
         </section>
 
         <section className="detail" aria-label="1 件の中身">
@@ -235,10 +271,21 @@ function groupLabel(group: string, ctx: Context) {
   return `約束（レイヤー ${layer ? layer.name : id || "なし"}）`;
 }
 
-function EntryList(props: { review: Review; ctx: Context; selected: string | null; onSelect: (key: string) => void }) {
-  const { review } = props;
+function EntryList(props: {
+  review: Review;
+  ctx: Context;
+  selected: string | null;
+  onSelect: (key: string) => void;
+  filter: Filter;
+  onFilterText: (v: string) => void;
+  onFilterNotAgreed: (v: boolean) => void;
+}) {
+  const { review, filter } = props;
+  const filtering = filter.text !== "" || filter.notAgreed;
+  const entries = review.entries.filter((e) => matchesFilter(e, filter));
+  const detached = review.detached.filter((e) => matchesFilter(e, filter));
   const groups: { name: string; entries: Entry[] }[] = [];
-  for (const e of review.entries) {
+  for (const e of entries) {
     const last = groups[groups.length - 1];
     if (last && last.name === e.group) last.entries.push(e);
     else groups.push({ name: e.group, entries: [e] });
@@ -247,22 +294,38 @@ function EntryList(props: { review: Review; ctx: Context; selected: string | nul
   return (
     <div>
       <h2>
-        変わったもの <span className="total">全 {review.total} 件</span>
+        変わったもの{" "}
+        <span className="total">
+          全 {review.total} 件{filtering && `・絞り込んだ後 ${entries.length} 件`}
+        </span>
       </h2>
+      <div className="filter" role="search" aria-label="一覧の絞り込み">
+        <label>
+          絞り込み
+          <input type="search" value={filter.text} onChange={(e) => props.onFilterText(e.target.value)} placeholder="ID・名前・文・定義・パス" />
+        </label>
+        <label>
+          <input type="checkbox" checked={filter.notAgreed} onChange={(e) => props.onFilterNotAgreed(e.target.checked)} />
+          合意済でないものだけ
+        </label>
+      </div>
       <p className="note">
         追加 {count("added")}・変更 {count("modified")}・削除 {count("deleted")}・名前の変更 {count("renamed")}
       </p>
-      {review.detached.length > 0 && (
+      {detached.length > 0 && (
         <div className="detached">
-          <h3>合意が外れたもの（{review.detached.length} 件。比べる元から変わっていないため、総数に数えません）</h3>
+          <h3>合意が外れたもの（{detached.length} 件。比べる元から変わっていないため、総数に数えません）</h3>
           <ul className="entries">
-            {review.detached.map((e) => (
+            {detached.map((e) => (
               <EntryRow key={entryKey(e)} e={e} selected={props.selected === entryKey(e)} onSelect={props.onSelect} />
             ))}
           </ul>
         </div>
       )}
       {review.total === 0 && <p className="note">比べる元と今のあいだで、変わったものはありません。</p>}
+      {filtering && (review.total > 0 || review.detached.length > 0) && entries.length === 0 && detached.length === 0 && (
+        <p className="note">絞り込みの条件に当たるものはありません。</p>
+      )}
       {groups.map((g) => (
         <Group key={g.name} label={groupLabel(g.name, props.ctx)} entries={g.entries} selected={props.selected} onSelect={props.onSelect} />
       ))}
