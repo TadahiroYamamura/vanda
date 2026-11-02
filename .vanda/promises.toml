@@ -731,7 +731,7 @@ layers = ["cli"]
 id = "fingerprint-excludes-flags"
 subjects = ["store-agreements", "flag", "agreement"]
 statement = "約束の指紋は、約束リストの項目から flags と guesses を除いたものから作る"
-rationale = "フラグは注意して読む手がかりで、合意すると外すので、フラグだけを変えても合意し直しにならないようにするため"
+rationale = "フラグは注意して読む手がかりで、合意すると外すので、フラグだけを変えても、合意し直さなくてよいようにするため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
