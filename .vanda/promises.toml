@@ -2702,7 +2702,7 @@ layers = ["api"]
 [[claim]]
 id = "story-project-adapter"
 subjects = ["connect-story-store", "run-custom-adapters"]
-statement = "置き場所がカスタムアダプタなら、標準入力に {\"action\": \"read\", \"story\": <ID>} を渡し、標準出力の title・body・url・attachments を読む"
+statement = "ストーリーの置き場所がカスタムアダプタなら、標準入力に {\"action\": \"read\", \"story\": <ID>} を渡し、標準出力の title・body・url・attachments を読む"
 condition = "ストーリーがない・認証が通らないなどで返せないときは、アダプタが 0 でない終了コードで終わって標準エラーに理由を書き、vanda はそれを 502 の理由としてそのまま出す"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -3013,7 +3013,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-added-content"
 subjects = ["compare-contents"]
-statement = "追加したものは、今の中身（約束なら文・条件・理由・対象・レイヤー・エビデンスの予定・推測、用語と機能なら定義など、ファイルなら本文）を示す"
+statement = "追加したものは、今の中身（約束なら文・理由・条件・対象・レイヤー・エビデンスの予定・推測、用語と機能なら定義など、ファイルなら本文）を示す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3895,7 +3895,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-writes-files"
 subjects = ["create-vanda-dir"]
-statement = "プロンプトに答えると、設定・約束リスト・合意の記録と、2 つの審査の設定（ブランチで動かす .vanda/checks/ci.toml と、ベースブランチで動かす .vanda/checks/main.toml）の 5 つのファイルを作る"
+statement = "問いかけに答えると、設定・約束リスト・合意の記録と、2 つの審査の設定（ブランチで動かす .vanda/checks/ci.toml と、ベースブランチで動かす .vanda/checks/main.toml）の 5 つのファイルを作る"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4194,7 +4194,7 @@ layers = ["gui"]
 [[claim]]
 id = "revoke-others-shown"
 subjects = ["revoke-agreement", "agreement"]
-statement = "取り消してもほかの人の合意が残るときは、取り消す前にその人の名前と合意済みのままになることを示し、取り消した後にも合意済みのままであることを示す"
+statement = "取り消してもほかの人の合意が残るときは、取り消す前にその人の名前と合意済のままになることを示し、取り消した後にも合意済のままであることを示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4410,7 +4410,7 @@ subjects = ["connect-story-store", "story"]
 statement = "ストーリーの本文のリンク・「置き場所で開く」のリンク・添付ファイルのリンクは新しいタブで開き、開いた先から vanda の画面に戻って操れないようにする"
 layers = ["gui"]
 flags = ["ai-proposal"]
-guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）", "開いた先から戻れないようにするのは、開いた頁に vanda の画面を操らせないためだと推し量った"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）", "開いた先から戻れないようにするのは、開いたページに vanda の画面を操らせないためだと推し量った"]
 
 [[claim.evidence]]
 stage = "test"
@@ -4640,7 +4640,7 @@ layers = ["cli"]
 id = "story-trailer-at-most-one"
 subjects = ["run-checks", "list-check-kinds", "story"]
 statement = "分かれた点より後のコミットに Story: のトレーラーが 2 つ以上あるものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡したときも審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
-rationale = "1 つのブランチは 1 つのストーリーに当たり、コミットは 1 つのブランチで作るため。--story はストーリーを選ぶためのもので、トレーラーを確かめずに済ませるためのものではないため。また、手元と CI で結果をそろえるため"
+rationale = "1 つのブランチは 1 つのストーリーに当たり、コミットは 1 つのブランチで作るため。--story はストーリーを選ぶためのもので、トレーラーを確かめずに済ませるためのものではないため。また、手元と CI で結果を揃えるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4653,7 +4653,7 @@ layers = ["cli"]
 id = "story-trailer-matches-pattern"
 subjects = ["run-checks", "list-check-kinds", "story"]
 statement = "分かれた点より後のコミットに、Story: のトレーラーの値が id_pattern に全体で当たらないものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡したときも審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
-rationale = "--story を渡したときも誤りにするのは、--story はストーリーを選ぶためのもので、トレーラーを確かめずに済ませるためのものではないため。また、手元と CI で結果をそろえるため"
+rationale = "--story を渡したときも誤りにするのは、--story はストーリーを選ぶためのもので、トレーラーを確かめずに済ませるためのものではないため。また、手元と CI で結果を揃えるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
