@@ -850,7 +850,7 @@ layers = ["api"]
 id = "pass-only-when-all-seen"
 subjects = ["agree-on-review", "list-check-kinds", "agreement"]
 statement = "全部の範囲の agreement が通るなら、今ある約束・用語・機能・合意の対象のファイルの今の中身（ファイルなら場所も）と、合意したことのある項目が今ないことは、どれも一度は誰かが合意したものである"
-rationale = "PO が一度も見ていない状態で、審査が通らないようにするため。細かい場面（名前を元に戻す、消して足し直す など）の振る舞いは、この性質に反しないように決める（PO の決定）"
+rationale = "PO が一度も見ていない状態で、審査が通らないようにするため。細かい場面（名前を元に戻す、消して足し直す など）の振る舞いは、この性質に反しないように決める"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
@@ -868,7 +868,7 @@ layers = ["cli"]
 id = "story-pass-only-when-seen"
 subjects = ["agree-on-review", "list-check-kinds", "agreement", "story"]
 statement = "ストーリー s の範囲の agreement が通るなら、比べる元と今で違う約束・用語・機能・合意の対象のファイルは、どれも今の状態（今ある中身か、ないこと）に一度は誰かが合意したものである"
-rationale = "ストーリーで変えたものを、PO が見ないまま合流させないため（PO の決定）"
+rationale = "ストーリーで変えたものを、PO が見ないまま合流させないため"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
@@ -886,7 +886,7 @@ layers = ["cli"]
 id = "renamed-file-needs-agreement"
 subjects = ["store-agreements", "agreement", "scenario"]
 statement = "ファイルの名前を変えたら、古い場所を消したものとし、新しい場所のファイルは、その場所に同じ中身への合意の記録がなければ、中身が同じでも提案中とする"
-rationale = "ファイルは場所で見分けるため。中身だけで見分けると、合意済のファイルを写した先が、誰も読まないまま合意済になる。名前を元に戻したときのように、その場所のその中身に一度合意していれば、合意し直さなくてよい（PO の決定）"
+rationale = "ファイルは場所で見分けるため。中身だけで見分けると、合意済のファイルを写した先が、誰も読まないまま合意済になる。名前を元に戻したときのように、その場所のその中身に一度合意していれば、合意し直さなくてよい"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
@@ -1190,7 +1190,7 @@ layers = ["cli"]
 id = "annotation-backquoted-ignored"
 subjects = ["read-annotations", "annotation"]
 statement = "コメントの中で逆引用符で囲んだ @vanda: は、アノテーションとして数えない。同じ行に本物のアノテーションがあっても、1 行に 2 つ以上の @vanda: の誤りにしない（例: @vanda:internal の理由の文で、書き方に触れるとき）"
-rationale = "説明の文で書き方に触れられるようにするため（PO の決定）"
+rationale = "説明の文で書き方に触れられるようにするため"
 layers = ["cli"]
 
 [[claim.evidence]]
@@ -1253,7 +1253,7 @@ layers = ["cli"]
 id = "annotation-txtar-comment-lines"
 subjects = ["read-annotations", "builtin-adapter", "scenario"]
 statement = "txtar のアダプタは、最初のファイルの区切りより前の、# で始まるコメントの行だけを読み、名前をファイルの名前から .txtar を除いたものとする"
-rationale = "testscript の命令の行（exec の引数など）にある @vanda: を読まないため（PO の決定）"
+rationale = "testscript の命令の行（exec の引数など）にある @vanda: を読まないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1419,7 +1419,7 @@ layers = ["cli"]
 id = "annotation-types-unsatisfiable-allowed"
 subjects = ["store-config", "annotation", "evidence-type", "builtin-adapter"]
 statement = "組込みのアダプタが書けない種類でしか満たせないタイプ（例: tla に unit-test）を types に書いても、設定の誤りにしない"
-rationale = "エビデンスが揃わずに審査で止まるので害がなく、決まりを足すほどではないため（PO の決定）"
+rationale = "エビデンスが揃わずに審査で止まるので害がなく、決まりを足すほどではないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1536,7 +1536,7 @@ layers = ["cli"]
 id = "project-adapter-not-annotation"
 subjects = ["run-custom-adapters", "annotation"]
 statement = "カスタムアダプタが \"annotation\": false と返した行は、アノテーションとして数えず、書き方の確かめもしない"
-rationale = "vanda は言語を知らないので、コメントの外の @vanda: をアダプタに見分けてもらうため（PO の決定）"
+rationale = "vanda は言語を知らないので、コメントの外の @vanda: をアダプタに見分けてもらうため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1617,7 +1617,7 @@ layers = ["cli"]
 id = "project-adapter-annotation-timeout"
 subjects = ["run-custom-adapters", "read-annotations", "store-config"]
 statement = ".vanda/adapters/ のアノテーションのアダプタが、[[annotation]] の timeout（秒。省けば 20）を過ぎても終わらなければ、アダプタを止めて、どのアダプタが時間を過ぎたかを書いた誤りにする"
-rationale = "アダプタが止まると、審査も画面も止まり、画面では合意のロックを握ったままになるため。構文解析が遅いアダプタもあるので、設定で変えられるようにする（PO の決定）"
+rationale = "アダプタが止まると、審査も画面も止まり、画面では合意のロックを握ったままになるため。構文解析が遅いアダプタもあるので、設定で変えられるようにする"
 layers = ["cli", "api"]
 flags = ["ai-proposal"]
 
@@ -1652,7 +1652,7 @@ layers = ["cli"]
 id = "unread-files-excludes-adapters"
 subjects = ["list-check-kinds", "run-custom-adapters"]
 statement = "読まれていないファイルの審査は、.vanda/adapters/ の下のファイルを除く"
-rationale = "アダプタは設定の adapter の名前で動かすもので、約束リストのパターンで読むものではないため（PO の決定）"
+rationale = "アダプタは設定の adapter の名前で動かすもので、約束リストのパターンで読むものではないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1854,7 +1854,7 @@ layers = ["cli"]
 id = "check-story-from-commits"
 subjects = ["run-checks", "check", "story"]
 statement = "範囲 story の agreement・evidence-present を含む審査の設定では、審査を始める前にストーリーを 1 つに決める。分かれた点より後のコミットの Story: のトレーラーにあるストーリーの ID が 1 つなら、それを使い、--story を渡していてそれと違えば、審査を始める前の誤りにする。ID が 0 個か 2 つ以上なら、--story を使い、渡していなければ --story を求める、審査を始める前の誤りにする"
-rationale = "--story は、トレーラーのあるコミットがまだないブランチのためのもの。トレーラーと違うストーリーを使うと、本当のストーリーの外れた合意を見ないまま審査が通るため（PO の決定）"
+rationale = "--story は、トレーラーのあるコミットがまだないブランチのためのもの。トレーラーと違うストーリーを使うと、本当のストーリーの外れた合意を見ないまま審査が通るため"
 condition = "決めたストーリーを使うのは、agreement がそのストーリーの外れた合意を探すときだけで、範囲 story の evidence-present は、分かれた点の中身と今の中身の違いだけを見る"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -2840,7 +2840,7 @@ layers = ["gui"]
 id = "review-view-branch"
 subjects = ["switch-review-unit", "base-branch"]
 statement = "レビュー単位がブランチなら、ベースブランチと分かれた点の中身と、HEAD のコミットの中身を比べ、コミットしていない変更は比べない"
-rationale = "コミットしていないものは、提出される保証がなく、ないのと同じため（reads-committed-files-only と同じ PO の決定）"
+rationale = "コミットしていないものは、提出される保証がなく、ないのと同じため（reads-committed-files-only と同じ考え方）"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2905,7 +2905,7 @@ layers = ["gui"]
 id = "review-detached-shown"
 subjects = ["show-detached", "agreement", "story"]
 statement = "レビューのストーリーが決まっていれば、そのストーリーの外れた合意を「合意が外れた」と示し、HEAD の履歴で、そのストーリーの最後の合意の記録を足したコミットより後のコミットのうち、その中身を変えたもののストーリーの ID も示す"
-rationale = "rebase や amend で履歴を書き換えるとコミットの日時が変わるので、合意の後かどうかを日時でなく履歴の順で決める（PO の決定）。手で書いた合意の記録も、コミットした後は同じに扱える"
+rationale = "rebase や amend で履歴を書き換えるとコミットの日時が変わるので、合意の後かどうかを日時でなく履歴の順で決める。手で書いた合意の記録も、コミットした後は同じに扱える"
 condition = "レビュー単位がブランチのときも出す。ストーリーが決まらないときは出さない。今の約束リストにない約束・用語・機能と、今はその場所にないファイル（名前を変えたものを含む）は、外れた合意として出さない"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
@@ -3113,7 +3113,7 @@ layers = ["gui"]
 id = "review-filter-not-agreed"
 subjects = ["list-changes", "proposed", "detached"]
 statement = "一覧を、合意済でないもの（提案中と、合意が外れたもの）だけに絞り込める。文字の絞り込みと重ねられる"
-rationale = "残りの合意を片付けるため。細かい状態ごとの絞り込みは要らない（PO の決定）"
+rationale = "残りの合意を片付けるため。細かい状態ごとの絞り込みは要らない"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3161,7 +3161,7 @@ layers = ["gui"]
 id = "agree-writes-and-commits"
 subjects = ["agree-on-review", "agreement"]
 statement = "合意すると、合意の記録を書き足し、合意の記録のファイルと約束リストのファイルだけを 1 つのコミットにする"
-rationale = "1 件の合意ごとに 1 つのコミットにする（まとめる形にすると、画面の中に書きかけの合意を持つことになり、閉じたときに消えるおそれがあるため。PO の決定）"
+rationale = "1 件の合意ごとに 1 つのコミットにする（まとめる形にすると、画面の中に書きかけの合意を持つことになり、閉じたときに消えるおそれがあるため）"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3599,7 +3599,7 @@ layers = ["gui"]
 id = "tla-symbol-font"
 subjects = ["render-tla-symbols", "oracle"]
 statement = "TLA+ の数学の記号は、画面に同梱した数学の記号の書体（Noto Sans Math）で描き、OS の書体に頼らない"
-rationale = "等幅の書体に数学の記号が入っておらず、OS の書体で代わりに描くと、記号の大きさがばらつき、≜ などがつぶれて読めないため（PO の決定）"
+rationale = "等幅の書体に数学の記号が入っておらず、OS の書体で代わりに描くと、記号の大きさがばらつき、≜ などがつぶれて読めないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3791,7 +3791,7 @@ layers = ["cli"]
 id = "init-no-store-id-pattern"
 subjects = ["create-vanda-dir", "connect-story-store"]
 statement = "ストーリーの置き場所に カスタムアダプタか使わないを選んだときは、ストーリーの ID の書き方の問いを、既定の答えのない空の状態から始める"
-rationale = "GitHub 以外では ID の形を推し量れず、カスタムアダプタは init の時点ではまだないので既定を聞けないため。既定を勝手に入れると、気づかずにそのまま進みうる（PO の決定）"
+rationale = "GitHub 以外では ID の形を推し量れず、カスタムアダプタは init の時点ではまだないので既定を聞けないため。既定を勝手に入れると、気づかずにそのまま進みうる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -3827,7 +3827,7 @@ layers = ["cli"]
 id = "init-patterns"
 subjects = ["create-vanda-dir", "annotation"]
 statement = "選んだ言語ごとに、読むファイルのパターンを、言語のアダプタが持つ既定を入れた状態で問いかけ、空白で区切って複数書けるようにする"
-rationale = "ts の既定のパターンが 2 つあるため（PO の決定）"
+rationale = "ts の既定のパターンが 2 つあるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4000,7 +4000,7 @@ layers = ["cli"]
 id = "init-missing-project-adapter"
 subjects = ["create-vanda-dir", "run-custom-adapters"]
 statement = "カスタムアダプタを選んだときは、作った後に確かめるときに、そのアダプタがまだないことをエラーにせず、アダプタを実装して配置するよう案内して、終了コード 0 で終える"
-rationale = "カスタムアダプタは .vanda/ を作った後にしか置けないため（PO の決定）"
+rationale = "カスタムアダプタは .vanda/ を作った後にしか置けないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4018,7 +4018,7 @@ layers = ["cli"]
 id = "init-accepts-builtin-name"
 subjects = ["create-vanda-dir", "builtin-adapter"]
 statement = "カスタムアダプタの名前に、組込みのアダプタと同じ名前を答えても断らない"
-rationale = "PO の決定。.vanda/adapters/ に置かなければ組込みのものが使われ、作った後の確かめで足りない項目の誤りになる"
+rationale = ".vanda/adapters/ に置かなければ組込みのものが使われ、作った後の確かめで足りない項目の誤りになる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4036,7 +4036,7 @@ layers = ["cli"]
 id = "init-reads-answers-sent-after-prompt"
 subjects = ["create-vanda-dir"]
 statement = "問いが出てから送った答えを、読み落とさない"
-rationale = "Expect のように、問いを待ってから答えを送る形で、自動で答えさせられるようにするため（PO の決定）"
+rationale = "Expect のように、問いを待ってから答えを送る形で、自動で答えさせられるようにするため"
 condition = "問いが出る前にまとめて送った答えは、読み落とすことがある"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -4337,7 +4337,7 @@ layers = ["gui"]
 id = "review-list-icons"
 subjects = ["list-changes", "raise-flags", "proposed", "agreed", "detached"]
 statement = "変わったものの一覧では、状態とフラグを、言葉の札でなくアイコンで、名前の下の行の種類の後ろに並べる。状態のアイコンは 1 件に 1 つ（合意が外れたものは、提案中でなく合意が外れたことを示す）で、続けて立っているフラグのアイコンを並べる。状態のアイコンは丸の形、フラグのアイコンは丸のない形にし、色だけに頼らずに見分けられるようにする"
-rationale = "一覧は幅が狭く、言葉の札を名前の横に並べると折り返して崩れるため（PO の決定）"
+rationale = "一覧は幅が狭く、言葉の札を名前の横に並べると折り返して崩れるため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4355,7 +4355,7 @@ layers = ["gui"]
 id = "review-list-first-line"
 subjects = ["list-changes", "number-changes"]
 statement = "変わったものの一覧では、1 件ごとの 1 行目に、通し番号と名前だけを出し、追加・変更・削除の記号は出さない。種類（約束・用語・機能・ファイルの種類）は 2 行目の左端に出す。追加・変更・削除のどれかは、選んだ 1 件の詳細に示す"
-rationale = "一覧は幅が狭く、名前を出す幅を広く取るため。合意するかどうかは、追加か変更かで変わらない（PO の決定）"
+rationale = "一覧は幅が狭く、名前を出す幅を広く取るため。合意するかどうかは、追加か変更かで変わらない"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4617,7 +4617,7 @@ layers = ["gui"]
 id = "story-id-from-trailer"
 subjects = ["run-checks", "switch-review-unit", "story"]
 statement = "コミットのストーリーの ID は、メッセージの末尾の Story: のトレーラーから読み、subject と本文の中の ID は数えない"
-rationale = "本文で Issue の番号に触れても、ストーリーとして数えないため（PO の決定）。数えると、1 つのブランチのストーリーが決まらなくなる"
+rationale = "本文で Issue の番号に触れても、ストーリーとして数えないため。数えると、1 つのブランチのストーリーが決まらなくなる"
 layers = ["cli", "api"]
 flags = ["ai-proposal"]
 
@@ -4640,7 +4640,7 @@ layers = ["cli"]
 id = "story-trailer-at-most-one"
 subjects = ["run-checks", "list-check-kinds", "story"]
 statement = "分かれた点より後のコミットに Story: のトレーラーが 2 つ以上あるものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡したときも審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
-rationale = "1 つのブランチは 1 つのストーリーに当たり、コミットは 1 つのブランチで作るため（PO の決定）。--story はストーリーを選ぶためのもので、トレーラーの確かめを飛ばすためのものではなく、手元と CI で結果をそろえるため（PO の決定）"
+rationale = "1 つのブランチは 1 つのストーリーに当たり、コミットは 1 つのブランチで作るため。--story はストーリーを選ぶためのもので、トレーラーの確かめを飛ばすためのものではなく、手元と CI で結果をそろえるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4653,7 +4653,7 @@ layers = ["cli"]
 id = "story-trailer-matches-pattern"
 subjects = ["run-checks", "list-check-kinds", "story"]
 statement = "分かれた点より後のコミットに、Story: のトレーラーの値が id_pattern に全体で当たらないものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡したときも審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
-rationale = "PO の決定。--story を渡したときも誤りにするのは、--story はストーリーを選ぶためのもので、トレーラーの確かめを飛ばすためのものではなく、手元と CI で結果をそろえるため"
+rationale = "--story を渡したときも誤りにするのは、--story はストーリーを選ぶためのもので、トレーラーの確かめを飛ばすためのものではなく、手元と CI で結果をそろえるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
