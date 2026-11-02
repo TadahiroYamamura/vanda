@@ -1616,7 +1616,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-annotation-timeout"
 subjects = ["run-custom-adapters", "read-annotations", "store-config"]
-statement = ".vanda/adapters/ のアノテーションのアダプタが、[[annotation]] の timeout（秒。省けば 20）を過ぎても終わらなければ、アダプタを止めて、どのアダプタが時間を過ぎたかを書いた誤りにする"
+statement = "カスタムアダプタが、[[annotation]] の timeout（秒。省けば 20）を過ぎても終わらなければ、アダプタを止めて、どのアダプタが時間を過ぎたかを書いたタイムアウトのエラーを知らせる"
 rationale = "アダプタが止まると、審査も画面も止まり、画面では合意のロックを握ったままになるため。構文解析が遅いアダプタもあるので、設定で変えられるようにする"
 layers = ["cli", "api"]
 flags = ["ai-proposal"]
