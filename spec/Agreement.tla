@@ -5,15 +5,18 @@
 (* 中身の指紋は 1..MaxFp の数で表す。数は項目をまたいで共通で、別の項目が同じ数なら同じ中身（写し）。                    *)
 (* 項目ごとの版の番号にしないのは、写しや名前の変更で、別の場所に同じ中身ができる場面を起こすため。                      *)
 (* 同じ理由で、中身を前の中身に戻すことも起きる。                                                                        *)
+(* 範囲 story の比べる元（分かれた点）は、はじめの中身とする。どのストーリーも、はじめの状態から分かれたものとして扱う。  *)
 EXTENDS Naturals
 
 CONSTANTS Items, Files, Stories, MaxFp
 
 ASSUME Files \subseteq Items
 
-VARIABLES content, agreements, changedBy, agreedNow, last
+VARIABLES content, base, agreements, changedBy, agreedNow, last
 
-vars == <<content, agreements, changedBy, agreedNow, last>>
+vars == <<content, base, agreements, changedBy, agreedNow, last>>
+
+(* changedBy（項目を変えたストーリー）は判定に使わない。誰が変えたかを問わない場面が起きることを数えるためだけに持つ *)
 
 (* 項目が今ないことを表す中身。消したことへの合意の記録は、指紋の代わりにこの値を持つ（実装では deleted = true） *)
 Absent == 0
@@ -27,6 +30,7 @@ AgreementRecord == [item : Items, fp : 0..MaxFp, story : Stories]
 
 TypeOK ==
     /\ content \in [Items -> 0..MaxFp]
+    /\ base \in [Items -> 0..MaxFp]
     /\ agreements \subseteq AgreementRecord
     /\ changedBy \in [Items -> SUBSET Stories]
     /\ agreedNow \in [Items -> BOOLEAN]
@@ -49,28 +53,36 @@ EverAgreed(i) == \E a \in agreements : a.item = i /\ a.fp # Absent
 \* @vanda:claim deleted-item-needs-agreement
 Passes(i) == IF Present(i) THEN Agreed(i) ELSE (EverAgreed(i) => HasRecord(i, Absent))
 
-(* s の外れた合意: s が合意したことがあり、今の中身に s の合意がない項目。誰が変えたかを問わない（PO の判断）。           *)
+(* s の外れた合意: s が中身に合意したことがあり、今の中身に s の合意がない項目。誰が変えたかを問わない（PO の判断）。      *)
 (* 今ない項目（名前を変えた後の古い場所を含む）は、外れた合意にしない。消したことは、外れた合意でなく Passes で止める。   *)
-(* レビューで、今ないものを外れた合意として出さない（review-detached-shown）ことに合わせる                                 *)
+(* レビューで、今ないものを外れた合意として出さない（review-detached-shown）ことに合わせる（PO の決定）。                *)
+(* s が消したことにだけ合意した項目を足し直しても、s の外れた合意にしない（PO の決定）                                   *)
 \* @vanda:claim detached-agreement
 Broken(s) ==
     {i \in Items :
         /\ Present(i)
-        /\ \E a \in agreements : a.item = i /\ a.story = s
+        /\ \E a \in agreements : a.item = i /\ a.story = s /\ a.fp # Absent
         /\ ~ \E a \in agreements : a.item = i /\ a.story = s /\ a.fp = content[i]}
 
-(* s の範囲の合意の審査が通る: s が変えた（足した・消した・名前を変えたを含む）項目がどれも止まらず、s の外れた合意がない *)
+(* 比べる元と今で違う項目（中身が違うもの、比べる元にあって今ないもの、今あって比べる元にないもの）。             *)
+(* 変えて元に戻したものや、ストーリーの中で足して消したものは入らない                                            *)
+Diff == {i \in Items : content[i] # base[i]}
+
+(* s の範囲の合意の審査が通る: 比べる元と今で違う項目が、どれも今の状態（中身か、ないこと）で合意済で、s の外れた合意がない。 *)
+(* 全部の範囲（Passes）と違い、比べる元にあって今ない項目は、合意したことがなくても、消したことへの合意を求める。          *)
+(* 合意したことのあるものだけに求めると、PO が一度も見ていない削除で通り、story-pass-only-when-seen に反する（TLC の反例） *)
 \* @vanda:claim check-agreement-story-scope
 StoryPass(s) ==
-    /\ \A i \in Items : s \in changedBy[i] => Passes(i)
+    /\ \A i \in Diff : Agreed(i)
     /\ Broken(s) = {}
 
 (* 全部の範囲の合意の審査が通る *)
 AllPass == \A i \in Items : Passes(i)
 
-(* はじめは、項目ごとに、ないか、どれかの中身がある。合意の記録はない *)
+(* はじめは、項目ごとに、ないか、どれかの中身がある。合意の記録はない。比べる元は、はじめの中身のまま変わらない *)
 Init ==
     /\ content \in [Items -> 0..MaxFp]
+    /\ base = content
     /\ agreements = {}
     /\ changedBy = [i \in Items |-> {}]
     /\ agreedNow = [i \in Items |-> FALSE]
@@ -84,7 +96,7 @@ Change(s, i, f) ==
     /\ changedBy' = [changedBy EXCEPT ![i] = @ \cup {s}]
     /\ agreedNow' = [agreedNow EXCEPT ![i] = HasRecord(i, f)]
     /\ last' = "Change"
-    /\ UNCHANGED agreements
+    /\ UNCHANGED <<base, agreements>>
 
 (* ストーリー s が、今ない項目 i を、中身 f で足す。前に消した項目を足し直すことも含む *)
 Add(s, i, f) ==
@@ -93,7 +105,7 @@ Add(s, i, f) ==
     /\ changedBy' = [changedBy EXCEPT ![i] = @ \cup {s}]
     /\ agreedNow' = [agreedNow EXCEPT ![i] = HasRecord(i, f)]
     /\ last' = "Add"
-    /\ UNCHANGED agreements
+    /\ UNCHANGED <<base, agreements>>
 
 (* ストーリー s が、今ある項目 i を消す。i への合意の記録は消さない *)
 Delete(s, i) ==
@@ -102,7 +114,7 @@ Delete(s, i) ==
     /\ changedBy' = [changedBy EXCEPT ![i] = @ \cup {s}]
     /\ agreedNow' = [agreedNow EXCEPT ![i] = HasRecord(i, Absent)]
     /\ last' = "Delete"
-    /\ UNCHANGED agreements
+    /\ UNCHANGED <<base, agreements>>
 
 (* ストーリー s が、ファイル i の名前を j に変える。i を消し、j に同じ中身を足すのを、1 つのコミットで行う。         *)
 (* j の合意済は j への合意の記録だけで決まり、i への合意は j に移らない                                                *)
@@ -114,7 +126,7 @@ Rename(s, i, j) ==
     /\ changedBy' = [changedBy EXCEPT ![i] = @ \cup {s}, ![j] = @ \cup {s}]
     /\ agreedNow' = [agreedNow EXCEPT ![i] = HasRecord(i, Absent), ![j] = HasRecord(j, content[i])]
     /\ last' = "Rename"
-    /\ UNCHANGED agreements
+    /\ UNCHANGED <<base, agreements>>
 
 (* ストーリー s で、項目 i の今の中身に合意する。i が今なければ、消したことに合意する。合意の記録は消さない *)
 Agree(s, i) ==
@@ -122,7 +134,7 @@ Agree(s, i) ==
     /\ agreements' = agreements \cup {[item |-> i, fp |-> content[i], story |-> s]}
     /\ agreedNow' = [agreedNow EXCEPT ![i] = TRUE]
     /\ last' = "Agree"
-    /\ UNCHANGED <<content, changedBy>>
+    /\ UNCHANGED <<content, base, changedBy>>
 
 (* ストーリー s で、項目 i の今の中身への s の合意の記録を消す（RV-17）。i が今なければ、消したことへの合意を消す。       *)
 (* フラグは戻さない（モデルにはフラグがない）。                                                                          *)
@@ -134,7 +146,7 @@ Revoke(s, i) ==
     /\ agreements' = agreements \ {[item |-> i, fp |-> content[i], story |-> s]}
     /\ agreedNow' = [agreedNow EXCEPT ![i] = \E t \in Stories \ {s} : [item |-> i, fp |-> content[i], story |-> t] \in agreements]
     /\ last' = "Revoke"
-    /\ UNCHANGED <<content, changedBy>>
+    /\ UNCHANGED <<content, base, changedBy>>
 
 (* 操作で項目の中身（今ないことを含む）が変わる *)
 Edit(s) ==
@@ -154,11 +166,11 @@ AgreedOnlyWithMatchingFingerprint == \A i \in Items : agreedNow[i] = Agreed(i)
 BrokenBlocksStory == \A s \in Stories : Broken(s) # {} => ~ StoryPass(s)
 
 (* 性質 3: ほかのストーリーが今の中身に合意しても、s の外れた合意は外れたまま。s が合意し直せば解ける *)
-(* 性質 4: s 自身が変えた項目も、s が前に合意していれば、s が合意し直すまで外れたまま *)
+(* 性質 4: s 自身が変えた項目も、s が前に中身に合意していれば、s が合意し直すまで外れたまま *)
 \* @vanda:claim detached-agreement
 OwnChangeBreaks ==
     [][\A s \in Stories, i \in Items, f \in Fps :
-          (Change(s, i, f) /\ \E a \in agreements : a.item = i /\ a.story = s) =>
+          (Change(s, i, f) /\ \E a \in agreements : a.item = i /\ a.story = s /\ a.fp # Absent) =>
               (i \in Broken(s)' <=> ~ [item |-> i, fp |-> f, story |-> s] \in agreements)]_vars
 
 \* @vanda:claim detached-until-story-reagrees
@@ -173,14 +185,14 @@ OnlyOwnAgreementRepairs ==
 OnlyRevokeRemovesAgreements ==
     [][\A s \in Stories : (Edit(s) \/ \E i \in Items : Agree(s, i)) => agreements \subseteq agreements']_vars
 
-(* 性質 6: 合意したことのある項目が今なく、消したことへの合意がなければ、全部の範囲の審査は止まり、     *)
-(* 消したストーリーの範囲の審査も止まる。消したことに誰かが合意すれば、その項目では止まらない           *)
+(* 性質 6: 合意したことのある項目が今なく、消したことへの合意がなければ、全部の範囲の審査は止まる。         *)
+(* 比べる元にあった項目なら、どのストーリーの範囲の審査も止まる。消したことに誰かが合意すれば、その項目では止まらない *)
 \* @vanda:claim deleted-item-needs-agreement
 DeletedBlocksWithoutAgreement ==
     \A i \in Items :
         /\ (~ Present(i) /\ EverAgreed(i) /\ ~ HasRecord(i, Absent)) =>
                /\ ~ AllPass
-               /\ \A s \in Stories : s \in changedBy[i] => ~ StoryPass(s)
+               /\ base[i] # Absent => \A s \in Stories : ~ StoryPass(s)
         /\ (~ Present(i) /\ HasRecord(i, Absent)) => Passes(i)
 
 (* 性質 7: 名前を変えると、古い場所は消したものになり、新しい場所は、新しい場所への合意の記録がなければ、   *)
@@ -199,6 +211,21 @@ CopyIsNotAgreed ==
     \A i, j \in Items :
         (i # j /\ Present(j) /\ content[i] = content[j] /\ Agreed(i) /\ Agreed(j)) => HasRecord(j, content[j])
 
+(* 性質 9: 全部の範囲の審査が通るなら、今ある項目の今の中身と、合意したことのある項目が今ないことは、どれも、   *)
+(* 合意の記録（取り消したものを除く）のどれかが合意したもの                                                    *)
+\* @vanda:claim pass-only-when-all-seen
+PassOnlyWhenAllSeen ==
+    AllPass =>
+        \A i \in Items :
+            /\ Present(i) => HasRecord(i, content[i])
+            /\ (~ Present(i) /\ EverAgreed(i)) => HasRecord(i, Absent)
+
+(* 性質 10: s の範囲の審査が通るなら、比べる元と今で違う項目は、どれも今の状態（今の中身か、ないこと）に、 *)
+(* 合意の記録（取り消したものを除く）のどれかが合意したもの                                               *)
+\* @vanda:claim story-pass-only-when-seen
+StoryPassOnlyWhenSeen ==
+    \A s \in Stories : StoryPass(s) => \A i \in Items : content[i] # base[i] => HasRecord(i, content[i])
+
 (* どの操作も一度は起きることを確かめるため、違反が見つかるはずの不変条件 *)
 NeverChange == last # "Change"
 NeverAdd == last # "Add"
@@ -209,7 +236,8 @@ NeverAgreeDeletion == ~ \E a \in agreements : a.fp = Absent
 NeverRevoke == last # "Revoke"
 NeverBroken == \A s \in Stories : Broken(s) = {}
 
-(* Agreement.cfg の検査で、last だけが違う状態を同じとみなすための見方。last は次の操作にも性質にも効かないので、     *)
-(* 同じとみなしても検査の結果は変わらず、状態の数がおよそ操作の種類の数で割られる。Never* の検査は last を見るので使わない *)
-StateView == <<content, agreements, changedBy, agreedNow>>
+(* Agreement.cfg の検査で、last と changedBy だけが違う状態を同じとみなすための見方。この 2 つは、次の操作にも、  *)
+(* Agreement.cfg の性質にも効かない（場面を数えるためだけにある）ので、同じとみなしても検査の結果は変わらず、     *)
+(* 状態の数が減る。Never* と AgreementVacuity の検査は、この 2 つを見るので使わない                          *)
+StateView == <<content, base, agreements, agreedNow>>
 =============================================================================
