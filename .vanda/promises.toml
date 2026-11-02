@@ -3917,7 +3917,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-missing-project-adapter"
 subjects = ["cmd-11", "project-adapters"]
-statement = ".vanda/adapters/ のアダプタを選んだとき、作った後の確かめでは、そのアダプタがまだないことだけは誤りにせず、置くよう案内して終了コード 0 で終える"
+statement = ".vanda/adapters/ のアダプタを選んだときは、作った後に確かめるときに、そのアダプタがまだないことをエラーにせず、アダプタを実装して配置するよう案内して、終了コード 0 で終える"
 rationale = ".vanda/adapters/ のアダプタは .vanda/ を作った後にしか置けないため（PO の決定）"
 layers = ["cli"]
 flags = ["ai-proposal"]
