@@ -1657,19 +1657,6 @@ type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
-id = "check-same-name-runs-each"
-subjects = ["cmd-03", "check-config"]
-statement = "審査の設定に同じ名前の審査が 2 つ以上あっても誤りにせず、書いた順にそれぞれを行う"
-rationale = "設定の書き方の誤りは、使う人が直すもので、vanda が見張るものではないため（PO の決定）"
-layers = ["cli"]
-flags = ["ai-proposal"]
-
-[[claim.evidence]]
-stage = "test"
-type = "unit-test"
-layers = ["cli"]
-
-[[claim]]
 id = "check-config-unknown-entries-rejected"
 subjects = ["cmd-03", "check-config"]
 statement = "審査の設定に、[[check]] のほかの表か、name・scope のほかの項目があれば、審査の設定の誤りにする"
