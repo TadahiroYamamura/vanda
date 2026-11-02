@@ -1464,7 +1464,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-args-and-cwd"
 subjects = ["run-custom-adapters", "adapter"]
-statement = ".vanda/adapters/ のアダプタは、リポジトリの根を作業のディレクトリにし、設定の args をそのまま引数として渡して動かす"
+statement = "カスタムアダプタは、リポジトリの根を作業のディレクトリにし、設定の args をそのまま引数として渡して動かす"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1481,7 +1481,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-args-only-for-project"
 subjects = ["run-custom-adapters", "cm-09"]
-statement = "args は .vanda/adapters/ のアダプタのときだけ書け、組込みのアダプタに書けば設定の誤りにする"
+statement = "args は カスタムアダプタのときだけ書け、組込みのアダプタに書けば設定の誤りにする"
 rationale = "組込みのアダプタは引数を受け取らないので、書いても黙って無視され、効いているように見えてしまうため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -1494,7 +1494,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-not-runnable"
 subjects = ["run-custom-adapters", "adapter"]
-statement = ".vanda/adapters/ のアダプタがない・実行の権限がない・1 行目に動かし方がないなどで動かせないときは、場所と直し方を書いた誤りにする"
+statement = "カスタムアダプタがない・実行の権限がない・1 行目に動かし方がないなどで動かせないときは、場所と直し方を書いた誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1522,7 +1522,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-not-annotation"
 subjects = ["run-custom-adapters", "annotation"]
-statement = ".vanda/adapters/ のアダプタが \"annotation\": false と返した行は、アノテーションとして数えず、書き方の確かめもしない"
+statement = "カスタムアダプタが \"annotation\": false と返した行は、アノテーションとして数えず、書き方の確かめもしない"
 rationale = "vanda は言語を知らないので、コメントの外の @vanda: をアダプタに見分けてもらうため（PO の決定）"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -1540,7 +1540,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-response-errors"
 subjects = ["run-custom-adapters", "adapter"]
-statement = ".vanda/adapters/ のアダプタの答えに、渡していない行・空の名前・同じ行の 2 つ以上の答え・name と annotation の両方・決まっていない項目があれば、誤りにする"
+statement = "カスタムアダプタの答えに、渡していない行・空の名前・同じ行の 2 つ以上の答え・name と annotation の両方・決まっていない項目があれば、誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1557,7 +1557,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-missing-answer"
 subjects = ["run-custom-adapters", "adapter"]
-statement = ".vanda/adapters/ のアダプタが、渡した行のどれかに答えを返さなければ、その行を指して誤りにする"
+statement = "カスタムアダプタが、渡した行のどれかに答えを返さなければ、その行を指して誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1574,7 +1574,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-annotation-true-rejected"
 subjects = ["run-custom-adapters", "adapter"]
-statement = ".vanda/adapters/ のアダプタが、答えの annotation に true を返したら、誤りにする"
+statement = "カスタムアダプタが、答えの annotation に true を返したら、誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1586,7 +1586,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-failure-reason"
 subjects = ["run-custom-adapters", "adapter"]
-statement = ".vanda/adapters/ のアダプタが 0 でない終了コードで終わったら、標準エラーに書いた理由を誤りのメッセージに含める"
+statement = "カスタムアダプタが 0 でない終了コードで終わったら、標準エラーに書いた理由を誤りのメッセージに含める"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1626,7 +1626,7 @@ layers = ["api"]
 [[claim]]
 id = "config-annotation-timeout"
 subjects = ["cm-09", "run-custom-adapters"]
-statement = "[[annotation]] の timeout は、1 以上の整数（秒）でなければ誤りにし、.vanda/adapters/ のアダプタを使わない [[annotation]] に書けば誤りにする"
+statement = "[[annotation]] の timeout は、1 以上の整数（秒）でなければ誤りにし、カスタムアダプタを使わない [[annotation]] に書けば誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2291,9 +2291,9 @@ layers = ["cli"]
 [[claim]]
 id = "doctor-project-adapter"
 subjects = ["cmd-01", "run-custom-adapters"]
-statement = "vanda doctor は、ストーリーの置き場所が .vanda/adapters/ のアダプタなら、そこにあって実行できるかを確かめる"
-rationale = "vanda doctor は、今効いている設定と、ストーリーの置き場所などとのつながりを確かめる機能で、.vanda/adapters/ のアダプタでは、そこにあって実行できることが、つながることに当たるため"
-condition = "アノテーションの .vanda/adapters/ のアダプタは、vanda doctor では確かめない"
+statement = "vanda doctor は、ストーリーの置き場所が カスタムアダプタなら、そこにあって実行できるかを確かめる"
+rationale = "vanda doctor は、今効いている設定と、ストーリーの置き場所などとのつながりを確かめる機能で、カスタムアダプタでは、そこにあって実行できることが、つながることに当たるため"
+condition = "アノテーションの カスタムアダプタは、vanda doctor では確かめない"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2672,7 +2672,7 @@ layers = ["api"]
 id = "story-errors"
 subjects = ["cm-08", "story"]
 statement = "ストーリーの置き場所が設定にないときと、組込みの github で Issue がないときは 404、ストーリーの ID が id_pattern に合わない（github では、ID に Issue の番号がない）ときは 400、認証・ネットワーク・アダプタの誤りは 502 で、ストーリーの置き場所かアダプタが返した理由をそのまま出す"
-condition = ".vanda/adapters/ のアダプタは、ストーリーがないことを 404 として伝える手段を持たないので、ないストーリーも 502 になる"
+condition = "カスタムアダプタは、ストーリーがないことを 404 として伝える手段を持たないので、ないストーリーも 502 になる"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2689,7 +2689,7 @@ layers = ["api"]
 [[claim]]
 id = "story-project-adapter"
 subjects = ["cm-08", "run-custom-adapters"]
-statement = "置き場所が .vanda/adapters/ のアダプタなら、標準入力に {\"action\": \"read\", \"story\": <ID>} を渡し、標準出力の title・body・url・attachments を読む"
+statement = "置き場所が カスタムアダプタなら、標準入力に {\"action\": \"read\", \"story\": <ID>} を渡し、標準出力の title・body・url・attachments を読む"
 condition = "ストーリーがない・認証が通らないなどで返せないときは、アダプタが 0 でない終了コードで終わって標準エラーに理由を書き、vanda はそれを 502 の理由としてそのまま出す"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -3499,7 +3499,7 @@ layers = ["gui"]
 [[claim]]
 id = "claim-detail-evidence-content"
 subjects = ["cl-02", "scenario", "oracle", "guardrail"]
-statement = "エビデンスとして見つかったアノテーションごとに、名前と場所（ファイルと行）を示し、さらに、アダプタが tla なら付いている定義を、go・ts でなければ（txtar・sql・.vanda/adapters/ のアダプタ）ファイルの中身全体を示す。go・ts は、テストの名前と場所だけを示す"
+statement = "エビデンスとして見つかったアノテーションごとに、名前と場所（ファイルと行）を示し、さらに、アダプタが tla なら付いている定義を、go・ts でなければ（txtar・sql・カスタムアダプタ）ファイルの中身全体を示す。go・ts は、テストの名前と場所だけを示す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3760,7 +3760,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-store-choices"
 subjects = ["cmd-11", "cm-08"]
-statement = "ストーリーの置き場所は、GitHub Issues・.vanda/adapters/ のアダプタ・使わない から選ばせ、ID の書き方の既定は選んだアダプタが持つものにする"
+statement = "ストーリーの置き場所は、GitHub Issues・カスタムアダプタ・使わない から選ばせ、ID の書き方の既定は選んだアダプタが持つものにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -3777,8 +3777,8 @@ layers = ["cli"]
 [[claim]]
 id = "init-no-store-id-pattern"
 subjects = ["cmd-11", "cm-08"]
-statement = "ストーリーの置き場所に .vanda/adapters/ のアダプタか使わないを選んだときは、ストーリーの ID の書き方の問いを、既定の答えのない空の状態から始める"
-rationale = "GitHub 以外では ID の形を推し量れず、.vanda/adapters/ のアダプタは init の時点ではまだないので既定を聞けないため。既定を勝手に入れると、気づかずにそのまま進みうる（PO の決定）"
+statement = "ストーリーの置き場所に カスタムアダプタか使わないを選んだときは、ストーリーの ID の書き方の問いを、既定の答えのない空の状態から始める"
+rationale = "GitHub 以外では ID の形を推し量れず、カスタムアダプタは init の時点ではまだないので既定を聞けないため。既定を勝手に入れると、気づかずにそのまま進みうる（PO の決定）"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -3986,8 +3986,8 @@ layers = ["cli"]
 [[claim]]
 id = "init-missing-project-adapter"
 subjects = ["cmd-11", "run-custom-adapters"]
-statement = ".vanda/adapters/ のアダプタを選んだときは、作った後に確かめるときに、そのアダプタがまだないことをエラーにせず、アダプタを実装して配置するよう案内して、終了コード 0 で終える"
-rationale = ".vanda/adapters/ のアダプタは .vanda/ を作った後にしか置けないため（PO の決定）"
+statement = "カスタムアダプタを選んだときは、作った後に確かめるときに、そのアダプタがまだないことをエラーにせず、アダプタを実装して配置するよう案内して、終了コード 0 で終える"
+rationale = "カスタムアダプタは .vanda/ を作った後にしか置けないため（PO の決定）"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4004,7 +4004,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-accepts-builtin-name"
 subjects = ["cmd-11", "builtin-adapter"]
-statement = ".vanda/adapters/ のアダプタの名前に、組込みのアダプタと同じ名前を答えても断らない"
+statement = "カスタムアダプタの名前に、組込みのアダプタと同じ名前を答えても断らない"
 rationale = "PO の決定。.vanda/adapters/ に置かなければ組込みのものが使われ、作った後の確かめで足りない項目の誤りになる"
 layers = ["cli"]
 flags = ["ai-proposal"]
