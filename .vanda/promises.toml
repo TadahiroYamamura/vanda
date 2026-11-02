@@ -1735,7 +1735,8 @@ layers = ["cli"]
 [[claim]]
 id = "check-story-from-commits"
 subjects = ["cmd-03", "check", "story"]
-statement = "範囲 story の agreement・evidence-present を含む審査の設定では、審査を始める前にストーリーを 1 つに決める。--story を渡せば、分かれた点より後のコミットの Story: のトレーラーにある ID と違っても、それを使う。渡さなければ、そのトレーラーにあるストーリーの ID が 1 つならそれを使い、0 個か 2 つ以上なら --story を求める、審査を始める前の誤りにする"
+statement = "範囲 story の agreement・evidence-present を含む審査の設定では、審査を始める前にストーリーを 1 つに決める。分かれた点より後のコミットの Story: のトレーラーにあるストーリーの ID が 1 つなら、それを使い、--story を渡していてそれと違えば、審査を始める前の誤りにする。ID が 0 個か 2 つ以上なら、--story を使い、渡していなければ --story を求める、審査を始める前の誤りにする"
+rationale = "--story は、トレーラーのあるコミットがまだないブランチのためのもの。トレーラーと違うストーリーを使うと、本当のストーリーの外れた合意を見ないまま審査が通るため（PO の決定）"
 condition = "決めたストーリーを使うのは、agreement がそのストーリーの外れた合意を探すときだけで、範囲 story の evidence-present は、分かれた点の中身と今の中身の違いだけを見る"
 layers = ["cli"]
 flags = ["ai-proposal"]
