@@ -2357,7 +2357,7 @@ subjects = ["cm-01"]
 statement = "Host が 127.0.0.1:<ポート>・localhost:<ポート> でない要求を 403 で断る"
 layers = ["api"]
 flags = ["ai-proposal"]
-guesses = ["DNS の名前を差し替えてvanda サーバーを読ませる攻撃を防ぐための決まりだと推し量った"]
+guesses = ["DNS の名前を差し替えて vanda サーバーを読ませる攻撃を防ぐための決まりだと推し量った"]
 
 [[claim.evidence]]
 stage = "test"
