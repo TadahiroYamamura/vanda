@@ -54,4 +54,23 @@ NeverCopyOfAgreedProposed ==
 (* RenameNeedsAgreement の前件が空振りしない: 合意済のファイルの名前を変える *)
 NeverRenameAgreed ==
     [][~ \E s \in Stories, i, j \in Items : Rename(s, i, j) /\ Agreed(i)]_vars
+(* StoryPassOnlyWhenSeen の前件が空振りしない: 比べる元と今で違う項目があっても、s の範囲の審査が通ることがある *)
+NeverStoryPassWithDiff ==
+    \A s \in Stories : Diff # {} => ~ StoryPass(s)
+
+(* 比べる元にあって今ない項目があっても、消したことへの合意で、s の範囲の審査が通ることがある *)
+NeverStoryPassAfterDelete ==
+    ~ \E s \in Stories, i \in Items : base[i] # Absent /\ ~ Present(i) /\ StoryPass(s)
+
+(* 比べる元になく、足して合意して消した項目は、消したことへの合意がなくても、s の範囲の審査では見ない（全部の範囲では止まる） *)
+NeverAddedThenDeletedIgnored ==
+    ~ \E s \in Stories, i \in Items :
+        base[i] = Absent /\ ~ Present(i) /\ EverAgreed(i) /\ ~ HasRecord(i, Absent) /\ StoryPass(s)
+
+(* s が消したことにだけ合意した項目が、合意のない中身で足し直されても、s の外れた合意にならない *)
+NeverReaddedAfterDeletionAgreed ==
+    ~ \E s \in Stories, i \in Items :
+        /\ Present(i) /\ ~ Agreed(i)
+        /\ [item |-> i, fp |-> Absent, story |-> s] \in agreements
+        /\ ~ \E a \in agreements : a.item = i /\ a.story = s /\ a.fp # Absent
 =============================================================================

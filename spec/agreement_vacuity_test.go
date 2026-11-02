@@ -44,6 +44,10 @@ func TestAgreementの性質の前提と合意の場面はどれも一度は起�
 		{"NeverAllPassAfterDelete", false},
 		{"NeverCopyOfAgreedProposed", false},
 		{"NeverRenameAgreed", true},
+		{"NeverStoryPassWithDiff", false},
+		{"NeverStoryPassAfterDelete", false},
+		{"NeverAddedThenDeletedIgnored", false},
+		{"NeverReaddedAfterDeletionAgreed", false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
