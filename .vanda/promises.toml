@@ -11,7 +11,7 @@ definition = "vanda で開発するもの。.vanda/ を置いた git のリポ�
 [[term]]
 id = "vanda-server"
 name = "vanda サーバー"
-definition = "vanda serve が自分のマシンで起動する Web サーバー。画面と、画面が使う API を出す。自分のマシンの中からだけ開ける"
+definition = "vanda serve が起動する Web サーバー。画面と、画面が使う API を出す"
 
 [[term]]
 id = "promise-list"
@@ -233,7 +233,7 @@ definition = "約束ごとに、どのステージで、どのタイプのエビ
 [[feature]]
 id = "cm-01"
 name = "vanda サーバーの起動（vanda serve）"
-definition = "vanda サーバーを起動し、ブラウザで開く。自分のマシンの中でだけ開く（CM-01・CMD-04）"
+definition = "vanda サーバーを起動し、画面をブラウザで開く（CM-01・CMD-04）"
 
 [[feature]]
 id = "cm-02"
