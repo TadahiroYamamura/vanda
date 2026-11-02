@@ -2322,6 +2322,72 @@ type = "scenario-test"
 layers = ["gui"]
 
 [[claim]]
+id = "review-filter-text"
+subjects = ["rv-01"]
+statement = "一覧を、書いた文字で絞り込める。約束・用語・機能は ID・名前・文・定義に、ファイルはパスに、書いた文字を含むものだけを出す（大文字と小文字を区別しない）"
+rationale = "変わったものが数百件になると、1 件を探せないため（PO の依頼）"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
+
+[[claim]]
+id = "review-filter-not-agreed"
+subjects = ["rv-01", "proposed", "detached"]
+statement = "一覧を、合意済でないもの（提案中と、合意が外れたもの）だけに絞り込める。文字の絞り込みと重ねられる"
+rationale = "残りの合意を片付けるため。細かい状態ごとの絞り込みは要らない（PO の決定）"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
+
+[[claim]]
+id = "review-filter-count"
+subjects = ["rv-01", "rv-02"]
+statement = "絞り込んでいるあいだは、全体の件数に加えて、絞り込んだ後の件数を示し、絞り込みで 1 件もなければその旨を示す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "review-filter-kept"
+subjects = ["rv-01"]
+statement = "絞り込みの条件は、画面の URL に残し、再読み込みや、詳細から戻ったときにも消さない"
+rationale = "詳細を読んで合意した後に、一覧へ戻って続きを片付けられるようにするため"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
+
+[[claim]]
 id = "agree-writes-and-commits"
 subjects = ["rv-06", "agreement"]
 statement = "合意すると、合意の記録を書き足し、合意の記録のファイルと約束リストのファイルだけを 1 つのコミットにする"
