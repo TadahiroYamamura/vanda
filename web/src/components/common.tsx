@@ -1,6 +1,6 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { ApiError, type Flag, type State } from "../api";
-import { flagHelp, flagLabel, stateLabel } from "../labels";
+import { detachedLabel, flagHelp, flagLabel, stateLabel } from "../labels";
 
 export function ErrorBox(props: { error: unknown; title?: string }) {
   const e = props.error;
@@ -72,6 +72,81 @@ export function FlagBadge(props: { flag: Flag }) {
       {flagLabel[props.flag]}
       <span id={id} ref={t.tip} role="tooltip" className="tooltip" hidden={!t.open} style={t.tipStyle}>
         {flagHelp[props.flag]}
+      </span>
+    </span>
+  );
+}
+
+// 一覧のアイコンの形（PO が見本で選んだもの）。状態は丸の形、フラグは丸のない形にし、色だけに頼らずに見分けられるようにする（RV-01・RV-04）
+export type ListIconName = State | "detached" | Flag;
+
+const listIconShape: Record<ListIconName, ReactNode> = {
+  agreed: (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="6.5" />
+      <path d="M5 8.2l2 2 4-4.2" />
+    </svg>
+  ),
+  proposed: (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="6.5" strokeDasharray="2.6 2" />
+      <circle cx="8" cy="8" r="1.4" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  detached: (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="6.5" />
+      <path d="M8 4.6v4.2" />
+      <circle cx="8" cy="11.2" r=".9" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  "ai-proposal": (
+    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" focusable="false">
+      <path d="M7 1.5l1.3 3.6 3.6 1.3-3.6 1.3L7 11.3 5.7 7.7 2.1 6.4l3.6-1.3z" />
+      <path d="M12.3 9.5l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z" />
+    </svg>
+  ),
+  guess: (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <path d="M5.2 5.4a2.9 2.9 0 1 1 4 2.7c-.8.4-1.2.9-1.2 1.8v.5" />
+      <circle cx="8" cy="13.1" r=".95" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  "changed-since-agreement": (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <path d="M8 2.5l5.5 10.5h-11z" />
+    </svg>
+  ),
+};
+
+const isFlag = (n: ListIconName): n is Flag => n in flagLabel;
+
+// ListIcon は、一覧の状態とフラグのアイコン。触れたとき・フォーカスしたときに言葉を出し、読み上げにも同じ言葉を渡す（RV-01・RV-04）。
+// フラグは、詳細の札と同じ説明を言葉に続けて出し、読み上げには説明として渡す
+export function ListIcon(props: { name: ListIconName }) {
+  const id = useId();
+  const t = useTooltip();
+  const n = props.name;
+  const word = isFlag(n) ? flagLabel[n] : n === "detached" ? detachedLabel : stateLabel[n];
+  const help = isFlag(n) ? flagHelp[n] : null;
+  return (
+    <span
+      ref={t.anchor}
+      className={`list-icon ${isFlag(n) ? "list-icon-flag" : "list-icon-state"} list-icon-${n}`}
+      tabIndex={0}
+      role="img"
+      aria-label={word}
+      aria-describedby={help ? id : undefined}
+      {...t.handlers}
+    >
+      {listIconShape[n]}
+      <span ref={t.tip} role="tooltip" className="tooltip" hidden={!t.open} style={t.tipStyle}>
+        {word}
+        {help && (
+          <span id={id} className="tooltip-help">
+            {help}
+          </span>
+        )}
       </span>
     </span>
   );

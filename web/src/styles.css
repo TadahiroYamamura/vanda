@@ -60,14 +60,14 @@ h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; }
 main { padding: 20px 28px 40px; }
 
 /* 札 */
-.badge, .change { display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; border-radius: 999px; font-size: 12px; line-height: 22px; white-space: nowrap; position: relative; font-weight: 400; font-family: var(--sans); }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; border-radius: 999px; font-size: 12px; line-height: 22px; white-space: nowrap; position: relative; font-weight: 400; font-family: var(--sans); }
 .state-proposed { background: var(--pend-bg); color: var(--pend); }
 .state-agreed { background: var(--ok-bg); color: var(--ok); }
 .flag { border: 1px solid var(--mark-line); color: var(--mark); background: var(--mark-bg); cursor: help; }
 .flag::before { content: "!"; font-weight: 700; }
-.detached-badge { background: var(--bad-bg); color: var(--bad); }
 .tooltip { position: fixed; z-index: 50; width: max-content; max-width: min(360px, calc(100vw - 16px)); white-space: normal; overflow-wrap: anywhere; background: var(--fg); color: #fff; font-size: 11px; line-height: 1.5; padding: 3px 8px; border-radius: 6px; pointer-events: none; }
 .tooltip[hidden] { display: none; }
+.tooltip-help { display: block; }
 
 /* 誤りと注意 */
 .error { margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: var(--bad-bg); color: var(--bad); font-size: 13px; white-space: pre-wrap; }
@@ -105,16 +105,25 @@ main { padding: 20px 28px 40px; }
 .detached { border: 1px solid #e3b4b4; background: #fffafa; border-radius: 10px; padding: 4px 6px; margin: 8px 0; }
 .detached h3 { font-size: 12px; font-weight: 500; color: var(--bad); padding: 0 4px; }
 ul.entries { list-style: none; padding: 0; margin: 0; }
-.entry { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px 8px; border-radius: 8px; min-height: 44px; cursor: pointer; }
+.entry { display: block; padding: 6px 8px; border-radius: 8px; min-height: 44px; cursor: pointer; }
 .entry:hover { background: var(--hover); }
 .entry.selected { background: var(--accent-bg); box-shadow: inset 0 0 0 1px var(--accent-ring); }
-.entry-button { cursor: pointer; display: flex; align-items: baseline; gap: 6px; flex: 1 1 100%; min-width: 0; min-height: 0; padding: 0; border: 0; background: transparent; text-align: left; font-weight: 400; color: var(--fg); }
+.entry-button { cursor: pointer; display: flex; align-items: baseline; gap: 6px; width: 100%; min-width: 0; min-height: 0; padding: 0; border: 0; background: transparent; text-align: left; font-weight: 400; color: var(--fg); }
 .entry-button:hover { background: transparent; }
 .entry-button .no { font-family: var(--mono); font-size: 11px; color: var(--muted); width: 22px; text-align: right; flex: none; }
-.entry-button .change { padding: 0; width: 10px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
-.entry-button .kind { font-size: 11px; color: var(--muted); flex: none; }
 .entry-button .name { font-family: var(--mono); font-size: 12px; overflow-wrap: anywhere; min-width: 0; }
-.entry > .badge:first-of-type { margin-left: 34px; }
+/* 2 行目は、番号の幅だけ下げて、名前の書き出しに揃える。左端に種類、続けて状態のアイコン、フラグのアイコン */
+.entry-line2 { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin: 2px 0 0 calc(22px + 6px); }
+.entry-line2 .kind { font-size: 11px; color: var(--muted); flex: none; margin-right: 4px; }
+.entry-sep { width: 1px; height: 16px; background: var(--line); margin: 0 3px; flex: none; }
+/* 一覧のアイコン: 16px の形を、触れられる 24px の枠に入れる */
+.list-icon { position: relative; display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; flex: none; }
+.list-icon:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.list-icon svg { width: 16px; height: 16px; display: block; }
+.list-icon-agreed { color: var(--ok); }
+.list-icon-proposed { color: var(--pend); }
+.list-icon-detached { color: var(--bad); }
+.list-icon-flag { color: var(--mark); }
 .detail { grid-area: detail; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 22px; min-width: 0; }
 .detail > div > .note:first-child { font-family: var(--mono); }
 .entry-title { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-family: var(--mono); font-size: 18px; font-weight: 500; margin: 4px 0 10px; }
@@ -254,9 +263,9 @@ ul.evidence-found { margin: 4px 0 0; padding-left: 18px; font-size: 13px; overfl
 .agreement-proposed { color: #c26a00; }
 
 /* 文字ではない印（札・アイコン）は、触れても文字選択の形のカーソルにしない。押せる行・枠の中では、行と同じ指の形にする */
-.chip, .badge, .present-icon, .agreement-icon, .change { cursor: default; }
+.chip, .badge, .present-icon, .agreement-icon, .list-icon { cursor: default; }
 .badge.flag { cursor: help; }
-li.entry .chip, li.entry .badge, li.entry .badge.flag, li.entry .change,
+li.entry .chip, li.entry .badge, li.entry .badge.flag, li.entry .list-icon,
 tr.at-toggle-row .chip, tr.at-toggle-row .badge, tr.at-toggle-row .present-icon, tr.at-toggle-row .agreement-icon { cursor: pointer; }
 
 /* 狭い画面では、一覧と 1 件の中身を縦に並べ、ページ全体をスクロールして読む。

@@ -3,7 +3,7 @@ import { useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api, type ClaimContent, type User, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FileContent, type Review, type TermContent } from "../api";
-import { AgreementIcon, ErrorBox, FlagBadge, PresentIcon, StateBadge, shortCommit, useLoad } from "../components/common";
+import { AgreementIcon, ErrorBox, FlagBadge, ListIcon, PresentIcon, StateBadge, shortCommit, useLoad } from "../components/common";
 import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
 import { LineDiff, Parts } from "../components/DiffView";
@@ -12,7 +12,7 @@ import { EvidenceGroups } from "../components/EvidenceGroups";
 import { EvidenceList } from "../components/EvidenceList";
 import { langOf } from "../highlight";
 import { TlaCode } from "../components/TlaCode";
-import { changeLabel, changeMark, fileTypeLabel, kindLabel, stageLabel, typeLabel } from "../labels";
+import { changeLabel, fileTypeLabel, kindLabel, stageLabel, typeLabel } from "../labels";
 import { BACK, Link, navigate, reviewQuery } from "../route";
 
 // まとまりの件数がこれを超えたら、開いたときにたたんでおく（RV-10）
@@ -357,7 +357,7 @@ function Group(props: { label: string; entries: Entry[]; selected: string | null
 function EntryRow(props: { e: Entry; selected: boolean; onSelect: (key: string) => void }) {
   const { e } = props;
   return (
-    // 1 件の枠（番号・種類・名前・札）のどこを押しても選ぶ。キーボードと読み上げのために、名前の所は <button> のまま残す
+    // 1 件の枠（番号・名前・種類・アイコン）のどこを押しても選ぶ。キーボードと読み上げのために、名前の所は <button> のまま残す
     <li className={props.selected ? "entry selected" : "entry"} onClick={() => props.onSelect(entryKey(e))}>
       <button
         type="button"
@@ -370,17 +370,17 @@ function EntryRow(props: { e: Entry; selected: boolean; onSelect: (key: string) 
         aria-current={props.selected}
       >
         <span className="no">{e.no ?? "—"}</span>
-        <span className={`change change-${e.change}`} title={changeLabel[e.change]}>
-          {changeMark[e.change]}
-        </span>
-        <span className="kind">{e.kind === "file" && e.fileType ? fileTypeLabel[e.fileType] : kindLabel[e.kind]}</span>
         <span className="name">{entryName(e)}</span>
       </button>
-      <StateBadge state={e.state} />
-      {e.flags.map((f) => (
-        <FlagBadge key={f} flag={f} />
-      ))}
-      {e.detachedAgreement && <span className="badge detached-badge">合意が外れた</span>}
+      <div className="entry-line2">
+        <span className="kind">{e.kind === "file" && e.fileType ? fileTypeLabel[e.fileType] : kindLabel[e.kind]}</span>
+        {/* 状態のアイコンは 1 つだけ。外れた合意は、提案中より先に気づくべきなので、外れたほうを出す */}
+        {e.detachedAgreement ? <ListIcon name="detached" /> : e.state && <ListIcon name={e.state} />}
+        {e.flags.length > 0 && <i className="entry-sep" aria-hidden="true" />}
+        {e.flags.map((f) => (
+          <ListIcon key={f} name={f} />
+        ))}
+      </div>
     </li>
   );
 }
