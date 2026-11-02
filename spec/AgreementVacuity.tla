@@ -1,7 +1,7 @@
 ------------------------- MODULE AgreementVacuity -------------------------
 (* Agreement の性質が空振りで成り立っていないかを確かめるための、破られるはずの性質。               *)
 (* どれも、TLC が反例を見つける（その状態や操作が一度は起きる）ことを、spec/agreement_vacuity_test.go で確かめる。 *)
-(* Agreement.tla の NeverChange・NeverAgree・NeverBroken が確かめていない、性質の前提と RV-14 の場面を足す。 *)
+(* Agreement.tla の Never* が確かめていない、性質の前提と RV-14 の場面を足す。                              *)
 EXTENDS Agreement
 
 (* StoryPass が、自分の変えた項目があっても成り立つことがある（BrokenBlocksStory の後件が空振りしない） *)
@@ -39,4 +39,19 @@ NeverOwnChangeAfterAgree ==
 (* 自分しか変えていない項目でも、合意が外れていることがある（誰が変えたかを問わない） *)
 NeverBrokenByOwnChangeOnly ==
     \A s \in Stories, i \in Items : ~ (i \in Broken(s) /\ changedBy[i] = {s})
+(* DeletedBlocksWithoutAgreement の 1 つ目の前件: 合意したことのある項目が、消したことへの合意のないまま消えている *)
+NeverDeletedWithoutAgreement ==
+    \A i \in Items : ~ (~ Present(i) /\ EverAgreed(i) /\ ~ HasRecord(i, Absent))
+
+(* 合意したことのある項目を消した後で、消したことへの合意により、全部の範囲の審査が通ることがある *)
+NeverAllPassAfterDelete ==
+    (\E i \in Items : ~ Present(i) /\ EverAgreed(i)) => ~ AllPass
+
+(* CopyIsNotAgreed の場面: 合意済の項目と同じ中身の別の項目（写し）が、提案中 *)
+NeverCopyOfAgreedProposed ==
+    ~ \E i, j \in Items : i # j /\ Present(j) /\ content[i] = content[j] /\ Agreed(i) /\ ~ Agreed(j)
+
+(* RenameNeedsAgreement の前件が空振りしない: 合意済のファイルの名前を変える *)
+NeverRenameAgreed ==
+    [][~ \E s \in Stories, i, j \in Items : Rename(s, i, j) /\ Agreed(i)]_vars
 =============================================================================
