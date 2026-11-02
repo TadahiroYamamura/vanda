@@ -4,9 +4,14 @@ name = "エビデンス・ファースト開発"
 definition = "AI がソースコードを書き、人はソースコードを読まずに、約束とエビデンスで開発を進めるやり方"
 
 [[term]]
+id = "software"
+name = "ソフトウェア"
+definition = "vanda で開発するもの。.vanda/ を置いた git のリポジトリで作っているもの"
+
+[[term]]
 id = "promise-list"
 name = "約束リスト"
-definition = "約束・用語・機能をまとめた一覧（既定は .vanda/promises.toml）。作ったものが何をするかの正"
+definition = "ソフトウェアについて、使う言葉（用語）、利用者が行う操作（機能）、そこで成り立たせると決めたこと（約束）をまとめた一覧（既定は .vanda/promises.toml）。ソフトウェアの正とする"
 
 [[term]]
 id = "promise"
