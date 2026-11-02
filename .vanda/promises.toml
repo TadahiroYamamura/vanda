@@ -2974,7 +2974,7 @@ layers = ["api"]
 [[claim]]
 id = "review-flag-labels"
 subjects = ["raise-flags", "flag"]
-statement = "フラグの札には短い言葉だけを出し、説明は札に触れた時かフォーカスした時に出す"
+statement = "フラグのラベルには短い言葉だけを出し、説明はラベルに触れた時かフォーカスした時に出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4336,8 +4336,8 @@ layers = ["gui"]
 [[claim]]
 id = "review-list-icons"
 subjects = ["list-changes", "raise-flags", "proposed", "agreed", "detached"]
-statement = "変わったものの一覧では、状態とフラグを、言葉の札でなくアイコンで、名前の下の行の種類の後ろに並べる。状態のアイコンは 1 件に 1 つ（合意が外れたものは、提案中でなく合意が外れたことを示す）で、続けて立っているフラグのアイコンを並べる。状態のアイコンは丸の形、フラグのアイコンは丸のない形にし、色だけに頼らずに見分けられるようにする"
-rationale = "一覧は幅が狭く、言葉の札を名前の横に並べると折り返して崩れるため"
+statement = "変わったものの一覧では、状態とフラグを、言葉のラベルでなくアイコンで、名前の下の行の種類の後ろに並べる。状態のアイコンは 1 件に 1 つ（合意が外れたものは、提案中でなく合意が外れたことを示す）で、続けて立っているフラグのアイコンを並べる。状態のアイコンは丸の形、フラグのアイコンは丸のない形にし、色だけに頼らずに見分けられるようにする"
+rationale = "一覧は幅が狭く、言葉のラベルを名前の横に並べると折り返して崩れるため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4490,7 +4490,7 @@ layers = ["gui"]
 [[claim]]
 id = "entry-select-anywhere"
 subjects = ["list-changes"]
-statement = "変わったものの一覧の 1 件は、名前のほか、番号・状態の札・フラグの札・枠の端を押しても選ばれる"
+statement = "変わったものの一覧の 1 件は、名前のほか、番号・状態のアイコン・フラグのアイコン・枠の端を押しても選ばれる"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
