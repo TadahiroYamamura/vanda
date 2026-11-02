@@ -1523,3 +1523,67 @@ test("約束の詳細の画面でTLAの定義をコピーするとリポジト�
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText()), { message: "コピーした文字がリポジトリの文字のままでない" }).toContain(def);
   expect(await page.evaluate(() => navigator.clipboard.readText())).not.toMatch(/[∀∈⇒≜]/);
 });
+
+// RV-01 の絞り込み。story-24 の一覧は task-id-unique（文を変えた）・task-title-required（足した）・e2e/add-task.txtar の 3 件
+const filterList = (page: Page) => page.getByRole("region", { name: "変わったものの一覧" });
+async function expectListed(page: Page, want: string[], where: string) {
+  const list = filterList(page);
+  for (const item of items) {
+    const n = want.includes(item) ? 1 : 0;
+    await expect(list.getByText(item, { exact: true }), `${where}: ${item} が${n ? "出ない" : "出ている"}`).toHaveCount(n);
+  }
+}
+
+// @vanda:evidence review-filter-text
+// @vanda:evidence review-filter-not-agreed
+test("一覧を文字で絞り込み合意した後に合意済でないものだけにすると合意したものが消え文字の絞り込みと重ねられる", async ({ page }) => {
+  await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
+  await expectListed(page, items, "絞り込む前");
+  const box = filterList(page).getByRole("searchbox", { name: "絞り込み" });
+  // ID・文・パスに、大文字と小文字を変えて当てる
+  await box.fill("TITLE");
+  await expectListed(page, ["task-title-required"], "ID で絞り込んだとき");
+  await box.fill("すべてのタスクを通して");
+  await expectListed(page, ["task-id-unique"], "文で絞り込んだとき");
+  await box.fill("E2E/ADD");
+  await expectListed(page, ["e2e/add-task.txtar"], "パスで絞り込んだとき");
+  await box.fill("");
+  await expectListed(page, items, "文字を消したとき");
+
+  await agreeAll(page, ["task-id-unique"]);
+  const notAgreed = filterList(page).getByRole("checkbox", { name: "合意済でないものだけ" });
+  await notAgreed.check();
+  await expectListed(page, ["task-title-required", "e2e/add-task.txtar"], "合意済でないものだけにしたとき");
+  await box.fill("task");
+  await expectListed(page, ["task-title-required", "e2e/add-task.txtar"], "合意済でないものだけと task を重ねたとき");
+  await box.fill("required");
+  await expectListed(page, ["task-title-required"], "合意済でないものだけと required を重ねたとき");
+  await box.fill("unique");
+  await expectListed(page, [], "合意済でないものだけと合意した件の文字を重ねたとき");
+  await expect(filterList(page).getByText(/絞り込みの条件に当たるものはありません/)).toBeVisible();
+  await notAgreed.uncheck();
+  await expectListed(page, ["task-id-unique"], "合意済でないものだけを外したとき");
+});
+
+// @vanda:evidence review-filter-kept
+test("絞り込みの条件は約束の詳細から戻っても読み込み直しても残る", async ({ page }) => {
+  await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
+  await expectListed(page, items, "絞り込む前");
+  const box = filterList(page).getByRole("searchbox", { name: "絞り込み" });
+  const notAgreed = filterList(page).getByRole("checkbox", { name: "合意済でないものだけ" });
+  await box.fill("Title");
+  await notAgreed.check();
+  await expectListed(page, ["task-title-required"], "絞り込んだとき");
+  const kept = async (where: string) => {
+    await expect(box, `${where}: 文字が消えた`).toHaveValue("Title");
+    await expect(notAgreed, `${where}: 合意済でないものだけが外れた`).toBeChecked();
+    await expectListed(page, ["task-title-required"], where);
+  };
+  await select(page, "task-title-required");
+  await page.getByRole("link", { name: "約束の詳細を開く" }).click();
+  await expect(page).toHaveURL(/\/claims\/task-title-required/);
+  await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
+  await kept("約束の詳細から戻ったとき");
+  await page.reload();
+  await kept("読み込み直したとき");
+});

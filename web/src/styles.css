@@ -96,6 +96,9 @@ main { padding: 20px 28px 40px; }
 .list h2 { padding: 0 6px; display: flex; justify-content: space-between; align-items: baseline; }
 .list > div > .note { padding: 0 6px; font-size: 11px; }
 .total { font-size: 11px; font-weight: 400; color: var(--muted); }
+.filter { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; padding: 0 6px; margin: 6px 0; }
+.filter label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.filter input[type="search"] { font-size: 13px; border: 1px solid var(--ctl-line); border-radius: 8px; background: #fff; color: var(--fg); padding: 6px 10px; min-height: 36px; min-width: 0; }
 .group { margin-bottom: 6px; }
 .group h3, .detached h3 { margin: 8px 0 2px; }
 .fold { width: 100%; text-align: left; min-height: 0; padding: 4px 6px; border: 0; background: transparent; font-size: 12px; font-weight: 500; color: var(--fg2); }

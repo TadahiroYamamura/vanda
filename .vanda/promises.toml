@@ -765,10 +765,46 @@ type = "cross-check"
 layers = ["api"]
 
 [[claim]]
+id = "pass-only-when-all-seen"
+subjects = ["rv-06", "cmd-10", "agreement"]
+statement = "全部の範囲の agreement が通るなら、今ある約束・用語・機能・合意の対象のファイルの今の中身（ファイルなら場所も）と、合意したことのある項目が今ないことは、どれも一度は誰かが合意したものである"
+rationale = "PO が一度も見ていない状態で、審査が通らないようにするため。細かい場面（名前を元に戻す、消して足し直す など）の振る舞いは、この性質に反しないように決める（PO の決定）"
+layers = ["model", "cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "model-check"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "cross-check"
+layers = ["cli"]
+
+[[claim]]
+id = "story-pass-only-when-seen"
+subjects = ["rv-06", "cmd-10", "agreement", "story"]
+statement = "ストーリー s の範囲の agreement が通るなら、比べる元と今で違う約束・用語・機能・合意の対象のファイルは、どれも今の状態（今ある中身か、ないこと）に一度は誰かが合意したものである"
+rationale = "ストーリーで変えたものを、PO が見ないまま合流させないため（PO の決定）"
+layers = ["model", "cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "model-check"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "cross-check"
+layers = ["cli"]
+
+[[claim]]
 id = "renamed-file-needs-agreement"
 subjects = ["cm-03", "agreement", "scenario"]
-statement = "ファイルの名前を変えたら、中身が同じでも、新しい場所のファイルを提案中とし、古い場所を消したものとする"
-rationale = "ファイルは場所で見分けるため。中身だけで見分けると、合意済のファイルを写した先が、誰も読まないまま合意済になる"
+statement = "ファイルの名前を変えたら、古い場所を消したものとし、新しい場所のファイルは、その場所に同じ中身への合意の記録がなければ、中身が同じでも提案中とする"
+rationale = "ファイルは場所で見分けるため。中身だけで見分けると、合意済のファイルを写した先が、誰も読まないまま合意済になる。名前を元に戻したときのように、その場所のその中身に一度合意していれば、合意し直さなくてよい（PO の決定）"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
@@ -2619,7 +2655,8 @@ layers = ["api"]
 [[claim]]
 id = "review-renamed-file"
 subjects = ["rv-01", "scenario"]
-statement = "中身が同じで場所だけが変わったファイルは、名前の変更の 1 件にまとめる"
+statement = "中身が同じで場所だけが変わったファイルは、古い場所の削除と新しい場所の追加の 2 件として出す"
+rationale = "ファイルは場所で見分けるので、名前の変更は、古い場所を消して新しい場所に足すことになり、どちらにも合意が要るため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2631,7 +2668,7 @@ layers = ["api"]
 [[claim]]
 id = "review-count-verified"
 subjects = ["rv-01"]
-statement = "一覧を返す前に、同じものが 2 度出ていないかと、一覧の数が、比べる元と今で指紋の違う鍵の数から名前の変更の数を引いたものに合うかを確かめ、どちらかが破れていれば一覧を返さず 500 にする"
+statement = "一覧を返す前に、同じものが 2 度出ていないかと、一覧の数が、比べる元と今で指紋の違う鍵の数に合うかを確かめ、どちらかが破れていれば一覧を返さず 500 にする"
 rationale = "指紋の違う鍵を一覧の 1 件ずつにするところで漏れや重複が起きても、PO に誤った一覧を見せないため"
 condition = "指紋の違う鍵を求めるところの漏れは、これでは見つけない"
 layers = ["api"]
@@ -2696,7 +2733,7 @@ layers = ["api"]
 [[claim]]
 id = "review-change-counts"
 subjects = ["rv-01", "rv-02"]
-statement = "一覧の総数とともに、追加・変更・削除・名前の変更のそれぞれの件数を示す"
+statement = "一覧の総数とともに、追加・変更・削除のそれぞれの件数を示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3739,7 +3776,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-writes-files"
 subjects = ["cmd-11"]
-statement = "作るかの確かめに答えると、設定・約束リスト・合意の記録と、2 つの審査の設定（ブランチで動かす .vanda/checks/ci.toml と、ベースブランチで動かす .vanda/checks/main.toml）の 5 つのファイルを作る"
+statement = "プロンプトに答えると、設定・約束リスト・合意の記録と、2 つの審査の設定（ブランチで動かす .vanda/checks/ci.toml と、ベースブランチで動かす .vanda/checks/main.toml）の 5 つのファイルを作る"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4171,6 +4208,50 @@ statement = "変わったものの一覧の 1 件ごとに、合意の状態を�
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "review-list-icons"
+subjects = ["rv-01", "rv-04", "proposed", "agreed", "detached"]
+statement = "変わったものの一覧では、状態とフラグを、言葉の札でなくアイコンで、名前の下の行の種類の後ろに並べる。状態のアイコンは 1 件に 1 つ（合意が外れたものは、提案中でなく合意が外れたことを示す）で、続けて立っているフラグのアイコンを並べる。状態のアイコンは丸の形、フラグのアイコンは丸のない形にし、色だけに頼らずに見分けられるようにする"
+rationale = "一覧は幅が狭く、言葉の札を名前の横に並べると折り返して崩れるため（PO の決定）"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
+
+[[claim]]
+id = "review-list-first-line"
+subjects = ["rv-01", "rv-02"]
+statement = "変わったものの一覧では、1 件ごとの 1 行目に、通し番号と名前だけを出し、追加・変更・削除の記号は出さない。種類（約束・用語・機能・ファイルの種類）は 2 行目の左端に出す。追加・変更・削除のどれかは、選んだ 1 件の詳細に示す"
+rationale = "一覧は幅が狭く、名前を出す幅を広く取るため。合意するかどうかは、追加か変更かで変わらない（PO の決定）"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "review-icon-names"
+subjects = ["rv-01", "rv-04"]
+statement = "一覧のアイコンに触れたときか、キーボードでフォーカスしたときに、そのアイコンの言葉（合意済・提案中・合意が外れた・AI 案・推測・差分あり）を出し、読み上げにも同じ言葉を渡す"
+rationale = "アイコンだけでは意味を覚えていない人が読めないため"
+layers = ["gui"]
+flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
