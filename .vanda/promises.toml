@@ -4196,6 +4196,19 @@ type = "scenario-test"
 layers = ["gui"]
 
 [[claim]]
+id = "review-list-first-line"
+subjects = ["rv-01", "rv-02"]
+statement = "変わったものの一覧では、1 件ごとの 1 行目に、通し番号・種類・名前だけを出し、追加・変更・削除・名前の変更の記号は出さない。追加・変更・削除・名前の変更は、選んだ 1 件の詳細に示す"
+rationale = "一覧は幅が狭く、名前を出す幅を広く取るため。合意するかどうかは、追加か変更かで変わらない（PO の決定）"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
 id = "review-icon-names"
 subjects = ["rv-01", "rv-04"]
 statement = "一覧のアイコンに触れたときか、キーボードでフォーカスしたときに、そのアイコンの言葉（合意済・提案中・合意が外れた・AI 案・推測・差分あり）を出し、読み上げにも同じ言葉を渡す"
