@@ -15,33 +15,32 @@ export function ErrorBox(props: { error: unknown; title?: string }) {
   );
 }
 
-// FlagBadge は、札に短い言葉だけを出し、説明は札に触れたとき（マウスを載せる・フォーカスする）に出す（RV-04）。
-// 説明は、画面に対して位置を決める（position: fixed）。札が一覧の欄（スクロールする欄）の中にあると、
+// useTooltip は、触れたとき（マウスを載せる・フォーカスする）に出す説明の、開け閉めと位置を持つ。
+// 説明は、画面に対して位置を決める（position: fixed）。触れる所が一覧の欄（スクロールする欄）の中にあると、
 // 欄に対して置いた説明は欄の端で切れるため。画面の右端に近いときは左に寄せ、長いときは折り返す
-export function FlagBadge(props: { flag: Flag }) {
+function useTooltip() {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
-  const id = useId();
-  const badge = useRef<HTMLSpanElement>(null);
+  const anchor = useRef<HTMLSpanElement>(null);
   const tip = useRef<HTMLSpanElement>(null);
   useLayoutEffect(() => {
-    if (!open || !badge.current || !tip.current) {
+    if (!open || !anchor.current || !tip.current) {
       setPos(null);
       return;
     }
     const margin = 8;
-    const b = badge.current.getBoundingClientRect();
+    const b = anchor.current.getBoundingClientRect();
     const w = tip.current.offsetWidth;
     const h = tip.current.offsetHeight;
     const left = Math.max(margin, Math.min(b.left, window.innerWidth - w - margin));
-    // 下に収まらなければ、札の上に出す
+    // 下に収まらなければ、触れた所の上に出す
     const below = b.bottom + 4;
     const top = below + h + margin > window.innerHeight ? Math.max(margin, b.top - 4 - h) : below;
     setPos({ left, top });
   }, [open]);
   useEffect(() => {
     if (!open) return;
-    // 欄や画面がスクロールすると札と説明がずれるので、閉じる
+    // 欄や画面がスクロールすると触れた所と説明がずれるので、閉じる
     const close = () => setOpen(false);
     window.addEventListener("scroll", close, true);
     window.addEventListener("resize", close);
@@ -50,26 +49,28 @@ export function FlagBadge(props: { flag: Flag }) {
       window.removeEventListener("resize", close);
     };
   }, [open]);
+  return {
+    anchor,
+    tip,
+    open,
+    handlers: {
+      onMouseEnter: () => setOpen(true),
+      onMouseLeave: () => setOpen(false),
+      onFocus: () => setOpen(true),
+      onBlur: () => setOpen(false),
+    },
+    tipStyle: pos ? { left: pos.left, top: pos.top } : { left: 0, top: 0, visibility: open ? ("hidden" as const) : undefined },
+  };
+}
+
+// FlagBadge は、札に短い言葉だけを出し、説明は札に触れたとき（マウスを載せる・フォーカスする）に出す（RV-04）
+export function FlagBadge(props: { flag: Flag }) {
+  const id = useId();
+  const t = useTooltip();
   return (
-    <span
-      ref={badge}
-      className={`badge flag flag-${props.flag}`}
-      tabIndex={0}
-      aria-describedby={id}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onFocus={() => setOpen(true)}
-      onBlur={() => setOpen(false)}
-    >
+    <span ref={t.anchor} className={`badge flag flag-${props.flag}`} tabIndex={0} aria-describedby={id} {...t.handlers}>
       {flagLabel[props.flag]}
-      <span
-        id={id}
-        ref={tip}
-        role="tooltip"
-        className="tooltip"
-        hidden={!open}
-        style={pos ? { left: pos.left, top: pos.top } : { left: 0, top: 0, visibility: open ? "hidden" : undefined }}
-      >
+      <span id={id} ref={t.tip} role="tooltip" className="tooltip" hidden={!t.open} style={t.tipStyle}>
         {flagHelp[props.flag]}
       </span>
     </span>
