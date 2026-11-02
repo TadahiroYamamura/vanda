@@ -1891,7 +1891,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-load-errors-owner"
 subjects = ["run-checks", "list-check-kinds", "check"]
-statement = "約束リストの読み込みの誤りは promise-list-shape が、アノテーションの読み込みの誤りは annotation-links が、合意の記録の読み込みの誤りは agreement-targets が出す"
+statement = "約束リストの読み込みの誤りとエラーは promise-list-shape が、アノテーションの読み込みの誤りとエラーは annotation-links が、合意の記録の読み込みの誤りとエラーは agreement-targets が出す"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2611,7 +2611,7 @@ layers = ["api"]
 [[claim]]
 id = "story-github-issue-number"
 subjects = ["connect-story-store", "story"]
-statement = "組込みの github のアダプタは、ストーリーの ID の中の最後の数字の並びを Issue の番号とし、ID に数字がなければ 400 の誤りにする"
+statement = "組込みの github のアダプタは、ストーリーの ID の中の最後の数字の並びを Issue の番号とし、ID に数字がなければ 400 のエラーにする"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -4666,7 +4666,7 @@ layers = ["cli"]
 id = "story-trailer-errors-shown"
 subjects = ["switch-review-unit", "story"]
 statement = "Story: のトレーラーに誤りのあるコミットがあっても、API はエラーで止めずに 200 で返し、そのコミットのストーリーを空にしたうえで、どのコミットの何が誤りかを返し、画面に出す"
-rationale = "履歴に 1 つ誤ったコミットがあるだけで画面を開けなくならないようにし、そのうえで、段 2 で決めた「誤りは画面にそのまま理由を出す（黙って空にしない）」に沿うため（監督の判断）"
+rationale = "履歴に 1 つ誤ったコミットがあるだけで画面を開けなくならないようにし、そのうえで、ストーリーを読めない時と同じく、理由を画面にそのまま出し、黙って空にしないため"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
