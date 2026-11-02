@@ -14,7 +14,7 @@ NeverOwnChangeUnagreed ==
 
 (* 中身を変えた後で、全部の範囲の審査が通ることがある *)
 NeverAllPassAfterChange ==
-    (\E i \in Items : content[i] > 0) => ~ AllPass
+    (\E i \in Items : changedBy[i] # {}) => ~ AllPass
 
 (* 同じ中身に、2 つのストーリーが別々に合意することがある *)
 NeverTwoStoriesAgreeSame ==
@@ -34,7 +34,7 @@ NeverRepair ==
 
 (* OwnChangeBreaks の前件: 前に合意したストーリーが、自分でその項目を変える *)
 NeverOwnChangeAfterAgree ==
-    [][~ \E s \in Stories, i \in Items : Change(s, i) /\ \E a \in agreements : a.item = i /\ a.story = s]_vars
+    [][~ \E s \in Stories, i \in Items, f \in Fps : Change(s, i, f) /\ \E a \in agreements : a.item = i /\ a.story = s]_vars
 
 (* 自分しか変えていない項目でも、合意が外れていることがある（誰が変えたかを問わない） *)
 NeverBrokenByOwnChangeOnly ==

@@ -11,8 +11,9 @@ import (
 // 定数は Agreement.cfg と同じ範囲にする（性質を検査した範囲で、前提が起きることを確かめるため）。
 const constants = `CONSTANTS
     Items = {i1, i2}
+    Files = {i1, i2}
     Stories = {A, B}
-    MaxVer = 2
+    MaxFp = 2
 SPECIFICATION Spec
 CHECK_DEADLOCK FALSE
 `
