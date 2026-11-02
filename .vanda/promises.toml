@@ -3514,6 +3514,42 @@ type = "human-review"
 layers = ["gui"]
 
 [[claim]]
+id = "tla-symbol-font"
+subjects = ["cl-07", "oracle"]
+statement = "TLA+ の数学の記号は、画面に同梱した数学の記号の書体（Noto Sans Math）で描き、OS の書体に頼らない"
+rationale = "等幅の書体に数学の記号が入っておらず、OS の書体で代わりに描くと、記号の大きさがばらつき、≜ などがつぶれて読めないため（PO の決定）"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
+
+[[claim]]
+id = "tla-symbol-keeps-width"
+subjects = ["cl-07", "oracle"]
+statement = "TLA+ の記号は、置き換える前の ASCII の文字数ぶんの幅（等幅の 1 文字を単位とする）を取り、その中央に描く"
+rationale = "TLA+ は /\ などの並びを縦に揃えて書くので、記号に置き換えた後も揃えを崩さないため"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["gui"]
+
+[[claim]]
 id = "tla-copy-ascii"
 subjects = ["cl-07", "oracle"]
 statement = "TLA+ の定義をコピーしたときは、リポジトリの文字のまま（ASCII）にする"
