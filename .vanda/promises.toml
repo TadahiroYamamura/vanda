@@ -1465,7 +1465,8 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-overrides-builtin"
 subjects = ["run-custom-adapters", "builtin-adapter"]
-statement = "組込みのアダプタと同じ名前のアダプタが .vanda/adapters/ にあれば、そちらを使う"
+statement = "組込みのアダプタと同じ名前のカスタムアダプタがあれば、そちらを使う"
+condition = "ガードレールの定義は、今は組込みの file だけを使うので、カスタムアダプタでは置き換えられない（config-guardrail-adapter-file）"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
