@@ -274,7 +274,7 @@ definition = "約束ごとに、どのステージで、どのタイプのエビ
 
 [[feature]]
 id = "cm-01"
-name = "vanda サーバーの起動（vanda serve）"
+name = "vanda サーバーを起動する（vanda serve）"
 definition = "vanda サーバーを起動し、画面をブラウザで開く"
 
 [[feature]]
@@ -304,17 +304,17 @@ definition = "ストーリーの置き場所から、ストーリーの題・本
 
 [[feature]]
 id = "cm-09"
-name = "設定のファイル"
+name = "設定をファイルに書く"
 definition = "設定を .vanda/config.toml に持つ。画面で書き換える機能は作らない。認証の鍵はファイルに書かない"
 
 [[feature]]
 id = "rv-01"
-name = "ストーリーで変わったものの一覧"
+name = "ストーリーで変わったものを並べる"
 definition = "比べる元と今のあいだで追加・変更・削除された約束・用語・機能とエビデンスの本体の一覧を、漏れも重複もなく示す"
 
 [[feature]]
 id = "rv-02"
-name = "通し番号と総数"
+name = "通し番号と総数を示す"
 definition = "一覧に通し番号と総数を示す"
 
 [[feature]]
@@ -324,7 +324,7 @@ definition = "注意して読む手がかりとして、AI 案・推測・差分
 
 [[feature]]
 id = "rv-05"
-name = "変更前と変更後の中身"
+name = "変更前と変更後の中身を比べる"
 definition = "変更・削除したものの、変更前と変更後の中身と差分を示す"
 
 [[feature]]
@@ -336,7 +336,7 @@ formal = true
 
 [[feature]]
 id = "rv-08"
-name = "エビデンスの予定と実際"
+name = "エビデンスの予定と実際を示す"
 definition = "エビデンスの予定ごとに、揃っているかを示す"
 
 [[feature]]
@@ -346,7 +346,7 @@ definition = "一覧をまとまりごとにたたみ、たたんだ件数を示
 
 [[feature]]
 id = "rv-13"
-name = "レビュー単位"
+name = "レビュー単位を切り替える"
 definition = "レビュー単位をブランチとストーリーで切り替える"
 
 [[feature]]
@@ -356,7 +356,7 @@ definition = "ストーリーが前に合意したのに今の中身にそのス
 
 [[feature]]
 id = "rv-16"
-name = "1 件の詳細の由来と合意の履歴"
+name = "1 件の詳細に由来と合意の履歴を示す"
 definition = "レビューの 1 件の詳細に、約束の由来と合意の履歴を示す"
 
 [[feature]]
@@ -368,37 +368,37 @@ formal = true
 
 [[feature]]
 id = "rv-18"
-name = "約束の詳細とファイルの画面での合意"
+name = "約束の詳細とファイルの画面で合意する"
 definition = "約束の詳細の画面と、ファイルの画面でも、合意する・合意を取り消す"
 
 [[feature]]
 id = "cl-01"
-name = "約束の文・理由・条件・レイヤー"
+name = "約束の文・理由・条件・レイヤーを示す"
 definition = "約束の詳細に、文・理由・条件・レイヤーを示す"
 
 [[feature]]
 id = "cl-02"
-name = "約束のエビデンス"
+name = "約束のエビデンスを示す"
 definition = "約束の詳細に、エビデンスをステージとタイプで分けて、その中身とともに示す"
 
 [[feature]]
 id = "cl-04"
-name = "約束の由来"
+name = "約束の由来を示す"
 definition = "約束の詳細に、由来を示す"
 
 [[feature]]
 id = "cl-05"
-name = "約束の合意の履歴"
+name = "約束の合意の履歴を示す"
 definition = "約束の詳細に、合意の履歴を示す"
 
 [[feature]]
 id = "cl-07"
-name = "TLA+ の記号"
+name = "TLA+ を数学の記号で見せる"
 definition = "オラクルの定義（TLA+）を数学の記号で見せ、コピーしたときはリポジトリの文字のままにする"
 
 [[feature]]
 id = "cl-08"
-name = "その時点の約束の中身"
+name = "その時点の約束の中身を示す"
 definition = "由来のコミットや合意の記録を選ぶと、その時点の約束の中身を示す"
 
 [[feature]]
@@ -413,7 +413,7 @@ definition = "審査の設定のファイルに並べた審査を行う"
 
 [[feature]]
 id = "cmd-10"
-name = "審査の種類"
+name = "審査を列挙する"
 definition = "vanda check で行える審査の種類を用意する。どの種類があるかは、用語「審査」の一部として並べる"
 
 [[feature]]
@@ -428,12 +428,12 @@ definition = "動いている vanda の版を出す"
 
 [[feature]]
 id = "annotation-reading"
-name = "アノテーションの読み取り"
+name = "アノテーションを読み取る"
 definition = "設定のパターンに当たるファイルから、アダプタでアノテーションと、付いているものの名前を読む"
 
 [[feature]]
 id = "project-adapters"
-name = ".vanda/adapters/ のアダプタ"
+name = ".vanda/adapters/ のアダプタを動かす"
 definition = "プロジェクトが .vanda/adapters/ に置いたアダプタを、設定に書いた名前で動かす"
 
 [[claim]]
