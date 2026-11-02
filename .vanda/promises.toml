@@ -2757,7 +2757,8 @@ layers = ["gui"]
 [[claim]]
 id = "review-view-branch"
 subjects = ["rv-13", "base-branch"]
-statement = "レビュー単位がブランチなら、ベースブランチと分かれた点の中身と、作業ツリーの今の中身（コミットしていない変更を含む）を比べる"
+statement = "レビュー単位がブランチなら、ベースブランチと分かれた点の中身と、HEAD のコミットの中身を比べ、コミットしていない変更は比べない"
+rationale = "コミットしていないものは、提出される保証がなく、ないのと同じため（reads-committed-files-only と同じ PO の決定）"
 layers = ["api"]
 flags = ["ai-proposal"]
 
