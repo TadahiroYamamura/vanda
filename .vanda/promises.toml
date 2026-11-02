@@ -3535,7 +3535,7 @@ layers = ["gui"]
 id = "tla-symbol-keeps-width"
 subjects = ["cl-07", "oracle"]
 statement = "TLA+ の記号は、置き換える前の ASCII の文字数ぶんの幅（等幅の 1 文字を単位とする）を取り、その中央に描く"
-rationale = "TLA+ は /\ などの並びを縦に揃えて書くので、記号に置き換えた後も揃えを崩さないため"
+rationale = "TLA+ は /\\ などの並びを縦に揃えて書くので、記号に置き換えた後も揃えを崩さないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
