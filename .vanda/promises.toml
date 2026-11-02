@@ -128,7 +128,7 @@ definition = "約束などの今の中身が要求どおりかを人が確かめ
 [[term]]
 id = "agreement-record"
 name = "合意の記録"
-definition = "合意を書き留めたもの。対象の鍵と中身の指紋の組ごとに、誰が（合意したときの git の user.name と user.email）・いつ・どのストーリーで合意したかを書く。約束リストとは別のファイルに置く"
+definition = "合意を書き留めたもの。約束・用語・機能なら ID と中身の指紋の組、ファイルならファイルパスと中身の指紋の組ごとに、誰が（合意したときの git の user.name と user.email）・いつ・どのストーリーで合意したかを書く。約束リストとは別のファイルに置く"
 
 [[term]]
 id = "proposed"
@@ -312,7 +312,7 @@ definition = "ストーリーの置き場所から、ストーリーの題・本
 [[feature]]
 id = "store-config"
 name = "設定をファイルに書く"
-definition = "設定を .vanda/config.toml に持つ。画面で書き換える機能は作らない。認証の鍵はファイルに書かない"
+definition = "設定を .vanda/config.toml に持つ。画面で書き換える機能は作らない。認証キーはファイルに書かない"
 
 [[feature]]
 id = "list-changes"
@@ -2287,7 +2287,7 @@ layers = ["cli"]
 [[claim]]
 id = "doctor-github-token"
 subjects = ["diagnose-setup", "connect-story-store"]
-statement = "vanda doctor が GitHub につなぐときも、画面でストーリーを読むときと同じ決まりで認証の鍵を選び、合う鍵が見つからなければ要求を送らずに誤りにする"
+statement = "vanda doctor が GitHub につなぐときも、画面でストーリーを読むときと同じ決まりで認証キーを選び、合う認証キーが見つからなければ要求を送らずに誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2641,8 +2641,8 @@ layers = ["api"]
 [[claim]]
 id = "story-github-token"
 subjects = ["connect-story-store", "store-config"]
-statement = "GitHub の認証の鍵は、使うたびに、api_url のホストに合うものを使う。ホストが api.github.com なら、環境変数 GH_TOKEN を使い、なければ gh auth token --hostname github.com の出力を使う。ほかのホストなら、GH_ENTERPRISE_TOKEN を使い、なければ gh auth token --hostname <そのホスト> の出力を使う"
-rationale = "認証の鍵は設定に書かず、使うたびに読めるものを使うため。api_url はチームで共有する設定なので、github.com の鍵を、設定に書かれたほかのホストへ送らない"
+statement = "GitHub の認証キーは、使うたびに、api_url のホストに合うものを使う。ホストが api.github.com なら、環境変数 GH_TOKEN を使い、なければ gh auth token --hostname github.com の出力を使う。ほかのホストなら、GH_ENTERPRISE_TOKEN を使い、なければ gh auth token --hostname <そのホスト> の出力を使う"
+rationale = "認証キーは設定に書かず、使うたびに読めるものを使うため。api_url はチームで共有する設定なので、github.com の認証キーを、設定に書かれたほかのホストへ送らない"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2659,7 +2659,7 @@ layers = ["api"]
 [[claim]]
 id = "story-github-token-missing"
 subjects = ["connect-story-store", "story"]
-statement = "api_url のホストに合う鍵が見つからなければ、GitHub への要求を送らずに、ストーリーの置き場所の誤りにする"
+statement = "api_url のホストに合う認証キーが見つからなければ、GitHub への要求を送らずに、ストーリーの置き場所の誤りにする"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2671,8 +2671,8 @@ layers = ["api"]
 [[claim]]
 id = "story-github-http-warning"
 subjects = ["connect-story-store", "store-config"]
-statement = "api_url が http:// で始まるなら、鍵を送るたびに、鍵が暗号化されずに流れることを標準エラーに出す"
-rationale = "サンドボックスなどでは http で送ることがあるので認めるが、鍵が平文で流れることに気づけるようにするため"
+statement = "api_url が http:// で始まるなら、認証キーを送るたびに、認証キーが暗号化されずに流れることを標準エラーに出す"
+rationale = "サンドボックスなどでは http で送ることがあるので認めるが、認証キーが平文で流れることに気づけるようにするため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2750,9 +2750,9 @@ layers = ["api"]
 [[claim]]
 id = "review-count-verified"
 subjects = ["list-changes"]
-statement = "一覧を返す前に、同じものが 2 度出ていないかと、一覧の数が、比べる元と今で指紋の違う鍵の数に合うかを確かめ、どちらかを満たさなければ一覧を返さず 500 にする"
-rationale = "指紋の違う鍵を一覧の 1 件ずつにするところで漏れや重複が起きても、PO に誤った一覧を見せないため"
-condition = "指紋の違う鍵を求めるところの漏れは、これでは見つけない"
+statement = "一覧を返す前に、同じものが 2 度出ていないかと、一覧の数が、比べる元と今で中身の指紋が違う、約束・用語・機能の ID とファイルのファイルパスの数に合うかを確かめ、どちらかを満たさなければ一覧を返さず 500 にする"
+rationale = "中身の指紋が違う ID とファイルパスを、一覧の 1 件ずつにするところで漏れや重複が起きても、PO に誤った一覧を見せないため"
+condition = "中身の指紋が違う ID とファイルパスを求めるところの漏れは、これでは見つけない"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2962,7 +2962,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-flags"
 subjects = ["raise-flags", "flag", "ai-proposal", "guess", "changed-since-agreement"]
-statement = "約束の flags にあれば AI 案、guesses が空でなければ推測、同じ鍵に合意の記録があり今の中身に合う合意がなければ差分ありのフラグを立てる"
+statement = "約束の flags にあれば AI 案、guesses が空でなければ推測、同じ ID（ファイルならファイルパス）の合意の記録があり今の中身に合う合意がなければ差分ありのフラグを立てる"
 layers = ["api"]
 flags = ["ai-proposal"]
 
