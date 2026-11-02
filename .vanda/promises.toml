@@ -3739,7 +3739,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-writes-files"
 subjects = ["cmd-11"]
-statement = "作るかの確かめに答えると、設定・約束リスト・合意の記録と、2 つの審査の設定（ブランチで動かす .vanda/checks/ci.toml と、ベースブランチで動かす .vanda/checks/main.toml）の 5 つのファイルを作る"
+statement = "プロンプトに答えると、設定・約束リスト・合意の記録と、2 つの審査の設定（ブランチで動かす .vanda/checks/ci.toml と、ベースブランチで動かす .vanda/checks/main.toml）の 5 つのファイルを作る"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
