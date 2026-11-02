@@ -166,6 +166,48 @@ name = "審査"
 definition = "CLI の vanda check が行う点検。約束リスト・アノテーション・Story: のトレーラー・合意・エビデンスの予定などの証拠を集めて、間違いや矛盾がなく基準を満たすかを判断する。オラクルそのもの（モデル検査など）は動かさない"
 
 [[term]]
+id = "promise-list-shape-check"
+name = "約束リストの形の審査（promise-list-shape）"
+definition = "約束リストが決まった形で書かれているかを確かめる審査"
+part_of = "check"
+
+[[term]]
+id = "annotation-links-check"
+name = "アノテーションのつながりの審査（annotation-links）"
+definition = "アノテーションが、約束リストにある用語・機能・約束を正しく指しているかを確かめる審査"
+part_of = "check"
+
+[[term]]
+id = "story-origin-check"
+name = "由来の審査（story-origin）"
+definition = "約束リストを変えたコミットが、どのストーリーのものか分かるかを確かめる審査"
+part_of = "check"
+
+[[term]]
+id = "agreement-check"
+name = "合意の審査（agreement）"
+definition = "合意の対象の今の中身に、PO が合意しているかを確かめる審査"
+part_of = "check"
+
+[[term]]
+id = "agreement-targets-check"
+name = "合意の記録の指す先の審査（agreement-targets）"
+definition = "合意の記録が、約束リストにあるものを指しているかを確かめる審査"
+part_of = "check"
+
+[[term]]
+id = "evidence-present-check"
+name = "エビデンスが揃っている審査（evidence-present）"
+definition = "約束に予定したエビデンスが揃っているかを確かめる審査"
+part_of = "check"
+
+[[term]]
+id = "unread-files-check"
+name = "読まれていないファイルの審査（unread-files）"
+definition = ".vanda/ に、vanda が読まないファイルが置かれていないかを確かめる審査"
+part_of = "check"
+
+[[term]]
 id = "mistake"
 name = "誤り"
 definition = "人が書いたもの（設定・約束リスト・合意の記録・アノテーション・コマンドの引数など）の間違いで、vanda が見つけて知らせるもの。例: 設定の誤り、約束リストの形の誤り、審査で見つかった誤り。誤りを見つけても vanda は最後まで動き、知らせた後に終了コード 1 で終わることがある"
@@ -372,7 +414,7 @@ definition = "審査の設定のファイルに並べた審査を行う"
 [[feature]]
 id = "cmd-10"
 name = "審査の種類"
-definition = "約束リストの形・アノテーションのつながり・由来・合意・合意の記録の指す先・エビデンスが揃っている・読まれていないファイルの審査"
+definition = "vanda check で行える審査の種類を用意する。どの種類があるかは、用語「審査」の一部として並べる"
 
 [[feature]]
 id = "cmd-11"
