@@ -4662,6 +4662,23 @@ type = "scenario-test"
 layers = ["cli"]
 
 [[claim]]
+id = "branch-point-merge-base"
+subjects = ["branch-point", "base-branch", "run-checks", "switch-review-unit"]
+statement = "分岐点は、ベースブランチと HEAD の git merge-base で求める"
+layers = ["cli", "api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
 id = "story-trailer-at-most-one"
 subjects = ["run-checks", "list-check-kinds", "story"]
 statement = "分岐点より後のコミットに Story: のトレーラーが 2 つ以上あるものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡した時も審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
