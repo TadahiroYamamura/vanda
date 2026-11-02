@@ -233,151 +233,151 @@ definition = "約束ごとに、どのステージで、どのタイプのエビ
 [[feature]]
 id = "cm-01"
 name = "vanda サーバーの起動（vanda serve）"
-definition = "vanda サーバーを起動し、画面をブラウザで開く（CM-01・CMD-04）"
+definition = "vanda サーバーを起動し、画面をブラウザで開く"
 
 [[feature]]
 id = "cm-02"
 name = "約束リストを読む"
-definition = "約束リスト（設定の promises のパターンに当たるファイル）を読み、形を確かめる（CM-02）"
+definition = "約束リスト（設定の promises のパターンに当たるファイル）を読み、形を確かめる"
 
 [[feature]]
 id = "cm-03"
 name = "合意の記録を読み書きする"
-definition = "約束リストとは別のファイルの合意の記録を読み書きする。合意ごとに、中身の指紋・日時・ストーリーの ID・合意した人を持つ（CM-03）"
+definition = "約束リストとは別のファイルの合意の記録を読み書きする。合意ごとに、中身の指紋・日時・ストーリーの ID・合意した人を持つ"
 
 [[feature]]
 id = "cm-05"
 name = "由来を作る"
-definition = "git の履歴から、約束ごとの由来（約束が作られ・変わったコミット）を作る（CM-05 のうち、判断の記録を結ぶところを除く）"
+definition = "git の履歴から、約束ごとの由来（約束が作られ・変わったコミット）を作る"
 
 [[feature]]
 id = "cm-06"
 name = "ベースブランチを選ぶ"
-definition = "比べるベースブランチを、画面でその場で選ぶ。開いたときの既定は設定のベースブランチ（CM-06）"
+definition = "比べるベースブランチを、画面でその場で選ぶ。開いたときの既定は設定のベースブランチ"
 
 [[feature]]
 id = "cm-08"
 name = "ストーリーの置き場所と連携する"
-definition = "ストーリーの置き場所から、ストーリーの題・本文・添付ファイルを読む。置き場所はアダプタで差し替えられる（CM-08 のうち、読むところ）"
+definition = "ストーリーの置き場所から、ストーリーの題・本文・添付ファイルを読む。置き場所はアダプタで差し替えられる"
 
 [[feature]]
 id = "cm-09"
 name = "設定のファイル"
-definition = "設定を .vanda/config.toml に持つ。画面で書き換える機能は作らない。認証の鍵はファイルに書かない（CM-09）"
+definition = "設定を .vanda/config.toml に持つ。画面で書き換える機能は作らない。認証の鍵はファイルに書かない"
 
 [[feature]]
 id = "rv-01"
 name = "ストーリーで変わったものの一覧"
-definition = "比べる元と今のあいだで追加・変更・削除された約束・用語・機能とエビデンスの本体の一覧を、漏れも重複もなく示す（RV-01）"
+definition = "比べる元と今のあいだで追加・変更・削除された約束・用語・機能とエビデンスの本体の一覧を、漏れも重複もなく示す"
 
 [[feature]]
 id = "rv-02"
 name = "通し番号と総数"
-definition = "一覧に通し番号と総数を示す（RV-02）"
+definition = "一覧に通し番号と総数を示す"
 
 [[feature]]
 id = "rv-04"
 name = "フラグを立てる"
-definition = "注意して読む手がかりとして、AI 案・推測・差分ありのフラグを立てる（RV-04）"
+definition = "注意して読む手がかりとして、AI 案・推測・差分ありのフラグを立てる"
 
 [[feature]]
 id = "rv-05"
 name = "変更前と変更後の中身"
-definition = "変更・削除したものの、変更前と変更後の中身と差分を示す（RV-05）"
+definition = "変更・削除したものの、変更前と変更後の中身と差分を示す"
 
 [[feature]]
 id = "rv-06"
 name = "合意する"
-definition = "1 件に合意し、合意の記録を書いてコミットする（RV-06）"
+definition = "1 件に合意し、合意の記録を書いてコミットする"
 core = true
 formal = true
 
 [[feature]]
 id = "rv-08"
 name = "エビデンスの予定と実際"
-definition = "エビデンスの予定ごとに、揃っているかを示す（RV-08 のうち、合格したかを除く）"
+definition = "エビデンスの予定ごとに、揃っているかを示す"
 
 [[feature]]
 id = "rv-10"
 name = "長い一覧をたたむ"
-definition = "一覧をまとまりごとにたたみ、たたんだ件数を示す（RV-10）"
+definition = "一覧をまとまりごとにたたみ、たたんだ件数を示す"
 
 [[feature]]
 id = "rv-13"
 name = "レビュー単位"
-definition = "レビュー単位をブランチとストーリーで切り替える（RV-13）"
+definition = "レビュー単位をブランチとストーリーで切り替える"
 
 [[feature]]
 id = "rv-14"
 name = "外れた合意を示す"
-definition = "ストーリーが前に合意したのに今の中身にそのストーリーの合意がないものを、「合意が外れた」と示す（RV-14 のうち、エージェントへの知らせを除く）"
+definition = "ストーリーが前に合意したのに今の中身にそのストーリーの合意がないものを、「合意が外れた」と示す"
 
 [[feature]]
 id = "rv-16"
 name = "1 件の詳細の由来と合意の履歴"
-definition = "レビューの 1 件の詳細に、約束の由来と合意の履歴を示す（RV-16）"
+definition = "レビューの 1 件の詳細に、約束の由来と合意の履歴を示す"
 
 [[feature]]
 id = "rv-17"
 name = "合意を取り消す"
-definition = "今の人が今のブランチで書いた合意の記録を消し、コミットする（RV-17）"
+definition = "今の人が今のブランチで書いた合意の記録を消し、コミットする"
 core = true
 formal = true
 
 [[feature]]
 id = "rv-18"
 name = "約束の詳細とファイルの画面での合意"
-definition = "約束の詳細の画面と、ファイルの画面でも、合意する・合意を取り消す（RV-18）"
+definition = "約束の詳細の画面と、ファイルの画面でも、合意する・合意を取り消す"
 
 [[feature]]
 id = "cl-01"
 name = "約束の文・理由・条件・レイヤー"
-definition = "約束の詳細に、文・理由・条件・レイヤーを示す（CL-01）"
+definition = "約束の詳細に、文・理由・条件・レイヤーを示す"
 
 [[feature]]
 id = "cl-02"
 name = "約束のエビデンス"
-definition = "約束の詳細に、エビデンスをステージとタイプで分けて、その中身とともに示す（CL-02）"
+definition = "約束の詳細に、エビデンスをステージとタイプで分けて、その中身とともに示す"
 
 [[feature]]
 id = "cl-04"
 name = "約束の由来"
-definition = "約束の詳細に、由来を示す（CL-04）"
+definition = "約束の詳細に、由来を示す"
 
 [[feature]]
 id = "cl-05"
 name = "約束の合意の履歴"
-definition = "約束の詳細に、合意の履歴を示す（CL-05）"
+definition = "約束の詳細に、合意の履歴を示す"
 
 [[feature]]
 id = "cl-07"
 name = "TLA+ の記号"
-definition = "オラクルの定義（TLA+）を数学の記号で見せ、コピーしたときはリポジトリの文字のままにする（CL-07）"
+definition = "オラクルの定義（TLA+）を数学の記号で見せ、コピーしたときはリポジトリの文字のままにする"
 
 [[feature]]
 id = "cl-08"
 name = "その時点の約束の中身"
-definition = "由来のコミットや合意の記録を選ぶと、その時点の約束の中身を示す（CL-08）"
+definition = "由来のコミットや合意の記録を選ぶと、その時点の約束の中身を示す"
 
 [[feature]]
 id = "cmd-01"
 name = "設定とつながりを確かめる（vanda doctor）"
-definition = "今効いている設定と版と、ストーリーの置き場所につながるかを確かめる（CMD-01 のうち、結果を取ってくる元を除く）"
+definition = "今効いている設定と版と、ストーリーの置き場所につながるかを確かめる"
 
 [[feature]]
 id = "cmd-03"
 name = "審査を行う（vanda check）"
-definition = "審査の設定のファイルに並べた審査を行う（CMD-03）"
+definition = "審査の設定のファイルに並べた審査を行う"
 
 [[feature]]
 id = "cmd-10"
 name = "審査の種類"
-definition = "約束リストの形・アノテーションのつながり・由来・合意・合意の記録の指す先・エビデンスが揃っている・読まれていないファイルの審査（CMD-10 のうち、実行の結果・キャッチしない理由・モデル検査の審査を除く）"
+definition = "約束リストの形・アノテーションのつながり・由来・合意・合意の記録の指す先・エビデンスが揃っている・読まれていないファイルの審査"
 
 [[feature]]
 id = "cmd-11"
 name = ".vanda/ を作る（vanda init）"
-definition = "端末で問いかけ、答えで設定・約束リスト・合意の記録・審査の設定を作る（CMD-11）"
+definition = "端末で問いかけ、答えで設定・約束リスト・合意の記録・審査の設定を作る"
 
 [[feature]]
 id = "show-version"
@@ -682,7 +682,7 @@ layers = ["cli"]
 id = "fingerprint-excludes-flags"
 subjects = ["cm-03", "flag", "agreement"]
 statement = "約束の指紋は、約束リストの項目から flags と guesses を除いたものから作る"
-rationale = "フラグは注意して読む手がかりで、合意すると外すので、フラグだけを変えても合意し直しにならないようにするため（RV-04）"
+rationale = "フラグは注意して読む手がかりで、合意すると外すので、フラグだけを変えても合意し直しにならないようにするため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2243,7 +2243,7 @@ layers = ["cli"]
 id = "doctor-project-adapter"
 subjects = ["cmd-01", "project-adapters"]
 statement = "vanda doctor は、ストーリーの置き場所が .vanda/adapters/ のアダプタなら、そこにあって実行できるかを確かめる"
-rationale = "vanda doctor は、今効いている設定と、ストーリーの置き場所などとのつながりを確かめる機能（CMD-01）で、.vanda/adapters/ のアダプタでは、そこにあって実行できることが、つながることに当たるため"
+rationale = "vanda doctor は、今効いている設定と、ストーリーの置き場所などとのつながりを確かめる機能で、.vanda/adapters/ のアダプタでは、そこにあって実行できることが、つながることに当たるため"
 condition = "アノテーションの .vanda/adapters/ のアダプタは、vanda doctor では確かめない"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -3165,7 +3165,7 @@ layers = ["api"]
 id = "agree-removes-flags"
 subjects = ["rv-06", "flag"]
 statement = "約束に合意すると、同じコミットで、その約束の flags と guesses を外す"
-rationale = "責任を持つのは合意した人（合意の記録の「誰が」）で、フラグがあってもなくても変わったものはすべて読んで合意するため（RV-04）"
+rationale = "責任を持つのは合意した人（合意の記録の「誰が」）で、フラグがあってもなくても変わったものはすべて読んで合意するため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3638,7 +3638,7 @@ layers = ["api"]
 id = "init-requires-terminal"
 subjects = ["cmd-11"]
 statement = "vanda init は、端末でないところから動かしたら、端末で動かすよう伝えて止める"
-rationale = "問いかけを飛ばすオプションは持たないため（CMD-11）"
+rationale = "問いかけを飛ばすオプションは持たないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -3915,7 +3915,7 @@ layers = ["cli"]
 id = "init-guide"
 subjects = ["cmd-11", "layer"]
 statement = "作った後に、[[layer]] を書くことと、CI に vanda check を足すこと（ブランチでは ci.toml を --base <ベースブランチ> で、ベースブランチでは main.toml を動かす）を案内し、言語を 1 つも選ばなかったときは [[annotation]] を書くことも案内する"
-rationale = "レイヤーは問いかけず、作った後に設定へ書いてもらうため（CMD-11）"
+rationale = "レイヤーは問いかけず、作った後に設定へ書いてもらうため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
