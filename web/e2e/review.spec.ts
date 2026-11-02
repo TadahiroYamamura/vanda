@@ -192,6 +192,10 @@ test.afterEach(async () => {
   rmSync(repo.root, { recursive: true, force: true });
 });
 
+const listItem = (page: Page, text: string) => page.getByRole("listitem").filter({ hasText: text }).first();
+// listIcon は、一覧の 1 件の状態やフラグのアイコンを、読み上げの名前で探す
+const listIcon = (page: Page, text: string, name: string) => listItem(page, text).getByRole("img", { name, exact: true });
+
 // select は、一覧の 1 件を選ぶ。
 async function select(page: Page, text: string) {
   await page.getByText(text, { exact: false }).first().click();
@@ -239,8 +243,10 @@ test("合意した約束を変えると一覧に差分ありとして戻る", as
   commit(repo, "文を直す", "#24");
   await page.reload();
   await select(page, "task-id-unique");
-  await expect(page.getByText(/差分あり/).first()).toBeVisible();
-  await expect(page.getByText(/提案中/).first()).toBeVisible();
+  await expect(listIcon(page, "task-id-unique", "差分あり")).toBeVisible();
+  // 同じストーリーが合意した後に変えたので、一覧の状態のアイコンは提案中でなく合意が外れたを出す。提案中であることは詳細の札で見る
+  await expect(listIcon(page, "task-id-unique", "合意が外れた")).toBeVisible();
+  await expect(page.getByRole("region", { name: "1 件の中身" }).getByText("提案中", { exact: true }).first()).toBeVisible();
 });
 
 test("ベースブランチとレビュー単位を切り替えると一覧が変わる", async ({ page }) => {
@@ -773,9 +779,10 @@ test("合意済の約束で合意を取り消すとストーリーの今の中�
   // git() は前後の空白を落とすので、行ごとに空白を落として比べる
   expect(repo.git("-c", "core.quotePath=false", "status", "--porcelain", "--untracked-files=all").split("\n").map((l) => l.trim()).sort()).toEqual(["?? メモ.txt", "M README.md"]);
 
-  await expect(page.getByText(/提案中/).first()).toBeVisible();
+  await expect(listIcon(page, "task-id-unique", "提案中")).toBeVisible();
   // 自分で取り消したものは、RV-14 の「合意が外れた」としては出さない
   await expect(page.getByText(/合意が外れた/)).toHaveCount(0);
+  await expect(page.getByRole("img", { name: "合意が外れた" })).toHaveCount(0);
   const stopped = repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main");
   expect(stopped.code, "取り消した後も合意の審査が通る").toBe(1);
   expect(stopped.out).toContain("task-id-unique");
@@ -798,7 +805,7 @@ test("合意の記録のファイルに書きかけの変更があると合意�
   await expect(page.getByText(/agreements\.toml|合意の記録/).first(), "断った理由が出ない").toBeVisible();
   expect(commitCount()).toBe(countBefore);
   expect(readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8")).toBe(dirty);
-  await expect(page.getByText(/合意済/).first()).toBeVisible();
+  await expect(listIcon(page, "task-id-unique", "合意済")).toBeVisible();
 });
 
 // 取り消せるのは、今の git の人（buildRepo の user.name「合意する人」・user.email「po@example.com」）が今のブランチで書いた
@@ -851,7 +858,7 @@ for (const w of writers) {
       expect(repo.git("diff", "--name-only", "HEAD~1", "HEAD").split("\n")).toEqual([".vanda/agreements.toml"]);
       expect(nonBlank(readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8"))).toEqual(withoutRecord(agreementsBefore, "task-id-unique", "#24"));
       expect(readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8"), "取り消しでフラグが戻った").toBe(promisesBefore);
-      await expect(page.getByText(/提案中/).first()).toBeVisible();
+      await expect(listIcon(page, "task-id-unique", "提案中")).toBeVisible();
     });
   }
 }
@@ -1000,18 +1007,19 @@ test("エビデンスの予定と実際の詳細は長い文も改行も省略�
   expect(page_.scroll, "幅 400px で、ページが横にスクロールする").toBeLessThanOrEqual(page_.view);
 });
 
-// 一覧の 1 件は、枠のどこを押しても選ばれる（番号・状態の札・フラグの札・枠の端）
-test("変わったものの一覧の1件は名前のほかに番号や状態の札やフラグの札や枠の端を押しても選ばれる", async ({ page }) => {
+// 一覧の 1 件は、枠のどこを押しても選ばれる（番号・種類・状態のアイコン・フラグのアイコン・枠の端）
+test("変わったものの一覧の1件は名前のほかに番号や種類や状態のアイコンやフラグのアイコンや枠の端を押しても選ばれる", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   const detailOf = (id: string) => expect(page.getByRole("link", { name: "約束の詳細を開く" }), `${id} が選ばれていない`).toHaveAttribute("href", new RegExp(`/claims/${id}`));
-  // task-title-required は 2 件目で、提案中の札と AI 案の札を持つ
-  // 札は名前のボタンの外にあるので、1 件の枠（listitem）の中で押す
+  // task-title-required は 2 件目で、提案中のアイコンと AI 案のアイコンを持つ
+  // 種類とアイコンは名前のボタンの外にあるので、1 件の枠（listitem）の中で押す
   const frame = page.getByRole("listitem").filter({ hasText: "task-title-required" }).first();
   await expect(frame).toBeVisible();
   const spots: [string, () => Promise<void>][] = [
     ["番号", () => frame.getByText("2", { exact: true }).first().click()],
-    ["状態の札", () => frame.getByText("提案中").first().click()],
-    ["フラグの札", () => frame.getByText("AI 案").first().click()],
+    ["種類", () => frame.getByText("約束", { exact: true }).click()],
+    ["状態のアイコン", () => frame.getByRole("img", { name: "提案中", exact: true }).click()],
+    ["フラグのアイコン", () => frame.getByRole("img", { name: "AI 案", exact: true }).click()],
     ["枠の左上の端", () => frame.click({ position: { x: 2, y: 2 } })],
     ["枠の右下の端", async () => {
       const box = (await frame.boundingBox())!;
@@ -1106,8 +1114,6 @@ const recordsOf = (key: string, story: string) => {
   const text = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
   return text.split("[[agreement]]").filter((b) => b.includes(`key = "${key}"`) && b.includes(`story = "${story}"`)).length;
 };
-const listItem = (page: Page, text: string) => page.getByRole("listitem").filter({ hasText: text }).first();
-
 async function agreeHere(page: Page, url: RegExp) {
   const count = commitCount();
   const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
@@ -1145,13 +1151,13 @@ test("レビューの画面から約束の詳細へ移って合意すると1コ�
   await expect(row).toContainText(/合います/);
 
   await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
-  await expect(listItem(page, "task-id-unique"), "戻った一覧で合意済になっていない").toContainText("合意済");
+  await expect(listIcon(page, "task-id-unique", "合意済"), "戻った一覧で合意済になっていない").toBeVisible();
 
   await page.getByRole("link", { name: "約束の詳細を開く" }).click();
   await revokeHere(page, /\/claims\/task-id-unique/);
   expect(recordsOf("task-id-unique", "#24"), "取り消しても合意の記録が残っている").toBe(0);
   await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
-  await expect(listItem(page, "task-id-unique")).toContainText("提案中");
+  await expect(listIcon(page, "task-id-unique", "提案中")).toBeVisible();
 });
 
 // @vanda:evidence agree-from-detail-pages
@@ -1170,7 +1176,7 @@ test("エビデンスのファイルのリンクからファイルの画面へ�
   expect(repo.git("diff", "--name-only", "HEAD~1", "HEAD")).toBe(".vanda/agreements.toml");
 
   await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
-  await expect(listItem(page, "e2e/add-task.txtar"), "戻った一覧でファイルが合意済になっていない").toContainText("合意済");
+  await expect(listIcon(page, "e2e/add-task.txtar", "合意済"), "戻った一覧でファイルが合意済になっていない").toBeVisible();
 
   await select(page, "task-id-unique");
   await page.getByRole("link", { name: /e2e\/add-task\.txtar:1/ }).first().click();
@@ -1193,7 +1199,7 @@ test("レビューの画面の一覧のファイルからファイルの画面�
   await agreeHere(page, /\/files\?/);
   expect(recordsOf(fp, "#24"), "ファイルへの合意の記録が 1 件増えていない").toBe(1);
   await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
-  await expect(listItem(page, "e2e/add-task.txtar"), "戻った一覧でファイルが合意済になっていない").toContainText("合意済");
+  await expect(listIcon(page, "e2e/add-task.txtar", "合意済"), "戻った一覧でファイルが合意済になっていない").toBeVisible();
   await select(page, "e2e/add-task.txtar");
   await page.locator('a[href*="/files"]').first().click();
   await revokeHere(page, /\/files\?/);
@@ -1466,9 +1472,48 @@ test("ストーリーが合意した約束を変えると一覧に合意が外�
   repo.write(".vanda/promises.toml", text.replace("すべてのタスクを通して重ならない", "どのタスクとも重ならない"));
   commit(repo, "文を直す", "#24");
   await page.reload();
-  await expect(page.getByText(/合意が外れた/).first(), "合意が外れたと出ない").toBeVisible();
+  await expect(listIcon(page, "task-id-unique", "合意が外れた"), "合意が外れたと出ない").toBeVisible();
+  await expect(listIcon(page, "task-id-unique", "提案中"), "合意が外れたものに提案中と出ている").toHaveCount(0);
   await select(page, "task-id-unique");
   await expect(page.getByText(/#24/).first()).toBeVisible();
+});
+
+// RV-01・RV-04: 一覧の 1 件の 2 行目に、種類・状態のアイコン・フラグのアイコンを並べる。合意すると合意済に、合意した後に中身が変わると合意が外れたに変わる
+// @vanda:evidence review-list-icons
+test("一覧の1件の2行目に種類と状態のアイコンとフラグのアイコンが並び触れると言葉が出て合意すると合意済に合意の後に変えると合意が外れたに変わる", async ({ page }) => {
+  await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
+  const row = listItem(page, "task-title-required");
+  await expect(row).toBeVisible();
+  // 名前の所（1 行目）にはアイコンがなく、2 行目に種類・提案中・AI 案の順に並ぶ
+  await expect(row.getByRole("button").getByRole("img"), "1 行目にアイコンがある").toHaveCount(0);
+  const icons = row.getByRole("img");
+  await expect(icons).toHaveCount(2);
+  await expect(icons.nth(0)).toHaveAccessibleName("提案中");
+  await expect(icons.nth(1)).toHaveAccessibleName("AI 案");
+  const kindBox = (await row.getByText("約束", { exact: true }).boundingBox())!;
+  const nameBox = (await row.getByText("task-title-required", { exact: true }).boundingBox())!;
+  expect(kindBox.y, "種類が名前の下の行にない").toBeGreaterThanOrEqual(nameBox.y + nameBox.height - 1);
+  for (let i = 0; i < 2; i++) {
+    const box = (await icons.nth(i).boundingBox())!;
+    expect(box.x, `${i + 1} 番目のアイコンが種類の後ろにない`).toBeGreaterThanOrEqual(kindBox.x + kindBox.width - 1);
+    expect(Math.abs(box.y + box.height / 2 - (kindBox.y + kindBox.height / 2)), `${i + 1} 番目のアイコンが種類と同じ行にない`).toBeLessThanOrEqual(6);
+  }
+  // 触れると言葉が出る
+  await icons.nth(1).hover();
+  await expect(row.getByRole("tooltip"), "触れても AI 案と出ない").toContainText("AI 案");
+  await page.mouse.move(0, 0);
+  await expect(row.getByRole("tooltip")).toHaveCount(0);
+
+  await agreeAll(page, ["task-title-required"]);
+  await expect(listIcon(page, "task-title-required", "合意済"), "合意した後に合意済のアイコンにならない").toBeVisible();
+  await expect(listIcon(page, "task-title-required", "提案中")).toHaveCount(0);
+
+  const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
+  repo.write(".vanda/promises.toml", text.replace("タスクの題は空にできない", "タスクの題は空にも空白だけにもできない"));
+  commit(repo, "題の約束を直す", "#24");
+  await page.reload();
+  await expect(listIcon(page, "task-title-required", "合意が外れた"), "合意の後に変えても合意が外れたのアイコンにならない").toBeVisible();
+  for (const name of ["提案中", "合意済"]) await expect(listIcon(page, "task-title-required", name), `合意が外れたものに${name}のアイコンもある`).toHaveCount(0);
 });
 
 // RV-10・RV-02: 一覧は約束のレイヤー・用語と機能・ファイルのまとまりに分け、たたむとたたんだ件数を示す。1 件ごとに通し番号と総数

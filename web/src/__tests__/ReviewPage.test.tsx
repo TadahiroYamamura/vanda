@@ -34,24 +34,40 @@ async function openEntry(text: RegExp) {
 
 const bodyText = () => document.body.textContent ?? "";
 
+const listRegion = () => screen.getByRole("region", { name: "変わったものの一覧" });
+const detailRegion = () => screen.getByRole("region", { name: "1 件の中身" });
+// listRow は、一覧で名前が name の 1 件（<li>）
+const listRow = async (name: string) => (await within(await screen.findByRole("region", { name: "変わったものの一覧" })).findByText(name, { exact: true })).closest("li")! as HTMLElement;
+
 const reviewRequests = () => requests.filter((r) => r.url.pathname === "/api/review");
 
 describe("RV-04 フラグ", () => {
   // @vanda:evidence review-flag-labels
-  it("フラグは短い言葉の札で出し説明は札に触れたときかフォーカスしたときに出す", async () => {
+  // 一覧ではフラグをアイコンで出す（review-list-icons）ので、札は 1 件の詳細で確かめ、一覧のアイコンにも同じ説明が出ることを確かめる
+  it("フラグは詳細では短い言葉の札で出し説明は札に触れたときかフォーカスしたときに出し一覧のアイコンにも同じ説明を出す", async () => {
     open([claimEntry(1, "task-id-unique", { flags: ["ai-proposal", "guess", "changed-since-agreement"] })]);
     const user = userEvent.setup();
-    for (const label of [/^AI\s?案/, /^推測/, /^差分あり/]) {
-      const [badge] = await screen.findAllByText(label, { selector: "*:not([role=tooltip])" });
-      expect(within(badge).queryByRole("tooltip"), "触れる前から説明が出ている").toBeNull();
-      await user.hover(badge);
-      const tip = await within(badge).findByRole("tooltip");
-      expect((tip.textContent ?? "").length).toBeGreaterThan(0);
-      await user.unhover(badge);
-      await waitFor(() => expect(within(badge).queryByRole("tooltip")).toBeNull());
-      badge.focus();
-      expect(await within(badge).findByRole("tooltip")).toBeTruthy();
-      badge.blur();
+    await openEntry(/task-id-unique/);
+    // tipOf は、触れたときとフォーカスしたときにだけ説明が出ることを確かめ、説明の文を返す
+    const tipOf = async (el: HTMLElement, where: string) => {
+      expect(within(el).queryByRole("tooltip"), `${where}: 触れる前から説明が出ている`).toBeNull();
+      await user.hover(el);
+      const text = (await within(el).findByRole("tooltip")).textContent ?? "";
+      await user.unhover(el);
+      await waitFor(() => expect(within(el).queryByRole("tooltip"), `${where}: 離れても説明が消えない`).toBeNull());
+      el.focus();
+      expect(await within(el).findByRole("tooltip"), `${where}: フォーカスしても説明が出ない`).toBeTruthy();
+      el.blur();
+      await waitFor(() => expect(within(el).queryByRole("tooltip")).toBeNull());
+      return text;
+    };
+    for (const [label, word] of [[/^AI\s?案/, "AI 案"], [/^推測/, "推測"], [/^差分あり/, "差分あり"]] as const) {
+      const [badge] = await within(detailRegion()).findAllByText(label, { selector: "*:not([role=tooltip])" });
+      const help = await tipOf(badge, `詳細の札 ${word}`);
+      expect(help.length, `詳細の札 ${word} の説明が空`).toBeGreaterThan(0);
+      const icon = within(await listRow("task-id-unique")).getByRole("img", { name: word });
+      expect(await tipOf(icon, `一覧のアイコン ${word}`), `一覧のアイコン ${word} に詳細の札と同じ説明が出ない`).toContain(help);
+      expect(within(await listRow("task-id-unique")).getByRole("img", { name: word, description: help }), `一覧のアイコン ${word} の説明が読み上げに渡らない`).toBe(icon);
     }
   });
 
@@ -59,7 +75,10 @@ describe("RV-04 フラグ", () => {
   it("フラグのないものには札を出さない", async () => {
     open([claimEntry(1, "plain-claim")]);
     await screen.findAllByText(/plain-claim/);
-    for (const label of [/AI\s?案/, /推測/, /差分あり/]) expect(screen.queryByText(label)).toBeNull();
+    for (const label of [/AI\s?案/, /推測/, /差分あり/]) {
+      expect(screen.queryByText(label)).toBeNull();
+      expect(screen.queryByRole("img", { name: label }), `${label} のアイコンが出ている`).toBeNull();
+    }
   });
 });
 
@@ -96,10 +115,9 @@ describe("RV-01・RV-02・RV-05 一覧と中身", () => {
     open(states.flatMap(([st], i) => [claimEntry(2 * i + 1, `c-${st}`, { state: st }), fileEntry(2 * i + 2, `e2e/${st}.txtar`, { state: st })]));
     for (const [st, label] of states) {
       for (const name of [`c-${st}`, `e2e/${st}.txtar`]) {
-        const [item] = await screen.findAllByText(name);
-        const li = item.closest("li")!;
+        const li = await listRow(name);
         expect(li, `${name} の一覧の 1 件がない`).toBeTruthy();
-        for (const [, l] of states) expect((li.textContent ?? "").includes(l), `${name} の「${l}」`).toBe(l === label);
+        for (const [, l] of states) expect(within(li).queryAllByRole("img", { name: l }).length, `${name} の「${l}」`).toBe(l === label ? 1 : 0);
       }
     }
   });
@@ -194,6 +212,9 @@ describe("RV-13・RV-14 レビュー単位と外れた合意", () => {
     await screen.findAllByText(/c-changed/);
     await screen.findAllByText(/c-detached/);
     expect(bodyText()).toMatch(/合意が外れた/);
+    for (const name of ["c-changed", "c-detached"]) {
+      expect(within(await listRow(name)).queryAllByRole("img", { name: "合意が外れた" }).length, `${name} に合意が外れたと出ない`).toBe(1);
+    }
     await openEntry(/c-changed/);
     await waitFor(() => expect(bodyText()).toContain("#31"));
     await openEntry(/c-detached/);
@@ -492,11 +513,12 @@ describe("RV-06 合意した後に読み直す", () => {
     const user = userEvent.setup();
     const [item] = await screen.findAllByText(/task-id-unique/);
     const li = () => screen.getAllByText(/task-id-unique/).map((el) => el.closest("li")).find((x) => x)!;
-    expect(li().textContent).toContain("提案中");
+    const stateIcons = (name: string) => within(li()).queryAllByRole("img", { name }).length;
+    expect(stateIcons("提案中")).toBe(1);
     if (!screen.queryAllByRole("button", { name: /合意する/ })[0]) await user.click(item);
     await user.click(await screen.findByRole("button", { name: /合意する/ }));
-    await waitFor(() => expect(li().textContent, "合意した後の一覧が合意済にならない").toContain("合意済"));
-    expect(li().textContent).not.toContain("提案中");
+    await waitFor(() => expect(stateIcons("合意済"), "合意した後の一覧が合意済にならない").toBe(1));
+    expect(stateIcons("提案中")).toBe(0);
   });
 });
 
@@ -532,15 +554,16 @@ describe("RV-13 ストーリーの示し方", () => {
 
 describe("RV-02 一覧の 1 件を選ぶ", () => {
   // @vanda:evidence entry-select-anywhere
-  it("一覧の1件は名前のほか番号と状態の札とフラグの札と枠の端を押しても選ばれる", async () => {
+  it("一覧の1件は名前のほか番号と種類と状態のアイコンとフラグのアイコンと枠の端を押しても選ばれる", async () => {
     open([claimEntry(1, "c-one"), claimEntry(2, "c-two", { flags: ["ai-proposal"] })]);
     const user = userEvent.setup();
     const nameButton = async (id: string) => (await screen.findAllByText(id)).map((el) => el.closest("button")).find((b) => b?.closest("li"))!;
     const frame = async () => (await nameButton("c-two")).closest("li")! as HTMLElement;
     const spots: [string, () => Promise<HTMLElement>][] = [
       ["番号", async () => within(await frame()).getByText("2", { exact: true })],
-      ["状態の札", async () => within(await frame()).getByText(/提案中/)],
-      ["フラグの札", async () => within(await frame()).getAllByText(/^AI\s?案/, { selector: "*:not([role=tooltip])" })[0]],
+      ["種類", async () => within(await frame()).getByText("約束", { exact: true })],
+      ["状態のアイコン", async () => within(await frame()).getByRole("img", { name: "提案中" })],
+      ["フラグのアイコン", async () => within(await frame()).getByRole("img", { name: "AI 案" })],
       ["枠の端", frame],
     ];
     for (const [spot, target] of spots) {
@@ -549,6 +572,124 @@ describe("RV-02 一覧の 1 件を選ぶ", () => {
       await user.click(await target());
       await waitFor(async () => expect((await nameButton("c-two")).getAttribute("aria-current"), `${spot}を押しても選ばれない`).toBe("true"));
     }
+  });
+});
+
+describe("RV-01・RV-02・RV-04 一覧の 1 件の出し方", () => {
+  const term = (no: number, id: string) =>
+    claimEntry(no, id, { kind: "term", group: "terms-features", before: { name: id, definition: "定義", partOf: null }, after: { name: id, definition: "定義", partOf: null } });
+  const feature = (no: number, id: string) =>
+    claimEntry(no, id, { kind: "feature", group: "terms-features", before: { name: id, definition: "定義", core: null, formal: null, formalWaiver: null }, after: { name: id, definition: "定義", core: null, formal: null, formalWaiver: null } });
+  // 1 行目は名前の所のボタン、2 行目はその後ろ
+  const firstLine = (li: HTMLElement) => within(li).getByRole("button");
+  const secondLine = (li: HTMLElement) => firstLine(li).nextElementSibling as HTMLElement;
+
+  // @vanda:evidence review-list-first-line
+  it("一覧の1件の1行目には通し番号と名前だけを出し追加と変更と削除の記号と言葉は出さず種類は2行目の左端に出し追加か変更か削除かは詳細に出す", async () => {
+    const cases = [
+      { e: claimEntry(1, "c-added", { change: "added", before: null }), name: "c-added", kind: "約束", change: "追加" },
+      { e: claimEntry(2, "c-modified"), name: "c-modified", kind: "約束", change: "変更" },
+      { e: claimEntry(3, "c-deleted", { change: "deleted", after: null, state: null, fingerprint: null }), name: "c-deleted", kind: "約束", change: "削除" },
+      { e: term(4, "t-term"), name: "t-term", kind: "用語", change: null },
+      { e: feature(5, "f-feature"), name: "f-feature", kind: "機能", change: null },
+      { e: fileEntry(6, "e2e/new.txtar", { change: "renamed", oldPath: "e2e/old.txtar" }), name: "e2e/new.txtar", kind: "シナリオ", change: "名前の変更" },
+      { e: fileEntry(7, "spec/Task.tla", { fileType: "oracle", change: "added", before: null }), name: "spec/Task.tla", kind: "オラクルの定義", change: null },
+      { e: fileEntry(8, "spec/guard.cue", { fileType: "guardrail" }), name: "spec/guard.cue", kind: "ガードレールの定義", change: null },
+      { e: fileEntry(9, "docs/other.md", { fileType: null }), name: "docs/other.md", kind: "ファイル", change: null },
+    ];
+    open(cases.map((c) => c.e));
+    for (const c of cases) {
+      const li = await listRow(c.name);
+      const line1 = Array.from(firstLine(li).children).map((el) => el.textContent);
+      expect(line1, `${c.name} の 1 行目`).toEqual([String(c.e.no), c.name]);
+      expect(secondLine(li).firstElementChild?.textContent, `${c.name} の 2 行目の左端`).toBe(c.kind);
+      for (const w of ["+", "~", "−", "→", "=", "追加", "変更", "削除"]) expect(li.textContent ?? "", `${c.name} の一覧に「${w}」が出ている`).not.toContain(w);
+    }
+    const user = userEvent.setup();
+    for (const c of cases.filter((c) => c.change !== null)) {
+      await user.click(firstLine(await listRow(c.name)));
+      await waitFor(() =>
+        expect(
+          within(detailRegion()).queryAllByText((_, el) => el?.tagName === "P" && (el.textContent ?? "").split(" · ").includes(c.change!)).length,
+          `${c.name} の詳細に「${c.change}」と出ない`,
+        ).toBe(1),
+      );
+    }
+  });
+
+  // @vanda:evidence review-list-icons
+  it("一覧の1件の2行目には種類の後ろに状態のアイコンを1つと立っているフラグのアイコンを並べ合意が外れたものは提案中でなく合意が外れたを出し状態は丸の形でフラグは丸のない形にする", async () => {
+    const all = ["ai-proposal", "guess", "changed-since-agreement"] as const;
+    const cases = [
+      { e: claimEntry(1, "c-proposed"), icons: ["提案中"] },
+      { e: claimEntry(2, "c-agreed-flags", { state: "agreed", flags: [...all] }), icons: ["合意済", "AI 案", "推測", "差分あり"] },
+      { e: claimEntry(3, "c-guess-ai", { flags: ["guess", "ai-proposal"] }), icons: ["提案中", "推測", "AI 案"] },
+      { e: claimEntry(4, "c-detached-proposed", { flags: ["changed-since-agreement"], detachedAgreement: { by: ["#31"] } }), icons: ["合意が外れた", "差分あり"] },
+      { e: claimEntry(5, "c-detached-agreed", { state: "agreed", detachedAgreement: { by: ["#31"] } }), icons: ["合意が外れた"] },
+      { e: fileEntry(6, "e2e/agreed.txtar", { state: "agreed" }), icons: ["合意済"] },
+    ];
+    const unchanged = claimEntry(0, "c-detached-unchanged", { no: null, change: "unchanged", before: null, flags: ["ai-proposal"], detachedAgreement: { by: ["#30"] } });
+    open(
+      cases.map((c) => c.e),
+      { detached: [unchanged] },
+    );
+    const stateWords = ["合意済", "提案中", "合意が外れた"];
+    // 丸の形は、外周の円（半径が 16px の枠の 6 以上）で見る。推測の点のような小さい円は丸の形に数えない
+    const hasRing = (icon: HTMLElement) => Array.from(icon.querySelectorAll("svg circle")).some((c) => Number(c.getAttribute("r")) >= 6);
+    const shapes = new Map<string, string>();
+    for (const c of [...cases, { e: unchanged, icons: ["合意が外れた", "AI 案"] }]) {
+      const name = c.e.kind === "file" ? c.e.path! : c.e.id!;
+      const li = await listRow(name);
+      expect(within(firstLine(li)).queryAllByRole("img"), `${name} の 1 行目にアイコンがある`).toEqual([]);
+      const line2 = secondLine(li);
+      const icons = within(line2).queryAllByRole("img");
+      expect(icons.length, `${name} のアイコンの数`).toBe(c.icons.length);
+      c.icons.forEach((w, i) => expect(within(line2).getByRole("img", { name: w }), `${name} の ${i + 1} 番目のアイコンが「${w}」でない`).toBe(icons[i]));
+      expect(icons.filter((ic) => stateWords.some((w) => within(line2).queryByRole("img", { name: w }) === ic)).length, `${name} の状態のアイコンが 1 つでない`).toBe(1);
+      // 種類の後ろに並ぶ
+      const kind = line2.firstElementChild!;
+      for (const ic of icons) expect(kind.compareDocumentPosition(ic) & Node.DOCUMENT_POSITION_FOLLOWING, `${name} のアイコンが種類より前にある`).toBeTruthy();
+      c.icons.forEach((w, i) => {
+        expect(hasRing(icons[i]), `${name} の「${w}」の丸の形`).toBe(stateWords.includes(w));
+        shapes.set(w, icons[i].querySelector("svg")!.innerHTML);
+      });
+    }
+    // 色だけに頼らないよう、6 つのアイコンは形がすべて違う
+    expect(shapes.size).toBe(6);
+    expect(new Set(shapes.values()).size, "形が同じアイコンがある").toBe(6);
+  });
+
+  // @vanda:evidence review-icon-names
+  it("一覧のアイコンに触れたときかキーボードでフォーカスしたときにそのアイコンの言葉を出し読み上げにも同じ言葉を渡す", async () => {
+    open([
+      claimEntry(1, "c-proposed", { flags: ["ai-proposal", "guess", "changed-since-agreement"] }),
+      claimEntry(2, "c-agreed", { state: "agreed" }),
+      claimEntry(3, "c-detached", { detachedAgreement: { by: ["#31"] } }),
+    ]);
+    await listRow("c-proposed");
+    const user = userEvent.setup();
+    for (const word of ["合意済", "提案中", "合意が外れた", "AI 案", "推測", "差分あり"]) {
+      // 読み上げの名前で 1 つだけ見つかる
+      const icon = within(listRegion()).getByRole("img", { name: word });
+      const tip = () => within(icon).queryByRole("tooltip");
+      expect(tip(), `${word}: 触れる前から言葉が出ている`).toBeNull();
+      await user.hover(icon);
+      expect((await within(icon).findByRole("tooltip")).textContent ?? "", `${word}: 触れたときに言葉が出ない`).toMatch(new RegExp(`^${word}`));
+      await user.unhover(icon);
+      await waitFor(() => expect(tip(), `${word}: 離れても言葉が消えない`).toBeNull());
+    }
+    // キーボードでは、Tab で順に移る
+    const names: string[] = [];
+    for (let i = 0; i < 40 && names.length < 6; i++) {
+      await user.tab();
+      const el = document.activeElement as HTMLElement;
+      if (el.getAttribute("role") !== "img" || !listRegion().contains(el)) continue;
+      const word = el.getAttribute("aria-label") ?? "";
+      expect(within(listRegion()).getByRole("img", { name: word }), `${word}: 読み上げの名前とフォーカスしたものが合わない`).toBe(el);
+      expect((await within(el).findByRole("tooltip")).textContent ?? "", `${word}: フォーカスしたときに言葉が出ない`).toMatch(new RegExp(`^${word}`));
+      names.push(word);
+    }
+    expect(names, "Tab で移ったアイコン").toEqual(["提案中", "AI 案", "推測", "差分あり", "合意済", "合意が外れた"]);
   });
 });
 
