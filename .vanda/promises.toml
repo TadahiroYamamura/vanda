@@ -797,7 +797,7 @@ layers = ["cli"]
 [[claim]]
 id = "fingerprint-item-json"
 subjects = ["store-agreements", "fingerprint"]
-statement = "約束・用語・機能の指紋の元は、項目の表を決まった形の JSON（キーを UTF-8 のバイトの順に並べ、配列は書いた順、区切りの前後に空白を入れず、最後に改行を付けない）にした UTF-8 のバイト列"
+statement = "約束・用語・機能の指紋は、項目の表を決まった形の JSON（キーを UTF-8 のバイトの順に並べ、配列は書いた順、区切りの前後に空白を入れず、最後に改行を付けない）にした UTF-8 のバイト列から作る"
 rationale = "作り方が変わると、今までの合意がすべて外れるか、違う中身を合意済とみなすため。期待する指紋は、実装とは別の源（手で書いた JSON を sha256sum に通したもの）から作る"
 layers = ["cli"]
 flags = ["ai-proposal"]
