@@ -143,7 +143,7 @@ definition = "今の中身に合意している状態"
 [[term]]
 id = "base-branch"
 name = "ベースブランチ"
-definition = "差分を出す時に比べるブランチ。そのブランチから分かれた点と比べる。審査では --base で渡し、画面ではその場で選ぶ"
+definition = "差分を出す時に比べるブランチ。そのブランチとの分岐点と比べる。審査では --base で渡し、画面ではその場で選ぶ"
 
 [[term]]
 id = "ai-proposal"
@@ -266,7 +266,7 @@ definition = "審査が見るもの。all（全部）か story（1 つのスト�
 
 [[term]]
 id = "branch-point"
-name = "分かれた点"
+name = "分岐点"
 definition = "今のブランチがベースブランチから分かれたコミット（git merge-base）。範囲 story の審査は、ここからの変化を見る"
 
 [[term]]
@@ -1853,9 +1853,9 @@ layers = ["cli"]
 [[claim]]
 id = "check-story-from-commits"
 subjects = ["run-checks", "check", "story"]
-statement = "範囲 story の agreement・evidence-present を含む審査の設定では、審査を始める前にストーリーを 1 つに決める。分かれた点より後のコミットの Story: のトレーラーにあるストーリーの ID が 1 つなら、それを使う。--story を渡していて、それと違えば、審査を始める前の誤りにする。ID が 0 個か 2 つ以上なら、--story を使う。--story を渡していなければ、--story を求める誤りを、審査を始める前に出す"
+statement = "範囲 story の agreement・evidence-present を含む審査の設定では、審査を始める前にストーリーを 1 つに決める。分岐点より後のコミットの Story: のトレーラーにあるストーリーの ID が 1 つなら、それを使う。--story を渡していて、それと違えば、審査を始める前の誤りにする。ID が 0 個か 2 つ以上なら、--story を使う。--story を渡していなければ、--story を求める誤りを、審査を始める前に出す"
 rationale = "--story は、トレーラーのあるコミットがまだないブランチのためのもの。トレーラーと違うストーリーを使うと、本当のストーリーの外れた合意を見ないまま審査が通るため"
-condition = "決めたストーリーを使うのは、agreement がそのストーリーの外れた合意を探す時だけで、範囲 story の evidence-present は、分かれた点の中身と今の中身の違いだけを見る"
+condition = "決めたストーリーを使うのは、agreement がそのストーリーの外れた合意を探す時だけで、範囲 story の evidence-present は、分岐点の中身と今の中身の違いだけを見る"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1903,7 +1903,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-story-origin"
 subjects = ["list-check-kinds", "origin", "story"]
-statement = "story-origin は、分かれた点より後の、合流でないコミットのうち、約束リストのファイルを変えたものに Story: のトレーラーがなければ誤りにする"
+statement = "story-origin は、分岐点より後の、合流でないコミットのうち、約束リストのファイルを変えたものに Story: のトレーラーがなければ誤りにする"
 rationale = "履歴を書き換えないと直せない古いコミットは見ない"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -1965,8 +1965,8 @@ layers = ["cli"]
 [[claim]]
 id = "check-agreement-story-scope"
 subjects = ["list-check-kinds", "agreement", "story"]
-statement = "範囲を story にした agreement は、分かれた点の中身と今の中身で指紋の違う約束・用語・機能と合意の対象のファイルだけを見て、さらにそのストーリーの外れた合意も誤りにする"
-condition = "ストーリーのコミットで変えて、元の中身に戻したものは、分かれた点と指紋が同じなので見ない"
+statement = "範囲を story にした agreement は、分岐点の中身と今の中身で指紋の違う約束・用語・機能と合意の対象のファイルだけを見て、さらにそのストーリーの外れた合意も誤りにする"
+condition = "ストーリーのコミットで変えて、元の中身に戻したものは、分岐点と指紋が同じなので見ない"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
@@ -2529,7 +2529,7 @@ layers = ["api"]
 [[claim]]
 id = "context-base-always-shown"
 subjects = ["choose-base-branch", "base-branch"]
-statement = "レビューの画面は、レビュー単位がブランチの時、今どのベースブランチの、どの分かれた点のコミットと比べているかを常に示す"
+statement = "レビューの画面は、レビュー単位がブランチの時、今どのベースブランチの、どの分岐点のコミットと比べているかを常に示す"
 condition = "レビュー単位がストーリーの時は、ベースブランチを使わないので示さない"
 layers = ["gui"]
 flags = ["ai-proposal"]
@@ -2839,7 +2839,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-view-branch"
 subjects = ["switch-review-unit", "base-branch"]
-statement = "レビュー単位がブランチなら、ベースブランチと分かれた点の中身と、HEAD のコミットの中身を比べ、コミットしていない変更は比べない"
+statement = "レビュー単位がブランチなら、ベースブランチとの分岐点の中身と、HEAD のコミットの中身を比べ、コミットしていない変更は比べない"
 rationale = "コミットしていないものは、提出される保証がなく、ないのと同じため（reads-committed-files-only と同じ考え方）"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -2882,7 +2882,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-story-choice"
 subjects = ["switch-review-unit", "story"]
-statement = "レビュー単位がブランチの時、分かれた点より後のコミットの Story: のトレーラーからストーリーが 1 つに決まれば選ばせずに示し、2 つ以上ならそのストーリーから、1 つもなければ HEAD の履歴（合流のコミットを除く）のコミットの Story: のトレーラーにあるストーリーから、新しいコミットの順に選ばせる。story= でほかのストーリーを名指しした時は、それも選べるようにする"
+statement = "レビュー単位がブランチの時、分岐点より後のコミットの Story: のトレーラーからストーリーが 1 つに決まれば選ばせずに示し、2 つ以上ならそのストーリーから、1 つもなければ HEAD の履歴（合流のコミットを除く）のコミットの Story: のトレーラーにあるストーリーから、新しいコミットの順に選ばせる。story= でほかのストーリーを名指しした時は、それも選べるようにする"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3303,7 +3303,7 @@ layers = ["gui"]
 [[claim]]
 id = "revoke-own-branch-only"
 subjects = ["revoke-agreement", "agreement"]
-statement = "取り消せるのは、今の git の user.name と user.email の人が、今のブランチ（ベースブランチと分かれた点より後）で書いた合意の記録だけ"
+statement = "取り消せるのは、今の git の user.name と user.email の人が、今のブランチ（ベースブランチとの分岐点より後）で書いた合意の記録だけ"
 rationale = "ほかの人の合意や、ベースブランチにすでにある合意は取り消せない"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -4639,7 +4639,7 @@ layers = ["cli"]
 [[claim]]
 id = "story-trailer-at-most-one"
 subjects = ["run-checks", "list-check-kinds", "story"]
-statement = "分かれた点より後のコミットに Story: のトレーラーが 2 つ以上あるものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡した時も審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
+statement = "分岐点より後のコミットに Story: のトレーラーが 2 つ以上あるものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡した時も審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
 rationale = "1 つのブランチは 1 つのストーリーに当たり、コミットは 1 つのブランチで作るため。--story はストーリーを選ぶためのもので、トレーラーを確かめずに済ませるためのものではないため。また、手元と CI で結果を揃えるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -4652,7 +4652,7 @@ layers = ["cli"]
 [[claim]]
 id = "story-trailer-matches-pattern"
 subjects = ["run-checks", "list-check-kinds", "story"]
-statement = "分かれた点より後のコミットに、Story: のトレーラーの値が id_pattern に全体で当たらないものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡した時も審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
+statement = "分岐点より後のコミットに、Story: のトレーラーの値が id_pattern に全体で当たらないものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡した時も審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
 rationale = "--story を渡した時も誤りにするのは、--story はストーリーを選ぶためのもので、トレーラーを確かめずに済ませるためのものではないため。また、手元と CI で結果を揃えるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
