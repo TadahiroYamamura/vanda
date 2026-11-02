@@ -3634,6 +3634,7 @@ layers = ["cli"]
 id = "init-no-store-id-pattern"
 subjects = ["cmd-11", "cm-08"]
 statement = "ストーリーの置き場所に .vanda/adapters/ のアダプタか使わないを選んだときは、ストーリーの ID の書き方の問いを、既定の答えのない空の状態から始める"
+rationale = "GitHub 以外では ID の形を推し量れず、.vanda/adapters/ のアダプタは init の時点ではまだないので既定を聞けないため。既定を勝手に入れると、気づかずにそのまま進みうる（PO の決定）"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
