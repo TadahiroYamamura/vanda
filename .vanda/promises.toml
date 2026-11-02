@@ -2129,7 +2129,8 @@ layers = ["api"]
 [[claim]]
 id = "review-view-story"
 subjects = ["rv-13", "story"]
-statement = "レビュー単位がストーリーなら、Story: のトレーラーがそのストーリーの ID のコミットで変わったものすべてを、ストーリーで最初に変える直前の中身と今の中身で比べる"
+statement = "レビュー単位がストーリーなら、HEAD の履歴のうち、Story: のトレーラーがそのストーリーの ID のコミットで変わったものすべてを、ストーリーで最初に変える直前の中身と今の中身で比べる。HEAD の履歴にないブランチのコミットは見ない"
+rationale = "HEAD に入っていないコミットは、まだ提出されていないとみなすため（コミットしたものだけを読むのと同じ考え方）"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2844,9 +2845,9 @@ type = "interface-test"
 layers = ["cli"]
 
 [[claim]]
-id = "init-writes-four-files"
+id = "init-writes-files"
 subjects = ["cmd-11"]
-statement = "作るかの確かめに答えると、設定・約束リスト・合意の記録・審査の設定（.vanda/checks/ci.toml）の 4 つのファイルを作る"
+statement = "作るかの確かめに答えると、設定・約束リスト・合意の記録と、2 つの審査の設定（ブランチで動かす .vanda/checks/ci.toml と、ベースブランチで動かす .vanda/checks/main.toml）の 5 つのファイルを作る"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2858,6 +2859,24 @@ layers = ["cli"]
 [[claim.evidence]]
 stage = "test"
 type = "interface-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["cli"]
+
+[[claim]]
+id = "init-check-configs"
+subjects = ["cmd-11", "check-config", "check-scope"]
+statement = "vanda init が作る ci.toml は、story-origin・agreement・evidence-present を範囲 story に、ほかの審査を範囲 all にし、main.toml は、story-origin を除くすべての審査を範囲 all にする"
+rationale = "ベースブランチへの push のように Story: のトレーラーのないコミットでは、範囲 story の審査が必ず止まるため、ベースブランチでは範囲 all の審査だけを動かす"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
@@ -2885,7 +2904,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-guide"
 subjects = ["cmd-11", "layer"]
-statement = "作った後に、[[layer]] を書くことと、CI に vanda check を足すことを案内し、言語を 1 つも選ばなかったときは [[annotation]] を書くことも案内する"
+statement = "作った後に、[[layer]] を書くことと、CI に vanda check を足すこと（ブランチでは ci.toml を --base <ベースブランチ> で、ベースブランチでは main.toml を動かす）を案内し、言語を 1 つも選ばなかったときは [[annotation]] を書くことも案内する"
 rationale = "レイヤーは問いかけず、作った後に設定へ書いてもらうため（CMD-11）"
 layers = ["cli"]
 flags = ["ai-proposal"]
