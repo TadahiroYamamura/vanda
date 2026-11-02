@@ -479,6 +479,42 @@ type = "scenario-test"
 layers = ["cli"]
 
 [[claim]]
+id = "promise-list-required-field-names"
+subjects = ["cm-02", "cmd-10", "promise-list"]
+statement = "約束リストの必須の項目は、用語と機能の id・name・definition、約束の id・subjects・statement・layers・evidence、エビデンスの stage・type・layers とする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "promise-list-non-empty"
+subjects = ["cm-02", "cmd-10", "promise-list"]
+statement = "約束の subjects・layers・evidence と、エビデンスの layers が空なら、promise-list-shape の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "promise-list-field-types"
+subjects = ["cm-02", "cmd-10", "promise-list"]
+statement = "約束リストの項目の型が、決まった型（core・formal は真偽、約束の subjects・layers・flags・guesses とエビデンスの layers は文字列の配列、evidence は表の配列、ほかの項目は文字列）でなければ、promise-list-shape の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
 id = "promise-list-id-shape"
 subjects = ["cm-02", "cmd-10", "promise-list"]
 statement = "用語・機能・約束の ID が、英小文字で始め、英小文字・数字をハイフンでつないだ形でなければ、promise-list-shape の誤りにする"
@@ -571,6 +607,18 @@ layers = ["cli"]
 id = "promise-list-fixed-values"
 subjects = ["cm-02", "cmd-10", "stage", "evidence-type", "flag"]
 statement = "エビデンスの stage・type と、約束の flags が決まった値でなければ、promise-list-shape の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "promise-list-fixed-value-list"
+subjects = ["cm-02", "stage", "evidence-type", "flag"]
+statement = "決まった値は、stage が plan・implementation・test・release・operation、type が model-check・proof・cross-check・random-check・scenario-test・unit-test・interface-test・concurrency-test・guardrail・sensor・monitoring・human-review、flags が ai-proposal だけとする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -841,6 +889,54 @@ id = "agreements-unknown-entries-rejected"
 subjects = ["cm-03", "cmd-10", "agreement-record"]
 statement = "合意の記録に決まっていない表か項目があれば、agreement-targets の誤りにする"
 layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "agreements-default-file-may-be-absent"
+subjects = ["cm-03", "agreement-record"]
+statement = "設定に agreements を書かず、既定の .vanda/agreements.toml がなければ、合意の記録を空とみなす"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "agreements-required-fields"
+subjects = ["cm-03", "cmd-10", "agreement-record"]
+statement = "合意の記録に kind・key・fingerprint・user の name と email・agreed_at・story のどれかがなければ、または kind が claim・term・feature・file のどれでもなければ、agreement-targets の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "agreements-fingerprint-shape"
+subjects = ["cm-03", "cmd-10", "agreement-record", "fingerprint"]
+statement = "合意の記録の fingerprint が、sha256: に続けて 16 進の小文字 64 文字を書いた形でなければ、agreement-targets の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "agreements-file-record-path"
+subjects = ["cm-03", "cmd-10", "agreement-record"]
+statement = "kind が file の合意の記録に path がないか、key が fingerprint と違えば、また kind がほかの合意の記録に path があれば、agreement-targets の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
@@ -1332,6 +1428,35 @@ type = "interface-test"
 layers = ["cli"]
 
 [[claim]]
+id = "project-adapter-missing-answer"
+subjects = ["project-adapters", "adapter"]
+statement = ".vanda/adapters/ のアダプタが、渡した行のどれかに答えを返さなければ、その行を指して誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["cli"]
+
+[[claim]]
+id = "project-adapter-annotation-true-rejected"
+subjects = ["project-adapters", "adapter"]
+statement = ".vanda/adapters/ のアダプタが、答えの annotation に true を返したら、誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
 id = "project-adapter-failure-reason"
 subjects = ["project-adapters", "adapter"]
 statement = ".vanda/adapters/ のアダプタが 0 でない終了コードで終わったら、標準エラーに書いた理由を誤りのメッセージに含める"
@@ -1387,10 +1512,44 @@ type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
+id = "check-base-unused-without-story"
+subjects = ["cmd-03", "base-branch", "check-scope"]
+statement = "範囲を story にする審査を含まない審査の設定では、--base を使わず、渡したブランチがなくても誤りにしない"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["cli"]
+
+[[claim]]
 id = "check-runs-in-order-and-fails"
 subjects = ["cmd-03", "check"]
 statement = "審査の設定に書いた順に審査を行い、どれかが失敗したら終了コード 1 で終わる"
 rationale = "審査は、どれも失敗したら止める（「知らせるだけ」の段は設けない）"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["cli"]
+
+[[claim]]
+id = "check-errors-before-run"
+subjects = ["cmd-03", "check"]
+statement = "設定の誤り、版の違い、審査の設定の誤り、--base・--story の誤りは、審査を始める前に標準エラーに出し、審査ごとの結果の行を出さずに終了コード 1 で終わる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1417,9 +1576,62 @@ type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
+id = "check-scope-table"
+subjects = ["cmd-03", "check-config", "check-scope"]
+statement = "審査ごとに書ける範囲は、promise-list-shape・annotation-links・agreement-targets・unread-files は all だけ、story-origin は story だけ、agreement・evidence-present は all と story にする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "check-name-known"
+subjects = ["cmd-03", "check-config"]
+statement = "審査の設定の name が、決まった審査の名前（promise-list-shape・annotation-links・story-origin・agreement・agreement-targets・evidence-present・unread-files）のどれでもなければ、審査の設定の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "check-config-unknown-entries-rejected"
+subjects = ["cmd-03", "check-config"]
+statement = "審査の設定に、[[check]] のほかの表か、name・scope のほかの項目があれば、審査の設定の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
 id = "check-output-lines"
 subjects = ["cmd-03", "check"]
 statement = "審査ごとに「審査 <名前>（<範囲>）: 通った」か「失敗（<件数> 件）」の行を標準出力に出し、誤りの中身を標準エラーに 1 件 1 行で出す"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "scenario-test"
+layers = ["cli"]
+
+[[claim]]
+id = "check-output-story-id"
+subjects = ["cmd-03", "check", "story"]
+statement = "範囲 story の agreement・evidence-present の結果の行には、範囲の後に、審査に使ったストーリーの ID を書く（例: 審査 agreement（story #24）: 通った）"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1499,6 +1711,18 @@ type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
+id = "check-load-errors-owner"
+subjects = ["cmd-03", "cmd-10", "check"]
+statement = "約束リストの読み込みの誤りは promise-list-shape が、アノテーションの読み込みの誤りは annotation-links が、合意の記録の読み込みの誤りは agreement-targets が出す"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
 id = "check-story-origin"
 subjects = ["cmd-10", "origin", "story"]
 statement = "story-origin は、分かれた点より後の、合流でないコミットのうち、約束リストのファイルを変えたものに Story: のトレーラーがなければ誤りにする"
@@ -1533,6 +1757,18 @@ layers = ["cli"]
 [[claim.evidence]]
 stage = "test"
 type = "scenario-test"
+layers = ["cli"]
+
+[[claim]]
+id = "check-guardrail-file-missing"
+subjects = ["cmd-10", "guardrail"]
+statement = "[[guardrail]] の paths に書いた、ワイルドカードのない場所のファイルがなければ、agreement の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -1664,6 +1900,79 @@ type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
+id = "config-required-fields"
+subjects = ["cm-09"]
+statement = "設定の version、[[layer]] の id・name・description、[[annotation]] の paths、[[guardrail]] の adapter・paths のどれかがなければ、設定の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "config-layer-id"
+subjects = ["cm-09", "layer"]
+statement = "[[layer]] の id が、英小文字で始め、英小文字・数字をハイフンでつないだ形でなければ、またほかのレイヤーの id と重なれば、設定の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "config-patterns-not-empty"
+subjects = ["cm-09"]
+statement = "promises・agreements と、[[annotation]]・[[guardrail]] の paths に、パターンが 1 つもなければ、設定の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "config-pattern-syntax"
+subjects = ["cm-09"]
+statement = "設定のファイルのパターンの書き方が誤っていれば（リポジトリの直下からの / 区切りの場所でない、閉じていない [ など）、設定の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "config-annotation-types-unique"
+subjects = ["cm-09", "annotation", "evidence-type"]
+statement = "[[annotation]] の types に同じタイプを 2 つ以上書けば、設定の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "config-guardrail-adapter-file"
+subjects = ["cm-09", "guardrail"]
+statement = "[[guardrail]] の adapter には file だけを書け、ほかの名前を書けば設定の誤りにする"
+rationale = "ガードレールの定義を取り出すアダプタは、今はファイルを読むだけのものしかないため"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
 id = "config-id-pattern-not-empty-match"
 subjects = ["cm-09", "story"]
 statement = "設定の id_pattern が空の文字列に当たる正規表現なら、誤りにする"
@@ -1676,9 +1985,69 @@ type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
+id = "config-id-pattern-default"
+subjects = ["cm-09", "story"]
+statement = "設定の id_pattern を省けば、ストーリーの ID の書き方を #[0-9]+（GitHub Issues）にする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "config-id-pattern-regex"
+subjects = ["cm-09", "story"]
+statement = "設定の id_pattern が、正規表現（Go の RE2）として読めなければ、設定の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
 id = "config-github-only-fields"
 subjects = ["cm-09", "cm-08"]
 statement = "[story] の repository と api_url は、組込みの github を使うときだけ書け、ほかのときに書けば誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "config-github-repository"
+subjects = ["cm-09", "cm-08"]
+statement = "組込みの github を使うときに、repository がなければ、または <owner>/<repo> の形（英数字と _・.・- の名前を / で 1 つつないだもの）でなければ、設定の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "config-api-url-scheme"
+subjects = ["cm-09", "cm-08"]
+statement = "api_url が http:// か https:// で始まらなければ、設定の誤りにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "config-api-url-default"
+subjects = ["cm-09", "cm-08"]
+statement = "組込みの github を使うときに api_url を省けば、https://api.github.com を使う"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1721,6 +2090,23 @@ layers = ["cli"]
 id = "doctor-github-issues"
 subjects = ["cmd-01", "cm-08"]
 statement = "vanda doctor は、置き場所が組込みの github なら、GET <api_url>/repos/<repository> を呼んで、Issues が使えるかを確かめる"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["cli"]
+
+[[claim]]
+id = "doctor-github-token"
+subjects = ["cmd-01", "cm-08"]
+statement = "vanda doctor が GitHub につなぐときも、画面でストーリーを読むときと同じ決まりで認証の鍵を選び、合う鍵が見つからなければ要求を送らずに誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1805,6 +2191,47 @@ type = "interface-test"
 layers = ["cli"]
 
 [[claim]]
+id = "serve-config-error-stops"
+subjects = ["cm-01", "cm-09"]
+statement = "vanda serve は、設定に誤りがあれば、待ち受けを始めずに誤りを標準エラーに出し、終了コード 1 で終わる"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "serve-port-unavailable"
+subjects = ["cm-01"]
+statement = "vanda serve は、--port のポートで待ち受けられなければ、空いているポートか --port 0 を渡すよう伝えて、終了コード 1 で終わる"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["cli"]
+
+[[claim]]
+id = "serve-browser-open-failure"
+subjects = ["cm-01"]
+statement = "vanda serve は、ブラウザを開けなければ、開いた URL をブラウザで開くよう標準エラーに出し、サーバーは止めずに動かし続ける"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
 id = "serve-rejects-foreign-host"
 subjects = ["cm-01"]
 statement = "Host が 127.0.0.1:<ポート>・localhost:<ポート> でない要求を 403 で断る"
@@ -1858,6 +2285,37 @@ type = "interface-test"
 layers = ["api"]
 
 [[claim]]
+id = "serve-reloads-config"
+subjects = ["cm-01", "cm-09"]
+statement = "vanda serve は、API の要求ごとに設定を読み直し、読めなければ、誤りの数と最初の 1 件を書いた 500 を返す"
+rationale = "起動した後にブランチを切り替えたり設定を書き換えたりしても、画面を開き直すだけで今の設定が効くようにするため"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
+id = "serve-agree-one-at-a-time"
+subjects = ["cm-01", "rv-06", "rv-17"]
+statement = "vanda serve は、合意と取り消しを 1 件ずつ行い、そのあいだは一覧・約束の詳細・ファイルの読み込みを待たせる"
+rationale = "書きかけの合意の記録や約束リストを、一覧が読まないようにするため"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "concurrency-test"
+layers = ["api"]
+
+[[claim]]
 id = "context-default-base"
 subjects = ["cm-06", "base-branch"]
 statement = "画面を開いたときのベースブランチは、設定の [gui] の base にする"
@@ -1901,6 +2359,18 @@ layers = ["gui"]
 [[claim.evidence]]
 stage = "test"
 type = "scenario-test"
+layers = ["gui"]
+
+[[claim]]
+id = "header-context"
+subjects = ["cm-01"]
+statement = "画面の上の帯に、今のブランチ（ブランチにいなければ「ブランチにいません」）と、git の user.name・user.email（なければ設定されていないこと）と、vanda の版を示す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
 layers = ["gui"]
 
 [[claim]]
@@ -1953,6 +2423,18 @@ layers = ["api"]
 [[claim.evidence]]
 stage = "test"
 type = "interface-test"
+layers = ["api"]
+
+[[claim]]
+id = "story-github-issue-number"
+subjects = ["cm-08", "story"]
+statement = "組込みの github のアダプタは、ストーリーの ID の中の最後の数字の並びを Issue の番号とし、ID に数字がなければ 400 の誤りにする"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
 layers = ["api"]
 
 [[claim]]
@@ -2115,6 +2597,59 @@ type = "scenario-test"
 layers = ["gui"]
 
 [[claim]]
+id = "review-order"
+subjects = ["rv-01", "rv-02", "layer"]
+statement = "一覧は、設定のレイヤーの順の約束のまとまり、用語と機能、エビデンスの本体（ファイル）の順に並べ、同じまとまりの中は ID か場所の順に並べて、その順に通し番号を付ける"
+layers = ["api", "gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "review-group-first-layer"
+subjects = ["rv-10", "layer"]
+statement = "2 つ以上のレイヤーを持つ約束は、layers の最初のレイヤーのまとまりに入れる"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
+id = "review-change-counts"
+subjects = ["rv-01", "rv-02"]
+statement = "一覧の総数とともに、追加・変更・削除・名前の変更のそれぞれの件数を示す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "review-empty-note"
+subjects = ["rv-01"]
+statement = "変わったものが 0 件なら、「比べる元と今のあいだで、変わったものはありません。」と示す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
 id = "review-view-branch"
 subjects = ["rv-13", "base-branch"]
 statement = "レビュー単位がブランチなら、ベースブランチと分かれた点の中身と、作業ツリーの今の中身（コミットしていない変更を含む）を比べる"
@@ -2219,6 +2754,18 @@ type = "unit-test"
 layers = ["gui"]
 
 [[claim]]
+id = "review-detached-on-top"
+subjects = ["rv-14", "agreement"]
+statement = "一覧の外に示す外れた合意は、まとまりの上に「合意が外れたもの」としてまとめ、総数に数えないことを添える"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
 id = "review-flags"
 subjects = ["rv-04", "flag", "ai-proposal", "guess", "changed-since-agreement"]
 statement = "約束の flags にあれば AI 案、guesses が空でなければ推測、同じ鍵に合意の記録があり今の中身に合う合意がなければ差分ありのフラグを立てる"
@@ -2267,6 +2814,23 @@ layers = ["gui"]
 [[claim.evidence]]
 stage = "test"
 type = "scenario-test"
+layers = ["gui"]
+
+[[claim]]
+id = "review-added-content"
+subjects = ["rv-05"]
+statement = "追加したものは、今の中身（約束なら文・条件・理由・対象・レイヤー・エビデンスの予定・推測、用語と機能なら定義など、ファイルなら本文）を示す"
+layers = ["api", "gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
 layers = ["gui"]
 
 [[claim]]
@@ -2319,6 +2883,18 @@ layers = ["gui"]
 [[claim.evidence]]
 stage = "test"
 type = "scenario-test"
+layers = ["gui"]
+
+[[claim]]
+id = "review-groups-fold-over-ten"
+subjects = ["rv-10"]
+statement = "画面を開いたとき、11 件以上のまとまりはたたんでおき、10 件以下のまとまりと、選んだ件を含むまとまりは開いておく"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
 layers = ["gui"]
 
 [[claim]]
@@ -2406,6 +2982,42 @@ type = "sensor"
 layers = ["api"]
 
 [[claim]]
+id = "agree-record-file"
+subjects = ["rv-06", "agreement-record"]
+statement = "合意の記録は、設定の agreements のパターンの順で最初に当たったファイルの終わりに書き足し、どれにも当たらなければ、最初のパターンにワイルドカードがないならそのファイルを作り、あるなら合意を 409 で断る"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
+id = "agree-record-form"
+subjects = ["rv-06", "agreement-record"]
+statement = "書き足す合意の記録は、user をインラインの表（user = { name = …, email = … }）で書き、agreed_at を、合意した時の手元の時差の付いた日時（秒まで）で書く"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
+id = "agree-commit-message"
+subjects = ["rv-06", "story"]
+statement = "合意のコミットのメッセージの subject を「(chore) <ストーリーの ID> で <種類> <ID か場所> に合意する」（種類は 約束・用語・機能・ファイル）にする"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
 id = "agree-rejects-stale"
 subjects = ["rv-06", "agreement"]
 statement = "画面に見せていた中身の指紋が今の中身の指紋と違えば、合意を 409 で断る"
@@ -2433,6 +3045,18 @@ layers = ["api"]
 [[claim.evidence]]
 stage = "test"
 type = "sensor"
+layers = ["api"]
+
+[[claim]]
+id = "agree-inline-flags-refused"
+subjects = ["rv-06", "flag"]
+statement = "約束の flags か guesses を、インラインの表の中か、複数行の文字列を含む形で書いていれば、合意を 409 で断る"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
 layers = ["api"]
 
 [[claim]]
@@ -2511,6 +3135,30 @@ layers = ["api"]
 [[claim.evidence]]
 stage = "test"
 type = "sensor"
+layers = ["api"]
+
+[[claim]]
+id = "revoke-removes-all-duplicates"
+subjects = ["rv-17", "agreement-record"]
+statement = "取り消すと、今の人が今のブランチで書いた、このストーリーの今の中身への合意の記録を、同じものが 2 つ以上あればすべて消し、ほかの人とほかのストーリーの記録は残す"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
+id = "revoke-commit-message"
+subjects = ["rv-17", "story"]
+statement = "取り消しのコミットのメッセージの subject を「(chore) <ストーリーの ID> で <種類> <ID か場所> の合意を取り消す」（種類は 約束・用語・機能・ファイル）にする"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
 layers = ["api"]
 
 [[claim]]
@@ -2605,6 +3253,52 @@ type = "scenario-test"
 layers = ["gui"]
 
 [[claim]]
+id = "claim-detail-state"
+subjects = ["cl-01", "agreed", "proposed"]
+statement = "約束の詳細の見出しに、約束の ID と、今の中身が合意済か提案中かを示す"
+layers = ["api", "gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "claim-detail-subjects"
+subjects = ["cl-01"]
+statement = "約束の詳細の対象には、用語か機能の名前と ID を示し、約束リストにない ID には「（約束リストにありません）」と添える"
+layers = ["api", "gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "claim-detail-guesses"
+subjects = ["cl-01", "guess"]
+statement = "約束の詳細に、推測（guesses）があれば、1 つずつ示す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
 id = "claim-detail-evidence-grouping"
 subjects = ["cl-02", "stage", "evidence-type"]
 statement = "約束の詳細のエビデンスを、ステージ（計画・実装・テスト・リリース・運用の順）ごとに分け、その中をタイプごとに分けて示す"
@@ -2627,6 +3321,18 @@ flags = ["ai-proposal"]
 stage = "test"
 type = "unit-test"
 layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "claim-detail-found-location"
+subjects = ["cl-02"]
+statement = "実際のエビデンスごとに、付いているものの名前と、<ファイル>:<行> を書いたファイルの画面へのリンクを示し、TLA+ ならファイル全体へのリンクも示す"
+layers = ["gui"]
+flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
@@ -2768,6 +3474,23 @@ type = "interface-test"
 layers = ["cli"]
 
 [[claim]]
+id = "init-terminal-streams"
+subjects = ["cmd-11"]
+statement = "vanda init は、標準入力と標準出力のどちらかが端末でなければ、問いかけずに標準エラーに理由を出し、終了コード 1 で終わる"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["cli"]
+
+[[claim]]
 id = "init-keeps-existing"
 subjects = ["cmd-11"]
 statement = "vanda init は、.vanda/ がすでにあれば、何も書き換えずに止める"
@@ -2810,6 +3533,23 @@ layers = ["cli"]
 id = "init-store-choices"
 subjects = ["cmd-11", "cm-08"]
 statement = "ストーリーの置き場所は、GitHub Issues・.vanda/adapters/ のアダプタ・使わない から選ばせ、ID の書き方の既定は選んだアダプタが持つものにする"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "interface-test"
+layers = ["cli"]
+
+[[claim]]
+id = "init-no-store-id-pattern"
+subjects = ["cmd-11", "cm-08"]
+statement = "ストーリーの置き場所に .vanda/adapters/ のアダプタか使わないを選んだときは、ストーリーの ID の書き方の問いを、既定の答えのない空の状態から始める"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2930,6 +3670,30 @@ layers = ["cli"]
 [[claim.evidence]]
 stage = "test"
 type = "scenario-test"
+layers = ["cli"]
+
+[[claim]]
+id = "init-write-failure-cleans"
+subjects = ["cmd-11"]
+statement = "ファイルを書く途中で失敗したら、作りかけの .vanda/ を消し、誤りを出して終了コード 1 で終わる"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "init-check-failure-keeps"
+subjects = ["cmd-11"]
+statement = "作った後の確かめ（作った設定を読み直す）で誤りがあれば、作った .vanda/ を残したまま、直す誤りを出して終了コード 1 で終わる"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
@@ -3080,6 +3844,30 @@ type = "scenario-test"
 layers = ["gui"]
 
 [[claim]]
+id = "story-open-link"
+subjects = ["cm-08", "story"]
+statement = "ストーリーに置き場所の URL があれば、「置き場所で開く」のリンクを出す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "story-undecided-note"
+subjects = ["cm-08", "story", "rv-13"]
+statement = "ストーリーが決まっていなければ、ストーリーの欄に「ストーリーが決まっていません。ストーリーを選んでください。」と示す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
 id = "story-error-shown-on-screen"
 subjects = ["cm-08", "story"]
 statement = "ストーリーを読めないとき（ネットワークや認証の誤りなど）は、画面に置き場所が返した理由をそのまま出し、黙って空にしない"
@@ -3109,6 +3897,42 @@ type = "scenario-test"
 layers = ["gui"]
 
 [[claim]]
+id = "review-detail-links"
+subjects = ["rv-01", "rv-18"]
+statement = "1 件の詳細に、約束なら「約束の詳細を開く」、ファイルなら「ファイルの画面を開く」のリンクを出し、削除したものには出さない"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "agree-button-label"
+subjects = ["rv-06", "story"]
+statement = "合意のボタンには、「ストーリー <ID> で合意する」と、合意するストーリーの ID を書く"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "agree-cannot-reason-shown"
+subjects = ["rv-06", "agreement"]
+statement = "ストーリーが決まっていないか、git の user.name・user.email がなくて合意できないときは、合意のボタンを押せなくし、「ストーリーを選ぶと、合意できます。」か「git の user.name と user.email を設定すると、合意できます。」と示す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
 id = "revoke-on-screen"
 subjects = ["rv-17", "agreement"]
 statement = "レビューの画面で、合意済の件への今の人の合意を取り消せる"
@@ -3123,6 +3947,30 @@ layers = ["gui"]
 [[claim.evidence]]
 stage = "test"
 type = "scenario-test"
+layers = ["gui"]
+
+[[claim]]
+id = "revoke-others-shown"
+subjects = ["rv-17", "agreement"]
+statement = "取り消してもほかの人の合意が残るときは、取り消す前にその人の名前と合意済みのままになることを示し、取り消した後にも合意済みのままであることを示す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "revoke-reason-shown"
+subjects = ["rv-17", "agreement"]
+statement = "合意済の件を今の人が取り消せないときは、取り消しのボタンを出さず、取り消せない理由を示す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
 layers = ["gui"]
 
 [[claim]]
@@ -3162,6 +4010,42 @@ statement = "約束の詳細を読めないときは、API が返した理由を
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "api-error-fix-shown"
+subjects = ["cm-01"]
+statement = "画面は、API の誤りを出すとき、何がどうなっているか（message）と、どうすればよいか（fix）の両方を出す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "context-error-shown"
+subjects = ["cm-01", "cm-09"]
+statement = "画面を開いたときの、今の設定と選べるものの読み込みに失敗したら、API が返した理由を画面に出す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "file-page-error-shown"
+subjects = ["cl-02"]
+statement = "ファイルの画面でファイルを読めないときは、API が返した理由を画面に出す"
+layers = ["gui"]
+flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "test"
