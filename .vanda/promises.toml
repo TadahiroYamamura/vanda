@@ -765,6 +765,42 @@ type = "cross-check"
 layers = ["api"]
 
 [[claim]]
+id = "pass-only-when-all-seen"
+subjects = ["rv-06", "cmd-10", "agreement"]
+statement = "全部の範囲の agreement が通るなら、今ある約束・用語・機能・合意の対象のファイルの今の中身（ファイルなら場所も）と、合意したことのある項目が今ないことは、どれも一度は誰かが合意したものである"
+rationale = "PO が一度も見ていない状態で、審査が通らないようにするため。細かい場面（名前を元に戻す、消して足し直す など）の振る舞いは、この性質に反しないように決める（PO の決定）"
+layers = ["model", "cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "model-check"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "cross-check"
+layers = ["cli"]
+
+[[claim]]
+id = "story-pass-only-when-seen"
+subjects = ["rv-06", "cmd-10", "agreement", "story"]
+statement = "ストーリー s の範囲の agreement が通るなら、比べる元と今で違う約束・用語・機能・合意の対象のファイルは、どれも今の状態（今ある中身か、ないこと）に一度は誰かが合意したものである"
+rationale = "ストーリーで変えたものを、PO が見ないまま合流させないため（PO の決定）"
+layers = ["model", "cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "model-check"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "test"
+type = "cross-check"
+layers = ["cli"]
+
+[[claim]]
 id = "renamed-file-needs-agreement"
 subjects = ["cm-03", "agreement", "scenario"]
 statement = "ファイルの名前を変えたら、古い場所を消したものとし、新しい場所のファイルは、その場所に同じ中身への合意の記録がなければ、中身が同じでも提案中とする"
