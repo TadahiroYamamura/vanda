@@ -2287,7 +2287,7 @@ layers = ["cli"]
 [[claim]]
 id = "doctor-github-token"
 subjects = ["diagnose-setup", "connect-story-store"]
-statement = "vanda doctor が GitHub につなぐ時も、画面でストーリーを読む時と同じ決まりで認証キーを選び、合う認証キーが見つからなければ要求を送らずに誤りにする"
+statement = "vanda doctor が GitHub につなぐ時も、画面でストーリーを読む時と同じ決まりで認証キーを選び、合う認証キーが見つからなければ要求を送らずにエラーにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2452,7 +2452,7 @@ layers = ["api"]
 [[claim]]
 id = "api-error-shape"
 subjects = ["start-server"]
-statement = "API の誤りは、HTTP の状態コードと、{\"error\": {\"message\": …, \"fix\": …}} で返す。直し方がなければ fix を省く"
+statement = "API のエラーは、HTTP の状態コードと、{\"error\": {\"message\": …, \"fix\": …}} で返す。直し方がなければ fix を省く"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2659,7 +2659,7 @@ layers = ["api"]
 [[claim]]
 id = "story-github-token-missing"
 subjects = ["connect-story-store", "story"]
-statement = "api_url のホストに合う認証キーが見つからなければ、GitHub への要求を送らずに、ストーリーの置き場所の誤りにする"
+statement = "api_url のホストに合う認証キーが見つからなければ、GitHub への要求を送らずに、ストーリーの置き場所のエラーにする"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2684,7 +2684,7 @@ layers = ["api"]
 [[claim]]
 id = "story-errors"
 subjects = ["connect-story-store", "story"]
-statement = "状態コードは次のとおりにする。ストーリーの置き場所が設定にない時と、組込みの github で Issue がない時は 404。ストーリーの ID が id_pattern に合わない（github では、ID に Issue の番号がない）時は 400。認証・ネットワーク・アダプタの誤りは 502。どれも、ストーリーの置き場所かアダプタが返した理由をそのまま出す"
+statement = "状態コードは次のとおりにする。ストーリーの置き場所が設定にない時と、組込みの github で Issue がない時は 404。ストーリーの ID が id_pattern に合わない（github では、ID に Issue の番号がない）時は 400。認証・ネットワーク・アダプタのエラーは 502。どれも、ストーリーの置き場所かアダプタが返した理由をそのまま出す"
 condition = "カスタムアダプタは、ストーリーがないことを 404 として伝える手段を持たないので、ないストーリーも 502 になる"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -3917,7 +3917,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-write-failure-cleans"
 subjects = ["create-vanda-dir"]
-statement = "ファイルを書く途中で失敗したら、作りかけの .vanda/ を消し、誤りを出して終了コード 1 で終わる"
+statement = "ファイルを書く途中で失敗したら、作りかけの .vanda/ を消し、エラーを出して終了コード 1 で終わる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -3999,7 +3999,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-missing-project-adapter"
 subjects = ["create-vanda-dir", "run-custom-adapters"]
-statement = "カスタムアダプタを選んだ時は、作った後に確かめる時に、そのアダプタがまだないことをエラーにせず、アダプタを実装して配置するよう案内して、終了コード 0 で終える"
+statement = "カスタムアダプタを選んだ時は、作った後に確かめる時に、そのアダプタがまだないことを誤りにせず、アダプタを実装して配置するよう案内して、終了コード 0 で終える"
 rationale = "カスタムアダプタは .vanda/ を作った後にしか置けないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -4112,7 +4112,7 @@ layers = ["gui"]
 [[claim]]
 id = "story-error-shown-on-screen"
 subjects = ["connect-story-store", "story"]
-statement = "ストーリーを読めない時（ネットワークや認証の誤りなど）は、画面にストーリーの置き場所が返した理由をそのまま出し、黙って空にしない"
+statement = "ストーリーを読めない時（ネットワークや認証のエラーなど）は、画面にストーリーの置き場所が返した理由をそのまま出し、黙って空にしない"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4261,7 +4261,7 @@ layers = ["gui"]
 [[claim]]
 id = "api-error-fix-shown"
 subjects = ["start-server"]
-statement = "画面は、API の誤りを出す時、何がどうなっているか（message）と、どうすればよいか（fix）の両方を出す"
+statement = "画面は、API のエラーを出す時、何がどうなっているか（message）と、どうすればよいか（fix）の両方を出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4665,7 +4665,7 @@ layers = ["cli"]
 [[claim]]
 id = "story-trailer-errors-shown"
 subjects = ["switch-review-unit", "story"]
-statement = "Story: のトレーラーに誤りのあるコミットがあっても、API は誤りで止めずに 200 で返し、そのコミットのストーリーを空にしたうえで、どのコミットの何が誤りかを返し、画面に出す"
+statement = "Story: のトレーラーに誤りのあるコミットがあっても、API はエラーで止めずに 200 で返し、そのコミットのストーリーを空にしたうえで、どのコミットの何が誤りかを返し、画面に出す"
 rationale = "履歴に 1 つ誤ったコミットがあるだけで画面を開けなくならないようにし、そのうえで、段 2 で決めた「誤りは画面にそのまま理由を出す（黙って空にしない）」に沿うため（監督の判断）"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
