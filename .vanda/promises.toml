@@ -3201,6 +3201,18 @@ type = "unit-test"
 layers = ["api"]
 
 [[claim]]
+id = "agree-record-user-from-git"
+subjects = ["agree-on-review", "agreement-record"]
+statement = "書き足す合意の記録の user には、合意した時の git の user.name と user.email を書く"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
 id = "agree-commit-message"
 subjects = ["agree-on-review", "story"]
 statement = "合意のコミットのメッセージの subject を「(chore) <ストーリーの ID> で <種類> <ID か場所> に合意する」（種類は 約束・用語・機能・ファイル）にする"
@@ -3561,6 +3573,18 @@ layers = ["gui"]
 stage = "test"
 type = "scenario-test"
 layers = ["gui"]
+
+[[claim]]
+id = "origin-commit-stories"
+subjects = ["build-origins", "show-claim-origin", "origin", "story"]
+statement = "約束の由来のコミットごとに、そのコミットの Story: のトレーラーのストーリーを結ぶ"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
 
 [[claim]]
 id = "claim-detail-agreements"
