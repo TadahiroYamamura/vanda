@@ -128,7 +128,7 @@ definition = "約束などの今の中身が要求どおりかを人が確かめ
 [[term]]
 id = "agreement-record"
 name = "合意の記録"
-definition = "合意を書き留めたもの。約束・用語・機能なら ID と中身の指紋の組、ファイルならファイルパスと中身の指紋の組ごとに、誰が（合意したときの git の user.name と user.email）・いつ・どのストーリーで合意したかを書く。約束リストとは別のファイルに置く"
+definition = "合意を書き留めたもの。約束・用語・機能なら ID と中身の指紋の組、ファイルならファイルパスと中身の指紋の組ごとに、誰が（合意した時の git の user.name と user.email）・いつ・どのストーリーで合意したかを書く。約束リストとは別のファイルに置く"
 
 [[term]]
 id = "proposed"
@@ -143,7 +143,7 @@ definition = "今の中身に合意している状態"
 [[term]]
 id = "base-branch"
 name = "ベースブランチ"
-definition = "差分を出すときに比べるブランチ。そのブランチから分かれた点と比べる。審査では --base で渡し、画面ではその場で選ぶ"
+definition = "差分を出す時に比べるブランチ。そのブランチから分かれた点と比べる。審査では --base で渡し、画面ではその場で選ぶ"
 
 [[term]]
 id = "ai-proposal"
@@ -247,7 +247,7 @@ part_of = "adapter"
 [[term]]
 id = "fingerprint"
 name = "指紋"
-definition = "中身が同じかを比べるための値。合意の記録は、合意したときの指紋を持つ"
+definition = "中身が同じかを比べるための値。合意の記録は、合意した時の指紋を持つ"
 
 [[term]]
 id = "story-trailer"
@@ -302,7 +302,7 @@ definition = "git の履歴から、約束ごとの由来（約束が作られ�
 [[feature]]
 id = "choose-base-branch"
 name = "ベースブランチを選ぶ"
-definition = "比べるベースブランチを、画面でその場で選ぶ。開いたときの既定は設定のベースブランチ"
+definition = "比べるベースブランチを、画面でその場で選ぶ。開いた時の既定は設定のベースブランチ"
 
 [[feature]]
 id = "connect-story-store"
@@ -401,7 +401,7 @@ definition = "約束の詳細に、合意の履歴を示す"
 [[feature]]
 id = "render-tla-symbols"
 name = "TLA+ を数学の記号で見せる"
-definition = "オラクルの定義（TLA+）を数学の記号で見せ、コピーしたときはリポジトリの文字のままにする"
+definition = "オラクルの定義（TLA+）を数学の記号で見せ、コピーした時はリポジトリの文字のままにする"
 
 [[feature]]
 id = "show-claim-at-commit"
@@ -886,7 +886,7 @@ layers = ["cli"]
 id = "renamed-file-needs-agreement"
 subjects = ["store-agreements", "agreement", "scenario"]
 statement = "ファイルの名前を変えたら、古い場所を消したものとし、新しい場所のファイルは、その場所に同じ中身への合意の記録がなければ、中身が同じでも提案中とする"
-rationale = "ファイルは場所で見分けるため。中身だけで見分けると、合意済のファイルを写した先が、誰も読まないまま合意済になる。名前を元に戻したときのように、その場所のその中身に一度合意していれば、合意し直さなくてよい"
+rationale = "ファイルは場所で見分けるため。中身だけで見分けると、合意済のファイルを写した先が、誰も読まないまま合意済になる。名前を元に戻した時のように、その場所のその中身に一度合意していれば、合意し直さなくてよい"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
@@ -1189,7 +1189,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-backquoted-ignored"
 subjects = ["read-annotations", "annotation"]
-statement = "コメントの中で逆引用符で囲んだ @vanda: は、アノテーションとして数えない。同じ行に本物のアノテーションがあっても、1 行に 2 つ以上の @vanda: の誤りにしない（例: @vanda:internal の理由の文で、書き方に触れるとき）"
+statement = "コメントの中で逆引用符で囲んだ @vanda: は、アノテーションとして数えない。同じ行に本物のアノテーションがあっても、1 行に 2 つ以上の @vanda: の誤りにしない（例: @vanda:internal の理由の文で、書き方に触れる時）"
 rationale = "説明の文で書き方に触れられるようにするため"
 layers = ["cli"]
 
@@ -1213,7 +1213,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-adapter-required"
 subjects = ["read-annotations", "annotation", "adapter"]
-statement = "[[annotation]] のパターンに当たったのに、その [[annotation]] に adapter がないファイルがあれば、annotation-links の誤りにする。そのときアノテーションを読めないので、evidence-present も行えない誤りにする"
+statement = "[[annotation]] のパターンに当たったのに、その [[annotation]] に adapter がないファイルがあれば、annotation-links の誤りにする。その時アノテーションを読めないので、evidence-present も行えない誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1494,7 +1494,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-args-only-for-project"
 subjects = ["run-custom-adapters", "store-config"]
-statement = "args は、カスタムアダプタのときだけ書くことができ、組込みのアダプタに書けば設定の誤りにする"
+statement = "args は、カスタムアダプタの時だけ書くことができ、組込みのアダプタに書けば設定の誤りにする"
 rationale = "組込みのアダプタは引数を受け取らないので、書いても黙って無視され、効いているように見えてしまうため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -1507,7 +1507,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-not-runnable"
 subjects = ["run-custom-adapters", "adapter"]
-statement = "カスタムアダプタがない・実行の権限がない・1 行目に動かし方がないなどで動かせないときは、場所と直し方を書いた誤りにする"
+statement = "カスタムアダプタがない・実行の権限がない・1 行目に動かし方がないなどで動かせない時は、場所と直し方を書いた誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1855,7 +1855,7 @@ id = "check-story-from-commits"
 subjects = ["run-checks", "check", "story"]
 statement = "範囲 story の agreement・evidence-present を含む審査の設定では、審査を始める前にストーリーを 1 つに決める。分かれた点より後のコミットの Story: のトレーラーにあるストーリーの ID が 1 つなら、それを使う。--story を渡していて、それと違えば、審査を始める前の誤りにする。ID が 0 個か 2 つ以上なら、--story を使う。--story を渡していなければ、--story を求める誤りを、審査を始める前に出す"
 rationale = "--story は、トレーラーのあるコミットがまだないブランチのためのもの。トレーラーと違うストーリーを使うと、本当のストーリーの外れた合意を見ないまま審査が通るため"
-condition = "決めたストーリーを使うのは、agreement がそのストーリーの外れた合意を探すときだけで、範囲 story の evidence-present は、分かれた点の中身と今の中身の違いだけを見る"
+condition = "決めたストーリーを使うのは、agreement がそのストーリーの外れた合意を探す時だけで、範囲 story の evidence-present は、分かれた点の中身と今の中身の違いだけを見る"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1879,7 +1879,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-blocked-by-unreadable-input"
 subjects = ["run-checks", "check"]
-statement = "約束リスト・アノテーション・合意の記録が読めないときは、それを前提にするほかの審査を「<何>が読めないため行えない」の 1 行で失敗にする"
+statement = "約束リスト・アノテーション・合意の記録が読めない時は、それを前提にするほかの審査を「<何>が読めないため行えない」の 1 行で失敗にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2005,7 +2005,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-evidence-guardrail-needs-definition"
 subjects = ["list-check-kinds", "evidence", "guardrail"]
-statement = "evidence-present は、タイプが guardrail の予定を、[[guardrail]] の paths に当たるファイルにその約束を指すアノテーションがあるときだけ揃ったとみなす。[[annotation]] のパターンで読んだ guardrail のアノテーション（Go のテストなど）は、ガードレールが拒むことを確かめるエビデンスとして重ねるもので、それだけでは揃わない"
+statement = "evidence-present は、タイプが guardrail の予定を、[[guardrail]] の paths に当たるファイルにその約束を指すアノテーションがある時だけ揃ったとみなす。[[annotation]] のパターンで読んだ guardrail のアノテーション（Go のテストなど）は、ガードレールが拒むことを確かめるエビデンスとして重ねるもので、それだけでは揃わない"
 rationale = "ガードレールそのものがないのに、テストだけでガードレールの予定が揃ったとみなさないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -2191,7 +2191,7 @@ layers = ["cli"]
 [[claim]]
 id = "config-github-only-fields"
 subjects = ["store-config", "connect-story-store"]
-statement = "[story] の repository と api_url は、組込みの github を使うときだけ書くことができ、ほかのときに書けば誤りにする"
+statement = "[story] の repository と api_url は、組込みの github を使う時だけ書くことができ、ほかの時に書けば誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2203,7 +2203,7 @@ layers = ["cli"]
 [[claim]]
 id = "config-github-repository"
 subjects = ["store-config", "connect-story-store"]
-statement = "組込みの github を使うときに、repository がなければ、または <owner>/<repo> の形（英数字と _・.・- でできた 2 つの名前を、1 つの / でつないだもの）でなければ、設定の誤りにする"
+statement = "組込みの github を使う時に、repository がなければ、または <owner>/<repo> の形（英数字と _・.・- でできた 2 つの名前を、1 つの / でつないだもの）でなければ、設定の誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2227,7 +2227,7 @@ layers = ["cli"]
 [[claim]]
 id = "config-api-url-default"
 subjects = ["store-config", "connect-story-store"]
-statement = "組込みの github を使うときに api_url を省けば、https://api.github.com を使う"
+statement = "組込みの github を使う時に api_url を省けば、https://api.github.com を使う"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2253,7 +2253,7 @@ layers = ["cli"]
 [[claim]]
 id = "doctor-ok-line"
 subjects = ["diagnose-setup"]
-statement = "vanda doctor は、設定と版に誤りがなく、かつ（ストーリーの置き場所が設定にあれば）そこにつながったときだけ、標準出力に 1 行を出して終了コード 0 で終わる。どれかに誤りがあれば、誤りを標準エラーに出して終了コード 1 で終わる"
+statement = "vanda doctor は、設定と版に誤りがなく、かつ（ストーリーの置き場所が設定にあれば）そこにつながった時だけ、標準出力に 1 行を出して終了コード 0 で終わる。どれかに誤りがあれば、誤りを標準エラーに出して終了コード 1 で終わる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2287,7 +2287,7 @@ layers = ["cli"]
 [[claim]]
 id = "doctor-github-token"
 subjects = ["diagnose-setup", "connect-story-store"]
-statement = "vanda doctor が GitHub につなぐときも、画面でストーリーを読むときと同じ決まりで認証キーを選び、合う認証キーが見つからなければ要求を送らずに誤りにする"
+statement = "vanda doctor が GitHub につなぐ時も、画面でストーリーを読む時と同じ決まりで認証キーを選び、合う認証キーが見つからなければ要求を送らずに誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2358,7 +2358,7 @@ layers = ["api"]
 [[claim]]
 id = "serve-prints-url"
 subjects = ["start-server"]
-statement = "vanda serve は、開いた URL を、--no-open のときも標準出力に 1 行で出す"
+statement = "vanda serve は、開いた URL を、--no-open の時も標準出力に 1 行で出す"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2500,7 +2500,7 @@ layers = ["api"]
 [[claim]]
 id = "context-default-base"
 subjects = ["choose-base-branch", "base-branch"]
-statement = "画面を開いたときのベースブランチは、設定の [gui] の base にする"
+statement = "画面を開いた時のベースブランチは、設定の [gui] の base にする"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -2529,8 +2529,8 @@ layers = ["api"]
 [[claim]]
 id = "context-base-always-shown"
 subjects = ["choose-base-branch", "base-branch"]
-statement = "レビューの画面は、レビュー単位がブランチのとき、今どのベースブランチの、どの分かれた点のコミットと比べているかを常に示す"
-condition = "レビュー単位がストーリーのときは、ベースブランチを使わないので示さない"
+statement = "レビューの画面は、レビュー単位がブランチの時、今どのベースブランチの、どの分かれた点のコミットと比べているかを常に示す"
+condition = "レビュー単位がストーリーの時は、ベースブランチを使わないので示さない"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -2560,7 +2560,7 @@ layers = ["gui"]
 id = "context-no-user-cannot-agree"
 subjects = ["agree-on-review", "agreement"]
 statement = "git の user.name か user.email がなければ、合意できない"
-rationale = "合意の記録の「誰が」には、合意したときの git の user.name と user.email を書くため"
+rationale = "合意の記録の「誰が」には、合意した時の git の user.name と user.email を書くため"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -2684,7 +2684,7 @@ layers = ["api"]
 [[claim]]
 id = "story-errors"
 subjects = ["connect-story-store", "story"]
-statement = "状態コードは次のとおりにする。ストーリーの置き場所が設定にないときと、組込みの github で Issue がないときは 404。ストーリーの ID が id_pattern に合わない（github では、ID に Issue の番号がない）ときは 400。認証・ネットワーク・アダプタの誤りは 502。どれも、ストーリーの置き場所かアダプタが返した理由をそのまま出す"
+statement = "状態コードは次のとおりにする。ストーリーの置き場所が設定にない時と、組込みの github で Issue がない時は 404。ストーリーの ID が id_pattern に合わない（github では、ID に Issue の番号がない）時は 400。認証・ネットワーク・アダプタの誤りは 502。どれも、ストーリーの置き場所かアダプタが返した理由をそのまま出す"
 condition = "カスタムアダプタは、ストーリーがないことを 404 として伝える手段を持たないので、ないストーリーも 502 になる"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -2703,7 +2703,7 @@ layers = ["api"]
 id = "story-project-adapter"
 subjects = ["connect-story-store", "run-custom-adapters"]
 statement = "ストーリーの置き場所がカスタムアダプタなら、標準入力に {\"action\": \"read\", \"story\": <ID>} を渡し、標準出力の title・body・url・attachments を読む"
-condition = "ストーリーがない・認証が通らないなどで返せないときは、アダプタが 0 でない終了コードで終わって標準エラーに理由を書き、vanda はそれを 502 の理由としてそのまま出す"
+condition = "ストーリーがない・認証が通らないなどで返せない時は、アダプタが 0 でない終了コードで終わって標準エラーに理由を書き、vanda はそれを 502 の理由としてそのまま出す"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2865,7 +2865,7 @@ layers = ["api"]
 [[claim]]
 id = "review-other-commits"
 subjects = ["switch-review-unit", "story"]
-statement = "レビュー単位がストーリーのとき、ストーリーで最初に変えた後にほかのコミットが同じものを変えていたら、そのコミットを示す"
+statement = "レビュー単位がストーリーの時、ストーリーで最初に変えた後にほかのコミットが同じものを変えていたら、そのコミットを示す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -2882,7 +2882,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-story-choice"
 subjects = ["switch-review-unit", "story"]
-statement = "レビュー単位がブランチのとき、分かれた点より後のコミットの Story: のトレーラーからストーリーが 1 つに決まれば選ばせずに示し、2 つ以上ならそのストーリーから、1 つもなければ HEAD の履歴（合流のコミットを除く）のコミットの Story: のトレーラーにあるストーリーから、新しいコミットの順に選ばせる。story= でほかのストーリーを名指ししたときは、それも選べるようにする"
+statement = "レビュー単位がブランチの時、分かれた点より後のコミットの Story: のトレーラーからストーリーが 1 つに決まれば選ばせずに示し、2 つ以上ならそのストーリーから、1 つもなければ HEAD の履歴（合流のコミットを除く）のコミットの Story: のトレーラーにあるストーリーから、新しいコミットの順に選ばせる。story= でほかのストーリーを名指しした時は、それも選べるようにする"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -2906,7 +2906,7 @@ id = "review-detached-shown"
 subjects = ["show-detached", "agreement", "story"]
 statement = "レビューのストーリーが決まっていれば、そのストーリーの外れた合意を「合意が外れた」と示す。あわせて、HEAD の履歴で、そのストーリーが最後に合意の記録を足したコミットより後に、その中身を変えたコミットを探し、そのコミットのストーリーの ID も示す"
 rationale = "rebase や amend で履歴を書き換えるとコミットの日時が変わるので、合意の後かどうかを日時でなく履歴の順で決める。手で書いた合意の記録も、コミットした後は同じに扱える"
-condition = "レビュー単位がブランチのときも出す。ストーリーが決まらないときは出さない。今の約束リストにない約束・用語・機能と、今はその場所にないファイル（名前を変えたものを含む）は、外れた合意として出さない"
+condition = "レビュー単位がブランチの時も出す。ストーリーが決まらない時は出さない。今の約束リストにない約束・用語・機能と、今はその場所にないファイル（名前を変えたものを含む）は、外れた合意として出さない"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -2974,7 +2974,7 @@ layers = ["api"]
 [[claim]]
 id = "review-flag-labels"
 subjects = ["raise-flags", "flag"]
-statement = "フラグの札には短い言葉だけを出し、説明は札に触れたときかフォーカスしたときに出す"
+statement = "フラグの札には短い言葉だけを出し、説明は札に触れた時かフォーカスした時に出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3064,7 +3064,7 @@ layers = ["api"]
 [[claim]]
 id = "review-groups-fold"
 subjects = ["fold-groups", "layer"]
-statement = "一覧を、約束はレイヤーごと、用語と機能、エビデンスの本体（ファイル）のまとまりに分け、まとまりごとにたためるようにする。たたんだまとまりも一覧から外さず、見出しにたたんだ件数を示し、総数と通し番号はたたまないときと同じにする"
+statement = "一覧を、約束はレイヤーごと、用語と機能、エビデンスの本体（ファイル）のまとまりに分け、まとまりごとにたためるようにする。たたんだまとまりも一覧から外さず、見出しにたたんだ件数を示し、総数と通し番号はたたまない時と同じにする"
 rationale = "変わったものが多くても、全体の件数を見失わずに把握できるようにするため"
 layers = ["gui"]
 flags = ["ai-proposal"]
@@ -3082,7 +3082,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-groups-fold-over-ten"
 subjects = ["fold-groups"]
-statement = "画面を開いたとき、11 件以上のまとまりはたたんでおき、10 件以下のまとまりと、選んだ件を含むまとまりは開いておく"
+statement = "画面を開いた時、11 件以上のまとまりはたたんでおき、10 件以下のまとまりと、選んだ件を含むまとまりは開いておく"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3142,7 +3142,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-filter-kept"
 subjects = ["list-changes"]
-statement = "絞り込みの条件は、画面の URL に残し、再読み込みや、詳細から戻ったときにも消さない"
+statement = "絞り込みの条件は、画面の URL に残し、再読み込みや、詳細から戻った時にも消さない"
 rationale = "詳細を読んで合意した後に、一覧へ戻って続きを片付けられるようにするため"
 layers = ["gui"]
 flags = ["ai-proposal"]
@@ -3161,7 +3161,7 @@ layers = ["gui"]
 id = "agree-writes-and-commits"
 subjects = ["agree-on-review", "agreement"]
 statement = "合意すると、合意の記録を書き足し、合意の記録のファイルと約束リストのファイルだけを 1 つのコミットにする"
-rationale = "1 件の合意ごとに 1 つのコミットにする（まとめる形にすると、画面の中に書きかけの合意を持つことになり、閉じたときに消えるおそれがあるため）"
+rationale = "1 件の合意ごとに 1 つのコミットにする（まとめる形にすると、画面の中に書きかけの合意を持つことになり、閉じた時に消えるおそれがあるため）"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3178,7 +3178,7 @@ layers = ["api"]
 [[claim]]
 id = "agree-record-file"
 subjects = ["agree-on-review", "agreement-record"]
-statement = "合意の記録は、設定の agreements のパターンの順で最初に当たったファイルの終わりに書き足す。どれにも当たらないときは、最初のパターンにワイルドカードがなければそのファイルを作り、あれば合意を 409 で断る"
+statement = "合意の記録は、設定の agreements のパターンの順で最初に当たったファイルの終わりに書き足す。どれにも当たらない時は、最初のパターンにワイルドカードがなければそのファイルを作り、あれば合意を 409 で断る"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3190,7 +3190,7 @@ layers = ["api"]
 [[claim]]
 id = "agree-record-form"
 subjects = ["agree-on-review", "agreement-record"]
-statement = "書き足す合意の記録は、user をインラインの表（user = { name = …, email = … }）で書き、agreed_at に、合意したときの日時を、手元の時差を付けて秒まで書く"
+statement = "書き足す合意の記録は、user をインラインの表（user = { name = …, email = … }）で書き、agreed_at に、合意した時の日時を、手元の時差を付けて秒まで書く"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3321,7 +3321,7 @@ layers = ["api"]
 [[claim]]
 id = "revoke-commits-and-keeps-flags"
 subjects = ["revoke-agreement", "flag"]
-statement = "取り消すと、その合意の記録を消して 1 つのコミットにし、合意のときに外したフラグは戻さない"
+statement = "取り消すと、その合意の記録を消して 1 つのコミットにし、合意の時に外したフラグは戻さない"
 rationale = "人が一度読んだことは変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -3364,7 +3364,7 @@ layers = ["api"]
 id = "detail-origin-and-history"
 subjects = ["show-entry-history", "origin"]
 statement = "レビューの 1 件の詳細に、約束の由来と合意の履歴を示す"
-rationale = "合意するかどうかを決めるときに、約束の詳細へ移らずに見られるようにするため"
+rationale = "合意するかどうかを決める時に、約束の詳細へ移らずに見られるようにするため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3376,7 +3376,7 @@ layers = ["gui"]
 [[claim]]
 id = "agree-from-detail-pages"
 subjects = ["agree-on-detail-pages", "agreement"]
-statement = "約束の詳細の画面とファイルの画面でも、ストーリーのレビューから移ってきて、その約束・ファイルがレビューの一覧にあるときは、合意・取り消しのボタンを出す"
+statement = "約束の詳細の画面とファイルの画面でも、ストーリーのレビューから移ってきて、その約束・ファイルがレビューの一覧にある時は、合意・取り消しのボタンを出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3634,7 +3634,7 @@ layers = ["gui"]
 [[claim]]
 id = "tla-copy-ascii"
 subjects = ["render-tla-symbols", "oracle"]
-statement = "TLA+ の定義をコピーしたときは、リポジトリの文字のまま（ASCII）にする"
+statement = "TLA+ の定義をコピーした時は、リポジトリの文字のまま（ASCII）にする"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3665,7 +3665,7 @@ id = "claim-at-commit"
 subjects = ["show-claim-at-commit", "origin"]
 statement = "由来のコミットか合意の記録を選ぶと、その時点（合意の記録なら、合意を書いたコミットの時点）の約束の中身を示す"
 rationale = "約束の詳細には今の中身との差分を出さないため、過去の中身はここで見る"
-condition = "合意の記録を選んだとき、示した中身がその記録の指紋と合うかは示さない"
+condition = "合意の記録を選んだ時、示した中身がその記録の指紋と合うかは示さない"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3687,7 +3687,7 @@ layers = ["gui"]
 [[claim]]
 id = "claim-at-commit-errors"
 subjects = ["show-claim-at-commit"]
-statement = "その時点の約束の中身を求めるとき、コミットの指定がハッシュの形でなければ 400、ないコミットとその時点にない約束は 404 にする"
+statement = "その時点の約束の中身を求める時、コミットの指定がハッシュの形でなければ 400、ないコミットとその時点にない約束は 404 にする"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3790,7 +3790,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-no-store-id-pattern"
 subjects = ["create-vanda-dir", "connect-story-store"]
-statement = "ストーリーの置き場所にカスタムアダプタか「使わない」を選んだときは、ストーリーの ID の書き方の問いを、既定の答えのない空の状態から始める"
+statement = "ストーリーの置き場所にカスタムアダプタか「使わない」を選んだ時は、ストーリーの ID の書き方の問いを、既定の答えのない空の状態から始める"
 rationale = "GitHub 以外では ID の形を推し量れず、カスタムアダプタは init の時点ではまだないので既定を聞けないため。既定を勝手に入れると、気づかずにそのまま進みうる"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -3976,7 +3976,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-guide"
 subjects = ["create-vanda-dir", "layer"]
-statement = "作った後に、[[layer]] を書くことと、CI に vanda check を足すこと（ブランチでは ci.toml を --base <ベースブランチ> で、ベースブランチでは main.toml を動かす）を案内し、言語を 1 つも選ばなかったときは [[annotation]] を書くことも案内する"
+statement = "作った後に、[[layer]] を書くことと、CI に vanda check を足すこと（ブランチでは ci.toml を --base <ベースブランチ> で、ベースブランチでは main.toml を動かす）を案内し、言語を 1 つも選ばなかった時は [[annotation]] を書くことも案内する"
 rationale = "レイヤーは問いかけず、作った後に設定へ書いてもらうため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -3999,7 +3999,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-missing-project-adapter"
 subjects = ["create-vanda-dir", "run-custom-adapters"]
-statement = "カスタムアダプタを選んだときは、作った後に確かめるときに、そのアダプタがまだないことをエラーにせず、アダプタを実装して配置するよう案内して、終了コード 0 で終える"
+statement = "カスタムアダプタを選んだ時は、作った後に確かめる時に、そのアダプタがまだないことをエラーにせず、アダプタを実装して配置するよう案内して、終了コード 0 で終える"
 rationale = "カスタムアダプタは .vanda/ を作った後にしか置けないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -4112,7 +4112,7 @@ layers = ["gui"]
 [[claim]]
 id = "story-error-shown-on-screen"
 subjects = ["connect-story-store", "story"]
-statement = "ストーリーを読めないとき（ネットワークや認証の誤りなど）は、画面にストーリーの置き場所が返した理由をそのまま出し、黙って空にしない"
+statement = "ストーリーを読めない時（ネットワークや認証の誤りなど）は、画面にストーリーの置き場所が返した理由をそのまま出し、黙って空にしない"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4165,7 +4165,7 @@ layers = ["gui"]
 [[claim]]
 id = "agree-cannot-reason-shown"
 subjects = ["agree-on-review", "agreement"]
-statement = "ストーリーが決まっていないか、git の user.name・user.email がなくて合意できないときは、合意のボタンを押せなくし、「ストーリーを選ぶと、合意できます。」か「git の user.name と user.email を設定すると、合意できます。」と示す"
+statement = "ストーリーが決まっていないか、git の user.name・user.email がなくて合意できない時は、合意のボタンを押せなくし、「ストーリーを選ぶと、合意できます。」か「git の user.name と user.email を設定すると、合意できます。」と示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4194,7 +4194,7 @@ layers = ["gui"]
 [[claim]]
 id = "revoke-others-shown"
 subjects = ["revoke-agreement", "agreement"]
-statement = "取り消してもほかの人の合意が残るときは、取り消す前にその人の名前と合意済のままになることを示し、取り消した後にも合意済のままであることを示す"
+statement = "取り消してもほかの人の合意が残る時は、取り消す前にその人の名前と合意済のままになることを示し、取り消した後にも合意済のままであることを示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4206,7 +4206,7 @@ layers = ["gui"]
 [[claim]]
 id = "revoke-reason-shown"
 subjects = ["revoke-agreement", "agreement"]
-statement = "合意済の件を今の利用者が取り消せないときは、取り消しのボタンを出さず、取り消せない理由を示す"
+statement = "合意済の件を今の利用者が取り消せない時は、取り消しのボタンを出さず、取り消せない理由を示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4248,7 +4248,7 @@ layers = ["api"]
 [[claim]]
 id = "claim-detail-error-shown"
 subjects = ["show-claim-fields"]
-statement = "約束の詳細を読めないときは、API が返した理由を画面に出す"
+statement = "約束の詳細を読めない時は、API が返した理由を画面に出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4261,7 +4261,7 @@ layers = ["gui"]
 [[claim]]
 id = "api-error-fix-shown"
 subjects = ["start-server"]
-statement = "画面は、API の誤りを出すとき、何がどうなっているか（message）と、どうすればよいか（fix）の両方を出す"
+statement = "画面は、API の誤りを出す時、何がどうなっているか（message）と、どうすればよいか（fix）の両方を出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4273,7 +4273,7 @@ layers = ["gui"]
 [[claim]]
 id = "context-error-shown"
 subjects = ["start-server", "store-config"]
-statement = "画面を開いたときの、今の設定と選べるものの読み込みに失敗したら、API が返した理由を画面に出す"
+statement = "画面を開いた時の、今の設定と選べるものの読み込みに失敗したら、API が返した理由を画面に出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4285,7 +4285,7 @@ layers = ["gui"]
 [[claim]]
 id = "file-page-error-shown"
 subjects = ["show-claim-evidence"]
-statement = "ファイルの画面でファイルを読めないときは、API が返した理由を画面に出す"
+statement = "ファイルの画面でファイルを読めない時は、API が返した理由を画面に出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4310,7 +4310,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-error-shown"
 subjects = ["list-changes"]
-statement = "変わったものの一覧を読めないときは、API が返した理由を画面に出す"
+statement = "変わったものの一覧を読めない時は、API が返した理由を画面に出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4367,7 +4367,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-icon-names"
 subjects = ["list-changes", "raise-flags"]
-statement = "一覧のアイコンに触れたときか、キーボードでフォーカスしたときに、そのアイコンの言葉（合意済・提案中・合意が外れた・AI 案・推測・差分あり）を出し、読み上げにも同じ言葉を渡す"
+statement = "一覧のアイコンに触れた時か、キーボードでフォーカスした時に、そのアイコンの言葉（合意済・提案中・合意が外れた・AI 案・推測・差分あり）を出し、読み上げにも同じ言葉を渡す"
 rationale = "意味を覚えていない人は、アイコンだけでは読めないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
@@ -4420,7 +4420,7 @@ layers = ["gui"]
 [[claim]]
 id = "highlight-fallback"
 subjects = ["compare-contents", "show-claim-evidence"]
-statement = "コードの色付けを読み込めないときも、ファイルの文字は全部見せる"
+statement = "コードの色付けを読み込めない時も、ファイルの文字は全部見せる"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4577,7 +4577,7 @@ layers = ["gui"]
 [[claim]]
 id = "claim-at-commit-error-shown"
 subjects = ["show-claim-at-commit"]
-statement = "合意の記録を選んだとき、その時点の約束リストが読めなければ、理由を出す"
+statement = "合意の記録を選んだ時、その時点の約束リストが読めなければ、理由を出す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -4639,7 +4639,7 @@ layers = ["cli"]
 [[claim]]
 id = "story-trailer-at-most-one"
 subjects = ["run-checks", "list-check-kinds", "story"]
-statement = "分かれた点より後のコミットに Story: のトレーラーが 2 つ以上あるものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡したときも審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
+statement = "分かれた点より後のコミットに Story: のトレーラーが 2 つ以上あるものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡した時も審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
 rationale = "1 つのブランチは 1 つのストーリーに当たり、コミットは 1 つのブランチで作るため。--story はストーリーを選ぶためのもので、トレーラーを確かめずに済ませるためのものではないため。また、手元と CI で結果を揃えるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -4652,8 +4652,8 @@ layers = ["cli"]
 [[claim]]
 id = "story-trailer-matches-pattern"
 subjects = ["run-checks", "list-check-kinds", "story"]
-statement = "分かれた点より後のコミットに、Story: のトレーラーの値が id_pattern に全体で当たらないものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡したときも審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
-rationale = "--story を渡したときも誤りにするのは、--story はストーリーを選ぶためのもので、トレーラーを確かめずに済ませるためのものではないため。また、手元と CI で結果を揃えるため"
+statement = "分かれた点より後のコミットに、Story: のトレーラーの値が id_pattern に全体で当たらないものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡した時も審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
+rationale = "--story を渡した時も誤りにするのは、--story はストーリーを選ぶためのもので、トレーラーを確かめずに済ませるためのものではないため。また、手元と CI で結果を揃えるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
