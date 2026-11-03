@@ -191,7 +191,8 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 
 	var mine []*agreements.Agreement
 	for _, a := range s.recs.Agreements {
-		if a.Kind == "claim" && a.Key == c.ID {
+		// 消したことへの合意は中身を持たず、合意の履歴（中身ごとの合意）に並べられないので除く
+		if a.Kind == "claim" && a.Key == c.ID && !a.Deleted {
 			mine = append(mine, a)
 		}
 	}

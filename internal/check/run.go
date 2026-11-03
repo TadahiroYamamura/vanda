@@ -50,6 +50,14 @@ type env struct {
 	story        string
 	changedItems map[string]bool // "<種類>:<ID>"
 	changedFiles map[string]bool
+	// 分かれた点にあって今ないもの。今の項目とファイルを回すだけでは見つからないので、別に持つ
+	goneItems []gone
+	goneFiles []string
+}
+
+// gone は、分かれた点にあって今ない約束・用語・機能。file は分かれた点でその項目があった約束リストのファイル
+type gone struct {
+	kind, id, file string
 }
 
 // Run は、審査を設定の順に行い、審査ごとの結果の行を o.Out に、誤りの中身を o.Err に出す。審査を始める前の誤りは error で返す。すべて通れば true。
@@ -168,13 +176,30 @@ func (e *env) findChanges() error {
 	// 分かれた点の約束リストの誤りは、ここでは出さない。読めなかった項目は、増えたものとみなす（合意を求める側に倒す）
 	baseFP := base.ItemFingerprints()
 	e.changedItems = map[string]bool{}
+	now := map[string]bool{}
 	for _, it := range items(e.list) {
+		now[it.key()] = true
 		fp, err := agreements.ItemFingerprint(it.raw)
 		if err != nil || baseFP[it.key()] != fp {
 			e.changedItems[it.key()] = true
 		}
 	}
+	for _, b := range snapshot.Entries(base.List) {
+		if !now[b.Key()] {
+			now[b.Key()] = true // 重なった ID を 2 度数えない
+			e.goneItems = append(e.goneItems, gone{kind: b.Kind, id: b.ID, file: b.Table.Doc.File})
+		}
+	}
 	e.changedFiles = map[string]bool{}
+	cur := map[string]bool{}
+	for _, f := range e.targetFiles() {
+		cur[f] = true
+	}
+	for _, t := range base.Targets {
+		if !cur[t.Path] {
+			e.goneFiles = append(e.goneFiles, t.Path)
+		}
+	}
 	for _, f := range e.targetFiles() {
 		if !base.Has(f) {
 			e.changedFiles[f] = true

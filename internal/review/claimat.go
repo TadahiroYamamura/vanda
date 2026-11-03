@@ -78,7 +78,7 @@ func (s *state) agreementCommits(list []*agreements.Agreement) (map[*agreements.
 		return nil, err
 	}
 	same := func(a, b *agreements.Agreement) bool {
-		return a.Kind == b.Kind && a.Key == b.Key && a.Fingerprint == b.Fingerprint && a.Story == b.Story &&
+		return a.Kind == b.Kind && a.Key == b.Key && a.Fingerprint == b.Fingerprint && a.Deleted == b.Deleted && a.Story == b.Story &&
 			a.AgreedAt.Equal(b.AgreedAt) && a.UserName == b.UserName && a.UserEmail == b.UserEmail
 	}
 	for _, c := range commits {

@@ -468,7 +468,9 @@ export function AgreeControls(props: { entry: Entry; story: string | null; base:
       setAgreeing(false);
     }
   };
-  const agree = () => run(async () => `合意しました（コミット ${shortCommit((await api.agree(e, props.story as string)).commit)}）`);
+  const deleted = e.change === "deleted";
+  const agree = () =>
+    run(async () => `${deleted ? "消したことに合意しました" : "合意しました"}（コミット ${shortCommit((await api.agree(e, props.story as string)).commit)}）`);
   const revoke = () =>
     run(async () => {
       const r = await api.revoke(e, props.story as string, props.base);
@@ -488,12 +490,12 @@ export function AgreeControls(props: { entry: Entry; story: string | null; base:
         {e.state === "proposed" && (
         <>
           <button type="button" className="primary" disabled={agreeing || cannot !== null} onClick={agree}>
-            {agreeing ? "合意しています…" : props.story ? `ストーリー ${props.story} で合意する` : "合意する"}
+            {agreeing ? "合意しています…" : `${props.story ? `ストーリー ${props.story} で` : ""}${deleted ? "消したことに合意する" : "合意する"}`}
           </button>
           {cannot && <span className="note">{cannot}</span>}
         </>
       )}
-      {e.state === "agreed" && <span className="note">今の中身に合意済みです。</span>}
+      {e.state === "agreed" && <span className="note">{deleted ? "消したことに合意済みです。" : "今の中身に合意済みです。"}</span>}
       {e.state === "agreed" && e.revoke?.possible && (
         <>
           <button type="button" className="revoke" disabled={agreeing} onClick={revoke}>
@@ -505,7 +507,6 @@ export function AgreeControls(props: { entry: Entry; story: string | null; base:
         </>
       )}
       {e.state === "agreed" && e.revoke && !e.revoke.possible && e.revoke.reason && <span className="note revoke-reason">{e.revoke.reason}</span>}
-      {e.state === null && <span className="note">消したものには合意できません。</span>}
       {done && <span className="note">{done}</span>}
       {agreeError != null && <ErrorBox error={agreeError} title="合意できません" />}
     </div>

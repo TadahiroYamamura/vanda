@@ -426,6 +426,8 @@ func (s *state) itemEntry(rc rawChange) Entry {
 	if inAfter {
 		e.After = Content(ae)
 		s.itemState(&e, ae)
+	} else {
+		e.State = ptr(stateName(s.recs.DeletionAgreed(ref.Kind, ref.ID)))
 	}
 	if inBefore && inAfter {
 		e.Diff = itemDiff(e.Before, e.After)
@@ -462,7 +464,7 @@ func (s *state) itemState(e *Entry, cur snapshot.Entry) {
 	}
 	if !agreed {
 		for _, a := range s.recs.Agreements {
-			if a.Kind == cur.Kind && a.Key == cur.ID {
+			if a.Kind == cur.Kind && a.Key == cur.ID && !a.Deleted {
 				e.Flags = append(e.Flags, "changed-since-agreement")
 				break
 			}
@@ -488,7 +490,9 @@ func (s *state) fileEntry(rc rawChange, path, change string) (Entry, error) {
 		e.Before = FileContent{Text: string(b)}
 		e.FileType = ptr(rc.before.types[path])
 	}
-	if change != "deleted" {
+	if change == "deleted" {
+		e.State = ptr(stateName(s.recs.DeletionAgreed("file", path)))
+	} else {
 		if err := s.fileState(&e, path); err != nil {
 			return e, err
 		}
@@ -514,7 +518,7 @@ func (s *state) fileState(e *Entry, path string) error {
 	e.State = ptr(stateName(agreed))
 	if !agreed {
 		for _, a := range s.recs.Agreements {
-			if a.Kind == "file" && a.Path == path {
+			if a.Kind == "file" && a.Path == path && !a.Deleted {
 				e.Flags = append(e.Flags, "changed-since-agreement")
 				break
 			}
@@ -582,7 +586,8 @@ func (s *state) detached(es []Entry) ([]Entry, error) {
 	last := map[string]time.Time{}
 	var keys []string
 	for _, a := range s.recs.Agreements {
-		if a.Story != story {
+		// 消したことにだけ合意したものを足し直しても、外れた合意にしない（中身に合意したことがないため）
+		if a.Story != story || a.Deleted {
 			continue
 		}
 		k := a.Kind + ":" + a.Key

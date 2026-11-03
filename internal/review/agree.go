@@ -22,6 +22,8 @@ type AgreeRequest struct {
 	Path        *string `json:"path"`
 	Fingerprint string  `json:"fingerprint"`
 	Story       string  `json:"story"`
+	// Deleted は、消したことに合意するか。真なら fingerprint は見ない
+	Deleted bool `json:"deleted"`
 }
 
 type AgreeResult struct {
@@ -30,9 +32,11 @@ type AgreeResult struct {
 }
 
 type AgreementRecord struct {
-	Kind        string  `json:"kind"`
-	Key         string  `json:"key"`
-	Fingerprint string  `json:"fingerprint"`
+	Kind string `json:"kind"`
+	Key  string `json:"key"`
+	// Fingerprint は、消したことへの合意では nil
+	Fingerprint *string `json:"fingerprint"`
+	Deleted     bool    `json:"deleted"`
 	Path        *string `json:"path"`
 	User        User    `json:"user"`
 	AgreedAt    string  `json:"agreedAt"`
@@ -72,9 +76,19 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	rec := AgreementRecord{Kind: req.Kind, User: *user, AgreedAt: now.Format(time.RFC3339), Story: req.Story}
 	var target string // 一覧の名前（コミットのメッセージに書く）
 	var claim *promises.Claim
-	var source string // 合意の対象が書いてあるファイル
-	switch req.Kind {
-	case "claim", "term", "feature":
+	var source string // 合意の対象が書いてあるファイル。消した約束・用語・機能では空
+	var fp string
+	switch {
+	case req.Deleted:
+		key, t, e := s.deletedTarget(req.Kind, req.ID, req.Path, "合意")
+		if e != nil {
+			return nil, e
+		}
+		rec.Key, rec.Deleted, target = key, true, t
+		if req.Kind == "file" {
+			rec.Path, source = &key, key
+		}
+	case req.Kind == "claim" || req.Kind == "term" || req.Kind == "feature":
 		if req.ID == nil || *req.ID == "" {
 			return nil, badRequest(kindName[req.Kind]+"の合意に id がありません。", "id に ID を書いてください。")
 		}
@@ -83,14 +97,14 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		if !ok {
 			return nil, &Error{Status: http.StatusNotFound, Message: kindName[req.Kind] + " " + *req.ID + " は約束リストにありません。", Fix: "一覧を読み直してください。"}
 		}
-		rec.Key, rec.Fingerprint = cur.ID, s.cur.itemFP[key]
-		if rec.Fingerprint == "" {
+		rec.Key, fp = cur.ID, s.cur.itemFP[key]
+		if fp == "" {
 			return nil, conflict(kindName[req.Kind]+" "+cur.ID+" の指紋を作れません。", "vanda check の promise-list-shape で誤りを確かめて、直してください。")
 		}
 		target = kindName[req.Kind] + " " + cur.ID
 		claim = cur.Claim
 		source = cur.Table.Doc.File
-	case "file":
+	case req.Kind == "file":
 		if req.Path == nil || *req.Path == "" {
 			return nil, badRequest("ファイルの合意に path がありません。", "path にファイルの場所を書いてください。")
 		}
@@ -98,21 +112,28 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		if _, ok := s.cur.types[p]; !ok {
 			return nil, &Error{Status: http.StatusNotFound, Message: p + " は合意の対象のファイルではありません。", Fix: "一覧を読み直してください。"}
 		}
-		fp, err := s.cur.fileFP(p)
-		if err != nil {
+		var err error
+		if fp, err = s.cur.fileFP(p); err != nil {
 			return nil, internalErr(err)
 		}
-		rec.Key, rec.Fingerprint, rec.Path = fp, fp, &p
+		rec.Key, rec.Path = fp, &p
 		target = "ファイル " + p
 		source = p
 	default:
 		return nil, badRequest(fmt.Sprintf("対象の種類 %q はありません。", req.Kind), "kind を claim・term・feature・file のどれかにしてください。")
 	}
-	if rec.Fingerprint != req.Fingerprint {
-		return nil, conflict(target+" の中身が、画面に表示した後に変わりました（画面 "+req.Fingerprint+"、今 "+rec.Fingerprint+"）。", "一覧を読み直し、今の中身を確かめてから合意してください。")
-	}
-	if s.recs.AgreedBy(rec.Kind, rec.target(), rec.Fingerprint, req.Story) {
-		return nil, conflict(target+" の今の中身には、ストーリー "+req.Story+" ですでに合意しています。", "一覧を読み直してください。")
+	if req.Deleted {
+		if s.recs.DeletionAgreedBy(rec.Kind, rec.target(), req.Story) {
+			return nil, conflict(target+" を消したことには、ストーリー "+req.Story+" ですでに合意しています。", "一覧を読み直してください。")
+		}
+	} else {
+		rec.Fingerprint = &fp
+		if fp != req.Fingerprint {
+			return nil, conflict(target+" の中身が、画面に表示した後に変わりました（画面 "+req.Fingerprint+"、今 "+fp+"）。", "一覧を読み直し、今の中身を確かめてから合意してください。")
+		}
+		if s.recs.AgreedBy(rec.Kind, rec.target(), fp, req.Story) {
+			return nil, conflict(target+" の今の中身には、ストーリー "+req.Story+" ですでに合意しています。", "一覧を読み直してください。")
+		}
 	}
 
 	agreementsFile, create, e := s.agreementsFile()
@@ -126,14 +147,28 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		files = append(files, promiseFile)
 	}
 	// 合意の対象のファイルにコミットしていない変更があると、合意のコミットの時点のリポジトリが、合意した中身と合わなくなる
-	dirty, err := repo.Git(o.Root, "status", "--porcelain", "-z", "--", source)
-	if err != nil {
-		return nil, internalErr(err)
+	sources := []string{source}
+	if source == "" {
+		// 消した約束・用語・機能には書いてあるファイルがないので、約束リストのどのファイル（消したファイルを含む）にも、
+		// コミットしていない変更がないことを求める
+		dirty, err := dirtyMatching(o.Root, o.Cfg.Promises)
+		if err != nil {
+			return nil, internalErr(err)
+		}
+		if len(dirty) > 0 {
+			return nil, conflict("約束リスト（"+strings.Join(dirty, "・")+"）に、コミットしていない変更があります（このまま合意すると、消したことと、合意のコミットの時点のリポジトリが合わなくなります）。", "先に約束リストの変更をコミットしてから、合意してください。")
+		}
+		sources, _ = glob.Select(s.cur.snap.Files, o.Cfg.Promises)
+	} else {
+		dirty, err := repo.Git(o.Root, "status", "--porcelain", "-z", "--", source)
+		if err != nil {
+			return nil, internalErr(err)
+		}
+		if dirty != "" {
+			return nil, conflict(target+" が書いてある "+source+" に、コミットしていない変更があります（このまま合意すると、合意した中身と、合意のコミットの時点のリポジトリが合わなくなります）。", "先に "+source+" の変更をコミットしてから、合意してください。")
+		}
 	}
-	if dirty != "" {
-		return nil, conflict(target+" が書いてある "+source+" に、コミットしていない変更があります（このまま合意すると、合意した中身と、合意のコミットの時点のリポジトリが合わなくなります）。", "先に "+source+" の変更をコミットしてから、合意してください。")
-	}
-	dirty, err = repo.Git(o.Root, append([]string{"status", "--porcelain", "-z", "--"}, files...)...)
+	dirty, err := repo.Git(o.Root, append([]string{"status", "--porcelain", "-z", "--"}, files...)...)
 	if err != nil {
 		return nil, internalErr(err)
 	}
@@ -205,6 +240,9 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		}
 	}
 	msg := fmt.Sprintf("(chore) %s で %s に合意する", req.Story, target)
+	if req.Deleted {
+		msg = fmt.Sprintf("(chore) %s で %s を消したことに合意する", req.Story, target)
+	}
 	// パスを渡すと、索引に足してあるほかのファイルの変更を入れず、渡したファイルだけをコミットする
 	if _, err := repo.Git(o.Root, append([]string{"commit", "-q", "-m", msg, "-m", config.StoryTrailerKey + ": " + req.Story, "--"}, files...)...); err != nil {
 		return nil, fail(err)
@@ -216,7 +254,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	if Hooks.AfterAgreeCommit != nil {
 		Hooks.AfterAgreeCommit(o.Root)
 	}
-	if err := checkAgreeCommit(o.Root, files, source); err != nil {
+	if err := checkAgreeCommit(o.Root, files, sources); err != nil {
 		return nil, sensorErr("合意", strings.TrimSpace(head), err)
 	}
 	return &AgreeResult{Commit: strings.TrimSpace(head), Agreement: rec}, nil
@@ -340,7 +378,11 @@ func appendRecord(src []byte, rec AgreementRecord) []byte {
 	b.WriteString("[[agreement]]\n")
 	fmt.Fprintf(&b, "kind = %s\n", tomlwrite.String(rec.Kind))
 	fmt.Fprintf(&b, "key = %s\n", tomlwrite.String(rec.Key))
-	fmt.Fprintf(&b, "fingerprint = %s\n", tomlwrite.String(rec.Fingerprint))
+	if rec.Deleted {
+		b.WriteString("deleted = true\n")
+	} else if rec.Fingerprint != nil {
+		fmt.Fprintf(&b, "fingerprint = %s\n", tomlwrite.String(*rec.Fingerprint))
+	}
 	if rec.Path != nil {
 		fmt.Fprintf(&b, "path = %s\n", tomlwrite.String(*rec.Path))
 	}
@@ -348,4 +390,37 @@ func appendRecord(src []byte, rec AgreementRecord) []byte {
 	fmt.Fprintf(&b, "agreed_at = %s\n", rec.AgreedAt)
 	fmt.Fprintf(&b, "story = %s\n", tomlwrite.String(rec.Story))
 	return []byte(b.String())
+}
+
+// dirtyMatching は、patterns に当たるファイルのうち、コミットしていない変更（消したもの・索引に足したものを含む）のあるものを返す。
+func dirtyMatching(root string, patterns []string) ([]string, error) {
+	out, err := repo.Git(root, "status", "--porcelain", "-z", "--untracked-files=all")
+	if err != nil {
+		return nil, err
+	}
+	var dirty []string
+	fields := strings.Split(out, "\x00")
+	for i := 0; i < len(fields); i++ {
+		f := fields[i]
+		if len(f) < 4 {
+			continue
+		}
+		paths := []string{f[3:]}
+		// 名前の変更と写しは、次の欄に元の場所が続く
+		if f[0] == 'R' || f[0] == 'C' {
+			if i+1 < len(fields) {
+				paths = append(paths, fields[i+1])
+			}
+			i++
+		}
+		for _, p := range paths {
+			for _, pat := range patterns {
+				if glob.Match(pat, p) {
+					dirty = append(dirty, p)
+					break
+				}
+			}
+		}
+	}
+	return dirty, nil
 }

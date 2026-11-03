@@ -45,7 +45,9 @@ func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
 	if rerrs != nil {
 		return fmt.Errorf("書き足した後の合意の記録を読めません（%s）", rerrs[0].Error())
 	}
-	if !recs.AgreedBy(rec.Kind, rec.target(), rec.Fingerprint, rec.Story) {
+	found := rec.Deleted && recs.DeletionAgreedBy(rec.Kind, rec.target(), rec.Story) ||
+		rec.Fingerprint != nil && recs.AgreedBy(rec.Kind, rec.target(), *rec.Fingerprint, rec.Story)
+	if !found {
 		return errors.New("書き足した合意が、読み直した合意の記録に見つかりません")
 	}
 	if claim == nil {
@@ -53,7 +55,7 @@ func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
 	}
 	after := newSide(snap)
 	key := "claim:" + claim.ID
-	if after.itemFP[key] != rec.Fingerprint {
+	if rec.Fingerprint == nil || after.itemFP[key] != *rec.Fingerprint {
 		return errors.New("フラグを外したら、約束の指紋が変わりました")
 	}
 	want := map[string]any{}
@@ -68,21 +70,23 @@ func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
 	return nil
 }
 
-// checkAgreeCommit は、合意のコミットの後に、コミットが合意で変えるファイル files だけを含み、合意の対象が書いてあるファイル source と
-// files に、コミットしていない変更が残っていないかを確かめる（合意のコミットの時点のリポジトリが、合意した中身と合うこと）。
+// checkAgreeCommit は、合意のコミットの後に、コミットが合意で変えるファイル files だけを含み、合意の対象が書いてあるファイル sources
+// （消した約束・用語・機能なら、約束リストのファイル）と files に、コミットしていない変更が残っていないかを確かめる
+// （合意のコミットの時点のリポジトリが、合意した中身と合うこと）。
 //
 // @vanda:sensor agree-writes-and-commits
 // @vanda:sensor agree-rejects-uncommitted
-func checkAgreeCommit(root string, files []string, source string) error {
+func checkAgreeCommit(root string, files, sources []string) error {
 	if err := committedExactly(root, files); err != nil {
 		return err
 	}
-	dirty, err := repo.Git(root, append([]string{"status", "--porcelain", "-z", "--", source}, files...)...)
+	paths := append(append([]string{}, sources...), files...)
+	dirty, err := repo.Git(root, append([]string{"status", "--porcelain", "-z", "--"}, paths...)...)
 	if err != nil {
 		return err
 	}
 	if dirty != "" {
-		return fmt.Errorf("コミットの後も、%s にコミットしていない変更があります", strings.Join(append([]string{source}, files...), "・"))
+		return fmt.Errorf("コミットの後も、%s にコミットしていない変更があります", strings.Join(paths, "・"))
 	}
 	return nil
 }

@@ -247,6 +247,7 @@ export const api = {
         path: e.kind === "file" ? e.path : null,
         fingerprint: e.fingerprint,
         story,
+        deleted: e.change === "deleted",
         base,
       }),
     }),
@@ -260,6 +261,7 @@ export const api = {
         path: e.kind === "file" ? e.path : null,
         fingerprint: e.fingerprint,
         story,
+        deleted: e.change === "deleted",
       }),
     }),
 };

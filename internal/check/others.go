@@ -77,15 +77,13 @@ func (e *env) agreement(scope string) []diag.Error {
 	inScope := func(key string, changed map[string]bool) bool {
 		return scope == ScopeAll || changed[key]
 	}
-	// 範囲 story では、そのストーリーが前に合意したもの（外れた合意を探す先）も見る
+	// 範囲 story では、そのストーリーが前に中身に合意したもの（外れた合意を探す先）も見る。
+	// 消したことにだけ合意したものは、足し直しても外れた合意にしない（約束 detached-agreement の「中身に合意した」）
 	storyAgreed := map[string]bool{}
 	if scope == ScopeStory {
 		for _, a := range e.recs.Agreements {
-			if a.Story == e.story {
-				storyAgreed[a.Kind+":"+a.Key] = true
-				if a.Kind == "file" {
-					storyAgreed["path:"+a.Path] = true
-				}
+			if a.Story == e.story && !a.Deleted {
+				storyAgreed[targetKey(a.Kind, a.Target())] = true
 			}
 		}
 	}
@@ -136,6 +134,74 @@ func (e *env) agreement(scope string) []diag.Error {
 			errs = append(errs, diag.Error{File: f, What: "ストーリー " + e.story + " の合意が外れています（前に合意した後に中身が変わり、今の中身 " + fp + " に " + e.story + " の合意がありません）", Fix: "今の中身を確かめ、ストーリー " + e.story + " で合意し直してください"})
 		}
 	}
+	return append(errs, e.deletions(scope)...)
+}
+
+// targetKey は、合意の対象の鍵。約束・用語・機能は "<種類>:<ID>"、ファイルは "path:<場所>"。
+func targetKey(kind, target string) string {
+	if kind == "file" {
+		return "path:" + target
+	}
+	return kind + ":" + target
+}
+
+// deletions は、今ないものに、消したことへの合意があるかを確かめる。範囲 all では、中身に合意したことがあって今ないもの。
+// 範囲 story では、分かれた点にあって今ないものを、合意したことがあるかによらず見る（一度も合意していないものを消しても、
+// そのストーリーで変えたものなので、PO が見ないまま合流させない）。
+func (e *env) deletions(scope string) []diag.Error {
+	var errs []diag.Error
+	need := func(kind, target, why string, at diag.Error) {
+		if e.recs.DeletionAgreed(kind, target) {
+			return
+		}
+		name := kindName[kind] + " " + target + " "
+		if kind == "file" {
+			name = "ファイル" // 誤りの行の頭に場所を書くので、場所は繰り返さない
+		}
+		at.What = name + "を消したことに、まだ合意していません（" + why + "）"
+		at.Fix = "消してよいかを確かめてから、消したことに合意してください"
+		errs = append(errs, at)
+	}
+	if scope == ScopeStory {
+		for _, g := range e.goneItems {
+			need(g.kind, g.id, "分かれた点にあり、今の約束リストにありません", diag.Error{File: g.file})
+		}
+		for _, f := range e.goneFiles {
+			need("file", f, "分かれた点では合意の対象のファイルで、今はありません", diag.Error{File: f})
+		}
+		return errs
+	}
+	present := map[string]bool{}
+	for _, it := range items(e.list) {
+		present[it.key()] = true
+	}
+	for _, f := range e.targetFiles() {
+		present["path:"+f] = true
+	}
+	// 同じものへの記録が 2 つ以上あっても 1 度だけ出し、誤りの行は最後の記録を指す
+	last := map[string]*agreements.Agreement{}
+	var keys []string
+	for _, a := range e.recs.Agreements {
+		if a.Deleted || a.Kind == "" || a.Target() == "" {
+			continue
+		}
+		k := targetKey(a.Kind, a.Target())
+		if present[k] {
+			continue
+		}
+		if _, ok := last[k]; !ok {
+			keys = append(keys, k)
+		}
+		last[k] = a
+	}
+	for _, k := range keys {
+		a := last[k]
+		what := "前に中身に合意していて、今の約束リストにありません"
+		if a.Kind == "file" {
+			what = "前に中身に合意していて、今は合意の対象のファイルにありません"
+		}
+		need(a.Kind, a.Target(), what, a.Table.Err("key", "", ""))
+	}
 	return errs
 }
 
@@ -156,8 +222,8 @@ func (e *env) agreementTargets() []diag.Error {
 		if a.Kind == "file" || a.Kind == "" || a.Key == "" {
 			continue
 		}
-		if !have[a.Kind+":"+a.Key] {
-			errs = append(errs, a.Table.Err("key", "合意の記録が、約束リストにない"+kindName[a.Kind]+" "+quote(a.Key)+" を指しています", "約束リストに戻すか、この合意の記録を消してください"))
+		if !have[a.Kind+":"+a.Key] && !e.recs.DeletionAgreed(a.Kind, a.Key) {
+			errs = append(errs, a.Table.Err("key", "合意の記録が、約束リストにない"+kindName[a.Kind]+" "+quote(a.Key)+" を指しています", "約束リストに戻すか、消したことに合意してください"))
 		}
 	}
 	return errs

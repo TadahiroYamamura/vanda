@@ -67,13 +67,13 @@ func (s *state) baseRecords(point string) (*agreements.Records, error) {
 }
 
 func sameRecord(a, b *agreements.Agreement) bool {
-	return a.Kind == b.Kind && a.Key == b.Key && a.Fingerprint == b.Fingerprint && a.Story == b.Story &&
+	return a.Kind == b.Kind && a.Key == b.Key && a.Fingerprint == b.Fingerprint && a.Deleted == b.Deleted && a.Story == b.Story &&
 		a.AgreedAt.Equal(b.AgreedAt) && a.UserName == b.UserName && a.UserEmail == b.UserEmail
 }
 
-// revocable は、kind・key（ファイルなら場所）・fp の今の中身への、ストーリー story の合意の記録のうち、今の人が今のブランチで書いたもの（消すもの）と、
+// revocable は、kind・key（ファイルなら場所）・fp の今の中身（deleted なら、消したこと）への、ストーリー story の合意の記録のうち、今の人が今のブランチで書いたもの（消すもの）と、
 // 取り消せるかの判定を返す。
-func (s *state) revocable(kind, key, fp, point string, base *agreements.Records, user *User) ([]*agreements.Agreement, Revocation) {
+func (s *state) revocable(kind, key, fp string, deleted bool, point string, base *agreements.Records, user *User) ([]*agreements.Agreement, Revocation) {
 	no := func(reason string) Revocation { return Revocation{Reason: ptr(reason), Others: []User{}} }
 	story := s.o.Story
 	if story == "" {
@@ -86,7 +86,7 @@ func (s *state) revocable(kind, key, fp, point string, base *agreements.Records,
 	var otherStories []string
 	seen := map[string]bool{}
 	for _, a := range s.recs.Agreements {
-		if a.Kind != kind || a.Target() != key || a.Fingerprint != fp {
+		if a.Kind != kind || a.Target() != key || a.Deleted != deleted || !deleted && a.Fingerprint != fp {
 			continue
 		}
 		if a.Story == story {
@@ -153,16 +153,20 @@ func (s *state) setRevocations(es []Entry, mergeBase string) error {
 	}
 	for i := range es {
 		e := &es[i]
-		if e.State == nil || *e.State != "agreed" || e.Fingerprint == nil {
+		deleted := e.Change == "deleted"
+		if e.State == nil || *e.State != "agreed" || e.Fingerprint == nil && !deleted {
 			continue
 		}
-		kind, key := e.Kind, ""
+		kind, key, fp := e.Kind, "", ""
 		if e.Kind == "file" {
 			key = *e.Path
 		} else {
 			key = *e.ID
 		}
-		_, r := s.revocable(kind, key, *e.Fingerprint, point, base, user)
+		if !deleted {
+			fp = *e.Fingerprint
+		}
+		_, r := s.revocable(kind, key, fp, deleted, point, base, user)
 		e.Revoke = &r
 	}
 	return nil
@@ -175,6 +179,8 @@ type RevokeRequest struct {
 	Fingerprint string  `json:"fingerprint"`
 	Story       string  `json:"story"`
 	Base        *string `json:"base"`
+	// Deleted は、消したことへの合意を取り消すか。真なら fingerprint は見ない
+	Deleted bool `json:"deleted"`
 }
 
 type RevokeResult struct {
@@ -198,8 +204,14 @@ func Revoke(o Options, req RevokeRequest) (*RevokeResult, *Error) {
 		return nil, e
 	}
 	var kind, key, fp, target string
-	switch req.Kind {
-	case "claim", "term", "feature":
+	switch {
+	case req.Deleted:
+		k, t, e := s.deletedTarget(req.Kind, req.ID, req.Path, "取り消し")
+		if e != nil {
+			return nil, e
+		}
+		kind, key, target = req.Kind, k, t
+	case req.Kind == "claim" || req.Kind == "term" || req.Kind == "feature":
 		if req.ID == nil || *req.ID == "" {
 			return nil, badRequest(kindName[req.Kind]+"の取り消しに id がありません。", "id に ID を書いてください。")
 		}
@@ -208,7 +220,7 @@ func Revoke(o Options, req RevokeRequest) (*RevokeResult, *Error) {
 			return nil, &Error{Status: http.StatusNotFound, Message: kindName[req.Kind] + " " + *req.ID + " は約束リストにありません。", Fix: "一覧を読み直してください。"}
 		}
 		kind, key, fp, target = req.Kind, *req.ID, s.cur.itemFP[k], kindName[req.Kind]+" "+*req.ID
-	case "file":
+	case req.Kind == "file":
 		if req.Path == nil || *req.Path == "" {
 			return nil, badRequest("ファイルの取り消しに path がありません。", "path にファイルの場所を書いてください。")
 		}
@@ -223,7 +235,7 @@ func Revoke(o Options, req RevokeRequest) (*RevokeResult, *Error) {
 	default:
 		return nil, badRequest(fmt.Sprintf("対象の種類 %q はありません。", req.Kind), "kind を claim・term・feature・file のどれかにしてください。")
 	}
-	if fp != req.Fingerprint {
+	if !req.Deleted && fp != req.Fingerprint {
 		return nil, conflict(target+" の中身が、画面に表示した後に変わりました（画面 "+req.Fingerprint+"、今 "+fp+"）。", "一覧を読み直し、今の中身を確かめてから取り消してください。")
 	}
 	user := GitUser(o.Root)
@@ -236,7 +248,7 @@ func Revoke(o Options, req RevokeRequest) (*RevokeResult, *Error) {
 		}
 		base = b
 	}
-	remove, r := s.revocable(kind, key, fp, point, base, user)
+	remove, r := s.revocable(kind, key, fp, req.Deleted, point, base, user)
 	if !r.Possible {
 		return nil, conflict(target+" の合意を取り消せません。"+*r.Reason, "取り消せるのは、あなたがこのブランチで書いた、このストーリーの合意だけです。")
 	}
@@ -297,6 +309,9 @@ func Revoke(o Options, req RevokeRequest) (*RevokeResult, *Error) {
 		return nil, fail(err)
 	}
 	msg := fmt.Sprintf("(chore) %s で %s の合意を取り消す", req.Story, target)
+	if req.Deleted {
+		msg = fmt.Sprintf("(chore) %s で %s を消したことへの合意を取り消す", req.Story, target)
+	}
 	if _, err := repo.Git(o.Root, append([]string{"commit", "-q", "-m", msg, "-m", config.StoryTrailerKey + ": " + req.Story, "--"}, files...)...); err != nil {
 		return nil, fail(err)
 	}
@@ -310,7 +325,11 @@ func Revoke(o Options, req RevokeRequest) (*RevokeResult, *Error) {
 	if err := checkRevokeCommit(o.Root, files); err != nil {
 		return nil, sensorErr("取り消し", strings.TrimSpace(head), err)
 	}
-	return &RevokeResult{Commit: strings.TrimSpace(head), StillAgreed: after.Agreed(kind, key, fp), Removed: len(remove)}, nil
+	still := after.Agreed(kind, key, fp)
+	if req.Deleted {
+		still = after.DeletionAgreed(kind, key)
+	}
+	return &RevokeResult{Commit: strings.TrimSpace(head), StillAgreed: still, Removed: len(remove)}, nil
 }
 
 // removeRecords は、合意の記録のファイルの中身 src から、records の [[agreement]] の表（見出しから、次の表の見出しの前までのうち、
@@ -373,4 +392,31 @@ func checkRemoved(before, after, remove []*agreements.Agreement) error {
 		}
 	}
 	return nil
+}
+
+// deletedTarget は、消したことへの合意と取り消しの対象を確かめ、記録の key（約束・用語・機能なら ID、ファイルなら場所）と、
+// 文言に使う名前を返す。今あるものは消していないので断る（画面に表示した後に足し直されたときも、ここで断る）。
+func (s *state) deletedTarget(kind string, id, path *string, what string) (string, string, *Error) {
+	switch kind {
+	case "claim", "term", "feature":
+		if id == nil || *id == "" {
+			return "", "", badRequest(kindName[kind]+"の"+what+"に id がありません。", "id に ID を書いてください。")
+		}
+		if _, ok := s.cur.items[kind+":"+*id]; ok {
+			return "", "", conflict(kindName[kind]+" "+*id+" は約束リストにあり、消していません。", "一覧を読み直してください。")
+		}
+		return *id, kindName[kind] + " " + *id, nil
+	case "file":
+		if path == nil || *path == "" {
+			return "", "", badRequest("ファイルの"+what+"に path がありません。", "path にファイルの場所を書いてください。")
+		}
+		if _, ok := s.cur.types[*path]; ok {
+			return "", "", conflict(*path+" は合意の対象のファイルとして今もあり、消していません。", "一覧を読み直してください。")
+		}
+		if len(snapshot.Targets([]string{*path}, s.o.Cfg)) == 0 {
+			return "", "", &Error{Status: http.StatusNotFound, Message: *path + " は合意の対象のファイルの場所ではありません。", Fix: "一覧を読み直してください。"}
+		}
+		return *path, "ファイル " + *path, nil
+	}
+	return "", "", badRequest(fmt.Sprintf("対象の種類 %q はありません。", kind), "kind を claim・term・feature・file のどれかにしてください。")
 }
