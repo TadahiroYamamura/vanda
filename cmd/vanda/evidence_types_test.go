@@ -273,6 +273,14 @@ func Test_guardrailの予定はガードレールの定義と拒むことの確�
 			}
 		})
 	}
+	// 定義でないファイルを、types に guardrail を含まない [[annotation]] で読んだものは、拒むことの確かめに数えない
+	t.Run("検証をtypesにguardrailを含まないannotationで読む", func(t *testing.T) {
+		t.Parallel()
+		root := pairRepo(t, version, "guardrail", `types = ["unit-test"]`, map[string]string{"def/schema.ext": "evidence", "ext/reject.ext": "evidence"})
+		if code, out := runCheck(t, bin, root, ".vanda/checks/present.toml"); code == 0 {
+			t.Errorf("types に guardrail を含まない [[annotation]] のアノテーションで揃った\n%s", out)
+		}
+	})
 	// 定義のファイルを types に guardrail を含む [[annotation]] で読んでも、定義でないファイルの代わりにはならない
 	t.Run("定義のファイルをtypesにguardrailを含むannotationで読む", func(t *testing.T) {
 		t.Parallel()
@@ -326,6 +334,14 @@ func Test_sensorの予定はセンサーの場所と検証の両方があると�
 			}
 		})
 	}
+	// 検証だけを types に sensor を含まない [[annotation]]（def/ の下は types = []）で読んだものは数えない
+	t.Run("検証をtypesにsensorを含まないannotationで読む", func(t *testing.T) {
+		t.Parallel()
+		root := pairRepo(t, version, "sensor", `types = ["sensor"]`, map[string]string{"ext/loc.ext": "sensor", "def/check.ext": "evidence"})
+		if code, out := runCheck(t, bin, root, ".vanda/checks/present.toml"); code == 0 {
+			t.Errorf("types に sensor を含まない [[annotation]] の evidence を、センサーの検証に数えた\n%s", out)
+		}
+	})
 	// 2 つとも、types に sensor を含まない [[annotation]] で読んだものは数えない
 	t.Run("typesにsensorを含まないannotationで読む", func(t *testing.T) {
 		t.Parallel()
