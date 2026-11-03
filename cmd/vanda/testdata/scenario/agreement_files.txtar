@@ -1,5 +1,6 @@
 # CMD-10 合意: エビデンスの本体のファイル（シナリオ、ガードレールの定義、オラクルの定義）も、今の中身に合意していないと止まる。
 # @vanda:evidence renamed-file-needs-agreement
+# @vanda:evidence deleted-item-needs-agreement
 # @vanda:evidence check-agreement-targets
 # ファイルは場所と中身の指紋で見分ける。名前を変えると、古い場所は消したもの、新しい場所は（中身が同じでも）提案中になる。
 # 合意済のファイルを写した先も提案中。中身を 1 文字変えると提案中になる。
@@ -31,6 +32,26 @@ agree .vanda/agreements.toml '#1' file spec/Task.tla
 agree .vanda/agreements.toml '#1' file scenarios/plain.txtar
 agree .vanda/agreements.toml '#1' file spec/Helper.tla
 agree .vanda/agreements.toml '#1' file db/schema.sql
+exec vanda check .vanda/checks/agreement.toml
+
+# 合意したことのある約束を消すと、消したことに合意するまで止まる
+cp .vanda/promises.toml promises-before.toml
+cp cases/without-claim.toml .vanda/promises.toml
+! exec vanda check .vanda/checks/agreement.toml
+stdout '失敗（1 件）'
+stderr '約束 task-id-unique を消したことに、まだ合意していません'
+! stderr '(?m)^panic: '
+agree -deleted .vanda/agreements.toml '#1' claim task-id-unique
+exec vanda check .vanda/checks/agreement.toml
+cp promises-before.toml .vanda/promises.toml
+rm promises-before.toml
+exec vanda check .vanda/checks/agreement.toml
+
+# 合意したことのないファイルを消しても、全部の範囲では止めない（合意の対象がなかった）
+cp cases/never-agreed.txtar scenarios/never-agreed.txtar
+! exec vanda check .vanda/checks/agreement.toml
+stderr 'scenarios/never-agreed\.txtar'
+rm scenarios/never-agreed.txtar
 exec vanda check .vanda/checks/agreement.toml
 
 # 合意済のファイルを写した先は、中身が同じでも提案中
@@ -147,6 +168,13 @@ detail = "spec/Task.tla"
 -- scenarios/task-id.txtar --
 # @vanda:evidence task-id-unique
 # Adding two tasks gives them different IDs.
+-- cases/never-agreed.txtar --
+# A scenario nobody agreed to.
+-- cases/without-claim.toml --
+[[term]]
+id = "task"
+name = "Task"
+definition = "A thing to do"
 -- cases/task-id-changed.txtar --
 # @vanda:evidence task-id-unique
 # Adding two tasks gives them different IDs!

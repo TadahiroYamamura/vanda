@@ -1478,6 +1478,28 @@ test("ストーリーが合意した約束を変えると一覧に合意が外�
   await expect(page.getByText(/#24/).first()).toBeVisible();
 });
 
+// @vanda:evidence review-deleted-shown
+test("消したファイルは一覧に削除として出て消す前の中身を見せ消したことに合意すると合意済になりストーリーの合意の審査が通る", async ({ page }) => {
+  rmSync(join(repo.root, "e2e/add-task.txtar"));
+  commit(repo, "シナリオを消す", "#24");
+  await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
+  await select(page, "e2e/add-task.txtar");
+  const detail = page.getByRole("region", { name: "1 件の中身" });
+  await expect(detail.getByText("削除").first()).toBeVisible();
+  // 比べる元（main）の中身を見せる
+  await expect(detail.getByText(/exec vanda-task add a/).first()).toBeVisible();
+  await expect(listIcon(page, "e2e/add-task.txtar", "提案中")).toBeVisible();
+  const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
+  await detail.getByRole("button", { name: /消したことに合意する/ }).click();
+  expect((await res).status(), "消したことに合意できない").toBe(200);
+  await expect(listIcon(page, "e2e/add-task.txtar", "合意済")).toBeVisible();
+  const recs = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
+  expect(recs, "消したことへの合意の記録が書かれていない").toMatch(/kind = "file"\nkey = "e2e\/add-task\.txtar"\ndeleted = true/);
+  await agreeAll(page, ["task-id-unique", "task-title-required"]);
+  const check = repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main");
+  expect(check.code, check.out).toBe(0);
+});
+
 // RV-01・RV-04: 一覧の 1 件の 2 行目に、種類・状態のアイコン・フラグのアイコンを並べる。合意すると合意済に、合意した後に中身が変わると合意が外れたに変わる
 // @vanda:evidence review-list-icons
 test("一覧の1件の2行目に種類と状態のアイコンとフラグのアイコンが並び触れると言葉が出て合意すると合意済に合意の後に変えると合意が外れたに変わる", async ({ page }) => {

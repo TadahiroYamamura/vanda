@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,7 +20,8 @@ type agreeResponse struct {
 	Agreement struct {
 		Kind        string  `json:"kind"`
 		Key         string  `json:"key"`
-		Fingerprint string  `json:"fingerprint"`
+		Fingerprint *string `json:"fingerprint"`
+		Deleted     bool    `json:"deleted"`
 		Path        *string `json:"path"`
 		User        struct {
 			Name  string `json:"name"`
@@ -48,6 +50,7 @@ type agreementRecord struct {
 	Kind        string `toml:"kind"`
 	Key         string `toml:"key"`
 	Fingerprint string `toml:"fingerprint"`
+	Deleted     bool   `toml:"deleted"`
 	Path        string `toml:"path"`
 	Story       string `toml:"story"`
 	AgreedAt    any    `toml:"agreed_at"`
@@ -135,7 +138,7 @@ func Test合意すると合意の記録が1件増えその約束のフラグだ�
 		t.Errorf("書き足した合意の記録: %+v", rec)
 	}
 	a := got.Agreement
-	if a.Kind != "claim" || a.Key != "task-id-unique" || a.Fingerprint != reviewClaimFP || a.Path != nil ||
+	if a.Kind != "claim" || a.Key != "task-id-unique" || str(a.Fingerprint) != reviewClaimFP || a.Path != nil ||
 		a.Story != reviewStory || a.User.Name != reviewUserName || a.User.Email != reviewUserEmail || a.AgreedAt == "" {
 		t.Errorf("返した合意の記録: %+v", a)
 	}
@@ -752,5 +755,144 @@ func Testフラグを複数行の文字列で書いた約束には合意を断�
 				t.Errorf("断ったのに、約束リストか合意の記録が変わったか、コミットができた")
 			}
 		})
+	}
+}
+
+type deletedReview struct {
+	Entries []struct {
+		Kind        string          `json:"kind"`
+		Path        *string         `json:"path"`
+		Change      string          `json:"change"`
+		State       *string         `json:"state"`
+		Fingerprint *string         `json:"fingerprint"`
+		Before      json.RawMessage `json:"before"`
+		After       json.RawMessage `json:"after"`
+		Agree       *struct {
+			Possible bool `json:"possible"`
+		} `json:"agree"`
+		Revoke *struct {
+			Possible bool `json:"possible"`
+		} `json:"revoke"`
+	} `json:"entries"`
+}
+
+// RV-01・RV-06・RV-17: 消したもの
+// @vanda:evidence review-deleted-shown
+// @vanda:evidence revoke-returns-to-proposed
+func Test消したファイルは一覧に削除として前の中身と提案中で出て消したことに合意すると合意済になり取り消すと提案中に戻る(t *testing.T) {
+	t.Parallel()
+	_, r, s := setupAgree(t)
+	if err := os.Remove(filepath.Join(r.Root, "db", "schema.sql")); err != nil {
+		t.Fatal(err)
+	}
+	r.g.commitAll("スキーマの定義を消す", reviewStory)
+
+	type seen struct {
+		state, fingerprint            string
+		before                        string
+		afterNull                     bool
+		agreePossible, revokePossible *bool
+	}
+	look := func() seen {
+		t.Helper()
+		var rv deletedReview
+		if code, msg := s.get("/api/review?view=branch&base=main&story=%2324", &rv); code != 200 {
+			t.Fatalf("一覧を読めない（%d）: %s", code, msg)
+		}
+		for _, e := range rv.Entries {
+			if e.Kind != "file" || str(e.Path) != "db/schema.sql" {
+				continue
+			}
+			if e.Change != "deleted" {
+				t.Fatalf("消したファイルの change が %q", e.Change)
+			}
+			var before struct {
+				Text string `json:"text"`
+			}
+			if err := json.Unmarshal(e.Before, &before); err != nil {
+				t.Fatalf("before を読めない: %v: %s", err, e.Before)
+			}
+			out := seen{state: str(e.State), fingerprint: str(e.Fingerprint), before: before.Text, afterNull: isNull(e.After)}
+			if e.Agree != nil {
+				p := e.Agree.Possible
+				out.agreePossible = &p
+			}
+			if e.Revoke != nil {
+				p := e.Revoke.Possible
+				out.revokePossible = &p
+			}
+			return out
+		}
+		t.Fatalf("一覧に、消した db/schema.sql がない")
+		return seen{}
+	}
+
+	got := look()
+	if got.state != "proposed" || got.fingerprint != "" || got.before != reviewSchema || !got.afterNull {
+		t.Errorf("消したことに合意する前: %+v（提案中、指紋なし、前の中身、後の中身なし のはず）", got)
+	}
+	if got.agreePossible == nil || !*got.agreePossible {
+		t.Errorf("消したことに合意できない: %+v", got)
+	}
+
+	head := r.git("rev-parse", "HEAD")
+	body := map[string]any{"kind": "file", "id": nil, "path": "db/schema.sql", "fingerprint": nil, "story": reviewStory, "deleted": true}
+	var res agreeResponse
+	if code, msg := s.post("/api/agree", body, &res); code != 200 {
+		t.Fatalf("消したことに合意できない（%d）: %s", code, msg)
+	}
+	if !res.Agreement.Deleted || res.Agreement.Fingerprint != nil || res.Agreement.Key != "db/schema.sql" || str(res.Agreement.Path) != "db/schema.sql" {
+		t.Errorf("返した合意の記録: %+v", res.Agreement)
+	}
+	if n := r.git("rev-list", "--count", head+"..HEAD"); n != "1" {
+		t.Errorf("コミットが %s 個できた", n)
+	}
+	if subject := r.git("log", "-1", "--format=%s"); subject != "(chore) #24 で ファイル db/schema.sql を消したことに合意する" {
+		t.Errorf("コミットのメッセージ: %q", subject)
+	}
+	recs := readAgreements(t, r.Root)
+	rec := recs[len(recs)-1]
+	if rec.Kind != "file" || rec.Key != "db/schema.sql" || !rec.Deleted || rec.Fingerprint != "" || rec.Path != "db/schema.sql" ||
+		rec.Story != reviewStory || rec.User.Name != reviewUserName || rec.User.Email != reviewUserEmail {
+		t.Errorf("書き足した合意の記録: %+v", rec)
+	}
+	got = look()
+	if got.state != "agreed" {
+		t.Errorf("消したことに合意した後の状態が %q", got.state)
+	}
+	if got.agreePossible == nil || *got.agreePossible {
+		t.Errorf("このストーリーで消したことにもう合意したのに、また合意できる: %+v", got)
+	}
+	if got.revokePossible == nil || !*got.revokePossible {
+		t.Errorf("今の人が今のブランチで書いた、消したことへの合意を取り消せない: %+v", got)
+	}
+
+	var rv revokeResponse
+	if code, msg := s.post("/api/revoke", map[string]any{"kind": "file", "id": nil, "path": "db/schema.sql", "fingerprint": nil, "story": reviewStory, "base": "main", "deleted": true}, &rv); code != 200 {
+		t.Fatalf("消したことへの合意を取り消せない（%d）: %s", code, msg)
+	}
+	if rv.StillAgreed || rv.Removed != 1 {
+		t.Errorf("取り消しの答え: %+v", rv)
+	}
+	if subject := r.git("log", "-1", "--format=%s"); subject != "(chore) #24 で ファイル db/schema.sql を消したことへの合意を取り消す" {
+		t.Errorf("コミットのメッセージ: %q", subject)
+	}
+	if got := look(); got.state != "proposed" {
+		t.Errorf("取り消した後の状態が %q（提案中に戻るはず）", got.state)
+	}
+}
+
+// RV-06: 今あるものを消したことには合意できない
+// @vanda:evidence review-deleted-shown
+func Test今あるファイルを消したことへの合意は断る(t *testing.T) {
+	t.Parallel()
+	_, r, s := setupAgree(t)
+	head := r.git("rev-parse", "HEAD")
+	body := map[string]any{"kind": "file", "id": nil, "path": "db/schema.sql", "fingerprint": nil, "story": reviewStory, "deleted": true}
+	if code, msg := s.post("/api/agree", body, nil); code != 409 || msg == "" {
+		t.Errorf("%d（%q）を返した。409 で断り、理由を出す", code, msg)
+	}
+	if r.git("rev-parse", "HEAD") != head {
+		t.Errorf("断ったのにコミットができた")
 	}
 }

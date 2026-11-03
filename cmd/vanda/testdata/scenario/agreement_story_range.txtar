@@ -1,5 +1,6 @@
 # CMD-10 合意: 範囲を 1 つのストーリーにすると、ベースブランチから分かれた点より後に変わったものだけが対象になる。
 # @vanda:evidence check-agreement-story-scope
+# @vanda:evidence deleted-item-needs-agreement
 # main には合意していない約束（task-id-unique）が残っているが、ストーリー 2 で変えていないので、ストーリー 2 の範囲の審査では止めない。
 
 exec git init -q -b main
@@ -26,6 +27,16 @@ exec vanda check .vanda/checks/story.toml --base main
 stderr 'a\.toml.*task-id-unique'
 ! stderr 'task-title-required'
 ! stderr '(?m)^panic: '
+
+# ストーリー 2 で、分かれた点にあった約束を消すと、一度も合意していなくても、ストーリー 2 の範囲では消したことへの合意を求める
+cp cases/a-without-claim.toml .vanda/promises/a.toml
+commit '約束を消す' '#2'
+! exec vanda check .vanda/checks/story.toml --base main
+stderr '約束 task-id-unique を消したことに、まだ合意していません'
+! stderr '(?m)^panic: '
+agree -deleted .vanda/agreements/story-2.toml '#2' claim task-id-unique
+commit '約束を消したことに合意する' '#2'
+exec vanda check .vanda/checks/story.toml --base main
 
 -- .vanda/config.toml --
 version = "${VANDA_VERSION}"
@@ -64,6 +75,11 @@ stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+-- cases/a-without-claim.toml --
+[[term]]
+id = "task"
+name = "Task"
+definition = "A thing to do"
 -- cases/b.toml --
 [[claim]]
 id = "task-title-required"

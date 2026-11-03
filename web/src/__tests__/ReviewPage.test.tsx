@@ -107,11 +107,19 @@ describe("RV-01・RV-02・RV-05 一覧と中身", () => {
   });
 
   // @vanda:evidence review-state-shown
-  it("一覧の1件ごとに合意の状態を提案中か合意済かで示す", async () => {
+  it("一覧の1件ごとに合意の状態を提案中か合意済かで示し削除したものも消したことへの合意で示す", async () => {
     const states = [["proposed", "提案中"], ["agreed", "合意済"]] as const;
-    open(states.flatMap(([st], i) => [claimEntry(2 * i + 1, `c-${st}`, { state: st }), fileEntry(2 * i + 2, `e2e/${st}.txtar`, { state: st })]));
+    const del = { change: "deleted", after: null, fingerprint: null } as const;
+    open(
+      states.flatMap(([st], i) => [
+        claimEntry(4 * i + 1, `c-${st}`, { state: st }),
+        fileEntry(4 * i + 2, `e2e/${st}.txtar`, { state: st }),
+        claimEntry(4 * i + 3, `c-del-${st}`, { ...del, state: st }),
+        fileEntry(4 * i + 4, `e2e/del-${st}.txtar`, { ...del, state: st }),
+      ]),
+    );
     for (const [st, label] of states) {
-      for (const name of [`c-${st}`, `e2e/${st}.txtar`]) {
+      for (const name of [`c-${st}`, `e2e/${st}.txtar`, `c-del-${st}`, `e2e/del-${st}.txtar`]) {
         const li = await listRow(name);
         expect(li, `${name} の一覧の 1 件がない`).toBeTruthy();
         for (const [, l] of states) expect(within(li).queryAllByRole("img", { name: l }).length, `${name} の「${l}」`).toBe(l === label ? 1 : 0);
@@ -169,6 +177,40 @@ describe("RV-06 合意する", () => {
     await user.click(button);
     await waitFor(() => expect(posted).toEqual({ kind: "claim", id: "task-id-unique", path: null, fingerprint: e.fingerprint, story: "#24", deleted: false }));
     await waitFor(() => expect(reviewRequests().length).toBeGreaterThan(before));
+  });
+
+  // @vanda:evidence review-deleted-shown
+  it("削除したものは消す前の中身を見せ消したことに合意するとdeletedを添えて送り一覧を読み直す", async () => {
+    const e = fileEntry(1, "e2e/old.txtar", { change: "deleted", after: null, fingerprint: null, before: { text: "消す前のシナリオの中身\n" } });
+    open([e]);
+    let posted: unknown = null;
+    server.use(
+      http.post("/api/agree", async ({ request }) => {
+        posted = await request.json();
+        return HttpResponse.json({ commit: "c".repeat(40), agreement: {} });
+      }),
+    );
+    await openEntry(/e2e\/old\.txtar/);
+    await waitFor(() => expect(within(detailRegion()).getByText(/消す前のシナリオの中身/)).toBeTruthy());
+    const button = await within(detailRegion()).findByRole("button", { name: /消したことに合意する/ });
+    const before = reviewRequests().length;
+    await userEvent.setup().click(button);
+    await waitFor(() => expect(posted).toEqual({ kind: "file", id: null, path: "e2e/old.txtar", fingerprint: null, story: "#24", deleted: true }));
+    await waitFor(() => expect(reviewRequests().length).toBeGreaterThan(before));
+  });
+
+  // @vanda:evidence agree-on-screen
+  it("合意済でもこのストーリーで合意できる件には合意のボタンを出し合意できない件には出さない", async () => {
+    // ほかのストーリーの合意で合意済だが、このストーリーの合意が外れた件（API が合意できると答える）
+    const reagree = claimEntry(1, "c-reagree", { state: "agreed", detachedAgreement: { by: ["#31"] }, agree: { possible: true, reason: null } });
+    const done = claimEntry(2, "c-done", { state: "agreed", agree: { possible: false, reason: "このストーリーで今の中身にもう合意しています" } });
+    open([reagree, done]);
+    await openEntry(/c-reagree/);
+    await waitFor(() => expect(within(detailRegion()).getAllByRole("button", { name: /合意する/ }).length).toBe(1));
+    expect((within(detailRegion()).getByRole("button", { name: /合意する/ }) as HTMLButtonElement).disabled).toBe(false);
+    await openEntry(/c-done/);
+    await waitFor(() => expect(within(detailRegion()).getByText(/c-done/, { selector: "h2" })).toBeTruthy());
+    expect(within(detailRegion()).queryAllByRole("button", { name: /合意する/ }).length).toBe(0);
   });
 
   // @vanda:evidence agree-refusal-shown

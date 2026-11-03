@@ -161,6 +161,7 @@ email = "po@example.com"
 	}
 }
 
+// @vanda:evidence agreements-file-record-path
 func TestLoadは合意の記録の誤りを行の付いたエラーで全部返す(t *testing.T) {
 	root, files := writeFiles(t, map[string]string{".vanda/agreements.toml": `[[agreement]]
 kind = "story"
@@ -197,6 +198,73 @@ story = "#24"
 	}
 	if n := strings.Count(got, "\n") + 1; n != len(want) {
 		t.Errorf("エラーの数 %d, want %d:\n%s", n, len(want), got)
+	}
+}
+
+const userLine = "user = { name = \"PO\", email = \"po@example.com\" }\nagreed_at = 2026-10-31T12:00:00Z\nstory = \"#24\"\n"
+
+// @vanda:evidence deletion-agreement-record
+func TestLoadは消したことへの合意の記録をfingerprintの代わりにdeletedで読み中身への合意と分けて数える(t *testing.T) {
+	root, files := writeFiles(t, map[string]string{".vanda/agreements.toml": "[[agreement]]\nkind = \"file\"\nkey = \"e2e/old.txtar\"\ndeleted = true\npath = \"e2e/old.txtar\"\n" + userLine +
+		"\n[[agreement]]\nkind = \"claim\"\nkey = \"gone\"\ndeleted = true\n" + userLine})
+	r, errs := Load(root, files, []string{".vanda/agreements.toml"}, false)
+	if errs != nil {
+		t.Fatal(errs)
+	}
+	if len(r.Agreements) != 2 {
+		t.Fatalf("記録の数 %d", len(r.Agreements))
+	}
+	if a := r.Agreements[0]; !a.Deleted || a.Fingerprint != "" || a.Kind != "file" || a.Key != "e2e/old.txtar" || a.Path != "e2e/old.txtar" || a.Story != "#24" || a.UserEmail != "po@example.com" {
+		t.Errorf("ファイルを消したことへの合意の記録: %+v", a)
+	}
+	if a := r.Agreements[1]; !a.Deleted || a.Fingerprint != "" || a.Kind != "claim" || a.Key != "gone" || a.Path != "" {
+		t.Errorf("約束を消したことへの合意の記録: %+v", a)
+	}
+	cases := []struct {
+		name string
+		got  bool
+		want bool
+	}{
+		{"消したファイルの場所への、消したことへの合意", r.DeletionAgreed("file", "e2e/old.txtar"), true},
+		{"消した約束への、消したことへの合意", r.DeletionAgreed("claim", "gone"), true},
+		{"ほかの場所には、消したことへの合意がない", r.DeletionAgreed("file", "e2e/other.txtar"), false},
+		{"種類が違えば、消したことへの合意がない", r.DeletionAgreed("term", "gone"), false},
+		{"消したことへの合意は、中身への合意に数えない（ファイル）", r.Agreed("file", "e2e/old.txtar", fpA), false},
+		{"消したことへの合意は、中身への合意に数えない（約束）", r.Agreed("claim", "gone", fpA), false},
+		{"消したことへの合意は、合意したことに数えない", r.EverAgreed("claim", "gone"), false},
+	}
+	for _, c := range cases {
+		if c.got != c.want {
+			t.Errorf("%s: %v（思ったもの %v）", c.name, c.got, c.want)
+		}
+	}
+}
+
+// @vanda:evidence deletion-agreement-record
+// @vanda:evidence agreements-file-record-path
+func TestLoadは消したことへの合意の記録の形の誤りを行の付いたエラーで返す(t *testing.T) {
+	cases := []struct {
+		name, body string
+		line       string
+		frags      []string
+	}{
+		{"ファイルの記録の key が path と違う", "[[agreement]]\nkind = \"file\"\nkey = \"e2e/a.txtar\"\ndeleted = true\npath = \"e2e/b.txtar\"\n" + userLine, ":3: ", []string{"key"}},
+		{"ファイルの記録の key が指紋", "[[agreement]]\nkind = \"file\"\nkey = \"" + fpA + "\"\ndeleted = true\npath = \"e2e/a.txtar\"\n" + userLine, ":3: ", []string{"key"}},
+		{"fingerprint と deleted の両方がある", "[[agreement]]\nkind = \"claim\"\nkey = \"c\"\nfingerprint = \"" + fpA + "\"\ndeleted = true\n" + userLine, "", []string{"deleted"}},
+		{"deleted が false", "[[agreement]]\nkind = \"claim\"\nkey = \"c\"\ndeleted = false\n" + userLine, ":4: ", []string{"deleted"}},
+		{"約束の記録に path がある", "[[agreement]]\nkind = \"claim\"\nkey = \"c\"\ndeleted = true\npath = \"x\"\n" + userLine, ":5: ", []string{"path"}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			root, files := writeFiles(t, map[string]string{".vanda/agreements.toml": c.body})
+			_, errs := Load(root, files, []string{".vanda/agreements.toml"}, false)
+			if errs == nil {
+				t.Fatalf("誤りにならない:\n%s", c.body)
+			}
+			if got := errs.Error(); !lineWith(got, ".vanda/agreements.toml"+c.line, c.frags...) {
+				t.Errorf("エラーに、.vanda/agreements.toml%s で始まり %q を含む行がない:\n%s", c.line, c.frags, got)
+			}
+		})
 	}
 }
 

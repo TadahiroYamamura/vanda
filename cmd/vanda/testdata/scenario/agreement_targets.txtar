@@ -1,7 +1,8 @@
 # CMD-10 合意の記録の指す先: 合意の記録が、約束リストにない約束・用語・機能を指していない。
 # @vanda:evidence agreements-point-to-existing-items
-# 約束・用語・機能のそれぞれで、合意した後に約束リストから消すと止まる。指す ID が別の種類の項目でも止まる。
-# ファイルの合意は中身の指紋を鍵にするので、そのファイルがなくなっても止めない（履歴として残る）。
+# 約束・用語・機能のそれぞれで、合意した後に約束リストから消すと止まる。消したことに合意すれば止めない。
+# 指す ID が別の種類の項目でも止まる。
+# ファイルの合意は、この審査では、そのファイルがなくなっても止めない（消したことは合意の審査が見る）。
 #
 # この審査は指紋が今の中身に合うかを見ないので、指紋の元の JSON は中身と合っていなくてよい。
 
@@ -22,6 +23,10 @@ cp cases/without-claim.toml .vanda/promises.toml
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'agreements\.toml.*task-id-unique'
 ! stderr '(?m)^panic: '
+
+# 約束を消したことに合意すると、消した約束を指す合意の記録は誤りにしない（履歴として残る）
+agree -deleted .vanda/agreements.toml '#1' claim task-id-unique
+exec vanda check .vanda/checks/targets.toml
 
 # 機能を消す
 cp cases/without-feature.toml .vanda/promises.toml
