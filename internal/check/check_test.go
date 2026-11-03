@@ -910,3 +910,44 @@ func TestPromiseListShapeは形式手法を使う機能を対象にする約束�
 		}
 	}
 }
+
+// 合意の対象のファイルは、どのアダプタで読むかではなく、[[annotation]] の types に scenario-test か model-check を含むかで決まる。
+// .vanda/adapters/ のアダプタで読むシナリオ（E2E など）とオラクルも合意の対象にし、組込みの txtar・tla で読んでも、types が
+// どちらも含まないパターンだけに当たるファイルは合意の対象にしない。どのファイルにもアノテーションは書かない
+//
+// @vanda:evidence check-agreement-targets
+func TestAgreementは合意の対象のファイルをアダプタの名前でなくannotationのtypesで決める(t *testing.T) {
+	cases := []struct {
+		path, rule string
+		target     bool
+	}{
+		{"e2e/a.spec.ts", "paths = [\"e2e/*.spec.ts\"]\nadapter = \"pw\"\ntypes = [\"scenario-test\"]", true},
+		{"model/a.oracle", "paths = [\"model/*.oracle\"]\nadapter = \"pw\"\ntypes = [\"model-check\"]", true},
+		{"mixed/a.spec.ts", "paths = [\"mixed/*.spec.ts\"]\nadapter = \"pw\"\ntypes = [\"unit-test\", \"scenario-test\"]", true},
+		{"unit/a.txtar", "paths = [\"unit/*.txtar\"]\nadapter = \"txtar\"\ntypes = [\"unit-test\"]", false},
+		{"unit/A.tla", "paths = [\"unit/*.tla\"]\nadapter = \"tla\"\ntypes = [\"cross-check\"]", false},
+		{"web/a.spec.ts", "paths = [\"web/*.spec.ts\"]\nadapter = \"pw\"\ntypes = [\"unit-test\"]", false},
+		{"none/a.spec.ts", "paths = [\"none/*.spec.ts\"]\nadapter = \"pw\"\ntypes = []", false},
+	}
+	for _, c := range cases {
+		t.Run(c.path, func(t *testing.T) {
+			r := goodRepo(t)
+			r.write(map[string]string{
+				".vanda/config.toml": baseConfig + "\n[[annotation]]\n" + c.rule + "\n",
+				".vanda/adapters/pw": "#!/bin/sh\ncat >/dev/null\necho '{\"names\":[]}'\n",
+				c.path:               "中身\n",
+			})
+			if err := os.Chmod(filepath.Join(r.root, ".vanda/adapters/pw"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			r.commit("(test) ファイルを足す", "")
+			pass, out, _ := r.run("[[check]]\nname = \"agreement\"\nscope = \"all\"\n", "", "")
+			if got := !pass && lineWith(out, c.path+": ", "ファイルの今の中身", "提案中"); got != c.target {
+				t.Errorf("%s が合意の対象なのは %v のはず\n%s", c.path, c.target, out)
+			}
+			if !c.target && !pass {
+				t.Errorf("合意の対象でないファイルを足しただけで止まった\n%s", out)
+			}
+		})
+	}
+}
