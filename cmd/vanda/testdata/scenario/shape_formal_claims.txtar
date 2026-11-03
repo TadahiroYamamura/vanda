@@ -1,0 +1,327 @@
+# 約束リストの形: 形式手法を使う機能（formal が真。省けば core と同じ）を subjects に持つ約束には、model-check の予定と
+# model_check_waiver のどちらか一方だけを書く。どちらもないか、両方あれば promise-list-shape の誤り。
+# @vanda:evidence promise-list-formal-claims
+# 形式手法を使わない機能だけを subjects に持つ約束は、どちらもなくても通る（model_check_waiver を書いたときは約束で決まっていないので確かめない）。
+
+exec git init -q -b main
+expand .vanda/config.toml
+
+# formal = true の機能を subjects に持ち、どちらもないなら止まる
+cp cases/formal-true-none.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
+! exec vanda check .vanda/checks/shape.toml
+stdout '失敗（1 件）'
+stderr 'promises\.toml:[0-9]+: .*task-id-unique.*model_check_waiver'
+! stderr '(?m)^panic: '
+
+# formal = true の機能を subjects に持ち、model-check の予定だけなら通る
+cp cases/formal-true-mc.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
+exec vanda check .vanda/checks/shape.toml
+
+# formal = true の機能を subjects に持ち、model_check_waiver だけなら通る
+cp cases/formal-true-waiver.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
+exec vanda check .vanda/checks/shape.toml
+
+# formal = true の機能を subjects に持ち、両方なら止まる
+cp cases/formal-true-both.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
+! exec vanda check .vanda/checks/shape.toml
+stdout '失敗（1 件）'
+stderr 'promises\.toml:[0-9]+: .*task-id-unique.*model_check_waiver'
+! stderr '(?m)^panic: '
+
+# core = true で formal を省いた（formal = true とみなす）機能を subjects に持ち、どちらもないなら止まる
+cp cases/core-true-none.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
+! exec vanda check .vanda/checks/shape.toml
+stdout '失敗（1 件）'
+stderr 'promises\.toml:[0-9]+: .*task-id-unique.*model_check_waiver'
+! stderr '(?m)^panic: '
+
+# core = true で formal を省いた機能を subjects に持ち、model-check の予定だけなら通る
+cp cases/core-true-mc.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
+exec vanda check .vanda/checks/shape.toml
+
+# core = true で formal を省いた機能を subjects に持ち、model_check_waiver だけなら通る
+cp cases/core-true-waiver.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
+exec vanda check .vanda/checks/shape.toml
+
+# core = true で formal を省いた機能を subjects に持ち、両方なら止まる
+cp cases/core-true-both.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
+! exec vanda check .vanda/checks/shape.toml
+stdout '失敗（1 件）'
+stderr 'promises\.toml:[0-9]+: .*task-id-unique.*model_check_waiver'
+! stderr '(?m)^panic: '
+
+# core も formal も省いた（formal = false とみなす）機能だけを subjects に持ち、どちらもないなら通る
+cp cases/plain-none.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
+exec vanda check .vanda/checks/shape.toml
+
+# core = true・formal = false の機能だけを subjects に持ち、どちらもないなら通る
+cp cases/core-true-formal-false-none.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
+exec vanda check .vanda/checks/shape.toml
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+-- .vanda/checks/shape.toml --
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+-- .vanda/agreements.toml --
+-- .vanda/promises.toml --
+-- cases/formal-true-none.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+formal = true
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+-- cases/formal-true-mc.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+formal = true
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "model-check"
+layers = ["model"]
+-- cases/formal-true-waiver.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+formal = true
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+model_check_waiver = "登録の順で結果が変わらないため"
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+-- cases/formal-true-both.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+formal = true
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+model_check_waiver = "登録の順で結果が変わらないため"
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "model-check"
+layers = ["model"]
+-- cases/core-true-none.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = true
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+-- cases/core-true-mc.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = true
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "model-check"
+layers = ["model"]
+-- cases/core-true-waiver.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = true
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+model_check_waiver = "登録の順で結果が変わらないため"
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+-- cases/core-true-both.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = true
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+model_check_waiver = "登録の順で結果が変わらないため"
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "model-check"
+layers = ["model"]
+-- cases/plain-none.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+-- cases/core-true-formal-false-none.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+core = true
+formal = false
+formal_waiver = "画面の並びだけで、状態を持たないため"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task", "task-add"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]

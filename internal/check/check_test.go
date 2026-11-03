@@ -857,3 +857,56 @@ func TestEvidencePresentはtypesが空のannotationで読んだアノテーシ�
 		t.Errorf("types = [] の go のアノテーションで、unit-test が揃ったことになった\n%s", out)
 	}
 }
+
+// 機能の書き方（formal が真になるかは、formal を省けば core と同じ）と、約束の model-check の予定・model_check_waiver の
+// 書き方の全部の組み合わせ。形式手法を使わない機能に model_check_waiver を書いたときは、約束で決まっていないので確かめない
+//
+// @vanda:evidence promise-list-formal-claims
+func TestPromiseListShapeは形式手法を使う機能を対象にする約束にmodel_checkの予定とmodel_check_waiverのどちらか一方だけを求める(t *testing.T) {
+	features := []struct {
+		name, fields string
+		formal       bool
+	}{
+		{"formal=true", "formal = true\n", true},
+		{"core=trueでformalを省く", "core = true\n", true},
+		{"core=true・formal=true", "core = true\nformal = true\n", true},
+		{"coreもformalも省く", "", false},
+		{"formal=false", "formal = false\n", false},
+		{"core=true・formal=false", "core = true\nformal = false\nformal_waiver = \"状態を持たないため\"\n", false},
+	}
+	const mc = "\n[[claim.evidence]]\nstage = \"plan\"\ntype = \"model-check\"\nlayers = [\"model\"]\n"
+	const waiver = "model_check_waiver = \"順で結果が変わらないため\"\n"
+	plans := []struct {
+		name, claim, evidence string
+		count                 int // model-check の予定と model_check_waiver の数
+	}{
+		{"どちらもない", "", "", 0},
+		{"model-checkの予定だけ", "", mc, 1},
+		{"model_check_waiverだけ", waiver, "", 1},
+		{"両方", waiver, mc, 2},
+	}
+	for _, f := range features {
+		for _, p := range plans {
+			if !f.formal && p.claim != "" {
+				continue
+			}
+			t.Run(f.name+"で"+p.name, func(t *testing.T) {
+				r := goodRepo(t)
+				promises := "[[term]]\nid = \"task\"\nname = \"タスク\"\ndefinition = \"やること\"\n\n" +
+					"[[feature]]\nid = \"add-task\"\nname = \"タスクの登録\"\ndefinition = \"タスクを足す\"\n" + f.fields + "\n" +
+					"[[claim]]\nid = \"task-unique\"\nsubjects = [\"task\", \"add-task\"]\nstatement = \"タスクは重ならない\"\nlayers = [\"model\"]\n" + p.claim +
+					"\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n" + p.evidence
+				r.write(map[string]string{".vanda/promises.toml": promises})
+				r.commit("(test) 約束リストを置き換える", "")
+				pass, out, _ := r.run("[[check]]\nname = \"promise-list-shape\"\nscope = \"all\"\n", "", "")
+				want := !f.formal || p.count == 1
+				if pass != want {
+					t.Errorf("通るのは %v のはず\n%s", want, out)
+				}
+				if !want && !lineWith(out, ".vanda/promises.toml:", "task-unique", "model_check_waiver") {
+					t.Errorf("誤りが、約束 task-unique の行と model_check_waiver を示していない\n%s", out)
+				}
+			})
+		}
+	}
+}
