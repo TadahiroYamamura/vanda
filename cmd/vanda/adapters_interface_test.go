@@ -563,3 +563,30 @@ func Test_vanda_adaptersのアダプタがtimeoutを過ぎたらどのアダプ�
 		t.Errorf("どのアダプタかを書いたタイムアウトの誤りでない（%d）\n%s", code, errs)
 	}
 }
+
+// RV: 画面の API でも、アダプタが timeout を過ぎたら止めて、どのアダプタかを書いたタイムアウトの誤りを返す
+// （待ち続けて応答しないことがない）。約束の詳細はエビデンスを探すのでアノテーションを読む
+// @vanda:evidence project-adapter-annotation-timeout
+func Test_vanda_adaptersのアダプタがtimeoutを過ぎたら約束の詳細のAPIがどのアダプタかを書いたタイムアウトの誤りを返す(t *testing.T) {
+	t.Parallel()
+	bin := buildVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	promises := "[[term]]\nid = \"task\"\nname = \"タスク\"\ndefinition = \"やること\"\n\n[[claim]]\nid = \"task-id-unique\"\nsubjects = [\"task\"]\nstatement = \"タスクの ID は重ならない\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n"
+	root := ifaceRepo(t, version, annotationRule("slow-adapter", "timeout = 1\n")+"\n[gui]\nbase = \"main\"\n",
+		map[string]string{".vanda/promises.toml": promises, "ext/a.ext": "@vanda:evidence task-id-unique\n"},
+		map[string]string{"slow-adapter": "cat >/dev/null\nsleep 30\n"})
+	g := newRVGit(t, root)
+	g.commitAll("(test) はじめ", "#1")
+	s := startServe(t, bin, root, g.env)
+	start := time.Now()
+	code, msg := s.get("/api/claims/task-id-unique", nil)
+	if d := time.Since(start); d > 15*time.Second {
+		t.Errorf("timeout の 1 秒で止めず、%v 待った", d)
+	}
+	if code == 200 || !strings.Contains(msg, "slow-adapter") || !strings.Contains(msg, "タイムアウト") {
+		t.Errorf("どのアダプタかを書いたタイムアウトの誤りでない（%d）: %s", code, msg)
+	}
+}
