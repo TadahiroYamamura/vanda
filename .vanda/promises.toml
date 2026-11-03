@@ -70,6 +70,30 @@ definition = "エビデンスを得る開発の段階。約束リストでの項
 part_of = "evidence"
 
 [[term]]
+id = "plan-stage"
+name = "計画"
+definition = "ソースコードや設定ファイルを編集しなくても得られ、リリースの前に確かめられるエビデンスに合意する段階。例: 約束、モデル、コードベースを分析した結果（カバレッジ、ホットスポットなど）"
+part_of = "stage"
+
+[[term]]
+id = "implementation-stage"
+name = "実装"
+definition = "ソースコードや設定ファイルを足したり、変えたり、消したりして得られ、リリースの前に確かめられるエビデンスに合意する段階。例: 社内に 3 つの案を公開して試した結果"
+part_of = "stage"
+
+[[term]]
+id = "release-stage"
+name = "リリース"
+definition = "ソフトウェアをリリースする時に確かめられるエビデンスに合意する段階"
+part_of = "stage"
+
+[[term]]
+id = "operation-stage"
+name = "運用"
+definition = "リリースした後に、動いているソフトウェアから確かめられるエビデンスに合意する段階。例: センサーで確かめた結果"
+part_of = "stage"
+
+[[term]]
 id = "evidence-type"
 name = "タイプ"
 definition = "エビデンスの種類。約束リストでの項目名は type"
@@ -560,17 +584,17 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -583,17 +607,17 @@ layers = ["cli", "api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -605,7 +629,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -618,12 +642,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -635,7 +659,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -647,12 +671,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -664,7 +688,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -676,7 +700,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -688,7 +712,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -700,7 +724,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -713,7 +737,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -726,7 +750,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -739,7 +763,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -752,12 +776,12 @@ layers = ["cli", "api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -770,12 +794,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -787,12 +811,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "human-review"
 layers = ["gui"]
 
@@ -805,7 +829,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -818,7 +842,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -830,12 +854,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "random-check"
 layers = ["cli"]
 
@@ -847,7 +871,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -859,7 +883,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -871,7 +895,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -883,7 +907,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -895,7 +919,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -907,19 +931,19 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
 id = "promise-list-fixed-value-list"
 subjects = ["read-promise-list", "stage", "evidence-type", "flag"]
-statement = "決まった値は、stage が plan・implementation・test・release・operation、type が model-check・proof・cross-check・random-check・scenario-test・unit-test・interface-test・concurrency-test・guardrail・sensor・human-review、flags が ai-proposal だけとする"
+statement = "決まった値は、stage が plan・implementation・release・operation、type が model-check・proof・cross-check・random-check・scenario-test・unit-test・interface-test・concurrency-test・guardrail・sensor・human-review、flags が ai-proposal だけとする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -932,7 +956,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -945,12 +969,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -963,7 +987,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -975,12 +999,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "random-check"
 layers = ["cli"]
 
@@ -992,7 +1016,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1004,7 +1028,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1017,7 +1041,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1030,7 +1054,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1042,7 +1066,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1054,22 +1078,22 @@ layers = ["model", "cli", "api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "model-check"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "cross-check"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "cross-check"
 layers = ["api"]
 
@@ -1082,12 +1106,12 @@ layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "model-check"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "cross-check"
 layers = ["cli"]
 
@@ -1100,12 +1124,12 @@ layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "model-check"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "cross-check"
 layers = ["cli"]
 
@@ -1118,17 +1142,17 @@ layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "model-check"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "cross-check"
 layers = ["cli"]
 
@@ -1139,22 +1163,22 @@ statement = "指紋の合わない合意の記録は、消さずに履歴とし�
 layers = ["model", "cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "model-check"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "cross-check"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "sensor"
 layers = ["cli"]
 
@@ -1165,17 +1189,17 @@ statement = "ストーリー s が合意したことがあり、今の中身に 
 layers = ["model", "cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "model-check"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "cross-check"
 layers = ["cli"]
 
@@ -1186,17 +1210,17 @@ statement = "外れた合意は、ほかのストーリーが今の中身に合�
 layers = ["model", "cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "model-check"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "cross-check"
 layers = ["cli"]
 
@@ -1207,27 +1231,27 @@ statement = "合意を取り消した後、今の中身に合う合意の記録�
 layers = ["model", "cli", "api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "model-check"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "cross-check"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "cross-check"
 layers = ["api"]
 
@@ -1240,7 +1264,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1251,7 +1275,7 @@ statement = "合意の記録に決まっていない表か項目があれば、a
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1263,7 +1287,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1275,7 +1299,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1287,7 +1311,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1299,7 +1323,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1312,12 +1336,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1330,22 +1354,22 @@ layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "model-check"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "cross-check"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1357,7 +1381,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1369,17 +1393,17 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -1391,12 +1415,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1409,7 +1433,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1421,7 +1445,7 @@ rationale = "説明の文で書き方に触れられるようにするため"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1433,7 +1457,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1445,7 +1469,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1456,7 +1480,7 @@ statement = "組込みのアダプタのファイルに、そのアダプタで�
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1467,12 +1491,12 @@ statement = "go のアダプタは、func の宣言の直前のコメント（�
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1485,12 +1509,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1502,12 +1526,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1519,7 +1543,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1531,12 +1555,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1549,7 +1573,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1562,7 +1586,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1575,12 +1599,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1593,12 +1617,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1609,12 +1633,12 @@ statement = "annotation-links は、term が用語を、feature が機能を、c
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1625,7 +1649,7 @@ statement = "annotation-links は、TLA+ の仕様の型（TypeOK で使う、�
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1638,7 +1662,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1651,7 +1675,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1663,7 +1687,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1675,17 +1699,17 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1698,7 +1722,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1710,12 +1734,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -1728,7 +1752,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1740,12 +1764,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -1756,7 +1780,7 @@ statement = "設定の adapter の名前のアダプタが、組込みにも .va
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1769,12 +1793,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -1786,12 +1810,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -1803,12 +1827,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -1820,7 +1844,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1832,12 +1856,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -1850,17 +1874,17 @@ layers = ["cli", "api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -1872,7 +1896,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1885,7 +1909,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1898,7 +1922,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1910,7 +1934,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1922,12 +1946,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1940,12 +1964,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1957,12 +1981,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -1974,7 +1998,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1986,7 +2010,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -1998,7 +2022,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2010,7 +2034,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2022,12 +2046,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -2039,12 +2063,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -2056,7 +2080,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2069,12 +2093,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "human-review"
 layers = ["cli"]
 
@@ -2088,7 +2112,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2100,7 +2124,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2112,7 +2136,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2124,7 +2148,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2137,12 +2161,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -2156,12 +2180,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -2173,7 +2197,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2186,7 +2210,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2199,17 +2223,17 @@ layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "model-check"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "cross-check"
 layers = ["cli"]
 
@@ -2221,12 +2245,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -2239,12 +2263,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -2257,7 +2281,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2270,7 +2294,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2282,12 +2306,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -2299,12 +2323,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -2316,7 +2340,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2328,7 +2352,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2340,7 +2364,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2352,7 +2376,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2364,7 +2388,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2376,7 +2400,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2389,7 +2413,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2401,7 +2425,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2413,7 +2437,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2425,7 +2449,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2437,7 +2461,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2449,7 +2473,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2461,7 +2485,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2473,7 +2497,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2487,7 +2511,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2499,12 +2523,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -2516,12 +2540,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -2533,12 +2557,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -2552,12 +2576,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -2569,12 +2593,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -2587,12 +2611,12 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["api"]
 
@@ -2604,12 +2628,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -2621,7 +2645,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2633,12 +2657,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -2650,7 +2674,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -2663,12 +2687,12 @@ flags = ["ai-proposal"]
 guesses = ["DNS の名前を差し替えて vanda サーバーを読ませる攻撃を防ぐための決まりだと推し量った"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["api"]
 
@@ -2681,12 +2705,12 @@ flags = ["ai-proposal"]
 guesses = ["ほかのサイトから合意を書かせないための決まりだと推し量った"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["api"]
 
@@ -2698,12 +2722,12 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["api"]
 
@@ -2716,7 +2740,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -2729,12 +2753,12 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "concurrency-test"
 layers = ["api"]
 
@@ -2746,12 +2770,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -2763,7 +2787,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -2776,12 +2800,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -2793,7 +2817,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -2806,12 +2830,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -2823,12 +2847,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -2840,12 +2864,12 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["api"]
 
@@ -2857,7 +2881,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -2870,12 +2894,12 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["api"]
 
@@ -2888,12 +2912,12 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["api"]
 
@@ -2905,7 +2929,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -2918,7 +2942,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -2931,12 +2955,12 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["api"]
 
@@ -2949,12 +2973,12 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["api"]
 
@@ -2966,12 +2990,12 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "random-check"
 layers = ["api"]
 
@@ -2984,7 +3008,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -2997,7 +3021,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "sensor"
 layers = ["api"]
 
@@ -3009,17 +3033,17 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -3031,12 +3055,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3048,7 +3072,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3060,7 +3084,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3072,7 +3096,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3085,7 +3109,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3098,7 +3122,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3110,12 +3134,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3127,17 +3151,17 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -3151,22 +3175,22 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "cross-check"
 layers = ["api"]
 
@@ -3178,12 +3202,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3195,7 +3219,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3207,7 +3231,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3219,12 +3243,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "human-review"
 layers = ["gui"]
 
@@ -3236,17 +3260,17 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -3258,12 +3282,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3275,17 +3299,17 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "random-check"
 layers = ["api"]
 
@@ -3297,7 +3321,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3310,12 +3334,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -3327,7 +3351,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3340,12 +3364,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -3358,12 +3382,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -3375,7 +3399,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3388,12 +3412,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -3406,12 +3430,12 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "sensor"
 layers = ["api"]
 
@@ -3423,7 +3447,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3435,7 +3459,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3447,7 +3471,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3459,7 +3483,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3471,7 +3495,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3484,12 +3508,12 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "sensor"
 layers = ["api"]
 
@@ -3501,7 +3525,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3514,12 +3538,12 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "sensor"
 layers = ["api"]
 
@@ -3531,7 +3555,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3543,12 +3567,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3561,12 +3585,12 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "sensor"
 layers = ["api"]
 
@@ -3579,12 +3603,12 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "sensor"
 layers = ["api"]
 
@@ -3596,7 +3620,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3608,7 +3632,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3621,7 +3645,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3633,12 +3657,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -3650,17 +3674,17 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "human-review"
 layers = ["gui"]
 
@@ -3672,12 +3696,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -3689,17 +3713,17 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -3711,12 +3735,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3728,12 +3752,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3745,19 +3769,19 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim]]
 id = "claim-detail-evidence-grouping"
 subjects = ["show-claim-evidence", "stage", "evidence-type"]
-statement = "約束の詳細のエビデンスを、ステージ（計画・実装・テスト・リリース・運用の順）ごとに分け、その中をタイプごとに分けて示す"
+statement = "約束の詳細のエビデンスを、ステージ（計画・実装・リリース・運用の順）ごとに分け、その中をタイプごとに分けて示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3769,12 +3793,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3786,7 +3810,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3799,17 +3823,17 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -3821,7 +3845,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3833,12 +3857,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3850,12 +3874,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "human-review"
 layers = ["gui"]
 
@@ -3868,12 +3892,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -3886,12 +3910,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -3903,12 +3927,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -3920,7 +3944,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -3933,17 +3957,17 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -3955,7 +3979,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -3968,12 +3992,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -3985,12 +4009,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -4002,17 +4026,17 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "sensor"
 layers = ["cli"]
 
@@ -4024,12 +4048,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -4041,12 +4065,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -4059,12 +4083,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -4077,12 +4101,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -4095,12 +4119,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -4112,12 +4136,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -4129,12 +4153,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -4146,12 +4170,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -4163,17 +4187,17 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -4185,7 +4209,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -4197,7 +4221,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -4210,12 +4234,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -4227,12 +4251,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -4245,17 +4269,17 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "human-review"
 layers = ["cli"]
 
@@ -4268,12 +4292,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -4286,12 +4310,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -4305,12 +4329,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -4322,12 +4346,12 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
 
@@ -4339,12 +4363,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -4356,7 +4380,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4368,7 +4392,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4380,7 +4404,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4392,12 +4416,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -4409,7 +4433,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4421,7 +4445,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4433,7 +4457,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4445,12 +4469,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -4462,7 +4486,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4474,7 +4498,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4486,7 +4510,7 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -4499,12 +4523,12 @@ layers = ["api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["api"]
 
@@ -4517,7 +4541,7 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4529,7 +4553,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4541,7 +4565,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4553,7 +4577,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4566,7 +4590,7 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4579,7 +4603,7 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4592,7 +4616,7 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4605,12 +4629,12 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -4623,7 +4647,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4636,7 +4660,7 @@ layers = ["gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4649,7 +4673,7 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4663,7 +4687,7 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4676,7 +4700,7 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）", "開いた先から戻れないようにするのは、開いたページに vanda の画面を操らせないためだと推し量った"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4689,7 +4713,7 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4702,7 +4726,7 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -4715,12 +4739,12 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）", "戻す状態に、ベースブランチ・レビュー単位・ストーリー・選んだ件を含めるのは、E2E の場合分けから推し量った"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -4733,7 +4757,7 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4746,7 +4770,7 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4759,7 +4783,7 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4772,7 +4796,7 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4785,12 +4809,12 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "human-review"
 layers = ["gui"]
 
@@ -4802,12 +4826,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4820,7 +4844,7 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4833,7 +4857,7 @@ flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4845,12 +4869,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4862,17 +4886,17 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
 
@@ -4885,17 +4909,17 @@ layers = ["cli", "api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 
@@ -4907,12 +4931,12 @@ layers = ["cli", "api"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
@@ -4925,7 +4949,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -4938,7 +4962,7 @@ layers = ["cli"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
 
@@ -4951,12 +4975,12 @@ layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
 
@@ -4970,6 +4994,6 @@ flags = ["ai-proposal"]
 guesses = ["取り消しのコミットにも書く理由は、コードにも文書にも書いていなかったので推し量った"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["api"]
