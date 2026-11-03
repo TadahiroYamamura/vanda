@@ -127,6 +127,32 @@ func (e *env) promiseListShape() []diag.Error {
 			}
 		}
 	}
+	errs = append(errs, refErrs(e.list, all)...)
+	return errs
+}
+
+// refErrs は、自然言語で書く項目の中の壊れた参照を、その項目の行の誤りにする。
+func refErrs(l *promises.List, all []item) []diag.Error {
+	ids := map[string]bool{}
+	for _, it := range all {
+		ids[it.id] = true
+	}
+	var errs []diag.Error
+	const literal = "文字の {@ なら {@@ と書いてください"
+	for _, p := range l.Proses() {
+		key := p.Key + " "
+		if p.Index >= 0 {
+			key = fmt.Sprintf("%s の %d 番目", p.Key, p.Index+1)
+		}
+		for _, part := range promises.SplitRefs(p.Text) {
+			switch {
+			case part.Broken != "":
+				errs = append(errs, p.Table.Err(p.Key, key+"の参照 "+quote(part.Text)+" が {@id:<ID>} の形ではありません（"+part.Broken+"）", "{@id:<ID>} の形に直すか、"+literal))
+			case part.Ref != "" && !ids[part.Ref]:
+				errs = append(errs, p.Table.Err(p.Key, key+"の参照 "+quote(part.Text)+" が指す用語・機能・約束がありません", "約束リストにある用語・機能・約束の ID に直すか、"+literal))
+			}
+		}
+	}
 	return errs
 }
 
