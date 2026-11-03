@@ -63,7 +63,7 @@ condition = "いつも"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
@@ -83,7 +83,7 @@ condition = "いつも"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
@@ -103,7 +103,7 @@ condition = "いつも"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
@@ -134,6 +134,6 @@ name = "タスクの登録"
 definition = "タスクを足す"
 core = false
 -- fp/a-claim.json --
-{"condition":"いつも","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"a-claim","layers":["model"],"rationale":"登録できたかを確かめるため","statement":"登録したタスクは一覧に出る","subjects":["task-add"]}
+{"condition":"いつも","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"a-claim","layers":["model"],"rationale":"登録できたかを確かめるため","statement":"登録したタスクは一覧に出る","subjects":["task-add"]}
 -- fp/b-claim.json --
-{"condition":"いつも","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"b-claim","layers":["model"],"rationale":"ID でタスクを指すため","statement":"タスクの ID は重ならない","subjects":["task"]}
+{"condition":"いつも","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"b-claim","layers":["model"],"rationale":"ID でタスクを指すため","statement":"タスクの ID は重ならない","subjects":["task"]}

@@ -69,7 +69,7 @@ func foundNames(t *testing.T, annotation string, files map[string]string, adapte
 	g := newRVGit(t, root)
 	g.run("init", "-q", "-b", "main")
 	writeFile(t, root, ".vanda/config.toml", fmt.Sprintf("version = %q\n\n[[layer]]\nid = \"model\"\nname = \"モデル\"\ndescription = \"判定と状態の変化\"\n\n%s", version, annotation))
-	writeFile(t, root, ".vanda/promises.toml", "[[term]]\nid = \"task\"\nname = \"タスク\"\ndefinition = \"やること\"\n\n[[claim]]\nid = \"task-id-unique\"\nsubjects = [\"task\"]\nstatement = \"タスクの ID は重ならない\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"test\"\ntype = \"scenario-test\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"test\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n")
+	writeFile(t, root, ".vanda/promises.toml", "[[term]]\nid = \"task\"\nname = \"タスク\"\ndefinition = \"やること\"\n\n[[claim]]\nid = \"task-id-unique\"\nsubjects = [\"task\"]\nstatement = \"タスクの ID は重ならない\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"scenario-test\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n")
 	writeFile(t, root, ".vanda/agreements.toml", "")
 	for p, b := range files {
 		writeFile(t, root, p, b)

@@ -64,7 +64,7 @@ statement = "タスクの ID は重ならない"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = %q
 layers = ["model"]
 `, planned))
@@ -151,7 +151,8 @@ func Test予定のタイプをtypesに含まないannotationのアノテーシ�
 	}
 }
 
-// CMD-10: types は必ず書く。確かめないタイプ（human-review・monitoring）と、今は扱えない proof は書けない
+// CMD-10: types は必ず書く。確かめないタイプ（human-review）と、今は扱えない proof と、決まった値にないタイプ
+// （決まった値から外した monitoring を含む）は書けない
 func Test_typesがないときと書けないタイプを書いたときは設定の誤りになる(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)

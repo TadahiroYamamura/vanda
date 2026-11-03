@@ -28,7 +28,6 @@ var presentTypes = []struct {
 	{"concurrency-test", bp(true), bp(false), "go"},
 	{"guardrail", bp(true), bp(false), "sql"},
 	{"sensor", bp(true), bp(false), "go"},
-	{"monitoring", nil, nil, ""},
 	{"human-review", nil, nil, ""},
 }
 
@@ -38,7 +37,7 @@ func presentClaim(id string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "\n[[claim]]\nid = %q\nsubjects = [\"t\"]\nstatement = \"エビデンスのタイプ\"\nlayers = [\"model\"]\n", id)
 	for _, p := range presentTypes {
-		fmt.Fprintf(&b, "\n[[claim.evidence]]\nstage = \"test\"\ntype = %q\nlayers = [\"model\"]\n", p.typ)
+		fmt.Fprintf(&b, "\n[[claim.evidence]]\nstage = \"implementation\"\ntype = %q\nlayers = [\"model\"]\n", p.typ)
 	}
 	return b.String()
 }

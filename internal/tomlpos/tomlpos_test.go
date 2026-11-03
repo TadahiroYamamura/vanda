@@ -20,14 +20,14 @@ layers = [
 ]
 statement = "s"
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 
 [[claim.evidence]]
 type = "unit-test"
 
 [[claim]]
 id = "b"
-evidence = [{ stage = "test" }]
+evidence = [{ stage = "implementation" }]
 
 [story]
 id_pattern = "#[0-9]+"

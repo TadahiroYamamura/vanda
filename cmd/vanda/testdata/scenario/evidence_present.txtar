@@ -7,7 +7,7 @@
 # タイプに合う種類は、model-check が claim、sensor が sensor、ほかは evidence。種類とタイプの全部の組み合わせと、
 # types の書き方は evidence_types_test.go で確かめる。
 # 1 つのアノテーションが、同じ約束の複数の予定を満たしてよい。proof は今は扱えない誤りにする。
-# 実行しないタイプ（human-review・monitoring）は確かめない（detail に書いたファイルがなくても止めない）。
+# 実行しないタイプ（human-review）は確かめない（detail に書いたファイルがなくても止めない）。
 # 範囲を 1 つのストーリーにすると、分かれた点より後に変わった約束だけを見る。
 #
 # txtar のファイルの中身は、この台本の区切りとぶつからないよう、行の頭に > を付けて書き、unquote で外す。
@@ -135,42 +135,42 @@ statement = "タスクの ID は重ならない"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "model-check"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "guardrail"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "cross-check"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "random-check"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "interface-test"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "concurrency-test"
 layers = ["model"]
 
@@ -184,12 +184,6 @@ stage = "release"
 type = "human-review"
 layers = ["model"]
 detail = "docs/no-such-review.md"
-
-[[claim.evidence]]
-stage = "operation"
-type = "monitoring"
-layers = ["model"]
-detail = "docs/no-such-dashboard.md"
 -- e2e/add.txtar --
 ># @vanda:evidence task-id-unique
 >exec echo add
@@ -280,7 +274,7 @@ statement = "タスクには題がある"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 -- cases/promises-proof.toml --
@@ -296,7 +290,7 @@ statement = "タスクの ID は重ならない"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "proof"
 layers = ["model"]
 -- cases/promises-main.toml --
@@ -312,7 +306,7 @@ statement = "タスクの ID は重ならない"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 -- cases/promises-story.toml --
@@ -328,7 +322,7 @@ statement = "タスクの ID は重ならない"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 
@@ -339,6 +333,6 @@ statement = "タスクには題がある"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]

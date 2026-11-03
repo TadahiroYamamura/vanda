@@ -267,7 +267,7 @@ func Test設定のpromisesのパターンに当たるファイルをすべて約
 		t.Fatal(err)
 	}
 	files := map[string]string{
-		".vanda/promises/a.toml":     "[[claim]]\nid = \"task-unique\"\nsubjects = [\"task\"]\nstatement = \"タスクは重ならない\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"test\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n",
+		".vanda/promises/a.toml":     "[[claim]]\nid = \"task-unique\"\nsubjects = [\"task\"]\nstatement = \"タスクは重ならない\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n",
 		".vanda/promises/sub/b.toml": "[[term]]\nid = \"task\"\nname = \"タスク\"\ndefinition = \"やること\"\n",
 		".vanda/promises/c.toml":     "[[term]]\nid = \"Bad_ID\"\nname = \"誤った ID\"\ndefinition = \"読まれていれば誤りになる\"\n",
 		".vanda/not-promises/d.toml": "[[term]]\nid = \"Other_Bad\"\nname = \"当たらない\"\ndefinition = \"読まれない\"\n",

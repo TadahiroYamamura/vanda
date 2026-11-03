@@ -72,12 +72,12 @@ func fieldsFlagClaim(i int, story bool) string {
 			b.WriteString("guesses = []\n")
 		}
 	}
-	b.WriteString("\n[[claim.evidence]]\nstage = \"test\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n")
+	b.WriteString("\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n")
 	return b.String()
 }
 
 func fieldsFlagFP(i int, statement string) string {
-	return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"test","type":"unit-test"}],"id":"flag-%d","layers":["model"],"statement":%q,"subjects":["t-keep"]}`, i, statement)))
+	return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"flag-%d","layers":["model"],"statement":%q,"subjects":["t-keep"]}`, i, statement)))
 }
 
 const fieldsBaseRest = `
@@ -116,7 +116,7 @@ statement = "CLI の約束"
 layers = ["cli", "model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli", "model"]
 
@@ -138,7 +138,7 @@ statement = "v0"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 `
@@ -175,7 +175,7 @@ statement = "CLI の約束（改）"
 layers = ["cli", "model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli", "model"]
 
@@ -200,7 +200,7 @@ statement = "v1"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 `
@@ -244,7 +244,7 @@ func newFieldsRepo(t *testing.T, version string) *fieldsRepo {
 	}
 	// flag-agreed は、前の中身と今の中身の両方に合意してある（今の中身に合う合意があれば、差分ありにしない）
 	agreedFP := func(v string) string {
-		return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"test","type":"unit-test"}],"id":"flag-agreed","layers":["model"],"statement":%q,"subjects":["t-keep"]}`, v)))
+		return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"flag-agreed","layers":["model"],"statement":%q,"subjects":["t-keep"]}`, v)))
 	}
 	agreements.WriteString(agreementTOML("claim", "flag-agreed", agreedFP("v0"), "", "#1", "テスト担当", "tester@example.com"))
 	sqlFP := sha256Hex([]byte(fieldsSQLBase))
@@ -381,8 +381,8 @@ func Test変更前と変更後の中身は約束リストに書いたとおり�
 			`{"statement":"DB の約束","rationale":null,"condition":null,"subjects":["t-keep"],"layers":["db"],"evidence":[{"stage":"implementation","type":"guardrail","layers":["db"],"detail":null}],"flags":[],"guesses":[]}`,
 			`{"statement":"DB の約束（改）","rationale":"理由","condition":"条件","subjects":["t-keep"],"layers":["db"],"evidence":[{"stage":"implementation","type":"guardrail","layers":["db"],"detail":"制約で拒む"}],"flags":[],"guesses":[]}`},
 		{"flag-3",
-			`{"statement":"v0","rationale":null,"condition":null,"subjects":["t-keep"],"layers":["model"],"evidence":[{"stage":"test","type":"unit-test","layers":["model"],"detail":null}],"flags":[],"guesses":[]}`,
-			`{"statement":"v1","rationale":null,"condition":null,"subjects":["t-keep"],"layers":["model"],"evidence":[{"stage":"test","type":"unit-test","layers":["model"],"detail":null}],"flags":["ai-proposal"],"guesses":["確かめていない"]}`},
+			`{"statement":"v0","rationale":null,"condition":null,"subjects":["t-keep"],"layers":["model"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["model"],"detail":null}],"flags":[],"guesses":[]}`,
+			`{"statement":"v1","rationale":null,"condition":null,"subjects":["t-keep"],"layers":["model"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["model"],"detail":null}],"flags":["ai-proposal"],"guesses":["確かめていない"]}`},
 		{"t-mod", `{"name":"変える用語","definition":"前","partOf":null}`, `{"name":"変える用語","definition":"後","partOf":"t-keep"}`},
 		{"t-del", `{"name":"消す用語","definition":"消す","partOf":null}`, `null`},
 		{"f-mod", `{"name":"変える機能","definition":"前","core":true,"formal":false,"formalWaiver":"理由 1"}`,

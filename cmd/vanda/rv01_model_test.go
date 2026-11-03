@@ -391,7 +391,7 @@ func rvRenderItem(id string, it rvItem, pick rvPick) string {
 		if pick(2) == 0 {
 			inlineEvidence = true
 			ev := []string{
-				"stage = " + rvValue("test", pick),
+				"stage = " + rvValue("implementation", pick),
 				"type = " + rvValue("unit-test", pick),
 				"layers = " + rvArray([]string{"model"}, pick),
 				"detail = " + rvValue(detail, pick),
@@ -412,7 +412,7 @@ func rvRenderItem(id string, it rvItem, pick rvPick) string {
 	if it.kind == "claim" && !inlineEvidence {
 		b.WriteString(strings.Repeat("\n", pick(2)))
 		ev := []string{
-			rvKeyLine("stage", rvValue("test", pick), pick),
+			rvKeyLine("stage", rvValue("implementation", pick), pick),
 			rvKeyLine("type", rvValue("unit-test", pick), pick),
 			rvKeyLine("layers", rvArray([]string{"model"}, pick), pick),
 			rvKeyLine("detail", rvValue(detail, pick), pick),

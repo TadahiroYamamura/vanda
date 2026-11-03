@@ -53,7 +53,7 @@ func renderOverlap(items []overlapItem, files int) (map[string]string, map[int]o
 			case "term", "feature":
 				write("name = \"名前\"\ndefinition = \"定義\"\n")
 			case "claim":
-				write("subjects = [\"base\"]\nstatement = \"文\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"test\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n")
+				write("subjects = [\"base\"]\nstatement = \"文\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n")
 			}
 			write("\n")
 		}

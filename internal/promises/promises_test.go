@@ -63,7 +63,7 @@ flags = ["ai-proposal"]
 guesses = ["DB に一意の制約を付けられる"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "TestTaskID"
@@ -117,7 +117,7 @@ layers = []
 note = "x"
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 layers = ["model"]
 
 [[feature]]
@@ -159,7 +159,7 @@ statement = "s"
 rationale = "r"
 condition = "c"
 layers = ["model"]
-evidence = [{ stage = "test", type = "unit-test", layers = "model", detail = "x" }]
+evidence = [{ stage = "implementation", type = "unit-test", layers = "model", detail = "x" }]
 `})
 	_, errs := Load(root, files, []string{".vanda/promises.toml"}, false)
 	// 行を示せない誤りは、ID と項目で場所を示す
@@ -181,7 +181,7 @@ statement = "s"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 `})

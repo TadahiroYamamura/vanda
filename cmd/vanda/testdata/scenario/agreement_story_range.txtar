@@ -60,7 +60,7 @@ condition = "always"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
@@ -74,9 +74,9 @@ condition = "always"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
 -- fp/claim-b.json --
-{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","statement":"Every task has a title","subjects":["task"]}
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","statement":"Every task has a title","subjects":["task"]}

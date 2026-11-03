@@ -87,7 +87,7 @@ condition = "always"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
@@ -106,7 +106,7 @@ condition = "always"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
@@ -120,18 +120,18 @@ condition = "always"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
 -- fp/term-task.json --
 {"definition":"A thing to do","id":"task","name":"Task"}
 -- fp/claim-v1.json --
-{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"Task IDs are unique","subjects":["task"]}
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"Task IDs are unique","subjects":["task"]}
 -- fp/claim-v2.json --
-{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"No two tasks share an ID","subjects":["task"]}
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"No two tasks share an ID","subjects":["task"]}
 -- fp/claim-b.json --
-{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","statement":"Every task has a title","subjects":["task"]}
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","statement":"Every task has a title","subjects":["task"]}
 -- cases/b-v2.toml --
 [[claim]]
 id = "task-title-required"
@@ -142,9 +142,9 @@ condition = "always"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
 -- fp/claim-b2.json --
-{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","statement":"Every task has a non-empty title","subjects":["task"]}
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","statement":"Every task has a non-empty title","subjects":["task"]}

@@ -201,12 +201,12 @@ statement = "タスクは重ならない"
 layers = ["model", "db"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 
@@ -221,7 +221,7 @@ type = "guardrail"
 layers = ["db"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "human-review"
 layers = ["model"]
 `
@@ -417,7 +417,7 @@ func TestAgreementTargetsは約束リストにない項目を指す合意を出�
 func TestEvidencePresentはタイプに合うアノテーションのない予定とproofを出す(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{
-		".vanda/promises.toml": basePromises + "\n[[claim.evidence]]\nstage = \"test\"\ntype = \"proof\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"test\"\ntype = \"sensor\"\nlayers = [\"model\"]\n",
+		".vanda/promises.toml": basePromises + "\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"proof\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"sensor\"\nlayers = [\"model\"]\n",
 		"db/schema.sql":        "CREATE UNIQUE INDEX t ON task(id);\n",
 	})
 	_, out, _ := r.run("[[check]]\nname = \"evidence-present\"\nscope = \"all\"\n", "", "")
@@ -615,7 +615,7 @@ func TestPromiseListShapeは重なったIDを表の種類でなく出てきた�
 	r.write(map[string]string{
 		".vanda/promises.toml":   "[[feature]]\nid = \"a\"\nname = \"n\"\ndefinition = \"d\"\n\n[[term]]\nid = \"a\"\nname = \"n\"\ndefinition = \"d\"\n",
 		".vanda/promises/b.toml": "[[term]]\nid = \"b\"\nname = \"n\"\ndefinition = \"d\"\n",
-		".vanda/promises/a.toml": "[[claim]]\nid = \"b\"\nsubjects = [\"a\"]\nstatement = \"s\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"test\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n",
+		".vanda/promises/a.toml": "[[claim]]\nid = \"b\"\nsubjects = [\"a\"]\nstatement = \"s\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n",
 		".vanda/config.toml":     strings.Replace(baseConfig, `version = "0.1.0"`, "version = \"0.1.0\"\npromises = [\".vanda/promises.toml\", \".vanda/promises/*.toml\"]", 1),
 	})
 	_, out, _ := r.run("[[check]]\nname = \"promise-list-shape\"\nscope = \"all\"\n", "", "")

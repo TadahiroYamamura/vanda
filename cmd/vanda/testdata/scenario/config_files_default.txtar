@@ -84,7 +84,7 @@ condition = "いつも"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
@@ -103,7 +103,7 @@ condition = "いつも"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
@@ -132,4 +132,4 @@ id = "task"
 name = "タスク"
 definition = "利用者がやること"
 -- fp/claim.json --
-{"condition":"いつも","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-add-unique","layers":["model"],"rationale":"ID でタスクを指すため","statement":"タスクの ID は重ならない","subjects":["task"]}
+{"condition":"いつも","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-add-unique","layers":["model"],"rationale":"ID でタスクを指すため","statement":"タスクの ID は重ならない","subjects":["task"]}

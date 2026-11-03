@@ -80,7 +80,7 @@ layers = ["model"]
 guesses = ["前の推測"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "前の中身"
@@ -109,7 +109,7 @@ layers = ["model"]
 guesses = ["後の推測"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "後の中身"
@@ -422,20 +422,20 @@ func Test約束のエビデンスの予定の差分はステージとタイプ�
 	t.Parallel()
 	model, both := []string{"model"}, []string{"model", "db"}
 	before := evidenceDiffTerm +
-		evidenceTOML("test", "scenario-test", model, "同じ") +
+		evidenceTOML("implementation", "scenario-test", model, "同じ") +
 		evidenceTOML("plan", "model-check", model, "前の詳細") +
-		evidenceTOML("test", "unit-test", model, "") +
+		evidenceTOML("implementation", "unit-test", model, "") +
 		evidenceTOML("release", "human-review", model, "") +
-		evidenceTOML("test", "random-check", model, "一つ目") +
-		evidenceTOML("test", "random-check", model, "二つ目")
+		evidenceTOML("implementation", "random-check", model, "一つ目") +
+		evidenceTOML("implementation", "random-check", model, "二つ目")
 	after := evidenceDiffTerm +
-		evidenceTOML("test", "scenario-test", model, "同じ") +
+		evidenceTOML("implementation", "scenario-test", model, "同じ") +
 		evidenceTOML("plan", "model-check", model, "後の詳細") +
-		evidenceTOML("test", "unit-test", both, "") +
-		evidenceTOML("operation", "monitoring", model, "") +
-		evidenceTOML("test", "random-check", model, "一つ目") +
-		evidenceTOML("test", "random-check", model, "二つ目を変える") +
-		evidenceTOML("test", "random-check", model, "三つ目")
+		evidenceTOML("implementation", "unit-test", both, "") +
+		evidenceTOML("operation", "sensor", model, "") +
+		evidenceTOML("implementation", "random-check", model, "一つ目") +
+		evidenceTOML("implementation", "random-check", model, "二つ目を変える") +
+		evidenceTOML("implementation", "random-check", model, "三つ目")
 	// [変更前の値, 変更後の値]。modified のときだけ確かめる
 	type side struct{ layers, detail [2]string }
 	wantBefore := []string{"equal", "modified", "modified", "removed", "equal", "modified"}

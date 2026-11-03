@@ -88,7 +88,7 @@ condition = "always"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
@@ -107,7 +107,7 @@ condition = "always"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
@@ -126,7 +126,7 @@ id = "task-id-unique"
   type = 'unit-test'
   detail = "task_test.go"
   layers = ['model']
-  stage = "test"
+  stage = "implementation"
 
 [[term]]
 definition = 'A thing to do'
@@ -148,7 +148,7 @@ layers = ["model"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
@@ -168,7 +168,7 @@ layers = ["model"]
 guesses = ["IDs are assigned in order"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
@@ -187,7 +187,7 @@ condition = "always"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
@@ -206,13 +206,13 @@ condition = "always"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
 -- fp/term-task.json --
 {"definition":"A thing to do","id":"task","name":"Task"}
 -- fp/claim-v1.json --
-{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"Task IDs are unique","subjects":["task"]}
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"Task IDs are unique","subjects":["task"]}
 -- fp/claim-v2.json --
-{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"test","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"No two tasks share an ID","subjects":["task"]}
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"No two tasks share an ID","subjects":["task"]}

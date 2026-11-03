@@ -82,7 +82,7 @@ statement = "タスクの ID は重ならない"
 layers = ["model", "db"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 
@@ -97,7 +97,7 @@ type = "guardrail"
 layers = ["db"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 `
@@ -131,7 +131,7 @@ flags = ["ai-proposal"]
 guesses = ["タスクは消しても ID を使い回さない"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 
@@ -146,7 +146,7 @@ type = "guardrail"
 layers = ["db"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 
@@ -159,7 +159,7 @@ flags = ["ai-proposal"]
 guesses = ["題の長さの上限はまだ決めていない"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 `
@@ -210,21 +210,21 @@ var reviewItemJSON = map[string]string{
 	"term task":        `{"definition":"やること","id":"task","name":"タスク"}`,
 	"term task-id":     `{"definition":"タスクを見分ける名前","id":"task-id","name":"タスクの ID","part_of":"task"}`,
 	"feature add-task": `{"definition":"タスクを足す","id":"add-task","name":"タスクの登録"}`,
-	"claim task-id-unique": `{"evidence":[{"layers":["model"],"stage":"test","type":"scenario-test"},` +
+	"claim task-id-unique": `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"},` +
 		`{"layers":["model"],"stage":"plan","type":"model-check"},` +
 		`{"layers":["db"],"stage":"implementation","type":"guardrail"},` +
-		`{"layers":["model"],"stage":"test","type":"unit-test"}],` +
+		`{"layers":["model"],"stage":"implementation","type":"unit-test"}],` +
 		`"id":"task-id-unique","layers":["model","db"],"statement":"タスクの ID は重ならない","subjects":["task-id"]}`,
 }
 
 // ストーリー #24 の後の中身の、指紋の元の JSON。flags と guesses は含めない。
 var reviewStoryItemJSON = map[string]string{
-	"claim task-id-unique": `{"evidence":[{"layers":["model"],"stage":"test","type":"scenario-test"},` +
+	"claim task-id-unique": `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"},` +
 		`{"layers":["model"],"stage":"plan","type":"model-check"},` +
 		`{"layers":["db"],"stage":"implementation","type":"guardrail"},` +
-		`{"layers":["model"],"stage":"test","type":"unit-test"}],` +
+		`{"layers":["model"],"stage":"implementation","type":"unit-test"}],` +
 		`"id":"task-id-unique","layers":["model","db"],"statement":"タスクの ID は、すべてのタスクを通して重ならない","subjects":["task-id"]}`,
-	"claim task-title-required": `{"evidence":[{"layers":["model"],"stage":"test","type":"scenario-test"}],` +
+	"claim task-title-required": `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"}],` +
 		`"id":"task-title-required","layers":["model"],"statement":"タスクの題は空にできない","subjects":["add-task"]}`,
 }
 

@@ -111,7 +111,7 @@ rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"

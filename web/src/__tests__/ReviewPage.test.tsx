@@ -390,8 +390,8 @@ describe("RV-05 変更前と変更後の差分", () => {
     const layers = [{ op: "equal", text: "model" }];
     open([
       claimEntry(1, "c-ev", {
-        before: { ...claimEntry(1, "c-ev").before!, evidence: [ev("test", "scenario-test", null), ev("plan", "model-check", "TLA+ の古い計画で確かめる"), ev("release", "human-review", null)] },
-        after: { ...claimEntry(1, "c-ev").after!, evidence: [ev("test", "scenario-test", null), ev("plan", "model-check", "TLA+ の新しい計画で確かめる"), ev("operation", "monitoring", null)] },
+        before: { ...claimEntry(1, "c-ev").before!, evidence: [ev("implementation", "scenario-test", null), ev("plan", "model-check", "TLA+ の古い計画で確かめる"), ev("release", "human-review", null)] },
+        after: { ...claimEntry(1, "c-ev").after!, evidence: [ev("implementation", "scenario-test", null), ev("plan", "model-check", "TLA+ の新しい計画で確かめる"), ev("operation", "sensor", null)] },
         diff: {
           fields: { statement: [{ op: "delete", text: "c-ev の前の文" }, { op: "insert", text: "c-ev の後の文" }] },
           evidence: {
@@ -416,7 +416,7 @@ describe("RV-05 変更前と変更後の差分", () => {
       return (inner.closest("li") ?? inner.parentElement ?? inner).textContent ?? "";
     };
     expect(itemText("人のレビュー"), "消したエビデンスに札がない").toMatch(removed);
-    expect(itemText("監視"), "足したエビデンスに札がない").toMatch(added);
+    expect(itemText("センサー"), "足したエビデンスに札がない").toMatch(added);
     expect(itemText("シナリオテスト"), "変わらないエビデンスに足した・消したの札がある").not.toMatch(/足した|追加|消した|削除/);
     // 変わったエビデンスは、詳細の中の消した語と足した語を見分けられるように見せる
     const exact = (t: string) => Array.from(row!.querySelectorAll<HTMLElement>("*")).filter((el) => el.textContent === t);

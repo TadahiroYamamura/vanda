@@ -18,7 +18,7 @@ const sha = (s: string) => "sha256:" + createHash("sha256").update(s, "utf8").di
 // 指紋の元の JSON は、docs/formats.md の決まった形を手で書く（約束リストを読んで作らない）
 const termJSON = `{"definition":"タスクを見分ける名前","id":"task-id","name":"タスクの ID"}`;
 const claimJSON = (statement: string) =>
-  `{"evidence":[{"layers":["model"],"stage":"test","type":"scenario-test"}],"id":"task-id-unique","layers":["model"],"statement":"${statement}","subjects":["task-id"]}`;
+  `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"}],"id":"task-id-unique","layers":["model"],"statement":"${statement}","subjects":["task-id"]}`;
 
 const config = (version: string) => `version = "${version}"
 
@@ -49,7 +49,7 @@ statement = "${statement}"
 layers = ["model"]
 ${flags ? 'flags = ["ai-proposal"]\nguesses = ["使い回さない"]\n' : ""}
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 ${extra ? `
@@ -61,7 +61,7 @@ layers = ["model"]
 flags = ["ai-proposal"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 ` : ""}`;
@@ -387,7 +387,7 @@ statement = "${c.statement}"
 ${c.rationale ? `rationale = "${c.rationale}"\n` : ""}${c.condition ? `condition = "${c.condition}"\n` : ""}layers = [${c.layers.map((l) => `"${l}"`).join(", ")}]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 ${c.plan ? `
@@ -570,7 +570,7 @@ layers = ["model"]
 guesses = ["${guess}"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 `;
@@ -947,8 +947,8 @@ test("エビデンスの予定と実際の揃っているかは揃っている�
   repo.write(
     ".vanda/promises.toml",
     text.replace(
-      '[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n',
-      '[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "plan"\ntype = "model-check"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "release"\ntype = "human-review"\nlayers = ["model"]\n',
+      '[[claim.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n',
+      '[[claim.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "plan"\ntype = "model-check"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "release"\ntype = "human-review"\nlayers = ["model"]\n',
     ),
   );
   commit(repo, "エビデンスの予定を足す", "#24");
@@ -986,8 +986,8 @@ test("エビデンスの予定と実際の詳細は長い文も改行も省略�
   repo.write(
     ".vanda/promises.toml",
     text.replace(
-      '[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n',
-      `[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "plan"\ntype = "model-check"\nlayers = ["model"]\ndetail = ${JSON.stringify(detail)}\n`,
+      '[[claim.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n',
+      `[[claim.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "plan"\ntype = "model-check"\nlayers = ["model"]\ndetail = ${JSON.stringify(detail)}\n`,
     ),
   );
   commit(repo, "長い詳細を書く", "#24");
@@ -1034,20 +1034,20 @@ test("変わったものの一覧の1件は名前のほかに番号や種類や�
   }
 });
 
-// CL-02: エビデンスは、ステージ（計画→実装→テスト→リリース→運用）の見出しの下を、タイプの見出しで分けて示す。
+// CL-02: エビデンスは、ステージ（計画→実装→リリース→運用）の見出しの下を、タイプの見出しで分けて示す。
 // 見出しは、ページの見出しのうちステージとタイプの名前のものだけを、出てくる順に見る
-const stageNames: [string, string][] = [["plan", "計画"], ["implementation", "実装"], ["test", "テスト"], ["release", "リリース"], ["operation", "運用"]];
+const stageNames: [string, string][] = [["plan", "計画"], ["implementation", "実装"], ["release", "リリース"], ["operation", "運用"]];
 const typeNames: Record<string, string> = {
   "model-check": "モデル検査", proof: "証明", "cross-check": "クロスチェック", "random-check": "ランダムチェック",
   "scenario-test": "シナリオテスト", "unit-test": "単体テスト", "interface-test": "インターフェースのテスト",
-  "concurrency-test": "同時実行のテスト", guardrail: "ガードレール", sensor: "センサー", monitoring: "監視", "human-review": "人のレビュー",
+  "concurrency-test": "同時実行のテスト", guardrail: "ガードレール", sensor: "センサー", "human-review": "人のレビュー",
 };
 // 書く順はステージの順にしない
 const allStagesEvidence: [string, string][] = [
-  ["operation", "monitoring"], ["test", "unit-test"], ["plan", "model-check"], ["release", "human-review"],
-  ["test", "scenario-test"], ["implementation", "guardrail"], ["plan", "proof"],
+  ["operation", "sensor"], ["implementation", "unit-test"], ["plan", "model-check"], ["release", "human-review"],
+  ["implementation", "scenario-test"], ["implementation", "guardrail"], ["plan", "proof"],
 ];
-const twoStagesEvidence: [string, string][] = [["test", "scenario-test"], ["plan", "model-check"]];
+const twoStagesEvidence: [string, string][] = [["implementation", "scenario-test"], ["plan", "model-check"]];
 
 function promisesWithEvidence(statement: string, ev: [string, string][]) {
   return `[[term]]\nid = "task-id"\nname = "タスクの ID"\ndefinition = "タスクを見分ける名前"\n\n[[claim]]\nid = "task-id-unique"\nsubjects = ["task-id"]\nstatement = "${statement}"\nlayers = ["model"]\n` +
@@ -1078,7 +1078,7 @@ function checkHeadings(got: string[], ev: [string, string][], where: string) {
 }
 
 for (const pg of pages) {
-  for (const [label, ev] of [["5つのステージ全部", allStagesEvidence], ["計画とテストのステージだけ", twoStagesEvidence]] as const) {
+  for (const [label, ev] of [["4つのステージ全部", allStagesEvidence], ["計画と実装のステージだけ", twoStagesEvidence]] as const) {
     test(`${pg.name}のエビデンスは${label}にエビデンスがあるときステージの見出しを決まった順に並べその下にそのステージのタイプの見出しだけを出す`, async ({ page }) => {
       repo.write(".vanda/promises.toml", promisesWithEvidence(v4.statement, [...ev]));
       commit(repo, "エビデンスの予定を書く", "#24");
@@ -1102,8 +1102,8 @@ test("約束の詳細の画面で由来のコミットを開くとその時点�
   checkHeadings(before, twoStagesEvidence, "今の中身");
   await choose(rowOf(page, "エビデンスの予定を書く"));
   await expect(page.getByText(v3.statement).first()).toBeVisible();
-  // 開いたその時点の中身の分だけ、見出しが増える。今の中身にない実装・リリース・運用の見出しが、その時点の中身から出る
-  await expect.poll(async () => (await evidenceHeadings(page)).filter((t) => ["実装", "リリース", "運用"].includes(t)).sort()).toEqual(["リリース", "実装", "運用"].sort());
+  // 開いたその時点の中身の分だけ、見出しが増える。今の中身にないリリース・運用の見出しが、その時点の中身から出る
+  await expect.poll(async () => (await evidenceHeadings(page)).filter((t) => ["リリース", "運用"].includes(t)).sort()).toEqual(["リリース", "運用"].sort());
   const after = await evidenceHeadings(page);
   checkHeadings(after.slice(before.length), allStagesEvidence, "その時点の中身");
 });
@@ -1305,7 +1305,7 @@ layers = ["model"]
 guesses = [${q2(w.guess)}]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 detail = ${q2(w.detail)}
@@ -1388,8 +1388,8 @@ function withGoEvidence(r: Repo) {
   r.write(
     ".vanda/promises.toml",
     text.replace(
-      '[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n',
-      '[[claim.evidence]]\nstage = "test"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "test"\ntype = "unit-test"\nlayers = ["model"]\n',
+      '[[claim.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n',
+      '[[claim.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "implementation"\ntype = "unit-test"\nlayers = ["model"]\n',
     ),
   );
   r.write("e2e/add-task.txtar", annotatedScenario);

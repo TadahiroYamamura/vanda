@@ -29,15 +29,15 @@ const tla = "Unique == \\A a, b \\in DOMAIN tasks : tasks[a] = tasks[b] => a = b
 
 const detail = claimDetail({
   evidence: [
-    { stage: "test", type: "scenario-test", layers: ["model"], detail: null, present: true,
+    { stage: "implementation", type: "scenario-test", layers: ["model"], detail: null, present: true,
       found: [{ adapter: "txtar", file: "e2e/add-task.txtar", line: 1, name: "add-task", text: "exec vanda add 買い物\n" }] },
     { stage: "plan", type: "model-check", layers: ["model"], detail: null, present: true,
       found: [{ adapter: "tla", file: "spec/Task.tla", line: 5, name: "Unique", text: tla }] },
     { stage: "implementation", type: "guardrail", layers: ["model"], detail: null, present: true,
       found: [{ adapter: "sql", file: "db/schema.sql", line: 4, name: "CREATE UNIQUE INDEX t ON task (id);", text: "CREATE UNIQUE INDEX t ON task (id);\n" }] },
-    { stage: "test", type: "unit-test", layers: ["model"], detail: null, present: true,
+    { stage: "implementation", type: "unit-test", layers: ["model"], detail: null, present: true,
       found: [{ adapter: "go", file: "internal/task/task_test.go", line: 6, name: "TestUnique", text: null }] },
-    { stage: "test", type: "random-check", layers: ["model"], detail: "まだ書いていない", present: false, found: [] },
+    { stage: "implementation", type: "random-check", layers: ["model"], detail: "まだ書いていない", present: false, found: [] },
   ],
   origin: [
     { commit: "1".repeat(40), date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" },
@@ -163,14 +163,14 @@ it("約束の詳細の画面で合意した後もその画面にとどまる", a
   expect(await screen.findByText(/タスクの ID は重ならない/)).toBeTruthy();
 });
 
-// CL-02: エビデンスは、ステージ（計画・実装・テスト・リリース・運用の順）ごとに分け、その中をタイプごとに分ける
+// CL-02: エビデンスは、ステージ（計画・実装・リリース・運用の順）ごとに分け、その中をタイプごとに分ける
 // @vanda:evidence claim-detail-evidence-grouping
 it("エビデンスをステージの順の見出しの下にタイプの見出しで分けて見せる", async () => {
   const ev = (stage: string, type: string) => ({ stage, type, layers: ["model"], detail: null, present: false, found: [] });
-  open(claimDetail({ evidence: [ev("operation", "monitoring"), ev("test", "unit-test"), ev("plan", "model-check"), ev("release", "human-review"), ev("implementation", "guardrail"), ev("test", "scenario-test")] }));
+  open(claimDetail({ evidence: [ev("operation", "sensor"), ev("implementation", "unit-test"), ev("plan", "model-check"), ev("release", "human-review"), ev("implementation", "guardrail"), ev("implementation", "scenario-test")] }));
   await screen.findByText(/タスクの ID は重ならない/);
-  const stages = ["計画", "実装", "テスト", "リリース", "運用"];
-  const types: Record<string, string[]> = { 計画: ["モデル検査"], 実装: ["ガードレール"], テスト: ["単体テスト", "シナリオテスト"], リリース: ["人のレビュー"], 運用: ["監視"] };
+  const stages = ["計画", "実装", "リリース", "運用"];
+  const types: Record<string, string[]> = { 計画: ["モデル検査"], 実装: ["単体テスト", "ガードレール", "シナリオテスト"], リリース: ["人のレビュー"], 運用: ["センサー"] };
   const all = Object.values(types).flat();
   await waitFor(() => expect(screen.getAllByRole("heading").map((h) => h.textContent?.trim())).toContain("運用"));
   const got = screen.getAllByRole("heading").map((h) => (h.textContent ?? "").trim()).filter((t) => stages.includes(t) || all.includes(t));
@@ -228,7 +228,7 @@ it("エビデンスの予定ごとに揃っているとないとアノテーシ�
     evidence: presenceNames.map(([present]) => {
       const [type] = types[String(present)];
       const found = present ? [{ adapter: "txtar", file: "e2e/add-task.txtar", line: 1, name: "add-task", text: "exec vanda add 買い物\n", state: "proposed" as const }] : [];
-      return { stage: "test", type, layers: ["model"], detail: null, present, found };
+      return { stage: "implementation", type, layers: ["model"], detail: null, present, found };
     }),
   }));
   await screen.findByText(/タスクの ID は重ならない/);
@@ -253,7 +253,7 @@ it("実際のエビデンスのうち合意の対象のファイルには今の�
   };
   open(claimDetail({
     evidence: [{
-      stage: "test", type: "unit-test", layers: ["model"], detail: null, present: true,
+      stage: "implementation", type: "unit-test", layers: ["model"], detail: null, present: true,
       found: states.map(([st]) => {
         const [adapter, file, name] = files[String(st)];
         return { adapter, file, line: 1, name, text: adapter === "go" ? null : `${name} の中身\n`, state: st };

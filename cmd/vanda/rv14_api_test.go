@@ -17,14 +17,14 @@ const rv14Term = "[[term]]\nid = \"t\"\nname = \"n\"\ndefinition = \"d\"\n"
 
 func rv14Promises(a, b int) string {
 	claim := func(id string, v int) string {
-		return fmt.Sprintf("\n[[claim]]\nid = %q\nsubjects = [\"t\"]\nstatement = \"v%d\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"test\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", id, v)
+		return fmt.Sprintf("\n[[claim]]\nid = %q\nsubjects = [\"t\"]\nstatement = \"v%d\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", id, v)
 	}
 	return rv14Term + claim("item-a", a) + claim("item-b", b)
 }
 
 // rv14FP は、docs/formats.md の決まった形の JSON を手で書き、その指紋を返す。
 func rv14FP(id string, v int) string {
-	return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"test","type":"unit-test"}],"id":%q,"layers":["model"],"statement":"v%d","subjects":["t"]}`, id, v)))
+	return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":%q,"layers":["model"],"statement":"v%d","subjects":["t"]}`, id, v)))
 }
 
 type rv14Repo struct {

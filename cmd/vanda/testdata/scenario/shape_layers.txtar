@@ -69,7 +69,7 @@ condition = "いつも"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
@@ -94,13 +94,13 @@ condition = "いつも"
 layers = ["model", "cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
 detail = "task.txtar"
@@ -125,7 +125,7 @@ condition = "いつも"
 layers = ["model", "cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model", "cli"]
 detail = "task_test.go"
@@ -150,7 +150,7 @@ condition = "いつも"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model", "cli"]
 detail = "task_test.go"
@@ -175,7 +175,7 @@ condition = "いつも"
 layers = ["model", "cli"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"

@@ -465,9 +465,9 @@ func expected(l promiseList) map[string]string {
 
 // ---- ランダムチェック ----
 
-var stages = []string{"plan", "implementation", "test", "release", "operation"}
+var stages = []string{"plan", "implementation", "release", "operation"}
 var evidenceTypes = []string{"model-check", "proof", "cross-check", "random-check", "scenario-test", "unit-test",
-	"interface-test", "concurrency-test", "guardrail", "sensor", "monitoring", "human-review"}
+	"interface-test", "concurrency-test", "guardrail", "sensor", "human-review"}
 
 // 書き方で扱いの変わる文字（引用符、\、改行、タブ、制御文字、< > &、日本語）を多めに混ぜる。
 func textGen() *rapid.Generator[string] {
@@ -572,8 +572,8 @@ func baseList() promiseList {
 			ID: "task-id-unique", Subjects: []string{"task"}, Statement: "タスクの ID は重ならない",
 			Rationale: strp("ID で指すため"), Condition: strp("いつも"), Layers: []string{"model", "cli"},
 			Evidence: []evidenceM{
-				{Stage: "test", Type: "unit-test", Layers: []string{"model"}, Detail: strp("task_test.go")},
-				{Stage: "test", Type: "scenario-test", Layers: []string{"cli"}},
+				{Stage: "implementation", Type: "unit-test", Layers: []string{"model"}, Detail: strp("task_test.go")},
+				{Stage: "implementation", Type: "scenario-test", Layers: []string{"cli"}},
 			},
 		}},
 	}
@@ -605,7 +605,7 @@ func Test指紋に入る項目のどれを変えても指紋が変わりflagsと
 		{"約束の対象", "task-id-unique", func(l *promiseList) { l.claims[0].Subjects = []string{"task", "task-add"} }, true},
 		{"約束のレイヤーの順", "task-id-unique", func(l *promiseList) { l.claims[0].Layers = []string{"cli", "model"} }, true},
 		{"約束のレイヤー", "task-id-unique", func(l *promiseList) { l.claims[0].Layers = []string{"model", "cli", "db"} }, true},
-		{"エビデンスのステージ", "task-id-unique", func(l *promiseList) { l.claims[0].Evidence[0].Stage = "implementation" }, true},
+		{"エビデンスのステージ", "task-id-unique", func(l *promiseList) { l.claims[0].Evidence[0].Stage = "release" }, true},
 		{"エビデンスのタイプ", "task-id-unique", func(l *promiseList) { l.claims[0].Evidence[0].Type = "random-check" }, true},
 		{"エビデンスのレイヤー", "task-id-unique", func(l *promiseList) { l.claims[0].Evidence[0].Layers = []string{"model", "cli"} }, true},
 		{"エビデンスの detail", "task-id-unique", func(l *promiseList) { l.claims[0].Evidence[0].Detail = strp("other_test.go") }, true},

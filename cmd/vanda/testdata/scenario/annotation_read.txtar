@@ -240,7 +240,7 @@ statement = "タスクの ID は重ならない"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 -- task.go --

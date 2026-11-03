@@ -105,7 +105,7 @@ condition = "always"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "model-check"
 layers = ["model"]
 detail = "spec/Task.tla"
@@ -146,4 +146,4 @@ CREATE TABLE tasks (id TEXT PRIMARY KEY);
 -- fp/term-task.json --
 {"definition":"A thing to do","id":"task","name":"Task"}
 -- fp/claim.json --
-{"condition":"always","evidence":[{"detail":"spec/Task.tla","layers":["model"],"stage":"test","type":"model-check"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"Task IDs are unique","subjects":["task"]}
+{"condition":"always","evidence":[{"detail":"spec/Task.tla","layers":["model"],"stage":"implementation","type":"model-check"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"Task IDs are unique","subjects":["task"]}

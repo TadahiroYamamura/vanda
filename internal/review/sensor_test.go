@@ -49,7 +49,7 @@ statement = "前の文"
 layers = ["model"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 `

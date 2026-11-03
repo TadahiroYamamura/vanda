@@ -141,11 +141,11 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 		layers     []string
 		found      []wantFound
 	}{
-		{"test", "scenario-test", []string{"model"}, []wantFound{{"txtar", "e2e/add-task.txtar", "add-task", 1, sp(reviewScenarioStory)}}},
+		{"implementation", "scenario-test", []string{"model"}, []wantFound{{"txtar", "e2e/add-task.txtar", "add-task", 1, sp(reviewScenarioStory)}}},
 		{"plan", "model-check", []string{"model"}, []wantFound{{"tla", "spec/Task.tla", "Unique", 5,
 			sp("Unique == \\A a, b \\in DOMAIN tasks : tasks[a] = tasks[b] => a = b\n")}}},
 		{"implementation", "guardrail", []string{"db"}, []wantFound{{"sql", "db/schema.sql", "CREATE UNIQUE INDEX task_id_unique ON task (id);", 4, sp(reviewSchema)}}},
-		{"test", "unit-test", []string{"model"}, []wantFound{{"go", "internal/task/task_test.go", "TestUnique", 6, nil}}},
+		{"implementation", "unit-test", []string{"model"}, []wantFound{{"go", "internal/task/task_test.go", "TestUnique", 6, nil}}},
 	}
 	if len(got.Evidence) != len(wantEvidence) {
 		t.Fatalf("エビデンスが %d 件: %+v", len(got.Evidence), got.Evidence)
