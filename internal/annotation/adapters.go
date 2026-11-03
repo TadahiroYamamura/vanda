@@ -12,6 +12,7 @@ import (
 	"go/token"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/diag"
@@ -351,8 +352,9 @@ func (sqlAdapter) names(file string, src []byte, lines []int) (map[int]string, [
 
 // userAdapter は、.vanda/adapters/ のアダプタ。受け渡しの形は docs/formats.md の「.vanda/adapters/ のアダプタ」。
 type userAdapter struct {
-	root string
-	u    *config.UserAdapter
+	root    string
+	u       *config.UserAdapter
+	timeout time.Duration
 }
 
 type adapterRequest struct {
@@ -395,11 +397,18 @@ func (c userAdapter) ask(file string, lines []int) (map[int]string, map[int]bool
 		return nil, nil, []diag.Error{{File: file, What: "アダプタに渡す JSON を作れません（" + err.Error() + "）", Fix: "vanda の不具合です。開発者に知らせてください"}}
 	}
 	label := c.u.Label()
-	cmd := c.u.Cmd(context.Background(), c.root)
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+	cmd := c.u.Cmd(ctx, c.root)
+	// アダプタが起こしたプロセスが出力を握ったままでも、止めた後に待ち続けないため
+	cmd.WaitDelay = time.Second
 	cmd.Stdin = bytes.NewReader(in)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return nil, nil, []diag.Error{{File: file, What: fmt.Sprintf("アノテーションの読み取りの%sが、%d 秒を過ぎても終わらないため、止めました（タイムアウト）", label, int(c.timeout/time.Second)), Fix: "アダプタが終わらない理由を直すか、" + config.File + " のその [[annotation]] の timeout（秒）を延ばしてください"}}
+		}
 		if e := c.u.StartError(c.root, err); e != nil {
 			return nil, nil, []diag.Error{{File: file, What: "アノテーションの読み取りの" + e.What, Fix: e.Fix}}
 		}

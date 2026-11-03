@@ -4,6 +4,7 @@ package config
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -11,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/TadahiroYamamura/vanda/internal/diag"
 	"github.com/TadahiroYamamura/vanda/internal/glob"
@@ -116,8 +118,13 @@ type AnnotationRule struct {
 	User    *UserAdapter
 	// Types は、このパターンで読んだアノテーションが満たすエビデンスのタイプ
 	Types []string
-	Line  int
+	// Timeout は、.vanda/adapters/ のアダプタを、1 つのファイルについて待つ長さ
+	Timeout time.Duration
+	Line    int
 }
+
+// DefaultAdapterTimeout は、[[annotation]] の timeout を省いたときに、.vanda/adapters/ のアダプタを待つ長さ
+const DefaultAdapterTimeout = 20 * time.Second
 
 type GuardrailRule struct {
 	Adapter string
@@ -222,7 +229,20 @@ func parse(l *loader, top *tomlread.Table) *Config {
 		r.Paths = patterns(t, "paths", "")
 		r.Adapter, r.User = adapterOf(l, t, BuiltinAdapters, "adapter を "+strings.Join(BuiltinAdapters, "・")+" のどれかにするか")
 		r.Types = evidenceTypes(t)
-		t.Unknown("paths, adapter, args, types")
+		r.Timeout = DefaultAdapterTimeout
+		if n, ok := t.Int("timeout", false); ok {
+			switch {
+			case r.User == nil && r.Adapter != "":
+				t.ErrAt("timeout", "timeout は、カスタムアダプタ（.vanda/adapters/ のアダプタ）のときだけ書けます（"+quote(r.Adapter)+" は組込みのアダプタです）", "timeout を消してください")
+			case r.User == nil:
+				t.ErrAt("timeout", "timeout は、カスタムアダプタ（.vanda/adapters/ のアダプタ）のときだけ書けます（adapter がありません）", "adapter にカスタムアダプタの名前を書くか、timeout を消してください")
+			case n < 1:
+				t.ErrAt("timeout", fmt.Sprintf("timeout が %d です", n), "timeout には 1 以上の整数（秒）を書いてください")
+			default:
+				r.Timeout = time.Duration(n) * time.Second
+			}
+		}
+		t.Unknown("paths, adapter, args, types, timeout")
 		cfg.Annotations = append(cfg.Annotations, r)
 	}
 

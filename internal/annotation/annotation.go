@@ -177,7 +177,12 @@ func ReadWith(root string, read tomlread.Reader, files []string, rules []config.
 
 func adapterFor(root string, r config.AnnotationRule) adapter {
 	if r.User != nil {
-		return userAdapter{root: root, u: r.User}
+		t := r.Timeout
+		if t <= 0 {
+			// 設定を読まずに作った規則（timeout を埋めていないもの）は、省いたときと同じに待つ
+			t = config.DefaultAdapterTimeout
+		}
+		return userAdapter{root: root, u: r.User, timeout: t}
 	}
 	switch r.Adapter {
 	case "go":

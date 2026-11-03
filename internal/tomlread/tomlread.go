@@ -176,6 +176,24 @@ func (t *Table) Bool(key string, required bool) (bool, bool) {
 	return b, true
 }
 
+// Int は、整数の項目を返す。
+func (t *Table) Int(key string, required bool) (int64, bool) {
+	t.used[key] = true
+	v, ok := t.M[key]
+	if !ok {
+		if required {
+			t.missing(key, key+" = 1")
+		}
+		return 0, false
+	}
+	n, ok := v.(int64)
+	if !ok {
+		t.ErrAt(key, key+" が整数ではありません", key+" = 30 のように、整数で書いてください")
+		return 0, false
+	}
+	return n, true
+}
+
 // Time は、時差の付いた日時の項目を返す。
 func (t *Table) Time(key string, required bool) (time.Time, bool) {
 	t.used[key] = true
