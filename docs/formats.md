@@ -110,7 +110,7 @@ flags = ["ai-proposal"]
 guesses = ["…"]
 
 [[claim.evidence]]
-stage = "test"
+stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "…"
@@ -131,7 +131,7 @@ detail = "…"
 | | `flags` | 文字列の配列（`ai-proposal` だけ） | 省いてよい |
 | | `guesses` | 文字列の配列 | 省いてよい |
 | | `[[claim.evidence]]` | 表の配列 | 必ず。1 つ以上 |
-| `[[claim.evidence]]` | `stage` | 文字列（`plan`・`implementation`・`test`・`release`・`operation`） | 必ず |
+| `[[claim.evidence]]` | `stage` | 文字列（`plan`・`implementation`・`release`・`operation`） | 必ず |
 | | `type` | 文字列（`docs/spec.md` の「エビデンスのタイプ」の値） | 必ず |
 | | `layers` | 文字列の配列（約束の `layers` の中から） | 必ず。1 つ以上 |
 | | `detail` | 文字列 | 省いてよい |
@@ -352,7 +352,7 @@ scope = "story"
 | `sensor` | `@vanda:sensor` |
 | `cross-check`・`random-check`・`scenario-test`・`unit-test`・`interface-test`・`concurrency-test`・`guardrail` | `@vanda:evidence` |
 | `proof` | 今は扱えない（予定に書いたら誤り。`types` に書けない） |
-| `human-review`・`monitoring` | 確かめない（`types` に書けない） |
+| `human-review` | 確かめない（`types` に書けない） |
 
 組込みのアダプタは、既定のタイプを持つ（`vanda init` が `types` にそのまま書く）。
 
@@ -474,7 +474,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
       "fingerprint": "sha256:…",
       "flags": ["ai-proposal", "changed-since-agreement"],
       "group": "layer:model",
-      "before": {"statement": "…", "rationale": "…", "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [{"stage": "test", "type": "unit-test", "layers": ["model"], "detail": null}], "flags": [], "guesses": []},
+      "before": {"statement": "…", "rationale": "…", "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [{"stage": "implementation", "type": "unit-test", "layers": ["model"], "detail": null}], "flags": [], "guesses": []},
       "after": {"statement": "…", "rationale": "…", "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [], "flags": ["ai-proposal"], "guesses": []},
       "detachedAgreement": null,
       "otherCommits": []
@@ -657,7 +657,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
   "flags": [], "guesses": [],
   "evidence": [
     {
-      "stage": "test", "type": "model-check", "layers": ["model"], "detail": null,
+      "stage": "plan", "type": "model-check", "layers": ["model"], "detail": null,
       "found": [{"adapter": "tla", "file": "spec/Task.tla", "line": 12, "name": "IdsUnique", "text": "IdsUnique ==\n  …"}],
       "present": true
     }
@@ -672,7 +672,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `evidence[].found[].state` | ファイルが合意の対象（シナリオ・オラクルの定義・ガードレールの定義）のときだけ、今の中身の指紋に合う合意の記録があれば `agreed`、なければ `proposed`（ストーリーによらない）。合意の対象でないもの（Go のテストなど）は `null` |
 | `evidence[].found` | その約束を指す、タイプに合うアノテーション（「エビデンスが揃っている審査」の表と同じ組み合わせ）。`text` は、`txtar` と `sql` ならファイルの中身全体、`tla` なら付いている定義（定義の行から、次の最上位の定義か `====` の前まで。終わりの空行とコメントだけの行は含めない）、`go` と `ts` なら `null`。`line` は、アノテーションが付いているものの行（`go` は `func` の宣言、`ts` は `test`・`it`・`describe` の呼び出し、`tla` は定義、`sql` は文の行。`txtar` はファイル全体に付くので 1） |
 | `subjects` | 約束の `subjects` の順。約束リストにない ID は、`kind`・`name` を `null` にする |
-| `evidence[].present` | 揃っているか（RV-08。エビデンスが揃っている審査と同じ判定）。`found` があれば `true`。`proof` は `false`。`human-review`・`monitoring` は `null`（アノテーションで確かめない） |
+| `evidence[].present` | 揃っているか（RV-08。エビデンスが揃っている審査と同じ判定）。`found` があれば `true`。`proof` は `false`。`human-review` は `null`（アノテーションで確かめない） |
 | `origin` | HEAD の履歴の、合流でないコミットのうち、約束の指紋が変わったもの（作ったものを含む）。コミットの日時の新しい順（同じ日時なら、履歴で後のコミットを先に）。`change` は `added`・`modified`。`stories` は `Story:` のトレーラーにあるストーリーの ID。消した後に同じ ID で作り直した約束は新しいものとみなし、消すまでのコミットを入れない |
 | `agreements` | 合意の記録のうち、`kind = "claim"` でこの ID を指すもの。合意した日時（`agreed_at`）の新しい順（同じ日時なら、合意の記録のファイルの順（設定の `agreements` のファイルの順、同じファイルなら行の順）で後のものを先に）。`current` は、今の中身の指紋に合うか。`commit` は、その合意の記録を書き足したコミット（HEAD の履歴を古い順にたどり、合意の記録のファイルを変えたコミットの時点の記録に、同じ記録（`kind`・`key`・`fingerprint`・`story`・`agreed_at`・`user`）が初めて現れたコミット）。まだコミットしていなければ `null` |
 

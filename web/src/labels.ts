@@ -36,7 +36,6 @@ export const flagHelp: Record<Flag, string> = {
 export const stageLabel: Record<string, string> = {
   plan: "計画",
   implementation: "実装",
-  test: "テスト",
   release: "リリース",
   operation: "運用",
 };
@@ -52,6 +51,5 @@ export const typeLabel: Record<string, string> = {
   "concurrency-test": "同時実行のテスト",
   guardrail: "ガードレール",
   sensor: "センサー",
-  monitoring: "監視",
   "human-review": "人のレビュー",
 };

@@ -30,7 +30,7 @@ const (
 var BuiltinAdapters = []string{"go", "txtar", "tla", "sql", "ts"}
 
 // EvidenceKinds は、[[annotation]] の types に書けるエビデンスのタイプ（書ける順）と、そのタイプのエビデンスとして
-// 揃っているとするアノテーションの種類。human-review・monitoring はアノテーションで確かめず、proof はまだ扱えないので、書けない
+// 揃っているとするアノテーションの種類。human-review はアノテーションで確かめず、proof はまだ扱えないので、書けない
 var EvidenceKinds = []struct{ Type, Kind string }{
 	{"model-check", "claim"},
 	{"cross-check", "evidence"},
@@ -291,7 +291,7 @@ func evidenceTypes(t *tomlread.Table) []string {
 			}
 			why := "決まったタイプではありません"
 			switch typ {
-			case "human-review", "monitoring":
+			case "human-review":
 				why = "アノテーションで確かめないタイプなので、書けません"
 			case "proof":
 				why = "まだ扱えないタイプなので、書けません"

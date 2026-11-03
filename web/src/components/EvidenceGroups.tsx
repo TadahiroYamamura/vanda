@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { stageLabel, typeLabel } from "../labels";
 
-// ステージの並び（計画→実装→テスト→リリース→運用）。決まった値のほかのステージは、後ろに出てきた順で並べる
-const STAGES = ["plan", "implementation", "test", "release", "operation"];
+// ステージの並び（計画→実装→リリース→運用）。決まった値のほかのステージは、後ろに出てきた順で並べる
+const STAGES = ["plan", "implementation", "release", "operation"];
 
 type Heading = "h3" | "h4" | "h5";
 const next: Record<Heading, "h4" | "h5" | "h6"> = { h3: "h4", h4: "h5", h5: "h6" };

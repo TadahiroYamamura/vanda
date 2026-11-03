@@ -9,9 +9,9 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/diag"
 )
 
-var Stages = []string{"plan", "implementation", "test", "release", "operation"}
+var Stages = []string{"plan", "implementation", "release", "operation"}
 
-var Types = []string{"model-check", "proof", "cross-check", "random-check", "scenario-test", "unit-test", "interface-test", "concurrency-test", "guardrail", "sensor", "monitoring", "human-review"}
+var Types = []string{"model-check", "proof", "cross-check", "random-check", "scenario-test", "unit-test", "interface-test", "concurrency-test", "guardrail", "sensor", "human-review"}
 
 var Flags = []string{"ai-proposal"}
 

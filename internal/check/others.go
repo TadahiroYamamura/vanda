@@ -181,7 +181,7 @@ func (e *env) evidencePresent(scope string) []diag.Error {
 			case "proof":
 				errs = append(errs, ev.Table.Err("type", "タイプ proof は、まだ扱えません（対応するアダプタがありません）", "別のタイプのエビデンスにしてください"))
 				continue
-			case "human-review", "monitoring":
+			case "human-review":
 				continue
 			}
 			kind := config.EvidenceKind(ev.Type)
