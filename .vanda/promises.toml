@@ -657,7 +657,7 @@ layers = ["cli"]
 [[claim]]
 id = "reference-form"
 subjects = ["read-promise-list", "reference", "promise-list"]
-statement = "名前を除く、自然言語で書く項目（用語と機能の definition、機能の formal_waiver、約束の statement・rationale・condition・guesses）の中の {@@id:<ID>} を、その ID の用語・機能・約束を指す参照として読む"
+statement = "名前を除く、自然言語で書く項目の中の {@@id:<ID>} を、その ID の用語・機能・約束を指す参照として読む"
 rationale = "どれがどれを参照しているかを機械的に追えるようにし、後から依存や詳細化などの関係を定義しやすくするため。また、定義していない語が一目で分かるようにするため。名前を除くのは、名前がほかの約束や文書に一言一句同じに載せるものだから。ほかの項目を絞らないのは、ID を変えない限り、参照元と参照先のあいだで、参照を通じて影響が伝わることがないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
