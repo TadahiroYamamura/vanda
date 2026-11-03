@@ -358,18 +358,35 @@ func ConfigText(a Answers) string {
 	return b.String()
 }
 
-// ChecksText は、.vanda/checks/ci.toml の中身。今ある審査を全部、審査の種類の順に並べる。
+// ChecksText は、.vanda/checks/ci.toml（ブランチで動かす審査の設定）の中身。今ある審査を全部、審査の種類の順に並べる。
 // 1 つのストーリーで変わったものを見られる審査は、範囲を story にする
 func ChecksText() string {
+	return checksText(true)
+}
+
+// MainChecksText は、.vanda/checks/main.toml（ベースブランチで動かす審査の設定）の中身。
+// 範囲 story だけで行える審査（story-origin）を除き、ほかの審査を全部、範囲 all で並べる。
+// ベースブランチへの push のように Story: のトレーラーのないコミットでは、範囲 story の審査が必ず止まるため
+func MainChecksText() string {
+	return checksText(false)
+}
+
+func checksText(story bool) string {
 	var b strings.Builder
-	for i, n := range check.Names {
-		scope := check.ScopeAll
+	for _, n := range check.Names {
+		scope := ""
 		for _, s := range n.Scopes {
-			if s == check.ScopeStory {
+			if s == check.ScopeAll && scope == "" {
+				scope = check.ScopeAll
+			}
+			if s == check.ScopeStory && story {
 				scope = check.ScopeStory
 			}
 		}
-		if i > 0 {
+		if scope == "" {
+			continue
+		}
+		if b.Len() > 0 {
 			b.WriteString("\n")
 		}
 		fmt.Fprintf(&b, "[[check]]\nname = %s\nscope = %s\n", tomlwrite.String(n.Name), tomlwrite.String(scope))
@@ -377,16 +394,23 @@ func ChecksText() string {
 	return b.String()
 }
 
-// Files は、答え a から、作る 4 つのファイルを作る。問いかけも、ファイルの書き込みもしない。
+// CIChecksFile と MainChecksFile は、vanda init が作る審査の設定の場所。CIChecksFile はブランチで、MainChecksFile はベースブランチで動かす
+const (
+	CIChecksFile   = ".vanda/checks/ci.toml"
+	MainChecksFile = ".vanda/checks/main.toml"
+)
+
+// Files は、答え a から、作る 5 つのファイルを作る。問いかけも、ファイルの書き込みもしない。
 // 戻り値の要素は {場所, 中身}。場所はリポジトリの直下からの / 区切り（例: .vanda/config.toml）。
-// 順は .vanda/config.toml・.vanda/promises.toml・.vanda/agreements.toml・.vanda/checks/ci.toml で、
+// 順は .vanda/config.toml・.vanda/promises.toml・.vanda/agreements.toml・.vanda/checks/ci.toml・.vanda/checks/main.toml で、
 // promises.toml と agreements.toml の中身は空。
 func Files(a Answers) [][2]string {
 	return [][2]string{
 		{config.File, ConfigText(a)},
 		{config.DefaultPromises, ""},
 		{config.DefaultAgreements, ""},
-		{".vanda/checks/ci.toml", ChecksText()},
+		{CIChecksFile, ChecksText()},
+		{MainChecksFile, MainChecksText()},
 	}
 }
 

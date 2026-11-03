@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
 
 	"github.com/TadahiroYamamura/vanda/internal/config"
@@ -48,9 +49,9 @@ func newInitCommand() *cobra.Command {
 	}
 }
 
+// isTerminal は、f が端末かを返す。文字デバイスかどうかでは /dev/null も当たるので、端末の属性を読めるかで決める
 func isTerminal(f *os.File) bool {
-	st, err := f.Stat()
-	return err == nil && st.Mode()&os.ModeCharDevice != 0
+	return term.IsTerminal(f.Fd())
 }
 
 // runInit は、問いかけて確かめ、.vanda/ を作る。
@@ -103,7 +104,7 @@ func report(out io.Writer, root string, files [][2]string, noAnnotations bool) e
 	fmt.Fprintf(out, "設定を確かめました: %s（版 %s）\n", config.File, cfg.Version)
 	fmt.Fprintln(out, "\n次にすること:")
 	fmt.Fprintln(out, "  1. "+config.File+" に、約束のレイヤーを [[layer]] で書いてください（id・name・description）。")
-	fmt.Fprintf(out, "  2. CI で vanda check .vanda/checks/ci.toml --base %s を動かすよう、CI の設定に足してください。\n", cfg.GUIBase)
+	fmt.Fprintf(out, "  2. CI で vanda check を動かすよう、CI の設定に足してください。ブランチでは vanda check %s --base %s を、ベースブランチでは vanda check %s を動かします。\n", initcmd.CIChecksFile, cfg.GUIBase, initcmd.MainChecksFile)
 	n := 3
 	if noAnnotations {
 		fmt.Fprintf(out, "  %d. %s に、アノテーションを読むファイルを [[annotation]] で書いてください（paths と adapter）。\n", n, config.File)
