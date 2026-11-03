@@ -1,0 +1,216 @@
+# 審査は、設定・約束リスト・合意の記録のファイルと、アノテーションを読むファイルを、HEAD のコミットの中身で読む。
+# コミットしていないファイルと変更（git add したものを含む）は読まない。
+# @vanda:evidence reads-committed-files-only
+# ファイルの種類ごとに、作業ツリーで誤りになるように書き換えても、コミットするまでは審査が通り、コミットすると止まることを確かめる。
+# 作業ツリーにだけある、どのパターンにも当たらない .vanda/ の下のファイルも、コミットするまでは読まない。
+
+exec git init -q -b main
+expand .vanda/config.toml
+commit '(test) はじめ'
+exec vanda check .vanda/checks/all.toml
+
+# 設定
+cp cases/config-bad.toml .vanda/config.toml
+expand .vanda/config.toml
+exec vanda check .vanda/checks/all.toml
+exec git add -A
+exec vanda check .vanda/checks/all.toml
+commit '(test) 設定を誤らせる'
+! exec vanda check .vanda/checks/all.toml
+stderr '\.vanda/config\.toml:[0-9]+: .*extra'
+! stderr '(?m)^panic: '
+cp cases/config.toml .vanda/config.toml
+expand .vanda/config.toml
+commit '(test) 設定を戻す'
+exec vanda check .vanda/checks/all.toml
+
+# 約束リスト
+cp cases/promises-bad.toml .vanda/promises.toml
+exec vanda check .vanda/checks/all.toml
+exec git add -A
+exec vanda check .vanda/checks/all.toml
+commit '(test) 約束リストを誤らせる'
+! exec vanda check .vanda/checks/all.toml
+stdout '審査 promise-list-shape（all）: 失敗'
+stderr '\.vanda/promises\.toml:[0-9]+: .*Task_ID'
+cp cases/promises.toml .vanda/promises.toml
+commit '(test) 約束リストを戻す'
+
+# 合意の記録
+cp cases/agreements-bad.toml .vanda/agreements.toml
+exec vanda check .vanda/checks/all.toml
+exec git add -A
+exec vanda check .vanda/checks/all.toml
+commit '(test) 合意の記録を誤らせる'
+! exec vanda check .vanda/checks/all.toml
+stdout '審査 agreement-targets（all）: 失敗'
+stderr '\.vanda/agreements\.toml:1: '
+cp cases/agreements.toml .vanda/agreements.toml
+commit '(test) 合意の記録を戻す'
+
+# アノテーションを読むファイル（約束リストにない ID を指す）
+cp cases/task_test.go.bad task_test.go
+exec vanda check .vanda/checks/all.toml
+exec git add -A
+exec vanda check .vanda/checks/all.toml
+commit '(test) アノテーションを誤らせる'
+! exec vanda check .vanda/checks/all.toml
+stdout '審査 annotation-links（all）: 失敗'
+stderr 'task_test\.go:3: .*no-such-claim'
+cp cases/task_test.go.orig task_test.go
+commit '(test) アノテーションを戻す'
+
+# アノテーションを消すと、エビデンスの予定が揃わなくなる
+cp cases/task_test.go.none task_test.go
+exec vanda check .vanda/checks/all.toml
+commit '(test) アノテーションを消す'
+! exec vanda check .vanda/checks/all.toml
+stdout '審査 evidence-present（all）: 失敗'
+cp cases/task_test.go.orig task_test.go
+commit '(test) アノテーションを戻す'
+
+# 作業ツリーにだけある .vanda/ の下のファイル
+cp cases/memo.md .vanda/memo.md
+exec vanda check .vanda/checks/all.toml
+exec git add -A
+exec vanda check .vanda/checks/all.toml
+commit '(test) 読まれないファイルを足す'
+! exec vanda check .vanda/checks/all.toml
+stdout '審査 unread-files（all）: 失敗'
+stderr '\.vanda/memo\.md: '
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["**/*_test.go"]
+adapter = "go"
+types = ["unit-test"]
+-- cases/config.toml --
+version = "${VANDA_VERSION}"
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["**/*_test.go"]
+adapter = "go"
+types = ["unit-test"]
+-- cases/config-bad.toml --
+version = "${VANDA_VERSION}"
+extra = 1
+
+[[layer]]
+id = "model"
+name = "モデル"
+description = "判定と状態の変化"
+
+[[annotation]]
+paths = ["**/*_test.go"]
+adapter = "go"
+types = ["unit-test"]
+-- .vanda/checks/all.toml --
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+[[check]]
+name = "annotation-links"
+scope = "all"
+[[check]]
+name = "agreement-targets"
+scope = "all"
+[[check]]
+name = "evidence-present"
+scope = "all"
+[[check]]
+name = "unread-files"
+scope = "all"
+-- .vanda/agreements.toml --
+-- cases/agreements.toml --
+-- cases/agreements-bad.toml --
+[[memo]]
+text = "決まっていない表"
+-- .vanda/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+-- cases/promises.toml --
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+-- cases/promises-bad.toml --
+[[term]]
+id = "Task_ID"
+name = "タスク"
+definition = "利用者がやること"
+
+[[term]]
+id = "task"
+name = "タスク"
+definition = "利用者がやること"
+
+[[claim]]
+id = "task-id-unique"
+subjects = ["task"]
+statement = "タスクの ID は重ならない"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+-- task_test.go --
+package task
+
+// @vanda:evidence task-id-unique
+func TestUnique(t *testing.T) {}
+-- cases/task_test.go.orig --
+package task
+
+// @vanda:evidence task-id-unique
+func TestUnique(t *testing.T) {}
+-- cases/task_test.go.bad --
+package task
+
+// @vanda:evidence no-such-claim
+func TestUnique(t *testing.T) {}
+
+// @vanda:evidence task-id-unique
+func TestOther(t *testing.T) {}
+-- cases/task_test.go.none --
+package task
+
+func TestUnique(t *testing.T) {}
+-- cases/memo.md --
+メモ
