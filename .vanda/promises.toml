@@ -1318,7 +1318,8 @@ layers = ["cli"]
 [[claim]]
 id = "agreements-file-record-path"
 subjects = ["store-agreements", "list-check-kinds", "agreement-record"]
-statement = "kind が file の合意の記録に path がないか、key が fingerprint と違えば、また kind が file でない合意の記録に path があれば、agreement-targets の誤りにする"
+statement = "kind が file の合意の記録に path がなければ、agreement-targets の誤りにする。key が fingerprint と違えば、誤りにする。ただし、消したことへの合意の記録では、key が path と違えば誤りにする。kind が file でない合意の記録に path があれば、誤りにする"
+rationale = "消したファイルには中身がなく指紋もないので、消したことへの合意の記録は場所で指す"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
