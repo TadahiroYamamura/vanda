@@ -66,13 +66,13 @@ definition = "約束が成り立っていることの裏付け"
 [[term]]
 id = "stage"
 name = "ステージ"
-definition = "エビデンスを得る開発の段階。計画・実装・テスト・リリース・運用。約束リストでの項目名は stage"
+definition = "エビデンスを得る開発の段階。約束リストでの項目名は stage"
 part_of = "evidence"
 
 [[term]]
 id = "evidence-type"
 name = "タイプ"
-definition = "エビデンスの種類（単体テスト、モデル検査、シナリオテストなど）。約束リストでの項目名は type"
+definition = "エビデンスの種類。約束リストでの項目名は type"
 part_of = "evidence"
 
 [[term]]
@@ -83,22 +83,61 @@ definition = "クロスチェックやランダムチェックの正解を出す
 [[term]]
 id = "model-check"
 name = "モデル検査"
-definition = "エビデンスのタイプ（model-check）。決めた範囲の中のすべての状態をたどって、性質が成り立つことを確かめる（TLC）"
+definition = "決めた範囲の中のすべての状態をたどって、性質が成り立つことを確かめる（TLC）"
+part_of = "evidence-type"
 
 [[term]]
 id = "proof"
 name = "証明"
-definition = "エビデンスのタイプ（proof）。すべての値で性質が成り立つことを示す（Dafny）"
+definition = "すべての値で性質が成り立つことを示す（Dafny）"
+part_of = "evidence-type"
 
 [[term]]
 id = "cross-check"
 name = "クロスチェック"
-definition = "オラクルと実装に同じ操作を送り、結果を比べるテスト（モデルベーステスト）。タイプの値は cross-check"
+definition = "オラクルと実装に同じ操作を送り、結果を比べるテスト（モデルベーステスト）"
+part_of = "evidence-type"
 
 [[term]]
 id = "random-check"
 name = "ランダムチェック"
 definition = "無作為な入力で性質を確かめるテスト（プロパティベーステスト）"
+part_of = "evidence-type"
+
+[[term]]
+id = "unit-test"
+name = "単体テスト"
+definition = "部品を 1 つずつ、決めた入力で動かして確かめるテスト"
+part_of = "evidence-type"
+
+[[term]]
+id = "interface-test"
+name = "インターフェースのテスト"
+definition = "DB や CLI などの境界の振る舞いを確かめるテスト"
+part_of = "evidence-type"
+
+[[term]]
+id = "concurrency-test"
+name = "同時実行のテスト"
+definition = "複数の操作を同時に行っても、約束が成り立つことを確かめるテスト"
+part_of = "evidence-type"
+
+[[term]]
+id = "human-review"
+name = "人のレビュー"
+definition = "人が読んで確かめること"
+part_of = "evidence-type"
+
+[[term]]
+id = "guardrail-evidence"
+name = "ガードレールの検証"
+definition = "ガードレールが、約束に反するものを本当に拒むかを確かめた結果。例: ミューテーションテストの結果"
+part_of = "evidence-type"
+
+[[term]]
+id = "sensor-evidence"
+name = "センサーの検証"
+definition = "センサーが、約束が破れた時に本当に見つけて知らせるかを確かめた結果。例: ミューテーションテストの結果"
 part_of = "evidence-type"
 
 [[term]]
@@ -109,7 +148,8 @@ definition = "利用者の操作の流れで約束を確かめる台本（エビ
 [[term]]
 id = "scenario-test"
 name = "シナリオテスト"
-definition = "シナリオを動かして確かめるエビデンスのタイプ（scenario-test）。CLI の txtar、端末で問いかけるものの Expect、画面の E2E のどれで書いたシナリオも含む"
+definition = "シナリオを動かして確かめるテスト。CLI の txtar、端末で問いかけるものの Expect、画面の E2E のどれで書いたシナリオも含む"
+part_of = "evidence-type"
 
 [[term]]
 id = "guardrail"
