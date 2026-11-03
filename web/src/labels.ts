@@ -29,7 +29,7 @@ export const flagLabel: Record<Flag, string> = {
 
 export const flagHelp: Record<Flag, string> = {
   "ai-proposal": "要求にも質疑にもなく、AI が自分で決めたもの",
-  guess: "AI が確かめずに書いた事実を含むもの",
+  guess: "AI が確かめずに推し量って書いた所があるもの",
   "changed-since-agreement": "前の合意から中身が変わったもの",
 };
 
