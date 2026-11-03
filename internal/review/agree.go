@@ -39,6 +39,14 @@ type AgreementRecord struct {
 	Story       string  `json:"story"`
 }
 
+// target は、記録の指す先（約束・用語・機能なら ID、ファイルなら場所）。agreements.Agreement の Target と同じ決め方。
+func (rec AgreementRecord) target() string {
+	if rec.Path != nil {
+		return *rec.Path
+	}
+	return rec.Key
+}
+
 func conflict(msg, fix string) *Error {
 	return &Error{Status: http.StatusConflict, Message: msg, Fix: fix}
 }
@@ -103,7 +111,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	if rec.Fingerprint != req.Fingerprint {
 		return nil, conflict(target+" の中身が、画面に表示した後に変わりました（画面 "+req.Fingerprint+"、今 "+rec.Fingerprint+"）。", "一覧を読み直し、今の中身を確かめてから合意してください。")
 	}
-	if s.recs.AgreedBy(rec.Kind, rec.Key, rec.Fingerprint, req.Story) {
+	if s.recs.AgreedBy(rec.Kind, rec.target(), rec.Fingerprint, req.Story) {
 		return nil, conflict(target+" の今の中身には、ストーリー "+req.Story+" ですでに合意しています。", "一覧を読み直してください。")
 	}
 

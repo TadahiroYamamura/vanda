@@ -141,7 +141,7 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 					if err != nil {
 						return nil, internalErr(err)
 					}
-					f.State = ptr(stateName(s.recs.Agreed("file", fp, fp)))
+					f.State = ptr(stateName(s.recs.Agreed("file", a.File, fp)))
 				}
 				if err != nil {
 					return nil, internalErr(err)

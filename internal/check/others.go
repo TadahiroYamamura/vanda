@@ -130,9 +130,9 @@ func (e *env) agreement(scope string) []diag.Error {
 		}
 		fp := agreements.FileFingerprint(src)
 		switch {
-		case changed && !e.recs.Agreed("file", fp, fp):
+		case changed && !e.recs.Agreed("file", f, fp):
 			errs = append(errs, diag.Error{File: f, What: "ファイルの今の中身に、まだ合意していません（提案中。指紋 " + fp + "）", Fix: "中身を確かめてから合意し、合意の記録に書いてください"})
-		case storyAgreed["path:"+f] && !e.recs.AgreedBy("file", fp, fp, e.story):
+		case storyAgreed["path:"+f] && !e.recs.AgreedBy("file", f, fp, e.story):
 			errs = append(errs, diag.Error{File: f, What: "ストーリー " + e.story + " の合意が外れています（前に合意した後に中身が変わり、今の中身 " + fp + " に " + e.story + " の合意がありません）", Fix: "今の中身を確かめ、ストーリー " + e.story + " で合意し直してください"})
 		}
 	}

@@ -45,7 +45,7 @@ func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
 	if rerrs != nil {
 		return fmt.Errorf("書き足した後の合意の記録を読めません（%s）", rerrs[0].Error())
 	}
-	if !recs.AgreedBy(rec.Kind, rec.Key, rec.Fingerprint, rec.Story) {
+	if !recs.AgreedBy(rec.Kind, rec.target(), rec.Fingerprint, rec.Story) {
 		return errors.New("書き足した合意が、読み直した合意の記録に見つかりません")
 	}
 	if claim == nil {

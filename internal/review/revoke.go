@@ -71,7 +71,7 @@ func sameRecord(a, b *agreements.Agreement) bool {
 		a.AgreedAt.Equal(b.AgreedAt) && a.UserName == b.UserName && a.UserEmail == b.UserEmail
 }
 
-// revocable は、kind・key・fp の今の中身への、ストーリー story の合意の記録のうち、今の人が今のブランチで書いたもの（消すもの）と、
+// revocable は、kind・key（ファイルなら場所）・fp の今の中身への、ストーリー story の合意の記録のうち、今の人が今のブランチで書いたもの（消すもの）と、
 // 取り消せるかの判定を返す。
 func (s *state) revocable(kind, key, fp, point string, base *agreements.Records, user *User) ([]*agreements.Agreement, Revocation) {
 	no := func(reason string) Revocation { return Revocation{Reason: ptr(reason), Others: []User{}} }
@@ -86,7 +86,7 @@ func (s *state) revocable(kind, key, fp, point string, base *agreements.Records,
 	var otherStories []string
 	seen := map[string]bool{}
 	for _, a := range s.recs.Agreements {
-		if a.Kind != kind || a.Key != key || a.Fingerprint != fp {
+		if a.Kind != kind || a.Target() != key || a.Fingerprint != fp {
 			continue
 		}
 		if a.Story == story {
@@ -158,7 +158,7 @@ func (s *state) setRevocations(es []Entry, mergeBase string) error {
 		}
 		kind, key := e.Kind, ""
 		if e.Kind == "file" {
-			key = *e.Fingerprint
+			key = *e.Path
 		} else {
 			key = *e.ID
 		}
@@ -219,7 +219,7 @@ func Revoke(o Options, req RevokeRequest) (*RevokeResult, *Error) {
 		if err != nil {
 			return nil, internalErr(err)
 		}
-		kind, key, fp, target = "file", f, f, "ファイル "+*req.Path
+		kind, key, fp, target = "file", *req.Path, f, "ファイル "+*req.Path
 	default:
 		return nil, badRequest(fmt.Sprintf("対象の種類 %q はありません。", req.Kind), "kind を claim・term・feature・file のどれかにしてください。")
 	}

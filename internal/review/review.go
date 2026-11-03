@@ -582,7 +582,7 @@ func (s *state) fileState(e *Entry, path, old string) error {
 	e.FileType = ptr(s.cur.types[path])
 	fp := agreements.FileFingerprint(b)
 	e.Fingerprint = ptr(fp)
-	agreed := s.recs.Agreed("file", fp, fp)
+	agreed := s.recs.Agreed("file", path, fp)
 	e.State = ptr(stateName(agreed))
 	if !agreed {
 		for _, a := range s.recs.Agreements {
@@ -683,7 +683,7 @@ func (s *state) detached(es []Entry) ([]Entry, error) {
 			if fp, err = s.cur.fileFP(f); err != nil {
 				return nil, err
 			}
-			if s.recs.AgreedBy("file", fp, fp, story) {
+			if s.recs.AgreedBy("file", f, fp, story) {
 				continue
 			}
 		} else {

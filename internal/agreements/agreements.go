@@ -97,11 +97,19 @@ func (r *Records) read(top *tomlread.Table) {
 	top.Unknown("agreement")
 }
 
-// Agreed は、対象の種類 kind・鍵 key の今の中身の指紋 fp に合う合意が 1 つでもあるかを返す。
-// 対象がファイルなら、鍵は指紋そのもの。
-func (r *Records) Agreed(kind, key, fp string) bool {
+// Target は、記録の指す先。約束・用語・機能なら ID、ファイルなら場所（path）。
+func (a *Agreement) Target() string {
+	if a.Kind == "file" {
+		return a.Path
+	}
+	return a.Key
+}
+
+// Agreed は、対象の種類 kind・指す先 target（約束・用語・機能なら ID、ファイルなら場所）の今の中身の指紋 fp に合う合意が 1 つでもあるかを返す。
+// ファイルは場所でも見分ける。指紋だけで当てると、合意済のファイルを写した先が、誰も読まないまま合意済になる
+func (r *Records) Agreed(kind, target, fp string) bool {
 	for _, a := range r.Agreements {
-		if a.Kind == kind && a.Key == key && a.Fingerprint == fp {
+		if a.Kind == kind && a.Target() == target && a.Fingerprint == fp {
 			return true
 		}
 	}
@@ -128,10 +136,10 @@ func contains(xs []string, s string) bool {
 
 func quote(s string) string { return `"` + s + `"` }
 
-// AgreedBy は、ストーリー story の合意のうち、kind・key・fp に合うものがあるかを返す。
-func (r *Records) AgreedBy(kind, key, fp, story string) bool {
+// AgreedBy は、ストーリー story の合意のうち、kind・target・fp に合うものがあるかを返す。
+func (r *Records) AgreedBy(kind, target, fp, story string) bool {
 	for _, a := range r.Agreements {
-		if a.Kind == kind && a.Key == key && a.Fingerprint == fp && a.Story == story {
+		if a.Kind == kind && a.Target() == target && a.Fingerprint == fp && a.Story == story {
 			return true
 		}
 	}
