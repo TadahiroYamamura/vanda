@@ -170,12 +170,12 @@ func (s *Server) ui() http.Handler {
 	})
 }
 
-// localOnly は、Host が 127.0.0.1・localhost でない要求と、ほかのサイトから送られた書き込みの要求を断る。
+// localOnly は、Host が 127.0.0.1:<ポート>・localhost:<ポート> でない要求と、ほかのサイトから送られた書き込みの要求を断る。
 // 127.0.0.1 で待ち受けるだけでは、ブラウザで開いたほかのサイトの頁から、DNS の付け替えや、フォームの送信で、
 // 合意（コミットを作る）を送らせることができてしまうため。
 func localOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !isLocalHost(r.Host) {
+		if !isLocalHost(r.Host, listeningPort(r)) {
 			writeError(w, http.StatusForbidden, "Host "+r.Host+" からの要求は受け付けません。", "http://127.0.0.1:<ポート>/ で開いてください。")
 			return
 		}
@@ -190,12 +190,28 @@ func localOnly(next http.Handler) http.Handler {
 	})
 }
 
-func isLocalHost(hostport string) bool {
-	host, _, err := net.SplitHostPort(hostport)
-	if err != nil {
-		host = hostport
+func isLocalHost(hostport, port string) bool {
+	host, p, err := net.SplitHostPort(hostport)
+	if err != nil || port == "" || p != port {
+		return false
 	}
 	return host == "127.0.0.1" || host == "localhost"
+}
+
+// listeningPort は、要求を受けた接続の、待ち受けているポートを返す。分からなければ空を返す（isLocalHost は断る）。
+// Handler を作るときにポートを渡さず接続から読むのは、--port 0 では待ち受けを始めるまでポートが決まらないため。
+func listeningPort(r *http.Request) string {
+	addr, ok := r.Context().Value(http.LocalAddrContextKey).(net.Addr)
+	if !ok {
+		log.Printf("要求 %s %s を受けた接続の、待ち受けているポートが分かりません。断ります。", r.Method, r.URL.Path)
+		return ""
+	}
+	_, port, err := net.SplitHostPort(addr.String())
+	if err != nil {
+		log.Printf("待ち受けている場所 %s からポートを読めません（%v）。断ります。", addr.String(), err)
+		return ""
+	}
+	return port
 }
 
 // apiError は、API の誤りの形。
