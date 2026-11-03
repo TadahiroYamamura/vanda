@@ -364,13 +364,14 @@ scope = "story"
 
 ### エビデンスが揃っている審査（`evidence-present`）
 
-予定したエビデンスの 1 件ごとに、その約束を指す、タイプに合うアノテーションが 1 つ以上あれば揃っているとする。タイプに合うアノテーションは、`types` にそのタイプを含む `[[annotation]]` で読んだ、下の表の種類のもの。1 つのアノテーションが、同じ約束の複数の予定を満たしてよい。
+予定したエビデンスの 1 件ごとに、その約束を指す、タイプに合うアノテーションが 1 つ以上あれば揃っているとする（`guardrail`・`sensor` は、下の表の 2 つがどちらも 1 つ以上あれば）。タイプに合うアノテーションは、`types` にそのタイプを含む `[[annotation]]` で読んだ、下の表の種類のもの。1 つのアノテーションが、同じ約束の複数の予定を満たしてよい。
 
 | タイプ | 揃っているとするアノテーションの種類 |
 |---|---|
 | `model-check` | `@vanda:claim` |
-| `sensor` | `@vanda:sensor` |
-| `cross-check`・`random-check`・`scenario-test`・`unit-test`・`interface-test`・`concurrency-test`・`guardrail` | `@vanda:evidence` |
+| `cross-check`・`random-check`・`scenario-test`・`unit-test`・`interface-test`・`concurrency-test` | `@vanda:evidence` |
+| `guardrail` | 次の 2 つがどちらもあるときだけ揃う。ガードレールの定義（`[[guardrail]]` の `paths` に当たるファイル）の `@vanda:evidence`（`types` は問わない）。`types` に `guardrail` を含む `[[annotation]]` で読んだ、ガードレールの定義でないファイルの `@vanda:evidence`（ガードレールが拒むことを確かめるテストなど） |
+| `sensor` | 次の 2 つがどちらもあるときだけ揃う。`types` に `sensor` を含む `[[annotation]]` で読んだ `@vanda:sensor`（実装のコードの中のセンサーの場所）。`types` に `sensor` を含む `[[annotation]]` で読んだ `@vanda:evidence`（センサーが、約束が破れた時に見つけることを確かめるテスト） |
 | `proof` | 今は扱えない（予定に書いたら誤り。`types` に書けない） |
 | `human-review` | 確かめない（`types` に書けない） |
 
@@ -693,7 +694,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `evidence[].found[].state` | ファイルが合意の対象（シナリオ・オラクルの定義・ガードレールの定義）のときだけ、今の場所と中身の指紋に合う合意の記録があれば `agreed`、なければ `proposed`（ストーリーによらない）。合意の対象でないもの（Go のテストなど）は `null` |
 | `evidence[].found` | その約束を指す、タイプに合うアノテーション（「エビデンスが揃っている審査」の表と同じ組み合わせ）。`text` は、`txtar` と `sql` ならファイルの中身全体、`tla` なら付いている定義（定義の行から、次の最上位の定義か `====` の前まで。終わりの空行とコメントだけの行は含めない）、`go` と `ts` なら `null`。`line` は、アノテーションが付いているものの行（`go` は `func` の宣言、`ts` は `test`・`it`・`describe` の呼び出し、`tla` は定義、`sql` は文の行。`txtar` はファイル全体に付くので 1） |
 | `subjects` | 約束の `subjects` の順。約束リストにない ID は、`kind`・`name` を `null` にする |
-| `evidence[].present` | 揃っているか（RV-08。エビデンスが揃っている審査と同じ判定）。`found` があれば `true`。`proof` は `false`。`human-review` は `null`（アノテーションで確かめない） |
+| `evidence[].present` | 揃っているか（RV-08。エビデンスが揃っている審査と同じ判定）。`found` があれば `true`（`guardrail`・`sensor` は、表の 2 つがどちらも `found` にあれば `true`。片方だけなら、`found` があっても `false`）。`proof` は `false`。`human-review` は `null`（アノテーションで確かめない） |
 | `origin` | HEAD の履歴の、合流でないコミットのうち、約束の指紋が変わったもの（作ったものを含む）。コミットの日時の新しい順（同じ日時なら、履歴で後のコミットを先に）。`change` は `added`・`modified`。`stories` は `Story:` のトレーラーにあるストーリーの ID。消した後に同じ ID で作り直した約束は新しいものとみなし、消すまでのコミットを入れない |
 | `agreements` | 合意の記録のうち、`kind = "claim"` でこの ID を指すもの（消したことへの合意は除く）。合意した日時（`agreed_at`）の新しい順（同じ日時なら、合意の記録のファイルの順（設定の `agreements` のファイルの順、同じファイルなら行の順）で後のものを先に）。`current` は、今の中身の指紋に合うか。`commit` は、その合意の記録を書き足したコミット（HEAD の履歴を古い順にたどり、合意の記録のファイルを変えたコミットの時点の記録に、同じ記録（`kind`・`key`・`fingerprint`・`story`・`agreed_at`・`user`）が初めて現れたコミット）。まだコミットしていなければ `null` |
 

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/TadahiroYamamura/vanda/internal/agreements"
+	"github.com/TadahiroYamamura/vanda/internal/annotation"
 	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/diag"
 	"github.com/TadahiroYamamura/vanda/internal/glob"
@@ -252,15 +253,21 @@ func (e *env) evidencePresent(scope string) []diag.Error {
 			if kind == "" {
 				continue // 決まった値でないタイプは、約束リストの形の審査で出す
 			}
-			found := false
-			for _, a := range e.anns {
-				if a.Satisfies(c.ID, ev.Type) {
-					found = true
-					break
+			parts := annotation.Evidence(e.anns, e.guards, c.ID, ev.Type)
+			if len(parts) == 1 {
+				if len(parts[0].Found) == 0 {
+					errs = append(errs, ev.Table.Err("type", fmt.Sprintf("約束 %s の %s のエビデンスがありません（types に %s を含む [[annotation]] で読んだファイルに、@vanda:%s %s がありません）", c.ID, ev.Type, ev.Type, kind, c.ID), fmt.Sprintf("エビデンスを作り、@vanda:%s %s を付けてください。そのファイルが、types に %s を含む [[annotation]] のパターンに当たるようにしてください", kind, c.ID, ev.Type)))
+				}
+				continue
+			}
+			var missing []string
+			for _, p := range parts {
+				if len(p.Found) == 0 {
+					missing = append(missing, p.Want)
 				}
 			}
-			if !found {
-				errs = append(errs, ev.Table.Err("type", fmt.Sprintf("約束 %s の %s のエビデンスがありません（types に %s を含む [[annotation]] で読んだファイルに、@vanda:%s %s がありません）", c.ID, ev.Type, ev.Type, kind, c.ID), fmt.Sprintf("エビデンスを作り、@vanda:%s %s を付けてください。そのファイルが、types に %s を含む [[annotation]] のパターンに当たるようにしてください", kind, c.ID, ev.Type)))
+			if len(missing) > 0 {
+				errs = append(errs, ev.Table.Err("type", fmt.Sprintf("約束 %s の %s のエビデンスが揃っていません（%s がありません）", c.ID, ev.Type, strings.Join(missing, "と、")), "足りないものを作り、アノテーションを付けてください"))
 			}
 		}
 	}

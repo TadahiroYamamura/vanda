@@ -10,6 +10,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/annotation"
 	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/glob"
+	"github.com/TadahiroYamamura/vanda/internal/guardrail"
 	"github.com/TadahiroYamamura/vanda/internal/repo"
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
 )
@@ -125,13 +126,17 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 	if aerrs != nil {
 		return nil, &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("アノテーションに誤りがあるため、エビデンスを探せません（%d 件。最初の 1 件: %s）。", len(aerrs), aerrs[0].Error()), Fix: "vanda check の annotation-links で誤りを確かめて、直してください。"}
 	}
+	guards, _ := guardrail.Files(s.cur.snap.Files, o.Cfg.Guardrails)
 	for _, ev := range content.Evidence {
 		ed := EvidenceDetail{EvidenceContent: ev, Found: []Found{}}
 		if config.EvidenceKind(ev.Type) != "" {
-			for _, a := range anns {
-				if !a.Satisfies(c.ID, ev.Type) {
-					continue
-				}
+			present := true
+			var found []annotation.Annotation
+			for _, p := range annotation.Evidence(anns, guards, c.ID, ev.Type) {
+				present = present && len(p.Found) > 0
+				found = append(found, p.Found...)
+			}
+			for _, a := range found {
 				f := Found{Adapter: a.Adapter, File: a.File, Name: a.Name}
 				text, line, err := evidenceText(s.cur, a)
 				f.Line = line
@@ -148,7 +153,7 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 				f.Text = text
 				ed.Found = append(ed.Found, f)
 			}
-			ed.Present = ptr(len(ed.Found) > 0)
+			ed.Present = ptr(present)
 		} else if ev.Type == "proof" {
 			// 段 1 の審査では、proof を予定に書いたら誤り（扱えるアダプタがない）
 			ed.Present = ptr(false)

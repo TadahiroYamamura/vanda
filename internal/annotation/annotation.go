@@ -298,11 +298,6 @@ func trimCloser(s string) string {
 	return s
 }
 
-// Satisfies は、このアノテーションが、約束 id のタイプ typ のエビデンスに当たるかを返す（エビデンスが揃っている審査と画面で同じ判定にする）。
-func (a Annotation) Satisfies(id, typ string) bool {
-	return a.Value == id && contains(a.Types, typ) && a.Kind == config.EvidenceKind(typ)
-}
-
 func contains(xs []string, s string) bool {
 	for _, x := range xs {
 		if x == s {
