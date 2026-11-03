@@ -467,7 +467,6 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
       "kind": "claim",
       "id": "task-id-unique",
       "path": null,
-      "oldPath": null,
       "fileType": null,
       "change": "modified",
       "state": "proposed",
@@ -484,9 +483,8 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
       "kind": "file",
       "id": null,
       "path": "e2e/add-task.txtar",
-      "oldPath": "e2e/add.txtar",
       "fileType": "scenario",
-      "change": "renamed",
+      "change": "modified",
       "state": "agreed",
       "fingerprint": "sha256:…",
       "flags": [],
@@ -507,15 +505,14 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `total` | `entries` の数（RV-02 の総数） |
 | `entries[].no` | 通し番号（1 から）。並びは `group` の順（下）、同じまとまりの中は ID か場所の順 |
 | `entries[].id`・`path` | 約束・用語・機能は `id`、ファイルは `path`（削除したものは前の場所） |
-| `entries[].oldPath` | `change` が `renamed` のときの前の場所。ほかは `null` |
-| `entries[].change` | `added`・`modified`・`deleted`・`renamed` |
+| `entries[].change` | `added`・`modified`・`deleted` |
 | `entries[].state` | 今の中身が合意済なら `agreed`、まだなら `proposed`。`deleted` は `null`（合意の対象がないので、合意できない） |
 | `entries[].fingerprint` | 今の中身の指紋。`deleted` は `null` |
 | `entries[].flags` | `ai-proposal`（AI 案。約束の `flags`）・`guess`（推測。約束の `guesses` が空でない）・`changed-since-agreement`（差分あり。同じ鍵（ファイルなら同じ場所）に合意の記録があり、今の中身の指紋に合う合意がない）。この順 |
 | `entries[].group` | たたむまとまり（RV-10）。約束は `layer:<約束の layers の最初のレイヤー>`、用語と機能は `terms-features`、ファイルは `files`。並びは、設定のレイヤーの順の約束、`terms-features`、`files` |
 | `entries[].before`・`after` | 変更前（`added` は `null`）と変更後（`deleted` は `null`）の中身。下の表 |
 | `entries[].detachedAgreement` | このストーリーの合意が外れたもの（RV-14）なら `{"by": ["#30"]}`（`by` は、そのストーリーの合意の後に中身を変えたコミットのストーリーの ID。ID のないコミットは数えない）。ほかは `null`。`by` は見せるための手がかりで、外れたかどうかの判定には使わない。「合意の後」は、合意の記録の `agreed_at` とコミットの日時を比べて決めるので、コミットの日時を書き換えた履歴では外れることがある |
-| `entries[].otherCommits` | `view=story` で、ストーリーで最初に変えた後に、このストーリーの ID のないコミット（ほかのストーリーのコミットと、ID のないコミット）が同じものを変えていたら、`[{"commit": "…", "subject": "…", "stories": ["#30"]}]`（履歴の古い順）。`renamed` では、前の場所か今の場所のどちらかを変えたコミットを数える（見落とすより、多めに示す）。`view=branch` では空 |
+| `entries[].otherCommits` | `view=story` で、ストーリーで最初に変えた後に、このストーリーの ID のないコミット（ほかのストーリーのコミットと、ID のないコミット）が同じものを変えていたら、`[{"commit": "…", "subject": "…", "stories": ["#30"]}]`（履歴の古い順）。`view=branch` では空 |
 | `entries[].revoke` | 合意済（`state` が `agreed`）の件だけ。今の人が、このストーリーの、今の中身への合意を取り消せるか（RV-17）。`{"possible": true, "reason": null, "others": []}`。取り消せるのは、今の git の `user.name`・`user.email` の人が、今のブランチ（ベースブランチと分かれた点より後）で書いた合意の記録。取り消せないときは `possible` が `false` で、`reason` に短い理由を出す（ストーリーが決まっていない、git の人が分からない、このストーリーの合意がない、ほかの人が書いた、ベースブランチにすでにある、ベースブランチが決まっていない）。`others` は、取り消しても残る、同じストーリーの今の中身へのほかの人の合意（残れば合意済のまま）。ほかの件は `null` |
 | `branchStories` | レビュー単位がブランチ（`view=branch`）のとき、分かれた点より後のコミットの `Story:` のトレーラーにあるストーリーの ID。名前の順。`view=story` では `null` |
 | `storyFrom` | `story` をどう決めたか。`query`（`story` で名指しした）・`branch`（ブランチのコミットから 1 つに決まった）。決まっていなければ空の文字列 |
@@ -531,14 +528,14 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `feature` | `name`・`definition`・`core`・`formal`・`formalWaiver` |
 | `file` | `text`（ファイルの中身） |
 
-- 一覧は、比べる元の中身と今の中身で指紋が違う鍵（約束・用語・機能は種類と ID、ファイルは場所）を、1 度ずつ出す。中身が同じで場所だけが変わったファイル（比べる元にあって今ない場所と、今あって比べる元にない場所で、中身の指紋が同じもの）は、`renamed` の 1 件にまとめる。中身も場所も変わったファイルは、`deleted` と `added` の 2 件にする。名前の変更が何度続いても、比べる元の場所と今の場所の 2 つで決める（途中の場所は出ない。途中で中身が変わり、今の中身が比べる元と違えば、`deleted` と `added`）。一度消して同じ場所に作り直したものは、同じ場所の 1 件として比べる（中身が同じなら出ない）
-- サーバーは、一覧を返す前に、`entries` の数が、比べる元と今で指紋の違う鍵の数から `renamed` の数を引いたものに合うかを確かめ、合わなければ `500` にする
+- 一覧は、比べる元の中身と今の中身で指紋が違う鍵（約束・用語・機能は種類と ID、ファイルは場所）を、1 度ずつ出す。ファイルは場所で見分けるので、名前を変えたファイルは、中身が同じでも、古い場所の `deleted` と新しい場所の `added` の 2 件にする（まとめない）。一度消して同じ場所に作り直したものは、同じ場所の 1 件として比べる（中身が同じなら出ない）
+- サーバーは、一覧を返す前に、`entries` の数が、比べる元と今で指紋の違う鍵の数に合うか、同じ鍵が 2 度出ていないかを確かめ、合わなければ `500` にする
 - `view=branch` の比べる元は、`vanda check` と同じく `git merge-base <base> HEAD` の中身。今の中身は作業ツリー
 - `view=story` の比べる元は、鍵ごとに、`Story:` のトレーラーがそのストーリーの ID のコミット（合流でないもの）のうち、その鍵の中身を変えた最初のコミットの、1 つ目の親の中身。今の中身は作業ツリー。比べる元と今の中身が同じもの（途中で足して後で消したものなど）は出ない
 
 #### 変更前と変更後の差分（`entries[].diff`）
 
-`entries[]` に `diff` を足す。`before` と `after` の両方があるとき（`modified`・`renamed`）だけ作り、ほかは `null`。差分は `github.com/sergi/go-diff` で作り、画面は見せるだけにする。
+`entries[]` に `diff` を足す。`before` と `after` の両方があるとき（`modified`）だけ作り、ほかは `null`。差分は `github.com/sergi/go-diff` で作り、画面は見せるだけにする。
 
 ファイル（`kind` が `file`）:
 

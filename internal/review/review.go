@@ -49,7 +49,6 @@ type Entry struct {
 	Kind              string      `json:"kind"`
 	ID                *string     `json:"id"`
 	Path              *string     `json:"path"`
-	OldPath           *string     `json:"oldPath"`
 	FileType          *string     `json:"fileType"`
 	Change            string      `json:"change"`
 	State             *string     `json:"state"`
@@ -375,15 +374,10 @@ func sortedKeys(cs *changeSet) []string {
 
 var kindName = map[string]string{"term": "用語", "feature": "機能", "claim": "約束", "file": "ファイル"}
 
-// entries は、違う鍵を一覧の 1 件ずつにする。中身が同じで場所だけが変わったファイルは、名前の変更の 1 件にまとめる。
+// entries は、違う鍵を一覧の 1 件ずつにする。中身が同じで場所だけが変わったファイルも、まとめずに、古い場所の削除と新しい場所の追加の 2 件にする
+// （ファイルは場所で見分け、どちらの場所にも合意が要るため）。
 func (s *state) entries(changes []rawChange) ([]Entry, error) {
 	var out []Entry
-	type fileSide struct {
-		rc   rawChange
-		path string
-		fp   string
-	}
-	var deleted, added []fileSide
 	for _, rc := range changes {
 		path, isFile := strings.CutPrefix(rc.key, "path:")
 		if !isFile {
@@ -392,83 +386,20 @@ func (s *state) entries(changes []rawChange) ([]Entry, error) {
 		}
 		_, inBefore := rc.before.types[path]
 		_, inAfter := s.cur.types[path]
+		change := "modified"
 		switch {
 		case inBefore && !inAfter:
-			fp, err := rc.before.fileFP(path)
-			if err != nil {
-				return nil, err
-			}
-			deleted = append(deleted, fileSide{rc, path, fp})
+			change = "deleted"
 		case !inBefore && inAfter:
-			fp, err := s.cur.fileFP(path)
-			if err != nil {
-				return nil, err
-			}
-			added = append(added, fileSide{rc, path, fp})
-		default:
-			e, err := s.fileEntry(rc, path, path, "modified")
-			if err != nil {
-				return nil, err
-			}
-			out = append(out, e)
+			change = "added"
 		}
-	}
-	used := map[int]bool{}
-	for _, a := range added {
-		pair := -1
-		for i, d := range deleted {
-			if !used[i] && d.fp == a.fp {
-				pair = i
-				break
-			}
-		}
-		rc, change, old := a.rc, "added", ""
-		if pair >= 0 {
-			used[pair] = true
-			d := deleted[pair]
-			// 比べる元は、前の場所の比べる元の時点（レビュー単位がストーリーでは、場所ごとに時点が違う）
-			rc = rawChange{key: a.rc.key, before: d.rc.before, others: s.mergeCommits(d.rc.others, a.rc.others)}
-			change, old = "renamed", d.path
-		}
-		e, err := s.fileEntry(rc, a.path, old, change)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, e)
-	}
-	for i, d := range deleted {
-		if used[i] {
-			continue
-		}
-		e, err := s.fileEntry(d.rc, d.path, d.path, "deleted")
+		e, err := s.fileEntry(rc, path, change)
 		if err != nil {
 			return nil, err
 		}
 		out = append(out, e)
 	}
 	return out, nil
-}
-
-// mergeCommits は、2 つのコミットの並びを、重ねずに、履歴の古い順にまとめる。
-// 名前の変更では、前の場所と今の場所のどちらかを変えたコミットを、どちらも示す（見落とすより、多めに示すほうを選んだ）。
-func (s *state) mergeCommits(a, b []CommitRef) []CommitRef {
-	if a == nil && b == nil {
-		return nil
-	}
-	order := map[string]int{}
-	for i, c := range s.h.commits {
-		order[c.Hash] = i
-	}
-	seen := map[string]bool{}
-	out := []CommitRef{}
-	for _, c := range append(append([]CommitRef{}, a...), b...) {
-		if !seen[c.Commit] {
-			seen[c.Commit] = true
-			out = append(out, c)
-		}
-	}
-	sort.SliceStable(out, func(i, j int) bool { return order[out[i].Commit] < order[out[j].Commit] })
-	return out
 }
 
 func ptr[T any](v T) *T { return &v }
@@ -546,22 +477,19 @@ func stateName(agreed bool) string {
 	return "proposed"
 }
 
-// fileEntry は、ファイルの 1 件を作る。path は今の場所（削除なら前の場所）、old は比べる元の場所。
-func (s *state) fileEntry(rc rawChange, path, old, change string) (Entry, error) {
+// fileEntry は、ファイルの 1 件を作る。path は今の場所（削除なら前の場所）。
+func (s *state) fileEntry(rc rawChange, path, change string) (Entry, error) {
 	e := Entry{Kind: "file", Path: ptr(path), Change: change, Flags: []string{}, Group: "files", OtherCommits: others(rc), key: "path:" + path}
-	if change == "renamed" {
-		e.OldPath = ptr(old)
-	}
 	if change != "added" {
-		b, err := rc.before.text(old)
+		b, err := rc.before.text(path)
 		if err != nil {
 			return e, err
 		}
 		e.Before = FileContent{Text: string(b)}
-		e.FileType = ptr(rc.before.types[old])
+		e.FileType = ptr(rc.before.types[path])
 	}
 	if change != "deleted" {
-		if err := s.fileState(&e, path, old); err != nil {
+		if err := s.fileState(&e, path); err != nil {
 			return e, err
 		}
 	}
@@ -573,7 +501,7 @@ func (s *state) fileEntry(rc rawChange, path, old, change string) (Entry, error)
 	return e, nil
 }
 
-func (s *state) fileState(e *Entry, path, old string) error {
+func (s *state) fileState(e *Entry, path string) error {
 	b, err := s.cur.text(path)
 	if err != nil {
 		return err
@@ -586,7 +514,7 @@ func (s *state) fileState(e *Entry, path, old string) error {
 	e.State = ptr(stateName(agreed))
 	if !agreed {
 		for _, a := range s.recs.Agreements {
-			if a.Kind == "file" && (a.Path == path || a.Path == old) {
+			if a.Kind == "file" && a.Path == path {
 				e.Flags = append(e.Flags, "changed-since-agreement")
 				break
 			}
@@ -749,7 +677,7 @@ func (s *state) changedBy(key string, since time.Time) ([]string, error) {
 func (s *state) unchanged(key string) (Entry, error) {
 	if f, ok := strings.CutPrefix(key, "path:"); ok {
 		e := Entry{Kind: "file", Path: ptr(f), Change: "unchanged", Flags: []string{}, Group: "files", OtherCommits: []CommitRef{}, key: key}
-		return e, s.fileState(&e, f, f)
+		return e, s.fileState(&e, f)
 	}
 	cur := s.cur.items[key]
 	e := Entry{Kind: cur.Kind, ID: ptr(cur.ID), Change: "unchanged", Flags: []string{}, OtherCommits: []CommitRef{}, key: key, After: Content(cur), Group: s.group(cur)}

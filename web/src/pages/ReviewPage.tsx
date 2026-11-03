@@ -310,7 +310,7 @@ function EntryList(props: {
         </label>
       </div>
       <p className="note">
-        追加 {count("added")}・変更 {count("modified")}・削除 {count("deleted")}・名前の変更 {count("renamed")}
+        追加 {count("added")}・変更 {count("modified")}・削除 {count("deleted")}
       </p>
       {detached.length > 0 && (
         <div className="detached">
@@ -401,7 +401,6 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
           <FlagBadge key={f} flag={f} />
         ))}
       </h2>
-      {e.oldPath && <p className="note">前の場所: {e.oldPath}</p>}
       {e.detachedAgreement && (
         <p className="warn">
           ストーリー {props.story} の合意が外れています。

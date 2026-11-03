@@ -13,7 +13,6 @@ export const changeLabel: Record<Change, string> = {
   added: "追加",
   modified: "変更",
   deleted: "削除",
-  renamed: "名前の変更",
   unchanged: "変更なし",
 };
 

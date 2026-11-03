@@ -2,7 +2,7 @@
 
 export type Kind = "claim" | "term" | "feature" | "file";
 export type FileType = "scenario" | "oracle" | "guardrail";
-export type Change = "added" | "modified" | "deleted" | "renamed" | "unchanged";
+export type Change = "added" | "modified" | "deleted" | "unchanged";
 export type State = "proposed" | "agreed";
 export type Flag = "ai-proposal" | "guess" | "changed-since-agreement";
 
@@ -101,7 +101,6 @@ export interface Entry {
   kind: Kind;
   id: string | null;
   path: string | null;
-  oldPath: string | null;
   fileType: FileType | null;
   change: Change;
   state: State | null;
