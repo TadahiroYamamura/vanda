@@ -2,10 +2,13 @@
 # タイプに合う種類のアノテーションが 1 つ以上ある。
 # @vanda:evidence check-evidence-present
 # @vanda:evidence check-evidence-proof-and-unchecked
+# @vanda:evidence check-evidence-guardrail-needs-definition
 # この台本の設定は、組込みのアダプタの既定のタイプを types に書く（go は unit-test・cross-check・random-check・
 # interface-test・concurrency-test・sensor、txtar は scenario-test、tla は model-check、sql は guardrail）。
-# タイプに合う種類は、model-check が claim、sensor が sensor、ほかは evidence。種類とタイプの全部の組み合わせと、
-# types の書き方は evidence_types_test.go で確かめる。
+# タイプに合う種類は、model-check が claim、ほかは evidence。guardrail と sensor は 2 つが揃って満たす。guardrail は、
+# ガードレールの定義（[[guardrail]] の paths。ここでは db/schema.sql）の evidence と、定義でないファイル（db/reject_test.sql。
+# ガードレールが拒むことを確かめるもの）の evidence。sensor は、Go の sensor（センサーの場所）と Go の evidence（センサーの検証）。
+# 種類とタイプの全部の組み合わせと、types の書き方は evidence_types_test.go で確かめる。
 # 1 つのアノテーションが、同じ約束の複数の予定を満たしてよい。proof は今は扱えない誤りにする。
 # 実行しないタイプ（human-review）は確かめない（detail に書いたファイルがなくても止めない）。
 # 範囲を 1 つのストーリーにすると、分かれた点より後に変わった約束だけを見る。
@@ -39,7 +42,7 @@ stderr 'promises\.toml.*model-check'
 ! stderr '(?m)^panic: '
 cp cases/Task.tla spec/Task.tla
 
-# SQL の evidence がないと、guardrail の予定で止まる
+# ガードレールの定義の evidence がないと、拒むことを確かめるものがあっても、guardrail の予定で止まる
 cp cases/schema-none.sql db/schema.sql
 commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
@@ -48,7 +51,18 @@ stderr 'promises\.toml.*guardrail'
 ! stderr '(?m)^panic: '
 cp cases/schema.sql db/schema.sql
 
-# Go の evidence がないと、Go で確かめる 5 つのタイプの予定のどれでも止まる。sensor は Go の sensor で満たされたまま
+# 拒むことを確かめるものの evidence がないと、ガードレールの定義の evidence があっても、guardrail の予定で止まる。
+# 定義のファイルは types に guardrail を含む [[annotation]] でも読むが、定義でないファイルの代わりにはならない
+cp cases/reject_test-none.sql db/reject_test.sql
+commit '(test) 審査の前にコミットする'
+! exec vanda check .vanda/checks/all.toml
+stderr 'promises\.toml.*guardrail'
+! stderr 'model-check'
+! stderr '(?m)^panic: '
+cp cases/reject_test.sql db/reject_test.sql
+
+# Go の evidence がないと、Go で確かめる 5 つのタイプの予定のどれでも止まる。sensor も、センサーの場所（Go の sensor）
+# があっても、センサーの検証（Go の evidence）がないので止まる
 cp cases/task_test.go.none task_test.go
 commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
@@ -57,11 +71,11 @@ stderr 'promises\.toml.*cross-check'
 stderr 'promises\.toml.*random-check'
 stderr 'promises\.toml.*interface-test'
 stderr 'promises\.toml.*concurrency-test'
-! stderr 'promises\.toml.*sensor'
+stderr 'promises\.toml.*sensor'
 ! stderr '(?m)^panic: '
 cp cases/task_test.go.orig task_test.go
 
-# Go の sensor がないと、sensor の予定で止まる。Go の evidence では代わりにならない
+# Go の sensor がないと、センサーの検証（Go の evidence）があっても、sensor の予定で止まる
 cp cases/task.go.none task.go
 commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
@@ -121,6 +135,9 @@ types = ["model-check"]
 paths = ["db/**/*.sql"]
 adapter = "sql"
 types = ["guardrail"]
+[[guardrail]]
+adapter = "file"
+paths = ["db/schema.sql"]
 -- .vanda/checks/all.toml --
 [[check]]
 name = "evidence-present"
@@ -228,6 +245,14 @@ CREATE TABLE task (id TEXT PRIMARY KEY);
 CREATE TABLE task (id TEXT PRIMARY KEY);
 -- cases/schema-none.sql --
 CREATE TABLE task (id TEXT PRIMARY KEY);
+-- db/reject_test.sql --
+-- @vanda:evidence task-id-unique
+INSERT INTO task VALUES ('a'), ('a');
+-- cases/reject_test.sql --
+-- @vanda:evidence task-id-unique
+INSERT INTO task VALUES ('a'), ('a');
+-- cases/reject_test-none.sql --
+INSERT INTO task VALUES ('a'), ('a');
 -- task.go --
 package task
 

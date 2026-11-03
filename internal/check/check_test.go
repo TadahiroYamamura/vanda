@@ -166,7 +166,7 @@ description = "保存"
 [[annotation]]
 paths = ["**/*_test.go"]
 adapter = "go"
-types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]
+types = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor", "guardrail"]
 [[annotation]]
 paths = ["e2e/*.txtar"]
 adapter = "txtar"
@@ -428,7 +428,7 @@ func TestEvidencePresentはタイプに合うアノテーションのない予�
 	_, out, _ := r.run("[[check]]\nname = \"evidence-present\"\nscope = \"all\"\n", "", "")
 	expect(t, out, [][]string{
 		{"審査 evidence-present（all）: 失敗（3 件）"},
-		{".vanda/promises.toml:34: ", "約束 task-unique の guardrail のエビデンス", "types に guardrail", "@vanda:evidence task-unique"},
+		{".vanda/promises.toml:34: ", "約束 task-unique の guardrail のエビデンス", "ガードレールの定義", "@vanda:evidence task-unique"},
 		{".vanda/promises.toml:44: ", "タイプ proof"},
 		{".vanda/promises.toml:49: ", "約束 task-unique の sensor のエビデンス", "types に sensor", "@vanda:sensor task-unique"},
 	})
@@ -849,9 +849,11 @@ func TestUnreadFilesはvanda_adaptersの下のファイルを除く(t *testing.T
 // @vanda:evidence annotation-types-empty
 func TestEvidencePresentはtypesが空のannotationで読んだアノテーションでどのタイプも満たさない(t *testing.T) {
 	r := goodRepo(t)
-	r.write(map[string]string{".vanda/config.toml": strings.Replace(baseConfig, "adapter = \"go\"\ntypes = [\"unit-test\", \"cross-check\", \"random-check\", \"interface-test\", \"concurrency-test\", \"sensor\"]", "adapter = \"go\"\ntypes = []", 1)})
+	r.write(map[string]string{".vanda/config.toml": strings.Replace(baseConfig, "adapter = \"go\"\ntypes = [\"unit-test\", \"cross-check\", \"random-check\", \"interface-test\", \"concurrency-test\", \"sensor\", \"guardrail\"]", "adapter = \"go\"\ntypes = []", 1)})
+	r.commit("(test) go の types を空にする", "")
 	_, out, _ := r.run("[[check]]\nname = \"evidence-present\"\nscope = \"all\"\n", "", "")
-	if !lineWith(out, "審査 evidence-present（all）: 失敗（1 件）") || !lineWith(out, ".vanda/promises.toml:", "unit-test") {
+	// go のアノテーションは guardrail の予定（ガードレールが拒むことを確かめるもの）も満たしていたので、それも揃わなくなる
+	if !lineWith(out, "審査 evidence-present（all）: 失敗（2 件）") || !lineWith(out, ".vanda/promises.toml:19: ", "unit-test") || !lineWith(out, ".vanda/promises.toml:34: ", "guardrail") {
 		t.Errorf("types = [] の go のアノテーションで、unit-test が揃ったことになった\n%s", out)
 	}
 }
