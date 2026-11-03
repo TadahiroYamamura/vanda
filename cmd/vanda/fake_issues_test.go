@@ -137,28 +137,56 @@ const fakeIssueBodyWithAttachments = "タスクの ID を重ならないよう�
 	"仕様の資料: [spec.pdf](https://github.com/user-attachments/files/17000001/spec.pdf)\n"
 
 // fakeGH は、PATH の先頭に置く偽の gh を作り、そのディレクトリを返す。
-// `gh auth token` に、token を出して終わる。token が空なら、gh にログインしていないときのように、終了コード 1 で終わる。
+// tokens は、ホスト → そのホストにログインした認証キー。本物の gh と同じく、`gh auth token --hostname <ホスト>` に
+// そのホストの認証キーを出し（--hostname がなければ github.com のもの）、ログインしていないホストなら終了コード 1 で終わる。
+// 認証キーが空のホストには、何も出さずに終了コード 0 で終わる。
 // ほかの引数で呼ばれたら、終了コード 2 で終わる。呼ばれた引数は、ディレクトリの calls.log に 1 行ずつ書く。
-func fakeGH(t *testing.T, token string) string {
+func fakeGH(t *testing.T, tokens map[string]string) string {
 	t.Helper()
 	dir := t.TempDir()
 	log := filepath.Join(dir, "calls.log")
-	answer := fmt.Sprintf("echo '%s'\n  exit 0", token)
-	if token == "" {
-		answer = "echo 'no oauth token found for github.com' >&2\n  exit 1"
+	var cases strings.Builder
+	for host, token := range tokens {
+		fmt.Fprintf(&cases, "    '%s') printf '%%s' '%s'; [ -n '%s' ] && echo; exit 0 ;;\n", host, token, token)
 	}
 	script := fmt.Sprintf(`#!/bin/sh
 echo "$*" >> '%s'
 if [ "$1" = "auth" ] && [ "$2" = "token" ]; then
-  %s
+  host=github.com
+  if [ "$3" = "--hostname" ]; then
+    host="$4"
+  fi
+  case "$host" in
+%s  esac
+  echo "no oauth token found for $host" >&2
+  exit 1
 fi
 echo "偽の gh: 思っていない引数: $*" >&2
 exit 2
-`, log, answer)
+`, log, cases.String())
 	if err := os.WriteFile(filepath.Join(dir, "gh"), []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	return dir
+}
+
+// ghEnv は、base から GitHub の認証キーとプロキシと PATH の環境変数を除き、偽の gh のディレクトリ ghDir を PATH の先頭に置いて、kv を足した環境を返す。
+// テストを動かす人の環境変数の認証キーや本物の gh を、vanda に読ませないため
+func ghEnv(base []string, ghDir string, kv ...string) []string {
+	drop := []string{"GH_TOKEN=", "GITHUB_TOKEN=", "GH_ENTERPRISE_TOKEN=", "GITHUB_ENTERPRISE_TOKEN=", "GH_HOST=", "PATH=",
+		"HTTP_PROXY=", "http_proxy=", "HTTPS_PROXY=", "https_proxy=", "NO_PROXY=", "no_proxy="}
+	var env []string
+next:
+	for _, e := range base {
+		for _, d := range drop {
+			if strings.HasPrefix(e, d) {
+				continue next
+			}
+		}
+		env = append(env, e)
+	}
+	env = append(env, "PATH="+ghDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	return append(env, kv...)
 }
 
 func fakeGHCalls(t *testing.T, dir string) []string {
@@ -241,26 +269,45 @@ func Test偽のストーリーの置き場所は正しい鍵でだけIssueを返
 	}
 }
 
-func Test偽のghはauth_tokenに鍵を出しログインしていなければ失敗する(t *testing.T) {
+func Test偽のghはauth_tokenにhostnameのホストの鍵を出しログインしていないホストなら失敗する(t *testing.T) {
 	t.Parallel()
-	dir := fakeGH(t, "gho_abc")
-	out, err := exec.Command(filepath.Join(dir, "gh"), "auth", "token").Output()
-	if err != nil || string(out) != "gho_abc\n" {
-		t.Errorf("out %q, err %v", out, err)
+	dir := fakeGH(t, map[string]string{"github.com": "gho_abc", "ghe.example.com": "ghe_xyz", "empty.example.com": ""})
+	gh := filepath.Join(dir, "gh")
+	for _, c := range []struct {
+		args []string
+		out  string
+	}{
+		{[]string{"auth", "token"}, "gho_abc\n"},
+		{[]string{"auth", "token", "--hostname", "github.com"}, "gho_abc\n"},
+		{[]string{"auth", "token", "--hostname", "ghe.example.com"}, "ghe_xyz\n"},
+		{[]string{"auth", "token", "--hostname", "empty.example.com"}, ""},
+	} {
+		if out, err := exec.Command(gh, c.args...).Output(); err != nil || string(out) != c.out {
+			t.Errorf("%v: out %q, err %v（思ったもの %q）", c.args, out, err, c.out)
+		}
 	}
-	if err := exec.Command(filepath.Join(dir, "gh"), "issue", "comment", "24").Run(); err == nil {
+	if err := exec.Command(gh, "issue", "comment", "24").Run(); err == nil {
 		t.Errorf("思っていない引数で成功した")
 	}
-	if calls := fakeGHCalls(t, dir); len(calls) != 2 || calls[0] != "auth token" || calls[1] != "issue comment 24" {
+	want := []string{"auth token", "auth token --hostname github.com", "auth token --hostname ghe.example.com", "auth token --hostname empty.example.com", "issue comment 24"}
+	if calls := fakeGHCalls(t, dir); strings.Join(calls, "\n") != strings.Join(want, "\n") {
 		t.Errorf("呼ばれた引数の記録: %q", calls)
 	}
 
-	none := fakeGH(t, "")
-	cmd := exec.Command(filepath.Join(none, "gh"), "auth", "token")
-	var stderr strings.Builder
-	cmd.Stderr = &stderr
-	var exitErr *exec.ExitError
-	if err := cmd.Run(); !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 || !strings.Contains(stderr.String(), "no oauth token") {
-		t.Errorf("ログインしていない gh: err %v, stderr %q", err, stderr.String())
+	for _, c := range []struct {
+		name string
+		dir  string
+		args []string
+	}{
+		{"ログインしていないホスト", dir, []string{"auth", "token", "--hostname", "other.example.com"}},
+		{"どこにもログインしていない", fakeGH(t, nil), []string{"auth", "token"}},
+	} {
+		cmd := exec.Command(filepath.Join(c.dir, "gh"), c.args...)
+		var stdout, stderr strings.Builder
+		cmd.Stdout, cmd.Stderr = &stdout, &stderr
+		var exitErr *exec.ExitError
+		if err := cmd.Run(); !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 || !strings.Contains(stderr.String(), "no oauth token") || stdout.String() != "" {
+			t.Errorf("%s: err %v, stdout %q, stderr %q", c.name, err, stdout.String(), stderr.String())
+		}
 	}
 }

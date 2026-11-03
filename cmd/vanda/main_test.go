@@ -123,6 +123,16 @@ func TestVersionはvandaのディレクトリがなくてもgitのリポジト�
 	}
 }
 
+// withoutGH は、どのホストにもログインしていない偽の gh を PATH の先頭に置く。本物の gh の認証キーを読ませないため
+func withoutGH(t *testing.T) {
+	t.Helper()
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "gh"), []byte("#!/bin/sh\necho 'no oauth token found' >&2\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
+
 // @vanda:evidence doctor-github-issues
 func TestDoctorは置き場所が組込みのgithubならリポジトリを読みIssuesが使えるかを確かめる(t *testing.T) {
 	for _, c := range []struct {
@@ -136,7 +146,10 @@ func TestDoctorは置き場所が組込みのgithubならリポジトリを読�
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprintf(w, `{"full_name":"o/r","has_issues":%v}`, c.hasIssues)
 		}))
-		t.Setenv("GH_TOKEN", "tok123")
+		// 偽のサーバー（127.0.0.1）は api.github.com でないので、認証キーは GH_ENTERPRISE_TOKEN から読まれる
+		t.Setenv("GH_ENTERPRISE_TOKEN", "tok123")
+		t.Setenv("GH_TOKEN", "")
+		withoutGH(t)
 		dir := gitRepo(t, "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"o/r\"\napi_url = \""+srv.URL+"\"\n")
 		code, out, errs := runIn(t, dir, "doctor")
 		srv.Close()

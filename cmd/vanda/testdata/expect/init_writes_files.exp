@@ -1,6 +1,6 @@
 # @vanda:evidence init-writes-four-files
 # vanda init の問いに答え、作るかの確かめに「作る」と答えると、.vanda/ に設定・約束リスト・合意の記録・
-# 審査の設定（.vanda/checks/ci.toml）の 4 つのファイルだけができる。確かめに答えるまでは何も作らない。
+# 審査の設定（ブランチで動かす .vanda/checks/ci.toml と、ベースブランチで動かす .vanda/checks/main.toml）の 5 つのファイルだけができる。確かめに答えるまでは何も作らない。
 # remote のないリポジトリなので、ストーリーの置き場所の既定は「使わない」（GitHub に繋ぎに行かない）。
 # 問いは、題が出てから 1 度だけ答えを送る。待つのは画面の文字が出るまでで、時間では待たない（timeout は止まったときの上限）
 
@@ -44,7 +44,7 @@ if {$code != 0} {
 }
 
 set got [lsort [split [exec find .vanda -type f] "\n"]]
-set want [list .vanda/agreements.toml .vanda/checks/ci.toml .vanda/config.toml .vanda/promises.toml]
+set want [list .vanda/agreements.toml .vanda/checks/ci.toml .vanda/checks/main.toml .vanda/config.toml .vanda/promises.toml]
 if {$got ne $want} {
     puts stderr "\n.vanda/ のファイルが $got（思ったもの $want）"
     exit 1
@@ -59,4 +59,4 @@ if {![string match {*name = "agreement"*} $ci]} {
     puts stderr "\n審査の設定に agreement の審査がない:\n$ci"
     exit 1
 }
-puts "\nvanda init で 4 つのファイルができた"
+puts "\nvanda init で 5 つのファイルができた"

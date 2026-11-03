@@ -820,10 +820,10 @@ var initLangs = []struct {
 	{"TypeScript", "web/src/a.test.ts", []string{"**/*.test.ts", "**/*.test.tsx"}, "ts"},
 }
 
-// checkNoComments は、作った 4 つのファイルにコメントの行がないことを確かめる。
+// checkNoComments は、作った 5 つのファイルにコメントの行がないことを確かめる。
 func checkNoComments(t *testing.T, root string) {
 	t.Helper()
-	for _, f := range []string{"config.toml", "promises.toml", "agreements.toml", "checks/ci.toml"} {
+	for _, f := range []string{"config.toml", "promises.toml", "agreements.toml", "checks/ci.toml", "checks/main.toml"} {
 		data, err := os.ReadFile(filepath.Join(root, ".vanda", f))
 		if err != nil {
 			t.Errorf(".vanda/%s ができていない: %v", f, err)
@@ -890,7 +890,7 @@ func (f *fakeRepoAPI) called() bool {
 // @vanda:evidence init-values-only
 // @vanda:evidence init-default-types
 // @vanda:evidence init-guide
-func Test既定の答えのまま進めると読み取った値で4つのファイルができdoctorとciの審査が通る(t *testing.T) {
+func Test既定の答えのまま進めると読み取った値で5つのファイルができdoctorとciの審査が通る(t *testing.T) {
 	t.Parallel()
 	bin, version := initSetup(t)
 	var files []string
@@ -957,7 +957,8 @@ func Test既定の答えのまま進めると読み取った値で4つのファ�
 		t.Fatal(err)
 	}
 	writeFile(t, r.root, ".vanda/config.toml", strings.Replace(string(cfgText), "[story]\n", "[story]\napi_url = \""+gh.URL+"\"\n", 1))
-	env := append(append([]string(nil), r.g.env...), "GH_TOKEN="+fakeRepoToken)
+	// 偽の GitHub（127.0.0.1）は api.github.com でないので、認証キーは GH_ENTERPRISE_TOKEN から読まれる
+	env := ghEnv(r.g.env, fakeGH(t, nil), "GH_ENTERPRISE_TOKEN="+fakeRepoToken)
 	doctor := exec.Command(bin, "doctor")
 	doctor.Dir, doctor.Env = r.root, env
 	if out, err := doctor.CombinedOutput(); err != nil {
@@ -1496,11 +1497,11 @@ func filesToDir(t *testing.T, files [][2]string) string {
 	return root
 }
 
-// CMD-11: 答えから作る 4 つのファイル。置き場所の選択肢の全部と、言語の選び方で、書かれる [story] と [[annotation]] が合う
+// CMD-11: 答えから作る 5 つのファイル。置き場所の選択肢の全部と、言語の選び方で、書かれる [story] と [[annotation]] が合う
 // @vanda:evidence init-writes-four-files
 // @vanda:evidence init-values-only
 // @vanda:evidence init-default-types
-func Test答えから作る4つのファイルは置き場所と言語の答えのとおりに値だけで書かれる(t *testing.T) {
+func Test答えから作る5つのファイルは置き場所と言語の答えのとおりに値だけで書かれる(t *testing.T) {
 	t.Parallel()
 	bin, version := initSetup(t)
 	cases := []struct {
@@ -1530,7 +1531,7 @@ func Test答えから作る4つのファイルは置き場所と言語の答え�
 			for _, f := range files {
 				paths = append(paths, f[0])
 			}
-			if want := []string{".vanda/config.toml", ".vanda/promises.toml", ".vanda/agreements.toml", ".vanda/checks/ci.toml"}; !reflect.DeepEqual(paths, want) {
+			if want := []string{".vanda/config.toml", ".vanda/promises.toml", ".vanda/agreements.toml", ".vanda/checks/ci.toml", ".vanda/checks/main.toml"}; !reflect.DeepEqual(paths, want) {
 				t.Fatalf("作るファイル: %v（思ったもの %v）", paths, want)
 			}
 			root := filesToDir(t, files)

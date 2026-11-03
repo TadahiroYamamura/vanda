@@ -41,7 +41,7 @@ type storySetup struct {
 }
 
 // newStorySetup は、設定に [story] を足したリポジトリと偽のサーバーを用意する。env は、vanda serve の環境を返す。
-func newStorySetup(t *testing.T, ghToken string) *storySetup {
+func newStorySetup(t *testing.T) *storySetup {
 	t.Helper()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
@@ -58,23 +58,20 @@ func newStorySetup(t *testing.T, ghToken string) *storySetup {
 	}
 	writeFile(t, r.Root, ".vanda/config.toml", string(cfg)+"\n[story]\nadapter = \"github\"\nrepository = \"owner/app\"\napi_url = \""+fake.URL+"\"\n")
 	r.g.commitTracked("設定にストーリーの置き場所を足す", "")
-	return &storySetup{bin: bin, r: r, fake: fake, gh: fakeGH(t, ghToken)}
+	return &storySetup{bin: bin, r: r, fake: fake, gh: fakeGH(t, nil)}
 }
 
-// env は、GH_TOKEN を token にした（空なら除いた）環境を返す。偽の gh を PATH の先頭に置く。
+// host は、偽のサーバーのホスト（api_url のホスト）。api.github.com でないので、認証キーは GH_ENTERPRISE_TOKEN か gh auth token --hostname <host> から読まれる
+func (st *storySetup) host() string {
+	return strings.TrimPrefix(st.fake.URL, "http://")
+}
+
+// env は、GH_ENTERPRISE_TOKEN を token にした（空なら除いた）環境を返す。偽の gh を PATH の先頭に置く。
 func (st *storySetup) env(token string) []string {
-	var env []string
-	for _, kv := range st.r.Env {
-		if strings.HasPrefix(kv, "GH_TOKEN=") || strings.HasPrefix(kv, "GITHUB_TOKEN=") || strings.HasPrefix(kv, "PATH=") {
-			continue
-		}
-		env = append(env, kv)
+	if token == "" {
+		return ghEnv(st.r.Env, st.gh)
 	}
-	env = append(env, "PATH="+st.gh+string(os.PathListSeparator)+os.Getenv("PATH"))
-	if token != "" {
-		env = append(env, "GH_TOKEN="+token)
-	}
-	return env
+	return ghEnv(st.r.Env, st.gh, "GH_ENTERPRISE_TOKEN="+token)
 }
 
 func (st *storySetup) checkOnlyReads(t *testing.T) {
@@ -101,20 +98,18 @@ func attachmentList(got storyResponse) []string {
 func Testストーリーの置き場所から題と本文と添付ファイルへのリンクを読める(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		name   string
-		ghTok  string // 偽の gh が出す鍵（空ならログインしていない）
-		envTok string // GH_TOKEN
-		viaGH  bool
+		name  string
+		viaGH bool // GH_ENTERPRISE_TOKEN を置かず、偽の gh だけが鍵を持つ
 	}{
-		{"GH_TOKENの鍵を使う", "", "", false},
-		{"GH_TOKENがなければghの鍵を使う", "", "", true},
+		{"GH_ENTERPRISE_TOKENの鍵を使う", false},
+		{"GH_ENTERPRISE_TOKENがなければghのそのホストの鍵を使う", true},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
-			st := newStorySetup(t, "")
+			st := newStorySetup(t)
 			if c.viaGH {
-				st.gh = fakeGH(t, st.fake.Token)
+				st.gh = fakeGH(t, map[string]string{st.host(): st.fake.Token})
 			}
 			envTok := st.fake.Token
 			if c.viaGH {
@@ -142,11 +137,11 @@ func Testストーリーの置き場所から題と本文と添付ファイル�
 				t.Errorf("偽のサーバーへの要求: %+v", reqs)
 			}
 			calls := fakeGHCalls(t, st.gh)
-			if c.viaGH && (len(calls) == 0 || !strings.HasPrefix(calls[0], "auth token")) {
-				t.Errorf("GH_TOKEN がないのに gh auth token を呼んでいない: %q", calls)
+			if c.viaGH && (len(calls) == 0 || calls[0] != "auth token --hostname "+st.host()) {
+				t.Errorf("GH_ENTERPRISE_TOKEN がないのに gh auth token --hostname %s を呼んでいない: %q", st.host(), calls)
 			}
 			if !c.viaGH && len(calls) != 0 {
-				t.Errorf("GH_TOKEN があるのに gh を呼んだ: %q", calls)
+				t.Errorf("GH_ENTERPRISE_TOKEN があるのに gh を呼んだ: %q", calls)
 			}
 			st.checkOnlyReads(t)
 		})
@@ -157,7 +152,7 @@ func Testストーリーの置き場所から題と本文と添付ファイル�
 // @vanda:evidence story-github-attachments
 func Testストーリーの添付ファイルは決まったURLで始まるリンクと画像だけで名前はリンクの文字かURLの最後の部分(t *testing.T) {
 	t.Parallel()
-	st := newStorySetup(t, "")
+	st := newStorySetup(t)
 	s := startServe(t, st.bin, st.r.Root, st.env(st.fake.Token))
 	var got storyResponse
 	if code, msg := s.get("/api/story?id="+q("#26"), &got); code != 200 {
@@ -180,23 +175,22 @@ func Testストーリーの置き場所の誤りは理由を画面に出す(t *t
 	t.Parallel()
 	cases := []struct {
 		name     string
-		ghTok    string
 		envTok   func(f *fakeIssues) string
 		cut      bool
 		id       string
 		wantCode int
 		wantMsg  string // message に含むもの（置き場所が返した理由）。空なら、空でないことだけを求める
 	}{
-		{"認証の鍵が誤っている", "", func(*fakeIssues) string { return "gho_wrong" }, false, "#24", 502, "Bad credentials"},
-		{"ghにログインしていない", "", func(*fakeIssues) string { return "" }, false, "#24", 502, ""},
-		{"ネットワークが切れている", "", func(f *fakeIssues) string { return f.Token }, true, "#24", 502, ""},
-		{"ないストーリー", "", func(f *fakeIssues) string { return f.Token }, false, "#25", 404, ""},
-		{"形の誤ったストーリーのID", "", func(f *fakeIssues) string { return f.Token }, false, "PROJ-1", 400, ""},
+		{"認証の鍵が誤っている", func(*fakeIssues) string { return "gho_wrong" }, false, "#24", 502, "Bad credentials"},
+		{"ghにログインしていない", func(*fakeIssues) string { return "" }, false, "#24", 502, ""},
+		{"ネットワークが切れている", func(f *fakeIssues) string { return f.Token }, true, "#24", 502, ""},
+		{"ないストーリー", func(f *fakeIssues) string { return f.Token }, false, "#25", 404, ""},
+		{"形の誤ったストーリーのID", func(f *fakeIssues) string { return f.Token }, false, "PROJ-1", 400, ""},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
-			st := newStorySetup(t, c.ghTok)
+			st := newStorySetup(t)
 			s := startServe(t, st.bin, st.r.Root, st.env(c.envTok(st.fake)))
 			if c.cut {
 				st.fake.cutNetwork()

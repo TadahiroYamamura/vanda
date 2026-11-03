@@ -320,7 +320,8 @@ func Test_vanda_doctorはGitHubのリポジトリを読んでIssuesが使える�
 			}))
 			t.Cleanup(srv.Close)
 			root := ifaceRepo(t, version, "\n[story]\nadapter = \"github\"\nrepository = \"owner/app\"\napi_url = \""+srv.URL+"\"\n", nil, nil)
-			env := append(append([]string(nil), newRVGit(t, root).env...), "GH_TOKEN=gho_doctortoken")
+			// 偽のサーバー（127.0.0.1）は api.github.com でないので、認証キーは GH_ENTERPRISE_TOKEN から読まれる
+			env := ghEnv(newRVGit(t, root).env, fakeGH(t, nil), "GH_ENTERPRISE_TOKEN=gho_doctortoken")
 			code, out, errs := runVandaIn(t, bin, root, env, "doctor")
 			if (code == 0) != c.ok {
 				t.Errorf("終了コード %d（通るのは %v のはず）\n%s%s", code, c.ok, out, errs)
