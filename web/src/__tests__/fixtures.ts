@@ -23,6 +23,9 @@ export const ctx: Context = {
   trailerErrors: [],
 };
 
+// plain は、参照のない文を片の配列にする（自然言語で書く項目は、API で片の配列になる。docs/plans/stage4-references.md）。
+export const plain = (text: string) => [{ text }];
+
 export function claimEntry(no: number, id: string, over: Partial<Entry> = {}): Entry {
   return {
     no,
@@ -36,7 +39,7 @@ export function claimEntry(no: number, id: string, over: Partial<Entry> = {}): E
     flags: [],
     group: "layer:model",
     before: {
-      statement: `${id} の前の文`,
+      statement: plain(`${id} の前の文`),
       rationale: null,
       condition: null,
       subjects: ["task-id"],
@@ -47,7 +50,7 @@ export function claimEntry(no: number, id: string, over: Partial<Entry> = {}): E
       modelCheckWaiver: null,
     },
     after: {
-      statement: `${id} の後の文`,
+      statement: plain(`${id} の後の文`),
       rationale: null,
       condition: null,
       subjects: ["task-id"],
@@ -96,6 +99,7 @@ export function review(entries: Entry[], over: Partial<Review> = {}): Review {
     total: entries.length,
     entries,
     detached: [],
+    refs: {},
     ...over,
   };
 }
@@ -111,9 +115,9 @@ export const story: Story = {
 export function claimDetail(over: Partial<ClaimDetail> = {}): ClaimDetail {
   return {
     id: "task-id-unique",
-    statement: "タスクの ID は重ならない",
-    rationale: "重なると消す相手を決められない",
-    condition: "タスクが 1 つ以上ある",
+    statement: plain("タスクの ID は重ならない"),
+    rationale: plain("重なると消す相手を決められない"),
+    condition: plain("タスクが 1 つ以上ある"),
     layers: [{ id: "model", name: "モデル" }],
     subjects: [{ kind: "term", id: "task-id", name: "タスクの ID" }],
     state: "proposed",
@@ -123,6 +127,7 @@ export function claimDetail(over: Partial<ClaimDetail> = {}): ClaimDetail {
     evidence: [],
     origin: [],
     agreements: [],
+    refs: {},
     ...over,
   };
 }

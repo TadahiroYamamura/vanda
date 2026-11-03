@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { App } from "../App";
 import type { Entry } from "../api";
-import { apiError, claimDetail, claimEntry, ctx, defaultHandlers, fileEntry, requests, review, server, story } from "./fixtures";
+import { apiError, claimDetail, claimEntry, ctx, defaultHandlers, fileEntry, plain, requests, review, server, story } from "./fixtures";
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterAll(() => server.close());
@@ -421,7 +421,7 @@ describe("RV-05 変更前と変更後の差分", () => {
 
   // @vanda:evidence review-before-after
   it("エビデンスの予定はエビデンスごとに足したものと消したものに札を付け変わったものは中の差分を見せる", async () => {
-    const ev = (stage: string, type: string, detail: string | null) => ({ stage, type, layers: ["model"], detail });
+    const ev = (stage: string, type: string, detail: string | null) => ({ stage, type, layers: ["model"], detail: detail === null ? null : plain(detail) });
     const detail = [
       { op: "equal", text: "TLA+ の" },
       { op: "delete", text: "古い計画" },
@@ -472,8 +472,8 @@ describe("RV-05 変更前と変更後の差分", () => {
   it("約束の項目の差分は1列で消した語をdelに足した語をinsに出し変わっていない項目は中身を1回だけ出す", async () => {
     open([
       claimEntry(1, "c-diff", {
-        before: { ...claimEntry(1, "c-diff").before!, statement: "タスクの ID はたぶん重ならない", rationale: "消す相手を決めるため" },
-        after: { ...claimEntry(1, "c-diff").after!, statement: "タスクの ID は絶対に重ならない", rationale: "消す相手を決めるため" },
+        before: { ...claimEntry(1, "c-diff").before!, statement: plain("タスクの ID はたぶん重ならない"), rationale: plain("消す相手を決めるため") },
+        after: { ...claimEntry(1, "c-diff").after!, statement: plain("タスクの ID は絶対に重ならない"), rationale: plain("消す相手を決めるため") },
         diff: {
           fields: {
             statement: [
@@ -618,9 +618,9 @@ describe("RV-02 一覧の 1 件を選ぶ", () => {
 
 describe("RV-01・RV-02・RV-04 一覧の 1 件の出し方", () => {
   const term = (no: number, id: string) =>
-    claimEntry(no, id, { kind: "term", group: "terms-features", before: { name: id, definition: "定義", partOf: null }, after: { name: id, definition: "定義", partOf: null } });
+    claimEntry(no, id, { kind: "term", group: "terms-features", before: { name: id, definition: plain("定義"), partOf: null }, after: { name: id, definition: plain("定義"), partOf: null } });
   const feature = (no: number, id: string) =>
-    claimEntry(no, id, { kind: "feature", group: "terms-features", before: { name: id, definition: "定義", core: null, formal: null, formalWaiver: null }, after: { name: id, definition: "定義", core: null, formal: null, formalWaiver: null } });
+    claimEntry(no, id, { kind: "feature", group: "terms-features", before: { name: id, definition: plain("定義"), core: null, formal: null, formalWaiver: null }, after: { name: id, definition: plain("定義"), core: null, formal: null, formalWaiver: null } });
   // 1 行目は名前の所のボタン、2 行目はその後ろ
   const firstLine = (li: HTMLElement) => within(li).getByRole("button");
   const secondLine = (li: HTMLElement) => firstLine(li).nextElementSibling as HTMLElement;
@@ -815,14 +815,14 @@ describe("RV-01 一覧の絞り込み", () => {
   const notAgreedBox = () => within(list()).getByRole("checkbox", { name: "合意済でないものだけ" });
 
   const term = (no: number, id: string, name: string, definition: string, over: Partial<Entry> = {}) =>
-    claimEntry(no, id, { kind: "term", group: "terms-features", before: { name, definition, partOf: null }, after: { name, definition, partOf: null }, ...over });
+    claimEntry(no, id, { kind: "term", group: "terms-features", before: { name, definition: plain(definition), partOf: null }, after: { name, definition: plain(definition), partOf: null }, ...over });
   const feature = (no: number, id: string, name: string, definition: string) =>
-    claimEntry(no, id, { kind: "feature", group: "terms-features", before: { name, definition, core: null, formal: null, formalWaiver: null }, after: { name, definition, core: null, formal: null, formalWaiver: null } });
+    claimEntry(no, id, { kind: "feature", group: "terms-features", before: { name, definition: plain(definition), core: null, formal: null, formalWaiver: null }, after: { name, definition: plain(definition), core: null, formal: null, formalWaiver: null } });
   // 一覧の API は、まとまりごとに続けて返す（まとまりが飛び飛びだと、同じまとまりが 2 つ出る）
   const byGroup = (es: Entry[]) => ["layer:model", "terms-features", "files"].flatMap((g) => es.filter((e) => e.group === g));
   const statementOf = (statement: string, rationale: string | null = null) => ({
-    statement,
-    rationale,
+    statement: plain(statement),
+    rationale: rationale === null ? null : plain(rationale),
     condition: null,
     subjects: ["task-id"],
     layers: ["model"],

@@ -33,9 +33,9 @@ func foundStates(d claimDetail) map[string]string {
 
 type claimDetail struct {
 	ID        string  `json:"id"`
-	Statement string  `json:"statement"`
-	Rationale *string `json:"rationale"`
-	Condition *string `json:"condition"`
+	Statement frags `json:"statement"`
+	Rationale frags `json:"rationale"`
+	Condition frags `json:"condition"`
 	Layers    []struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
@@ -48,12 +48,12 @@ type claimDetail struct {
 	State       string   `json:"state"`
 	Fingerprint string   `json:"fingerprint"`
 	Flags       []string `json:"flags"`
-	Guesses     []string `json:"guesses"`
+	Guesses     []frags  `json:"guesses"`
 	Evidence    []struct {
 		Stage  string       `json:"stage"`
 		Type   string       `json:"type"`
 		Layers []string     `json:"layers"`
-		Detail *string      `json:"detail"`
+		Detail frags        `json:"detail"`
 		Found  []claimFound `json:"found"`
 	} `json:"evidence"`
 	Origin []struct {
@@ -122,7 +122,7 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 	if code, msg := s.get("/api/claims/task-id-unique", &got); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
 	}
-	if got.ID != "task-id-unique" || got.Statement != "タスクの ID は、すべてのタスクを通して重ならない" || got.Rationale != nil || got.Condition != nil {
+	if got.ID != "task-id-unique" || got.Statement.String() != "タスクの ID は、すべてのタスクを通して重ならない" || got.Rationale != nil || got.Condition != nil {
 		t.Errorf("id・文・理由・条件: %q %q %v %v", got.ID, got.Statement, got.Rationale, got.Condition)
 	}
 	if len(got.Layers) != 2 || got.Layers[0].ID != "model" || got.Layers[0].Name != "モデル" || got.Layers[1].ID != "db" || got.Layers[1].Name != "DB" {
@@ -132,7 +132,7 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 		t.Errorf("対象: %+v", got.Subjects)
 	}
 	if got.State != "proposed" || got.Fingerprint != reviewClaimFP ||
-		!reflect.DeepEqual(got.Flags, []string{"ai-proposal"}) || !reflect.DeepEqual(got.Guesses, []string{"消したタスクの ID は使い回さない"}) {
+		!reflect.DeepEqual(got.Flags, []string{"ai-proposal"}) || !reflect.DeepEqual(fragsList(got.Guesses), []string{"消したタスクの ID は使い回さない"}) {
 		t.Errorf("state %q、fingerprint %q、flags %v、guesses %v", got.State, got.Fingerprint, got.Flags, got.Guesses)
 	}
 
@@ -297,22 +297,22 @@ func Testその時点の約束の中身は由来のコミットと合意の記�
 			ID      string `json:"id"`
 			Commit  string `json:"commit"`
 			Content struct {
-				Statement string `json:"statement"`
+				Statement frags `json:"statement"`
 			} `json:"content"`
 		}
 		if code, msg := s.get("/api/claims/task-id-unique/at/"+commit, &got); code != 200 {
 			t.Fatalf("%s の時点の中身を読めない（%d）: %s", c.rev, code, msg)
 		}
-		if got.ID != "task-id-unique" || got.Commit != commit || got.Content.Statement != c.want {
+		if got.ID != "task-id-unique" || got.Commit != commit || got.Content.Statement.String() != c.want {
 			t.Errorf("%s の時点: %+v（思った文 %q）", c.rev, got, c.want)
 		}
 		// 短いハッシュ（4 文字以上）でも同じものを返す
 		var short struct {
 			Content struct {
-				Statement string `json:"statement"`
+				Statement frags `json:"statement"`
 			} `json:"content"`
 		}
-		if code, msg := s.get("/api/claims/task-id-unique/at/"+commit[:7], &short); code != 200 || short.Content.Statement != c.want {
+		if code, msg := s.get("/api/claims/task-id-unique/at/"+commit[:7], &short); code != 200 || short.Content.Statement.String() != c.want {
 			t.Errorf("短いハッシュで %s の時点を読めない（%d %q）: %+v", c.rev, code, msg, short)
 		}
 	}

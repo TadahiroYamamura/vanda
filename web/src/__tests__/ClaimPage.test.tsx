@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { App } from "../App";
 import type { ClaimDetail, Entry } from "../api";
-import { apiError, claimDetail, claimEntry, ctx, fileEntry, review, server, story } from "./fixtures";
+import { apiError, claimDetail, claimEntry, ctx, fileEntry, plain, review, server, story } from "./fixtures";
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterAll(() => server.close());
@@ -37,7 +37,7 @@ const detail = claimDetail({
       found: [{ adapter: "sql", file: "db/schema.sql", line: 4, name: "CREATE UNIQUE INDEX t ON task (id);", text: "CREATE UNIQUE INDEX t ON task (id);\n" }] },
     { stage: "implementation", type: "unit-test", layers: ["model"], detail: null, present: true,
       found: [{ adapter: "go", file: "internal/task/task_test.go", line: 6, name: "TestUnique", text: null }] },
-    { stage: "implementation", type: "random-check", layers: ["model"], detail: "まだ書いていない", present: false, found: [] },
+    { stage: "implementation", type: "random-check", layers: ["model"], detail: plain("まだ書いていない"), present: false, found: [] },
   ],
   origin: [
     { commit: "1".repeat(40), date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" },
@@ -192,7 +192,8 @@ it("由来のコミットと合意の記録を開くとその時点の約束の�
     http.get("/api/claims/:id/at/:commit", ({ params }) =>
       HttpResponse.json({
         id: "task-id-unique", commit: params.commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめ", stories: ["#1"],
-        content: { statement: at.get(String(params.commit)) ?? "?", rationale: null, condition: null, subjects: ["task-id"], layers: ["model"], evidence: [], flags: [], guesses: [] },
+        content: { statement: plain(at.get(String(params.commit)) ?? "?"), rationale: null, condition: null, subjects: ["task-id"], layers: ["model"], evidence: [], flags: [], guesses: [] },
+        refs: {},
       }),
     ),
   );
@@ -289,7 +290,7 @@ it("エビデンスの予定の詳細は長い文も改行も省略せずに全�
     "定数の範囲は、タスクが 3 つまで、操作が 6 歩まで。",
     "置き場所の候補: spec/TaskLifecycleWithDeletionAndReAddition.tla",
   ].join("\n");
-  open(claimDetail({ evidence: [{ stage: "plan", type: "model-check", layers: ["model"], detail, present: false, found: [] }] }));
+  open(claimDetail({ evidence: [{ stage: "plan", type: "model-check", layers: ["model"], detail: plain(detail), present: false, found: [] }] }));
   await screen.findByText(/タスクの ID は重ならない/);
   await waitFor(() => expect(bodyText()).toContain("置き場所の候補"));
   const holders = Array.from(document.querySelectorAll<HTMLElement>("*")).filter((el) => el.textContent === detail);
@@ -306,13 +307,14 @@ it("約束の詳細とその時点の中身は利用者が書いた文の続い�
     http.get("/api/claims/:id/at/:commit", () =>
       HttpResponse.json({
         id: "task-id-unique", commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめ", stories: ["#1"],
-        content: { statement: "その時点の" + spaced, rationale: "理由の" + spaced, condition: "条件の" + spaced, subjects: ["task-id"], layers: ["model"], evidence: [], flags: [], guesses: [] },
+        content: { statement: plain("その時点の" + spaced), rationale: plain("理由の" + spaced), condition: plain("条件の" + spaced), subjects: ["task-id"], layers: ["model"], evidence: [], flags: [], guesses: [] },
         layers: [{ id: "model", name: "モデル" }],
+        refs: {},
       }),
     ),
   );
   open(claimDetail({
-    statement: spaced, rationale: "今の理由の" + spaced, condition: "今の条件の" + spaced,
+    statement: plain(spaced), rationale: plain("今の理由の" + spaced), condition: plain("今の条件の" + spaced),
     origin: [{ commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" }],
   }));
   const has = (t: string) => Array.from(document.querySelectorAll<HTMLElement>("*")).some((el) => el.textContent === t);
@@ -331,8 +333,9 @@ const atStatement: Record<string, string> = { [atCommits.first]: "はじめの�
 function openHistory(at: Parameters<typeof http.get>[1] = ({ params }) =>
   HttpResponse.json({
     id: "task-id-unique", commit: params.commit, date: "2026-10-01T12:00:00+09:00", subject: "s", stories: ["#1"],
-    content: { statement: atStatement[String(params.commit)] ?? "?", rationale: null, condition: null, subjects: ["task-id"], layers: ["model"], evidence: [], flags: [], guesses: [] },
+    content: { statement: plain(atStatement[String(params.commit)] ?? "?"), rationale: null, condition: null, subjects: ["task-id"], layers: ["model"], evidence: [], flags: [], guesses: [] },
     layers: [{ id: "model", name: "モデル" }],
+    refs: {},
   })) {
   server.use(http.get("/api/claims/:id/at/:commit", at));
   open(claimDetail({
@@ -390,8 +393,9 @@ it("その時点の中身のレイヤーのうち今の設定にないものはI
   openHistory(({ params }) =>
     HttpResponse.json({
       id: "task-id-unique", commit: params.commit, date: "2026-10-01T12:00:00+09:00", subject: "s", stories: ["#1"],
-      content: { statement: "古いレイヤーの時点の文", rationale: null, condition: null, subjects: ["task-id"], layers: ["model", "old-layer"], evidence: [], flags: [], guesses: [] },
+      content: { statement: plain("古いレイヤーの時点の文"), rationale: null, condition: null, subjects: ["task-id"], layers: ["model", "old-layer"], evidence: [], flags: [], guesses: [] },
       layers: [{ id: "model", name: "モデル" }, { id: "old-layer", name: "" }],
+      refs: {},
     }),
   );
   const row = await historyRow(/#1 はじめの約束を置く/);
