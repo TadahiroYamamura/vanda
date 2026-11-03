@@ -153,7 +153,7 @@ definition = "フラグ（注意して読む手がかり）。要求にも質疑
 [[term]]
 id = "guess"
 name = "推測"
-definition = "フラグ（注意して読む手がかり）。AI が確かめずに書いた事実を含むもの"
+definition = "フラグ（注意して読む手がかり）。AI が確かめずに推し量って書いた所があるもの"
 
 [[term]]
 id = "changed-since-agreement"
