@@ -300,6 +300,9 @@ func Revoke(o Options, req RevokeRequest) (*RevokeResult, *Error) {
 			return nil, fail(err)
 		}
 	}
+	if Hooks.AfterRevokeWrite != nil {
+		Hooks.AfterRevokeWrite(o.Root)
+	}
 	// 読み直して、消したものだけが消え、ほかの記録が変わっていないことを確かめる
 	snap, err := snapshot.Working(o.Root, o.Cfg)
 	if err != nil {
@@ -308,6 +311,12 @@ func Revoke(o Options, req RevokeRequest) (*RevokeResult, *Error) {
 	after, rerrs := agreements.Load(o.Root, snap.Files, o.Cfg.Agreements, o.Cfg.AgreementsDefault)
 	if rerrs != nil {
 		return nil, fail(fmt.Errorf("取り消した後の合意の記録を読めません（%s）", rerrs[0].Error()))
+	}
+	if err := checkRevokeOwn(s.recs.Agreements, after.Agreements, user, base); err != nil {
+		return nil, fail(err)
+	}
+	if err := checkRevokeKept(s.recs.Agreements, after.Agreements, kind, key, fp, req.Deleted, req.Story); err != nil {
+		return nil, fail(err)
 	}
 	if err := checkRemoved(s.recs.Agreements, after.Agreements, remove); err != nil {
 		return nil, fail(err)

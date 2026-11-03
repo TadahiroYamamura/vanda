@@ -24,6 +24,8 @@ var Hooks struct {
 	AfterAgreeWrite func(root string)
 	// AfterAgreeCommit は、合意のコミットの後、checkAgreeCommit の前に呼ぶ
 	AfterAgreeCommit func(root string)
+	// AfterRevokeWrite は、取り消しで合意の記録を書き換えた後、checkRevokeOwn・checkRevokeKept の前に呼ぶ
+	AfterRevokeWrite func(root string)
 	// AfterRevokeCommit は、取り消しのコミットの後、checkRevokeCommit の前に呼ぶ
 	AfterRevokeCommit func(root string)
 }
@@ -44,6 +46,9 @@ func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
 	recs, rerrs := agreements.Load(s.o.Root, snap.Files, s.o.Cfg.Agreements, s.o.Cfg.AgreementsDefault)
 	if rerrs != nil {
 		return fmt.Errorf("書き足した後の合意の記録を読めません（%s）", rerrs[0].Error())
+	}
+	if err := checkAgreeKept(s.recs.Agreements, recs.Agreements); err != nil {
+		return err
 	}
 	found := rec.Deleted && recs.DeletionAgreedBy(rec.Kind, rec.target(), rec.Story) ||
 		rec.Fingerprint != nil && recs.AgreedBy(rec.Kind, rec.target(), *rec.Fingerprint, rec.Story)
@@ -66,6 +71,80 @@ func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
 	}
 	if !reflect.DeepEqual(after.items[key].Raw, want) {
 		return errors.New("フラグを外したら、flags・guesses のほかの項目まで変わりました")
+	}
+	return nil
+}
+
+// lostRecords は、before の記録のうち、after に同じ記録がないものを返す。同じ記録が 2 つあれば、2 つとも残っているかを見る。
+func lostRecords(before, after []*agreements.Agreement) []*agreements.Agreement {
+	used := make([]bool, len(after))
+	var lost []*agreements.Agreement
+	for _, b := range before {
+		found := false
+		for i, a := range after {
+			if !used[i] && sameRecord(a, b) {
+				used[i] = true
+				found = true
+				break
+			}
+		}
+		if !found {
+			lost = append(lost, b)
+		}
+	}
+	return lost
+}
+
+func recordPlace(a *agreements.Agreement) string {
+	return fmt.Sprintf("%s:%d", a.Table.Doc.File, a.Table.Line(""))
+}
+
+// checkAgreeKept は、合意の記録を書き足した後に、書き足す前の記録がすべて残っているかを確かめる（コミットする前の事後条件）。
+// 書き足すだけで消さないので、指紋の合わない古い合意の記録も、履歴として残っているはず。
+//
+// @vanda:sensor old-agreements-kept-as-history
+func checkAgreeKept(before, after []*agreements.Agreement) error {
+	if lost := lostRecords(before, after); len(lost) > 0 {
+		return fmt.Errorf("合意を書き足したら、%s の合意の記録が消えました", recordPlace(lost[0]))
+	}
+	return nil
+}
+
+// checkRevokeKept は、取り消しで合意の記録を書き換えた後に、消えた記録が、取り消した対象 kind・key の今の中身 fp
+// （deleted なら、消したこと）への、ストーリー story の記録だけかを確かめる（コミットする前の事後条件）。
+// 取り消す記録の選び方（revocable）を信じず、書き換える前と後の記録の違いから確かめる。
+//
+// @vanda:sensor old-agreements-kept-as-history
+func checkRevokeKept(before, after []*agreements.Agreement, kind, key, fp string, deleted bool, story string) error {
+	for _, a := range lostRecords(before, after) {
+		if a.Kind != kind || a.Target() != key || a.Story != story || a.Deleted != deleted || !deleted && a.Fingerprint != fp {
+			return fmt.Errorf("取り消したら、取り消した対象の今の中身への合意ではない、%s の合意の記録が消えました", recordPlace(a))
+		}
+	}
+	return nil
+}
+
+// checkRevokeOwn は、取り消しで合意の記録を書き換えた後に、消えた記録が、今の人 user が、今のブランチ
+// （分岐点の時点の記録 base になかったもの）で書いたものだけかを確かめる（コミットする前の事後条件）。
+//
+// @vanda:sensor revoke-own-branch-only
+func checkRevokeOwn(before, after []*agreements.Agreement, user *User, base *agreements.Records) error {
+	lost := lostRecords(before, after)
+	if len(lost) == 0 {
+		return nil
+	}
+	if user == nil || base == nil {
+		return fmt.Errorf("今の人か分岐点の時点の合意の記録が分からないのに、%s の合意の記録が消えました", recordPlace(lost[0]))
+	}
+	for _, a := range lost {
+		if a.UserName != user.Name || a.UserEmail != user.Email {
+			return fmt.Errorf("取り消したら、ほかの人（%s <%s>）が書いた %s の合意の記録が消えました", a.UserName, a.UserEmail, recordPlace(a))
+		}
+		for _, b := range base.Agreements {
+			if sameRecord(a, b) {
+				return fmt.Errorf("取り消したら、ベースブランチにすでにある %s の合意の記録が消えました", recordPlace(a))
+			}
+		}
 	}
 	return nil
 }
