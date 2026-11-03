@@ -1569,6 +1569,127 @@ test("約束の詳細の画面でTLAの定義をコピーするとリポジト�
   expect(await page.evaluate(() => navigator.clipboard.readText())).not.toMatch(/[∀∈⇒≜]/);
 });
 
+// TLA+ の記号の幅と書体を、Chrome が実際に描いた結果で確かめる。
+// 2 行目の頭の /\ は、1 行目の /\ と同じ桁に置いてある（"Unique == " の 10 文字ぶん）。
+const alignedDef = "Unique == /\\ \\A a, b \\in Ids : a = b => a = b\n          /\\ ~(Ids \\subseteq {}) /\\ [x \\in Ids |-> x] # <<1, 2>>";
+// [見せる記号, 置き換える前の ASCII の文字数]。alignedDef から手で数える
+const alignedSymbols: [string, number][] = [
+  ["≜", 2], ["∧", 2], ["∀", 2], ["∈", 3], ["⇒", 2],
+  ["∧", 2], ["¬", 1], ["⊆", 9], ["∧", 2], ["∈", 3], ["↦", 3], ["≠", 1], ["⟨", 2], ["⟩", 2],
+];
+
+async function openTlaModel(page: Page, def: string) {
+  const cfg = readFileSync(join(repo.root, ".vanda/config.toml"), "utf8");
+  repo.write(".vanda/config.toml", cfg.replace("[gui]", '[[annotation]]\npaths = ["spec/*.tla"]\nadapter = "tla"\ntypes = ["model-check"]\n\n[gui]'));
+  repo.write("spec/Task.tla", "---- MODULE Task ----\nIds == {1, 2}\n\n\\* @vanda:claim task-id-unique\n" + def + "\n====\n");
+  repo.write(".vanda/promises.toml", promisesAt(v4));
+  commit(repo, "モデルを足す", "#24");
+  await page.goto(serve.url + "/claims/task-id-unique");
+  await expect(page.locator("pre.code", { hasText: "Unique ≜" }).first(), "TLA+ の定義が記号で出ていない").toBeVisible();
+  // 書体（等幅と数学の記号）を読み終えてから測る。読む前は代わりの書体で描くので、幅が変わる
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+}
+
+interface SymbolBox {
+  text: string;
+  left: number;
+  top: number;
+  width: number;
+  glyphCenter: number;
+}
+
+// measureSymbols は、TLA+ の定義の中の記号の箱と、その中に描いた記号の位置、等幅の 1 文字の幅を測る。
+// 等幅の 1 文字の幅は、同じ pre の中に置いた 100 文字の 0 の幅から求める。
+function measureSymbols(page: Page) {
+  return page.evaluate(() => {
+    const pre = [...document.querySelectorAll<HTMLElement>("pre.code")].find((p) => p.textContent?.includes("Unique ≜"))!;
+    const probe = document.createElement("span");
+    probe.textContent = "0".repeat(100);
+    pre.appendChild(probe);
+    const unit = probe.getBoundingClientRect().width / 100;
+    probe.remove();
+    const boxes = [...pre.querySelectorAll<HTMLElement>(".sym")].map((box) => {
+      const r = box.getBoundingClientRect();
+      const range = document.createRange();
+      range.selectNodeContents(box);
+      const g = range.getBoundingClientRect();
+      return { text: box.textContent ?? "", left: r.left, top: r.top, width: r.width, glyphCenter: g.left + g.width / 2 };
+    });
+    return { unit, boxes };
+  });
+}
+
+// @vanda:evidence tla-symbol-keeps-width
+test("TLAの記号は元のASCIIの文字数ぶんの等幅の文字の幅を取り中央に描かれ縦に揃えた並びが崩れない", async ({ page }) => {
+  await openTlaModel(page, alignedDef);
+  const { unit, boxes } = await measureSymbols(page);
+  expect(unit, "等幅の 1 文字の幅を測れない").toBeGreaterThan(0);
+  expect(boxes.map((b) => b.text)).toEqual(alignedSymbols.map(([c]) => c));
+  boxes.forEach((b: SymbolBox, i) => {
+    const [c, n] = alignedSymbols[i];
+    expect(Math.abs(b.width - n * unit), `${i + 1} 番目の ${c} の幅 ${b.width}px が ${n} 文字ぶん（${n * unit}px）でない`).toBeLessThanOrEqual(0.5);
+    const center = b.left + b.width / 2;
+    expect(Math.abs(b.glyphCenter - center), `${i + 1} 番目の ${c} が箱の中央（${center}px）でなく ${b.glyphCenter}px に描かれている`).toBeLessThanOrEqual(0.5);
+  });
+  // 1 行目と 2 行目の頭の ∧ は、同じ桁に揃う
+  const first = boxes[1];
+  const second = boxes[5];
+  expect(second.top, "2 行目の ∧ が 1 行目より下にない").toBeGreaterThan(first.top);
+  expect(Math.abs(second.left - first.left), `1 行目の ∧（${first.left}px）と 2 行目の ∧（${second.left}px）の桁が揃わない`).toBeLessThanOrEqual(0.5);
+});
+
+// @vanda:evidence tla-symbol-font
+test("TLAの記号は画面に同梱したNoto Sans Mathを読み込んでその書体だけで描かれる", async ({ page }) => {
+  await openTlaModel(page, alignedDef);
+  await expect
+    .poll(
+      () => page.evaluate(() => [...document.fonts].filter((f) => f.family.replace(/["']/g, "") === "Noto Sans Math").map((f) => f.status)),
+      { message: "Noto Sans Math を読み込んでいない" },
+    )
+    .toContain("loaded");
+  // 同梱のファイルを vanda のサーバーから読んだこと
+  const fontURLs = await page.evaluate(() =>
+    performance
+      .getEntriesByType("resource")
+      .map((e) => e.name)
+      .filter((u) => /noto-sans-math.*\.woff2$/.test(u)),
+  );
+  expect(fontURLs.length, "Noto Sans Math のファイルを読んでいない").toBeGreaterThan(0);
+  for (const u of fontURLs) expect(u.startsWith(serve.url + "/"), `${u} を vanda のサーバーから読んでいない`).toBe(true);
+
+  // 記号の文字だけを持ついちばん内側の要素に印を付け、Chrome が実際に使った書体を DevTools のプロトコルで聞く。
+  // 色付けを終えると画面が要素を作り直し、印が消えることがあるので、印を付けるところから条件で待ち直す
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("DOM.enable");
+  await cdp.send("CSS.enable");
+  const usedFonts = async (): Promise<string[]> => {
+    const count = await page.evaluate(() => {
+      const pre = [...document.querySelectorAll<HTMLElement>("pre.code")].find((p) => p.textContent?.includes("Unique ≜"))!;
+      const boxes = [...pre.querySelectorAll<HTMLElement>(".sym")];
+      boxes.forEach((box, i) => {
+        let inner: HTMLElement = box;
+        box.querySelectorAll<HTMLElement>("*").forEach((el) => {
+          if (el.textContent === box.textContent) inner = el;
+        });
+        inner.setAttribute("data-e2e-glyph", String(i));
+      });
+      return boxes.length;
+    });
+    const { root } = await cdp.send("DOM.getDocument", { depth: -1 });
+    const got: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const { nodeId } = await cdp.send("DOM.querySelector", { nodeId: root.nodeId, selector: `[data-e2e-glyph="${i}"]` });
+      if (!nodeId) return [`${i + 1} 番目の記号の要素を見失った`];
+      const { fonts } = await cdp.send("CSS.getPlatformFontsForNode", { nodeId });
+      got.push(`${alignedSymbols[i]?.[0]}: ${fonts.map((f) => `${f.familyName}${f.isCustomFont ? "（同梱）" : "（OS）"}`).join("、")}`);
+    }
+    return got;
+  };
+  await expect
+    .poll(usedFonts, { message: "TLA+ の記号を、同梱した Noto Sans Math だけで描いていない" })
+    .toEqual(alignedSymbols.map(([c]) => `${c}: Noto Sans Math（同梱）`));
+});
+
 // RV-01 の絞り込み。story-24 の一覧は task-id-unique（文を変えた）・task-title-required（足した）・e2e/add-task.txtar の 3 件
 const filterList = (page: Page) => page.getByRole("region", { name: "変わったものの一覧" });
 async function expectListed(page: Page, want: string[], where: string) {
