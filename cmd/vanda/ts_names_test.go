@@ -14,7 +14,8 @@ import (
 // （docs/plans/annotation-types.md の 2・3）。名前は、呼び出しの最初の引数の文字列で、describe の中なら外側の
 // describe の名前から順に " > " でつなぐ。約束の詳細（GET /api/claims/<ID>）の found の名前で確かめる。
 
-// tsNamesFile は、入れ子の describe と、.skip・.only を含むテストのファイル。期待する名前は tsNamesWant
+// tsNamesFile は、入れ子の describe を含むテストのファイル。期待する名前は tsNamesWant。
+// 組込みの ts は .skip・.todo を数えず .only を誤りにする（annotation_ts.txtar で確かめる）ので、ここには書かない
 const tsNamesFile = `import { describe, it, test } from "vitest";
 
 // @vanda:evidence task-id-unique
@@ -26,10 +27,10 @@ describe("ReviewPage", () => {
 
   describe("合意", () => {
     // @vanda:evidence task-id-unique
-    test.skip("合意すると合意済になる", () => {});
+    test("合意すると合意済になる", () => {});
 
     /* @vanda:evidence task-id-unique */
-    it.only("取り消すと提案中に戻る", () => {});
+    it("取り消すと提案中に戻る", () => {});
   });
 });
 

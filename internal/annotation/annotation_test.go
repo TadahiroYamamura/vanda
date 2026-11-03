@@ -364,9 +364,9 @@ func TestReadはtsのテストの呼び出しの直前だけを受け付け名�
 	src := "import { describe, it, test } from \"vitest\";\n\n" +
 		"// @vanda:evidence c1\ntest(\"外\", () => {});\n\n" +
 		"describe(\"画面\", () => {\n" +
-		"  // @vanda:evidence c2\n  it.only(\"出す\", () => {});\n" +
+		"  // @vanda:evidence c2\n  it(\"出す\", () => {});\n" +
 		"  test.describe(\"中\", () => {\n" +
-		"    /* @vanda:evidence c3 */\n    test.skip(\"飛ばす\", () => {});\n" +
+		"    /* @vanda:evidence c3 */\n    test(\"飛ばさない\", () => {});\n" +
 		"    // @vanda:evidence c4\n    test.each([1, 2])(\"番号 %i\", (n) => {});\n" +
 		"    // @vanda:evidence c5\n    it(`${op} をする`, () => {});\n" +
 		"  });\n});\n" +
@@ -380,7 +380,7 @@ func TestReadはtsのテストの呼び出しの直前だけを受け付け名�
 	for _, a := range as {
 		names = append(names, a.Value+" "+a.Name)
 	}
-	want := []string{"c1 外", "c2 画面 > 出す", "c3 画面 > 中 > 飛ばす", "c4 画面 > 中 > 番号 %i", "c5 画面 > 中 > ${op} をする"}
+	want := []string{"c1 外", "c2 画面 > 出す", "c3 画面 > 中 > 飛ばさない", "c4 画面 > 中 > 番号 %i", "c5 画面 > 中 > ${op} をする"}
 	if strings.Join(names, "\n") != strings.Join(want, "\n") {
 		t.Errorf("got:\n%s\nwant:\n%s", strings.Join(names, "\n"), strings.Join(want, "\n"))
 	}
@@ -482,5 +482,49 @@ func TestReadは1行目に動かし方がないvanda_adaptersのアダプタを�
 	_, errs := Read(root, files, []config.AnnotationRule{{Paths: []string{"docs/*.md"}, User: &config.UserAdapter{Name: "ad", Path: "ad.sh"}}})
 	if errs == nil || !strings.Contains(errs.Error(), "ad.sh") || !strings.Contains(errs.Error(), "ください") {
 		t.Errorf("1 行目に動かし方がないアダプタが、場所と直し方の誤りにならない: %v", errs)
+	}
+}
+
+// @vanda:evidence annotation-ts-skipped-not-counted
+func TestReadはtsのskipとtodoを付けた呼び出しとその中のアノテーションを数えない(t *testing.T) {
+	for _, callee := range []string{"test", "it", "describe"} {
+		for _, mod := range []string{"skip", "todo"} {
+			t.Run(callee+"."+mod, func(t *testing.T) {
+				// 飛ばす呼び出しの前（describe ならその中のテストにも）アノテーションを付け、外のテストのものだけが残ることを確かめる。
+				// テストの中にテストを書くことはテストの道具が許さないので、中の呼び出しは describe でだけ確かめる
+				body := "() => {}"
+				if callee == "describe" {
+					body = "() => {\n  // @vanda:evidence c-in\n  test(\"中\", () => {});\n}"
+				}
+				src := "// @vanda:evidence c-out\ntest(\"外\", () => {});\n\n" +
+					"// @vanda:evidence c-skip\n" + callee + "." + mod + "(\"飛ばす\", " + body + ");\n"
+				root, files := setup(t, map[string]string{"w/a.test.ts": src})
+				as, errs := Read(root, files, []config.AnnotationRule{{Paths: []string{"w/*.test.ts"}, Adapter: "ts"}})
+				if errs != nil {
+					t.Fatal(errs)
+				}
+				if got := show(as); got != "w/a.test.ts:01 evidence c-out -> 外\n" {
+					t.Errorf("got:\n%s", got)
+				}
+			})
+		}
+	}
+}
+
+// @vanda:evidence annotation-ts-only-rejected
+func TestReadはtsのonlyを付けた呼び出しをアノテーションの有無によらずその行を指して誤りにする(t *testing.T) {
+	for _, callee := range []string{"test", "it", "describe"} {
+		for name, src := range map[string]string{
+			"アノテーションあり": "// @vanda:evidence c1\ntest(\"外\", () => {});\n\n// @vanda:evidence c2\n" + callee + ".only(\"だけ\", () => {});\n",
+			"アノテーションなし": "// @vanda:evidence c1\ntest(\"外\", () => {});\n\n\n" + callee + ".only(\"だけ\", () => {});\n",
+		} {
+			t.Run(callee+"."+name, func(t *testing.T) {
+				root, files := setup(t, map[string]string{"w/a.test.ts": src})
+				_, errs := Read(root, files, []config.AnnotationRule{{Paths: []string{"w/*.test.ts"}, Adapter: "ts"}})
+				if errs == nil || !lineWith(errs.Error(), "w/a.test.ts:5: ", ".only") {
+					t.Errorf("5 行目の .only を誤りにしていない: %v", errs)
+				}
+			})
+		}
 	}
 }

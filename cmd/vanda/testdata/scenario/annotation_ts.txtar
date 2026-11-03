@@ -3,6 +3,8 @@
 # @vanda:evidence annotation-ts-test-call
 # @vanda:evidence annotation-ts-fixed-name
 # @vanda:evidence annotation-ts-hooks-rejected
+# @vanda:evidence annotation-ts-skipped-not-counted
+# @vanda:evidence annotation-ts-only-rejected
 # 書けるのは `@vanda:evidence` だけ。数えるのは // と /* */ のコメントの中だけで、文字列・テンプレート文字列の中は数えない。
 # 書ける所は test・it・describe から始まる呼び出し（後ろの修飾はすべて受け付ける）の直前のコメント（空行をはさまない）だけ。
 # beforeEach・afterEach・beforeAll・afterAll・test.step の直前と、ほかの所は誤り。
@@ -16,7 +18,7 @@ commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 exec vanda check .vanda/checks/present.toml
 
-# 書ける所: test・it・describe と、修飾（.skip・.only・.todo・.each(…)(…)・test.describe・test.describe.serial）が
+# 書ける所: test・it・describe と、修飾（.skip・.todo・.each(…)(…)・test.describe・test.describe.serial）が
 # 付いたものの直前のコメント。// でも /* */ でもよい。名前はテンプレート文字列でもよい
 cp cases/places-ok.ts web/a.test.ts
 commit '(test) 審査の前にコミットする'
@@ -103,7 +105,29 @@ cp cases/step.ts web/a.test.ts
 commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:[45]: '
+! stderr '(?m)^panic: '
+cp orig/a.test.ts.orig web/a.test.ts
+
+# .skip・.todo を付けた呼び出しと、.skip を付けた describe の中のテストのアノテーションは、書いてよいが数えない。
+# それしかなければ unit-test の予定が揃わない
+cp cases/skipped-only.ts web/a.test.ts
 commit '(test) 審査の前にコミットする'
+exec vanda check .vanda/checks/links.toml
+! exec vanda check .vanda/checks/present.toml
+stderr 'unit-test'
+! stderr '(?m)^panic: '
+cp orig/a.test.ts.orig web/a.test.ts
+
+# .only を付けた呼び出しは、アノテーションがあってもなくても、その行を指して annotation-links の誤り
+cp cases/only-annotated.ts web/a.test.ts
+commit '(test) 審査の前にコミットする'
+! exec vanda check .vanda/checks/links.toml
+stderr 'web/a\.test\.ts:7: .*\.only'
+! stderr '(?m)^panic: '
+cp cases/only-plain.ts web/a.test.ts
+commit '(test) 審査の前にコミットする'
+! exec vanda check .vanda/checks/links.toml
+stderr 'web/a\.test\.ts:6: .*\.only'
 ! stderr '(?m)^panic: '
 cp orig/a.test.ts.orig web/a.test.ts
 
@@ -177,9 +201,6 @@ describe("タスク", () => {
   test.skip("飛ばす", () => {});
 
   // @vanda:evidence task-id-unique
-  it.only("これだけ", () => {});
-
-  // @vanda:evidence task-id-unique
   test.each([1, 2])("番号 %i", (n) => {});
 
   // @vanda:evidence task-id-unique
@@ -197,6 +218,34 @@ describe("タスク", () => {
   // @vanda:evidence task-id-unique
   test.each(["合意", "取り消し"])(`${op} をすると記録が変わる`, (op) => {});
 });
+-- cases/skipped-only.ts --
+import { describe, it, test } from "vitest";
+
+// @vanda:evidence task-id-unique
+test.skip("飛ばす", () => {});
+
+// @vanda:evidence task-id-unique
+it.todo("あとで書く");
+
+describe.skip("飛ばすまとまり", () => {
+  // @vanda:evidence task-id-unique
+  test("中のテスト", () => {});
+});
+-- cases/only-annotated.ts --
+import { describe, test } from "vitest";
+
+// @vanda:evidence task-id-unique
+test("ID は重ならない", () => {});
+
+// @vanda:evidence task-id-unique
+describe.only("これだけ", () => {});
+-- cases/only-plain.ts --
+import { it, test } from "vitest";
+
+// @vanda:evidence task-id-unique
+test("ID は重ならない", () => {});
+
+it.only("これだけ", () => {});
 -- cases/kind-claim.ts --
 import { test } from "vitest";
 
