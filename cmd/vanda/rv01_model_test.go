@@ -20,9 +20,9 @@ import (
 
 // rvEntry は、一覧の 1 件の期待値。
 type rvEntry struct {
-	Kind    string // claim・term・feature・file
-	Key     string // 約束・用語・機能は ID。ファイルは今の場所（削除なら、前の場所）
-	Change  string // added・modified・deleted
+	Kind   string // claim・term・feature・file
+	Key    string // 約束・用語・機能は ID。ファイルは今の場所（削除なら、前の場所）
+	Change string // added・modified・deleted
 	// Others は、レビュー単位がストーリーのときに、そのストーリーで最初に変えた後に同じものを変えた、そのストーリーの ID のないコミット。
 	// コミットごとに、メッセージにあるストーリーの ID（ないものは "-"）を書き、名前の順に , でつなぐ。
 	Others string
