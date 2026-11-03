@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
@@ -75,29 +76,52 @@ func Read(root string, cfg *config.Config, id string) (*Story, *Error) {
 	return nil, &Error{Status: http.StatusNotFound, Message: "ストーリーの置き場所が設定されていません。", Fix: `.vanda/config.toml の [story] に、adapter = "github" と repository を書くか、.vanda/adapters/ に置いたアダプタの名前を adapter に書いてください。`}
 }
 
-// Token は、GitHub の認証の鍵を、使うたびに読む。環境の変数 GH_TOKEN があればそれを、なければ gh auth token の出力を使う。
-func Token() (string, *Error) {
-	if t := os.Getenv("GH_TOKEN"); t != "" {
+// tokenSource は、api_url のホストに合う認証キーの読み先（環境変数の名前と、gh auth token に渡すホスト）を返す。
+// api_url はチームで共有する設定に書くので、github.com の認証キーを、設定に書かれたほかのホストへ送らないよう、ホストごとに読み先を分ける
+func tokenSource(apiURL string) (env, host string, err error) {
+	u, err := url.Parse(apiURL)
+	if err != nil || u.Host == "" {
+		return "", "", fmt.Errorf("api_url %q からホストを読めません", apiURL)
+	}
+	if strings.EqualFold(u.Host, "api.github.com") {
+		return "GH_TOKEN", "github.com", nil
+	}
+	return "GH_ENTERPRISE_TOKEN", u.Host, nil
+}
+
+// token は、認証キーを、使うたびに環境変数 env から読み、なければ gh auth token --hostname host の出力を使う。
+// 見つからなければ（空も含む）、要求を送らないよう、ストーリーストアのエラーを返す。
+func token(env, host string) (string, *Error) {
+	if t := os.Getenv(env); t != "" {
 		return t, nil
 	}
+	fix := "環境変数 " + env + " に認証キーを入れるか、gh auth login --hostname " + host + " でログインしてください（環境変数を変えたときは、vanda を起動し直してください）。"
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	var stdout, stderr bytes.Buffer
-	cmd := exec.CommandContext(ctx, "gh", "auth", "token")
+	cmd := exec.CommandContext(ctx, "gh", "auth", "token", "--hostname", host)
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {
 		msg := strings.TrimSpace(stderr.String())
 		if msg == "" {
 			msg = err.Error()
 		}
-		return "", storeErr("GitHub の認証の鍵を読めません（gh auth token: "+msg+"）。", "gh auth login でログインするか、環境の変数 GH_TOKEN に鍵を入れて、vanda を起動し直してください。")
+		return "", storeErr("GitHub（"+host+"）の認証キーが見つかりません（"+env+" がなく、gh auth token --hostname "+host+": "+msg+"）。", fix)
 	}
-	return strings.TrimSpace(stdout.String()), nil
+	t := strings.TrimSpace(stdout.String())
+	if t == "" {
+		return "", storeErr("GitHub（"+host+"）の認証キーが見つかりません（"+env+" がなく、gh auth token --hostname "+host+" の出力が空です）。", fix)
+	}
+	return t, nil
 }
 
 // get は、GitHub の REST API を呼び、JSON を v に読む。404 は、notFound の誤りにする。
 func get(st config.StoryStore, path string, v any, notFound *Error) *Error {
-	token, e := Token()
+	env, host, err := tokenSource(st.APIURL)
+	if err != nil {
+		return storeErr("GitHub の認証キーを選べません（"+err.Error()+"）。", ".vanda/config.toml の [story] の api_url を確かめてください。")
+	}
+	key, e := token(env, host)
 	if e != nil {
 		return e
 	}
@@ -110,8 +134,10 @@ func get(st config.StoryStore, path string, v any, notFound *Error) *Error {
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+key)
+	// http を認めるのは、サンドボックスなどで http の API に送ることがあるため。認証キーが平文で流れることに気づけるよう、送るたびに知らせる
+	if strings.HasPrefix(strings.ToLower(st.APIURL), "http://") {
+		fmt.Fprintf(os.Stderr, "api_url（%s）が http:// で始まるため、GitHub の認証キーを暗号化せずに送っています。暗号化して送るには、api_url を https:// にしてください。\n", st.APIURL)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -135,7 +161,7 @@ func get(st config.StoryStore, path string, v any, notFound *Error) *Error {
 		}
 		fix := "GitHub が返した理由を確かめてください。"
 		if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-			fix = "gh auth login でログインし直すか、GH_TOKEN の鍵に、このリポジトリの Issues を読む権限があるかを確かめてください。"
+			fix = "gh auth login --hostname " + host + " でログインし直すか、" + env + " の認証キーに、このリポジトリの Issues を読む権限があるかを確かめてください。"
 		}
 		return storeErr(fmt.Sprintf("GitHub（%s）が %d を返しました（%s）。", url, resp.StatusCode, reason), fix)
 	}

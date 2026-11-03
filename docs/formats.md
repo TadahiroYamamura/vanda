@@ -369,7 +369,7 @@ scope = "story"
 | コマンド | 中身 |
 |---|---|
 | `vanda version` | 動いている vanda の版を、1 行で出す（例: `0.1.0`）。`.vanda/` がなくても、版が合わなくても動く |
-| `vanda doctor` | 設定（`.vanda/config.toml`）を読み、版が合うかを確かめる。ストーリーの置き場所が設定にあれば、繋がるかも確かめる（GitHub Issues なら、認証の鍵で `GET <api_url>/repos/<repository>` を呼び、Issues が使えるか。`.vanda/adapters/` のアダプタなら、そこにあって実行できるか）。通れば標準出力に 1 行を出す（置き場所を確かめたら、同じ行の終わりに、何を確かめたかを書き足す）。誤りがあれば、標準エラーに出して終了コード 1 で終わる |
+| `vanda doctor` | 設定（`.vanda/config.toml`）を読み、版が合うかを確かめる。ストーリーの置き場所が設定にあれば、繋がるかも確かめる（GitHub Issues なら、`api_url` のホストに合う認証キーで `GET <api_url>/repos/<repository>` を呼び、Issues が使えるか。`.vanda/adapters/` のアダプタなら、そこにあって実行できるか）。通れば標準出力に 1 行を出す（置き場所を確かめたら、同じ行の終わりに、何を確かめたかを書き足す）。誤りがあれば、標準エラーに出して終了コード 1 で終わる |
 | `vanda check <審査の設定のファイル> [--base <ブランチ>] [--story <ID>]` | 審査を行う。審査ごとの結果の行は標準出力に、誤りの中身は標準エラーに出す。どれかが失敗したら終了コード 1 |
 
 ## GUI の API（`vanda serve`）
@@ -738,7 +738,9 @@ base = "origin/develop"
 
 ### GitHub Issues のアダプタ
 
-- 認証の鍵は設定に書かない。使うたびに、環境の変数 `GH_TOKEN` があればそれを、なければ `gh auth token` の出力を使う。`gh` がない・ログインしていないときは `502` で、`gh` が返した理由を出す
+- 認証キーは設定に書かない。使うたびに、`api_url` のホストに合うものを使う。ホストが `api.github.com` なら、環境変数 `GH_TOKEN` があればそれを、なければ `gh auth token --hostname github.com` の出力を使う。ほかのホスト（GitHub Enterprise）なら、`GH_ENTERPRISE_TOKEN` があればそれを、なければ `gh auth token --hostname <そのホスト>` の出力を使う。ホストはポートを含む（例: `ghe.example.com:8443`）
+- 合う認証キーが見つからない（環境変数がなく、`gh` がない・ログインしていない・出力が空）ときは、GitHub への要求を送らずに `502` にし、`gh` が返した理由を出す。`vanda doctor` も同じ決まりで認証キーを選ぶ
+- `api_url` が `http://` で始まるときは、認証キーを送るたびに、暗号化せずに送っていることを標準エラーに出す
 - `GET <api_url>/repos/<repository>/issues/<番号>` を呼ぶ。番号は、ストーリーの ID の数字の部分
 - 添付ファイルは、本文の中のリンクと画像（Markdown の `[名前](URL)`・`![名前](URL)` と、HTML の `<img src>`）のうち、URL が `https://github.com/user-attachments/`・`https://github.com/<repository>/assets/`・`https://user-images.githubusercontent.com/` で始まるもの。名前は、リンクの文字か画像の代わりの文字（なければ URL の最後の部分）。並びは本文に出てくる順で、同じ URL は 1 度だけ
 - 添付ファイルの見分け方は、`github.com` の URL だけ。GitHub Enterprise の添付は、まだ見分けない
