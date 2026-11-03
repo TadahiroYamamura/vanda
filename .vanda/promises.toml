@@ -2753,7 +2753,6 @@ id = "review-count-verified"
 subjects = ["list-changes"]
 statement = "一覧を返す前に、同じものが 2 度出ていないかと、一覧の数が、比べる元と今で中身の指紋が違う、約束・用語・機能の ID とファイルのファイルパスの数に合うかを確かめ、どちらかを満たさなければ一覧を返さず 500 にする"
 rationale = "中身の指紋が違う ID とファイルパスを、一覧の 1 件ずつにするところで漏れや重複が起きても、PO に誤った一覧を見せないため"
-condition = "中身の指紋が違う ID とファイルパスを求めるところの漏れは、これでは見つけない"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3690,7 +3689,6 @@ id = "claim-at-commit"
 subjects = ["show-claim-at-commit", "origin"]
 statement = "由来のコミットか合意の記録を選ぶと、その時点（合意の記録なら、合意を書いたコミットの時点）の約束の中身を示す"
 rationale = "約束の詳細には今の中身との差分を出さないため、過去の中身はここで見る"
-condition = "合意の記録を選んだ時、示した中身がその記録の指紋と合うかは示さない"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
