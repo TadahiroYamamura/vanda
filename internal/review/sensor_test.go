@@ -312,7 +312,7 @@ func Test取り消しのコミットに約束リストの変更を入れると�
 
 // 一覧の作り方が正しければ外からは破れないので、食い違う changes と entries を直に渡す
 // @vanda:evidence review-count-verified
-func Test_checkCountは一覧の数が差分の数から名前の変更を引いたものに合わないか同じものが2度出れば500にする(t *testing.T) {
+func Test_checkCountは一覧の数が差分の数に合わないか同じものが2度出れば500にする(t *testing.T) {
 	ch := func(keys ...string) []rawChange {
 		var out []rawChange
 		for _, k := range keys {
@@ -328,12 +328,12 @@ func Test_checkCountは一覧の数が差分の数から名前の変更を引い
 		ok      bool
 	}{
 		{"数が合う", ch("claim:a", "path:x"), []Entry{en("claim:a", "modified"), en("path:x", "added")}, true},
-		{"名前の変更は2つの差分で1件", ch("path:x", "path:y"), []Entry{en("path:y", "renamed")}, true},
+		{"名前の変更は古い場所の削除と新しい場所の追加の2件", ch("path:x", "path:y"), []Entry{en("path:x", "deleted"), en("path:y", "added")}, true},
 		{"空", nil, nil, true},
 		{"一覧が足りない", ch("claim:a", "path:x"), []Entry{en("claim:a", "modified")}, false},
 		{"一覧が多い", ch("claim:a"), []Entry{en("claim:a", "modified"), en("path:x", "added")}, false},
 		{"同じものが2度", ch("claim:a", "path:x"), []Entry{en("claim:a", "modified"), en("claim:a", "modified")}, false},
-		{"名前の変更でないのに差分2つで1件", ch("path:x", "path:y"), []Entry{en("path:y", "modified")}, false},
+		{"差分2つで1件", ch("path:x", "path:y"), []Entry{en("path:y", "added")}, false},
 	}
 	for _, c := range cases {
 		err := checkCount(c.changes, c.es)

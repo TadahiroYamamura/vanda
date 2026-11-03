@@ -195,10 +195,26 @@ func cmdAgree(ts *testscript.TestScript, neg bool, args []string) {
 	if neg {
 		ts.Fatalf("agree は ! を付けて使えない")
 	}
+	deleted := len(args) > 0 && args[0] == "-deleted"
+	if deleted {
+		args = args[1:]
+	}
 	if len(args) < 4 {
-		ts.Fatalf("使い方: agree <合意の記録のファイル> <ストーリーの ID> <claim|term|feature|file> <ID かファイルの場所> [<JSON のファイル>]")
+		ts.Fatalf("使い方: agree [-deleted] <合意の記録のファイル> <ストーリーの ID> <claim|term|feature|file> <ID かファイルの場所> [<JSON のファイル>]")
 	}
 	record, story, kind, key := args[0], args[1], args[2], args[3]
+	if deleted {
+		// 消したことへの合意。消したものには中身がないので、指紋の代わりに deleted = true を書き、ファイルは場所で指す
+		if len(args) != 4 {
+			ts.Fatalf("消したことへの合意には、ID かファイルの場所だけを渡す")
+		}
+		path := ""
+		if kind == "file" {
+			path = key
+		}
+		appendRecord(ts, record, deletionAgreementTOML(kind, key, path, story, ts.Getenv("GIT_AUTHOR_NAME"), ts.Getenv("GIT_AUTHOR_EMAIL")))
+		return
+	}
 	var fingerprint, path string
 	switch kind {
 	case "claim", "term", "feature":
@@ -229,8 +245,10 @@ func cmdAgree(ts *testscript.TestScript, neg bool, args []string) {
 		ts.Fatalf("対象の種類 %q は claim・term・feature・file のどれでもない", kind)
 	}
 
-	text := agreementTOML(kind, key, fingerprint, path, story, ts.Getenv("GIT_AUTHOR_NAME"), ts.Getenv("GIT_AUTHOR_EMAIL"))
+	appendRecord(ts, record, agreementTOML(kind, key, fingerprint, path, story, ts.Getenv("GIT_AUTHOR_NAME"), ts.Getenv("GIT_AUTHOR_EMAIL")))
+}
 
+func appendRecord(ts *testscript.TestScript, record, text string) {
 	abs := ts.MkAbs(record)
 	ts.Check(os.MkdirAll(filepath.Dir(abs), 0o755))
 	f, err := os.OpenFile(abs, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
@@ -240,6 +258,19 @@ func cmdAgree(ts *testscript.TestScript, neg bool, args []string) {
 		err = cerr
 	}
 	ts.Check(err)
+}
+
+// deletionAgreementTOML は、消したことへの合意の記録の 1 件を、docs/formats.md の [[agreement]] の形で返す。
+// key は、約束・用語・機能なら ID、ファイルなら場所（path と同じ）。
+func deletionAgreementTOML(kind, key, path, story, name, email string) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "\n[[agreement]]\nkind = %q\nkey = %q\ndeleted = true\n", kind, key)
+	if path != "" {
+		fmt.Fprintf(&b, "path = %q\n", path)
+	}
+	fmt.Fprintf(&b, "agreed_at = 2026-10-31T12:00:00+09:00\nstory = %q\n", story)
+	fmt.Fprintf(&b, "\n[agreement.user]\nname = %q\nemail = %q\n", name, email)
+	return b.String()
 }
 
 // agreementTOML は、合意の記録の 1 件を、docs/formats.md の [[agreement]] の形で返す。

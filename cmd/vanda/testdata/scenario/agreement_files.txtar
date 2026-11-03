@@ -1,7 +1,8 @@
 # CMD-10 合意: エビデンスの本体のファイル（シナリオ、ガードレールの定義、オラクルの定義）も、今の中身に合意していないと止まる。
-# @vanda:evidence renamed-file-stays-agreed
+# @vanda:evidence renamed-file-needs-agreement
 # @vanda:evidence check-agreement-targets
-# CM-03: ファイルの指紋は中身そのものから作るので、名前を変えただけなら合意済のまま、中身を 1 文字変えると提案中になる。
+# ファイルは場所と中身の指紋で見分ける。名前を変えると、古い場所は消したもの、新しい場所は（中身が同じでも）提案中になる。
+# 合意済のファイルを写した先も提案中。中身を 1 文字変えると提案中になる。
 #
 # 合意の対象のファイルは、txtar と tla のアダプタのパターンに当たるファイル（アノテーションがなくても）と、ガードレールの paths に当たるファイル。
 # go のアダプタのパターンに当たるファイルは対象にしない。
@@ -32,7 +33,41 @@ agree .vanda/agreements.toml '#1' file spec/Helper.tla
 agree .vanda/agreements.toml '#1' file db/schema.sql
 exec vanda check .vanda/checks/agreement.toml
 
-# ファイルの名前を変えただけなら、合意済のまま
+# 合意済のファイルを写した先は、中身が同じでも提案中
+cp scenarios/plain.txtar scenarios/plain-copy.txtar
+! exec vanda check .vanda/checks/agreement.toml
+stderr 'scenarios/plain-copy\.txtar'
+! stderr 'scenarios/plain\.txtar'
+! stderr '(?m)^panic: '
+rm scenarios/plain-copy.txtar
+exec vanda check .vanda/checks/agreement.toml
+
+# ファイルの名前を変えると、古い場所は消したものになり、新しい場所は中身が同じでも提案中になる
+mv scenarios/task-id.txtar scenarios/unique-task-id.txtar
+! exec vanda check .vanda/checks/agreement.toml
+stdout '失敗（2 件）'
+stderr 'scenarios/unique-task-id\.txtar'
+stderr 'ファイルを消したことに、まだ合意していません'
+! stderr '(?m)^panic: '
+
+# 新しい場所に合意しても、古い場所を消したことに合意するまで止まる
+agree .vanda/agreements.toml '#2' file scenarios/unique-task-id.txtar
+! exec vanda check .vanda/checks/agreement.toml
+stdout '失敗（1 件）'
+stderr 'ファイルを消したことに、まだ合意していません'
+agree -deleted .vanda/agreements.toml '#2' file scenarios/task-id.txtar
+exec vanda check .vanda/checks/agreement.toml
+
+# 名前を元に戻すと、元の場所は同じ中身への記録があるので合意済。合意したことのある新しい場所を消したことへの合意を求める
+mv scenarios/unique-task-id.txtar scenarios/task-id.txtar
+! exec vanda check .vanda/checks/agreement.toml
+stdout '失敗（1 件）'
+stderr 'ファイルを消したことに、まだ合意していません'
+! stderr 'scenarios/task-id\.txtar'
+agree -deleted .vanda/agreements.toml '#2' file scenarios/unique-task-id.txtar
+exec vanda check .vanda/checks/agreement.toml
+
+# もう一度名前を変えると、どちらの場所にも、その状態（中身か、消したこと）への記録があるので通る
 mv scenarios/task-id.txtar scenarios/unique-task-id.txtar
 exec vanda check .vanda/checks/agreement.toml
 

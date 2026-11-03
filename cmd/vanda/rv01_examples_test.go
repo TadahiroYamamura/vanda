@@ -30,7 +30,7 @@ func pickCycle() rvPick {
 
 var rvExamples = []rvExample{
 	{
-		name: "追加・変更・削除・名前の変更のそれぞれが1度ずつ出て変わっていないものは出ず作業ツリーの書きかけの変更も含む",
+		name: "追加・変更・削除のそれぞれが1度ずつ出て名前の変更は削除と追加の2件になり変わっていないものは出ず作業ツリーの書きかけの変更も含む",
 		build: func(r *rvRepo) {
 			r.addItem("claim", "c-keep", 0)
 			r.addItem("claim", "c-change", 1)
@@ -63,7 +63,8 @@ var rvExamples = []rvExample{
 			{Kind: "claim", Key: "c-change", Change: "modified"},
 			{Kind: "term", Key: "t-del", Change: "deleted"},
 			{Kind: "feature", Key: "f-change", Change: "modified"},
-			{Kind: "file", Key: "e2e/sub/new-name.txtar", Change: "renamed", OldPath: "e2e/old.txtar"},
+			{Kind: "file", Key: "e2e/old.txtar", Change: "deleted"},
+			{Kind: "file", Key: "e2e/sub/new-name.txtar", Change: "added"},
 			{Kind: "file", Key: "spec/Model.tla", Change: "modified"},
 			{Kind: "claim", Key: "c-new", Change: "added"},
 			{Kind: "file", Key: "e2e/new.txtar", Change: "added"},
@@ -163,14 +164,16 @@ var rvExamples = []rvExample{
 		branch: map[string][]rvEntry{"main": {
 			{Kind: "claim", Key: "c-a", Change: "modified"},
 			{Kind: "claim", Key: "c-new", Change: "added"},
-			{Kind: "file", Key: "e2e/s2-renamed.txtar", Change: "renamed", OldPath: "e2e/s2.txtar"},
+			{Kind: "file", Key: "e2e/s2.txtar", Change: "deleted"},
+			{Kind: "file", Key: "e2e/s2-renamed.txtar", Change: "added"},
 			{Kind: "file", Key: "e2e/s1.txtar", Change: "modified"},
 		}},
 		story: map[string][]rvEntry{
 			"#24": {
 				{Kind: "claim", Key: "c-a", Change: "modified", Others: "#25"},
 				{Kind: "claim", Key: "c-new", Change: "added", Others: "-"},
-				{Kind: "file", Key: "e2e/s2-renamed.txtar", Change: "renamed", OldPath: "e2e/s2.txtar"},
+				{Kind: "file", Key: "e2e/s2.txtar", Change: "deleted"},
+				{Kind: "file", Key: "e2e/s2-renamed.txtar", Change: "added"},
 			},
 			"#25": {
 				{Kind: "claim", Key: "c-a", Change: "modified"},
@@ -210,7 +213,7 @@ var rvExamples = []rvExample{
 		}},
 	},
 	{
-		name: "レビュー単位がストーリーのときはIDのないコミットが名前を変えたファイルをストーリーがさらに名前を変えたものを名前の変更として示す",
+		name: "レビュー単位がストーリーのときはIDのないコミットが名前を変えたファイルをストーリーがさらに名前を変えたものをその間の場所の削除と新しい場所の追加として示す",
 		build: func(r *rvRepo) {
 			g := r.addFileAt(rvGuardrail, "db/a.sql")
 			r.commit("#1")
@@ -221,13 +224,13 @@ var rvExamples = []rvExample{
 		},
 		branch: map[string][]rvEntry{"main": nil},
 		story: map[string][]rvEntry{
-			"#25": {{Kind: "file", Key: "db/c.sql", Change: "renamed", OldPath: "db/b.sql"}},
+			"#25": {{Kind: "file", Key: "db/b.sql", Change: "deleted"}, {Kind: "file", Key: "db/c.sql", Change: "added"}},
 			// #1 が足した db/a.sql は今ないので出ない。db/c.sql を最初に変えたのは #25
 			"#1": {{Kind: "term", Key: "base", Change: "added"}},
 		},
 	},
 	{
-		name: "ストーリーが2つのコミットで2度名前を変えたファイルは最初の場所からの名前の変更の1件になる",
+		name: "ストーリーが2つのコミットで2度名前を変えたファイルは最初の場所の削除と最後の場所の追加の2件になり途中の場所は出ない",
 		build: func(r *rvRepo) {
 			g := r.addFileAt(rvGuardrail, "db/a.sql")
 			r.commit("#1")
@@ -237,8 +240,8 @@ var rvExamples = []rvExample{
 			r.renameFileTo(g, "db/c.sql")
 			r.commit("#25")
 		},
-		branch: map[string][]rvEntry{"main": {{Kind: "file", Key: "db/c.sql", Change: "renamed", OldPath: "db/a.sql"}}},
-		story:  map[string][]rvEntry{"#25": {{Kind: "file", Key: "db/c.sql", Change: "renamed", OldPath: "db/a.sql"}}},
+		branch: map[string][]rvEntry{"main": {{Kind: "file", Key: "db/a.sql", Change: "deleted"}, {Kind: "file", Key: "db/c.sql", Change: "added"}}},
+		story:  map[string][]rvEntry{"#25": {{Kind: "file", Key: "db/a.sql", Change: "deleted"}, {Kind: "file", Key: "db/c.sql", Change: "added"}}},
 	},
 }
 

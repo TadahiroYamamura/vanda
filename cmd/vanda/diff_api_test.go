@@ -308,7 +308,7 @@ func Testファイルの差分は変更前と変更後の行をファイルの�
 
 // @vanda:evidence review-renamed-file
 // @vanda:evidence review-before-after
-func Test差分は変更前と変更後の両方があるものだけに付き名前だけを変えたファイルは全部の行が同じになる(t *testing.T) {
+func Test差分は変更前と変更後の両方があるものだけに付き名前だけを変えたファイルは古い場所の削除と新しい場所の追加になり差分を付けない(t *testing.T) {
 	t.Parallel()
 	got := setupDiff(t)
 	for _, key := range []string{"e2e/new.txtar", "e2e/del.txtar"} {
@@ -317,13 +317,15 @@ func Test差分は変更前と変更後の両方があるものだけに付き�
 			t.Errorf("%s（追加か削除）の diff が null でない: %+v", key, e)
 		}
 	}
-	e := entryByKey(got, "e2e/r2.txtar")
-	if e == nil || e.Change != "renamed" {
-		t.Fatalf("名前の変更が一覧にない: %+v", e)
-	}
-	d := decodeDiff(t, e)
-	if d == nil || len(d.Lines) != 1 || d.Lines[0].Op != "equal" || d.Lines[0].Text != "名前だけ変える" || d.Lines[0].Parts != nil {
-		t.Errorf("名前だけを変えたファイルの diff: %s", e.Diff)
+	for key, change := range map[string]string{"e2e/r.txtar": "deleted", "e2e/r2.txtar": "added"} {
+		e := entryByKey(got, key)
+		if e == nil || e.Change != change {
+			t.Errorf("名前を変えたファイルの %s が %s として一覧にない: %+v", key, change, e)
+			continue
+		}
+		if !isNull(e.Diff) {
+			t.Errorf("名前を変えたファイルの %s（%s）の diff が null でない: %s", key, change, e.Diff)
+		}
 	}
 }
 

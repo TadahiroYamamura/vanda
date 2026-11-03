@@ -743,29 +743,56 @@ func TestRunは読めない入力を前提にするほかの審査を読めな�
 	}
 }
 
-// @vanda:evidence renamed-file-stays-agreed
+// @vanda:evidence renamed-file-needs-agreement
 // @vanda:evidence check-agreement-targets
-func TestAgreementは合意の対象のファイルの名前を変えただけなら合意済のままにし中身を変えれば止める(t *testing.T) {
+func TestAgreementは合意の対象のファイルの名前を変えたら古い場所に消したことへの合意を新しい場所に合意を求め中身を変えれば止める(t *testing.T) {
 	r := goodRepo(t)
+	src, err := os.ReadFile(filepath.Join(r.root, "e2e/add.txtar"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := os.Rename(filepath.Join(r.root, "e2e/add.txtar"), filepath.Join(r.root, "e2e/added.txtar")); err != nil {
 		t.Fatal(err)
 	}
-	pass, out, _ := r.run("[[check]]\nname = \"agreement\"\nscope = \"all\"\n", "", "")
-	if !pass {
-		t.Errorf("名前を変えただけで止まった\n%s", out)
+	agreement := "[[check]]\nname = \"agreement\"\nscope = \"all\"\n"
+	_, out, _ := r.run(agreement, "", "")
+	expect(t, out, [][]string{
+		{"審査 agreement（all）: 失敗（2 件）"},
+		// 消したファイルには行がないので、そのファイルに合意した記録の行で示す
+		{".vanda/agreements.toml:", "ファイルを消したこと", "まだ合意していません"},
+		{"e2e/added.txtar: ", "ファイルの今の中身", "提案中"},
+	})
+
+	// 新しい場所の中身に合意し、古い場所を消したことに合意すると通る
+	old, err := os.ReadFile(filepath.Join(r.root, ".vanda/agreements.toml"))
+	if err != nil {
+		t.Fatal(err)
 	}
+	fp := agreements.FileFingerprint(src)
+	renamed := string(old) +
+		"[[agreement]]\nkind = \"file\"\nkey = \"" + fp + "\"\nfingerprint = \"" + fp + "\"\npath = \"e2e/added.txtar\"\nuser = { name = \"PO\", email = \"po@example.com\" }\nagreed_at = 2026-11-01T12:00:00Z\nstory = \"#2\"\n\n" +
+		"[[agreement]]\nkind = \"file\"\nkey = \"e2e/add.txtar\"\ndeleted = true\npath = \"e2e/add.txtar\"\nuser = { name = \"PO\", email = \"po@example.com\" }\nagreed_at = 2026-11-01T12:00:00Z\nstory = \"#2\"\n\n"
+	r.write(map[string]string{".vanda/agreements.toml": renamed})
+	if pass, out, _ := r.run(agreement+"[[check]]\nname = \"agreement-targets\"\nscope = \"all\"\n", "", ""); !pass {
+		t.Errorf("新しい場所に合意し、古い場所を消したことに合意しても止まる\n%s", out)
+	}
+
+	// 名前を元に戻すと、元の場所は同じ中身への記録があるので合意済。新しい場所は合意したことがあるので、消したことへの合意を求める
+	if err := os.Rename(filepath.Join(r.root, "e2e/added.txtar"), filepath.Join(r.root, "e2e/add.txtar")); err != nil {
+		t.Fatal(err)
+	}
+	_, out, _ = r.run(agreement, "", "")
+	expect(t, out, [][]string{{"審査 agreement（all）: 失敗（1 件）"}, {".vanda/agreements.toml:", "ファイルを消したこと", "まだ合意していません"}})
+
 	// 合意の対象は txtar・tla のパターンと [[guardrail]] の paths に当たるファイル。どれも中身を変えれば止まる
-	for _, f := range []string{"e2e/added.txtar", "spec/Task.tla", "db/schema.sql"} {
+	for _, f := range []string{"e2e/add.txtar", "spec/Task.tla", "db/schema.sql"} {
 		r := goodRepo(t)
-		if f == "e2e/added.txtar" {
-			f = "e2e/add.txtar"
-		}
 		src, err := os.ReadFile(filepath.Join(r.root, f))
 		if err != nil {
 			t.Fatal(err)
 		}
 		r.write(map[string]string{f: string(src) + "\n"})
-		if pass, out, _ := r.run("[[check]]\nname = \"agreement\"\nscope = \"all\"\n", "", ""); pass || !lineWith(out, f+": ") {
+		if pass, out, _ := r.run(agreement, "", ""); pass || !lineWith(out, f+": ") {
 			t.Errorf("%s の中身を変えても止まらない\n%s", f, out)
 		}
 	}

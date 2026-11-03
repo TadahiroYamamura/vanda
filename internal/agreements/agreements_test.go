@@ -110,7 +110,8 @@ const fpA = "sha256:5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6
 const fpB = "sha256:ead0b1ff85473e3117de7dfb1514f5d4d749cc30a0eb431c015014c47a59bbe5"
 
 // @vanda:evidence changed-id-is-new
-func TestAgreedは種類と鍵と指紋がすべて合う合意があるときだけ真(t *testing.T) {
+// @vanda:evidence agreed-when-fingerprint-matches
+func TestAgreedは種類と鍵と指紋がすべて合いファイルなら場所も合う合意があるときだけ真(t *testing.T) {
 	root, files := writeFiles(t, map[string]string{".vanda/agreements.toml": `[[agreement]]
 kind = "claim"
 key = "c"
@@ -144,7 +145,9 @@ email = "po@example.com"
 		{"指紋が違えば提案中", "claim", "c", fpB, false},
 		{"鍵が違えば提案中", "claim", "d", fpA, false},
 		{"種類が違えば提案中", "term", "c", fpA, false},
-		{"ファイルは指紋を鍵にして合意済", "file", fpB, fpB, true},
+		{"ファイルは場所と指紋が合えば合意済", "file", "e2e/a.txtar", fpB, true},
+		{"ファイルは指紋が合っても場所が違えば提案中", "file", "e2e/copy.txtar", fpB, false},
+		{"ファイルは場所が合っても指紋が違えば提案中", "file", "e2e/a.txtar", fpA, false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

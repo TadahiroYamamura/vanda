@@ -221,15 +221,15 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 		}
 		// 下限は、100 回の実行を 112 通りの種で数えた、組ごとの回数の最小のおよそ 3 分の 1。種によってたまたま下回らないようにする。
 		// 数えた最小（平均）: レビュー単位がブランチのときの種類と変化の組でいちばん少ないのは機能の削除の 6（16.9）、ブランチのときの名前の変更は 19（30.6）、
-		// ストーリーのときの名前の変更は 17（29.0）、ストーリーのときのほかの組は 79（103.5。変更）以上。
+		// ストーリーのときの組は 79（103.5。変更）以上。名前の変更は、古い場所の削除と新しい場所の追加の 2 件として出るようになった後も、
+		// 同じ中身の削除と追加の組として数える。
 		// 生成が偏って、ある変化を確かめないまま通るのを防ぐ
 		for _, kind := range []string{"claim", "term", "feature", "file"} {
 			for _, change := range []string{"added", "modified", "deleted"} {
 				atLeast(t, seen, "ブランチ/"+kind+"/"+change, 2)
 			}
 		}
-		atLeast(t, seen, "ブランチ/file/renamed", 6)
-		atLeast(t, seen, "ストーリー/renamed", 5)
+		atLeast(t, seen, "ブランチ/名前を変えたファイル（同じ中身の削除と追加）", 6)
 		for _, change := range []string{"added", "modified", "deleted", "ほかのストーリー"} {
 			atLeast(t, seen, "ストーリー/"+change, 25)
 		}
@@ -279,6 +279,7 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 		for e := range branch {
 			seen["ブランチ/"+e.Kind+"/"+e.Change]++
 		}
+		seen["ブランチ/名前を変えたファイル（同じ中身の削除と追加）"] += rvRenamedPairs(rvKeyed(r.mergeBase("main").state), rvKeyed(r.state), branch)
 		shape(rt, bin, root)
 
 		if r.dirty {
@@ -306,6 +307,24 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 			compare(rt, bin, r, branch, stories)
 		}
 	})
+}
+
+// rvRenamedPairs は、一覧の、ファイルの追加のうち、比べる元（base）での中身が同じファイルの削除と組になるものの数を返す。
+// 名前を変えたファイルが一覧に出たことを数えるためだけに使う。
+func rvRenamedPairs(base, cur map[string]rvVal, list map[rvEntry]bool) int {
+	n := 0
+	for a := range list {
+		if a.Kind != "file" || a.Change != "added" {
+			continue
+		}
+		for d := range list {
+			if d.Kind == "file" && d.Change == "deleted" && base["file:"+d.Key].body == cur["file:"+a.Key].body {
+				n++
+				break
+			}
+		}
+	}
+	return n
 }
 
 func atLeast(t *testing.T, seen map[string]int, key string, min int) {

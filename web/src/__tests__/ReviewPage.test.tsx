@@ -84,19 +84,16 @@ describe("RV-04 フラグ", () => {
 
 describe("RV-01・RV-02・RV-05 一覧と中身", () => {
   // @vanda:evidence review-numbering
-  it("通し番号と総数を出し追加と変更と削除と名前の変更を区別して見せる", async () => {
+  it("通し番号と総数を出し追加と変更と削除を区別して見せる", async () => {
     open([
       claimEntry(1, "c-added", { change: "added", before: null }),
       claimEntry(2, "c-modified"),
-      claimEntry(3, "c-deleted", { change: "deleted", after: null, state: null, fingerprint: null }),
-      fileEntry(4, "e2e/new.txtar", { change: "renamed", oldPath: "e2e/old.txtar" }),
+      claimEntry(3, "c-deleted", { change: "deleted", after: null, fingerprint: null }),
+      fileEntry(4, "e2e/old.txtar", { change: "deleted", after: null, fingerprint: null }),
     ]);
-    for (const id of ["c-added", "c-modified", "c-deleted", "e2e/new.txtar"]) await screen.findAllByText(new RegExp(id));
+    for (const id of ["c-added", "c-modified", "c-deleted", "e2e/old.txtar"]) await screen.findAllByText(new RegExp(id));
     expect(bodyText()).toMatch(/4/);
-    for (const w of [/追加/, /変更/, /削除/, /名前の変更/]) expect(bodyText()).toMatch(w);
-    // 名前の変更の前の場所は、1 件の詳細に出す
-    await openEntry(/e2e\/new\.txtar/);
-    expect(bodyText()).toContain("e2e/old.txtar");
+    for (const w of [/追加/, /変更/, /削除/]) expect(bodyText()).toMatch(w);
   });
 
   // @vanda:evidence review-before-after
@@ -170,7 +167,7 @@ describe("RV-06 合意する", () => {
     }
     const before = reviewRequests().length;
     await user.click(button);
-    await waitFor(() => expect(posted).toEqual({ kind: "claim", id: "task-id-unique", path: null, fingerprint: e.fingerprint, story: "#24" }));
+    await waitFor(() => expect(posted).toEqual({ kind: "claim", id: "task-id-unique", path: null, fingerprint: e.fingerprint, story: "#24", deleted: false }));
     await waitFor(() => expect(reviewRequests().length).toBeGreaterThan(before));
   });
 
@@ -192,7 +189,9 @@ describe("RV-06 合意する", () => {
   // @vanda:evidence context-no-user-cannot-agree
   it("合意できない人のときは合意のボタンを押せず理由を出す", async () => {
     server.use(http.get("/api/context", () => HttpResponse.json({ ...ctx, user: null })));
-    server.use(http.get("/api/review", () => HttpResponse.json(review([claimEntry(1, "task-id-unique")]))));
+    // 合意できるかは API（entries[].agree）が決める。git の人が分からないときの API の答えを、手で作って渡す
+    const e = claimEntry(1, "task-id-unique", { agree: { possible: false, reason: "git の user.name と user.email が分かりません" } });
+    server.use(http.get("/api/review", () => HttpResponse.json(review([e]))));
     server.use(http.get("/api/story", () => HttpResponse.json(story)));
     render(<App />);
     const user = userEvent.setup();
@@ -589,10 +588,10 @@ describe("RV-01・RV-02・RV-04 一覧の 1 件の出し方", () => {
     const cases = [
       { e: claimEntry(1, "c-added", { change: "added", before: null }), name: "c-added", kind: "約束", change: "追加" },
       { e: claimEntry(2, "c-modified"), name: "c-modified", kind: "約束", change: "変更" },
-      { e: claimEntry(3, "c-deleted", { change: "deleted", after: null, state: null, fingerprint: null }), name: "c-deleted", kind: "約束", change: "削除" },
+      { e: claimEntry(3, "c-deleted", { change: "deleted", after: null, fingerprint: null }), name: "c-deleted", kind: "約束", change: "削除" },
       { e: term(4, "t-term"), name: "t-term", kind: "用語", change: null },
       { e: feature(5, "f-feature"), name: "f-feature", kind: "機能", change: null },
-      { e: fileEntry(6, "e2e/new.txtar", { change: "renamed", oldPath: "e2e/old.txtar" }), name: "e2e/new.txtar", kind: "シナリオ", change: "名前の変更" },
+      { e: fileEntry(6, "e2e/old.txtar", { change: "deleted", after: null, fingerprint: null }), name: "e2e/old.txtar", kind: "シナリオ", change: "削除" },
       { e: fileEntry(7, "spec/Task.tla", { fileType: "oracle", change: "added", before: null }), name: "spec/Task.tla", kind: "オラクルの定義", change: null },
       { e: fileEntry(8, "spec/guard.cue", { fileType: "guardrail" }), name: "spec/guard.cue", kind: "ガードレールの定義", change: null },
       { e: fileEntry(9, "docs/other.md", { fileType: null }), name: "docs/other.md", kind: "ファイル", change: null },
@@ -795,7 +794,7 @@ describe("RV-01 一覧の絞り込み", () => {
     const hits: [string, Entry][] = [
       ["約束の ID", claimEntry(1, "apple-claim")],
       ["約束の文", claimEntry(2, "c-statement", { after: statementOf("APPLE を数える") })],
-      ["消した約束の前の文", claimEntry(3, "c-deleted", { change: "deleted", after: null, state: null, fingerprint: null, before: statementOf("apple を消す") })],
+      ["消した約束の前の文", claimEntry(3, "c-deleted", { change: "deleted", after: null, fingerprint: null, before: statementOf("apple を消す") })],
       ["用語の ID", term(4, "t-apple", "果物", "食べるもの")],
       ["用語の名前", term(5, "t-name", "りんご ApPlE", "食べるもの")],
       ["用語の定義", term(6, "t-def", "果物", "赤い aPPLE のこと")],
@@ -831,18 +830,19 @@ describe("RV-01 一覧の絞り込み", () => {
     expect(shown("c-detached-miss"), "合意が外れたもので文字がないものが出ている").toBe(false);
   });
 
-  // 合意済でないもの（提案中と、合意が外れたもの）。消したものは合意できず、状態がない
+  // 合意済でないもの（提案中と、合意が外れたもの）。消したものは、消したことへの合意がなければ提案中
   const stateEntries = () => {
     const kept: [string, Entry][] = [
       ["提案中の約束", claimEntry(1, "c-proposed", { state: "proposed" })],
       ["提案中のファイル", fileEntry(2, "e2e/proposed.txtar", { state: "proposed" })],
       ["合意が外れた提案中の約束", claimEntry(3, "c-detached-proposed", { state: "proposed", detachedAgreement: { by: ["#31"] } })],
       ["ほかのストーリーの合意で合意済だが合意が外れた約束", claimEntry(4, "c-detached-agreed", { state: "agreed", detachedAgreement: { by: ["#31"] } })],
+      ["消したことへの合意がない消した約束", claimEntry(7, "c-deleted-proposed", { change: "deleted", after: null, state: "proposed", fingerprint: null })],
     ];
     const dropped: [string, Entry][] = [
       ["合意済の約束", claimEntry(5, "c-agreed", { state: "agreed" })],
       ["合意済のファイル", fileEntry(6, "e2e/agreed.txtar", { state: "agreed" })],
-      ["消した約束", claimEntry(7, "c-deleted", { change: "deleted", after: null, state: null, fingerprint: null })],
+      ["消したことに合意済の消した約束", claimEntry(8, "c-deleted-agreed", { change: "deleted", after: null, state: "agreed", fingerprint: null })],
     ];
     const detached = [
       claimEntry(0, "u-detached-proposed", { no: null, change: "unchanged", before: null, state: "proposed", detachedAgreement: { by: ["#30"] } }),
@@ -852,7 +852,7 @@ describe("RV-01 一覧の絞り込み", () => {
   };
 
   // @vanda:evidence review-filter-not-agreed
-  it("合意済でないものだけにすると提案中のものと合意が外れたものだけを出し合意済のものと消したものは出さない", async () => {
+  it("合意済でないものだけにすると提案中のものと合意が外れたものだけを出し合意済のものは消したものも含めて出さない", async () => {
     const { kept, dropped, detached } = stateEntries();
     open(byGroup([...kept, ...dropped].map(([, e]) => e)), { detached });
     const name = (e: Entry) => (e.kind === "file" ? e.path! : e.id!);

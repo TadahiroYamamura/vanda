@@ -18,7 +18,6 @@ type reviewEntry struct {
 	Kind              string          `json:"kind"`
 	ID                *string         `json:"id"`
 	Path              *string         `json:"path"`
-	OldPath           *string         `json:"oldPath"`
 	FileType          *string         `json:"fileType"`
 	Change            string          `json:"change"`
 	State             *string         `json:"state"`
@@ -72,7 +71,7 @@ func (e reviewEntry) rv() rvEntry {
 		}
 	}
 	sort.Strings(others)
-	return rvEntry{Kind: e.Kind, Key: e.key(), Change: e.Change, OldPath: str(e.OldPath), Others: strings.Join(others, ",")}
+	return rvEntry{Kind: e.Kind, Key: e.key(), Change: e.Change, Others: strings.Join(others, ",")}
 }
 
 // rvFileType は、rvConfig のパターンから手で決めた、ファイルの種類（fileType）。
@@ -115,14 +114,15 @@ func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]b
 		case e.Kind != "file" && (e.ID == nil || e.Path != nil || e.FileType != nil):
 			fmt.Fprintf(&b, "  約束・用語・機能の id・path・fileType が決まりどおりでない: %s\n", r)
 		}
-		if (e.Change == "renamed") != (e.OldPath != nil) {
-			fmt.Fprintf(&b, "  oldPath は名前の変更のときだけ書く: %s\n", r)
-		}
 		if (e.Change == "added") != isNull(e.Before) || (e.Change == "deleted") != isNull(e.After) {
 			fmt.Fprintf(&b, "  before は追加のときだけ、after は削除のときだけ null: %s\n", r)
 		}
-		if (e.Change == "deleted") != (e.State == nil) || (e.Change == "deleted") != (e.Fingerprint == nil) {
-			fmt.Fprintf(&b, "  state と fingerprint は削除のときだけ null: %s\n", r)
+		if (e.Change == "deleted") != (e.Fingerprint == nil) {
+			fmt.Fprintf(&b, "  fingerprint は削除のときだけ null: %s\n", r)
+		}
+		// 削除したものにも、消したことへの合意があるかで状態を付ける
+		if s := str(e.State); s != "proposed" && s != "agreed" {
+			fmt.Fprintf(&b, "  state が proposed・agreed のどちらでもない（%q）: %s\n", s, r)
 		}
 	}
 	if d := rvDiffEntries(want, set); d != "" {

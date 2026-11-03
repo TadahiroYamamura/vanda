@@ -14,30 +14,22 @@ import (
 
 // RV-01 の一覧の期待値を、vanda に頼らずテストの中で数える仕組み。
 // 約束リストの項目とファイルの中身を、テストの中の状態（rvState）として持ち、それを git のリポジトリに書き出す。
-// 期待する一覧は、書き出す前の状態どうしを、docs/formats.md の GET /api/review の決まり（鍵ごとに比べ、中身が同じで
-// 場所だけが変わったファイルを名前の変更にまとめる）で比べて作る。リポジトリに書いた TOML やファイルを読み直して作らないのは、
+// 期待する一覧は、書き出す前の状態どうしを、docs/formats.md の GET /api/review の決まり（鍵ごとに比べる。ファイルは場所で
+// 見分けるので、名前を変えたファイルは古い場所の削除と新しい場所の追加になる）で比べて作る。リポジトリに書いた TOML やファイルを読み直して作らないのは、
 // 読み込みや差分の取り方を実装と同じ作りにすると、実装と同じ誤りに気づけないため。
-//
-// 中身の同じファイルを 2 つ置く操作は起こさない（どれの名前の変更かが決まらず、期待値を一つに決められないため）。
-// 新しい中身は、毎回テストの中の番号から作るので、名前の変更のほかで中身が重なることはない。
 
 // rvEntry は、一覧の 1 件の期待値。
 type rvEntry struct {
 	Kind    string // claim・term・feature・file
 	Key     string // 約束・用語・機能は ID。ファイルは今の場所（削除なら、前の場所）
-	Change  string // added・modified・deleted・renamed
-	OldPath string // 名前の変更の、前の場所
+	Change  string // added・modified・deleted
 	// Others は、レビュー単位がストーリーのときに、そのストーリーで最初に変えた後に同じものを変えた、そのストーリーの ID のないコミット。
 	// コミットごとに、メッセージにあるストーリーの ID（ないものは "-"）を書き、名前の順に , でつなぐ。
-	// 名前の変更は、前の場所か今の場所のどちらかを変えたコミットを数える（監督の決定）
 	Others string
 }
 
 func (e rvEntry) String() string {
 	s := fmt.Sprintf("%s %s %s", e.Kind, e.Key, e.Change)
-	if e.OldPath != "" {
-		s += " ← " + e.OldPath
-	}
 	if e.Others != "" {
 		s += "（ほかのコミット: " + e.Others + "）"
 	}
@@ -165,68 +157,33 @@ func rvKeyed(s rvState) map[string]rvVal {
 }
 
 // rvDiff は、鍵ごとの比べる元（before）と今（after）から一覧を作る。keys に含む鍵だけを見る。
-// 比べる元にあって今ない場所と、今あって比べる元にない場所で、中身が同じファイルは、名前の変更の 1 件にまとめる。
 // others は鍵ごとのほかのコミット（rvEntry.Others の元。コミットを見分ける文字列 → 書く文字列）。
 func rvDiff(keys map[string]bool, before, after map[string]rvVal, others map[string]map[string]string) map[rvEntry]bool {
 	want := map[rvEntry]bool{}
-	var gone, came []string
 	for k := range keys {
 		b, bok := before[k]
 		a, aok := after[k]
 		switch {
 		case bok && aok && b == a:
 		case bok && aok:
-			want[rvEntryOf(k, a.kind, "modified", "", others[k])] = true
-		case bok && b.kind == "file":
-			gone = append(gone, k)
-		case aok && a.kind == "file":
-			came = append(came, k)
+			want[rvEntryOf(k, a.kind, "modified", others[k])] = true
 		case bok:
-			want[rvEntryOf(k, b.kind, "deleted", "", others[k])] = true
+			want[rvEntryOf(k, b.kind, "deleted", others[k])] = true
 		case aok:
-			want[rvEntryOf(k, a.kind, "added", "", others[k])] = true
-		}
-	}
-	sort.Strings(gone)
-	sort.Strings(came)
-	paired := map[string]bool{}
-	for _, g := range gone {
-		for _, c := range came {
-			if !paired[c] && before[g].body == after[c].body {
-				paired[c], paired[g] = true, true
-				merged := map[string]string{}
-				for h, s := range others[g] {
-					merged[h] = s
-				}
-				for h, s := range others[c] {
-					merged[h] = s
-				}
-				want[rvEntryOf(c, "file", "renamed", strings.TrimPrefix(g, "file:"), merged)] = true
-				break
-			}
-		}
-	}
-	for _, g := range gone {
-		if !paired[g] {
-			want[rvEntryOf(g, "file", "deleted", "", others[g])] = true
-		}
-	}
-	for _, c := range came {
-		if !paired[c] {
-			want[rvEntryOf(c, "file", "added", "", others[c])] = true
+			want[rvEntryOf(k, a.kind, "added", others[k])] = true
 		}
 	}
 	return want
 }
 
-func rvEntryOf(key, kind, change, oldPath string, others map[string]string) rvEntry {
+func rvEntryOf(key, kind, change string, others map[string]string) rvEntry {
 	_, k, _ := strings.Cut(key, ":")
 	var labels []string
 	for _, s := range others {
 		labels = append(labels, s)
 	}
 	sort.Strings(labels)
-	return rvEntry{Kind: kind, Key: k, Change: change, OldPath: oldPath, Others: strings.Join(labels, ",")}
+	return rvEntry{Kind: kind, Key: k, Change: change, Others: strings.Join(labels, ",")}
 }
 
 // rvBranchView は、レビュー単位がブランチのときの期待値。分かれた点の中身（base）と、作業ツリーの今の中身（cur）を比べる。
