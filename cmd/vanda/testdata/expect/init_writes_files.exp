@@ -1,6 +1,8 @@
 # @vanda:evidence init-writes-files
+# @vanda:evidence init-check-configs
 # vanda init の問いに答え、作るかの確かめに「作る」と答えると、.vanda/ に設定・約束リスト・合意の記録・
 # 審査の設定（ブランチで動かす .vanda/checks/ci.toml と、ベースブランチで動かす .vanda/checks/main.toml）の 5 つのファイルだけができる。確かめに答えるまでは何も作らない。
+# main.toml は story-origin を除く審査を範囲 all にするので、作ったものを Story: のトレーラーなしでコミットしたベースブランチで通る。
 # remote のないリポジトリなので、ストーリーの置き場所の既定は「使わない」（GitHub に繋ぎに行かない）。
 # 問いは、題が出てから 1 度だけ答えを送る。待つのは画面の文字が出るまでで、時間では待たない（timeout は止まったときの上限）
 
@@ -54,9 +56,34 @@ if {![string match "*id_pattern = \"#\\\[0-9\\\]+\"*" $cfg]} {
     puts stderr "\n設定に、答えた ID の書き方がない:\n$cfg"
     exit 1
 }
-set ci [exec cat .vanda/checks/ci.toml]
-if {![string match {*name = "agreement"*} $ci]} {
-    puts stderr "\n審査の設定に agreement の審査がない:\n$ci"
+# 審査の設定の [[check]] を「名前 範囲」で並べる
+proc checks {path} {
+    set got {}
+    set name ""
+    foreach line [split [exec cat $path] "\n"] {
+        if {[regexp {^name = "(.*)"$} $line -> n]} { set name $n }
+        if {[regexp {^scope = "(.*)"$} $line -> sc]} { lappend got "$name $sc" }
+    }
+    return $got
+}
+set want_ci [list "promise-list-shape all" "annotation-links all" "story-origin story" "agreement story" "agreement-targets all" "evidence-present story" "unread-files all"]
+set got_ci [checks .vanda/checks/ci.toml]
+if {$got_ci ne $want_ci} {
+    puts stderr "\nci.toml の審査が $got_ci（思ったもの $want_ci）"
     exit 1
 }
-puts "\nvanda init で 5 つのファイルができた"
+set want_main [list "promise-list-shape all" "annotation-links all" "agreement all" "agreement-targets all" "evidence-present all" "unread-files all"]
+set got_main [checks .vanda/checks/main.toml]
+if {$got_main ne $want_main} {
+    puts stderr "\nmain.toml の審査が $got_main（思ったもの $want_main）"
+    exit 1
+}
+
+# ベースブランチに、Story: のトレーラーなしでコミットして、main.toml の審査を動かす
+exec git add .vanda
+exec git -c user.name=テスト担当 -c user.email=tester@example.com commit -q -m "vanda を使いはじめる"
+if {[catch {exec vanda check .vanda/checks/main.toml} out]} {
+    puts stderr "\nベースブランチで vanda check .vanda/checks/main.toml が通らない:\n$out"
+    exit 1
+}
+puts "\nvanda init で 5 つのファイルができ、ベースブランチで main.toml の審査が通った"

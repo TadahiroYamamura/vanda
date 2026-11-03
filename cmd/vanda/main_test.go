@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/creack/pty"
 )
 
 func gitRepo(t *testing.T, config string) string {
@@ -200,6 +202,47 @@ func Test設定のファイルがなければdoctorもcheckも場所の出る誤
 		code, _, errs := runIn(t, dir, args...)
 		if code != 1 || !strings.Contains(errs, ".vanda/config.toml") {
 			t.Errorf("%v: code %d, stderr %q", args, code, errs)
+		}
+	}
+}
+
+// @vanda:evidence init-terminal-streams
+func Test端末かどうかは端末の属性で決まり_dev_nullもパイプもファイルも端末でない(t *testing.T) {
+	ptmx, tty, err := pty.Open()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ptmx.Close()
+	defer tty.Close()
+	devNull, err := os.OpenFile(os.DevNull, os.O_RDWR, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer devNull.Close()
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pr.Close()
+	defer pw.Close()
+	file, err := os.Create(filepath.Join(t.TempDir(), "out.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	for _, c := range []struct {
+		name string
+		f    *os.File
+		want bool
+	}{
+		{"擬似端末", tty, true},
+		{"/dev/null", devNull, false},
+		{"パイプの読む側", pr, false},
+		{"パイプの書く側", pw, false},
+		{"ふつうのファイル", file, false},
+	} {
+		if got := isTerminal(c.f); got != c.want {
+			t.Errorf("%s: 端末か %v（%v のはず）", c.name, got, c.want)
 		}
 	}
 }

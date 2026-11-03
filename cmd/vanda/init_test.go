@@ -907,6 +907,17 @@ func Test既定の答えのまま進めると読み取った値で5つのファ�
 		t.Errorf("既定の答え: %+v", seen)
 	}
 
+	var made []string
+	for p := range snapshotDir(t, filepath.Join(r.root, ".vanda")) {
+		if !strings.HasSuffix(p, "/") {
+			made = append(made, filepath.ToSlash(p))
+		}
+	}
+	sort.Strings(made)
+	if want := []string{"agreements.toml", "checks/ci.toml", "checks/main.toml", "config.toml", "promises.toml"}; !reflect.DeepEqual(made, want) {
+		t.Errorf(".vanda/ にできたファイル: %v（思ったもの %v）", made, want)
+	}
+
 	c := readInitConfig(t, r.root)
 	if c.Version != version {
 		t.Errorf("version が %q（動いている vanda は %q）", c.Version, version)
@@ -942,8 +953,12 @@ func Test既定の答えのまま進めると読み取った値で5つのファ�
 	if !strings.Contains(g, "[[layer]]") {
 		t.Errorf("案内に [[layer]] を書くことが出ていない\n%s", s.screen())
 	}
+	// ブランチでは ci.toml を --base <ベースブランチ> で、ベースブランチでは main.toml を動かす
 	if !strings.Contains(g, "vanda check .vanda/checks/ci.toml --base origin/main") {
-		t.Errorf("案内に、CI に足す vanda check が出ていない\n%s", s.screen())
+		t.Errorf("案内に、ブランチで動かす vanda check が出ていない\n%s", s.screen())
+	}
+	if !strings.Contains(g, "vanda check .vanda/checks/main.toml") || strings.Contains(g, "vanda check .vanda/checks/main.toml --base") {
+		t.Errorf("案内に、ベースブランチで動かす vanda check（--base なし）が出ていない\n%s", s.screen())
 	}
 	// コミットはしない
 	if n := r.g.run("rev-list", "--count", "HEAD"); n != "1" {
@@ -1241,6 +1256,7 @@ func Test途中で入力を終えると何も作られない(t *testing.T) {
 
 // CMD-11: 止める場合は、何も書かれず、理由が標準エラーに出て、終了コードが 1
 // @vanda:evidence init-requires-terminal
+// @vanda:evidence init-terminal-streams
 // @vanda:evidence init-keeps-existing
 func Test止める場合は何も書かず理由を標準エラーに出し終了コード1で終わる(t *testing.T) {
 	t.Parallel()
@@ -1258,12 +1274,20 @@ func Test止める場合は何も書かず理由を標準エラーに出し終�
 		}
 	}
 
-	// 端末でない。標準入力と標準出力の片方か両方が端末でない、の 3 通り
-	for _, c := range []struct {
-		name          string
-		stdin, stdout bool // 端末か
-	}{{"標準入力が端末でない", false, true}, {"標準出力が端末でない", true, false}, {"どちらも端末でない", false, false}} {
-		t.Run(c.name, func(t *testing.T) {
+	// 端末でない。標準入力と標準出力のそれぞれが、端末・パイプ・/dev/null のどれかで、片方か両方が端末でない 8 通り。
+	// /dev/null は文字デバイスだが端末ではない
+	kinds := []string{"端末", "パイプ", "/dev/null"}
+	type streams struct{ stdin, stdout string }
+	var cases []streams
+	for _, in := range kinds {
+		for _, out := range kinds {
+			if in != "端末" || out != "端末" {
+				cases = append(cases, streams{in, out})
+			}
+		}
+	}
+	for _, c := range cases {
+		t.Run("標準入力が"+c.stdin+"で標準出力が"+c.stdout, func(t *testing.T) {
 			t.Parallel()
 			r := newInitRepo(t, "https://github.com/owner/app.git", true)
 			before := snapshotDir(t, r.root)
@@ -1274,15 +1298,30 @@ func Test止める場合は何も書かず理由を標準エラーに出し終�
 			defer ptmx.Close()
 			defer tty.Close()
 			go func() { _, _ = bytes.NewBuffer(nil).ReadFrom(ptmx) }()
+			devNull, err := os.OpenFile(os.DevNull, os.O_RDWR, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer devNull.Close()
 			cmd := exec.Command(bin, "init")
 			cmd.Dir, cmd.Env = r.root, r.g.env
 			var stdout, stderr bytes.Buffer
-			cmd.Stdin, cmd.Stdout, cmd.Stderr = bytes.NewReader(nil), &stdout, &stderr
-			if c.stdin {
+			cmd.Stderr = &stderr
+			switch c.stdin {
+			case "端末":
 				cmd.Stdin = tty
+			case "パイプ":
+				cmd.Stdin = bytes.NewReader(nil)
+			default:
+				cmd.Stdin = devNull
 			}
-			if c.stdout {
+			switch c.stdout {
+			case "端末":
 				cmd.Stdout = tty
+			case "パイプ":
+				cmd.Stdout = &stdout
+			default:
+				cmd.Stdout = devNull
 			}
 			err = cmd.Start()
 			if err != nil {
@@ -1576,35 +1615,55 @@ func Test答えから作る5つのファイルは置き場所と言語の答え�
 	}
 }
 
-// CMD-11: 審査の設定には、今ある審査を全部、docs/formats.md の「審査の種類」の順に、審査ごとに決まった範囲で書く
+// CMD-11: 審査の設定には、今ある審査を、docs/formats.md の「審査の種類」の順に書く。ブランチで動かす ci.toml は審査ごとに決まった範囲で全部を、
+// ベースブランチで動かす main.toml は story-origin を除いて範囲 all で書く
 // @vanda:evidence init-writes-files
-func Test審査の設定には今ある審査が全部docs_formats_mdの順に決まった範囲で入る(t *testing.T) {
+// @vanda:evidence init-check-configs
+func Test審査の設定のci_tomlには今ある審査が全部決まった範囲で入りmain_tomlにはstory_originを除いて範囲allで入る(t *testing.T) {
 	t.Parallel()
-	var doc struct {
-		Check []struct {
-			Name  string `toml:"name"`
-			Scope string `toml:"scope"`
-		} `toml:"check"`
+	// 書ける範囲が 1 つのものはそれ。all と story の両方を書ける agreement と evidence-present は、ブランチではストーリーで変わったものを見る story
+	want := map[string][]string{
+		".vanda/checks/ci.toml": {
+			"promise-list-shape all", "annotation-links all", "story-origin story", "agreement story",
+			"agreement-targets all", "evidence-present story", "unread-files all",
+		},
+		".vanda/checks/main.toml": {
+			"promise-list-shape all", "annotation-links all", "agreement all",
+			"agreement-targets all", "evidence-present all", "unread-files all",
+		},
 	}
-	text := initcmd.ChecksText()
-	if _, err := toml.Decode(text, &doc); err != nil {
-		t.Fatalf("審査の設定を読めない: %v\n%s", err, text)
+	texts := map[string]string{}
+	for _, f := range initcmd.Files(initcmd.Answers{Base: "main", Store: "none", IDPattern: "#[0-9]+"}) {
+		if _, ok := want[f[0]]; ok {
+			texts[f[0]] = f[1]
+		}
 	}
-	var got []string
-	for _, c := range doc.Check {
-		got = append(got, c.Name+" "+c.Scope)
-	}
-	// 書ける範囲が 1 つのものはそれ。all と story の両方を書ける agreement と evidence-present は、ストーリーで変わったものを見る story
-	want := []string{
-		"promise-list-shape all", "annotation-links all", "story-origin story", "agreement story",
-		"agreement-targets all", "evidence-present story", "unread-files all",
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("審査の設定: %v（思ったもの %v）", got, want)
-	}
-	for i, line := range strings.Split(text, "\n") {
-		if strings.HasPrefix(strings.TrimSpace(line), "#") {
-			t.Errorf("審査の設定の %d 行目がコメント: %q", i+1, line)
+	for path, w := range want {
+		text, ok := texts[path]
+		if !ok {
+			t.Errorf("%s を作っていない", path)
+			continue
+		}
+		var doc struct {
+			Check []struct {
+				Name  string `toml:"name"`
+				Scope string `toml:"scope"`
+			} `toml:"check"`
+		}
+		if _, err := toml.Decode(text, &doc); err != nil {
+			t.Fatalf("%s を読めない: %v\n%s", path, err, text)
+		}
+		var got []string
+		for _, c := range doc.Check {
+			got = append(got, c.Name+" "+c.Scope)
+		}
+		if !reflect.DeepEqual(got, w) {
+			t.Errorf("%s: %v（思ったもの %v）", path, got, w)
+		}
+		for i, line := range strings.Split(text, "\n") {
+			if strings.HasPrefix(strings.TrimSpace(line), "#") {
+				t.Errorf("%s の %d 行目がコメント: %q", path, i+1, line)
+			}
 		}
 	}
 }
