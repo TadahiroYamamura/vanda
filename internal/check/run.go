@@ -93,6 +93,10 @@ func needsStory(s Spec) bool {
 }
 
 func (e *env) prepare(o Options) error {
+	// --story の形は、どの審査があるかによらず確かめる（使わない設定でも、誤った値を黙って受け取らないため）
+	if o.Story != "" && (e.cfg.IDFull == nil || !e.cfg.IDFull.MatchString(o.Story)) {
+		return fmt.Errorf("--story %s が、ストーリーの ID の書き方（%s）に合いません。設定の id_pattern に合う ID を渡してください。", o.Story, e.cfg.IDPattern)
+	}
 	t := o.Tree
 	if t == nil {
 		var err error
@@ -139,9 +143,6 @@ func (e *env) prepare(o Options) error {
 // decideStory は、範囲 story の審査のストーリーを決める。--story（given）を渡しても、分かれた点より後のコミットのトレーラーの誤りは、
 // 審査を始める前の誤りにする（--story はストーリーを選ぶためのもので、トレーラーの確かめを飛ばすためのものではない。手元と CI で結果をそろえるため）
 func (e *env) decideStory(given string, checks []string) error {
-	if given != "" && (e.cfg.IDFull == nil || !e.cfg.IDFull.MatchString(given)) {
-		return fmt.Errorf("--story %s が、ストーリーの ID の書き方（%s）に合いません。設定の id_pattern に合う ID を渡してください。", given, e.cfg.IDPattern)
-	}
 	commits, err := e.cfg.CommitStories(e.root, e.mergeBase+"..HEAD")
 	if err != nil {
 		return fmt.Errorf("コミットのメッセージを読めません（%v）。", err)
@@ -157,11 +158,14 @@ func (e *env) decideStory(given string, checks []string) error {
 			ids = append(ids, c.Story)
 		}
 	}
+	sort.Strings(ids)
+	if len(ids) == 1 && given != "" && given != ids[0] {
+		return fmt.Errorf("--story %s が、分岐点より後のコミットの Story: のトレーラーのストーリー %s と違います（トレーラーと違うストーリーで審査すると、%s の外れた合意を見ないまま通るため）。--story を外すか、--story %s を渡してください。", given, ids[0], ids[0], ids[0])
+	}
 	if given != "" {
 		e.story = given
 		return nil
 	}
-	sort.Strings(ids)
 	switch len(ids) {
 	case 1:
 		e.story = ids[0]
