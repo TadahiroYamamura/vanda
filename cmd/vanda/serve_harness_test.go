@@ -224,7 +224,8 @@ func (s *vandaServer) post(path string, body, out any) (int, string) {
 func q(v string) string { return url.QueryEscape(v) }
 
 // テストの中で起動したサーバーが、テストの終わりに止まることを確かめる（stop が確かめる）。
-// あわせて、ほかのホストの名前で来た要求を断ることも確かめる（CM-01: 自分のマシンの中でだけ開く）。
+// あわせて、Host が 127.0.0.1:<待ち受けているポート>・localhost:<待ち受けているポート> でない要求を断ることも確かめる
+// （CM-01: 自分のマシンの中でだけ開く）。
 // @vanda:evidence serve-rejects-foreign-host
 // @vanda:evidence serve-listens-localhost
 // @vanda:evidence serve-prints-url
@@ -238,18 +239,44 @@ func Test起動したvanda_serveは止めると止まりほかのHostの要求�
 	r := newReviewRepo(t, version)
 	s := startServe(t, bin, r.Root, r.Env)
 
-	req, err := http.NewRequest(http.MethodGet, s.URL+"/api/context", nil)
+	_, port, err := net.SplitHostPort(s.host)
 	if err != nil {
 		t.Fatal(err)
 	}
-	req.Host = "example.com"
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatal(err)
+	other := "1"
+	if port == "1" {
+		other = "2"
 	}
-	resp.Body.Close()
-	if resp.StatusCode != http.StatusForbidden {
-		t.Errorf("Host が example.com の要求に %d を返した（403 で断る）", resp.StatusCode)
+	cases := []struct {
+		host string
+		want int
+	}{
+		{"127.0.0.1:" + port, http.StatusOK},
+		{"localhost:" + port, http.StatusOK},
+		// 待ち受けているポートと違うポート
+		{"127.0.0.1:" + other, http.StatusForbidden},
+		{"localhost:" + other, http.StatusForbidden},
+		// ポートのない Host
+		{"127.0.0.1", http.StatusForbidden},
+		{"localhost", http.StatusForbidden},
+		// ほかのホストの名前
+		{"example.com", http.StatusForbidden},
+		{"example.com:" + port, http.StatusForbidden},
+	}
+	for _, c := range cases {
+		req, err := http.NewRequest(http.MethodGet, s.URL+"/api/context", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Host = c.host
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != c.want {
+			t.Errorf("%s で待ち受けているとき、Host が %q の要求に %d を返した（%d を返す）", port, c.host, resp.StatusCode, c.want)
+		}
 	}
 
 	s.stop()
