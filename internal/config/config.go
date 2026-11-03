@@ -515,7 +515,7 @@ func checkVersion(top *tomlread.Table, v string) {
 	case c < 0:
 		top.ErrAt("version", "動いている vanda（"+version.Current+"）が、設定の版（"+v+"）より古いです", "vanda を "+v+" に上げてください")
 	case c > 0:
-		top.ErrAt("version", "動いている vanda（"+version.Current+"）が、設定の版（"+v+"）より新しいです", "vanda の移行のコマンドで、.vanda/ を "+version.Current+" の形に書き換えてください")
+		top.ErrAt("version", "動いている vanda（"+version.Current+"）が、設定の版（"+v+"）より新しいです", ".vanda/ を、動いている vanda（"+version.Current+"）の形に書き換え、version を "+version.Current+" にしてください")
 	}
 }
 
