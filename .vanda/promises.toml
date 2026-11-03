@@ -16,7 +16,7 @@ definition = "vanda serve が起動する Web サーバー。画面と、画面�
 [[term]]
 id = "promise-list"
 name = "約束リスト"
-definition = "ソフトウェアについて、使う言葉（用語）、利用者が行う操作（機能）、そこで成り立たせると決めたこと（約束）をまとめた一覧（既定は .vanda/promises.toml）。ソフトウェアの正とする"
+definition = "ソフトウェアについて、使う言葉（用語）、利用者が行う操作（機能）、そこで成り立たせると決めたこと（約束）をまとめた一覧。ソフトウェアの正とする"
 
 [[term]]
 id = "promise"
@@ -46,12 +46,12 @@ definition = "利用者が行う操作（例: 審査の実行）。約束の対�
 [[term]]
 id = "layer"
 name = "レイヤー"
-definition = "約束がソフトウェアのどの部分の話か。設定で決める（vanda では、モデル・CLI・API・画面）"
+definition = "約束がソフトウェアのどの部分の話か"
 
 [[term]]
 id = "origin"
 name = "由来"
-definition = "約束が作られたり変わったりした履歴（コミット）。約束の中身（flags と guesses を除いた項目）を変えた、合流でないコミットごとに、由来を、そのコミットの Story: のトレーラーが指すストーリーと結ぶ"
+definition = "約束が作られたり変わったりした履歴（コミット）"
 
 [[term]]
 id = "evidence"
@@ -94,11 +94,12 @@ definition = "オラクルと実装に同じ操作を送り、結果を比べる
 id = "random-check"
 name = "ランダムチェック"
 definition = "無作為な入力で性質を確かめるテスト（プロパティベーステスト）"
+part_of = "evidence-type"
 
 [[term]]
 id = "scenario"
 name = "シナリオ"
-definition = "利用者の操作の流れで約束を確かめる台本（エビデンスの本体）。CLI は txtar、端末で問いかけるものは Expect、画面は E2E で書く"
+definition = "利用者の操作の流れで約束を確かめる台本（エビデンスの本体）"
 
 [[term]]
 id = "scenario-test"
@@ -118,7 +119,7 @@ definition = "実装のコードの中で、操作の後に約束が成り立っ
 [[term]]
 id = "story"
 name = "ストーリー"
-definition = "開発の単位。ストーリーストア（GitHub Issues など）で管理し、コミットとは Story: のトレーラーで結ぶ"
+definition = "開発の単位。ストーリーストア（GitHub Issues など）で管理する"
 
 [[term]]
 id = "agreement"
@@ -128,7 +129,7 @@ definition = "約束などの今の中身が要求どおりかを人が確かめ
 [[term]]
 id = "agreement-record"
 name = "合意の記録"
-definition = "合意を書き留めたもの。約束・用語・機能なら ID と中身の指紋の組、ファイルならファイルパスと中身の指紋の組ごとに、誰が（合意した時の git の user.name と user.email）・いつ・どのストーリーで合意したかを書く。約束リストとは別のファイルに置く"
+definition = "合意を書き留めたもの。約束・用語・機能なら ID と中身の指紋の組、ファイルならファイルパスと中身の指紋の組ごとに、誰が・いつ・どのストーリーで合意したかを書く。約束リストとは別のファイルに置く"
 
 [[term]]
 id = "proposed"
@@ -143,22 +144,25 @@ definition = "今の中身に合意している状態"
 [[term]]
 id = "base-branch"
 name = "ベースブランチ"
-definition = "差分を出す時に比べるブランチ。そのブランチとの分岐点と比べる。審査では --base で渡し、画面ではその場で選ぶ"
+definition = "差分を出す時に比べるブランチ。そのブランチとの分岐点と比べる"
 
 [[term]]
 id = "ai-proposal"
 name = "AI 案"
-definition = "フラグ（注意して読む手がかり）。要求にも質疑にもなく、AI が自分で決めたもの"
+definition = "要求にも質疑にもなく、AI が自分で決めたもの"
+part_of = "flag"
 
 [[term]]
 id = "guess"
 name = "推測"
-definition = "フラグ（注意して読む手がかり）。AI が確かめずに推し量って書いた所があるもの"
+definition = "AI が確かめずに推し量って書いた所があるもの"
+part_of = "flag"
 
 [[term]]
 id = "changed-since-agreement"
 name = "差分あり"
-definition = "フラグ（注意して読む手がかり）。前の合意から中身が変わったもの"
+definition = "前の合意から中身が変わったもの"
+part_of = "flag"
 
 [[term]]
 id = "check"
@@ -220,7 +224,7 @@ definition = "vanda や、vanda が呼んだもの（アダプタ・git・スト
 [[term]]
 id = "flag"
 name = "フラグ"
-definition = "注意して読む手がかりとして、約束などに立てるもの。AI 案・推測・差分ありの 3 種類。約束リストの項目 flags に書けるのは ai-proposal（AI 案）だけ。推測と差分ありは vanda が立てる。推測は項目 guesses を書いた約束に、差分ありは前に合意したことがあって今は提案中のものに立てる"
+definition = "注意して読む手がかりとして、約束などに立てるもの"
 
 [[term]]
 id = "annotation"
@@ -230,18 +234,18 @@ definition = "仕様・テスト・本番のコードに書く注釈。約束な
 [[term]]
 id = "adapter"
 name = "アダプタ"
-definition = "vanda と、言語や道具・ストーリーストア・ガードレールの定義とのあいだで受け渡しをする部品。vanda が組込みで持つもの（組込みのアダプタ）と、プロジェクトが .vanda/adapters/ に置くものがある"
+definition = "vanda と、言語や道具・ストーリーストア・ガードレールの定義とのあいだで受け渡しをする部品"
 
 [[term]]
 id = "builtin-adapter"
 name = "組込みのアダプタ"
-definition = "vanda が中に持つアダプタ（アノテーションの go・txtar・tla・sql・ts、ストーリーストアの github、ガードレールの定義の file）。アノテーションとストーリーストアでは、同じ名前のアダプタを .vanda/adapters/ に置くと、そちらが使われる"
+definition = "vanda が中に持つアダプタ"
 part_of = "adapter"
 
 [[term]]
 id = "custom-adapter"
 name = "カスタムアダプタ"
-definition = "利用者が .vanda/adapters/ に置いたアダプタ。設定に書いた名前で、vanda が動かす"
+definition = "利用者がアダプタのディレクトリに置いたアダプタ"
 part_of = "adapter"
 
 [[term]]
@@ -257,22 +261,57 @@ definition = "ストーリーを書いて置いておく所。例: GitHub Issues
 [[term]]
 id = "story-trailer"
 name = "Story: のトレーラー"
-definition = "コミットのメッセージの末尾に書く Story: <ID>（Co-Authored-By: と同じ Git のトレーラー）。そのコミットがどのストーリーのものかを表す。1 つのコミットに 1 つまで"
+definition = "コミットのメッセージの末尾に書く Story: <ID>（Co-Authored-By: と同じ Git のトレーラー）。そのコミットがどのストーリーのものかを表す"
+
+[[term]]
+id = "vanda-dir"
+name = ".vanda/"
+definition = "vanda が読み書きするファイルを置く、リポジトリの直下のディレクトリ（.vanda/）"
+
+[[term]]
+id = "config-file"
+name = "設定のファイル"
+definition = "vanda の設定を書いたファイル（.vanda/config.toml）"
+part_of = "vanda-dir"
+
+[[term]]
+id = "default-promise-list-file"
+name = "約束リストの既定のファイル"
+definition = "設定に promises を書かない時に、約束リストとして読むファイル（.vanda/promises.toml）"
+part_of = "vanda-dir"
+
+[[term]]
+id = "default-agreement-record-file"
+name = "合意の記録の既定のファイル"
+definition = "設定に agreements を書かない時に、合意の記録として読み書きするファイル（.vanda/agreements.toml）"
+part_of = "vanda-dir"
+
+[[term]]
+id = "check-config-dir"
+name = "審査の設定のディレクトリ"
+definition = "審査の設定を <名前>.toml という名前で置くディレクトリ（.vanda/checks/）"
+part_of = "vanda-dir"
+
+[[term]]
+id = "adapter-dir"
+name = "アダプタのディレクトリ"
+definition = "カスタムアダプタを置くディレクトリ（.vanda/adapters/）"
+part_of = "vanda-dir"
 
 [[term]]
 id = "check-config"
 name = "審査の設定"
-definition = "どの審査を、どの範囲で行うかを書いたファイル（.vanda/checks/<名前>.toml）。vanda check に渡す"
+definition = "どの審査を、どの範囲で行うかを書いたファイル"
 
 [[term]]
 id = "check-scope"
 name = "範囲"
-definition = "審査が見るもの。all（全部）か story（1 つのストーリーで変わったもの）"
+definition = "審査が見るもの"
 
 [[term]]
 id = "branch-point"
 name = "分岐点"
-definition = "今のブランチがベースブランチから分かれたコミット（git merge-base）。範囲 story の審査は、ここからの変化を見る"
+definition = "今のブランチがベースブランチから分かれたコミット"
 
 [[term]]
 id = "detached"
@@ -292,37 +331,37 @@ definition = "vanda サーバーを起動し、画面をブラウザで開く"
 [[feature]]
 id = "read-promise-list"
 name = "約束リストを読む"
-definition = "約束リスト（設定の promises のパターンに当たるファイル）を読み、形を確かめる"
+definition = "約束リストを読み、形を確かめる"
 
 [[feature]]
 id = "store-agreements"
 name = "合意の記録を読み書きする"
-definition = "約束リストとは別のファイルの合意の記録を読み書きする。合意ごとに、中身の指紋・日時・ストーリーの ID・合意した人を持つ"
+definition = "合意の記録を読み書きする"
 
 [[feature]]
 id = "build-origins"
 name = "由来を作る"
-definition = "git の履歴から、約束ごとの由来（約束が作られたり変わったりしたコミット）を作る"
+definition = "約束ごとの由来を作る"
 
 [[feature]]
 id = "choose-base-branch"
 name = "ベースブランチを選ぶ"
-definition = "比べるベースブランチを、画面でその場で選ぶ。開いた時の既定は設定のベースブランチ"
+definition = "比べるベースブランチを、画面でその場で選ぶ"
 
 [[feature]]
 id = "connect-story-store"
 name = "ストーリーストアと連携する"
-definition = "ストーリーストアから、ストーリーの題・本文・添付ファイルを読む。ストーリーストアはアダプタで差し替えられる"
+definition = "ストーリーストアから、ストーリーを読む"
 
 [[feature]]
 id = "store-config"
 name = "設定をファイルに書く"
-definition = "設定を .vanda/config.toml に持つ。画面で書き換える機能は作らない。認証キーはファイルに書かない"
+definition = "設定をファイルに持つ"
 
 [[feature]]
 id = "list-changes"
 name = "ストーリーで変わったものを並べる"
-definition = "比べる元と今のあいだで追加・変更・削除された約束・用語・機能とエビデンスの本体の一覧を、漏れも重複もなく示す"
+definition = "比べる元と今のあいだで変わったものの一覧を示す"
 
 [[feature]]
 id = "number-changes"
@@ -332,7 +371,7 @@ definition = "一覧に通し番号と総数を示す"
 [[feature]]
 id = "raise-flags"
 name = "フラグを立てる"
-definition = "注意して読む手がかりとして、AI 案・推測・差分ありのフラグを立てる"
+definition = "注意して読む手がかりとして、フラグを立てる"
 
 [[feature]]
 id = "compare-contents"
@@ -342,7 +381,7 @@ definition = "変更・削除したものの、変更前と変更後の中身と
 [[feature]]
 id = "agree-on-review"
 name = "合意する"
-definition = "1 件に合意し、合意の記録を書いてコミットする"
+definition = "1 件に合意する"
 core = true
 formal = true
 
@@ -354,17 +393,17 @@ definition = "エビデンスの予定ごとに、揃っているかを示す"
 [[feature]]
 id = "fold-groups"
 name = "長い一覧をたたむ"
-definition = "一覧をまとまりごとにたたみ、たたんだ件数を示す"
+definition = "一覧をまとまりごとにたたむ"
 
 [[feature]]
 id = "switch-review-unit"
 name = "レビュー単位を切り替える"
-definition = "レビュー単位をブランチとストーリーで切り替える"
+definition = "レビュー単位を切り替える"
 
 [[feature]]
 id = "show-detached"
 name = "外れた合意を示す"
-definition = "ストーリーが前に合意したのに今の中身にそのストーリーの合意がないものを、「合意が外れた」と示す"
+definition = "外れた合意を示す"
 
 [[feature]]
 id = "show-entry-history"
@@ -374,7 +413,7 @@ definition = "レビューの 1 件の詳細に、約束の由来と合意の履
 [[feature]]
 id = "revoke-agreement"
 name = "合意を取り消す"
-definition = "今の利用者（今の git の user.name と user.email の人）が今のブランチで書いた合意の記録を消し、コミットする"
+definition = "合意を取り消す"
 core = true
 formal = true
 
@@ -386,12 +425,12 @@ definition = "約束の詳細の画面と、ファイルの画面でも、合意
 [[feature]]
 id = "show-claim-fields"
 name = "約束の文・理由・条件・レイヤーを示す"
-definition = "約束の詳細に、文・理由・条件・レイヤーを示す"
+definition = "約束の詳細に、約束の中身を示す"
 
 [[feature]]
 id = "show-claim-evidence"
 name = "約束のエビデンスを示す"
-definition = "約束の詳細に、エビデンスをステージとタイプで分けて、その中身とともに示す"
+definition = "約束の詳細に、エビデンスを示す"
 
 [[feature]]
 id = "show-claim-origin"
@@ -406,7 +445,7 @@ definition = "約束の詳細に、合意の履歴を示す"
 [[feature]]
 id = "render-tla-symbols"
 name = "TLA+ を数学の記号で見せる"
-definition = "オラクルの定義（TLA+）を数学の記号で見せ、コピーした時はリポジトリの文字のままにする"
+definition = "オラクルの定義（TLA+）を数学の記号で見せる"
 
 [[feature]]
 id = "show-claim-at-commit"
@@ -431,7 +470,7 @@ definition = "vanda check で行える審査の種類を用意する。どの種
 [[feature]]
 id = "create-vanda-dir"
 name = ".vanda/ を作る（vanda init）"
-definition = "端末で問いかけ、答えで設定・約束リスト・合意の記録・審査の設定を作る"
+definition = "端末で問いかけ、答えで .vanda/ を作る"
 
 [[feature]]
 id = "show-version"
@@ -441,12 +480,12 @@ definition = "動いている vanda の版を出す"
 [[feature]]
 id = "read-annotations"
 name = "アノテーションを読み取る"
-definition = "設定のパターンに当たるファイルから、アダプタでアノテーションと、付いているものの名前を読む"
+definition = "ファイルから、アノテーションと、付いているものの名前を読む"
 
 [[feature]]
 id = "run-custom-adapters"
 name = "カスタムアダプタを動かす"
-definition = "プロジェクトが .vanda/adapters/ に置いたアダプタを、設定に書いた名前で動かす"
+definition = "カスタムアダプタを動かす"
 
 [[claim]]
 id = "promise-list-reads-all-patterns"
