@@ -62,13 +62,13 @@ type Target struct {
 	Type string
 }
 
-// Targets は、files のうち合意の対象になるファイル（txtar・tla のアノテーションのパターンと、[[guardrail]] の paths に当たるもの）を、場所の順で返す。
-// 2 つに当たるファイルは、アノテーションのほうの種類にする。
+// Targets は、files のうち合意の対象になるファイル（types に scenario-test か model-check を含む [[annotation]] のパターンと、
+// [[guardrail]] の paths に当たるもの）を、場所の順で返す。2 つに当たるファイルは、アノテーションのほうの種類にする。
 func Targets(files []string, cfg *config.Config) []Target {
 	kind := map[string]string{}
 	for _, f := range files {
 		for _, r := range cfg.Annotations {
-			t := map[string]string{"txtar": Scenario, "tla": Oracle}[r.Adapter]
+			t := targetType(r.Types)
 			if t == "" || kind[f] != "" {
 				continue
 			}
@@ -94,6 +94,25 @@ func Targets(files []string, cfg *config.Config) []Target {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Path < out[j].Path })
 	return out
+}
+
+// targetType は、[[annotation]] の types から、そのパターンに当たるファイルの種類を決める。合意の対象でなければ空。
+// シナリオとオラクルの定義は PO が読んで正とするもので、どのアダプタで読むかによらないので、アダプタの名前では決めない。
+// 両方を含むときはシナリオにする（どちらでも合意の対象になることは変わらず、画面の見出しが変わるだけ）
+func targetType(types []string) string {
+	oracle := false
+	for _, t := range types {
+		switch t {
+		case "scenario-test":
+			return Scenario
+		case "model-check":
+			oracle = true
+		}
+	}
+	if oracle {
+		return Oracle
+	}
+	return ""
 }
 
 // Snapshot は、ある時点のファイルの一覧と、約束リストと、合意の対象のファイル。

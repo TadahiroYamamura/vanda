@@ -344,7 +344,7 @@ scope = "story"
 | `promise-list-shape` | 読み込みの誤り（TOML、型、必須の項目、決まっていない表と項目）。ID の形と重なり。`part_of` の先が用語にあり、循環しない。`subjects` の先が用語か機能にある。`layers` が設定のレイヤーにある。エビデンスの `layers` が約束の `layers` の中にある。約束のどのレイヤーにもエビデンスがある。`stage`・`type`・`flags` が決まった値。`formal_waiver` の決まり |
 | `annotation-links` | アノテーションの読み込みの誤り。`term` は用語を、`feature` は機能を、`claim`・`evidence`・`sensor` は約束を指す。TLA+ の仕様の型（下）に `term` か `internal` があり、`feature` がない。`term` も `internal` もない誤りは型の定義の行を、`feature` を付けた誤りはそのアノテーションの行を指す |
 | `story-origin` | 分かれた点より後の、合流でないコミットのうち、約束リストのファイル（今のパターンで決める）を変えたものに、`Story:` のトレーラーがある。トレーラーの誤り（2 つ以上、`id_pattern` に合わない）も、そのコミットの誤りにする |
-| `agreement` | 合意の対象（約束・用語・機能と、`txtar`・`tla` のアノテーションのパターンに当たるファイルと、`[[guardrail]]` の `paths` に当たるファイル。Go のファイルは対象にしない）の今の中身が合意済。約束に `flags`・`guesses` が残っていない。中身に合意したことのある約束・用語・機能・合意の対象のファイルが今なければ、消したことへの合意がある。範囲 `story` では、そのストーリーで変わったものだけを見て（分かれた点にあって今ないものは、合意したことがあるかによらず、消したことへの合意を求める）、さらに、そのストーリーの外れた合意（下）も誤りにする |
+| `agreement` | 合意の対象（約束・用語・機能と、`types` に `scenario-test` か `model-check` を含む `[[annotation]]` のパターンに当たるファイルと、`[[guardrail]]` の `paths` に当たるファイル。どのアダプタで読むかによらない。`types` がどちらも含まないパターン（Go のテストなど）だけに当たるファイルは対象にしない）の今の中身が合意済。約束に `flags`・`guesses` が残っていない。中身に合意したことのある約束・用語・機能・合意の対象のファイルが今なければ、消したことへの合意がある。範囲 `story` では、そのストーリーで変わったものだけを見て（分かれた点にあって今ないものは、合意したことがあるかによらず、消したことへの合意を求める）、さらに、そのストーリーの外れた合意（下）も誤りにする |
 | `agreement-targets` | 合意の記録の読み込みの誤り（`kind` が `file` の記録に `path` がない、`key` が `fingerprint`（消したことへの合意なら `path`）と違う、`kind` が `file` でない記録に `path` がある、など）。`kind` が `claim`・`term`・`feature` の合意が、約束リストにある項目か、消したことへの合意のある項目を指す |
 | `evidence-present` | 下の「エビデンスが揃っている審査」。範囲 `story` では、そのストーリーで変わった約束だけを見る |
 | `unread-files` | `.vanda/` のファイル（`.vanda/config.toml`、`.vanda/checks/*.toml`、`.vanda/adapters/` の下を除く）が、`promises` か `agreements` のパターンに当たる |
@@ -416,7 +416,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `502` | ストーリーの置き場所の誤り（認証、ネットワーク）。`message` に置き場所が返した理由をそのまま入れる |
 
 - 対象の種類（`kind`）は、合意の記録と同じ `claim`・`term`・`feature`・`file`
-- ファイルの種類（`fileType`）は、`scenario`（`txtar` のアノテーションのパターンに当たる）・`oracle`（`tla`）・`guardrail`（`[[guardrail]]` の `paths`）
+- ファイルの種類（`fileType`）は、`scenario`（`types` に `scenario-test` を含む `[[annotation]]` のパターンに当たる）・`oracle`（`types` に `model-check` を含み、`scenario-test` を含まない）・`guardrail`（`[[guardrail]]` の `paths` にだけ当たる）
 
 ### `GET /api/context`
 
