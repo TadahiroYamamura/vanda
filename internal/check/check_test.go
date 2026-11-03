@@ -793,7 +793,7 @@ func TestAgreementは合意の対象のファイルの名前を変えたら古�
 	expect(t, out, [][]string{
 		{"審査 agreement（all）: 失敗（2 件）"},
 		// 消したファイルには行がないので、そのファイルに合意した記録の行で示す
-		{".vanda/agreements.toml:", "ファイルを消したこと", "まだ合意していません"},
+		{".vanda/agreements.toml:", "ファイル e2e/add.txtar を消したこと", "まだ合意していません"},
 		{"e2e/added.txtar: ", "ファイルの今の中身", "提案中"},
 	})
 
@@ -818,7 +818,7 @@ func TestAgreementは合意の対象のファイルの名前を変えたら古�
 	}
 	r.commit("(test) 名前を元に戻す", "#2")
 	_, out, _ = r.run(agreement, "", "")
-	expect(t, out, [][]string{{"審査 agreement（all）: 失敗（1 件）"}, {".vanda/agreements.toml:", "ファイルを消したこと", "まだ合意していません"}})
+	expect(t, out, [][]string{{"審査 agreement（all）: 失敗（1 件）"}, {".vanda/agreements.toml:", "ファイル e2e/added.txtar を消したこと", "まだ合意していません"}})
 
 	// 合意の対象は txtar・tla のパターンと [[guardrail]] の paths に当たるファイル。どれも中身を変えれば止まる
 	for _, f := range []string{"e2e/add.txtar", "spec/Task.tla", "db/schema.sql"} {

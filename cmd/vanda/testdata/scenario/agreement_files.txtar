@@ -78,7 +78,7 @@ commit '審査する前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stdout '失敗（2 件）'
 stderr 'scenarios/unique-task-id\.txtar'
-stderr 'ファイルを消したことに、まだ合意していません'
+stderr '\.vanda/agreements\.toml:[0-9]+: ファイル scenarios/task-id\.txtar を消したことに、まだ合意していません'
 ! stderr '(?m)^panic: '
 
 # 新しい場所に合意しても、古い場所を消したことに合意するまで止まる
@@ -86,7 +86,7 @@ agree .vanda/agreements.toml '#2' file scenarios/unique-task-id.txtar
 commit '審査する前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stdout '失敗（1 件）'
-stderr 'ファイルを消したことに、まだ合意していません'
+stderr '\.vanda/agreements\.toml:[0-9]+: ファイル scenarios/task-id\.txtar を消したことに、まだ合意していません'
 agree -deleted .vanda/agreements.toml '#2' file scenarios/task-id.txtar
 commit '審査する前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
@@ -96,7 +96,7 @@ mv scenarios/unique-task-id.txtar scenarios/task-id.txtar
 commit '審査する前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stdout '失敗（1 件）'
-stderr 'ファイルを消したことに、まだ合意していません'
+stderr '\.vanda/agreements\.toml:[0-9]+: ファイル scenarios/unique-task-id\.txtar を消したことに、まだ合意していません'
 ! stderr 'scenarios/task-id\.txtar'
 agree -deleted .vanda/agreements.toml '#2' file scenarios/unique-task-id.txtar
 commit '審査する前にコミットする'
