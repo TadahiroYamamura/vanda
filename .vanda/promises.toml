@@ -624,7 +624,7 @@ layers = ["api"]
 [[claim]]
 id = "promise-list-default-file-may-be-absent"
 subjects = ["read-promise-list", "promise-list"]
-statement = "設定に promises を書かず、既定の .vanda/promises.toml がなければ、空の約束リストとみなす"
+statement = "設定に promises を書かず、約束リストの既定のファイルがなければ、空の約束リストとみなす"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1282,7 +1282,7 @@ layers = ["cli"]
 [[claim]]
 id = "agreements-default-file-may-be-absent"
 subjects = ["store-agreements", "agreement-record"]
-statement = "設定に agreements を書かず、既定の .vanda/agreements.toml がなければ、合意の記録を空とみなす"
+statement = "設定に agreements を書かず、合意の記録の既定のファイルがなければ、合意の記録を空とみなす"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1694,7 +1694,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-name"
 subjects = ["run-custom-adapters", "adapter"]
-statement = ".vanda/adapters/ の直下のファイルの名前、またはディレクトリの名前をアダプタの名前とし、ファイルならそれを、ディレクトリなら直下の run を実行する"
+statement = "アダプタのディレクトリの直下のファイルの名前、またはディレクトリの名前をアダプタの名前とし、ファイルならそれを、ディレクトリなら直下の run を実行する"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1776,7 +1776,7 @@ layers = ["cli"]
 [[claim]]
 id = "adapter-name-unknown"
 subjects = ["store-config", "adapter"]
-statement = "設定の adapter の名前のアダプタが、組込みにも .vanda/adapters/ にもなければ、設定の誤りにする"
+statement = "設定の adapter の名前のアダプタが、組込みのアダプタにもカスタムアダプタにもなければ、設定の誤りにする"
 layers = ["cli"]
 
 [[claim.evidence]]
@@ -1903,7 +1903,7 @@ layers = ["cli"]
 [[claim]]
 id = "unread-files-excludes-adapters"
 subjects = ["list-check-kinds", "run-custom-adapters"]
-statement = "読まれていないファイルの審査は、.vanda/adapters/ の下のファイルを除く"
+statement = "読まれていないファイルの審査は、アダプタのディレクトリの下のファイルを除く"
 rationale = "アダプタは設定の adapter の名前で動かすもので、約束リストのパターンで読むものではないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -2301,7 +2301,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-unread-files"
 subjects = ["list-check-kinds", "check"]
-statement = "unread-files は、.vanda/ のファイル（.vanda/config.toml と .vanda/checks/*.toml を除く）が promises か agreements のパターンに当たらなければ誤りにする"
+statement = "unread-files は、.vanda/ のファイル（設定のファイルと審査の設定を除く）が promises か agreements のパターンに当たらなければ誤りにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4182,7 +4182,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-writes-files"
 subjects = ["create-vanda-dir"]
-statement = "問いかけに答えると、設定・約束リスト・合意の記録と、2 つの審査の設定（ブランチで動かす .vanda/checks/ci.toml と、ベースブランチで動かす .vanda/checks/main.toml）の 5 つのファイルを作る"
+statement = "問いかけに答えると、5 つのファイルを作る。設定のファイル・約束リスト・合意の記録と、審査の設定のディレクトリに置く 2 つの審査の設定（ブランチで動かすものと、ベースブランチで動かすもの）"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4305,7 +4305,7 @@ layers = ["cli"]
 id = "init-accepts-builtin-name"
 subjects = ["create-vanda-dir", "builtin-adapter"]
 statement = "カスタムアダプタの名前に、組込みのアダプタと同じ名前を答えても断らない"
-rationale = ".vanda/adapters/ に置かなければ組込みのものが使われ、作った後に確かめると、足りない項目の誤りになる"
+rationale = "同じ名前のカスタムアダプタを置かなければ組込みのものが使われ、作った後に確かめると、足りない項目の誤りになる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4720,7 +4720,7 @@ layers = ["gui"]
 [[claim]]
 id = "config-file-required"
 subjects = ["store-config"]
-statement = ".vanda/config.toml がなければ、vanda doctor と vanda check は誤りで止まる"
+statement = "設定のファイルがなければ、vanda doctor と vanda check は誤りで止まる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
