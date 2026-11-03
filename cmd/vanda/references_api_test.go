@@ -72,6 +72,17 @@ stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "{@id:f-rename}で試す"
+
+[[claim]]
+id = "c-same"
+subjects = ["t-keep"]
+statement = "{@id:t-keep}と新しい用語を数える"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
 `
 
 // story-24 の約束リスト。t-rename・f-rename の名前と定義を変え、t-gone・f-gone を消し、c-ref の文から消したものへの参照を外す
@@ -116,6 +127,17 @@ stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "{@id:f-rename}で確かめる"
+
+[[claim]]
+id = "c-same"
+subjects = ["t-keep"]
+statement = "タスクと{@id:t-rename}をいつも数える"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
 `
 
 type refDiffPart struct {
@@ -453,6 +475,20 @@ func Test差分は両方の参照を今の名前に置き換えて比べ名前�
 	checkRefDiff(t, "evidence の detail", d.Evidence.Before[0].Detail, fragsOf("新しい機能>f-rename", "で試す"), fragsOf("新しい機能>f-rename", "で確かめる"))
 	checkRefDiff(t, "evidence の detail（変更後の側）", d.Evidence.After[0].Detail, fragsOf("新しい機能>f-rename", "で試す"), fragsOf("新しい機能>f-rename", "で確かめる"))
 
+	// 変わっていない所（equal）の参照は、変更後の側で決める。c-same は、変更前は「タスク」が参照で「新しい用語」が文字、
+	// 変更後はその逆なので、見せる文字は変わらないが、equal の参照は変更後の側の位置に付く
+	se := r.entry(t, "c-same")
+	var sb, sa refClaimContent
+	decodeInto(t, "c-same の before", se.Before, &sb)
+	decodeInto(t, "c-same の after", se.After, &sa)
+	sameBefore := fragsOf("タスク>t-keep", "と新しい用語を数える")
+	sameAfter := fragsOf("タスクと", "新しい用語>t-rename", "をいつも数える")
+	wantFrags(t, "c-same の before の statement", sb.Statement, sameBefore)
+	wantFrags(t, "c-same の after の statement", sa.Statement, sameAfter)
+	var sd refDiff
+	decodeInto(t, "c-same の diff", se.Diff, &sd)
+	checkRefDiff(t, "c-same の statement", sd.Fields["statement"], sameBefore, sameAfter)
+
 	// 用語と機能の定義の差分も、片の見せる文字どうしで比べる
 	fe := r.entry(t, "f-rename")
 	var fd refDiff
@@ -474,7 +510,7 @@ func Test参照先の名前を変えただけの約束は一覧に出ない(t *t
 		keys = append(keys, e.key())
 	}
 	sort.Strings(keys)
-	want := []string{"c-ref", "f-gone", "f-rename", "t-gone", "t-rename"}
+	want := []string{"c-ref", "c-same", "f-gone", "f-rename", "t-gone", "t-rename"}
 	if !reflect.DeepEqual(keys, want) {
 		t.Errorf("一覧の件: %v（思ったもの %v）", keys, want)
 	}
