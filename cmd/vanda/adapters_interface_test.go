@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -338,6 +339,90 @@ func Test_vanda_doctorはGitHubのリポジトリを読んでIssuesが使える�
 				t.Errorf("認証の鍵を渡していない: %v", auths)
 			}
 		})
+	}
+}
+
+// CMD-01: vanda doctor は、api_url のホストに合う認証キーで GitHub に繋ぎ、見つからなければ要求を送らずに失敗する。
+// api.github.com の場合は、本物の GitHub に繋がないよう、api_url を http://api.github.com にして、HTTP_PROXY で偽のサーバーに向ける
+// @vanda:evidence doctor-github-token
+// @vanda:evidence story-github-token
+func Test_vanda_doctorはapi_urlのホストに合う認証キーで繋ぎ見つからなければGitHubに要求を送らずに失敗する(t *testing.T) {
+	t.Parallel()
+	bin := buildVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	type sent struct{ host, auth string }
+	for _, h := range []string{"api.github.com", "ほかのホスト"} {
+		for _, c := range []struct {
+			name string
+			// mine は、そのホストに合う読み先（api.github.com なら GH_TOKEN と github.com の gh、ほかなら GH_ENTERPRISE_TOKEN とそのホストの gh）。
+			// other は、合わない読み先
+			mineEnv, otherEnv bool
+			mineGH, otherGH   bool
+			wantKey           string // 送るはずの認証キー。空なら送らずに失敗する
+		}{
+			{"合う環境変数と合わない環境変数がある", true, true, true, true, "env_mine"},
+			{"合う環境変数がなくghが合うホストにログインしている", false, true, true, true, "gh_mine"},
+			{"合う環境変数がなくghも合うホストにログインしていない", false, true, false, true, ""},
+		} {
+			t.Run(h+"/"+c.name, func(t *testing.T) {
+				t.Parallel()
+				var mu sync.Mutex
+				var got []sent
+				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					mu.Lock()
+					got = append(got, sent{req.Host, req.Header.Get("Authorization")})
+					mu.Unlock()
+					w.Header().Set("Content-Type", "application/json")
+					_, _ = w.Write([]byte(`{"full_name":"owner/app","has_issues":true}`))
+				}))
+				t.Cleanup(srv.Close)
+				srvHost := strings.TrimPrefix(srv.URL, "http://")
+				apiURL, host, mineEnv, otherEnv, mineGH, otherGH := srv.URL, srvHost, "GH_ENTERPRISE_TOKEN", "GH_TOKEN", srvHost, "github.com"
+				if h == "api.github.com" {
+					apiURL, host, mineEnv, otherEnv, mineGH, otherGH = "http://api.github.com", "api.github.com", "GH_TOKEN", "GH_ENTERPRISE_TOKEN", "github.com", srvHost
+				}
+				var kv []string
+				if c.mineEnv {
+					kv = append(kv, mineEnv+"=env_mine")
+				}
+				if c.otherEnv {
+					kv = append(kv, otherEnv+"=env_other")
+				}
+				logins := map[string]string{}
+				if c.mineGH {
+					logins[mineGH] = "gh_mine"
+				}
+				if c.otherGH {
+					logins[otherGH] = "gh_other"
+				}
+				if h == "api.github.com" {
+					kv = append(kv, "HTTP_PROXY="+srv.URL)
+				}
+				root := ifaceRepo(t, version, "\n[story]\nadapter = \"github\"\nrepository = \"owner/app\"\napi_url = \""+apiURL+"\"\n", nil, nil)
+				ghDir := fakeGH(t, logins)
+				code, out, errs := runVandaIn(t, bin, root, ghEnv(newRVGit(t, root).env, ghDir, kv...), "doctor")
+				mu.Lock()
+				defer mu.Unlock()
+				if c.wantKey == "" {
+					if code != 1 || !strings.Contains(errs, "ください") {
+						t.Errorf("終了コード %d（1 で、直し方を出すはず）\n%s%s", code, out, errs)
+					}
+					if len(got) != 0 {
+						t.Errorf("認証キーがないのに要求を送った: %v", got)
+					}
+					return
+				}
+				if code != 0 {
+					t.Errorf("終了コード %d（0 のはず）\n%s%s", code, out, errs)
+				}
+				if want := []sent{{host, "Bearer " + c.wantKey}}; !reflect.DeepEqual(got, want) {
+					t.Errorf("送った要求: %v（%v のはず）", got, want)
+				}
+			})
+		}
 	}
 }
 
