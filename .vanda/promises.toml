@@ -914,7 +914,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-fixed-value-list"
 subjects = ["read-promise-list", "stage", "evidence-type", "flag"]
-statement = "決まった値は、stage が plan・implementation・test・release・operation、type が model-check・proof・cross-check・random-check・scenario-test・unit-test・interface-test・concurrency-test・guardrail・sensor・monitoring・human-review、flags が ai-proposal だけとする"
+statement = "決まった値は、stage が plan・implementation・test・release・operation、type が model-check・proof・cross-check・random-check・scenario-test・unit-test・interface-test・concurrency-test・guardrail・sensor・human-review、flags が ai-proposal だけとする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1632,8 +1632,8 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-types-required"
 subjects = ["store-config", "annotation", "evidence-type"]
-statement = "[[annotation]] に types がなければ、また types に human-review・monitoring・proof か決まっていないタイプを書けば、設定の誤りにする"
-rationale = "human-review・monitoring はアノテーションで確かめず、proof はまだ扱えないため"
+statement = "[[annotation]] に types がなければ、また types に human-review・proof か決まっていないタイプを書けば、設定の誤りにする"
+rationale = "human-review はアノテーションで確かめず、proof はまだ扱えないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2264,8 +2264,8 @@ layers = ["cli"]
 [[claim]]
 id = "check-evidence-proof-and-unchecked"
 subjects = ["list-check-kinds", "evidence", "proof"]
-statement = "evidence-present は、proof を予定に書いた約束を誤りにし、human-review・monitoring の予定は確かめない"
-rationale = "proof を扱うアダプタはまだなく、human-review・monitoring はアノテーションで確かめないため"
+statement = "evidence-present は、proof を予定に書いた約束を誤りにし、human-review の予定は確かめない"
+rationale = "proof を扱うアダプタはまだなく、human-review はアノテーションで確かめないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
