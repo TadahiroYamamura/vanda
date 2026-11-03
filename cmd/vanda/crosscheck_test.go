@@ -452,6 +452,12 @@ types = ["scenario-test"]
 	r.git("init", "-q", "-b", "main")
 	r.commit("はじめの中身", "#9")
 	r.base = r.git("rev-parse", "HEAD")
+	// 分岐点より後のトレーラーのストーリーが 1 つだけだと、ほかのストーリーの --story は審査の前の誤りになる
+	// （約束 check-story-from-commits）。モデルは、どちらのストーリーの範囲の審査も毎歩で比べるので、はじめに
+	// 2 つのストーリーの空のコミットを置き、トレーラーのストーリーをいつも 2 つにして、--story で選べるようにする。
+	// 空のコミットは中身を変えないので、範囲の審査が見るもの（分岐点の中身と今の中身の違い、外れた合意）は変わらない
+	r.commit("ストーリー A を始める", xcheckStory["A"])
+	r.commit("ストーリー B を始める", xcheckStory["B"])
 	return r
 }
 
