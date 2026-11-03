@@ -2,8 +2,6 @@ package check
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/TadahiroYamamura/vanda/internal/agreements"
@@ -121,9 +119,9 @@ func (e *env) agreement(scope string) []diag.Error {
 		if !changed && !storyAgreed["path:"+f] {
 			continue
 		}
-		src, err := os.ReadFile(filepath.Join(e.root, filepath.FromSlash(f)))
+		src, err := e.read(f)
 		if err != nil {
-			errs = append(errs, diag.Error{File: f, What: "ファイルを読めません（" + err.Error() + "）", Fix: "ファイルを読む権限を確かめてください"})
+			errs = append(errs, diag.Error{File: f, What: "ファイルを読めません（" + err.Error() + "）", Fix: "git の状態を確かめてください"})
 			continue
 		}
 		fp := agreements.FileFingerprint(src)

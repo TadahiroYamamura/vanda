@@ -3,8 +3,6 @@ package check
 import (
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -12,15 +10,17 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/annotation"
 	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/diag"
-	"github.com/TadahiroYamamura/vanda/internal/glob"
 	"github.com/TadahiroYamamura/vanda/internal/guardrail"
 	"github.com/TadahiroYamamura/vanda/internal/promises"
 	"github.com/TadahiroYamamura/vanda/internal/repo"
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
+	"github.com/TadahiroYamamura/vanda/internal/tomlread"
 )
 
 type Options struct {
-	Root  string
+	Root string
+	// Tree は、読むコミット（HEAD）。Cfg もこのコミットから読む
+	Tree  *repo.Tree
 	Cfg   *config.Config
 	Specs []Spec
 	Base  string
@@ -35,6 +35,7 @@ type env struct {
 	root  string
 	cfg   *config.Config
 	files []string
+	read  tomlread.Reader
 
 	list     *promises.List
 	listErrs diag.Errors
@@ -92,14 +93,19 @@ func needsStory(s Spec) bool {
 }
 
 func (e *env) prepare(o Options) error {
-	files, err := glob.Files(e.root)
-	if err != nil {
-		return fmt.Errorf("リポジトリのファイルの一覧を作れません（%v）。ファイルを読む権限を確かめてください。", err)
+	t := o.Tree
+	if t == nil {
+		var err error
+		if t, err = repo.HeadTree(e.root); err != nil {
+			return err
+		}
 	}
+	files := t.Files
 	e.files = files
-	e.list, e.listErrs = promises.Load(e.root, files, e.cfg.Promises, e.cfg.PromisesDefault)
-	e.recs, e.recErrs = agreements.Load(e.root, files, e.cfg.Agreements, e.cfg.AgreementsDefault)
-	e.anns, e.annErrs = annotation.Read(e.root, files, e.cfg.Annotations)
+	e.read = t.Read
+	e.list, e.listErrs = promises.LoadWith(t.Read, files, e.cfg.Promises, e.cfg.PromisesDefault)
+	e.recs, e.recErrs = agreements.LoadWith(t.Read, files, e.cfg.Agreements, e.cfg.AgreementsDefault)
+	e.anns, e.annErrs = annotation.ReadWith(e.root, t.Read, files, e.cfg.Annotations)
 	e.guards, e.guardErr = guardrail.Files(files, e.cfg.Guardrails)
 
 	var storyChecks, needStory []string
@@ -167,7 +173,7 @@ func (e *env) decideStory(given string, checks []string) error {
 	}
 }
 
-// findChanges は、分かれた点の中身と作業ツリーの今の中身を比べ、変わった項目とファイルを求める。
+// findChanges は、分かれた点の中身と今の中身（HEAD）を比べ、変わった項目とファイルを求める。
 func (e *env) findChanges() error {
 	base, err := snapshot.At(e.root, e.cfg, e.mergeBase)
 	if err != nil {
@@ -209,7 +215,7 @@ func (e *env) findChanges() error {
 		if err != nil {
 			return fmt.Errorf("分かれた点の %s を読めない（%v）", f, err)
 		}
-		cur, err := os.ReadFile(filepath.Join(e.root, filepath.FromSlash(f)))
+		cur, err := e.read(f)
 		if err != nil || agreements.FileFingerprint(cur) != agreements.FileFingerprint(b) {
 			e.changedFiles[f] = true
 		}

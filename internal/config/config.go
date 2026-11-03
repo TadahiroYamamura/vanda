@@ -14,6 +14,7 @@ import (
 
 	"github.com/TadahiroYamamura/vanda/internal/diag"
 	"github.com/TadahiroYamamura/vanda/internal/glob"
+	"github.com/TadahiroYamamura/vanda/internal/repo"
 	"github.com/TadahiroYamamura/vanda/internal/tomlread"
 	"github.com/TadahiroYamamura/vanda/internal/version"
 )
@@ -148,7 +149,19 @@ func LoadAllowingMissingAdapters(root string) (cfg *Config, missing []string, er
 	return load(&loader{root: root, allowMissing: true})
 }
 
+// LoadCommitted は、Load と同じく読み、確かめる。ただし、.vanda/config.toml はコミット t の中身を読む
+// （審査と画面は、コミットした中身だけを読むため。.vanda/adapters/ のアダプタは、作業ツリーのものを動かす）。
+func LoadCommitted(root string, t *repo.Tree) (*Config, diag.Errors) {
+	if !t.Has(File) {
+		return nil, diag.Errors{{File: File, What: "HEAD のコミットにファイルがありません（コミットしていない設定は読みません）", Fix: File + " をコミットしてください"}}
+	}
+	cfg, _, errs := load(&loader{root: root, read: t.Read})
+	return cfg, errs
+}
+
 type loader struct {
+	// read は、設定のファイルを読む。nil なら作業ツリーを読む
+	read         tomlread.Reader
 	root         string
 	allowMissing bool
 	missing      []string
@@ -156,7 +169,11 @@ type loader struct {
 
 func load(l *loader) (*Config, []string, diag.Errors) {
 	var errs []diag.Error
-	doc := tomlread.Load(l.root, File, &errs)
+	read := l.read
+	if read == nil {
+		read = tomlread.OSReader(l.root)
+	}
+	doc := tomlread.LoadWith(read, File, &errs)
 	if doc == nil {
 		return nil, nil, errs
 	}

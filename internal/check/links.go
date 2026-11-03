@@ -1,9 +1,6 @@
 package check
 
 import (
-	"os"
-	"path/filepath"
-
 	"github.com/TadahiroYamamura/vanda/internal/annotation"
 	"github.com/TadahiroYamamura/vanda/internal/diag"
 )
@@ -52,7 +49,7 @@ func (e *env) specTypes() []diag.Error {
 		if !e.isTLA(f) {
 			continue
 		}
-		src, err := os.ReadFile(filepath.Join(e.root, filepath.FromSlash(f)))
+		src, err := e.read(f)
 		if err != nil {
 			continue // 読めないことは、アノテーションの読み込みの誤りとして出ている
 		}

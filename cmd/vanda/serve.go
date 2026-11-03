@@ -28,7 +28,7 @@ func newServeCommand() *cobra.Command {
 		Short: "手元のサーバーを起動し、ブラウザで開きます",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			root, cfg, err := loadConfig()
+			root, _, cfg, err := loadCommittedConfig()
 			if err != nil {
 				return err
 			}

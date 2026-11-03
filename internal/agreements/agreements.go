@@ -34,6 +34,11 @@ type Records struct {
 
 // Load は、files（リポジトリの直下からの場所の一覧）のうち patterns に当たるものを、合意の記録として読む。allowMissing なら、ワイルドカードのないパターンのファイルがなくても誤りにしない（設定に書かなかった既定のファイルのため）。
 func Load(root string, files, patterns []string, allowMissing bool) (*Records, diag.Errors) {
+	return LoadWith(tomlread.OSReader(root), files, patterns, allowMissing)
+}
+
+// LoadWith は、Load と同じく読む。ファイルの中身は read で読む。
+func LoadWith(read tomlread.Reader, files, patterns []string, allowMissing bool) (*Records, diag.Errors) {
 	var errs []diag.Error
 	matched, missing := glob.Select(files, patterns)
 	if allowMissing {
@@ -44,7 +49,7 @@ func Load(root string, files, patterns []string, allowMissing bool) (*Records, d
 	}
 	r := &Records{Files: matched}
 	for _, f := range matched {
-		doc := tomlread.Load(root, f, &errs)
+		doc := tomlread.LoadWith(read, f, &errs)
 		if doc == nil {
 			continue
 		}

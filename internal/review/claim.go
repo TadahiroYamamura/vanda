@@ -3,8 +3,6 @@ package review
 import (
 	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 	"sort"
 	"time"
 
@@ -12,6 +10,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/annotation"
 	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/glob"
+	"github.com/TadahiroYamamura/vanda/internal/repo"
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
 )
 
@@ -122,7 +121,7 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 		d.Subjects = append(d.Subjects, ref)
 	}
 
-	anns, aerrs := annotation.Read(o.Root, s.cur.snap.Files, o.Cfg.Annotations)
+	anns, aerrs := annotation.ReadWith(o.Root, s.cur.text, s.cur.snap.Files, o.Cfg.Annotations)
 	if aerrs != nil {
 		return nil, &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("アノテーションに誤りがあるため、エビデンスを探せません（%d 件。最初の 1 件: %s）。", len(aerrs), aerrs[0].Error()), Fix: "vanda check の annotation-links で誤りを確かめて、直してください。"}
 	}
@@ -134,7 +133,7 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 					continue
 				}
 				f := Found{Adapter: a.Adapter, File: a.File, Name: a.Name}
-				text, line, err := evidenceText(o.Root, a)
+				text, line, err := evidenceText(s.cur, a)
 				f.Line = line
 				if _, target := s.cur.types[a.File]; target {
 					fp, err := s.cur.fileFP(a.File)
@@ -212,8 +211,8 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 }
 
 // evidenceText は、エビデンスの本文と、アノテーションが付いているものの行を返す。本文は、txtar と sql はファイル全体、tla は付いている定義、go は返さない。
-func evidenceText(root string, a annotation.Annotation) (*string, int, error) {
-	src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(a.File)))
+func evidenceText(cur *side, a annotation.Annotation) (*string, int, error) {
+	src, err := cur.text(a.File)
 	if err != nil {
 		return nil, 0, fmt.Errorf("%s を読めません（%v）", a.File, err)
 	}
@@ -235,10 +234,11 @@ func evidenceText(root string, a annotation.Annotation) (*string, int, error) {
 // File は、合意の対象のファイルか、アノテーションを読むファイルの中身を返す。
 func File(o Options, path string) (string, *Error) {
 	notFound := &Error{Status: http.StatusNotFound, Message: path + " は、合意の対象のファイルでも、アノテーションを読むファイルでもありません。", Fix: "ファイルの場所を確かめてください。"}
-	files, err := glob.Files(o.Root)
+	tree, err := repo.HeadTree(o.Root)
 	if err != nil {
 		return "", internalErr(err)
 	}
+	files := tree.Files
 	have := false
 	for _, f := range files {
 		if f == path {
@@ -265,7 +265,7 @@ func File(o Options, path string) (string, *Error) {
 	if !allowed {
 		return "", notFound
 	}
-	b, err := os.ReadFile(filepath.Join(o.Root, filepath.FromSlash(path)))
+	b, err := tree.Read(path)
 	if err != nil {
 		return "", internalErr(err)
 	}

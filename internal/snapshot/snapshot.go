@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/TadahiroYamamura/vanda/internal/agreements"
 	"github.com/TadahiroYamamura/vanda/internal/config"
@@ -107,7 +106,7 @@ type Snapshot struct {
 	read     func(path string) ([]byte, error)
 }
 
-// Working は、作業ツリーの今の中身を読む。
+// Working は、作業ツリーの今の中身を読む。合意と取り消しが、書いた後のファイルをコミットする前に読み直すときに使う。
 func Working(root string, cfg *config.Config) (*Snapshot, error) {
 	files, err := glob.Files(root)
 	if err != nil {
@@ -122,33 +121,22 @@ func Working(root string, cfg *config.Config) (*Snapshot, error) {
 
 // At は、コミット rev の中身を読む。パターンは今の設定のものを当てる。
 // 約束リストの誤りは ListErrs に入れ、読めた項目だけを List に入れる。
+// 過去の時点では、今の設定にはっきり書いた約束リストのファイルがまだないことがあるので、ないファイルを誤りにしない。
 func At(root string, cfg *config.Config, rev string) (*Snapshot, error) {
-	out, err := repo.Git(root, "ls-tree", "-r", "-z", "--name-only", rev)
+	t, err := repo.TreeAt(root, rev)
 	if err != nil {
-		return nil, fmt.Errorf("コミット %s のファイルの一覧を読めません（%v）。", rev, err)
+		return nil, err
 	}
-	var files []string
-	for _, f := range strings.Split(out, "\x00") {
-		if f != "" {
-			files = append(files, f)
-		}
-	}
-	sort.Strings(files)
-	s := newSnapshot(files, cfg, func(f string) ([]byte, error) {
-		b, err := repo.Git(root, "show", rev+":"+f)
-		return []byte(b), err
-	})
-	matched, _ := glob.Select(files, cfg.Promises)
-	srcs := map[string][]byte{}
-	for _, f := range matched {
-		b, err := s.read(f)
-		if err != nil {
-			return nil, fmt.Errorf("コミット %s の %s を読めません（%v）。", rev, f, err)
-		}
-		srcs[f] = b
-	}
-	s.List, s.ListErrs = promises.FromSources(matched, srcs)
+	s := newSnapshot(t.Files, cfg, t.Read)
+	s.List, s.ListErrs = promises.LoadWith(t.Read, t.Files, cfg.Promises, true)
 	return s, nil
+}
+
+// Committed は、今の中身として、読んだコミット t（HEAD）の中身を使う。
+func Committed(t *repo.Tree, cfg *config.Config) *Snapshot {
+	s := newSnapshot(t.Files, cfg, t.Read)
+	s.List, s.ListErrs = promises.LoadWith(t.Read, t.Files, cfg.Promises, cfg.PromisesDefault)
+	return s
 }
 
 func newSnapshot(files []string, cfg *config.Config, read func(string) ([]byte, error)) *Snapshot {

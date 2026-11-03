@@ -194,15 +194,17 @@ func Build(o Options) (*Result, *Error) {
 	return res, nil
 }
 
+// loadCurrent は、今の中身として HEAD のコミットを読む（コミットしていない変更は、提出される保証がないので読まない）。
 func (s *state) loadCurrent() *Error {
-	snap, err := snapshot.Working(s.o.Root, s.o.Cfg)
+	tree, err := repo.HeadTree(s.o.Root)
 	if err != nil {
 		return internalErr(err)
 	}
+	snap := snapshot.Committed(tree, s.o.Cfg)
 	if snap.ListErrs != nil {
 		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("約束リストに誤りがあるため、一覧を作れません（%d 件。最初の 1 件: %s）。", len(snap.ListErrs), snap.ListErrs[0].Error()), Fix: "vanda check の promise-list-shape で誤りを確かめて、直してください。"}
 	}
-	recs, rerrs := agreements.Load(s.o.Root, snap.Files, s.o.Cfg.Agreements, s.o.Cfg.AgreementsDefault)
+	recs, rerrs := agreements.LoadWith(tree.Read, snap.Files, s.o.Cfg.Agreements, s.o.Cfg.AgreementsDefault)
 	if rerrs != nil {
 		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("合意の記録に誤りがあるため、一覧を作れません（%d 件。最初の 1 件: %s）。", len(rerrs), rerrs[0].Error()), Fix: "vanda check の agreement-targets で誤りを確かめて、直してください。"}
 	}

@@ -4,13 +4,12 @@ package annotation
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/diag"
 	"github.com/TadahiroYamamura/vanda/internal/glob"
+	"github.com/TadahiroYamamura/vanda/internal/tomlread"
 )
 
 // AdapterInfo は、組込みのアノテーションの読み取りのアダプタの、言語の見つけ方と既定のパターン。
@@ -62,6 +61,11 @@ type adapter interface {
 
 // Read は、files（リポジトリの直下からの場所の一覧）のうち、設定の [[annotation]] のパターンに当たるものを読む。
 func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotation, diag.Errors) {
+	return ReadWith(root, tomlread.OSReader(root), files, rules)
+}
+
+// ReadWith は、Read と同じく読む。ファイルの中身は read で読む。root は、.vanda/adapters/ のアダプタを動かすディレクトリ。
+func ReadWith(root string, read tomlread.Reader, files []string, rules []config.AnnotationRule) ([]Annotation, diag.Errors) {
 	var out []Annotation
 	var errs []diag.Error
 	for _, f := range files {
@@ -90,7 +94,7 @@ func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotat
 			errs = append(errs, diag.Error{File: f, What: fmt.Sprintf("%s の %d 行目の [[annotation]] のパターンに当たりますが、使うアダプタが決まっていません", config.File, hit[0].Line), Fix: "その [[annotation]] に、adapter（組込みのアダプタか、.vanda/adapters/ のアダプタの名前）を書いてください"})
 			continue
 		}
-		src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(f)))
+		src, err := read(f)
 		if err != nil {
 			errs = append(errs, diag.Error{File: f, What: "ファイルを読めません（" + err.Error() + "）", Fix: "ファイルを読む権限を確かめてください"})
 			continue

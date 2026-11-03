@@ -30,7 +30,22 @@ type Doc struct {
 
 // Load は、root の下の file を読む。読めなければ、エラーを errs に足して nil を返す。
 func Load(root, file string, errs *[]diag.Error) *Doc {
-	src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
+	return LoadWith(OSReader(root), file, errs)
+}
+
+// Reader は、リポジトリの直下からの場所のファイルの中身を返す。ないときは fs.ErrNotExist を包んだエラーを返す。
+type Reader func(file string) ([]byte, error)
+
+// OSReader は、root の下の作業ツリーのファイルを読む Reader。
+func OSReader(root string) Reader {
+	return func(file string) ([]byte, error) {
+		return os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
+	}
+}
+
+// LoadWith は、read で file を読む。読めなければ、エラーを errs に足して nil を返す。
+func LoadWith(read Reader, file string, errs *[]diag.Error) *Doc {
+	src, err := read(file)
 	if err != nil {
 		what := "ファイルを読めません（" + err.Error() + "）"
 		fix := "ファイルの場所と、読む権限を確かめてください"

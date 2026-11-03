@@ -122,19 +122,6 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	default:
 		return nil, badRequest(fmt.Sprintf("対象の種類 %q はありません。", req.Kind), "kind を claim・term・feature・file のどれかにしてください。")
 	}
-	if req.Deleted {
-		if s.recs.DeletionAgreedBy(rec.Kind, rec.target(), req.Story) {
-			return nil, conflict(target+" を消したことには、ストーリー "+req.Story+" ですでに合意しています。", "一覧を読み直してください。")
-		}
-	} else {
-		rec.Fingerprint = &fp
-		if fp != req.Fingerprint {
-			return nil, conflict(target+" の中身が、画面に表示した後に変わりました（画面 "+req.Fingerprint+"、今 "+fp+"）。", "一覧を読み直し、今の中身を確かめてから合意してください。")
-		}
-		if s.recs.AgreedBy(rec.Kind, rec.target(), fp, req.Story) {
-			return nil, conflict(target+" の今の中身には、ストーリー "+req.Story+" ですでに合意しています。", "一覧を読み直してください。")
-		}
-	}
 
 	agreementsFile, create, e := s.agreementsFile()
 	if e != nil {
@@ -174,6 +161,21 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	}
 	if dirty != "" {
 		return nil, conflict("合意で変えるファイル（"+strings.Join(files, "・")+"）に、コミットしていない変更があります。", "そのファイルの変更をコミットするか元に戻してから、合意してください。")
+	}
+
+	// 書きかけの確かめを指紋の比べより先にする。今の中身は HEAD のコミットなので、書きかけがあると指紋の違いで断ることになり、先にコミットするよう知らせられないため
+	if req.Deleted {
+		if s.recs.DeletionAgreedBy(rec.Kind, rec.target(), req.Story) {
+			return nil, conflict(target+" を消したことには、ストーリー "+req.Story+" ですでに合意しています。", "一覧を読み直してください。")
+		}
+	} else {
+		rec.Fingerprint = &fp
+		if fp != req.Fingerprint {
+			return nil, conflict(target+" の中身が、画面に表示した後に変わりました（画面 "+req.Fingerprint+"、今 "+fp+"）。", "一覧を読み直し、今の中身を確かめてから合意してください。")
+		}
+		if s.recs.AgreedBy(rec.Kind, rec.target(), fp, req.Story) {
+			return nil, conflict(target+" の今の中身には、ストーリー "+req.Story+" ですでに合意しています。", "一覧を読み直してください。")
+		}
 	}
 
 	// 書く前の中身を持っておき、途中で失敗したら戻す

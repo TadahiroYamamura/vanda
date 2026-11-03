@@ -61,7 +61,7 @@ func newCheckCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			root, cfg, err := loadConfig()
+			root, tree, cfg, err := loadCommittedConfig()
 			if err != nil {
 				return err
 			}
@@ -73,7 +73,7 @@ func newCheckCommand() *cobra.Command {
 			if errs != nil {
 				return errs
 			}
-			pass, err := check.Run(check.Options{Root: root, Cfg: cfg, Specs: specs, Base: base, Story: story, Out: cmd.OutOrStdout(), Err: cmd.ErrOrStderr()})
+			pass, err := check.Run(check.Options{Root: root, Tree: tree, Cfg: cfg, Specs: specs, Base: base, Story: story, Out: cmd.OutOrStdout(), Err: cmd.ErrOrStderr()})
 			if err != nil {
 				return err
 			}
@@ -124,19 +124,44 @@ func newDoctorCommand() *cobra.Command {
 	}
 }
 
-// loadConfig は、git のリポジトリの根を探し、設定を読んで版を確かめる。
+// loadConfig は、git のリポジトリの根を探し、作業ツリーの設定を読んで版を確かめる。
 func loadConfig() (string, *config.Config, error) {
-	wd, err := os.Getwd()
+	root, err := findRoot()
 	if err != nil {
-		return "", nil, errors.New("今のディレクトリが分かりません（" + err.Error() + "）。")
-	}
-	root, rerr := repo.Root(wd)
-	if rerr != nil {
-		return "", nil, rerr
+		return "", nil, err
 	}
 	cfg, errs := config.Load(root)
 	if errs != nil {
 		return "", nil, diag.Errors(errs)
 	}
 	return root, cfg, nil
+}
+
+// loadCommittedConfig は、git のリポジトリの根を探し、HEAD のコミットの設定を読んで版を確かめる（審査と画面は、コミットした中身だけを読むため）。
+func loadCommittedConfig() (string, *repo.Tree, *config.Config, error) {
+	root, err := findRoot()
+	if err != nil {
+		return "", nil, nil, err
+	}
+	tree, err := repo.HeadTree(root)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	cfg, errs := config.LoadCommitted(root, tree)
+	if errs != nil {
+		return "", nil, nil, diag.Errors(errs)
+	}
+	return root, tree, cfg, nil
+}
+
+func findRoot() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", errors.New("今のディレクトリが分かりません（" + err.Error() + "）。")
+	}
+	root, rerr := repo.Root(wd)
+	if rerr != nil {
+		return "", rerr
+	}
+	return root, nil
 }

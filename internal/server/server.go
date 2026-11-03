@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/TadahiroYamamura/vanda/internal/config"
+	"github.com/TadahiroYamamura/vanda/internal/repo"
 	"github.com/TadahiroYamamura/vanda/internal/review"
 	"github.com/TadahiroYamamura/vanda/internal/story"
 )
@@ -50,7 +51,12 @@ func (s *Server) Handler() http.Handler {
 // 画面を開き直すだけで今の設定が効くようにするため（起動したときの設定を使い続けると、たとえばレイヤーの名前が古いままになる）。
 // 読めなければ、誤りを返して false を返す
 func (s *Server) config(w http.ResponseWriter) (*config.Config, bool) {
-	cfg, errs := config.Load(s.Root)
+	tree, err := repo.HeadTree(s.Root)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error(), "git の状態を確かめてください。")
+		return nil, false
+	}
+	cfg, errs := config.LoadCommitted(s.Root, tree)
 	if errs != nil {
 		writeError(w, http.StatusInternalServerError, fmt.Sprintf("設定（%s）を読めません（%d 件。最初の 1 件: %s）。", config.File, len(errs), errs[0].Error()), "vanda doctor で誤りを確かめて、直してください。")
 		return nil, false

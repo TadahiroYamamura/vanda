@@ -83,8 +83,8 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
     return reviewQuery(q);
   })();
   // 選択肢の中は短い名前にし、何と何を比べているかの説明は、触れたときに出す（欄に収まらないため）
-  const branchHelp = `ブランチ（${base ?? "ベースブランチ"} と分かれた点からの、このブランチの変更。コミットしていない変更も含む）`;
-  const storyHelp = story ? `ストーリー（${story} のコミットすべての変更。ほかのブランチや合流済みのものも含む）` : "ストーリー（そのストーリーのコミットすべての変更。ほかのブランチや合流済みのものも含む）";
+  const branchHelp = `ブランチ（${base ?? "ベースブランチ"} との分岐点から HEAD のコミットまでの、このブランチの変更）`;
+  const storyHelp = story ? `ストーリー（HEAD の履歴にある、${story} のコミットすべての変更。合流したほかのブランチのものも含む）` : "ストーリー（HEAD の履歴にある、そのストーリーのコミットすべての変更。合流したほかのブランチのものも含む）";
   const viewHelp = view === "branch" ? branchHelp : storyHelp;
 
   const all = review.data ? [...review.data.detached, ...review.data.entries] : [];
@@ -122,10 +122,10 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
         <p className="comparing" aria-live="polite">
           {view === "branch"
             ? base
-              ? `レビュー単位はブランチです（${base} と分かれた点${review.data?.mergeBase ? ` ${shortCommit(review.data.mergeBase)}` : ""} からの、このブランチの変更。コミットしていない変更も含む）`
+              ? `レビュー単位はブランチです（${base} との分岐点${review.data?.mergeBase ? ` ${shortCommit(review.data.mergeBase)}` : ""} から HEAD のコミットまでの、このブランチの変更）`
               : "ベースブランチを選んでください"
             : storyParam
-              ? `レビュー単位はストーリーです（${storyParam} のコミットすべての変更。ほかのブランチや合流済みのものも含む）`
+              ? `レビュー単位はストーリーです（HEAD の履歴にある、${storyParam} のコミットすべての変更。合流したほかのブランチのものも含む）`
               : "ストーリーを選んでください"}
         </p>
       </section>
