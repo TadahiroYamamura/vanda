@@ -1378,6 +1378,7 @@ layers = ["cli"]
 id = "deletion-agreement-record"
 subjects = ["agree-on-review", "store-agreements", "agreement-record"]
 statement = "消したことへの合意の記録は、ほかの合意の記録と同じ kind・key（ファイルなら path）・user・agreed_at・story に、fingerprint の代わりに deleted = true を持つ"
+model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1390,6 +1391,7 @@ layers = ["cli"]
 id = "review-deleted-shown"
 subjects = ["list-changes", "agree-on-review", "agreement"]
 statement = "レビューの一覧に、比べる元にあって今にない約束・用語・機能・合意の対象のファイルを「削除」として出し、消す前の中身を示し、消したことに合意できるようにする"
+model_check_waiver = "消したことへの合意そのものは、約束 deleted-item-needs-agreement としてモデルで確かめていて、この約束が決めるのは一覧への出し方だけのため"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -2768,6 +2770,7 @@ id = "serve-agree-one-at-a-time"
 subjects = ["start-server", "agree-on-review", "revoke-agreement"]
 statement = "vanda serve は、合意と取り消しを 1 件ずつ行い、そのあいだは一覧・約束の詳細・ファイルの読み込みを待たせる"
 rationale = "書きかけの合意の記録や約束リストを、一覧が読まないようにするため"
+model_check_waiver = "同時に来た要求を 1 件ずつにする決まりで、合意の記録の移り変わりではないため。同時に動かすテストで確かめる"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2845,6 +2848,7 @@ id = "context-no-user-cannot-agree"
 subjects = ["agree-on-review", "agreement"]
 statement = "git の user.name か user.email がなければ、合意できない"
 rationale = "合意の記録の「誰が」には、合意した時の git の user.name と user.email を書くため"
+model_check_waiver = "合意を受け付ける前の確かめで、合意の記録の移り変わりを変えないため"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3445,6 +3449,7 @@ id = "agree-writes-and-commits"
 subjects = ["agree-on-review", "agreement"]
 statement = "合意すると、合意の記録を書き足し、合意の記録のファイルと約束リストのファイルだけを 1 つのコミットにする"
 rationale = "1 件の合意ごとに 1 つのコミットにする（まとめる形にすると、画面の中に書きかけの合意を持つことになり、閉じた時に消えるおそれがあるため）"
+model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3462,6 +3467,7 @@ layers = ["api"]
 id = "agree-record-file"
 subjects = ["agree-on-review", "agreement-record"]
 statement = "合意の記録は、設定の agreements のパターンの順で最初に当たったファイルの終わりに書き足す。どれにも当たらない時は、最初のパターンにワイルドカードがなければそのファイルを作り、あれば合意を 409 で断る"
+model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3474,6 +3480,7 @@ layers = ["api"]
 id = "agree-record-form"
 subjects = ["agree-on-review", "agreement-record"]
 statement = "書き足す合意の記録は、user をインラインの表（user = { name = …, email = … }）で書き、agreed_at に、合意した時の日時を、手元の時差を付けて秒まで書く"
+model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3486,6 +3493,7 @@ layers = ["api"]
 id = "agree-record-user-from-git"
 subjects = ["agree-on-review", "agreement-record"]
 statement = "書き足す合意の記録の user には、合意した時の git の user.name と user.email を書く"
+model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3498,6 +3506,7 @@ layers = ["api"]
 id = "agree-commit-message"
 subjects = ["agree-on-review", "story"]
 statement = "合意のコミットのメッセージの subject を「(chore) <ストーリーの ID> で <種類> <ID か場所> に合意する」（種類は 約束・用語・機能・ファイル）にする"
+model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3510,6 +3519,7 @@ layers = ["api"]
 id = "agree-rejects-stale"
 subjects = ["agree-on-review", "agreement"]
 statement = "画面に見せていた中身の指紋が今の中身の指紋と違えば、合意を 409 で断る"
+model_check_waiver = "合意を受け付ける前の確かめで、合意の記録の移り変わりを変えないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3523,6 +3533,7 @@ id = "agree-removes-flags"
 subjects = ["agree-on-review", "flag"]
 statement = "約束に合意すると、同じコミットで、その約束の flags と guesses を外す"
 rationale = "責任を持つのは合意した人（合意の記録の「誰が」）で、フラグがあってもなくても変わったものはすべて読んで合意するため"
+model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3540,6 +3551,7 @@ layers = ["api"]
 id = "agree-inline-flags-refused"
 subjects = ["agree-on-review", "flag"]
 statement = "約束の flags か guesses を、インラインの表の中か、複数行の文字列を含む形で書いていれば、合意を 409 で断る"
+model_check_waiver = "合意を受け付ける前の確かめで、合意の記録の移り変わりを変えないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3553,6 +3565,7 @@ id = "agree-rejects-uncommitted"
 subjects = ["agree-on-review", "agreement"]
 statement = "合意の対象が書いてあるファイルか、合意で変えるファイルにコミットしていない変更があれば、合意を 409 で断る"
 rationale = "合意のコミットの時点のリポジトリが、合意した中身と合うようにするため"
+model_check_waiver = "合意を受け付ける前の確かめで、合意の記録の移り変わりを変えないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3570,6 +3583,7 @@ layers = ["api"]
 id = "agree-rejects-duplicate"
 subjects = ["agree-on-review", "agreement"]
 statement = "同じストーリーで今の中身にもう合意していれば、合意を 409 で断る"
+model_check_waiver = "合意を受け付ける前の確かめで、合意の記録の移り変わりを変えないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3600,6 +3614,7 @@ id = "revoke-own-branch-only"
 subjects = ["revoke-agreement", "agreement"]
 statement = "取り消せるのは、今の git の user.name と user.email の人が、今のブランチ（ベースブランチとの分岐点より後）で書いた合意の記録だけ"
 rationale = "ほかの人の合意や、ベースブランチにすでにある合意は取り消せない"
+model_check_waiver = "誰がどのブランチで書いた記録を取り消せるかは、モデルの粒度（ストーリー・項目・中身）では表さないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3618,6 +3633,7 @@ id = "revoke-commits-and-keeps-flags"
 subjects = ["revoke-agreement", "flag"]
 statement = "取り消すと、その合意の記録を消して 1 つのコミットにし、合意の時に外したフラグは戻さない"
 rationale = "人が一度読んだことは変わらないため"
+model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3635,6 +3651,7 @@ layers = ["api"]
 id = "revoke-removes-all-duplicates"
 subjects = ["revoke-agreement", "agreement-record"]
 statement = "取り消すと、今の利用者が今のブランチで書いた、このストーリーの今の中身への合意の記録を、同じものが 2 つ以上あればすべて消し、ほかの人とほかのストーリーの記録は残す"
+model_check_waiver = "モデルの合意の記録は集合で、同じ記録が 2 つ以上ある状態を表さないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3647,6 +3664,7 @@ layers = ["api"]
 id = "revoke-commit-message"
 subjects = ["revoke-agreement", "story"]
 statement = "取り消しのコミットのメッセージの subject を「(chore) <ストーリーの ID> で <種類> <ID か場所> の合意を取り消す」（種類は 約束・用語・機能・ファイル）にする"
+model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -4431,6 +4449,7 @@ layers = ["gui"]
 id = "agree-on-screen"
 subjects = ["agree-on-review", "agreement"]
 statement = "レビューの画面で 1 件に合意すると、画面に見せていた中身の指紋と、合意するストーリーの ID を添えて、API に合意を求める"
+model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4460,6 +4479,7 @@ layers = ["gui"]
 id = "agree-button-label"
 subjects = ["agree-on-review", "story"]
 statement = "合意のボタンには、「ストーリー <ID> で合意する」と、合意するストーリーの ID を書く"
+model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4472,6 +4492,7 @@ layers = ["gui"]
 id = "agree-cannot-reason-shown"
 subjects = ["agree-on-review", "agreement"]
 statement = "ストーリーが決まっていないか、git の user.name・user.email がなくて合意できない時は、合意のボタンを押せなくし、「ストーリーを選ぶと、合意できます。」か「git の user.name と user.email を設定すると、合意できます。」と示す"
+model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4484,6 +4505,7 @@ layers = ["gui"]
 id = "revoke-on-screen"
 subjects = ["revoke-agreement", "agreement"]
 statement = "レビューの画面で、合意済の件への今の利用者の合意を取り消せる"
+model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4501,6 +4523,7 @@ layers = ["gui"]
 id = "revoke-others-shown"
 subjects = ["revoke-agreement", "agreement"]
 statement = "取り消してもほかの人の合意が残る時は、取り消す前にその人の名前と合意済のままになることを示し、取り消した後にも合意済のままであることを示す"
+model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4513,6 +4536,7 @@ layers = ["gui"]
 id = "revoke-reason-shown"
 subjects = ["revoke-agreement", "agreement"]
 statement = "合意済の件を今の利用者が取り消せない時は、取り消しのボタンを出さず、取り消せない理由を示す"
+model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4525,6 +4549,7 @@ layers = ["gui"]
 id = "revoke-refused"
 subjects = ["revoke-agreement", "agreement"]
 statement = "取り消せる件の判定（今の利用者が今のブランチで書いた、このストーリーの今の中身への合意か）に当たらなければ、取り消しを 409 で断り、理由を出す"
+model_check_waiver = "合意を受け付ける前の確かめで、合意の記録の移り変わりを変えないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -4604,6 +4629,7 @@ layers = ["gui"]
 id = "agree-refusal-shown"
 subjects = ["agree-on-review", "agreement"]
 statement = "合意を断られたら、断られた理由を画面に出す"
+model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4687,6 +4713,7 @@ layers = ["gui"]
 id = "agree-on-screen-reloads"
 subjects = ["agree-on-review", "agreement"]
 statement = "画面で合意した後に、変わったものの一覧を読み直し、合意した後の状態を見せる"
+model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -5008,6 +5035,7 @@ id = "agree-commit-has-story-trailer"
 subjects = ["agree-on-review", "revoke-agreement", "story"]
 statement = "合意と取り消しのコミットのメッセージの末尾に、Story: <ストーリーの ID> のトレーラーを書く"
 rationale = "合意のコミットは（フラグを外すので）約束リストを変えることがあり、そのコミットが story-origin で止まらないようにするため。取り消しのコミットにも書くのは、どのストーリーで取り消したかを、コミットの履歴から追えるようにするため"
+model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 guesses = ["取り消しのコミットにも書く理由は、コードにも文書にも書いていなかったので推し量った"]
