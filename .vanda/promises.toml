@@ -269,6 +269,11 @@ name = "Story: のトレーラー"
 definition = "コミットのメッセージの末尾に書く Story: <ID>（Co-Authored-By: と同じ Git のトレーラー）。そのコミットがどのストーリーのものかを表す"
 
 [[term]]
+id = "reference"
+name = "参照"
+definition = "約束リストの文の中で、ほかの用語・機能・約束を ID で指したもの"
+
+[[term]]
 id = "vanda-dir"
 name = ".vanda/"
 definition = "vanda が読み書きするファイルを置く、リポジトリの直下のディレクトリ（.vanda/）"
@@ -337,6 +342,11 @@ definition = "vanda サーバーを起動し、画面をブラウザで開く"
 id = "read-promise-list"
 name = "約束リストを読む"
 definition = "約束リストを読み、形を確かめる"
+
+[[feature]]
+id = "show-references"
+name = "参照を、指す先が分かる形で見せる"
+definition = "約束リストの文の中の参照を、指す先が分かる形で見せる"
 
 [[feature]]
 id = "store-agreements"
@@ -643,6 +653,124 @@ flags = ["ai-proposal"]
 stage = "test"
 type = "unit-test"
 layers = ["cli"]
+
+[[claim]]
+id = "reference-form"
+subjects = ["read-promise-list", "reference", "promise-list"]
+statement = "名前を除く、自然言語で書く項目（用語と機能の definition、機能の formal_waiver、約束の statement・rationale・condition・guesses）の中の {@@id:<ID>} を、その ID の用語・機能・約束を指す参照として読む"
+rationale = "どれがどれを参照しているかを機械的に追えるようにし、後から依存や詳細化などの関係を定義しやすくするため。また、定義していない語が一目で分かるようにするため。名前を除くのは、名前がほかの約束や文書に一言一句同じに載せるものだから。ほかの項目を絞らないのは、ID を変えない限り、参照元と参照先のあいだで、参照を通じて影響が伝わることがないため"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "reference-literal"
+subjects = ["read-promise-list", "reference"]
+statement = "{@@@@ は、参照ではなく、文字の {@@ として読む"
+rationale = "ほかの {@@ をすべて参照として読み、種類の書き間違いも含めて、壊れた参照をすべて誤りにするため"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "reference-broken"
+subjects = ["read-promise-list", "list-check-kinds", "reference"]
+statement = "{@@@@ でない {@@ が次のどれかに当たれば、promise-list-shape の誤りにする。{@@<種類>:<値>} の形でない。種類が id でない。指す ID の用語・機能・約束がない"
+rationale = "ID を変えたり消したりした時に、古い ID を指したままの参照を見落とさないため"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim]]
+id = "reference-fingerprint-raw"
+subjects = ["reference", "fingerprint"]
+statement = "指紋は、参照を置き換える前の、書いたままの文から作る"
+rationale = "参照先の名前や定義を変えても、参照元の合意を外さないため。参照先が変わった時に参照元をどう扱うかは、約束どうしの関係を定義する時に、関係ごとに決める"
+layers = ["cli", "api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
+id = "reference-shown"
+subjects = ["show-references", "reference"]
+statement = "画面では、用語と機能を指す参照をその名前に、約束を指す参照をその ID に置き換えて、参照だと分かる見た目で出す。約束を指す参照は、その約束の詳細へのリンクにする"
+rationale = "約束には名前がなく、ID だけでおよその意味が分かるように付けているため"
+layers = ["api", "gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "reference-popup"
+subjects = ["show-references", "reference"]
+statement = "参照に触れた時かフォーカスした時に、用語と機能ならその定義を、約束ならその文を出す"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim.evidence]]
+stage = "test"
+type = "human-review"
+layers = ["gui"]
+
+[[claim]]
+id = "reference-diff"
+subjects = ["show-references", "compare-contents", "reference"]
+statement = "差分は、比べる元と今の文の両方の参照を置き換えてから比べる。置き換える名前は、両方とも今の名前を使う。今はない用語・機能を指す参照だけ、比べる元の時点の名前を使う"
+rationale = "合意する人が、約束の詳細と同じ文で差分を読めるようにするため。比べる元にも今の名前を使うのは、参照先の名前を変えただけの所を、差として出さないため"
+layers = ["api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
+id = "reference-filter"
+subjects = ["show-references", "reference"]
+statement = "一覧を書いた文字で絞り込む時は、参照を置き換えた後の文に当てる"
+rationale = "利用者が読んでいるのは置き換えた後の文なので、画面に見える語で探せるようにするため"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
+layers = ["gui"]
 
 [[claim]]
 id = "promise-list-id-unique"
