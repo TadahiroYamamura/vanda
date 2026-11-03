@@ -27,6 +27,7 @@
 
 - `vanda doctor` は、作業ツリーの設定を読む
 - `.vanda/adapters/` のアダプタ（実行するファイル）と、`vanda check` に渡す審査の設定のファイルは、作業ツリーのものを使う
+- アノテーションの `.vanda/adapters/` のアダプタには、アノテーションを読むファイルの HEAD のコミットの中身を、標準入力の `content` で渡す（下の「`.vanda/adapters/` のアダプタ」）
 - 合意と取り消し（`POST /api/agree`・`POST /api/revoke`）は、作業ツリーのファイルを書き換えてコミットする。書き換えるファイルと合意の対象が書いてあるファイルにコミットしていない変更があれば断るので、合意する中身は HEAD の中身と同じになる
 
 ## 版
@@ -259,13 +260,16 @@ story = "#24"
 標準入力に渡すもの（UTF-8 の JSON）:
 
 ```json
-{"path": "docs/add-task.md", "annotations": [{"line": 2}, {"line": 7}]}
+{"path": "docs/add-task.md", "content": "# タスクを足す\n<!-- @vanda:evidence add-task -->\n…", "annotations": [{"line": 2}, {"line": 7}]}
 ```
 
 | 項目 | 中身 |
 |---|---|
 | `path` | ファイルのリポジトリの根からの `/` 区切りの場所 |
+| `content` | ファイルの HEAD のコミットの中身（上の「読む中身」）。`annotations[].line` の行は、この中身の行 |
 | `annotations[].line` | `@vanda:` のある行（1 から数える）。小さい順 |
+
+- アダプタは、作業ツリーのファイル（`path`）を開かず、`content` を読む。作業ツリーのファイルには、コミットしていない変更があることがあり、渡した行と中身が食い違うため。`path` は、名前を作る（ファイルの名前を名前にするなど）ときと、エラーのメッセージに使う
 
 標準出力に返すもの:
 

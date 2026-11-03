@@ -11,7 +11,7 @@ const path = require("path");
 
 function main() {
   const req = JSON.parse(fs.readFileSync(0, "utf8"));
-  const rows = fs.readFileSync(req.path, "utf8").split("\n");
+  const rows = req.content.split("\n");
   // 冒頭のコメントは、1 行目の #! と空行をはさんでよく、最初の命令の行（# でも空でもない行）の前で終わる
   let headEnd = rows.length;
   for (let i = 0; i < rows.length; i++) {

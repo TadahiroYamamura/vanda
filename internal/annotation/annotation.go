@@ -123,7 +123,7 @@ func ReadWith(root string, read tomlread.Reader, files []string, rules []config.
 			if len(lines) == 0 {
 				continue
 			}
-			names, _, aerrs := ua.ask(f, lines)
+			names, _, aerrs := ua.ask(f, src, lines)
 			errs = append(errs, aerrs...)
 			if len(aerrs) > 0 {
 				continue

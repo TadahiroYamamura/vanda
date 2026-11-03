@@ -358,7 +358,10 @@ type userAdapter struct {
 }
 
 type adapterRequest struct {
-	Path        string        `json:"path"`
+	Path string `json:"path"`
+	// Content は、HEAD のコミットの中身。アダプタが作業ツリーのファイルを読むと、コミットしていない変更があるときに、
+	// vanda が HEAD の中身から選んで渡した行と、アダプタが読む中身が食い違うため
+	Content     string        `json:"content"`
 	Annotations []requestLine `json:"annotations"`
 }
 
@@ -381,14 +384,14 @@ func (userAdapter) kinds() []string { return nil }
 
 func (userAdapter) comments(string, []byte) ([]string, []diag.Error) { return nil, nil }
 
-func (c userAdapter) names(file string, _ []byte, lines []int) (map[int]string, []diag.Error) {
-	out, _, errs := c.ask(file, lines)
+func (c userAdapter) names(file string, src []byte, lines []int) (map[int]string, []diag.Error) {
+	out, _, errs := c.ask(file, src, lines)
 	return out, errs
 }
 
-// ask は、@vanda: のある行 lines をアダプタに渡し、アノテーションの行の名前と、アノテーションでない行を返す。
-func (c userAdapter) ask(file string, lines []int) (map[int]string, map[int]bool, []diag.Error) {
-	req := adapterRequest{Path: file}
+// ask は、ファイルの中身 src と @vanda: のある行 lines をアダプタに渡し、アノテーションの行の名前と、アノテーションでない行を返す。
+func (c userAdapter) ask(file string, src []byte, lines []int) (map[int]string, map[int]bool, []diag.Error) {
+	req := adapterRequest{Path: file, Content: string(src)}
 	for _, l := range lines {
 		req.Annotations = append(req.Annotations, requestLine{Line: l})
 	}

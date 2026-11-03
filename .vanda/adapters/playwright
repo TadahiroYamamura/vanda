@@ -206,7 +206,7 @@ function calls(toks) {
 
 function main() {
   const req = JSON.parse(fs.readFileSync(0, "utf8"));
-  const src = fs.readFileSync(req.path, "utf8");
+  const src = req.content;
   const rows = src.split("\n");
   const { toks, comments, code } = lex(src);
   const all = calls(toks);
