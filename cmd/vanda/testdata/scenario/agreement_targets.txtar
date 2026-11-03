@@ -12,30 +12,36 @@ agree .vanda/agreements.toml '#1' term note fp/any.json
 agree .vanda/agreements.toml '#1' feature task-add fp/any.json
 agree .vanda/agreements.toml '#1' claim task-id-unique fp/any.json
 agree .vanda/agreements.toml '#1' file note.txt
+commit '審査する前にコミットする'
 exec vanda check .vanda/checks/targets.toml
 
 # ファイルの合意は、ファイルがなくなっても止めない
 rm note.txt
+commit '審査する前にコミットする'
 exec vanda check .vanda/checks/targets.toml
 
 # 約束を消す
 cp cases/without-claim.toml .vanda/promises.toml
+commit '審査する前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'agreements\.toml.*task-id-unique'
 ! stderr '(?m)^panic: '
 
 # 約束を消したことに合意すると、消した約束を指す合意の記録は誤りにしない（履歴として残る）
 agree -deleted .vanda/agreements.toml '#1' claim task-id-unique
+commit '審査する前にコミットする'
 exec vanda check .vanda/checks/targets.toml
 
 # 機能を消す
 cp cases/without-feature.toml .vanda/promises.toml
+commit '審査する前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'agreements\.toml.*task-add'
 ! stderr '(?m)^panic: '
 
 # 用語を消す
 cp cases/without-term.toml .vanda/promises.toml
+commit '審査する前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'agreements\.toml.*\bnote\b'
 ! stderr '(?m)^panic: '
@@ -44,6 +50,7 @@ stderr 'agreements\.toml.*\bnote\b'
 cp cases/all.toml .vanda/promises.toml
 cp cases/empty.toml .vanda/agreements.toml
 agree .vanda/agreements.toml '#1' term task-id-unique fp/any.json
+commit '審査する前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'agreements\.toml.*task-id-unique'
 ! stderr '(?m)^panic: '

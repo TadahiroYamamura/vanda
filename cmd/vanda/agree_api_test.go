@@ -882,8 +882,7 @@ func Test消したファイルは一覧に削除として前の中身と提案�
 	}
 }
 
-// RV-06: 今あるものを消したことには合意できない
-// @vanda:evidence review-deleted-shown
+// RV-06: 今あるものを消したことには合意できない。約束にはなく、docs/formats.md の POST /api/agree の deleted に書いてある振る舞い
 func Test今あるファイルを消したことへの合意は断る(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)

@@ -755,6 +755,7 @@ func TestAgreementは合意の対象のファイルの名前を変えたら古�
 		t.Fatal(err)
 	}
 	agreement := "[[check]]\nname = \"agreement\"\nscope = \"all\"\n"
+	r.commit("(test) 名前を変える", "#2")
 	_, out, _ := r.run(agreement, "", "")
 	expect(t, out, [][]string{
 		{"審査 agreement（all）: 失敗（2 件）"},
@@ -773,6 +774,7 @@ func TestAgreementは合意の対象のファイルの名前を変えたら古�
 		"[[agreement]]\nkind = \"file\"\nkey = \"" + fp + "\"\nfingerprint = \"" + fp + "\"\npath = \"e2e/added.txtar\"\nuser = { name = \"PO\", email = \"po@example.com\" }\nagreed_at = 2026-11-01T12:00:00Z\nstory = \"#2\"\n\n" +
 		"[[agreement]]\nkind = \"file\"\nkey = \"e2e/add.txtar\"\ndeleted = true\npath = \"e2e/add.txtar\"\nuser = { name = \"PO\", email = \"po@example.com\" }\nagreed_at = 2026-11-01T12:00:00Z\nstory = \"#2\"\n\n"
 	r.write(map[string]string{".vanda/agreements.toml": renamed})
+	r.commit("(test) 合意する", "#2")
 	if pass, out, _ := r.run(agreement+"[[check]]\nname = \"agreement-targets\"\nscope = \"all\"\n", "", ""); !pass {
 		t.Errorf("新しい場所に合意し、古い場所を消したことに合意しても止まる\n%s", out)
 	}
@@ -781,6 +783,7 @@ func TestAgreementは合意の対象のファイルの名前を変えたら古�
 	if err := os.Rename(filepath.Join(r.root, "e2e/added.txtar"), filepath.Join(r.root, "e2e/add.txtar")); err != nil {
 		t.Fatal(err)
 	}
+	r.commit("(test) 名前を元に戻す", "#2")
 	_, out, _ = r.run(agreement, "", "")
 	expect(t, out, [][]string{{"審査 agreement（all）: 失敗（1 件）"}, {".vanda/agreements.toml:", "ファイルを消したこと", "まだ合意していません"}})
 
@@ -792,6 +795,7 @@ func TestAgreementは合意の対象のファイルの名前を変えたら古�
 			t.Fatal(err)
 		}
 		r.write(map[string]string{f: string(src) + "\n"})
+		r.commit("(test) 中身を変える", "#2")
 		if pass, out, _ := r.run(agreement, "", ""); pass || !lineWith(out, f+": ") {
 			t.Errorf("%s の中身を変えても止まらない\n%s", f, out)
 		}

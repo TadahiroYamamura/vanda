@@ -199,7 +199,7 @@ describe("RV-06 合意する", () => {
     await waitFor(() => expect(reviewRequests().length).toBeGreaterThan(before));
   });
 
-  // @vanda:evidence agree-on-screen
+  // 約束にはなく、docs/formats.md の entries[].agree に書いてある振る舞い（外れた合意を解くために、合意済でも合意し直せる）
   it("合意済でもこのストーリーで合意できる件には合意のボタンを出し合意できない件には出さない", async () => {
     // ほかのストーリーの合意で合意済だが、このストーリーの合意が外れた件（API が合意できると答える）
     const reagree = claimEntry(1, "c-reagree", { state: "agreed", detachedAgreement: { by: ["#31"] }, agree: { possible: true, reason: null } });
