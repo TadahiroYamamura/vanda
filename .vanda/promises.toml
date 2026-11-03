@@ -118,7 +118,7 @@ definition = "実装のコードの中で、操作の後に約束が成り立っ
 [[term]]
 id = "story"
 name = "ストーリー"
-definition = "開発の単位。ストーリーの置き場所（GitHub Issues など）で管理し、コミットとは Story: のトレーラーで結ぶ"
+definition = "開発の単位。ストーリーストア（GitHub Issues など）で管理し、コミットとは Story: のトレーラーで結ぶ"
 
 [[term]]
 id = "agreement"
@@ -215,7 +215,7 @@ definition = "人が書いたもの（設定・約束リスト・合意の記録
 [[term]]
 id = "error"
 name = "エラー"
-definition = "vanda や、vanda が呼んだもの（アダプタ・git・ストーリーの置き場所など）が、処理を続けられずに失敗すること。0 以外の終了コードや、API の 4xx・5xx で返す。例: アダプタが 0 以外で終わった、GitHub に繋がらない"
+definition = "vanda や、vanda が呼んだもの（アダプタ・git・ストーリーストアなど）が、処理を続けられずに失敗すること。0 以外の終了コードや、API の 4xx・5xx で返す。例: アダプタが 0 以外で終わった、GitHub に繋がらない"
 
 [[term]]
 id = "flag"
@@ -230,12 +230,12 @@ definition = "仕様・テスト・本番のコードに書く注釈。約束な
 [[term]]
 id = "adapter"
 name = "アダプタ"
-definition = "vanda と、言語や道具・ストーリーの置き場所・ガードレールの定義とのあいだで受け渡しをする部品。vanda が組込みで持つもの（組込みのアダプタ）と、プロジェクトが .vanda/adapters/ に置くものがある"
+definition = "vanda と、言語や道具・ストーリーストア・ガードレールの定義とのあいだで受け渡しをする部品。vanda が組込みで持つもの（組込みのアダプタ）と、プロジェクトが .vanda/adapters/ に置くものがある"
 
 [[term]]
 id = "builtin-adapter"
 name = "組込みのアダプタ"
-definition = "vanda が中に持つアダプタ（アノテーションの go・txtar・tla・sql・ts、ストーリーの置き場所の github、ガードレールの定義の file）。アノテーションとストーリーの置き場所では、同じ名前のアダプタを .vanda/adapters/ に置くと、そちらが使われる"
+definition = "vanda が中に持つアダプタ（アノテーションの go・txtar・tla・sql・ts、ストーリーストアの github、ガードレールの定義の file）。アノテーションとストーリーストアでは、同じ名前のアダプタを .vanda/adapters/ に置くと、そちらが使われる"
 part_of = "adapter"
 
 [[term]]
@@ -248,6 +248,11 @@ part_of = "adapter"
 id = "fingerprint"
 name = "指紋"
 definition = "中身が同じかを比べるための値。合意の記録は、合意した時の指紋を持つ"
+
+[[term]]
+id = "story-store"
+name = "ストーリーストア"
+definition = "ストーリーを書いて置いておく所。例: GitHub Issues。vanda はここからストーリーを読む"
 
 [[term]]
 id = "story-trailer"
@@ -306,8 +311,8 @@ definition = "比べるベースブランチを、画面でその場で選ぶ。
 
 [[feature]]
 id = "connect-story-store"
-name = "ストーリーの置き場所と連携する"
-definition = "ストーリーの置き場所から、ストーリーの題・本文・添付ファイルを読む。置き場所はアダプタで差し替えられる"
+name = "ストーリーストアと連携する"
+definition = "ストーリーストアから、ストーリーの題・本文・添付ファイルを読む。ストーリーストアはアダプタで差し替えられる"
 
 [[feature]]
 id = "store-config"
@@ -411,7 +416,7 @@ definition = "由来のコミットや合意の記録を選ぶと、その時点
 [[feature]]
 id = "diagnose-setup"
 name = "設定とつながりを確かめる（vanda doctor）"
-definition = "今効いている設定と版と、ストーリーの置き場所につながるかを確かめる"
+definition = "今効いている設定と版と、ストーリーストアにつながるかを確かめる"
 
 [[feature]]
 id = "run-checks"
@@ -2254,7 +2259,7 @@ layers = ["cli"]
 [[claim]]
 id = "doctor-ok-line"
 subjects = ["diagnose-setup"]
-statement = "vanda doctor は、設定と版に誤りがなく、かつ（ストーリーの置き場所が設定にあれば）そこにつながった時だけ、標準出力に 1 行を出して終了コード 0 で終わる。どれかに誤りかエラーがあれば、それを標準エラーに出して終了コード 1 で終わる"
+statement = "vanda doctor は、設定と版に誤りがなく、かつ（ストーリーストアが設定にあれば）そこにつながった時だけ、標準出力に 1 行を出して終了コード 0 で終わる。どれかに誤りかエラーがあれば、それを標準エラーに出して終了コード 1 で終わる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2271,7 +2276,7 @@ layers = ["cli"]
 [[claim]]
 id = "doctor-github-issues"
 subjects = ["diagnose-setup", "connect-story-store"]
-statement = "vanda doctor は、ストーリーの置き場所が組込みの github なら、GET <api_url>/repos/<repository> を呼んで、Issues が使えるかを確かめる"
+statement = "vanda doctor は、ストーリーストアが組込みの github なら、GET <api_url>/repos/<repository> を呼んで、Issues が使えるかを確かめる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2305,8 +2310,8 @@ layers = ["cli"]
 [[claim]]
 id = "doctor-project-adapter"
 subjects = ["diagnose-setup", "run-custom-adapters"]
-statement = "vanda doctor は、ストーリーの置き場所がカスタムアダプタなら、そこにあって実行できるかを確かめる"
-rationale = "vanda doctor は、今効いている設定と、ストーリーの置き場所などとのつながりを確かめる機能で、カスタムアダプタでは、そこにあって実行できることが、つながることに当たるため"
+statement = "vanda doctor は、ストーリーストアがカスタムアダプタなら、そこにあって実行できるかを確かめる"
+rationale = "vanda doctor は、今効いている設定と、ストーリーストアなどとのつながりを確かめる機能で、カスタムアダプタでは、そこにあって実行できることが、つながることに当たるため"
 condition = "アノテーションを読むカスタムアダプタは、vanda doctor では確かめない"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -2578,7 +2583,7 @@ layers = ["gui"]
 [[claim]]
 id = "context-story-store"
 subjects = ["connect-story-store", "story"]
-statement = "設定にストーリーの置き場所がなければ、画面はストーリーを読みに行かず、置き場所が設定にないことを注記で出す"
+statement = "設定にストーリーストアがなければ、画面はストーリーを読みに行かず、ストーリーストアが設定にないことを注記で出す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -2660,7 +2665,7 @@ layers = ["api"]
 [[claim]]
 id = "story-github-token-missing"
 subjects = ["connect-story-store", "story"]
-statement = "api_url のホストに合う認証キーが見つからなければ、GitHub への要求を送らずに、ストーリーの置き場所のエラーにする"
+statement = "api_url のホストに合う認証キーが見つからなければ、GitHub への要求を送らずに、ストーリーストアのエラーにする"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2685,7 +2690,7 @@ layers = ["api"]
 [[claim]]
 id = "story-errors"
 subjects = ["connect-story-store", "story"]
-statement = "状態コードは次のとおりにする。ストーリーの置き場所が設定にない時と、組込みの github で Issue がない時は 404。ストーリーの ID が id_pattern に合わない（github では、ID に Issue の番号がない）時は 400。認証・ネットワーク・アダプタのエラーは 502。どれも、ストーリーの置き場所かアダプタが返した理由をそのまま出す"
+statement = "状態コードは次のとおりにする。ストーリーストアが設定にない時と、組込みの github で Issue がない時は 404。ストーリーの ID が id_pattern に合わない（github では、ID に Issue の番号がない）時は 400。認証・ネットワーク・アダプタのエラーは 502。どれも、ストーリーストアかアダプタが返した理由をそのまま出す"
 condition = "カスタムアダプタは、ストーリーがないことを 404 として伝える手段を持たないので、ないストーリーも 502 になる"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -2703,7 +2708,7 @@ layers = ["api"]
 [[claim]]
 id = "story-project-adapter"
 subjects = ["connect-story-store", "run-custom-adapters"]
-statement = "ストーリーの置き場所がカスタムアダプタなら、標準入力に {\"action\": \"read\", \"story\": <ID>} を渡し、標準出力の title・body・url・attachments を読む"
+statement = "ストーリーストアがカスタムアダプタなら、標準入力に {\"action\": \"read\", \"story\": <ID>} を渡し、標準出力の title・body・url・attachments を読む"
 condition = "ストーリーがない・認証が通らないなどで返せない時は、アダプタが 0 でない終了コードで終わって標準エラーに理由を書き、vanda はそれを 502 の理由としてそのまま出す"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -3796,7 +3801,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-store-choices"
 subjects = ["create-vanda-dir", "connect-story-store"]
-statement = "ストーリーの置き場所は、GitHub Issues・カスタムアダプタ・「使わない」から選ばせ、ID の書き方の既定は選んだアダプタが持つものにする"
+statement = "ストーリーストアは、GitHub Issues・カスタムアダプタ・「使わない」から選ばせ、ID の書き方の既定は選んだアダプタが持つものにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -3813,7 +3818,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-no-store-id-pattern"
 subjects = ["create-vanda-dir", "connect-story-store"]
-statement = "ストーリーの置き場所にカスタムアダプタか「使わない」を選んだ時は、ストーリーの ID の書き方の問いを、既定の答えのない空の状態から始める"
+statement = "ストーリーストアにカスタムアダプタか「使わない」を選んだ時は、ストーリーの ID の書き方の問いを、既定の答えのない空の状態から始める"
 rationale = "GitHub 以外では ID の形を推し量れず、カスタムアダプタは init の時点ではまだないので既定を聞けないため。既定を勝手に入れると、気づかずにそのまま進みうる"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -4094,7 +4099,7 @@ layers = ["cli"]
 [[claim]]
 id = "story-shown-on-screen"
 subjects = ["connect-story-store", "story"]
-statement = "ストーリーの置き場所が設定にあれば、レビューの画面に、ストーリーの題・本文・添付ファイルへのリンクを出す"
+statement = "ストーリーストアが設定にあれば、レビューの画面に、ストーリーの題・本文・添付ファイルへのリンクを出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4111,7 +4116,7 @@ layers = ["gui"]
 [[claim]]
 id = "story-open-link"
 subjects = ["connect-story-store", "story"]
-statement = "ストーリーに置き場所の URL があれば、「置き場所で開く」のリンクを出す"
+statement = "ストーリーにストーリーストアの URL があれば、「ストーリーストアで開く」のリンクを出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4135,7 +4140,7 @@ layers = ["gui"]
 [[claim]]
 id = "story-error-shown-on-screen"
 subjects = ["connect-story-store", "story"]
-statement = "ストーリーを読めない時（ネットワークや認証のエラーなど）は、画面にストーリーの置き場所が返した理由をそのまま出し、黙って空にしない"
+statement = "ストーリーを読めない時（ネットワークや認証のエラーなど）は、画面にストーリーストアが返した理由をそのまま出し、黙って空にしない"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4417,7 +4422,7 @@ layers = ["gui"]
 id = "story-body-markdown"
 subjects = ["connect-story-store", "story"]
 statement = "ストーリーの本文を Markdown として描き（見出し・箇条書き・表・コード・リンク）、生の HTML は要素にしない"
-rationale = "ストーリーの置き場所から読んだ本文の HTML を、vanda の画面の中で動かさないため（CLAUDE.md の依存の表の react-markdown の行）"
+rationale = "ストーリーストアから読んだ本文の HTML を、vanda の画面の中で動かさないため（CLAUDE.md の依存の表の react-markdown の行）"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4430,7 +4435,7 @@ layers = ["gui"]
 [[claim]]
 id = "story-links-new-tab"
 subjects = ["connect-story-store", "story"]
-statement = "ストーリーの本文のリンク・「置き場所で開く」のリンク・添付ファイルのリンクは新しいタブで開き、開いた先から vanda の画面に戻って操れないようにする"
+statement = "ストーリーの本文のリンク・「ストーリーストアで開く」のリンク・添付ファイルのリンクは新しいタブで開き、開いた先から vanda の画面に戻って操れないようにする"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）", "開いた先から戻れないようにするのは、開いたページに vanda の画面を操らせないためだと推し量った"]
