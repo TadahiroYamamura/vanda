@@ -1084,9 +1084,20 @@ describe("参照", () => {
   // jsdom は描かないので、下線や色そのものは見ない
   const expectRefLook = (el: HTMLElement | undefined, name: string, where: string) => {
     expect(el, `${where}: 参照 ${name} が、フォーカスできる要素で出ていない`).toBeTruthy();
-    const parent = el!.parentElement!;
-    expect((parent.textContent ?? "").length, `${where}: 参照 ${name} が、前後の文字と同じ要素に入っている`).toBeGreaterThan((el!.textContent ?? "").length);
+    expect((el!.textContent ?? "").startsWith(name), `${where}: 参照 ${name} の要素が、前の文字も含んでいる`).toBe(true);
+    // 参照だけを包む要素が重なることがある（差分の 1 つずつを包む要素など）ので、参照より多くの文字を持つ祖先（前後の文字も含む要素）まで上って比べる
+    let parent = el!.parentElement;
+    while (parent && (parent.textContent ?? "").length <= (el!.textContent ?? "").length) parent = parent.parentElement;
+    expect(parent, `${where}: 参照 ${name} の前後の文字を含む要素がない`).toBeTruthy();
+    if (!parent) return;
     expect(el!.tagName + " " + el!.className, `${where}: 参照 ${name} の見た目が、囲む要素と同じ`).not.toBe(parent.tagName + " " + parent.className);
+    // 前後の参照でない文字を包む要素（ほかの参照の中のものを除く）とも、見た目の印が違う
+    const look = (x: Element) => x.tagName + " " + x.className;
+    const inRef = (x: Element) => x.closest("[tabindex], a[href]") !== null;
+    for (const other of Array.from(parent.querySelectorAll("*"))) {
+      if (other.children.length > 0 || !(other.textContent ?? "").trim() || other.contains(el!) || el!.contains(other) || inRef(other)) continue;
+      expect(look(el!), `${where}: 参照 ${name} の見た目が、参照でない文字「${other.textContent}」と同じ`).not.toBe(look(other));
+    }
   };
 
   // @vanda:evidence reference-shown
