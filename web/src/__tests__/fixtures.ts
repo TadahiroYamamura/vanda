@@ -44,6 +44,7 @@ export function claimEntry(no: number, id: string, over: Partial<Entry> = {}): E
       evidence: [{ stage: "implementation", type: "unit-test", layers: ["model"], detail: null }],
       flags: [],
       guesses: [],
+      modelCheckWaiver: null,
     },
     after: {
       statement: `${id} の後の文`,
@@ -54,6 +55,7 @@ export function claimEntry(no: number, id: string, over: Partial<Entry> = {}): E
       evidence: [{ stage: "implementation", type: "unit-test", layers: ["model"], detail: null }],
       flags: [],
       guesses: [],
+      modelCheckWaiver: null,
     },
     detachedAgreement: null,
     agree: { possible: true, reason: null },

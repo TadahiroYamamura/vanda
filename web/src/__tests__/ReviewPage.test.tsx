@@ -829,6 +829,7 @@ describe("RV-01 一覧の絞り込み", () => {
     evidence: [],
     flags: [],
     guesses: [],
+    modelCheckWaiver: null,
   });
 
   // 書く文字は大文字と小文字を混ぜ、当たる側も、見る所ごとに大文字・小文字を変える

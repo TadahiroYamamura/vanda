@@ -378,11 +378,11 @@ func Test変更前と変更後の中身は約束リストに書いたとおり�
 		key, before, after string
 	}{
 		{"a-db",
-			`{"statement":"DB の約束","rationale":null,"condition":null,"subjects":["t-keep"],"layers":["db"],"evidence":[{"stage":"implementation","type":"guardrail","layers":["db"],"detail":null}],"flags":[],"guesses":[]}`,
-			`{"statement":"DB の約束（改）","rationale":"理由","condition":"条件","subjects":["t-keep"],"layers":["db"],"evidence":[{"stage":"implementation","type":"guardrail","layers":["db"],"detail":"制約で拒む"}],"flags":[],"guesses":[]}`},
+			`{"statement":"DB の約束","rationale":null,"condition":null,"subjects":["t-keep"],"layers":["db"],"evidence":[{"stage":"implementation","type":"guardrail","layers":["db"],"detail":null}],"flags":[],"guesses":[],"modelCheckWaiver":null}`,
+			`{"statement":"DB の約束（改）","rationale":"理由","condition":"条件","subjects":["t-keep"],"layers":["db"],"evidence":[{"stage":"implementation","type":"guardrail","layers":["db"],"detail":"制約で拒む"}],"flags":[],"guesses":[],"modelCheckWaiver":null}`},
 		{"flag-3",
-			`{"statement":"v0","rationale":null,"condition":null,"subjects":["t-keep"],"layers":["model"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["model"],"detail":null}],"flags":[],"guesses":[]}`,
-			`{"statement":"v1","rationale":null,"condition":null,"subjects":["t-keep"],"layers":["model"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["model"],"detail":null}],"flags":["ai-proposal"],"guesses":["確かめていない"]}`},
+			`{"statement":"v0","rationale":null,"condition":null,"subjects":["t-keep"],"layers":["model"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["model"],"detail":null}],"flags":[],"guesses":[],"modelCheckWaiver":null}`,
+			`{"statement":"v1","rationale":null,"condition":null,"subjects":["t-keep"],"layers":["model"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["model"],"detail":null}],"flags":["ai-proposal"],"guesses":["確かめていない"],"modelCheckWaiver":null}`},
 		{"t-mod", `{"name":"変える用語","definition":"前","partOf":null}`, `{"name":"変える用語","definition":"後","partOf":"t-keep"}`},
 		{"t-del", `{"name":"消す用語","definition":"消す","partOf":null}`, `null`},
 		{"f-mod", `{"name":"変える機能","definition":"前","core":true,"formal":false,"formalWaiver":"理由 1"}`,
