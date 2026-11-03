@@ -471,6 +471,7 @@ func TestAgreementの範囲storyはそのストーリーで変わったものだ
 		t.Fatalf("pass=%v err=%v\n%s", pass, err, out)
 	}
 	r.write(map[string]string{".vanda/promises.toml": strings.Replace(basePromises, "やること", "すること", 1)})
+	r.commit("(feat) 用語を変える", "#2")
 	_, out, _ = r.run(storyAgreement, "main", "")
 	expect(t, out, [][]string{{"審査 agreement（story #2）: 失敗（1 件）"}, {".vanda/promises.toml:2: ", "用語 task の今の中身", "合意"}})
 }
@@ -493,6 +494,8 @@ func TestAgreementの範囲storyはほかのストーリーが合意してもそ
 	if !pass {
 		t.Fatalf("#2 の範囲は通るはず:\n%s", out)
 	}
+	// トレーラーのストーリーが #1・#2 の 2 つになるので、--story で #1 を選べる
+	r.commit("(chore) ストーリー #1 の作業", "#1")
 	_, out, _ = r.run(storyAgreement, "main", "#1")
 	expect(t, out, [][]string{{"審査 agreement（story #1）: 失敗（1 件）"}, {".vanda/promises.toml:2: ", "用語 task の", "ストーリー #1 の合意が外れ"}})
 }
@@ -518,34 +521,40 @@ func Test指紋の合わない合意の記録は誤りにせず外れた合意�
 	allAgreement := "[[check]]\nname = \"agreement\"\nscope = \"all\"\n[[check]]\nname = \"agreement-targets\"\nscope = \"all\"\n"
 
 	// 変えただけでは、今の中身に合う記録がないので提案中
+	r.commit("(feat) 用語を変える", "#2")
 	_, out, _ := r.run(allAgreement, "", "")
 	expect(t, out, [][]string{{"審査 agreement（all）: 失敗（1 件）"}, {".vanda/promises.toml:2: ", "用語 task の今の中身", "まだ合意していません"}, {"審査 agreement-targets（all）: 通った"}})
 
 	// #2 が今の中身に合意すると合意済。#1 の古い記録は指紋が合わなくても誤りにならない
 	r.agreeAll("#2", cfg, old)
 	withTwo := readAgreements()
+	r.commit("(feat) 用語に合意する", "#2")
 	pass, out, _ := r.run(allAgreement, "", "")
 	if !pass {
 		t.Fatalf("#2 の合意で全部の範囲が通るはず:\n%s", out)
 	}
-	r.commit("(feat) 用語を変える", "#2")
-	// #1 は前に合意し、今の中身に #1 の合意がないので外れたまま（#2 が合意していても）
+	// #1 は前に合意し、今の中身に #1 の合意がないので外れたまま（#2 が合意していても）。
+	// トレーラーのストーリーが #1・#2 の 2 つになるので、--story で #1 を選べる
+	r.commit("(chore) ストーリー #1 の作業", "#1")
 	_, out, _ = r.run(storyAgreement, "main", "#1")
 	expect(t, out, [][]string{{"審査 agreement（story #1）: 失敗（1 件）"}, {".vanda/promises.toml:2: ", "用語 task の", "ストーリー #1 の合意が外れ"}})
 
 	// #1 が今の中身に合意し直すと、#1 の範囲も通る
 	r.agreeAll("#1", cfg, withTwo)
+	r.commit("(feat) 用語に合意し直す", "#1")
 	if pass, out, _ := r.run(storyAgreement, "main", "#1"); !pass {
 		t.Fatalf("#1 が合意し直したら通るはず:\n%s", out)
 	}
 
 	// #2 の記録を除いても、#1 の今の中身への記録が残るので合意済のまま
 	r.agreeAll("#1", cfg, old)
+	r.commit("(chore) #2 の記録を除く", "#1")
 	if pass, out, _ := r.run(allAgreement, "", ""); !pass {
 		t.Fatalf("#2 の記録を除いても #1 の記録で合意済のはず:\n%s", out)
 	}
 	// 今の中身に合う記録をすべて除くと、提案中に戻る
 	r.write(map[string]string{".vanda/agreements.toml": old})
+	r.commit("(chore) 今の中身への記録を除く", "#1")
 	_, out, _ = r.run(allAgreement, "", "")
 	expect(t, out, [][]string{{"審査 agreement（all）: 失敗（1 件）"}, {".vanda/promises.toml:2: ", "用語 task の今の中身", "まだ合意していません"}})
 }
@@ -564,12 +573,23 @@ func TestRunは範囲storyのストーリーが決まらなければ止める(t 
 		t.Errorf("ID 0 個: %v", err)
 	}
 	r.commit("(chore) 直す", "#3")
+	// トレーラーのストーリーが #3 だけなら、違う --story は審査を始める前に止め、同じ --story なら止めない
+	if _, out, err := r.run(storyAgreement, "main", "#5"); err == nil || !strings.Contains(err.Error(), "#5") || !strings.Contains(err.Error(), "#3") || out != "" {
+		t.Errorf("トレーラーと違う --story: err=%v out=%q", err, out)
+	}
+	if _, _, err := r.run(storyAgreement, "main", "#3"); err != nil {
+		t.Errorf("トレーラーと同じ --story: %v", err)
+	}
 	r.commit("(chore) さらに直す", "#4")
 	if _, _, err := r.run(storyAgreement, "main", ""); err == nil || !lineWith(err.Error(), "", "ストーリーの ID が #3・#4", "--story <ID>") {
 		t.Errorf("ID 2 個: %v", err)
 	}
 	if _, _, err := r.run(storyAgreement, "main", "3"); err == nil || !strings.Contains(err.Error(), "--story 3 が、ストーリーの ID の書き方") {
 		t.Errorf("--story の形: %v", err)
+	}
+	// 範囲がすべて all で、ストーリーを使わない審査の設定でも、--story の形は確かめる
+	if _, out, err := r.run("[[check]]\nname = \"unread-files\"\nscope = \"all\"\n", "", "3"); err == nil || !strings.Contains(err.Error(), "--story 3 が、ストーリーの ID の書き方") || out != "" {
+		t.Errorf("範囲 all の --story の形: err=%v out=%q", err, out)
 	}
 	if _, _, err := r.run("[[check]]\nname = \"story-origin\"\nscope = \"story\"\n", "main", ""); err != nil {
 		t.Errorf("story-origin はストーリーを決めない: %v", err)
