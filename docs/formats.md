@@ -116,6 +116,7 @@ condition = "…"
 layers = ["model", "db"]
 flags = ["ai-proposal"]
 guesses = ["…"]
+model_check_waiver = "…"
 
 [[claim.evidence]]
 stage = "implementation"
@@ -138,6 +139,7 @@ detail = "…"
 | | `rationale`・`condition` | 文字列 | 省いてよい |
 | | `flags` | 文字列の配列（`ai-proposal` だけ） | 省いてよい |
 | | `guesses` | 文字列の配列 | 省いてよい |
+| | `model_check_waiver` | 文字列 | TLA+ で確かめない理由。形式手法を使う機能（`formal` が真。省けば `core` と同じ）を `subjects` に持つ約束には、`type = "model-check"` の予定とこれのどちらか一方だけを書く（どちらもないか両方あれば誤り） |
 | | `[[claim.evidence]]` | 表の配列 | 必ず。1 つ以上 |
 | `[[claim.evidence]]` | `stage` | 文字列（`plan`・`implementation`・`release`・`operation`） | 必ず |
 | | `type` | 文字列（`docs/spec.md` の「エビデンスのタイプ」の値） | 必ず |
@@ -341,7 +343,7 @@ scope = "story"
 
 | 審査 | 確かめること |
 |---|---|
-| `promise-list-shape` | 読み込みの誤り（TOML、型、必須の項目、決まっていない表と項目）。ID の形と重なり。`part_of` の先が用語にあり、循環しない。`subjects` の先が用語か機能にある。`layers` が設定のレイヤーにある。エビデンスの `layers` が約束の `layers` の中にある。約束のどのレイヤーにもエビデンスがある。`stage`・`type`・`flags` が決まった値。`formal_waiver` の決まり |
+| `promise-list-shape` | 読み込みの誤り（TOML、型、必須の項目、決まっていない表と項目）。ID の形と重なり。`part_of` の先が用語にあり、循環しない。`subjects` の先が用語か機能にある。`layers` が設定のレイヤーにある。エビデンスの `layers` が約束の `layers` の中にある。約束のどのレイヤーにもエビデンスがある。`stage`・`type`・`flags` が決まった値。`formal_waiver` の決まり。形式手法を使う機能を `subjects` に持つ約束に、`model-check` の予定と `model_check_waiver` のどちらか一方だけがある |
 | `annotation-links` | アノテーションの読み込みの誤り。`term` は用語を、`feature` は機能を、`claim`・`evidence`・`sensor` は約束を指す。TLA+ の仕様の型（下）に `term` か `internal` があり、`feature` がない。`term` も `internal` もない誤りは型の定義の行を、`feature` を付けた誤りはそのアノテーションの行を指す |
 | `story-origin` | 分かれた点より後の、合流でないコミットのうち、約束リストのファイル（今のパターンで決める）を変えたものに、`Story:` のトレーラーがある。トレーラーの誤り（2 つ以上、`id_pattern` に合わない）も、そのコミットの誤りにする |
 | `agreement` | 合意の対象（約束・用語・機能と、`types` に `scenario-test` か `model-check` を含む `[[annotation]]` のパターンに当たるファイルと、`[[guardrail]]` の `paths` に当たるファイル。どのアダプタで読むかによらない。`types` がどちらも含まないパターン（Go のテストなど）だけに当たるファイルは対象にしない）の今の中身が合意済。約束に `flags`・`guesses` が残っていない。中身に合意したことのある約束・用語・機能・合意の対象のファイルが今なければ、消したことへの合意がある。範囲 `story` では、そのストーリーで変わったものだけを見て（分かれた点にあって今ないものは、合意したことがあるかによらず、消したことへの合意を求める）、さらに、そのストーリーの外れた合意（下）も誤りにする |
@@ -494,8 +496,8 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
       "fingerprint": "sha256:…",
       "flags": ["ai-proposal", "changed-since-agreement"],
       "group": "layer:model",
-      "before": {"statement": "…", "rationale": "…", "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [{"stage": "implementation", "type": "unit-test", "layers": ["model"], "detail": null}], "flags": [], "guesses": []},
-      "after": {"statement": "…", "rationale": "…", "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [], "flags": ["ai-proposal"], "guesses": []},
+      "before": {"statement": "…", "rationale": "…", "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [{"stage": "implementation", "type": "unit-test", "layers": ["model"], "detail": null}], "flags": [], "guesses": [], "modelCheckWaiver": null},
+      "after": {"statement": "…", "rationale": "…", "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [], "flags": ["ai-proposal"], "guesses": [], "modelCheckWaiver": null},
       "detachedAgreement": null,
       "otherCommits": []
     },
@@ -545,7 +547,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 
 | `kind` | 中身 |
 |---|---|
-| `claim` | `statement`・`rationale`・`condition`・`subjects`・`layers`・`evidence`（`stage`・`type`・`layers`・`detail` の配列）・`flags`・`guesses` |
+| `claim` | `statement`・`rationale`・`condition`・`subjects`・`layers`・`evidence`（`stage`・`type`・`layers`・`detail` の配列）・`flags`・`guesses`・`modelCheckWaiver`（書いていなければ `null`） |
 | `term` | `name`・`definition`・`partOf` |
 | `feature` | `name`・`definition`・`core`・`formal`・`formalWaiver` |
 | `file` | `text`（ファイルの中身） |
@@ -595,7 +597,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | 項目 | 中身 |
 |---|---|
 | `fields` | 文字の項目ごとの、文字の単位の差分（`DiffMain` の後に `DiffCleanupSemantic`）。`op` は `equal`・`delete`・`insert`。`equal` と `delete` をつなげると変更前、`equal` と `insert` をつなげると変更後になる |
-| 対象の項目 | 約束は `statement`・`rationale`・`condition`、用語は `name`・`definition`、機能は `name`・`definition`・`formalWaiver`。変更前と変更後の両方に書いてある項目だけを入れ、片方にしかない項目は入れない（画面は、`before`・`after` の値をそのまま見せる）。変わっていない項目も、`equal` の 1 つとして入れる |
+| 対象の項目 | 約束は `statement`・`rationale`・`condition`・`modelCheckWaiver`、用語は `name`・`definition`、機能は `name`・`definition`・`formalWaiver`。変更前と変更後の両方に書いてある項目だけを入れ、片方にしかない項目は入れない（画面は、`before`・`after` の値をそのまま見せる）。変わっていない項目も、`equal` の 1 つとして入れる |
 
 - 配列の項目（`subjects`・`layers`・`guesses`）と真偽の項目は、差分を作らない。画面は `before`・`after` を並べて見せる
 - 約束のエビデンスの予定（`evidence`）は、エビデンスの単位の差分を `diff.evidence` に入れる（約束でなければ省く）
@@ -705,7 +707,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 あるコミットの時点の約束の中身（CL-08）。由来の `commit` か、合意の履歴の `commit` を渡す。
 
 ```json
-{"id": "task-id-unique", "commit": "0123abcd…", "date": "2026-10-31T12:00:00+09:00", "subject": "(feat) …", "stories": ["#24"], "content": {"statement": "…", "rationale": null, "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [], "flags": [], "guesses": []}}
+{"id": "task-id-unique", "commit": "0123abcd…", "date": "2026-10-31T12:00:00+09:00", "subject": "(feat) …", "stories": ["#24"], "content": {"statement": "…", "rationale": null, "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [], "flags": [], "guesses": [], "modelCheckWaiver": null}}
 ```
 
 - `content` は、その時点の約束リストの項目（形は `/api/review` の `before`・`after` の `claim` と同じ）

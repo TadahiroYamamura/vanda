@@ -7,6 +7,7 @@ import (
 
 	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/diag"
+	"github.com/TadahiroYamamura/vanda/internal/promises"
 )
 
 var Stages = []string{"plan", "implementation", "release", "operation"}
@@ -80,7 +81,15 @@ func (e *env) promiseListShape() []diag.Error {
 		}
 	}
 
+	formal := map[string]bool{}
+	for _, f := range e.list.Features {
+		if it, ok := where[f.ID]; ok && it.table == f.Table {
+			formal[f.ID] = f.Formal
+		}
+	}
+
 	for _, c := range e.list.Claims {
+		errs = append(errs, formalClaim(c, formal)...)
 		for _, s := range c.Subjects {
 			if k := kindOf(s); k != "term" && k != "feature" {
 				errs = append(errs, c.Table.Err("subjects", "subjects の "+quote(s)+" が用語にも機能にもありません"+notKind(k), "subjects に、約束リストにある用語か機能の ID を書いてください"))
@@ -171,4 +180,32 @@ func orNone(xs []string) string {
 		return "（設定にレイヤーがありません）"
 	}
 	return strings.Join(xs, "・")
+}
+
+// formalClaim は、形式手法を使う機能を subjects に持つ約束に、model-check の予定と model_check_waiver のどちらか一方だけがあるかを確かめる。
+func formalClaim(c *promises.Claim, formal map[string]bool) []diag.Error {
+	var features []string
+	for _, s := range c.Subjects {
+		if formal[s] {
+			features = append(features, s)
+		}
+	}
+	if len(features) == 0 {
+		return nil
+	}
+	planned := false
+	for _, ev := range c.Evidence {
+		if ev.Type == "model-check" {
+			planned = true
+		}
+	}
+	waiver := c.Table.Has("model_check_waiver")
+	which := "形式手法を使う機能（" + strings.Join(features, "・") + "）"
+	switch {
+	case !planned && !waiver:
+		return []diag.Error{c.Table.Err("subjects", "約束 "+c.ID+" は"+which+"を subjects に持ちますが、model-check の予定も、TLA+ で確かめない理由（model_check_waiver）もありません", "type = \"model-check\" の [[claim.evidence]] を足すか、model_check_waiver に理由を書いてください")}
+	case planned && waiver:
+		return []diag.Error{c.Table.Err("model_check_waiver", "約束 "+c.ID+" に、model-check の予定と、TLA+ で確かめない理由（model_check_waiver）の両方があります", "TLA+ で確かめるなら model_check_waiver を消し、確かめないなら model-check の予定を消してください")}
+	}
+	return nil
 }

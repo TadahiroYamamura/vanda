@@ -51,6 +51,8 @@ type Claim struct {
 	Flags     []string
 	Guesses   []string
 	Evidence  []*Evidence
+	// ModelCheckWaiver は、TLA+ で確かめない理由。書いていなければ空
+	ModelCheckWaiver string
 }
 
 type Evidence struct {
@@ -127,6 +129,7 @@ func (l *List) read(top *tomlread.Table) {
 		x.Layers = nonEmpty(t, "layers", "レイヤーの ID")
 		x.Flags, _ = t.Strs("flags", false)
 		x.Guesses, _ = t.Strs("guesses", false)
+		x.ModelCheckWaiver, _ = t.Str("model_check_waiver", false)
 		evs, ok := t.Tables("evidence", true)
 		if ok && len(evs) == 0 {
 			t.ErrAt("evidence", "evidence が 1 つもありません", "[[claim.evidence]] を 1 つ以上書いてください")
@@ -140,7 +143,7 @@ func (l *List) read(top *tomlread.Table) {
 			et.Unknown("stage, type, layers, detail")
 			x.Evidence = append(x.Evidence, e)
 		}
-		t.Unknown("id, subjects, statement, rationale, condition, layers, flags, guesses, evidence")
+		t.Unknown("id, subjects, statement, rationale, condition, layers, flags, guesses, evidence, model_check_waiver")
 		l.Claims = append(l.Claims, x)
 	}
 	top.Unknown("term, feature, claim")

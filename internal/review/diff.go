@@ -177,6 +177,7 @@ func itemDiff(before, after any) ItemDiff {
 		add("statement", &b.Statement, &a.Statement)
 		add("rationale", b.Rationale, a.Rationale)
 		add("condition", b.Condition, a.Condition)
+		add("modelCheckWaiver", b.ModelCheckWaiver, a.ModelCheckWaiver)
 		out.Evidence = evidenceDiff(b.Evidence, a.Evidence)
 	case TermContent:
 		a, _ := after.(TermContent)

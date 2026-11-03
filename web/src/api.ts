@@ -45,6 +45,7 @@ export interface ClaimContent {
   evidence: EvidenceContent[];
   flags: string[];
   guesses: string[];
+  modelCheckWaiver: string | null;
 }
 
 export interface TermContent {

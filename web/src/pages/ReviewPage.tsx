@@ -530,6 +530,7 @@ function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
         ["対象", x.subjects.join("・")],
         ["レイヤー", x.layers.join("・")],
         ["エビデンスの予定", x.evidence.map((ev) => `${stageLabel[ev.stage] ?? ev.stage} / ${typeLabel[ev.type] ?? ev.type} / ${ev.layers.join("・")}${ev.detail ? ` — ${ev.detail}` : ""}`).join("\n")],
+        ["TLA+ で確かめない理由", opt(x.modelCheckWaiver), "modelCheckWaiver"],
         ["推測", x.guesses.length > 0 ? x.guesses.join("\n") : "（なし）"],
       ];
     }

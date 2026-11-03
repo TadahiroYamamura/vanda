@@ -14,6 +14,8 @@ type ClaimContent struct {
 	Evidence  []EvidenceContent `json:"evidence"`
 	Flags     []string          `json:"flags"`
 	Guesses   []string          `json:"guesses"`
+	// ModelCheckWaiver は、TLA+ で確かめない理由。合意の対象の中身なので、一覧で見せる
+	ModelCheckWaiver *string `json:"modelCheckWaiver"`
 }
 
 type EvidenceContent struct {
@@ -69,6 +71,8 @@ func Content(e snapshot.Entry) any {
 			Evidence:  []EvidenceContent{},
 			Flags:     strs(c.Flags),
 			Guesses:   strs(c.Guesses),
+
+			ModelCheckWaiver: optStr(e.Table.Has("model_check_waiver"), c.ModelCheckWaiver),
 		}
 		for _, ev := range c.Evidence {
 			out.Evidence = append(out.Evidence, EvidenceContent{Stage: ev.Stage, Type: ev.Type, Layers: strs(ev.Layers), Detail: optStr(ev.Table.Has("detail"), ev.Detail)})
