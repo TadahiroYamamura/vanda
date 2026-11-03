@@ -1745,6 +1745,24 @@ type = "interface-test"
 layers = ["cli"]
 
 [[claim]]
+id = "project-adapter-reads-committed-content"
+subjects = ["run-custom-adapters", "adapter"]
+statement = "vanda は、カスタムアダプタに、アノテーションを読むファイルの HEAD のコミットの中身を、標準入力の JSON の content に入れて渡す。カスタムアダプタは、作業ツリーのファイルではなく content を読む"
+rationale = "コミットしていない変更がある時に、カスタムアダプタが作業ツリーのファイルを読むと、vanda が HEAD の中身から選んで渡したアノテーションの行と、アダプタが読む中身が食い違う。そうなると、組込みのアダプタと違って、手元と CI で結果が変わる"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "interface-test"
+layers = ["cli"]
+
+[[claim]]
 id = "project-adapter-args-only-for-project"
 subjects = ["run-custom-adapters", "store-config"]
 statement = "args は、カスタムアダプタの時だけ書くことができ、組込みのアダプタに書けば設定の誤りにする"
