@@ -521,8 +521,8 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
       "fingerprint": "sha256:…",
       "flags": ["ai-proposal", "changed-since-agreement"],
       "group": "layer:model",
-      "before": {"statement": "…", "rationale": "…", "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [{"stage": "implementation", "type": "unit-test", "layers": ["model"], "detail": null}], "flags": [], "guesses": [], "modelCheckWaiver": null},
-      "after": {"statement": "…", "rationale": "…", "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [], "flags": ["ai-proposal"], "guesses": [], "modelCheckWaiver": null},
+      "before": {"statement": [{"text": "…"}], "rationale": [{"text": "…"}], "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [{"stage": "implementation", "type": "unit-test", "layers": ["model"], "detail": null}], "flags": [], "guesses": [], "modelCheckWaiver": null},
+      "after": {"statement": [{"text": "タスクの ID", "ref": "task-id"}, {"text": " は重ならない"}], "rationale": [{"text": "…"}], "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [], "flags": ["ai-proposal"], "guesses": [], "modelCheckWaiver": null},
       "detachedAgreement": null,
       "otherCommits": []
     },
@@ -543,7 +543,8 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
       "otherCommits": []
     }
   ],
-  "detached": []
+  "detached": [],
+  "refs": {"task-id": {"kind": "term", "name": "タスクの ID", "text": "タスクを見分ける名前", "current": true}}
 }
 ```
 
@@ -566,9 +567,10 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `branchStories` | レビュー単位がブランチ（`view=branch`）のとき、分かれた点より後のコミットの `Story:` のトレーラーにあるストーリーの ID。名前の順。`view=story` では `null` |
 | `storyFrom` | `story` をどう決めたか。`query`（`story` で名指しした）・`branch`（ブランチのコミットから 1 つに決まった）。決まっていなければ空の文字列 |
 | `storyChoice` | 画面でストーリーをどう示すか（RV-13）。`fixed`: レビュー単位がブランチで、ブランチのコミットからストーリーが 1 つに決まる（`story` で別のものを名指ししたときを除く）。選ばせずに示すだけにする。`branch`: レビュー単位がブランチで、ブランチのストーリーが 2 つ以上ある。`branchStories` から選ばせる。`all`: レビュー単位がストーリーのときと、ブランチのストーリーが見つからない（か、名指ししたものが違う）とき。すべてのストーリー（`/api/context` の `stories`）から選ばせる |
+| `refs` | `entries` と `detached` の中の片が指すすべての ID の、指す先（下の「自然言語で書く項目（片の配列）」） |
 | `detached` | このストーリーの外れた合意のうち、`entries` に出ないもの（比べる元と今のあいだで変わっていないもの）。形は `entries` と同じで、`no` は `null`、`change` は `unchanged`、`before` は `null`。`total` に数えない |
 
-`before`・`after` の中身（項目は、約束リストの書いたとおり。省いた項目は `null`、配列は `[]`）:
+`before`・`after` の中身（項目は、約束リストの書いたとおり。省いた項目は `null`、配列は `[]`。自然言語で書く項目は、下の片の配列）:
 
 | `kind` | 中身 |
 |---|---|
@@ -576,6 +578,26 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `term` | `name`・`definition`・`partOf` |
 | `feature` | `name`・`definition`・`core`・`formal`・`formalWaiver` |
 | `file` | `text`（ファイルの中身） |
+
+#### 自然言語で書く項目（片の配列）
+
+約束リストの、参照を書ける項目（約束リストの「参照」）は、文字列ではなく、片の配列で返す。対象は、`entries[].before`・`after`（と `detached[].after`）、`GET /api/claims/<ID>`、`GET /api/claims/<ID>/at/<コミット>` の、約束の `statement`・`rationale`・`condition`・`guesses`・`modelCheckWaiver`、エビデンスの `detail`、用語の `definition`、機能の `definition`・`formalWaiver`。`guesses` は片の配列の配列。書いていない項目は `null`。
+
+```json
+"statement": [{"text": "タスクを足すと、"}, {"text": "タスクの ID", "ref": "task-id"}, {"text": " を付ける"}]
+```
+
+- 片は `{"text": …}` か、参照なら `{"text": <見せる文字>, "ref": <指す ID>}`。見せる文字は、用語と機能なら名前、約束なら ID。隣り合う参照でない片は、1 つにつなぐ
+- `{@@` は `{@` にした文字の片にする。壊れた参照（形でない、種類が `id` でない、指す先がない）は、書いたままの文字を参照でない片にする
+- 名前は今の約束リストのものを使う。今の約束リストにない ID だけ、比べる元（`GET /api/review` ならその件の比べる元、`.../at/<コミット>` ならそのコミット）の約束リストのものを使う。どちらにもなければ、壊れた参照として扱う。`GET /api/claims/<ID>` は今の約束リストだけを見る
+- 応答の最上位の `refs` は、応答の中の片が指すすべての ID から、指す先への表。何も指していなければ `{}`
+
+| 項目 | 中身 |
+|---|---|
+| `kind` | `term`・`feature`・`claim` |
+| `name` | 用語と機能は名前、約束は `null` |
+| `text` | 用語と機能は `definition`、約束は `statement`。中の参照を見せる文字に置き換えた、ただの文字列 |
+| `current` | 今の約束リストにあれば `true`。比べる元にだけあれば `false` |
 
 - 一覧は、比べる元の中身と今の中身で指紋が違う鍵（約束・用語・機能は種類と ID、ファイルは場所）を、1 度ずつ出す。ファイルは場所で見分けるので、名前を変えたファイルは、中身が同じでも、古い場所の `deleted` と新しい場所の `added` の 2 件にする（まとめない）。一度消して同じ場所に作り直したものは、同じ場所の 1 件として比べる（中身が同じなら出ない）
 - サーバーは、一覧を返す前に、`entries` の数が、比べる元と今で指紋の違う鍵の数に合うか、同じ鍵が 2 度出ていないかを確かめ、合わなければ `500` にする
@@ -621,7 +643,8 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 
 | 項目 | 中身 |
 |---|---|
-| `fields` | 文字の項目ごとの、文字の単位の差分（`DiffMain` の後に `DiffCleanupSemantic`）。`op` は `equal`・`delete`・`insert`。`equal` と `delete` をつなげると変更前、`equal` と `insert` をつなげると変更後になる |
+| `fields` | 文字の項目ごとの、文字の単位の差分（`DiffMain` の後に `DiffCleanupSemantic`）。`op` は `equal`・`delete`・`insert`。`equal` と `delete` をつなげると変更前、`equal` と `insert` をつなげると変更後になる。自然言語で書く項目は、両側を片の見せる文字に置き換えた文どうしで比べる（参照先の名前を変えただけの所は差にならない） |
+| `fields` の `ref` | 差分の 1 つが参照にかかる所は、参照の境で分け、参照にかかる分に `"ref": <ID>` を付ける（参照でない分には付けない）。`delete` は変更前の側、`equal`・`insert` は変更後の側の参照の位置で決める |
 | 対象の項目 | 約束は `statement`・`rationale`・`condition`・`modelCheckWaiver`、用語は `name`・`definition`、機能は `name`・`definition`・`formalWaiver`。変更前と変更後の両方に書いてある項目だけを入れ、片方にしかない項目は入れない（画面は、`before`・`after` の値をそのまま見せる）。変わっていない項目も、`equal` の 1 つとして入れる |
 
 - 配列の項目（`subjects`・`layers`・`guesses`）と真偽の項目は、差分を作らない。画面は `before`・`after` を並べて見せる
@@ -640,7 +663,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | 対応づけ | ステージ（`stage`）とタイプ（`type`）が同じものを、同じエビデンスとみなす。同じステージとタイプが 2 つ以上あれば、それぞれ現れた順に、1 つ目どうし、2 つ目どうし、と対応させる。対応の相手がないものは、変更前なら `removed`（消した）、変更後なら `added`（足した） |
 | `op` | 対応したものは、レイヤーと詳細が同じなら `equal`、どちらかが違えば `modified`。ほかは上のとおり |
 | `pair` | 対応したもう片方の側のエビデンスの添字（`before` の印なら `after.evidence` の添字）。`removed`・`added` は `null` |
-| `layers`・`detail` | `modified` のときだけ。レイヤー（`layers` を「・」でつないだ文字）と詳細（ないときは空の文字）の、文字の単位の差分（`fields` と同じ形）。両側に同じものを入れ、画面は変更前の側で `equal`・`delete`、変更後の側で `equal`・`insert` を見せる。ほかは `null` |
+| `layers`・`detail` | `modified` のときだけ。レイヤー（`layers` を「・」でつないだ文字）と詳細（ないときは空の文字。片の見せる文字に置き換えた文）の、文字の単位の差分（`fields` と同じ形。`detail` は参照に `ref` を付ける）。詳細が同じかも、見せる文字で比べる。両側に同じものを入れ、画面は変更前の側で `equal`・`delete`、変更後の側で `equal`・`insert` を見せる。ほかは `null` |
 
 ### `POST /api/agree`
 
@@ -698,7 +721,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 ```json
 {
   "id": "task-id-unique",
-  "statement": "…", "rationale": "…", "condition": null,
+  "statement": [{"text": "…"}], "rationale": [{"text": "…"}], "condition": null,
   "layers": [{"id": "model", "name": "モデル"}],
   "subjects": [{"kind": "term", "id": "task-id", "name": "タスクの ID"}],
   "state": "agreed",
@@ -712,12 +735,14 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
     }
   ],
   "origin": [{"commit": "0123abcd…", "date": "2026-10-31T12:00:00+09:00", "subject": "(feat) …", "stories": ["#24"], "change": "added"}],
-  "agreements": [{"user": {"name": "…", "email": "…"}, "agreedAt": "…", "story": "#24", "fingerprint": "sha256:…", "current": true}]
+  "agreements": [{"user": {"name": "…", "email": "…"}, "agreedAt": "…", "story": "#24", "fingerprint": "sha256:…", "current": true}],
+  "refs": {}
 }
 ```
 
 | 項目 | 中身 |
 |---|---|
+| `statement`・`rationale`・`condition`・`guesses`・`evidence[].detail` | 片の配列（「自然言語で書く項目（片の配列）」）。`refs` はその指す先 |
 | `evidence[].found[].state` | ファイルが合意の対象（シナリオ・オラクルの定義・ガードレールの定義）のときだけ、今の場所と中身の指紋に合う合意の記録があれば `agreed`、なければ `proposed`（ストーリーによらない）。合意の対象でないもの（Go のテストなど）は `null` |
 | `evidence[].found` | その約束を指す、タイプに合うアノテーション（「エビデンスが揃っている審査」の表と同じ組み合わせ）。`text` は、`txtar` と `sql` ならファイルの中身全体、`tla` なら付いている定義（定義の行から、次の最上位の定義か `====` の前まで。終わりの空行とコメントだけの行は含めない）、`go` と `ts` なら `null`。`line` は、アノテーションが付いているものの行（`go` は `func` の宣言、`ts` は `test`・`it`・`describe` の呼び出し、`tla` は定義、`sql` は文の行。`txtar` はファイル全体に付くので 1） |
 | `subjects` | 約束の `subjects` の順。約束リストにない ID は、`kind`・`name` を `null` にする |
@@ -732,10 +757,11 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 あるコミットの時点の約束の中身（CL-08）。由来の `commit` か、合意の履歴の `commit` を渡す。
 
 ```json
-{"id": "task-id-unique", "commit": "0123abcd…", "date": "2026-10-31T12:00:00+09:00", "subject": "(feat) …", "stories": ["#24"], "content": {"statement": "…", "rationale": null, "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [], "flags": [], "guesses": [], "modelCheckWaiver": null}}
+{"id": "task-id-unique", "commit": "0123abcd…", "date": "2026-10-31T12:00:00+09:00", "subject": "(feat) …", "stories": ["#24"], "content": {"statement": [{"text": "…"}], "rationale": null, "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [], "flags": [], "guesses": [], "modelCheckWaiver": null}, "layers": [{"id": "model", "name": "モデル"}], "refs": {}}
 ```
 
-- `content` は、その時点の約束リストの項目（形は `/api/review` の `before`・`after` の `claim` と同じ）
+- `content` は、その時点の約束リストの項目（形は `/api/review` の `before`・`after` の `claim` と同じ）。参照の名前は今の約束リストのものを使い、今はない ID だけ、そのコミットの時点のものを使う。`refs` はその指す先
+- 今の約束リスト（HEAD）が読めなければ `500`
 - `layers` は、`content.layers` の順に、今の設定のレイヤーの名前を付けた `[{"id": "model", "name": "モデル"}]`。今の設定にないレイヤーは、`name` を空の文字列にする（画面は ID のまま出す）
 - コミットはハッシュ（16 進の 4〜64 文字）で渡す。ほかの形は `400`、ないコミットは `404`
 - その時点に約束がなければ `404`、その時点の約束リストが読めなければ `500`。どちらも `message` に理由を出す

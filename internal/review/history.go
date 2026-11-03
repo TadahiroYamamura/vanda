@@ -19,10 +19,11 @@ type side struct {
 	itemFP map[string]string // 指紋を作れない項目は空の文字列
 	types  map[string]string // 場所からファイルの種類へ
 	texts  map[string][]byte
+	ids    map[string]snapshot.Entry // ID から項目へ。参照の指す先を探すため
 }
 
 func newSide(s *snapshot.Snapshot) *side {
-	sd := &side{snap: s, items: map[string]snapshot.Entry{}, itemFP: map[string]string{}, types: map[string]string{}, texts: map[string][]byte{}}
+	sd := &side{snap: s, items: map[string]snapshot.Entry{}, itemFP: map[string]string{}, types: map[string]string{}, texts: map[string][]byte{}, ids: map[string]snapshot.Entry{}}
 	if s == nil {
 		return sd
 	}
@@ -32,6 +33,9 @@ func newSide(s *snapshot.Snapshot) *side {
 			continue
 		}
 		sd.items[e.Key()] = e
+		if _, dup := sd.ids[e.ID]; !dup {
+			sd.ids[e.ID] = e
+		}
 		fp, err := agreements.ItemFingerprint(e.Raw)
 		if err != nil {
 			fp = ""
@@ -43,6 +47,8 @@ func newSide(s *snapshot.Snapshot) *side {
 	}
 	return sd
 }
+
+func (sd *side) byID() map[string]snapshot.Entry { return sd.ids }
 
 func (sd *side) text(path string) ([]byte, error) {
 	if b, ok := sd.texts[path]; ok {

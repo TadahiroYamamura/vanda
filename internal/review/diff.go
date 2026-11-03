@@ -6,10 +6,11 @@ import (
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
-// DiffPart は、文字の単位の差分の 1 つ。
+// DiffPart は、文字の単位の差分の 1 つ。約束リストの文の差分で、参照にかかる所なら Ref に指す ID を持つ。
 type DiffPart struct {
 	Op   string `json:"op"`
 	Text string `json:"text"`
+	Ref  string `json:"ref,omitempty"`
 }
 
 // DiffLine は、行の単位の差分の 1 行。
@@ -163,30 +164,40 @@ func partsByLine(parts []DiffPart, skip string) [][]DiffPart {
 }
 
 // itemDiff は、約束・用語・機能の文字の項目ごとの差分。両方に書いてある項目だけを入れる。
+// 自然言語で書く項目は、参照を見せる文字に置き換えた文どうしで比べる（reference-diff）。
 func itemDiff(before, after any) ItemDiff {
 	fields := map[string][]DiffPart{}
-	add := func(name string, a, b *string) {
+	add := func(name string, a, b []Piece) {
 		if a != nil && b != nil {
-			fields[name] = charDiff(*a, *b)
+			fields[name] = refDiff(a, b)
 		}
 	}
 	out := ItemDiff{Fields: fields}
 	switch b := before.(type) {
 	case ClaimContent:
-		a, _ := after.(ClaimContent)
-		add("statement", &b.Statement, &a.Statement)
+		a, ok := after.(ClaimContent)
+		if !ok {
+			return out
+		}
+		add("statement", b.Statement, a.Statement)
 		add("rationale", b.Rationale, a.Rationale)
 		add("condition", b.Condition, a.Condition)
 		add("modelCheckWaiver", b.ModelCheckWaiver, a.ModelCheckWaiver)
 		out.Evidence = evidenceDiff(b.Evidence, a.Evidence)
 	case TermContent:
-		a, _ := after.(TermContent)
-		add("name", &b.Name, &a.Name)
-		add("definition", &b.Definition, &a.Definition)
+		a, ok := after.(TermContent)
+		if !ok {
+			return out
+		}
+		fields["name"] = charDiff(b.Name, a.Name)
+		add("definition", b.Definition, a.Definition)
 	case FeatureContent:
-		a, _ := after.(FeatureContent)
-		add("name", &b.Name, &a.Name)
-		add("definition", &b.Definition, &a.Definition)
+		a, ok := after.(FeatureContent)
+		if !ok {
+			return out
+		}
+		fields["name"] = charDiff(b.Name, a.Name)
+		add("definition", b.Definition, a.Definition)
 		add("formalWaiver", b.FormalWaiver, a.FormalWaiver)
 	}
 	return out
@@ -209,12 +220,6 @@ func evidenceDiff(before, after []EvidenceContent) *EvidenceDiff {
 	for i, e := range before {
 		queue[key(e)] = append(queue[key(e)], i)
 	}
-	text := func(p *string) string {
-		if p == nil {
-			return ""
-		}
-		return *p
-	}
 	for j, a := range after {
 		q := queue[key(a)]
 		if len(q) == 0 {
@@ -224,13 +229,12 @@ func evidenceDiff(before, after []EvidenceContent) *EvidenceDiff {
 		queue[key(a)] = q[1:]
 		b := before[i]
 		bl, al := strings.Join(b.Layers, "・"), strings.Join(a.Layers, "・")
-		bd, ad := text(b.Detail), text(a.Detail)
-		if bl == al && bd == ad {
+		if bl == al && plain(b.Detail) == plain(a.Detail) {
 			d.Before[i] = EvidenceMark{Op: "equal", Pair: ptr(j)}
 			d.After[j] = EvidenceMark{Op: "equal", Pair: ptr(i)}
 			continue
 		}
-		layers, detail := charDiff(bl, al), charDiff(bd, ad)
+		layers, detail := charDiff(bl, al), refDiff(b.Detail, a.Detail)
 		d.Before[i] = EvidenceMark{Op: "modified", Pair: ptr(j), Layers: layers, Detail: detail}
 		d.After[j] = EvidenceMark{Op: "modified", Pair: ptr(i), Layers: layers, Detail: detail}
 	}

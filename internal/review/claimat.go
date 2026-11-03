@@ -21,6 +21,8 @@ type ClaimAt struct {
 	Content ClaimContent `json:"content"`
 	// Layers は、content の layers の順に、今の設定のレイヤーの名前を付けたもの。今の設定にないレイヤーは、名前を空にする
 	Layers []LayerRef `json:"layers"`
+	// Refs は、content の中の片が指すすべての ID の、指す先
+	Refs map[string]RefTarget `json:"refs"`
 }
 
 // ClaimAtCommit は、コミット rev の時点の、約束 id の中身を返す。
@@ -48,9 +50,15 @@ func ClaimAtCommit(o Options, id, rev string) (*ClaimAt, *Error) {
 	if snap.ListErrs != nil {
 		return nil, &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("コミット %s の時点の約束リストを読めません（%d 件。最初の 1 件: %s）。", short(full), len(snap.ListErrs), snap.ListErrs[0].Error()), Fix: "その時点の約束リストに誤りがあります。ほかの時点を選んでください。"}
 	}
+	// 参照の名前は今の約束リストのものを使い、今はない ID だけ、その時点のものを使う（reference-diff と同じ決まり）
+	s := &state{o: o, h: newHistory(o.Root, o.Cfg)}
+	if e := s.loadCurrent(); e != nil {
+		return nil, e
+	}
+	at := newSide(snap)
 	for _, e := range snapshot.Entries(snap.List) {
 		if e.Kind == "claim" && e.ID == id {
-			c := Content(e).(ClaimContent)
+			c := claimContent(e, s.refs, at)
 			names := map[string]string{}
 			for _, l := range o.Cfg.Layers {
 				names[l.ID] = l.Name
@@ -59,7 +67,7 @@ func ClaimAtCommit(o Options, id, rev string) (*ClaimAt, *Error) {
 			for _, l := range c.Layers {
 				layers = append(layers, LayerRef{ID: l, Name: names[l]})
 			}
-			return &ClaimAt{ID: id, Commit: full, Date: date, Subject: subject, Stories: strs(storyIDs(o.Cfg, msg)), Content: c, Layers: layers}, nil
+			return &ClaimAt{ID: id, Commit: full, Date: date, Subject: subject, Stories: strs(storyIDs(o.Cfg, msg)), Content: c, Layers: layers, Refs: s.refs.targets()}, nil
 		}
 	}
 	return nil, &Error{Status: http.StatusNotFound, Message: fmt.Sprintf("コミット %s の時点には、約束 %s はありません。", short(full), id), Fix: "由来か合意の履歴から、ほかの時点を選んでください。"}

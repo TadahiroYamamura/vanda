@@ -17,18 +17,20 @@ import (
 
 type ClaimDetail struct {
 	ID          string           `json:"id"`
-	Statement   string           `json:"statement"`
-	Rationale   *string          `json:"rationale"`
-	Condition   *string          `json:"condition"`
+	Statement   []Piece          `json:"statement"`
+	Rationale   []Piece          `json:"rationale"`
+	Condition   []Piece          `json:"condition"`
 	Layers      []LayerRef       `json:"layers"`
 	Subjects    []SubjectRef     `json:"subjects"`
 	State       string           `json:"state"`
 	Fingerprint *string          `json:"fingerprint"`
 	Flags       []string         `json:"flags"`
-	Guesses     []string         `json:"guesses"`
+	Guesses     [][]Piece        `json:"guesses"`
 	Evidence    []EvidenceDetail `json:"evidence"`
 	Origin      []OriginRef      `json:"origin"`
 	Agreements  []AgreementRef   `json:"agreements"`
+	// Refs は、この応答の中の片が指すすべての ID の、指す先
+	Refs map[string]RefTarget `json:"refs"`
 }
 
 type LayerRef struct {
@@ -90,8 +92,8 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 		return nil, &Error{Status: http.StatusNotFound, Message: "約束 " + id + " は約束リストにありません。", Fix: "約束の ID を確かめてください。"}
 	}
 	c := cur.Claim
-	content := Content(cur).(ClaimContent)
-	d := &ClaimDetail{ID: c.ID, Statement: c.Statement, Rationale: content.Rationale, Condition: content.Condition, Flags: content.Flags, Guesses: content.Guesses,
+	content := claimContent(cur, s.refs, nil)
+	d := &ClaimDetail{ID: c.ID, Statement: content.Statement, Rationale: content.Rationale, Condition: content.Condition, Flags: content.Flags, Guesses: content.Guesses,
 		Layers: []LayerRef{}, Subjects: []SubjectRef{}, Evidence: []EvidenceDetail{}, Origin: []OriginRef{}, Agreements: []AgreementRef{}}
 	fp := s.cur.itemFP[key]
 	if fp != "" {
@@ -212,6 +214,7 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 		d.Agreements = append(d.Agreements, ref)
 	}
 	newestFirst(d, commits, mine)
+	d.Refs = s.refs.targets()
 	return d, nil
 }
 

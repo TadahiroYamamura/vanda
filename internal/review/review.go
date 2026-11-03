@@ -41,6 +41,8 @@ type Result struct {
 	StoryFrom string `json:"storyFrom"`
 	// StoryChoice は、画面でストーリーをどう示すか（RV-13）。fixed（1 つに決まったので選ばせずに示す）・branch（ブランチのストーリーから選ばせる）・all（すべてのストーリーから選ばせる）
 	StoryChoice string `json:"storyChoice"`
+	// Refs は、entries と detached の中の片が指すすべての ID の、指す先
+	Refs map[string]RefTarget `json:"refs"`
 }
 
 type Entry struct {
@@ -94,6 +96,7 @@ type state struct {
 	h    *history
 	cur  *side
 	recs *agreements.Records
+	refs *refs
 }
 
 // Build は、一覧を作る。
@@ -191,6 +194,7 @@ func Build(o Options) (*Result, *Error) {
 	}
 	res.Detached = detached
 	res.Total = len(entries)
+	res.Refs = s.refs.targets()
 	return res, nil
 }
 
@@ -210,6 +214,7 @@ func (s *state) loadCurrent() *Error {
 	}
 	s.cur = newSide(snap)
 	s.recs = recs
+	s.refs = newRefs(s.cur)
 	return nil
 }
 
@@ -425,10 +430,10 @@ func (s *state) itemEntry(rc rawChange) Entry {
 		e.Change = "modified"
 	}
 	if inBefore {
-		e.Before = Content(be)
+		e.Before = Content(be, s.refs, rc.before)
 	}
 	if inAfter {
-		e.After = Content(ae)
+		e.After = Content(ae, s.refs, rc.before)
 		s.itemState(&e, ae)
 	} else {
 		e.State = ptr(stateName(s.recs.DeletionAgreed(ref.Kind, ref.ID)))
@@ -707,7 +712,7 @@ func (s *state) unchanged(key string) (Entry, error) {
 		return e, s.fileState(&e, f)
 	}
 	cur := s.cur.items[key]
-	e := Entry{Kind: cur.Kind, ID: ptr(cur.ID), Change: "unchanged", Flags: []string{}, OtherCommits: []CommitRef{}, key: key, After: Content(cur), Group: s.group(cur)}
+	e := Entry{Kind: cur.Kind, ID: ptr(cur.ID), Change: "unchanged", Flags: []string{}, OtherCommits: []CommitRef{}, key: key, After: Content(cur, s.refs, nil), Group: s.group(cur)}
 	s.itemState(&e, cur)
 	return e, nil
 }
