@@ -30,7 +30,7 @@ func pickCycle() rvPick {
 
 var rvExamples = []rvExample{
 	{
-		name: "追加・変更・削除のそれぞれが1度ずつ出て名前の変更は削除と追加の2件になり変わっていないものは出ず作業ツリーの書きかけの変更も含む",
+		name: "追加・変更・削除のそれぞれが1度ずつ出て名前の変更は削除と追加の2件になり変わっていないものもコミットしていない書きかけの変更も出ない",
 		build: func(r *rvRepo) {
 			r.addItem("claim", "c-keep", 0)
 			r.addItem("claim", "c-change", 1)
@@ -53,7 +53,7 @@ var rvExamples = []rvExample{
 			r.renameFileTo(ren, "e2e/sub/new-name.txtar")
 			r.addFileAt(rvNoise, "notes/memo.md")
 			r.commit("#24")
-			// ここから下はコミットしない（作業ツリーの書きかけの変更と、まだ git が追っていないファイル）
+			// ここから下はコミットしない（作業ツリーの書きかけの変更と、まだ git が追っていないファイル）。一覧には出ない
 			r.changeFile(m)
 			r.addItem("claim", "c-new", 2)
 			r.addFileAt(rvScenario, "e2e/new.txtar")
@@ -65,10 +65,6 @@ var rvExamples = []rvExample{
 			{Kind: "feature", Key: "f-change", Change: "modified"},
 			{Kind: "file", Key: "e2e/old.txtar", Change: "deleted"},
 			{Kind: "file", Key: "e2e/sub/new-name.txtar", Change: "added"},
-			{Kind: "file", Key: "spec/Model.tla", Change: "modified"},
-			{Kind: "claim", Key: "c-new", Change: "added"},
-			{Kind: "file", Key: "e2e/new.txtar", Change: "added"},
-			{Kind: "file", Key: "db/old.sql", Change: "deleted"},
 		}},
 	},
 	{

@@ -185,7 +185,8 @@ func TestRV01の操作の列をリポジトリに当てると期待する一覧�
 }
 
 // rvCompare は、作った一時的なリポジトリ（r）と期待する一覧を受け取り、vanda の一覧と比べる。
-// 書きかけの変更があるときは、レビュー単位がブランチのときだけで 1 度呼び（stories は nil）、コミットした後に両方のレビュー単位で呼ぶ。
+// 書きかけの変更があるときは、レビュー単位がブランチのときだけで 1 度呼び（stories は nil。branch は書きかけを含まない）、
+// コミットした後に両方のレビュー単位で呼ぶ。
 type rvCompare func(rt *rapid.T, bin string, r *rvRepo, branch map[rvEntry]bool, stories map[string]map[rvEntry]bool)
 
 // runRV01Random は、無作為な操作の列を当てたリポジトリを作り、期待する一覧を数える。compare があれば、vanda の一覧と比べる。
@@ -271,15 +272,10 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 		r.switchTo("story")
 		rvRandomOps(rt, r, "story", 8, true, &log)
 
-		dirtyBranch := r.branchView("main")
+		// 書きかけの変更があっても、一覧は HEAD のコミットの中身だけで決まる
 		if compare != nil && r.dirty {
-			compare(rt, bin, r, dirtyBranch, nil)
+			compare(rt, bin, r, r.branchView("main"), nil)
 		}
-		branch := dirtyBranch
-		for e := range branch {
-			seen["ブランチ/"+e.Kind+"/"+e.Change]++
-		}
-		seen["ブランチ/名前を変えたファイル（同じ中身の削除と追加）"] += rvRenamedPairs(rvKeyed(r.mergeBase("main").state), rvKeyed(r.state), branch)
 		shape(rt, bin, root)
 
 		if r.dirty {
@@ -287,6 +283,11 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 			r.commit(story)
 			log = append(log, "残りをコミット "+story)
 		}
+		branch := r.branchView("main")
+		for e := range branch {
+			seen["ブランチ/"+e.Kind+"/"+e.Change]++
+		}
+		seen["ブランチ/名前を変えたファイル（同じ中身の削除と追加）"] += rvRenamedPairs(rvKeyed(r.mergeBase("main").state), rvKeyed(r.head().state), branch)
 		stories := map[string]map[rvEntry]bool{}
 		for _, s := range rvStories {
 			if s == "" {
@@ -299,9 +300,6 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 					seen["ストーリー/ほかのストーリー"]++ // そのストーリーの ID のないコミットが途中で変えたもの
 				}
 			}
-		}
-		if again := r.branchView("main"); rvDiffEntries(branch, again) != "" {
-			rt.Fatalf("コミットしただけで、レビュー単位がブランチのときの期待値が変わった\n%s", rvDiffEntries(branch, again))
 		}
 		if compare != nil {
 			compare(rt, bin, r, branch, stories)

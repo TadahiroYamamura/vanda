@@ -294,12 +294,18 @@ func (r *rvRepo) mergeBase(base string) rvCommit {
 	return rvCommit{}
 }
 
-// branchView は、ベースブランチ base での、レビュー単位がブランチのときの期待値。作業ツリーの書きかけの変更も含める。
+// head は、今のブランチの HEAD のコミット。
+func (r *rvRepo) head() rvCommit { return r.commits[r.heads[r.branch]] }
+
+// branchView は、ベースブランチ base での、レビュー単位がブランチのときの期待値。分かれた点の中身と HEAD のコミットの中身を比べ、
+// 作業ツリーの書きかけの変更（コミットしていないもの）は含めない（約束 review-view-branch）。
 func (r *rvRepo) branchView(base string) map[rvEntry]bool {
 	mb := r.mergeBase(base)
 	verifyCommit(r.g, mb.hash, mb.state)
+	head := r.head()
+	verifyCommit(r.g, head.hash, head.state)
 	verifyWorkTree(r.t, r.root, r.state)
-	return rvBranchView(mb.state, r.state)
+	return rvBranchView(mb.state, head.state)
 }
 
 // storyView は、ストーリー story の、レビュー単位がストーリーのときの期待値。
