@@ -1009,3 +1009,248 @@ describe("RV-01 一覧の絞り込み", () => {
     filtered();
   });
 });
+
+// 参照（show-references）。自然言語で書く項目は片の配列で、参照の片は ref に指す ID を持ち、応答の最上位の refs に指す先がある
+// （docs/plans/stage4-references.md の「API の形」と「画面」）。
+describe("参照", () => {
+  const ref = (text: string, id: string) => ({ text, ref: id });
+  // fieldRefs は、自然言語で書く項目の全部（約束の 6 つ、用語の定義、機能の定義と形式手法を使わない理由）に、それぞれ別の用語を指す参照を書いたときの、見せる名前
+  const fieldRefs = {
+    statement: "文の用語",
+    rationale: "理由の用語",
+    condition: "条件の用語",
+    guesses: "推測の用語",
+    modelCheckWaiver: "モデル検査しない理由の用語",
+    detail: "エビデンスの詳細の用語",
+    termDefinition: "用語の定義の用語",
+    featureDefinition: "機能の定義の用語",
+    formalWaiver: "形式手法を使わない理由の用語",
+  };
+  type Field = keyof typeof fieldRefs;
+  const idOf = (field: Field) => `t-${field.toLowerCase()}`;
+  const termRefs = Object.fromEntries(
+    (Object.keys(fieldRefs) as Field[]).map((f) => [idOf(f), { kind: "term", name: fieldRefs[f], text: `${fieldRefs[f]}の定義`, current: true }]),
+  );
+  const allRefs = {
+    ...termRefs,
+    "f-sort": { kind: "feature", name: "並べ替え", text: "タスクを順に並べる", current: true },
+    "c-other": { kind: "claim", name: null, text: "ほかの約束の文", current: true },
+    "c-gone": { kind: "claim", name: null, text: "消えた約束の文", current: false },
+  };
+
+  const claimWithRefs = () =>
+    claimEntry(1, "c-all", {
+      change: "added",
+      before: null,
+      after: {
+        statement: [ref(fieldRefs.statement, idOf("statement")), { text: "と" }, ref("並べ替え", "f-sort"), { text: "と" }, ref("c-other", "c-other"), { text: "と" }, ref("c-gone", "c-gone"), { text: "の文" }],
+        rationale: [ref(fieldRefs.rationale, idOf("rationale")), { text: "の理由" }],
+        condition: [ref(fieldRefs.condition, idOf("condition")), { text: "の条件" }],
+        subjects: ["task-id"],
+        layers: ["model"],
+        evidence: [{ stage: "implementation", type: "unit-test", layers: ["model"], detail: [ref(fieldRefs.detail, idOf("detail")), { text: "で確かめる" }] }],
+        flags: [],
+        guesses: [[ref(fieldRefs.guesses, idOf("guesses")), { text: "の推測" }]],
+        modelCheckWaiver: [ref(fieldRefs.modelCheckWaiver, idOf("modelCheckWaiver")), { text: "は形で確かめない" }],
+      },
+    } as Partial<Entry>);
+  const termWithRefs = () =>
+    claimEntry(2, "t-ref", {
+      kind: "term", group: "terms-features", change: "added", before: null,
+      after: { name: "参照を持つ用語", definition: [ref(fieldRefs.termDefinition, idOf("termDefinition")), { text: "の一部" }], partOf: null },
+    } as Partial<Entry>);
+  const featureWithRefs = () =>
+    claimEntry(3, "f-ref", {
+      kind: "feature", group: "terms-features", change: "added", before: null,
+      after: {
+        name: "参照を持つ機能",
+        definition: [ref(fieldRefs.featureDefinition, idOf("featureDefinition")), { text: "を使う" }],
+        core: true,
+        formal: false,
+        formalWaiver: [ref(fieldRefs.formalWaiver, idOf("formalWaiver")), { text: "のため" }],
+      },
+    } as Partial<Entry>);
+
+  // refElement は、見せる文字が name の参照の要素（キーボードでフォーカスできる要素のうち、name を含む最も短いもの）。
+  // 説明（tooltip）を要素の中に持つ作りもありうるので、文字がちょうど name の要素には限らない
+  const refElement = (root: HTMLElement, name: string) => {
+    const focusable = Array.from(root.querySelectorAll<HTMLElement>("*")).filter(
+      (el) => (el.textContent ?? "").includes(name) && (el.tabIndex >= 0 || el.matches("a[href]")),
+    );
+    focusable.sort((a, b) => (a.textContent ?? "").length - (b.textContent ?? "").length);
+    return focusable[0];
+  };
+  // expectRefLook は、参照が、前後の参照でない文字と見分けられる形で出ているか（参照だけの要素で、囲む要素と違う見た目の印を持つ）を確かめる。
+  // jsdom は描かないので、下線や色そのものは見ない
+  const expectRefLook = (el: HTMLElement | undefined, name: string, where: string) => {
+    expect(el, `${where}: 参照 ${name} が、フォーカスできる要素で出ていない`).toBeTruthy();
+    const parent = el!.parentElement!;
+    expect((parent.textContent ?? "").length, `${where}: 参照 ${name} が、前後の文字と同じ要素に入っている`).toBeGreaterThan((el!.textContent ?? "").length);
+    expect(el!.tagName + " " + el!.className, `${where}: 参照 ${name} の見た目が、囲む要素と同じ`).not.toBe(parent.tagName + " " + parent.className);
+  };
+
+  // @vanda:evidence reference-shown
+  it("一覧の詳細では自然言語で書く項目のどれでも参照を用語と機能は名前で約束はIDで参照だと分かる見た目で出す", async () => {
+    open([claimWithRefs(), termWithRefs(), featureWithRefs()], { refs: allRefs });
+    const cases: [RegExp, Field[]][] = [
+      [/c-all/, ["statement", "rationale", "condition", "guesses", "modelCheckWaiver", "detail"]],
+      [/t-ref/, ["termDefinition"]],
+      [/f-ref/, ["featureDefinition", "formalWaiver"]],
+    ];
+    for (const [entry, fields] of cases) {
+      await openEntry(entry);
+      await waitFor(() => expect(within(detailRegion()).queryAllByText(entry).length).toBeGreaterThan(0));
+      await waitFor(() => expect(detailRegion().textContent).toContain(fieldRefs[fields[0]]));
+      for (const f of fields) expectRefLook(refElement(detailRegion(), fieldRefs[f]), fieldRefs[f], `${entry.source} の ${f}`);
+      // 置き換えた文字だけを出し、書いたままの参照も、用語と機能の参照の指す ID も出さない
+      expect(detailRegion().textContent, `${entry.source} に書いたままの参照が出た`).not.toContain("{@id:");
+      for (const f of fields) expect(detailRegion().textContent, `${entry.source} に ${f} の参照の指す ID が出た`).not.toContain(idOf(f));
+    }
+    await openEntry(/c-all/);
+    await waitFor(() => expect(detailRegion().textContent).toContain("並べ替え"));
+    expectRefLook(refElement(detailRegion(), "並べ替え"), "並べ替え", "機能を指す参照");
+    expectRefLook(refElement(detailRegion(), "c-other"), "c-other", "約束を指す参照");
+    expectRefLook(refElement(detailRegion(), "c-gone"), "c-gone", "今ない約束を指す参照");
+    expect(detailRegion().textContent, "機能の参照の指す ID が出た").not.toContain("f-sort");
+  });
+
+  // @vanda:evidence reference-shown
+  it("約束を指す参照のうち今ある約束はその約束の詳細へのリンクにし用語と機能と今ない約束はリンクにしない", async () => {
+    window.history.pushState({}, "", "/");
+    open([claimWithRefs()], { refs: allRefs },
+      http.get("/api/claims/:id", ({ params }) => HttpResponse.json(claimDetail({ id: String(params.id), statement: plain(`${String(params.id)} の詳細の文`) }))));
+    await openEntry(/c-all/);
+    await waitFor(() => expect(detailRegion().textContent).toContain("並べ替え"));
+    const region = detailRegion();
+    for (const name of [fieldRefs.statement, "並べ替え", "c-gone"]) {
+      expect(within(region).queryByRole("link", { name }), `${name} がリンクになっている`).toBeNull();
+    }
+    const link = within(region).getByRole("link", { name: "c-other" });
+    expect(new URL((link as HTMLAnchorElement).href).pathname).toBe("/claims/c-other");
+    const beforeURL = window.location.pathname + window.location.search;
+    const user = userEvent.setup();
+    await user.click(link);
+    expect(await screen.findByText("c-other の詳細の文")).toBeTruthy();
+    expect(window.location.pathname).toBe("/claims/c-other");
+    // 参照から移った先からも、行く前の画面の状態に戻れる（pitfall link-drops-default-state）
+    await user.click(await screen.findByRole("link", { name: "ストーリーのレビューへ戻る" }));
+    await waitFor(() => expect(window.location.pathname).toBe("/"));
+    expect(window.location.pathname + window.location.search).toBe(beforeURL);
+  });
+
+  // @vanda:evidence reference-shown
+  it("項目の差分の中の参照も名前で参照だと分かる見た目で出し消した参照はdelに足した参照はinsに出す", async () => {
+    open([
+      claimEntry(1, "c-diff", {
+        before: { ...claimEntry(1, "c-diff").before!, statement: [ref("前も後もある用語", "t-both"), { text: "は" }, ref("消した用語", "t-gone"), { text: "を使う" }] },
+        after: { ...claimEntry(1, "c-diff").after!, statement: [ref("前も後もある用語", "t-both"), { text: "は" }, ref("足した用語", "t-new"), { text: "を使う" }] },
+        diff: {
+          fields: {
+            statement: [
+              { op: "equal", text: "前も後もある用語", ref: "t-both" },
+              { op: "equal", text: "は" },
+              { op: "delete", text: "消した用語", ref: "t-gone" },
+              { op: "insert", text: "足した用語", ref: "t-new" },
+              { op: "equal", text: "を使う" },
+            ],
+          },
+        },
+      } as Partial<Entry>),
+    ], {
+      refs: {
+        "t-both": { kind: "term", name: "前も後もある用語", text: "両方の定義", current: true },
+        "t-gone": { kind: "term", name: "消した用語", text: "消した定義", current: false },
+        "t-new": { kind: "term", name: "足した用語", text: "足した定義", current: true },
+      },
+    });
+    await openEntry(/c-diff/);
+    await waitFor(() => expect(detailRegion().textContent).toContain("足した用語"));
+    for (const name of ["前も後もある用語", "消した用語", "足した用語"]) expectRefLook(refElement(detailRegion(), name), name, "差分");
+    expect(refElement(detailRegion(), "消した用語")!.closest("del"), "消した参照が del の中にない").toBeTruthy();
+    expect(refElement(detailRegion(), "足した用語")!.closest("ins"), "足した参照が ins の中にない").toBeTruthy();
+    expect(refElement(detailRegion(), "前も後もある用語")!.closest("del, ins"), "変わっていない参照が del・ins の中にある").toBeNull();
+  });
+
+  // tooltipWith は、text を含む説明（role=tooltip）
+  const tooltipWith = (text: string) => screen.queryAllByRole("tooltip").find((t) => (t.textContent ?? "").includes(text)) ?? null;
+
+  // @vanda:evidence reference-popup
+  it("参照に触れた時とキーボードでフォーカスした時に用語と機能はその定義を約束はその文を出し離れると消す", async () => {
+    open([claimWithRefs()], { refs: allRefs });
+    await openEntry(/c-all/);
+    await waitFor(() => expect(detailRegion().textContent).toContain("並べ替え"));
+    const user = userEvent.setup();
+    const cases: [string, string][] = [
+      [fieldRefs.statement, `${fieldRefs.statement}の定義`],
+      ["並べ替え", "タスクを順に並べる"],
+      ["c-other", "ほかの約束の文"],
+      ["c-gone", "消えた約束の文"],
+    ];
+    for (const [name, text] of cases) {
+      const el = refElement(detailRegion(), name)!;
+      expect(el, `参照 ${name} がない`).toBeTruthy();
+      expect(tooltipWith(text), `${name}: 触れる前から出ている`).toBeNull();
+      await user.hover(el);
+      await waitFor(() => expect(tooltipWith(text), `${name}: 触れても ${text} が出ない`).toBeTruthy());
+      await user.unhover(el);
+      await waitFor(() => expect(tooltipWith(text), `${name}: 離れても消えない`).toBeNull());
+      // キーボードで（Tab で）たどり着ける
+      (document.activeElement as HTMLElement | null)?.blur();
+      let reached = false;
+      for (let i = 0; i < 200 && !reached; i++) {
+        await user.tab();
+        reached = document.activeElement === el;
+      }
+      expect(reached, `${name}: Tab でフォーカスできない`).toBe(true);
+      await waitFor(() => expect(tooltipWith(text), `${name}: フォーカスしても ${text} が出ない`).toBeTruthy());
+      el.blur();
+      await waitFor(() => expect(tooltipWith(text), `${name}: フォーカスを外しても消えない`).toBeNull());
+    }
+  });
+});
+
+describe("参照の絞り込み", () => {
+  const list = () => screen.getByRole("region", { name: "変わったものの一覧" });
+  const shown = (name: string) => within(list()).queryByText(name, { exact: true }) !== null;
+  const searchBox = () => within(list()).getByRole("searchbox", { name: "絞り込み" });
+  const ref = (text: string, id: string) => ({ text, ref: id });
+  const withStatement = (no: number, id: string, statement: { text: string; ref?: string }[]) =>
+    claimEntry(no, id, { after: { ...claimEntry(no, id).after!, statement } } as Partial<Entry>);
+
+  // @vanda:evidence reference-filter
+  it("書いた文字で絞り込むと参照を置き換えた後の文に当て名前で当たり書いたままの参照や指す用語のIDでは当たらない", async () => {
+    const deletedBefore = { ...claimEntry(3, "c-deleted").before!, statement: [ref("りんご", "t-apple"), { text: "を消す" }] };
+    const entries: Entry[] = [
+      withStatement(1, "c-fruit", [ref("りんご", "t-apple"), { text: "を数える" }]),
+      // {@@ を {@ にした文字の片。見せる文字に {@id:t-apple} がある
+      withStatement(2, "c-literal", [{ text: "{@id:t-apple} は文字" }]),
+      claimEntry(3, "c-deleted", { change: "deleted", after: null, fingerprint: null, before: deletedBefore } as Partial<Entry>),
+      withStatement(4, "c-plain", [{ text: "バナナを数える" }]),
+      claimEntry(5, "t-def", {
+        kind: "term", group: "terms-features",
+        before: { name: "果物", definition: [ref("りんご", "t-apple"), { text: "の仲間" }], partOf: null },
+        after: { name: "果物", definition: [ref("りんご", "t-apple"), { text: "の仲間" }], partOf: null },
+      } as Partial<Entry>),
+    ];
+    open(entries, { refs: { "t-apple": { kind: "term", name: "りんご", text: "赤い果物", current: true } } });
+    await waitFor(() => expect(shown("c-fruit")).toBe(true));
+    const user = userEvent.setup();
+    const search = async (text: string, want: Record<string, boolean>) => {
+      await user.clear(searchBox());
+      await user.click(searchBox());
+      // { は user.type では特別な文字なので、貼り付けで入れる
+      await user.paste(text);
+      await waitFor(() => {
+        for (const [id, on] of Object.entries(want)) expect(shown(id), `「${text}」で ${id} が${on ? "出ない" : "出ている"}`).toBe(on);
+      });
+    };
+    // 参照を置き換えた名前で当たる（約束の文、消した約束の前の文、用語の定義）
+    await search("りんご", { "c-fruit": true, "c-deleted": true, "t-def": true, "c-literal": false, "c-plain": false });
+    // 書いたままの参照では当たらない。見せる文字に {@id:…} がある c-literal だけに当たる
+    await search("{@id:t-apple}", { "c-fruit": false, "c-deleted": false, "t-def": false, "c-literal": true, "c-plain": false });
+    // 参照の指す用語の ID は見せていないので当たらない
+    await search("t-apple", { "c-fruit": false, "c-deleted": false, "t-def": false, "c-literal": true, "c-plain": false });
+    // 参照と、その後ろの参照でない文字をまたいで当たる
+    await search("りんごを数", { "c-fruit": true, "c-deleted": false, "t-def": false, "c-literal": false, "c-plain": false });
+  });
+});

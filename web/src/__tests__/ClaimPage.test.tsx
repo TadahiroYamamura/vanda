@@ -415,3 +415,99 @@ it("その時点の約束リストが読めない合意の記録を選ぶとAPI�
   await userEvent.setup().click(toggleOf(row));
   expect(await screen.findByText(/コミット 3333333 の \.vanda\/promises\.toml を読めません/)).toBeTruthy();
 });
+
+// 参照（show-references）。約束の詳細とその時点の中身の、自然言語で書く項目の片と refs（docs/plans/stage4-references.md の「API の形」と「画面」）
+const ref = (text: string, id: string) => ({ text, ref: id });
+const claimRefs = {
+  "t-statement": { kind: "term", name: "文の用語", text: "文の用語の定義", current: true },
+  "t-rationale": { kind: "term", name: "理由の用語", text: "理由の用語の定義", current: true },
+  "t-condition": { kind: "term", name: "条件の用語", text: "条件の用語の定義", current: true },
+  "t-guess": { kind: "term", name: "推測の用語", text: "推測の用語の定義", current: true },
+  "t-detail": { kind: "term", name: "詳細の用語", text: "詳細の用語の定義", current: true },
+  "f-sort": { kind: "feature", name: "並べ替え", text: "タスクを順に並べる", current: true },
+  "c-other": { kind: "claim", name: null, text: "ほかの約束の文", current: true },
+  "c-gone": { kind: "claim", name: null, text: "消えた約束の文", current: false },
+};
+const detailWithRefs = (over: Partial<ClaimDetail> = {}) =>
+  claimDetail({
+    statement: [ref("文の用語", "t-statement"), { text: "と" }, ref("並べ替え", "f-sort"), { text: "と" }, ref("c-other", "c-other"), { text: "と" }, ref("c-gone", "c-gone"), { text: "の文" }],
+    rationale: [ref("理由の用語", "t-rationale"), { text: "の理由" }],
+    condition: [ref("条件の用語", "t-condition"), { text: "の条件" }],
+    guesses: [[ref("推測の用語", "t-guess"), { text: "の推測" }]],
+    evidence: [{ stage: "implementation", type: "unit-test", layers: ["model"], detail: [ref("詳細の用語", "t-detail"), { text: "で確かめる" }], present: false, found: [] }],
+    refs: claimRefs,
+    ...over,
+  } as Partial<ClaimDetail>);
+
+// 参照の要素（キーボードでフォーカスできる要素のうち、name を含む最も短いもの）
+const refElementIn = (root: HTMLElement, name: string) => {
+  const focusable = Array.from(root.querySelectorAll<HTMLElement>("*")).filter(
+    (el) => (el.textContent ?? "").includes(name) && (el.tabIndex >= 0 || el.matches("a[href]")),
+  );
+  focusable.sort((a, b) => (a.textContent ?? "").length - (b.textContent ?? "").length);
+  return focusable[0];
+};
+// 参照だけの要素で、囲む要素と違う見た目の印を持つか（jsdom は描かないので、下線や色そのものは見ない）
+const expectRefLookIn = (el: HTMLElement | undefined, name: string, where: string) => {
+  expect(el, `${where}: 参照 ${name} が、フォーカスできる要素で出ていない`).toBeTruthy();
+  const parent = el!.parentElement!;
+  expect((parent.textContent ?? "").length, `${where}: 参照 ${name} が、前後の文字と同じ要素に入っている`).toBeGreaterThan((el!.textContent ?? "").length);
+  expect(el!.tagName + " " + el!.className, `${where}: 参照 ${name} の見た目が、囲む要素と同じ`).not.toBe(parent.tagName + " " + parent.className);
+};
+
+// @vanda:evidence reference-shown
+it("約束の詳細では文と理由と条件と推測とエビデンスの詳細の参照を用語と機能は名前で約束はIDで参照だと分かる見た目で出し今ある約束だけをリンクにする", async () => {
+  open(detailWithRefs());
+  await waitFor(() => expect(bodyText()).toContain("詳細の用語"));
+  for (const name of ["文の用語", "理由の用語", "条件の用語", "推測の用語", "詳細の用語", "並べ替え", "c-other", "c-gone"]) {
+    expectRefLookIn(refElementIn(document.body, name), name, "約束の詳細");
+  }
+  expect(bodyText(), "書いたままの参照が出た").not.toContain("{@id:");
+  for (const id of ["t-statement", "t-rationale", "t-condition", "t-guess", "t-detail", "f-sort"]) expect(bodyText(), `用語・機能の参照の指す ID ${id} が出た`).not.toContain(id);
+  for (const name of ["文の用語", "並べ替え", "c-gone"]) expect(screen.queryByRole("link", { name }), `${name} がリンクになっている`).toBeNull();
+  const link = screen.getByRole("link", { name: "c-other" });
+  expect(new URL((link as HTMLAnchorElement).href).pathname).toBe("/claims/c-other");
+});
+
+// @vanda:evidence reference-shown
+it("約束の履歴で開いたその時点の中身の参照もその時点のrefsの名前で参照だと分かる見た目で出す", async () => {
+  const commit = "1".repeat(40);
+  server.use(
+    http.get("/api/claims/:id/at/:commit", () =>
+      HttpResponse.json({
+        id: "task-id-unique", commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめ", stories: ["#1"],
+        content: { statement: [ref("その時点だけの用語", "t-old"), { text: "を使っていた" }], rationale: null, condition: null, subjects: ["task-id"], layers: ["model"], evidence: [], flags: [], guesses: [] },
+        layers: [{ id: "model", name: "モデル" }],
+        refs: { "t-old": { kind: "term", name: "その時点だけの用語", text: "今はない用語の定義", current: false } },
+      }),
+    ),
+  );
+  open(detailWithRefs({ origin: [{ commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" }] }));
+  const row = (await screen.findByText(/#1 はじめの約束を置く/)).closest("tr")!;
+  await userEvent.setup().click(within(row).getByRole("button", { name: "その時点の中身を開く" }));
+  await waitFor(() => expect(bodyText()).toContain("その時点だけの用語"));
+  expectRefLookIn(refElementIn(document.body, "その時点だけの用語"), "その時点だけの用語", "その時点の中身");
+  expect(bodyText()).not.toContain("t-old");
+});
+
+// @vanda:evidence reference-popup
+it("約束の詳細の参照に触れた時とフォーカスした時に用語と機能はその定義を約束はその文を出し離れると消す", async () => {
+  open(detailWithRefs());
+  await waitFor(() => expect(bodyText()).toContain("詳細の用語"));
+  const tooltipWith = (text: string) => screen.queryAllByRole("tooltip").find((t) => (t.textContent ?? "").includes(text)) ?? null;
+  const user = userEvent.setup();
+  for (const [name, text] of [["理由の用語", "理由の用語の定義"], ["並べ替え", "タスクを順に並べる"], ["c-other", "ほかの約束の文"], ["c-gone", "消えた約束の文"]] as const) {
+    const el = refElementIn(document.body, name)!;
+    expect(el, `参照 ${name} がない`).toBeTruthy();
+    expect(tooltipWith(text), `${name}: 触れる前から出ている`).toBeNull();
+    await user.hover(el);
+    await waitFor(() => expect(tooltipWith(text), `${name}: 触れても ${text} が出ない`).toBeTruthy());
+    await user.unhover(el);
+    await waitFor(() => expect(tooltipWith(text), `${name}: 離れても消えない`).toBeNull());
+    el.focus();
+    expect(document.activeElement, `${name}: フォーカスできない`).toBe(el);
+    await waitFor(() => expect(tooltipWith(text), `${name}: フォーカスしても ${text} が出ない`).toBeTruthy());
+    el.blur();
+    await waitFor(() => expect(tooltipWith(text), `${name}: フォーカスを外しても消えない`).toBeNull());
+  }
+});
