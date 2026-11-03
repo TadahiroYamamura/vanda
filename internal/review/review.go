@@ -60,6 +60,7 @@ type Entry struct {
 	Diff              any         `json:"diff"`
 	DetachedAgreement *Detached   `json:"detachedAgreement"`
 	Revoke            *Revocation `json:"revoke"`
+	Agree             *Agreeable  `json:"agree"`
 	OtherCommits      []CommitRef `json:"otherCommits"`
 
 	key string // 項目なら "<種類>:<ID>"、ファイルなら "path:<場所>"
@@ -179,6 +180,8 @@ func Build(o Options) (*Result, *Error) {
 	if err := s.setRevocations(detached, mbStr); err != nil {
 		return nil, internalErr(err)
 	}
+	s.setAgreeables(entries)
+	s.setAgreeables(detached)
 	s.order(entries)
 	for i := range entries {
 		n := i + 1

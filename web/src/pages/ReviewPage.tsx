@@ -479,23 +479,24 @@ export function AgreeControls(props: { entry: Entry; story: string | null; base:
         : `合意を取り消しました（コミット ${shortCommit(r.commit)}）。`;
     });
 
-  const cannot = !props.story
-    ? "ストーリーを選ぶと、合意できます。"
-    : !props.user
-      ? "git の user.name と user.email を設定すると、合意できます。"
-      : null;
+  // 合意できるかは API（entries[].agree）の判定を使う。合意済でも、このストーリーの合意がなければ合意し直せる（外れた合意を解くため）
+  const possible = e.agree?.possible ?? false;
+  const agreeButton = (
+    <button type="button" className="primary" disabled={agreeing || !possible} onClick={agree}>
+      {agreeing ? "合意しています…" : `${props.story ? `ストーリー ${props.story} で` : ""}${deleted ? "消したことに合意する" : "合意する"}`}
+    </button>
+  );
 
   return (
     <div className="agree">
-        {e.state === "proposed" && (
+      {e.state === "proposed" && (
         <>
-          <button type="button" className="primary" disabled={agreeing || cannot !== null} onClick={agree}>
-            {agreeing ? "合意しています…" : `${props.story ? `ストーリー ${props.story} で` : ""}${deleted ? "消したことに合意する" : "合意する"}`}
-          </button>
-          {cannot && <span className="note">{cannot}</span>}
+          {agreeButton}
+          {!possible && e.agree?.reason && <span className="note">{e.agree.reason}</span>}
         </>
       )}
       {e.state === "agreed" && <span className="note">{deleted ? "消したことに合意済みです。" : "今の中身に合意済みです。"}</span>}
+      {e.state === "agreed" && possible && agreeButton}
       {e.state === "agreed" && e.revoke?.possible && (
         <>
           <button type="button" className="revoke" disabled={agreeing} onClick={revoke}>

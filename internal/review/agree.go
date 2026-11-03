@@ -424,3 +424,45 @@ func dirtyMatching(root string, patterns []string) ([]string, error) {
 	}
 	return dirty, nil
 }
+
+// Agreeable は、1 件に、今の人がこのストーリーで合意できるか。合意済でも、このストーリーの合意がなければ合意できる
+// （ストーリー s の合意が外れた後に、ほかのストーリーが今の中身に合意していても、s が合意し直すまで外れたままのため）。
+type Agreeable struct {
+	Possible bool `json:"possible"`
+	// Reason は、合意できないときの理由。合意できるときは nil
+	Reason *string `json:"reason"`
+}
+
+// setAgreeables は、各件に、合意できるかを付ける。判定は Agree が断る条件と合わせる。
+func (s *state) setAgreeables(es []Entry) {
+	story := s.o.Story
+	user := GitUser(s.o.Root)
+	for i := range es {
+		e := &es[i]
+		no := func(reason string) { e.Agree = &Agreeable{Reason: ptr(reason)} }
+		target := ""
+		if e.Kind == "file" {
+			target = *e.Path
+		} else {
+			target = *e.ID
+		}
+		switch {
+		case story == "":
+			no("ストーリーを選ぶと、合意できます。")
+		case user == nil:
+			no("git の user.name と user.email を設定すると、合意できます。")
+		case e.Change == "deleted":
+			if s.recs.DeletionAgreedBy(e.Kind, target, story) {
+				no("消したことには、ストーリー " + story + " ですでに合意しています。")
+			} else {
+				e.Agree = &Agreeable{Possible: true}
+			}
+		case e.Fingerprint == nil:
+			no("指紋を作れないため、合意できません。vanda check の promise-list-shape で誤りを確かめて、直してください。")
+		case s.recs.AgreedBy(e.Kind, target, *e.Fingerprint, story):
+			no("今の中身には、ストーリー " + story + " ですでに合意しています。")
+		default:
+			e.Agree = &Agreeable{Possible: true}
+		}
+	}
+}

@@ -97,7 +97,11 @@ func (s *state) revocable(kind, key, fp string, deleted bool, point string, base
 		}
 	}
 	if len(ofStory) == 0 {
-		return nil, no(fmt.Sprintf("ストーリー %s の合意はありません（ほかのストーリー %s の合意で合意済みです）。", story, strings.Join(otherStories, "・")))
+		what := "今の中身"
+		if deleted {
+			what = "消したこと"
+		}
+		return nil, no(fmt.Sprintf("%sへのストーリー %s の合意はありません（ほかのストーリー %s の合意で合意済みです）。", what, story, strings.Join(otherStories, "・")))
 	}
 	if point == "" {
 		return nil, no("ベースブランチが決まっていないため、このブランチで書いた合意か分かりません。ベースブランチを選んでください。")

@@ -112,6 +112,7 @@ export interface Entry {
   diff: Diff | null;
   detachedAgreement: { by: string[] } | null;
   revoke?: Revocation | null;
+  agree?: Agreeable | null;
   otherCommits: CommitRef[];
 }
 
@@ -119,6 +120,11 @@ export interface Revocation {
   possible: boolean;
   reason: string | null;
   others: User[];
+}
+
+export interface Agreeable {
+  possible: boolean;
+  reason: string | null;
 }
 
 export interface RevokeResult {
