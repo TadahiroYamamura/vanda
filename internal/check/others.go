@@ -155,7 +155,10 @@ func (e *env) deletions(scope string) []diag.Error {
 		}
 		name := kindName[kind] + " " + target + " "
 		if kind == "file" {
-			name = "ファイル" // 誤りの行の頭に場所を書くので、場所は繰り返さない
+			name = "ファイル " + target + " "
+			if at.File == target {
+				name = "ファイル" // 誤りの行の頭に消したファイルの場所を書くので、場所は繰り返さない
+			}
 		}
 		at.What = name + "を消したことに、まだ合意していません（" + why + "）"
 		at.Fix = "消してよいかを確かめてから、消したことに合意してください"
