@@ -99,6 +99,11 @@ func ReadWith(root string, read tomlread.Reader, files []string, rules []config.
 			errs = append(errs, diag.Error{File: f, What: "ファイルを読めません（" + err.Error() + "）", Fix: "ファイルを読む権限を確かめてください"})
 			continue
 		}
+		if v, ok := a.(interface {
+			fileErrors(string, []byte) []diag.Error
+		}); ok {
+			errs = append(errs, v.fileErrors(f, src)...)
+		}
 		texts, cerrs := a.comments(f, src)
 		errs = append(errs, cerrs...)
 		if len(cerrs) > 0 {

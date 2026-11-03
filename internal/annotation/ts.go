@@ -233,6 +233,8 @@ type tsCall struct {
 	close    int  // 対になる閉じ括弧の位置
 	describe bool
 	hook     bool
+	skipped  bool // .skip か .todo が付いている（実行しない）
+	only     bool // .only が付いている
 }
 
 var tsHooks = map[string]bool{"beforeEach": true, "afterEach": true, "beforeAll": true, "afterAll": true, "step": true}
@@ -290,6 +292,8 @@ func tsCalls(toks []tsTok) []tsCall {
 		c.describe = t.text == "describe" || len(c.members) > 1 && c.members[1] == "describe"
 		for _, m := range c.members[1:] {
 			c.hook = c.hook || tsHooks[m]
+			c.skipped = c.skipped || m == "skip" || m == "todo"
+			c.only = c.only || m == "only"
 		}
 		out = append(out, c)
 	}
@@ -341,16 +345,24 @@ func (tsAdapter) names(file string, src []byte, lines []int) (map[int]string, []
 			errs = append(errs, diag.Error{File: file, Line: l, What: strings.Join(c.members, ".") + " の直前には、アノテーションを書けません", Fix: "付けたい test・it・describe の呼び出しのすぐ上のコメントに移してください"})
 			continue
 		}
-		if !c.named {
-			errs = append(errs, diag.Error{File: file, Line: l, What: strings.Join(c.members, ".") + " の名前（最初の引数）が、文字列かテンプレート文字列で書いた決まった文字ではありません", Fix: "名前を、文字列で直接書いてください"})
-			continue
-		}
 		var outer []*tsCall
 		for k := range calls {
 			d := &calls[k]
 			if d.describe && d.open >= 0 && lx.toks[d.open].off < c.root.off && c.root.off < lx.toks[d.close].off {
 				outer = append(outer, d)
 			}
+		}
+		// 実行しないテストは何も確かめていないので、誤りにはせず、アノテーションとして返さない（エビデンスに数えない）
+		skipped := c.skipped
+		for _, d := range outer {
+			skipped = skipped || d.skipped
+		}
+		if skipped {
+			continue
+		}
+		if !c.named {
+			errs = append(errs, diag.Error{File: file, Line: l, What: strings.Join(c.members, ".") + " の名前（最初の引数）が、文字列かテンプレート文字列で書いた決まった文字ではありません", Fix: "名前を、文字列で直接書いてください"})
+			continue
 		}
 		sort.Slice(outer, func(a, b int) bool { return outer[a].open < outer[b].open })
 		parts := []string{}
@@ -378,4 +390,15 @@ func tsTargetLine(src []byte, annLine int) int {
 		return m
 	}
 	return annLine
+}
+
+// fileErrors は、アノテーションの有無によらず、ファイルの .only を誤りにする（同じファイルのほかのテストを黙って実行しなくするため）。
+func (tsAdapter) fileErrors(file string, src []byte) []diag.Error {
+	var errs []diag.Error
+	for _, c := range tsCalls(lexTS(string(src)).toks) {
+		if c.only {
+			errs = append(errs, diag.Error{File: file, Line: c.root.line, What: strings.Join(c.members, ".") + " があります（.only は、同じファイルのほかのテストを実行しなくします）", Fix: ".only を外してください"})
+		}
+	}
+	return errs
 }
