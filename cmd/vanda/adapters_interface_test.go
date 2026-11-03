@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 // vanda と外のもの（.vanda/adapters/ のアダプタ、設定に書いたファイル、GitHub の API）との境目の振る舞い。
@@ -492,5 +494,72 @@ func Test_vanda_doctorはストーリーの置き場所のアダプタがあっ�
 				t.Errorf("誤りに、場所 %s と直し方が出ていない\n%s", c.where, errs)
 			}
 		})
+	}
+}
+
+// CMD-10: アダプタには、アノテーションを読むファイルの HEAD のコミットの中身を、標準入力の JSON の content で渡す。
+// 作業ツリーには、行のずれる書きかけ（コミットしていない変更）と、git add しただけの変更の 2 つを試す。
+// アダプタは受け取った標準入力を .in.json に書き写し、1 行目に名前を返す
+// @vanda:evidence project-adapter-reads-committed-content
+// @vanda:evidence reads-committed-files-only
+func Test_vanda_adaptersのアダプタはコミットしていない変更があってもHEADの中身をcontentで受け取る(t *testing.T) {
+	t.Parallel()
+	bin := buildVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const committed = "@vanda:term task\n本文\n"
+	for _, staged := range []bool{false, true} {
+		t.Run(fmt.Sprintf("git_addした=%v", staged), func(t *testing.T) {
+			t.Parallel()
+			root := ifaceRepo(t, version, annotationRule("echo-in", ""), map[string]string{"ext/a.ext": committed},
+				map[string]string{"echo-in": "cat > .in.json\nprintf '%s' '{\"names\":[{\"line\":1,\"name\":\"x\"}]}'\n"})
+			g := newRVGit(t, root)
+			g.commitAll("(test) はじめ", "")
+			writeFile(t, root, "ext/a.ext", "書きかけ\n@vanda:term no-such-term\n")
+			if staged {
+				g.run("add", "ext/a.ext")
+			}
+			code, _, errs := runVandaIn(t, bin, root, g.env, "check", ".vanda/checks/links.toml")
+			if code != 0 {
+				t.Errorf("HEAD の中身なら通るはず（%d）\n%s", code, errs)
+			}
+			var in struct {
+				Path        string           `json:"path"`
+				Content     *string          `json:"content"`
+				Annotations []map[string]int `json:"annotations"`
+			}
+			if err := json.Unmarshal([]byte(readFileString(t, root, ".in.json")), &in); err != nil {
+				t.Fatal(err)
+			}
+			if in.Path != "ext/a.ext" || in.Content == nil || *in.Content != committed || !reflect.DeepEqual(in.Annotations, []map[string]int{{"line": 1}}) {
+				t.Errorf("渡したもの: path %q content %v annotations %v", in.Path, in.Content, in.Annotations)
+			}
+		})
+	}
+}
+
+// CMD-10: アダプタが [[annotation]] の timeout（秒）を過ぎても終わらなければ、止めて、どのアダプタかを書いたタイムアウトの誤りにする。
+// sleep の 30 秒を待たずに、timeout の 1 秒で終わることも見る
+// @vanda:evidence project-adapter-annotation-timeout
+func Test_vanda_adaptersのアダプタがtimeoutを過ぎたらどのアダプタかを書いたタイムアウトの誤りで止まる(t *testing.T) {
+	t.Parallel()
+	bin := buildVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := ifaceRepo(t, version, annotationRule("slow-adapter", "timeout = 1\n"), map[string]string{"ext/a.ext": "@vanda:term task\n"},
+		map[string]string{"slow-adapter": "cat >/dev/null\nsleep 30\n"})
+	g := newRVGit(t, root)
+	g.commitAll("(test) はじめ", "")
+	start := time.Now()
+	code, _, errs := runVandaIn(t, bin, root, g.env, "check", ".vanda/checks/links.toml")
+	if d := time.Since(start); d > 15*time.Second {
+		t.Errorf("timeout の 1 秒で止めず、%v 待った", d)
+	}
+	if code != 1 || !strings.Contains(errs, "ext/a.ext") || !strings.Contains(errs, "slow-adapter") || !strings.Contains(errs, "タイムアウト") {
+		t.Errorf("どのアダプタかを書いたタイムアウトの誤りでない（%d）\n%s", code, errs)
 	}
 }

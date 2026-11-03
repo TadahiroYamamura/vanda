@@ -1,12 +1,15 @@
 package annotation
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/TadahiroYamamura/vanda/internal/config"
 )
@@ -201,23 +204,44 @@ func TestReadはその言語のコメントの外にあるアノテーション�
 	}
 }
 
-func TestReadはvanda_adaptersのアダプタとJSONで受け渡す(t *testing.T) {
+// 作業ツリーのファイルには書きかけを置き、読む中身（read が返すもの。審査では HEAD のコミットの中身）と食い違わせる。
+// アダプタは受け取った標準入力を in.json に書き写すだけにし、JSON の形と中身はテストの側で確かめる
+//
+// @vanda:evidence project-adapter-reads-committed-content
+func TestReadはvanda_adaptersのアダプタにJSONで場所と読む中身と行を渡し名前を受け取る(t *testing.T) {
+	const committed = "x\n<!-- @vanda:evidence a -->\n<!-- @vanda:evidence b -->\n"
 	root, files := setup(t, map[string]string{
-		"docs/a.md": "x\n<!-- @vanda:evidence a -->\n<!-- @vanda:evidence b -->\n",
-		"adapter.sh": `#!/bin/sh
-in=$(cat)
-case "$in" in
-  '{"path":"docs/a.md","annotations":[{"line":2},{"line":3}]}') echo '{"names":[{"line":2,"name":"A"},{"line":3,"name":"B"}]}' ;;
-  *) echo "unexpected: $in" >&2; exit 3 ;;
-esac
-`,
+		"docs/a.md":  "書きかけ\n\n\n\n<!-- @vanda:evidence c -->\n",
+		"adapter.sh": "#!/bin/sh\ncat > in.json\necho '{\"names\":[{\"line\":2,\"name\":\"A\"},{\"line\":3,\"name\":\"B\"}]}'\n",
 	})
-	as, errs := Read(root, files, []config.AnnotationRule{{Paths: []string{"docs/*.md"}, User: &config.UserAdapter{Name: "adapter", Path: "adapter.sh"}}})
+	read := func(file string) ([]byte, error) {
+		if file == "docs/a.md" {
+			return []byte(committed), nil
+		}
+		return os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
+	}
+	as, errs := ReadWith(root, read, files, []config.AnnotationRule{{Paths: []string{"docs/*.md"}, User: &config.UserAdapter{Name: "adapter", Path: "adapter.sh"}}})
 	if errs != nil {
 		t.Fatal(errs)
 	}
 	if got := show(as); got != "docs/a.md:02 evidence a -> A\ndocs/a.md:03 evidence b -> B\n" {
 		t.Errorf("got:\n%s", got)
+	}
+	raw, err := os.ReadFile(filepath.Join(root, "in.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var in map[string]any
+	if err := json.Unmarshal(raw, &in); err != nil {
+		t.Fatalf("標準入力が JSON でない: %v\n%s", err, raw)
+	}
+	want := map[string]any{
+		"path":        "docs/a.md",
+		"content":     committed,
+		"annotations": []any{map[string]any{"line": float64(2)}, map[string]any{"line": float64(3)}},
+	}
+	if !reflect.DeepEqual(in, want) {
+		t.Errorf("標準入力:\n%s\nwant: %v", raw, want)
 	}
 }
 
@@ -526,5 +550,23 @@ func TestReadはtsのonlyを付けた呼び出しをアノテーションの有�
 				}
 			})
 		}
+	}
+}
+
+// アダプタは標準入力を読んだ後、止まったままになる。待つのは timeout の 1 秒で、sleep の 30 秒は待たない
+//
+// @vanda:evidence project-adapter-annotation-timeout
+func TestReadはvanda_adaptersのアダプタがtimeoutを過ぎたらどのアダプタかを書いたタイムアウトの誤りにする(t *testing.T) {
+	root, files := setup(t, map[string]string{
+		"docs/a.md": "<!-- @vanda:evidence a -->\n",
+		"slow.sh":   "#!/bin/sh\ncat >/dev/null\nsleep 30\n",
+	})
+	start := time.Now()
+	_, errs := Read(root, files, []config.AnnotationRule{{Paths: []string{"docs/*.md"}, User: &config.UserAdapter{Name: "slow", Path: "slow.sh"}, Timeout: time.Second}})
+	if d := time.Since(start); d > 10*time.Second {
+		t.Errorf("timeout の 1 秒で止めず、%v 待った", d)
+	}
+	if errs == nil || !lineWith(errs.Error(), "docs/a.md: ", "slow", "タイムアウト") {
+		t.Errorf("どのアダプタかを書いたタイムアウトの誤りでない: %v", errs)
 	}
 }

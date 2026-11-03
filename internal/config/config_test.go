@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func writeConfig(t *testing.T, body string) string {
@@ -261,6 +262,46 @@ func TestLoadはargsを組込みのアダプタとadapterのない表に書け�
 	root := writeConfig(t, "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"o/r\"\nargs = [\"x\"]\n")
 	if _, errs := Load(root); errs == nil || !strings.Contains(errs.Error(), "args") {
 		t.Errorf("組込みの github の args が誤りにならない: %v", errs)
+	}
+}
+
+// @vanda:evidence config-annotation-timeout
+func TestLoadはtimeoutを1以上の整数の秒でカスタムアダプタの表にだけ受け付け省けば20秒にする(t *testing.T) {
+	for name, body := range map[string]string{
+		"0":           "adapter = \"md\"\ntypes = [\"unit-test\"]\ntimeout = 0\n",
+		"負の数":         "adapter = \"md\"\ntypes = [\"unit-test\"]\ntimeout = -1\n",
+		"小数":          "adapter = \"md\"\ntypes = [\"unit-test\"]\ntimeout = 1.5\n",
+		"文字列":         "adapter = \"md\"\ntypes = [\"unit-test\"]\ntimeout = \"20\"\n",
+		"組込みのgo":      "adapter = \"go\"\ntypes = [\"unit-test\"]\ntimeout = 5\n",
+		"組込みのtxtar":   "adapter = \"txtar\"\ntypes = [\"scenario-test\"]\ntimeout = 5\n",
+		"組込みのtla":     "adapter = \"tla\"\ntypes = [\"model-check\"]\ntimeout = 5\n",
+		"組込みのsql":     "adapter = \"sql\"\ntypes = [\"guardrail\"]\ntimeout = 5\n",
+		"組込みのts":      "adapter = \"ts\"\ntypes = [\"unit-test\"]\ntimeout = 5\n",
+		"adapterのない表": "types = [\"unit-test\"]\ntimeout = 5\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			root := writeConfig(t, annConfig(body))
+			writeAdapter(t, root, "md", "#!/bin/sh\n")
+			if _, errs := Load(root); errs == nil || !lineWith(errs.Error(), ".vanda/config.toml:", "timeout") {
+				t.Errorf("timeout の行を指す誤りにならない: %v", errs)
+			}
+		})
+	}
+	for body, want := range map[string]time.Duration{
+		"adapter = \"md\"\ntypes = [\"unit-test\"]\ntimeout = 1\n":  time.Second,
+		"adapter = \"md\"\ntypes = [\"unit-test\"]\ntimeout = 90\n": 90 * time.Second,
+		"adapter = \"md\"\ntypes = [\"unit-test\"]\n":               20 * time.Second,
+	} {
+		root := writeConfig(t, annConfig(body))
+		writeAdapter(t, root, "md", "#!/bin/sh\n")
+		cfg, errs := Load(root)
+		if errs != nil {
+			t.Errorf("%q が誤りになった: %v", body, errs)
+			continue
+		}
+		if got := cfg.Annotations[0].Timeout; got != want {
+			t.Errorf("%q の timeout: %v, want %v", body, got, want)
+		}
 	}
 }
 
