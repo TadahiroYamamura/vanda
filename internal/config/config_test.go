@@ -123,11 +123,15 @@ id_pattern = "("
 }
 
 // @vanda:evidence config-version-mismatch
-func TestLoadは設定の版が動いているvandaより古いと移行を知らせる(t *testing.T) {
+func TestLoadは設定の版が動いているvandaより古いとvandaの形に書き換えるよう知らせてないコマンドは案内しない(t *testing.T) {
 	root := writeConfig(t, `version = "0.0.9"`)
 	_, errs := Load(root)
-	if !strings.Contains(errs.Error(), "移行のコマンド") {
-		t.Errorf("移行を知らせていない: %s", errs)
+	if errs == nil || !lineWith(errs.Error(), ".vanda/config.toml:1: ", "0.0.9", ".vanda/", "書き換え") {
+		t.Errorf(".vanda/ を書き換えるよう知らせていない: %v", errs)
+	}
+	// 移行のコマンドはまだないので、案内しない
+	if errs != nil && (strings.Contains(errs.Error(), "コマンド") || strings.Contains(errs.Error(), "vanda migrate")) {
+		t.Errorf("ないコマンドを案内した: %s", errs)
 	}
 }
 

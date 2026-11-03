@@ -3,8 +3,8 @@
 # version が動いている vanda と同じなら通り、新しい・古い・ないときはエラーで止まる。
 # 審査（vanda check）も、版が合わなければ止まる。
 #
-# 確かめないこと: 新しいときに「上げる」、古いときに「移行のコマンドを使う」と知らせる文言。
-# 文言は計画に書かれていないため。ここでは、エラーが version の行（1 行目）を指し、書いた版が出ることまでを確かめる。
+# エラーは version の行（1 行目）を指し、書いた版が出る。設定の版が新しければ vanda を上げるよう、古ければ .vanda/ を
+# 書き換えるよう知らせる（約束 config-version-mismatch）。移行のコマンドはまだないので、コマンドは案内しない。
 
 exec git init -q -b main
 
@@ -20,6 +20,8 @@ cp cases/config-newer.toml .vanda/config.toml
 expand .vanda/config.toml
 ! exec vanda doctor
 stderr 'config\.toml:1: .*'$VANDA_VERSION_NEWER
+stderr '上げ'
+! stderr 'コマンド'
 ! stderr '(?m)^panic: '
 commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
@@ -31,6 +33,8 @@ cp cases/config-older.toml .vanda/config.toml
 expand .vanda/config.toml
 ! exec vanda doctor
 stderr 'config\.toml:1: .*'$VANDA_VERSION_OLDER
+stderr '\.vanda/.*書き換え'
+! stderr 'コマンド'
 ! stderr '(?m)^panic: '
 commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
