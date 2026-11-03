@@ -383,6 +383,8 @@ func Test段2のテストで使うリポジトリはmainで審査が通りスト
 	if err := f.Close(); err != nil {
 		t.Fatal(err)
 	}
+	// 審査は HEAD のコミットの中身だけを読むので、合意をストーリーのコミットにする
+	r.g.commitAll("(chore) 合意する", reviewStory)
 	if code, out, errs := r.vanda(bin, "check", ".vanda/checks/merge.toml", "--base", "main"); code != 0 {
 		t.Fatalf("手で合意しても審査が通らない（%d）\n%s%s", code, out, errs)
 	}

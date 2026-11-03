@@ -7,10 +7,12 @@ expand .vanda/config.toml
 
 # a.toml の約束は b.toml の機能を、b.toml の約束は a.toml の用語を対象にする。
 # どちらかのファイルを読まなければ、対象が見つからずに止まる。
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # パターンに当たったファイルの誤りで止まる
 cp cases/b-bad-stage.toml .vanda/promises/b.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'b\.toml'
 ! stderr '(?m)^panic: '
@@ -21,8 +23,10 @@ stderr 'b\.toml'
 cp cases/b.toml .vanda/promises/b.toml
 agree .vanda/agreements/x.toml '#1' claim a-claim fp/a-claim.json
 agree .vanda/agreements/y.toml '#2' claim b-claim fp/b-claim.json
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/targets.toml
 cp cases/b-without-claim.toml .vanda/promises/b.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'y\.toml'
 ! stderr '(?m)^panic: '

@@ -82,6 +82,7 @@ func Test_vanda_adaptersのアダプタは直下のファイルとディレク�
 	t.Run("ファイル", func(t *testing.T) {
 		t.Parallel()
 		root := ifaceRepo(t, version, annotationRule("file-adapter", ""), files, map[string]string{"file-adapter": answerLine1})
+		newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
 		code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml")
 		if code != 1 || !strings.Contains(errs, "ext/a.ext:1: ") || !strings.Contains(errs, "no-such-claim") {
 			t.Errorf("ファイルのアダプタが動いていない（%d）\n%s", code, errs)
@@ -90,6 +91,7 @@ func Test_vanda_adaptersのアダプタは直下のファイルとディレク�
 	t.Run("ディレクトリの直下のrun", func(t *testing.T) {
 		t.Parallel()
 		root := ifaceRepo(t, version, annotationRule("dir-adapter", ""), files, map[string]string{"dir-adapter/run": answerLine1, "dir-adapter/other": "exit 9\n"})
+		newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
 		code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml")
 		if code != 1 || !strings.Contains(errs, "ext/a.ext:1: ") || !strings.Contains(errs, "no-such-claim") {
 			t.Errorf("ディレクトリの run が動いていない（%d）\n%s", code, errs)
@@ -115,6 +117,7 @@ func Test_vanda_adaptersのアダプタはリポジトリの根でargsをその�
 	if err != nil {
 		t.Fatal(err)
 	}
+	newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
 	_, _, errs := runVandaIn(t, bin, filepath.Join(root, "sub", "dir"), newRVGit(t, root).env, "check", "../../.vanda/checks/links.toml")
 	if !strings.Contains(errs, "cwd="+real+" ") {
 		t.Errorf("アダプタの作業のディレクトリがリポジトリの根（%s）でない\n%s", real, errs)
@@ -136,6 +139,7 @@ func Test_vanda_adaptersのアダプタが失敗すると標準エラーの理�
 	}
 	root := ifaceRepo(t, version, annotationRule("fails", ""), map[string]string{"ext/a.ext": "@vanda:evidence a\n"},
 		map[string]string{"fails": "cat >/dev/null\necho '置き場所が誤っています（3 行目）' >&2\nexit 4\n"})
+	newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
 	code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml")
 	if code != 1 || !strings.Contains(errs, "ext/a.ext") || !strings.Contains(errs, "置き場所が誤っています（3 行目）") {
 		t.Errorf("アダプタの理由が誤りに入っていない（%d）\n%s", code, errs)
@@ -154,6 +158,7 @@ func Test_vanda_adaptersのアダプタがannotationにfalseを返した行は�
 	// 1 行目は書き方が誤り（ID が 2 つ・決まっていない種類）、2 行目は約束リストにない ID。どちらも false を返す
 	root := ifaceRepo(t, version, annotationRule("not-ann", ""), map[string]string{"ext/a.ext": "@vanda:foo a b\n@vanda:evidence no-such-claim\n"},
 		map[string]string{"not-ann": "cat >/dev/null\nprintf '%s' '{\"names\":[{\"line\":1,\"annotation\":false},{\"line\":2,\"annotation\":false}]}'\n"})
+	newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
 	if code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml"); code != 0 {
 		t.Errorf("annotation: false の行で止まった（%d）\n%s", code, errs)
 	}
@@ -191,6 +196,7 @@ func Test_vanda_adaptersのアダプタを動かせないときは場所と直�
 			t.Parallel()
 			root := ifaceRepo(t, version, annotationRule(c.adapter, ""), map[string]string{"ext/a.ext": "@vanda:evidence a\n"}, nil)
 			c.prepare(root)
+			newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
 			code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml")
 			if code != 1 || !strings.Contains(errs, c.where) || !strings.Contains(errs, "ください。") {
 				t.Errorf("誤りに、場所 %s と直し方が出ていない（%d）\n%s", c.where, code, errs)
@@ -223,6 +229,7 @@ func Test_vanda_adaptersのアダプタの答えの誤りはそのファイル�
 			t.Parallel()
 			root := ifaceRepo(t, version, annotationRule("bad", ""), map[string]string{"ext/a.ext": "@vanda:term task\n"},
 				map[string]string{"bad": "cat >/dev/null\nprintf '%s' '" + answer + "'\n"})
+			newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
 			code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml")
 			if code != 1 || !strings.Contains(errs, "ext/a.ext") {
 				t.Errorf("答え %s で、ext/a.ext の誤りにならない（%d）\n%s", answer, code, errs)
@@ -247,11 +254,13 @@ func Test設定にはっきり書いた約束リストのファイルがなけ�
 	if err := os.Remove(filepath.Join(root, ".vanda/promises.toml")); err != nil {
 		t.Fatal(err)
 	}
+	newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
 	code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/shape.toml")
 	if code != 1 || !strings.Contains(errs, ".vanda/specs.toml") {
 		t.Errorf("はっきり書いたファイルがないのに、その場所の誤りにならない（%d）\n%s", code, errs)
 	}
 	writeFile(t, root, ".vanda/config.toml", strings.Replace(cfg, "\n[[layer]]", "promises = [\".vanda/specs/*.toml\"]\n\n[[layer]]", 1))
+	newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
 	if code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/shape.toml"); code != 0 {
 		t.Errorf("ワイルドカードのパターンが何にも当たらないのを誤りにした（%d）\n%s", code, errs)
 	}
@@ -278,6 +287,7 @@ func Test設定のpromisesのパターンに当たるファイルをすべて約
 	root := ifaceRepo(t, version, "", files, nil)
 	cfg := readFileString(t, root, ".vanda/config.toml")
 	writeFile(t, root, ".vanda/config.toml", strings.Replace(cfg, "\n[[layer]]", extra+"\n[[layer]]", 1))
+	newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
 	code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/shape.toml")
 	// c.toml の誤りは出て、b.toml を読んだので a.toml の subjects の誤りは出ない。パターンに当たらない d.toml は読まない
 	if code != 1 || !strings.Contains(errs, ".vanda/promises/c.toml") || strings.Contains(errs, "a.toml") || strings.Contains(errs, "Other_Bad") {

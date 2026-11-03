@@ -30,11 +30,13 @@ chmod 755 .vanda/adapters/norun/other
 # ファイルの形のアダプタに、args が渡り、正しい JSON を返せば通る
 cp cases/config-ok.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 
 # 引数が違えば、アダプタが失敗する（args が渡っていることの確かめ）
 cp cases/config-ok-wrong-args.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'ext/a\.ext.*args: --mode other'
 ! stderr '(?m)^panic: '
@@ -42,12 +44,14 @@ stderr 'ext/a\.ext.*args: --mode other'
 # ディレクトリの形のアダプタは、直下の run を動かし、args が渡る
 cp cases/config-dir.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 
 # 名前で指したアノテーションの ID は、組込みのアダプタと同じく、約束リストとのつながりを審査する
 cp cases/config-ok.toml .vanda/config.toml
 expand .vanda/config.toml
 cp cases/a-no-such.ext ext/a.ext
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'ext/a\.ext:1: '
 ! stderr '(?m)^panic: '
@@ -57,11 +61,13 @@ cp cases/a.ext ext/a.ext
 # 組込みの go なら ext/a.ext を Go として読めずに止まるが、.vanda/adapters/go は名前を返すので通る
 cp cases/config-go.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 
 # 渡していない行の名前を返す
 cp cases/config-wrong-line.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'ext/a\.ext'
 ! stderr '(?m)^panic: '
@@ -69,6 +75,7 @@ stderr 'ext/a\.ext'
 # 空の名前を返す
 cp cases/config-empty-name.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'ext/a\.ext'
 ! stderr '(?m)^panic: '
@@ -76,6 +83,7 @@ stderr 'ext/a\.ext'
 # 0 でない終了コードで終わると、標準エラーに書いた理由がエラーのメッセージに入る
 cp cases/config-reason.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'ext/a\.ext.*the annotation is misplaced'
 ! stderr '(?m)^panic: '
@@ -83,6 +91,7 @@ stderr 'ext/a\.ext.*the annotation is misplaced'
 # アダプタが失敗する
 cp cases/config-fail.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'ext/a\.ext'
 ! stderr '(?m)^panic: '
@@ -90,6 +99,7 @@ stderr 'ext/a\.ext'
 # アダプタが JSON として読めないものを返す
 cp cases/config-not-json.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'ext/a\.ext'
 ! stderr '(?m)^panic: '
@@ -100,12 +110,14 @@ chmod 755 .vanda/adapters/not-annotation
 cp cases/two-lines.ext ext/a.ext
 cp cases/config-not-annotation.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 
 # 名前を返した行は、書き方を確かめる（ID が 2 つで止まる）
 chmod 755 .vanda/adapters/both-named
 cp cases/config-both-named.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'ext/a\.ext:1: '
 ! stderr '(?m)^panic: '
@@ -119,32 +131,38 @@ chmod 755 .vanda/adapters/annotation-true
 chmod 755 .vanda/adapters/annotation-string
 cp cases/config-no-answer.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'ext/a\.ext'
 ! stderr '(?m)^panic: '
 cp cases/config-twice.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'ext/a\.ext'
 ! stderr '(?m)^panic: '
 cp cases/config-name-and-false.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'ext/a\.ext'
 ! stderr '(?m)^panic: '
 cp cases/config-annotation-true.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'ext/a\.ext'
 ! stderr '(?m)^panic: '
 cp cases/config-annotation-string.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'ext/a\.ext'
 ! stderr '(?m)^panic: '
 chmod 755 .vanda/adapters/neither
 cp cases/config-neither.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'ext/a\.ext'
 ! stderr '(?m)^panic: '
@@ -152,6 +170,7 @@ stderr 'ext/a\.ext'
 # 名前のアダプタが、中にも .vanda/adapters/ にもない。場所と直し方が出る
 cp cases/config-missing.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr '\.vanda/config\.toml.*no-such-adapter'
 stderr '\.vanda/adapters/'
@@ -161,6 +180,7 @@ stderr 'ください。'
 # 実行の権限がない。場所と直し方が出る
 cp cases/config-noexec.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr '\.vanda/adapters/noexec'
 stderr 'ください。'
@@ -169,6 +189,7 @@ stderr 'ください。'
 # ディレクトリの直下に run がない。場所と直し方が出る
 cp cases/config-norun.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr '\.vanda/adapters/norun/run'
 stderr 'ください。'
@@ -177,26 +198,31 @@ stderr 'ください。'
 # アダプタの名前に、空・/・\・.・.. は書けない（.vanda/adapters/ の外を指せないように）
 cp cases/config-name-empty.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr '\.vanda/config\.toml'
 ! stderr '(?m)^panic: '
 cp cases/config-name-slash.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr '\.vanda/config\.toml.*okdir/run'
 ! stderr '(?m)^panic: '
 cp cases/config-name-backslash.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr '\.vanda/config\.toml'
 ! stderr '(?m)^panic: '
 cp cases/config-name-dot.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr '\.vanda/config\.toml'
 ! stderr '(?m)^panic: '
 cp cases/config-name-dotdot.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr '\.vanda/config\.toml'
 ! stderr '(?m)^panic: '
@@ -205,6 +231,7 @@ stderr '\.vanda/config\.toml'
 cp cases/config-builtin-args.toml .vanda/config.toml
 expand .vanda/config.toml
 rm .vanda/adapters/go
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr '\.vanda/config\.toml.*args'
 ! stderr '(?m)^panic: '
@@ -212,6 +239,7 @@ stderr '\.vanda/config\.toml.*args'
 # command は、ほかの決まっていない項目と同じく誤りになる
 cp cases/config-command.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr '\.vanda/config\.toml.*command'
 ! stderr '(?m)^panic: '
@@ -219,6 +247,7 @@ stderr '\.vanda/config\.toml.*command'
 # アダプタを書いていない
 cp cases/config-no-adapter.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 ! stderr '(?m)^panic: '
 
@@ -226,6 +255,7 @@ expand .vanda/config.toml
 cp cases/config-fail.toml .vanda/config.toml
 expand .vanda/config.toml
 rm ext/a.ext
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 
 -- .vanda/config.toml --

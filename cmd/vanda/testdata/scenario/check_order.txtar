@@ -12,6 +12,7 @@
 exec git init -q -b main
 expand .vanda/config.toml
 
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape-then-unread.toml
 stdout '^審査 promise-list-shape（all）: 失敗（3 件）$'
 stdout '^審査 unread-files（all）: 失敗（1 件）$'
@@ -22,6 +23,7 @@ order stderr 'qqq-broken\.toml:3: ' 'qqq-broken\.toml:9: '
 ! stderr '(?m)^panic: '
 cp stdout first-stdout.txt
 cp stderr first-stderr.txt
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape-then-unread.toml
 cmp stdout first-stdout.txt
 cmp stderr first-stderr.txt
@@ -34,12 +36,14 @@ order stderr 'zzz-stray\.toml' 'qqq-broken\.toml:9: '
 # 通る審査の後に失敗する審査を並べても、終了コードは失敗になる
 rm .vanda/zzz-stray.toml
 cp cases/aaa-fixed.toml .vanda/promises/aaa.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/unread-then-shape.toml
 stderr 'qqq-broken\.toml:9: '
 ! stderr 'zzz-stray'
 
 # どちらも通れば、終了コードは成功になる
 cp cases/fixed.toml .vanda/promises/qqq-broken.toml
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/unread-then-shape.toml
 stdout '^審査 unread-files（all）: 通った$'
 stdout '^審査 promise-list-shape（all）: 通った$'

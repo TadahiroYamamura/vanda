@@ -31,6 +31,22 @@ func gitRepo(t *testing.T, config string) string {
 	return dir
 }
 
+// commitIn は、dir のリポジトリの作業ツリーのすべてを 1 つのコミットにする（審査は HEAD のコミットの中身だけを読むため）
+func commitIn(t *testing.T, dir, subject string) {
+	t.Helper()
+	for _, args := range [][]string{
+		{"rm", "-r", "-q", "--cached", "--ignore-unmatch", "."},
+		{"add", "-A"},
+		{"-c", "user.name=T", "-c", "user.email=t@example.com", "-c", "commit.gpgsign=false", "commit", "-q", "--allow-empty", "-m", subject},
+	} {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+}
+
 func runIn(t *testing.T, dir string, args ...string) (int, string, string) {
 	t.Helper()
 	t.Chdir(dir)
@@ -102,6 +118,7 @@ func TestCheckは審査の設定のファイルをカレントディレクトリ
 	if err := os.WriteFile(filepath.Join(dir, ".vanda", "memo.txt"), []byte("x"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	commitIn(t, dir, "memo を足す")
 	code, out, errs := runIn(t, sub, "check", "checks/push.toml")
 	if code != 1 || out != "審査 unread-files（all）: 失敗（1 件）\n" || !strings.HasPrefix(errs, ".vanda/memo.txt: ") || !strings.Contains(errs, "読まれて") || !strings.Contains(errs, "promises か agreements") || strings.Count(errs, "\n") != 1 {
 		t.Errorf("code %d, out %q, stderr %q", code, out, errs)
@@ -109,6 +126,7 @@ func TestCheckは審査の設定のファイルをカレントディレクトリ
 	if err := os.Remove(filepath.Join(dir, ".vanda", "memo.txt")); err != nil {
 		t.Fatal(err)
 	}
+	commitIn(t, dir, "memo を消す")
 	code, out, _ = runIn(t, sub, "check", "checks/push.toml")
 	if code != 0 || out != "審査 unread-files（all）: 通った\n" {
 		t.Errorf("code %d, out %q", code, out)

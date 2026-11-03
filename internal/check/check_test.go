@@ -346,6 +346,7 @@ stage = "someday"
 type = "e2e"
 layers = ["db"]
 `})
+	r.commit("(test) 約束リストを誤らせる", "")
 	pass, out, _ := r.run("[[check]]\nname = \"promise-list-shape\"\nscope = \"all\"\n", "", "")
 	if pass {
 		t.Fatal("通ってしまった")
@@ -377,6 +378,7 @@ func TestAnnotationLinksは指す先のないIDと種類の違いと型の用語
 		"x/more_test.go": "package x\n\n// @vanda:evidence task\nfunc TestA(t *testing.T) {}\n\n// @vanda:sensor nothing\nfunc TestB(t *testing.T) {}\n",
 		"spec/Task.tla":  "---- MODULE Task ----\n\\* @vanda:feature add-task\nTasks == {1, 2}\nVARIABLE tasks\nTypeOK == tasks \\subseteq Tasks\n\\* @vanda:claim task-unique\nUnique == TRUE\n====\n",
 	})
+	r.commit("(test) アノテーションを誤らせる", "")
 	_, out, _ := r.run("[[check]]\nname = \"annotation-links\"\nscope = \"all\"\n", "", "")
 	expect(t, out, [][]string{
 		{"spec/Task.tla:2: ", "仕様の型 Tasks", "TypeOK", "@vanda:feature"},
@@ -394,6 +396,7 @@ func TestAgreementは提案中とフラグと合意していないファイル�
 		".vanda/promises.toml": strings.Replace(basePromises, `statement = "タスクは重ならない"`, "statement = \"タスクは決して重ならない\"\nguesses = [\"g\"]", 1),
 		"e2e/add.txtar":        "# @vanda:evidence task-unique\nexec vanda version\n",
 	})
+	r.commit("(test) 約束とシナリオを変える", "")
 	_, out, _ := r.run("[[check]]\nname = \"agreement\"\nscope = \"all\"\n", "", "")
 	expect(t, out, [][]string{
 		{"審査 agreement（all）: 失敗（3 件）"},
@@ -408,6 +411,7 @@ func TestAgreementTargetsは約束リストにない項目を指す合意を出�
 	r := goodRepo(t)
 	cfg := r.config()
 	r.agreeAll("#1", cfg, "[[agreement]]\nkind = \"claim\"\nkey = \"gone\"\nfingerprint = \"sha256:0000000000000000000000000000000000000000000000000000000000000000\"\nuser = { name = \"PO\", email = \"po@example.com\" }\nagreed_at = 2026-10-31T12:00:00Z\nstory = \"#1\"\n\n")
+	r.commit("(test) ない約束への合意を足す", "")
 	_, out, _ := r.run("[[check]]\nname = \"agreement-targets\"\nscope = \"all\"\n", "", "")
 	expect(t, out, [][]string{{".vanda/agreements.toml:3: ", "合意の記録", `約束 "gone"`, "指して"}})
 }
@@ -420,6 +424,7 @@ func TestEvidencePresentはタイプに合うアノテーションのない予�
 		".vanda/promises.toml": basePromises + "\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"proof\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"sensor\"\nlayers = [\"model\"]\n",
 		"db/schema.sql":        "CREATE UNIQUE INDEX t ON task(id);\n",
 	})
+	r.commit("(test) 予定を足しガードレールの定義のアノテーションを外す", "")
 	_, out, _ := r.run("[[check]]\nname = \"evidence-present\"\nscope = \"all\"\n", "", "")
 	expect(t, out, [][]string{
 		{"審査 evidence-present（all）: 失敗（3 件）"},
@@ -433,6 +438,7 @@ func TestEvidencePresentはタイプに合うアノテーションのない予�
 func TestUnreadFilesは設定と審査の設定のほかの読まれていないファイルを出す(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{".vanda/checks/push.toml": "", ".vanda/notes.md": "x", ".vanda/checks/old/a.toml": ""})
+	r.commit("(test) 読まれないファイルを足す", "")
 	_, out, _ := r.run("[[check]]\nname = \"unread-files\"\nscope = \"all\"\n", "", "")
 	expect(t, out, [][]string{{"審査 unread-files（all）: 失敗（2 件）"}, {".vanda/checks/old/a.toml: ", ".vanda/ に", "読まれて"}, {".vanda/notes.md: ", ".vanda/ に", "読まれて"}})
 }
@@ -584,6 +590,7 @@ func TestLoadSpecsは審査の名前と範囲の誤りを出す(t *testing.T) {
 func TestRunは審査ごとの結果の行を標準出力に誤りの中身を標準エラーに出す(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{".vanda/notes.md": "x"})
+	r.commit("(test) 読まれないファイルを足す", "")
 	specs, errs := LoadSpecs("checks.toml", []byte("[[check]]\nname = \"unread-files\"\nscope = \"all\"\n[[check]]\nname = \"agreement\"\nscope = \"all\"\n"))
 	if errs != nil {
 		t.Fatal(errs)
@@ -605,6 +612,7 @@ func TestRunは審査ごとの結果の行を標準出力に誤りの中身を�
 func TestPromiseListShapeは空のIDを誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{".vanda/promises.toml": strings.Replace(basePromises, `id = "add-task"`, `id = ""`, 1)})
+	r.commit("(test) 空の ID にする", "")
 	_, out, _ := r.run("[[check]]\nname = \"promise-list-shape\"\nscope = \"all\"\n", "", "")
 	expect(t, out, [][]string{{".vanda/promises.toml:7: ", `機能の ID ""`, "決まった形"}})
 }
@@ -618,6 +626,7 @@ func TestPromiseListShapeは重なったIDを表の種類でなく出てきた�
 		".vanda/promises/a.toml": "[[claim]]\nid = \"b\"\nsubjects = [\"a\"]\nstatement = \"s\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n",
 		".vanda/config.toml":     strings.Replace(baseConfig, `version = "0.1.0"`, "version = \"0.1.0\"\npromises = [\".vanda/promises.toml\", \".vanda/promises/*.toml\"]", 1),
 	})
+	r.commit("(test) ID を重ねる", "")
 	_, out, _ := r.run("[[check]]\nname = \"promise-list-shape\"\nscope = \"all\"\n", "", "")
 	expect(t, out, [][]string{
 		{"審査 promise-list-shape（all）: 失敗（2 件）"},
@@ -660,6 +669,7 @@ func TestAgreementTargetsは合意の記録の決まっていない表と項目�
 		t.Run(name, func(t *testing.T) {
 			r := goodRepo(t)
 			r.agreeAll("#1", r.config(), extra)
+			r.commit("(test) 合意の記録に決まっていないものを足す", "")
 			pass, out, _ := r.run("[[check]]\nname = \"agreement-targets\"\nscope = \"all\"\n", "", "")
 			if pass || !lineWith(out, ".vanda/agreements.toml:") {
 				t.Errorf("誤りにならない、または場所がない:\n%s", out)
@@ -686,6 +696,7 @@ func TestAnnotationLinksは種類ごとに指す先の表が違えば全部の�
 				if err := os.Chmod(filepath.Join(r.root, ".vanda/adapters/any"), 0o755); err != nil {
 					t.Fatal(err)
 				}
+				r.commit("(test) アノテーションを足す", "")
 				pass, out, _ := r.run("[[check]]\nname = \"annotation-links\"\nscope = \"all\"\n", "", "")
 				if want := table == okTable; pass != want {
 					t.Errorf("@vanda:%s が %s の ID を指して、通るのは %v のはず\n%s", kind, table, want, out)
@@ -705,6 +716,7 @@ func TestAgreementは合意済でも約束にflagsかguessesが残っていれ�
 			r := goodRepo(t)
 			// flags と guesses は指紋に入らないので、合意の記録は今の中身に合ったまま
 			r.write(map[string]string{".vanda/promises.toml": strings.Replace(basePromises, "layers = [\"model\", \"db\"]", "layers = [\"model\", \"db\"]\n"+add, 1)})
+			r.commit("(test) "+name+" を残す", "")
 			pass, out, _ := r.run("[[check]]\nname = \"agreement\"\nscope = \"all\"\n", "", "")
 			if pass || !lineWith(out, ".vanda/promises.toml:", "task-unique") {
 				t.Errorf("%s が残っているのに通った、または約束を指していない\n%s", name, out)
@@ -730,6 +742,7 @@ func TestRunは読めない入力を前提にするほかの審査を読めな�
 		t.Run(c.name, func(t *testing.T) {
 			r := goodRepo(t)
 			r.write(map[string]string{c.file: c.body})
+			r.commit("(test) 読めない入力にする", "")
 			_, out, _ := r.run(allChecks, "", "")
 			for _, name := range c.blocked {
 				if !lineWith(out, "審査 "+name+"（all）: 失敗（1 件）") {
@@ -806,6 +819,7 @@ func TestAgreementは合意の対象のファイルの名前を変えたら古�
 func TestUnreadFilesはvanda_adaptersの下のファイルを除く(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{".vanda/adapters/a": "x", ".vanda/adapters/b/run": "x", ".vanda/adapters/c/d/e.toml": "x", ".vanda/adapters.toml": "x"})
+	r.commit("(test) ファイルを足す", "")
 	_, out, _ := r.run("[[check]]\nname = \"unread-files\"\nscope = \"all\"\n", "", "")
 	if strings.Contains(out, ".vanda/adapters/") || !lineWith(out, ".vanda/adapters.toml: ") {
 		t.Errorf(".vanda/adapters/ の下を除き、名前の似たほかのファイルは止めるはず\n%s", out)

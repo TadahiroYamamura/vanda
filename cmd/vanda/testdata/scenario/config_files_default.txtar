@@ -9,8 +9,10 @@ exec git init -q -b main
 expand .vanda/config.toml
 
 # 約束リスト: 既定のファイルの中身が審査に使われる
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 cp cases/promises-bad-stage.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml'
 ! stderr '(?m)^panic: '
@@ -20,8 +22,10 @@ stderr 'promises\.toml'
 # この審査は指紋が今の中身に合うかを見ないので、指紋の元の JSON の書き方（日本語の文字の扱い）は結果に関わらない
 cp cases/promises.toml .vanda/promises.toml
 agree .vanda/agreements.toml '#1' claim task-add-unique fp/claim.json
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/targets.toml
 cp cases/promises-without-claim.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'agreements\.toml'
 ! stderr '(?m)^panic: '
@@ -30,16 +34,19 @@ stderr 'agreements\.toml'
 rm .vanda/promises.toml
 rm .vanda/agreements.toml
 exec vanda doctor
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 exec vanda check .vanda/checks/targets.toml
 
 # 設定にはっきり書いたファイルがないと止まる
 cp cases/config-explicit.toml .vanda/config.toml
 expand .vanda/config.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml'
 ! stderr '(?m)^panic: '
 cp cases/promises.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'agreements\.toml'
 ! stderr '(?m)^panic: '

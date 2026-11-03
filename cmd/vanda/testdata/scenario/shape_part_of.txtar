@@ -11,52 +11,61 @@ expand .vanda/config.toml
 
 # part_of の先が用語としてあれば通る
 cp cases/part-of-good.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # part_of の先がない
 cp cases/part-of-missing.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:10: .*nothing'
 ! stderr '(?m)^panic: '
 
 # part_of の先が用語でなく機能
 cp cases/part-of-feature.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:10: .*task-add'
 ! stderr '(?m)^panic: '
 
 # part_of が自分を指す
 cp cases/part-of-self.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml.*task-id'
 ! stderr '(?m)^panic: '
 
 # part_of が 2 つの用語で循環する
 cp cases/part-of-cycle-2.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml.*\b[xy]\b'
 ! stderr '(?m)^panic: '
 
 # part_of が 3 つの用語で循環する
 cp cases/part-of-cycle-3.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml.*\b[xyz]\b'
 ! stderr '(?m)^panic: '
 
 # part_of を配列で書く
 cp cases/part-of-array.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:10: .*part_of'
 ! stderr '(?m)^panic: '
 
 # subjects に約束の ID を書く
 cp cases/subjects-claim.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:14: .*task-id-unique'
 ! stderr '(?m)^panic: '
 
 # subjects の先がない
 cp cases/subjects-missing.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:14: .*nothing'
 ! stderr '(?m)^panic: '

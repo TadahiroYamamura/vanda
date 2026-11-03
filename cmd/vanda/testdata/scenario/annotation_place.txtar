@@ -15,10 +15,12 @@ expand .vanda/config.toml
 unquote scenarios/add.txtar
 
 # 元のファイルでは通る
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 
 # go で決まっていない種類（foo）を書くと、その行で止まる
 cp cases/go-unknown-kind.case task.go
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: .*foo'
 ! stderr '(?m)^panic: '
@@ -26,6 +28,7 @@ cp orig/task.go.orig task.go
 
 # go で 1 つのアノテーションに ID を 2 つ書くと、その行で止まる
 cp cases/go-two-ids.case task.go
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
@@ -34,6 +37,7 @@ cp orig/task.go.orig task.go
 # txtar で決まっていない種類（foo）を書くと、その行で止まる
 cp cases/txtar-unknown-kind.case scenarios/add.txtar
 unquote scenarios/add.txtar
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'scenarios/add\.txtar:1: .*foo'
 ! stderr '(?m)^panic: '
@@ -43,6 +47,7 @@ unquote scenarios/add.txtar
 # txtar で 1 つのアノテーションに ID を 2 つ書くと、その行で止まる
 cp cases/txtar-two-ids.case scenarios/add.txtar
 unquote scenarios/add.txtar
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
@@ -51,6 +56,7 @@ unquote scenarios/add.txtar
 
 # tla で決まっていない種類（foo）を書くと、その行で止まる
 cp cases/tla-unknown-kind.case spec/Task.tla
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: .*foo'
 ! stderr '(?m)^panic: '
@@ -58,6 +64,7 @@ cp orig/Task.tla.orig spec/Task.tla
 
 # tla で 1 つのアノテーションに ID を 2 つ書くと、その行で止まる
 cp cases/tla-two-ids.case spec/Task.tla
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
@@ -65,6 +72,7 @@ cp orig/Task.tla.orig spec/Task.tla
 
 # sql で決まっていない種類（foo）を書くと、その行で止まる
 cp cases/sql-unknown-kind.case db/schema.sql
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: .*foo'
 ! stderr '(?m)^panic: '
@@ -72,6 +80,7 @@ cp orig/schema.sql.orig db/schema.sql
 
 # sql で 1 つのアノテーションに ID を 2 つ書くと、その行で止まる
 cp cases/sql-two-ids.case db/schema.sql
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
@@ -79,6 +88,7 @@ cp orig/schema.sql.orig db/schema.sql
 
 # Go で型の宣言の前に書くと止まる
 cp cases/go-on-type.case task.go
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:3: '
 ! stderr '(?m)^panic: '
@@ -86,6 +96,7 @@ cp orig/task.go.orig task.go
 
 # Go で関数の中に書くと止まる
 cp cases/go-in-body.case task.go
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:7: '
 ! stderr '(?m)^panic: '
@@ -93,6 +104,7 @@ cp orig/task.go.orig task.go
 
 # Go でコメントと func の宣言のあいだに空行があると止まる
 cp cases/go-gap.case task.go
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
@@ -100,49 +112,59 @@ cp orig/task.go.orig task.go
 
 # Go でメソッドの宣言の直前に書けば通る
 cp cases/go-method.case task.go
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/task.go.orig task.go
 
 # txtar で最初の -- name -- より後の `@vanda:` は数えず、誤りにもしない
 cp cases/txtar-after.case scenarios/add.txtar
 unquote scenarios/add.txtar
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
 
 # Go の文字列の中の `@vanda:` は数えず、誤りにもしない
 cp cases/go-string.case task.go
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/task.go.orig task.go
 
 # TLA+ の文字列の中の `@vanda:` は数えず、誤りにもしない
 cp cases/tla-string.case spec/Task.tla
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/Task.tla.orig spec/Task.tla
 
 # SQL の文字列の中の `@vanda:` は数えず、誤りにもしない
 cp cases/sql-string.case db/schema.sql
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/schema.sql.orig db/schema.sql
 
 # コメントの中で逆引用符で囲んだ `@vanda:` は数えず、誤りにもしない（説明の文で書き方に触れるため）。4 つの言語の全部で回す
 cp cases/go-backquote.case task.go
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/task.go.orig task.go
 cp cases/txtar-backquote.case scenarios/add.txtar
 unquote scenarios/add.txtar
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
 cp cases/tla-backquote.case spec/Task.tla
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/Task.tla.orig spec/Task.tla
 cp cases/sql-backquote.case db/schema.sql
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/schema.sql.orig db/schema.sql
 
 # 逆引用符で囲まなければ、同じ所でも数える（上の確かめが、ただ読み飛ばしているのでないことを見るため）
 cp cases/go-backquote-off.case task.go
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:3: '
 ! stderr '(?m)^panic: '
@@ -150,18 +172,21 @@ cp orig/task.go.orig task.go
 
 # 逆引用符で囲んだ `@vanda:` は、1 行に 2 つ以上あるかを見るときも数えない
 cp cases/tla-backquote-same-line.case spec/Task.tla
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/Task.tla.orig spec/Task.tla
 
 # txtar で、最初の -- name -- より前でも、# で始まらない命令の行の `@vanda:` は数えない
 cp cases/txtar-command.case scenarios/add.txtar
 unquote scenarios/add.txtar
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
 
 # TLA+ で次の行が定義でない（VARIABLES）と止まる
 cp cases/tla-vars.case spec/Task.tla
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:8: '
 ! stderr '(?m)^panic: '
@@ -169,11 +194,13 @@ cp orig/Task.tla.orig spec/Task.tla
 
 # TLA+ でアノテーションと定義のあいだに空行とコメントがあっても通る
 cp cases/tla-gap.case spec/Task.tla
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/Task.tla.orig spec/Task.tla
 
 # go でID のないアノテーションを書くと、その行で止まる
 cp cases/go-no-id.case task.go
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
@@ -181,6 +208,7 @@ cp orig/task.go.orig task.go
 
 # go で理由のない internal のアノテーションを書くと、その行で止まる
 cp cases/go-internal-no-reason.case task.go
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
@@ -188,6 +216,7 @@ cp orig/task.go.orig task.go
 
 # go で1 行に 2 つのアノテーションを書くと、その行で止まる
 cp cases/go-two-on-line.case task.go
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
@@ -196,6 +225,7 @@ cp orig/task.go.orig task.go
 # txtar でID のないアノテーションを書くと、その行で止まる
 cp cases/txtar-no-id.case scenarios/add.txtar
 unquote scenarios/add.txtar
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
@@ -205,6 +235,7 @@ unquote scenarios/add.txtar
 # txtar で理由のない internal のアノテーションを書くと、その行で止まる
 cp cases/txtar-internal-no-reason.case scenarios/add.txtar
 unquote scenarios/add.txtar
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
@@ -214,6 +245,7 @@ unquote scenarios/add.txtar
 # txtar で1 行に 2 つのアノテーションを書くと、その行で止まる
 cp cases/txtar-two-on-line.case scenarios/add.txtar
 unquote scenarios/add.txtar
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
@@ -222,6 +254,7 @@ unquote scenarios/add.txtar
 
 # tla でID のないアノテーションを書くと、その行で止まる
 cp cases/tla-no-id.case spec/Task.tla
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
@@ -229,6 +262,7 @@ cp orig/Task.tla.orig spec/Task.tla
 
 # tla で理由のない internal のアノテーションを書くと、その行で止まる
 cp cases/tla-internal-no-reason.case spec/Task.tla
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
@@ -236,6 +270,7 @@ cp orig/Task.tla.orig spec/Task.tla
 
 # tla で1 行に 2 つのアノテーションを書くと、その行で止まる
 cp cases/tla-two-on-line.case spec/Task.tla
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
@@ -243,6 +278,7 @@ cp orig/Task.tla.orig spec/Task.tla
 
 # sql でID のないアノテーションを書くと、その行で止まる
 cp cases/sql-no-id.case db/schema.sql
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
@@ -250,6 +286,7 @@ cp orig/schema.sql.orig db/schema.sql
 
 # sql で理由のない internal のアノテーションを書くと、その行で止まる
 cp cases/sql-internal-no-reason.case db/schema.sql
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
@@ -257,6 +294,7 @@ cp orig/schema.sql.orig db/schema.sql
 
 # sql で1 行に 2 つのアノテーションを書くと、その行で止まる
 cp cases/sql-two-on-line.case db/schema.sql
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
@@ -264,16 +302,19 @@ cp orig/schema.sql.orig db/schema.sql
 
 # TLA+ の (* *) で同じ行に閉じても、閉じは ID に含めないので通る
 cp cases/tla-block-ok.case spec/Task.tla
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/Task.tla.orig spec/Task.tla
 
 # TLA+ で LOCAL の付いた定義に付けても通る
 cp cases/tla-local.case spec/Task.tla
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/Task.tla.orig spec/Task.tla
 
 # TLA+ で関数の定義（f[x \in S] ==）に付けても通る
 cp cases/tla-func.case spec/Task.tla
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/Task.tla.orig spec/Task.tla
 

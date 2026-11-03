@@ -982,16 +982,18 @@ func Test既定の答えのまま進めると読み取った値で5つのファ�
 	if !gh.called() {
 		t.Errorf("vanda doctor が、偽の GitHub のリポジトリを読みに来ていない")
 	}
-	// 作った直後のブランチにはストーリーの ID のあるコミットがないので、--story がなければストーリーが分からず止まる
-	check := exec.Command(bin, "check", ".vanda/checks/ci.toml", "--base", "origin/main")
-	check.Dir, check.Env = r.root, env
-	if out, err := check.CombinedOutput(); err == nil || !strings.Contains(string(out), "ストーリー") {
-		t.Errorf("--story なしの vanda check が、ストーリーが分からないとして止まらない: %v\n%s", err, out)
-	}
-	check = exec.Command(bin, "check", ".vanda/checks/ci.toml", "--base", "origin/main", "--story", "#1")
-	check.Dir, check.Env = r.root, env
-	if out, err := check.CombinedOutput(); err != nil {
-		t.Errorf("作った審査の設定で vanda check --story #1 が通らない: %v\n%s", err, out)
+	// 審査は HEAD のコミットの中身だけを読むので、作ったファイルをストーリー #1 のコミットにしてから動かす。
+	// ストーリーはトレーラーから #1 に決まるので --story はいらず、--story #1 でも通る
+	r.g.commitAll("(chore) vanda init で作ったファイルを足す", "#1")
+	for _, args := range [][]string{
+		{"check", ".vanda/checks/ci.toml", "--base", "origin/main"},
+		{"check", ".vanda/checks/ci.toml", "--base", "origin/main", "--story", "#1"},
+	} {
+		check := exec.Command(bin, args...)
+		check.Dir, check.Env = r.root, env
+		if out, err := check.CombinedOutput(); err != nil {
+			t.Errorf("作った審査の設定で vanda %v が通らない: %v\n%s", args, err, out)
+		}
 	}
 }
 

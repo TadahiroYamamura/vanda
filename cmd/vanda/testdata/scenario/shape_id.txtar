@@ -9,106 +9,124 @@ expand .vanda/config.toml
 
 # 英小文字で始まり、英小文字・数字をハイフンでつないだ ID なら通る
 cp cases/good-ids.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # 約束の ID の形が誤り（upper）
 cp cases/bad-id-claim-upper.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:13: '
 ! stderr '(?m)^panic: '
 
 # 約束の ID の形が誤り（underscore）
 cp cases/bad-id-claim-underscore.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:13: '
 ! stderr '(?m)^panic: '
 
 # 約束の ID の形が誤り（leading-hyphen）
 cp cases/bad-id-claim-leading-hyphen.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:13: '
 ! stderr '(?m)^panic: '
 
 # 約束の ID の形が誤り（trailing-hyphen）
 cp cases/bad-id-claim-trailing-hyphen.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:13: '
 ! stderr '(?m)^panic: '
 
 # 約束の ID の形が誤り（double-hyphen）
 cp cases/bad-id-claim-double-hyphen.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:13: '
 ! stderr '(?m)^panic: '
 
 # 約束の ID の形が誤り（space）
 cp cases/bad-id-claim-space.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:13: '
 ! stderr '(?m)^panic: '
 
 # 約束の ID の形が誤り（non-ascii）
 cp cases/bad-id-claim-non-ascii.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:13: '
 ! stderr '(?m)^panic: '
 
 # 約束の ID の形が誤り（empty）
 cp cases/bad-id-claim-empty.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:13: '
 ! stderr '(?m)^panic: '
 
 # 約束の ID の形が誤り（leading-digit）
 cp cases/bad-id-claim-leading-digit.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:13: '
 ! stderr '(?m)^panic: '
 
 # term の ID の形が誤り（upper）
 cp cases/bad-id-term-upper.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:2: '
 ! stderr '(?m)^panic: '
 
 # feature の ID の形が誤り（upper）
 cp cases/bad-id-feature-upper.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:7: '
 ! stderr '(?m)^panic: '
 
 # ID が重なる（term-term）
 cp cases/dup-term-term.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:27: .*task.*\b2\b'
 ! stderr '(?m)^panic: '
 
 # ID が重なる（feature-feature）
 cp cases/dup-feature-feature.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:27: .*task-add.*\b7\b'
 ! stderr '(?m)^panic: '
 
 # ID が重なる（claim-claim）
 cp cases/dup-claim-claim.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:27: .*task-id-unique.*\b13\b'
 ! stderr '(?m)^panic: '
 
 # ID が重なる（term-feature）
 cp cases/dup-term-feature.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:27: .*task.*\b2\b'
 ! stderr '(?m)^panic: '
 
 # ID が重なる（term-claim）
 cp cases/dup-term-claim.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:27: .*task.*\b2\b'
 ! stderr '(?m)^panic: '
 
 # ID が重なる（feature-claim）
 cp cases/dup-feature-claim.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:27: .*task-add.*\b7\b'
 ! stderr '(?m)^panic: '
@@ -117,6 +135,7 @@ stderr 'promises\.toml:27: .*task-add.*\b7\b'
 cp cases/config-split.toml .vanda/config.toml
 expand .vanda/config.toml
 rm .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'two\.toml:2: .*task.*one\.toml'
 ! stderr '(?m)^panic: '

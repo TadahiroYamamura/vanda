@@ -130,6 +130,8 @@ func Test分けたファイルをまたいでも重なったIDは後に出てき
 		}
 		want := expectedOverlaps(items, locs)
 
+		// 審査は HEAD のコミットの中身だけを読む
+		newRVGit(rt, root).commitAll("(test) 審査の前にコミットする", "")
 		cmd := exec.Command(bin, "check", ".vanda/checks/shape.toml")
 		cmd.Dir = root
 		var stdout, stderr strings.Builder

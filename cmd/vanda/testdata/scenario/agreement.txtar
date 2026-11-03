@@ -10,6 +10,7 @@ exec git init -q -b main
 expand .vanda/config.toml
 
 # 合意していない約束・用語があると止まる
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stderr 'promises\.toml.*task-id-unique'
 stderr '(?m)promises\.toml.*\btask\b($|[^-])'
@@ -18,30 +19,36 @@ stderr '(?m)promises\.toml.*\btask\b($|[^-])'
 # 合意すると通る
 agree .vanda/agreements.toml '#1' term task fp/term-task.json
 agree .vanda/agreements.toml '#1' claim task-id-unique fp/claim-v1.json
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
 # 合意した後に中身（文）を変えると止まる
 cp cases/promises-v2.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stderr 'promises\.toml.*task-id-unique'
 ! stderr '(?m)^panic: '
 
 # 合意したときの中身に戻すと、また通る（合意は指紋で探すため）
 cp cases/promises-v1.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
 # 項目の順・空白・引用符だけが違う書き方なら、合意済のまま
 cp cases/promises-v1-reformatted.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
 # 合意した後に flags だけを立てると、指紋は変わらないが、フラグが残っているので止まる
 cp cases/promises-v1-flags.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stderr 'promises\.toml.*(task-id-unique|ai-proposal|flags)'
 ! stderr '(?m)^panic: '
 
 # 合意した後に guesses だけを書いても、同じく止まる
 cp cases/promises-v1-guesses.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stderr 'promises\.toml.*(task-id-unique|guesses)'
 ! stderr '(?m)^panic: '
@@ -49,14 +56,17 @@ stderr 'promises\.toml.*(task-id-unique|guesses)'
 # 中身を変えて、別のストーリーが今の中身に合意すれば通る。前の合意は履歴として残っていてよい
 cp cases/promises-v2.toml .vanda/promises.toml
 agree .vanda/agreements.toml '#2' claim task-id-unique fp/claim-v2.json
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
 # 同じ中身に、もう 1 つのストーリーが別に合意しても、合意済のまま
 agree .vanda/agreements.toml '#3' claim task-id-unique fp/claim-v2.json
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
 # 約束の ID を変えると、中身が同じでも提案中になる
 cp cases/promises-v2-renamed.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stderr 'promises\.toml.*task-ids-unique'
 ! stderr '(?m)^panic: '

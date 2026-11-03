@@ -12,6 +12,7 @@ exec git init -q -b main
 cp cases/config-current.toml .vanda/config.toml
 expand .vanda/config.toml
 exec vanda doctor
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/all.toml
 
 # version が動いている vanda より新しい
@@ -20,6 +21,7 @@ expand .vanda/config.toml
 ! exec vanda doctor
 stderr 'config\.toml:1: .*'$VANDA_VERSION_NEWER
 ! stderr '(?m)^panic: '
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
 stderr 'config\.toml'
 ! stderr '(?m)^panic: '
@@ -30,6 +32,7 @@ expand .vanda/config.toml
 ! exec vanda doctor
 stderr 'config\.toml:1: .*'$VANDA_VERSION_OLDER
 ! stderr '(?m)^panic: '
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
 stderr 'config\.toml'
 ! stderr '(?m)^panic: '
@@ -39,6 +42,7 @@ cp cases/config-no-version.toml .vanda/config.toml
 ! exec vanda doctor
 stderr 'config\.toml.*\bversion\b'
 ! stderr '(?m)^panic: '
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
 stderr 'config\.toml'
 ! stderr '(?m)^panic: '

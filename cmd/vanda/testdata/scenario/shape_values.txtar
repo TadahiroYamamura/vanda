@@ -9,46 +9,54 @@ expand .vanda/config.toml
 
 # 11 のタイプ、4 つのステージ、設定にある 3 つのレイヤー、flags の ai-proposal と guesses を使えば通る
 cp cases/all-values.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # 決まった値にないステージ
 cp cases/bad-stage.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:21: .*testing'
 ! stderr '(?m)^panic: '
 
 # 決まった値から外したステージ test
 cp cases/removed-stage.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:21: .*\Wtest\W'
 ! stderr '(?m)^panic: '
 
 # 決まった値から外したタイプ monitoring
 cp cases/removed-type.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:22: .*monitoring'
 ! stderr '(?m)^panic: '
 
 # 決まった値にないタイプ
 cp cases/bad-type.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:22: .*e2e-test'
 ! stderr '(?m)^panic: '
 
 # 約束に、設定にないレイヤー
 cp cases/bad-claim-layer.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:18: .*ui'
 ! stderr '(?m)^panic: '
 
 # エビデンスに、設定にないレイヤー
 cp cases/bad-evidence-layer.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:23: .*ui'
 ! stderr '(?m)^panic: '
 
 # flags に ai-proposal 以外の値
 cp cases/bad-flags.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:19: .*guess'
 ! stderr '(?m)^panic: '

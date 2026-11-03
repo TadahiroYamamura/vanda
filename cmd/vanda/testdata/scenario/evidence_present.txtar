@@ -17,10 +17,12 @@ expand .vanda/config.toml
 unquote e2e/add.txtar cases/add-none.txtar
 
 # どの予定にも、タイプに合うアノテーションがあれば通る
+commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/all.toml
 
 # txtar のアノテーションがないと、scenario-test の予定で止まる（Go の evidence では代わりにならない）
 cp cases/add-none.txtar e2e/add.txtar
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
 stderr 'promises\.toml.*scenario-test'
 ! stderr 'unit-test'
@@ -30,6 +32,7 @@ unquote e2e/add.txtar
 
 # TLA+ の claim がないと、model-check の予定で止まる
 cp cases/Task-none.tla spec/Task.tla
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
 stderr 'promises\.toml.*model-check'
 ! stderr 'scenario-test'
@@ -38,6 +41,7 @@ cp cases/Task.tla spec/Task.tla
 
 # SQL の evidence がないと、guardrail の予定で止まる
 cp cases/schema-none.sql db/schema.sql
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
 stderr 'promises\.toml.*guardrail'
 ! stderr 'model-check'
@@ -46,6 +50,7 @@ cp cases/schema.sql db/schema.sql
 
 # Go の evidence がないと、Go で確かめる 5 つのタイプの予定のどれでも止まる。sensor は Go の sensor で満たされたまま
 cp cases/task_test.go.none task_test.go
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
 stderr 'promises\.toml.*unit-test'
 stderr 'promises\.toml.*cross-check'
@@ -58,6 +63,7 @@ cp cases/task_test.go.orig task_test.go
 
 # Go の sensor がないと、sensor の予定で止まる。Go の evidence では代わりにならない
 cp cases/task.go.none task.go
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
 stderr 'promises\.toml.*sensor'
 ! stderr 'unit-test'
@@ -66,12 +72,14 @@ cp cases/task.go.orig task.go
 
 # ほかの約束のアノテーションでは、満たされない
 cp cases/promises-other.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
 stderr 'promises\.toml.*task-title-required'
 ! stderr '(?m)^panic: '
 
 # proof を予定に書くと、段 1 では扱えないので止まる
 cp cases/promises-proof.toml .vanda/promises.toml
+commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
 stderr 'promises\.toml.*proof'
 ! stderr '(?m)^panic: '
