@@ -886,7 +886,7 @@ func (f *fakeRepoAPI) called() bool {
 
 // CMD-11
 // @vanda:evidence init-defaults-from-repository
-// @vanda:evidence init-writes-four-files
+// @vanda:evidence init-writes-files
 // @vanda:evidence init-values-only
 // @vanda:evidence init-default-types
 // @vanda:evidence init-guide
@@ -1498,7 +1498,7 @@ func filesToDir(t *testing.T, files [][2]string) string {
 }
 
 // CMD-11: 答えから作る 5 つのファイル。置き場所の選択肢の全部と、言語の選び方で、書かれる [story] と [[annotation]] が合う
-// @vanda:evidence init-writes-four-files
+// @vanda:evidence init-writes-files
 // @vanda:evidence init-values-only
 // @vanda:evidence init-default-types
 func Test答えから作る5つのファイルは置き場所と言語の答えのとおりに値だけで書かれる(t *testing.T) {
@@ -1577,7 +1577,7 @@ func Test答えから作る5つのファイルは置き場所と言語の答え�
 }
 
 // CMD-11: 審査の設定には、今ある審査を全部、docs/formats.md の「審査の種類」の順に、審査ごとに決まった範囲で書く
-// @vanda:evidence init-writes-four-files
+// @vanda:evidence init-writes-files
 func Test審査の設定には今ある審査が全部docs_formats_mdの順に決まった範囲で入る(t *testing.T) {
 	t.Parallel()
 	var doc struct {
