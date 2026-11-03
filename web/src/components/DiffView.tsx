@@ -1,6 +1,7 @@
 import type { DiffLine, DiffPart } from "../api";
 import type { Lang } from "../highlight";
 import { CodeLine, symbolsByLine, useTokens } from "./Code";
+import { RefView } from "./Prose";
 
 // 差分は API（docs/formats.md の entries[].diff）が作ったものを、そのまま見せる。
 
@@ -10,28 +11,29 @@ function wsClass(text: string): string {
   return text.includes("\n") ? "diff-part ws nl" : "diff-part ws";
 }
 
-// side が both なら、消した文字と足した文字の両方を 1 列で見せる
+// side が both なら、消した文字と足した文字の両方を 1 列で見せる。参照にかかる所（ref）は、片と同じ参照の見た目にする
 export function Parts(props: { parts: DiffPart[]; side: "before" | "after" | "both" }) {
   const hide = props.side === "before" ? "insert" : props.side === "after" ? "delete" : "";
   return (
     <>
       {props.parts
         .filter((p) => p.op !== hide)
-        .map((p, i) =>
-          p.op === "delete" ? (
+        .map((p, i) => {
+          const text = p.ref ? <RefView id={p.ref}>{p.text}</RefView> : p.text;
+          return p.op === "delete" ? (
             <del key={i} className={wsClass(p.text)}>
-              {p.text}
+              {text}
             </del>
           ) : p.op === "insert" ? (
             <ins key={i} className={wsClass(p.text)}>
-              {p.text}
+              {text}
             </ins>
           ) : (
             <span key={i} className="diff-part">
-              {p.text}
+              {text}
             </span>
-          ),
-        )}
+          );
+        })}
     </>
   );
 }

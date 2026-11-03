@@ -2,6 +2,7 @@ import type { EvidenceContent, EvidenceMark } from "../api";
 import { stageLabel, typeLabel } from "../labels";
 import { LayerChips, LayerChipsDiff } from "./Chips";
 import { Parts } from "./DiffView";
+import { Prose } from "./Prose";
 
 // EvidenceList は、エビデンスの予定を、エビデンス 1 つを 1 項目にしたリストで出す（「ステージ · タイプ」とレイヤーの札の行と、その下に詳細）。
 // 変更前と変更後の表、その時点の中身（CL-08）で、同じ出し方にそろえる。詳細は改行を保つ。
@@ -35,7 +36,11 @@ export function EvidenceList(props: { items: EvidenceContent[]; marks?: Evidence
                 <Parts parts={m.detail} side={side} />
               </div>
             ) : (
-              ev.detail && <div className="evidence-detail">{ev.detail}</div>
+              ev.detail && (
+                <div className="evidence-detail">
+                  <Prose pieces={ev.detail} />
+                </div>
+              )
             )}
           </li>
         );

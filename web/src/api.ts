@@ -29,37 +29,54 @@ export interface Context {
   trailerErrors: { commit: string; subject: string; message: string }[];
 }
 
+// Piece は、自然言語で書く項目の文の片。ref があれば参照で、text は見せる文字（用語と機能は名前、約束は ID）
+export interface Piece {
+  text: string;
+  ref?: string;
+}
+
+export type Prose = Piece[];
+
+export interface RefTarget {
+  kind: "term" | "feature" | "claim";
+  name: string | null;
+  text: string;
+  current: boolean;
+}
+
+export type Refs = Record<string, RefTarget>;
+
 export interface EvidenceContent {
   stage: string;
   type: string;
   layers: string[];
-  detail: string | null;
+  detail: Prose | null;
 }
 
 export interface ClaimContent {
-  statement: string;
-  rationale: string | null;
-  condition: string | null;
+  statement: Prose;
+  rationale: Prose | null;
+  condition: Prose | null;
   subjects: string[];
   layers: string[];
   evidence: EvidenceContent[];
   flags: string[];
-  guesses: string[];
-  modelCheckWaiver: string | null;
+  guesses: Prose[];
+  modelCheckWaiver: Prose | null;
 }
 
 export interface TermContent {
   name: string;
-  definition: string;
+  definition: Prose;
   partOf: string | null;
 }
 
 export interface FeatureContent {
   name: string;
-  definition: string;
+  definition: Prose;
   core: boolean | null;
   formal: boolean | null;
-  formalWaiver: string | null;
+  formalWaiver: Prose | null;
 }
 
 export interface FileContent {
@@ -77,6 +94,7 @@ export interface CommitRef {
 export interface DiffPart {
   op: "equal" | "delete" | "insert";
   text: string;
+  ref?: string;
 }
 
 export interface DiffLine {
@@ -145,6 +163,7 @@ export interface Review {
   branchStories?: string[] | null;
   storyFrom?: string;
   storyChoice?: "fixed" | "branch" | "all";
+  refs: Refs;
 }
 
 export interface Story {
@@ -171,18 +190,19 @@ export interface EvidenceDetail extends EvidenceContent {
 
 export interface ClaimDetail {
   id: string;
-  statement: string;
-  rationale: string | null;
-  condition: string | null;
+  statement: Prose;
+  rationale: Prose | null;
+  condition: Prose | null;
   layers: LayerRef[];
   subjects: { kind: "term" | "feature" | null; id: string; name: string | null }[];
   state: State;
   fingerprint: string | null;
   flags: string[];
-  guesses: string[];
+  guesses: Prose[];
   evidence: EvidenceDetail[];
   origin: { commit: string; date: string; subject: string; stories: string[]; change: "added" | "modified" }[];
   agreements: { user: User; agreedAt: string; story: string; fingerprint: string; current: boolean; commit?: string | null }[];
+  refs: Refs;
 }
 
 export interface ClaimAt {
@@ -193,6 +213,7 @@ export interface ClaimAt {
   stories: string[];
   content: ClaimContent;
   layers?: LayerRef[];
+  refs: Refs;
 }
 
 export interface AgreeResult {

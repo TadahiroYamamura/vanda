@@ -3,6 +3,7 @@ import { api, type ClaimDetail } from "../api";
 import { ErrorBox, shortCommit, useLoad } from "./common";
 import { LayerChips } from "./Chips";
 import { EvidenceGroups } from "./EvidenceGroups";
+import { Prose, ProseLines, RefsProvider } from "./Prose";
 
 // ClaimHistory は、約束の由来（CL-04）と合意の履歴（CL-05）。約束の詳細の画面と、レビューの画面の 1 件の詳細（RV-16）で使う。
 export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) {
@@ -138,9 +139,9 @@ function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string; l
   const none = "（なし）";
   const rows: [string, ReactNode][] = d.data
     ? [
-        ["文", d.data.content.statement],
-        ["条件", d.data.content.condition ?? none],
-        ["理由", d.data.content.rationale ?? none],
+        ["文", <Prose pieces={d.data.content.statement} />],
+        ["条件", d.data.content.condition ? <Prose pieces={d.data.content.condition} /> : none],
+        ["理由", d.data.content.rationale ? <Prose pieces={d.data.content.rationale} /> : none],
         ["対象", d.data.content.subjects.join("・")],
         ["レイヤー", <LayerChips layers={d.data.content.layers} names={d.data.layers ?? undefined} />],
         [
@@ -154,13 +155,17 @@ function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string; l
               render={(ev) => (
                 <>
                   <LayerChips layers={ev.layers} names={d.data?.layers ?? undefined} />
-                  {ev.detail && <div className="evidence-detail">{ev.detail}</div>}
+                  {ev.detail && (
+                    <div className="evidence-detail">
+                      <Prose pieces={ev.detail} />
+                    </div>
+                  )}
                 </>
               )}
             />
           ),
         ],
-        ["推測", d.data.content.guesses.length > 0 ? d.data.content.guesses.join("\n") : none],
+        ["推測", d.data.content.guesses.length > 0 ? <ProseLines list={d.data.content.guesses} /> : none],
       ]
     : [];
   return (
@@ -178,14 +183,16 @@ function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string; l
           {d.loading && <p className="note">読み込んでいます…</p>}
           {d.error != null && <ErrorBox error={d.error} title="その時点の中身を読めません" />}
           {d.data && (
-            <dl className="fields">
-              {rows.map(([label, then]) => (
-                <Fragment key={label}>
-                  <dt>{label}</dt>
-                  <dd className="text user-text">{then}</dd>
-                </Fragment>
-              ))}
-            </dl>
+            <RefsProvider refs={d.data.refs}>
+              <dl className="fields">
+                {rows.map(([label, then]) => (
+                  <Fragment key={label}>
+                    <dt>{label}</dt>
+                    <dd className="text user-text">{then}</dd>
+                  </Fragment>
+                ))}
+              </dl>
+            </RefsProvider>
           )}
         </section>
       </td>

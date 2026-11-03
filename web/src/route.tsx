@@ -49,11 +49,12 @@ export function useRoute(): Route {
   return route;
 }
 
-export function Link(props: { to: string; children: React.ReactNode; className?: string }) {
+export function Link(props: { to: string; children: React.ReactNode; className?: string; describedBy?: string }) {
   return (
     <a
       href={props.to}
       className={props.className}
+      aria-describedby={props.describedBy}
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
         e.preventDefault();

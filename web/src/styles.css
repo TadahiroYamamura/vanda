@@ -77,6 +77,11 @@ main { padding: 20px 28px 40px; }
 .tooltip { position: fixed; z-index: 50; width: max-content; max-width: min(360px, calc(100vw - 16px)); white-space: normal; overflow-wrap: anywhere; background: var(--fg); color: #fff; font-size: 11px; line-height: 1.5; padding: 3px 8px; border-radius: 6px; pointer-events: none; }
 .tooltip[hidden] { display: none; }
 .tooltip-help { display: block; }
+/* 参照（reference-shown）。色だけに頼らないよう、点線の下線も付ける。約束を指す今の参照はリンクの色と実線の下線にする */
+.ref { color: var(--accent-dark); text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }
+.ref:focus-visible, .ref a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ref a { text-decoration: underline solid; }
+.ref .tooltip { white-space: pre-wrap; }
 
 /* 誤りと注意 */
 .error { margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: var(--bad-bg); color: var(--bad); font-size: 13px; white-space: pre-wrap; }

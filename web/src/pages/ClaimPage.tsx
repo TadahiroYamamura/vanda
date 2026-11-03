@@ -5,6 +5,7 @@ import { LayerChips } from "../components/Chips";
 import { EvidenceGroups } from "../components/EvidenceGroups";
 import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
+import { Prose, RefsProvider } from "../components/Prose";
 import { langOf } from "../highlight";
 import { Link, reviewQuery, reviewURL } from "../route";
 
@@ -15,6 +16,7 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: C
   if (!d.data) return <p className="note">読み込んでいます…</p>;
   const c = d.data;
   return (
+    <RefsProvider refs={c.refs} query={reviewQuery(props.params)}>
     <div className="claim">
       <p className="note">
         <Link to={reviewURL(props.params)}>ストーリーのレビューへ戻る</Link>
@@ -23,12 +25,14 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: C
         {c.id} <StateBadge state={c.state} />
       </h1>
       <ReviewAgree params={props.params} ctx={props.ctx ?? null} target={{ kind: "claim", id: c.id }} onDone={d.reload} />
-      <p className="statement user-text">{c.statement}</p>
+      <p className="statement user-text">
+        <Prose pieces={c.statement} />
+      </p>
       <dl className="fields">
         <dt>条件</dt>
-        <dd className="user-text">{c.condition ?? "（なし）"}</dd>
+        <dd className="user-text">{c.condition ? <Prose pieces={c.condition} /> : "（なし）"}</dd>
         <dt>理由</dt>
-        <dd className="user-text">{c.rationale ?? "（なし）"}</dd>
+        <dd className="user-text">{c.rationale ? <Prose pieces={c.rationale} /> : "（なし）"}</dd>
         <dt>レイヤー</dt>
         <dd>
           <LayerChips layers={c.layers.map((l) => l.id)} names={c.layers} />
@@ -40,9 +44,9 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: C
             <dt>推測</dt>
             <dd>
               <ul>
-                {c.guesses.map((g) => (
-                  <li key={g} className="user-text">
-                    {g}
+                {c.guesses.map((g, i) => (
+                  <li key={i} className="user-text">
+                    <Prose pieces={g} />
                   </li>
                 ))}
               </ul>
@@ -64,7 +68,11 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: C
                 <PresentIcon present={ev.present} />
                 <LayerChips layers={ev.layers} names={c.layers} />
               </div>
-              {ev.detail && <div className="evidence-detail">{ev.detail}</div>}
+              {ev.detail && (
+                <div className="evidence-detail">
+                  <Prose pieces={ev.detail} />
+                </div>
+              )}
               {ev.found.map((f) => (
                 <FoundView key={`${f.file}:${f.line}`} f={f} params={props.params} />
               ))}
@@ -75,6 +83,7 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: C
 
       <ClaimHistory claim={c} level="h2" />
     </div>
+    </RefsProvider>
   );
 }
 

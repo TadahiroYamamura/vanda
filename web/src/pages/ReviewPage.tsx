@@ -2,7 +2,7 @@ import { useState } from "react";
 // 本文の中の生の HTML は描かない（react-markdown の既定。rehype-raw などを足さない）。Issue の本文に悪意のある HTML があっても、画面で動かないようにするため
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { api, type ClaimContent, type User, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FileContent, type Review, type TermContent } from "../api";
+import { api, type ClaimContent, type Piece, type User, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FileContent, type Review, type TermContent } from "../api";
 import { AgreementIcon, ErrorBox, FlagBadge, ListIcon, PresentIcon, StateBadge, shortCommit, useLoad } from "../components/common";
 import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
@@ -12,6 +12,7 @@ import { EvidenceGroups } from "../components/EvidenceGroups";
 import { EvidenceList } from "../components/EvidenceList";
 import { langOf } from "../highlight";
 import { TlaCode } from "../components/TlaCode";
+import { Prose, RefsProvider, proseText } from "../components/Prose";
 import { changeLabel, fileTypeLabel, kindLabel, stageLabel, typeLabel } from "../labels";
 import { BACK, Link, navigate, reviewQuery } from "../route";
 
@@ -31,13 +32,13 @@ export interface Filter {
   notAgreed: boolean;
 }
 
-// 文字の絞り込みで見る所。消したものは今の中身がないので、前の中身で見る
+// 文字の絞り込みで見る所。消したものは今の中身がないので、前の中身で見る。文は、参照を見せる文字に置き換えた後の文に当てる（reference-filter）
 function searchable(e: Entry): string[] {
   if (e.kind === "file") return [e.path ?? ""];
   const c = e.after ?? e.before;
   const out = [e.id ?? ""];
-  if (c && "statement" in c) out.push(c.statement);
-  if (c && "definition" in c) out.push(c.name, c.definition);
+  if (c && "statement" in c) out.push(proseText(c.statement));
+  if (c && "definition" in c) out.push(c.name, proseText(c.definition));
   return out;
 }
 
@@ -152,6 +153,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
 
         <section className="detail" aria-label="1 件の中身">
           {selected && review.data ? (
+            <RefsProvider refs={review.data.refs} query={carried}>
             <EntryDetail
               key={entryKey(selected)}
               entry={selected}
@@ -165,6 +167,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
                 props.onAgreed();
               }}
             />
+            </RefsProvider>
           ) : (
             <p className="note">一覧から 1 件を選んでください。</p>
           )}
@@ -514,12 +517,20 @@ export function AgreeControls(props: { entry: Entry; story: string | null; base:
   );
 }
 
-// Row は、表の 1 行。field は、差分（diff.fields）の項目の名前
-type Row = [string, string, string?];
+// Row は、表の 1 行。値は文字か、自然言語で書く項目の片の配列。field は、差分（diff.fields）の項目の名前
+type Row = [string, string | Piece[], string?];
+
+// guessLines は、推測の並びを、1 行に 1 つずつの片の配列にする（変更前と変更後の比べと、出し方を、ほかの項目とそろえるため）
+function guessLines(gs: Piece[][]): Piece[] {
+  return gs.flatMap((g, i) => (i > 0 ? [{ text: "\n" }, ...g] : g));
+}
+
+const show = (v: string | Piece[]) => (typeof v === "string" ? v : <Prose pieces={v} />);
+const same = (a: string | Piece[], b: string | Piece[]) => JSON.stringify(a) === JSON.stringify(b);
 
 function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
   if (!c) return null;
-  const opt = (s: string | null) => s ?? "（なし）";
+  const opt = (s: Piece[] | string | null) => s ?? "（なし）";
   switch (kind) {
     case "claim": {
       const x = c as ClaimContent;
@@ -529,9 +540,9 @@ function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
         ["理由", opt(x.rationale), "rationale"],
         ["対象", x.subjects.join("・")],
         ["レイヤー", x.layers.join("・")],
-        ["エビデンスの予定", x.evidence.map((ev) => `${stageLabel[ev.stage] ?? ev.stage} / ${typeLabel[ev.type] ?? ev.type} / ${ev.layers.join("・")}${ev.detail ? ` — ${ev.detail}` : ""}`).join("\n")],
+        ["エビデンスの予定", x.evidence.map((ev) => `${stageLabel[ev.stage] ?? ev.stage} / ${typeLabel[ev.type] ?? ev.type} / ${ev.layers.join("・")}${ev.detail ? ` — ${proseText(ev.detail)}` : ""}`).join("\n")],
         ["TLA+ で確かめない理由", opt(x.modelCheckWaiver), "modelCheckWaiver"],
-        ["推測", x.guesses.length > 0 ? x.guesses.join("\n") : "（なし）"],
+        ["推測", x.guesses.length > 0 ? guessLines(x.guesses) : "（なし）"],
       ];
     }
     case "term": {
@@ -572,7 +583,10 @@ function Compare(props: { entry: Entry }) {
   const after = rows(e.kind, e.after);
   if (e.kind === "file") {
     // 行の差分がないファイル（追加・削除したもの）は、ある側の中身をそのまま出す。両側があれば、変更前・変更後の順に出す
-    const show = (r: Row) => (e.fileType === "oracle" ? <TlaCode source={r[1]} /> : <CodeBlock source={r[1]} lang={langOf(e.path ?? "")} />);
+    const show = (r: Row) => {
+      const text = typeof r[1] === "string" ? r[1] : "";
+      return e.fileType === "oracle" ? <TlaCode source={text} /> : <CodeBlock source={text} lang={langOf(e.path ?? "")} />;
+    };
     const b = before?.[0];
     const a = after?.[0];
     if (b && a) {
@@ -614,14 +628,15 @@ function ItemCompare(props: { entry: Entry; before: Row[] | null; after: Row[] |
       if (bl && al) return <LayerChipsDiff before={bl} after={al} side="both" />;
       return <LayerChips layers={(al ?? bl) as string[]} />;
     }
-    if (!b || !a) return (a ?? b)?.[1];
+    const one = a ?? b;
+    if (!b || !a) return one ? show(one[1]) : undefined;
     const parts = a[2] && fields ? fields[a[2]] : undefined;
     if (parts) return <Parts parts={parts} side="both" />;
-    if (b[1] === a[1]) return a[1];
+    if (same(b[1], a[1])) return show(a[1]);
     return (
       <>
-        <del className="diff-part">{b[1]}</del>
-        <ins className="diff-part">{a[1]}</ins>
+        <del className="diff-part">{show(b[1])}</del>
+        <ins className="diff-part">{show(a[1])}</ins>
       </>
     );
   };
@@ -660,6 +675,7 @@ export function ClaimSections(props: { id: string; query?: string }) {
       <h3>エビデンスの予定と実際</h3>
       {d.error != null && <ErrorBox error={d.error} title="エビデンスを探せません" />}
       {d.data && (
+        <RefsProvider refs={d.data.refs}>
         <EvidenceGroups
           items={d.data.evidence}
           level="h4"
@@ -669,7 +685,11 @@ export function ClaimSections(props: { id: string; query?: string }) {
                 <PresentIcon present={ev.present} />
                 <LayerChips layers={ev.layers} />
               </div>
-              {ev.detail && <div className="evidence-detail">{ev.detail}</div>}
+              {ev.detail && (
+                <div className="evidence-detail">
+                  <Prose pieces={ev.detail} />
+                </div>
+              )}
               {ev.found.length > 0 && (
                 <ul className="evidence-found">
                   {ev.found.map((f) => (
@@ -686,8 +706,9 @@ export function ClaimSections(props: { id: string; query?: string }) {
             </>
           )}
         />
+        <ClaimHistory claim={d.data} level="h3" />
+        </RefsProvider>
       )}
-      {d.data && <ClaimHistory claim={d.data} level="h3" />}
     </div>
   );
 }

@@ -18,7 +18,7 @@ export function ErrorBox(props: { error: unknown; title?: string }) {
 // useTooltip は、触れたとき（マウスを載せる・フォーカスする）に出す説明の、開け閉めと位置を持つ。
 // 説明は、画面に対して位置を決める（position: fixed）。触れる所が一覧の欄（スクロールする欄）の中にあると、
 // 欄に対して置いた説明は欄の端で切れるため。画面の右端に近いときは左に寄せ、長いときは折り返す
-function useTooltip() {
+export function useTooltip() {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const anchor = useRef<HTMLSpanElement>(null);
