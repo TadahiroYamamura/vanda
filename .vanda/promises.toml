@@ -89,7 +89,7 @@ part_of = "evidence-type"
 [[term]]
 id = "proof"
 name = "証明"
-definition = "すべての値で性質が成り立つことを示す（Dafny）"
+definition = "すべての値で性質が成り立つことを示す（Dafny等）"
 part_of = "evidence-type"
 
 [[term]]
@@ -131,13 +131,13 @@ part_of = "evidence-type"
 [[term]]
 id = "guardrail-evidence"
 name = "ガードレールの検証"
-definition = "ガードレールが、約束に反するものを本当に拒むかを確かめた結果。例: ミューテーションテストの結果"
+definition = "ガードレールが設定されていて、約束に反するものを本当に拒むことの裏付け。ガードレールの定義と、拒むことを確かめた結果（例: ミューテーションテストの結果）からなる"
 part_of = "evidence-type"
 
 [[term]]
 id = "sensor-evidence"
 name = "センサーの検証"
-definition = "センサーが、約束が破れた時に本当に見つけて知らせるかを確かめた結果。例: ミューテーションテストの結果"
+definition = "センサーが実装のコードの中にあり、約束が破れた時に本当に見つけて知らせることの裏付け。センサーの場所と、見つけることを確かめた結果（例: ミューテーションテストの結果）からなる"
 part_of = "evidence-type"
 
 [[term]]
@@ -155,6 +155,11 @@ part_of = "evidence-type"
 id = "guardrail"
 name = "ガードレール"
 definition = "実装のコードとは別の所で、約束に反するものを拒む仕組み。コードを読まない人が確かめられるもの。例: DB の制約・トリガー、ファイルの権限、外との境界のスキーマの検証、サンドボックスや通信の許可の一覧。見つけるだけのもの（センサー、テスト）は含めない"
+
+[[term]]
+id = "guardrail-definition"
+name = "ガードレールの定義"
+definition = "ガードレールを設定として書いたファイル。例: IaC の設定ファイル、DB のスキーマ"
 
 [[term]]
 id = "sensor"
@@ -2223,8 +2228,8 @@ layers = ["cli"]
 [[claim]]
 id = "check-evidence-guardrail-needs-definition"
 subjects = ["list-check-kinds", "evidence", "guardrail"]
-statement = "evidence-present は、タイプが guardrail の予定を、[[guardrail]] の paths に当たるファイルにその約束を指すアノテーションがある時だけ揃ったとみなす。[[annotation]] のパターンで読んだ guardrail のアノテーション（Go のテストなど）は、ガードレールが拒むことを確かめるエビデンスとして重ねるもので、それだけでは揃わない"
-rationale = "ガードレールそのものがないのに、テストだけでガードレールの予定が揃ったとみなさないため"
+statement = "evidence-present は、タイプが guardrail の予定を、次の 2 つがどちらもその約束を指している時だけ揃ったとみなす。1 つは、ガードレールの定義（[[guardrail]] の paths に当たるファイル）のアノテーション。もう 1 つは、types に guardrail を含む [[annotation]] で読んだアノテーション（Go のテストなど、ガードレールが拒むことを確かめるもの）"
+rationale = "ガードレールが設定されていることと、本当に働くことの両方を確かめるため。定義がないのにテストだけで揃ったとみなさず、定義があっても拒むことを確かめていなければ揃ったとみなさない"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2236,6 +2241,19 @@ layers = ["cli"]
 [[claim.evidence]]
 stage = "test"
 type = "scenario-test"
+layers = ["cli"]
+
+[[claim]]
+id = "check-evidence-sensor-needs-check"
+subjects = ["list-check-kinds", "evidence", "sensor"]
+statement = "evidence-present は、タイプが sensor の予定を、次の 2 つがどちらもその約束を指している時だけ揃ったとみなす。1 つは、実装のコードの中のセンサーの場所に書いた sensor のアノテーション。もう 1 つは、types に sensor を含む [[annotation]] で読んだ evidence のアノテーション（センサーが、約束が破れた時に見つけることを確かめるテスト）"
+rationale = "センサーが実装のコードの中にあることと、本当に働くことの両方を確かめるため"
+layers = ["cli"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "test"
+type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
