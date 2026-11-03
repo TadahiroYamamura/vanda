@@ -88,8 +88,12 @@ export function CodeLine(props: { line: string; tokens: Token[] | null; symbols?
     <>
       {pieces(props.line, props.tokens, props.symbols ?? [], props.parts ?? null).map((p, i) => {
         const sym = p.text !== p.ascii;
-        const inner = (
-          <span className={sym ? "tok sym" : "tok"} style={p.style} data-ascii={sym ? p.ascii : undefined} title={sym ? p.ascii : undefined}>
+        const inner = sym ? (
+          <span className="tok sym" style={{ ...p.style, width: `${p.ascii.length}ch` }} data-ascii={p.ascii} title={p.ascii}>
+            <span className="sym-glyph">{p.text}</span>
+          </span>
+        ) : (
+          <span className="tok" style={p.style}>
             {p.text}
           </span>
         );

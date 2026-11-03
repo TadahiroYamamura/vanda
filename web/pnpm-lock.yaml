@@ -30,6 +30,9 @@ importers:
       '@fontsource/noto-sans-jp':
         specifier: 5.3.1
         version: 5.3.1
+      '@fontsource/noto-sans-math':
+        specifier: 5.3.0
+        version: 5.3.0
       '@playwright/test':
         specifier: 1.64.1
         version: 1.64.1
@@ -143,6 +146,9 @@ packages:
 
   '@fontsource/noto-sans-jp@5.3.1':
     resolution: {integrity: sha512-9NNBB/M9PextLYVXGSfIaLZsPnrt5UDw8g2B6T0M775H2yb/oekApSjuS1XKOP7FPcMMEnTavR5rJGDM66qKtA==}
+
+  '@fontsource/noto-sans-math@5.3.0':
+    resolution: {integrity: sha512-CzodkZ4R2VC73rqbNbVpiI94fXZJLFEMNBTAM3DFadjAKrjLQ2Fr+s2yM2c5uS+frBZ2IM+LyMo6COhAzV7hCA==}
 
   '@inquirer/ansi@2.0.10':
     resolution: {integrity: sha512-dwrc+1aqVZpHNkNDswXGtn1typ+Pxpo5FHZRyBw1le7onEJUkPUkYOY1FIFC1LvFMYUqqLuWBwElhAmencL7MQ==}
@@ -1459,6 +1465,8 @@ snapshots:
   '@fontsource/jetbrains-mono@5.3.0': {}
 
   '@fontsource/noto-sans-jp@5.3.1': {}
+
+  '@fontsource/noto-sans-math@5.3.0': {}
 
   '@inquirer/ansi@2.0.10': {}
 

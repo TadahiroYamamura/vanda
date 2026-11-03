@@ -40,6 +40,7 @@
 | `react`、`react-dom` | 画面（`web/`） |
 | `shiki` | コードの色付け（Go・SQL は Shiki の文法、TLA+ は `web/src/grammars/tlaplus/`（vscode-tlaplus の MIT の文法）、シナリオは `web/src/grammars/txtar.json`） |
 | `@fontsource/noto-sans-jp`、`@fontsource/jetbrains-mono` | 画面のフォント（同梱。400・500・700 と 400・500 の woff2 だけ。OFL は `web/public/assets/`） |
+| `@fontsource/noto-sans-math` | TLA+ の数学の記号を描くフォント（同梱。400 の woff2 だけ。OFL は `web/public/assets/`） |
 | `react-markdown`、`remark-gfm` | ストーリーの本文を Markdown として描く（表などは `remark-gfm`）。生の HTML は描かない |
 | `@types/react`、`@types/react-dom` | 画面を TypeScript で書くための React の型 |
 | `typescript`、`vite`、`@vitejs/plugin-react` | 画面を作る |

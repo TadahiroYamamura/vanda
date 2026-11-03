@@ -1,4 +1,13 @@
 /* 見た目は、モック（quenta-notes/discussions/vanda-mock の Main.dc.html・CL.dc.html）に合わせる。明るい画面だけ。 */
+/* @fontsource/noto-sans-math の 400.css は読み込まず、ここで同じ woff2 を指す。
+   400.css の unicode-range は latin の範囲だけで、woff2 に入っている数学の記号（∧ ≜ など）をこの書体で描かなくなるため。 */
+@font-face {
+  font-family: "Noto Sans Math";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("@fontsource/noto-sans-math/files/noto-sans-math-latin-400-normal.woff2") format("woff2");
+}
 :root {
   --bg: #f4f5f7;
   --card: #ffffff;
@@ -160,6 +169,11 @@ table.compare tr.differs td:nth-child(3) { background: var(--after-bg); }
 /* コードと差分 */
 pre.code { margin: 0; padding: 14px 16px; background: var(--code-bg); border: 1px solid var(--line2); border-radius: 10px; overflow-x: auto; white-space: pre; font: 13px/1.75 var(--mono); font-variant-ligatures: none; }
 .tla pre.code { font-family: "JetBrains Mono", "Noto Sans Math", ui-monospace, monospace; font-size: 13.5px; }
+/* TLA+ の記号（CL-07）。幅は Code.tsx が、置き換える前の ASCII の文字数ぶん（ch）を指す。ch は外の span の書体（等幅）の 1 文字の幅で、
+   記号の書体は中の span にだけ付ける（外にも付けると、ch が数学の書体の幅になり、等幅の 1 文字とずれる）。
+   line-height: 1 は、数学の書体の上下の幅で、記号のある行だけが高くなり、行の間隔がそろわなくなるのを防ぐため。 */
+.tok.sym { display: inline-block; text-align: center; white-space: pre; line-height: 1; }
+.sym-glyph { font-family: "Noto Sans Math"; font-weight: 400; }
 .tla-tools { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
 .tla-tools button { min-height: 32px; padding: 0 10px; font-size: 12px; }
 .compare-file { margin: 12px 0; }
