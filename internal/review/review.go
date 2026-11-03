@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/TadahiroYamamura/vanda/internal/agreements"
 	"github.com/TadahiroYamamura/vanda/internal/config"
@@ -585,8 +584,8 @@ func (s *state) detached(es []Entry) ([]Entry, error) {
 	if story == "" {
 		return out, nil
 	}
-	// 鍵ごとの、そのストーリーの最後の合意の日時
-	last := map[string]time.Time{}
+	// 鍵ごとの、そのストーリーの中身への合意の記録
+	recs := map[string][]*agreements.Agreement{}
 	var keys []string
 	for _, a := range s.recs.Agreements {
 		// 消したことにだけ合意したものを足し直しても、外れた合意にしない（中身に合意したことがないため）
@@ -597,14 +596,13 @@ func (s *state) detached(es []Entry) ([]Entry, error) {
 		if a.Kind == "file" {
 			k = "path:" + a.Path
 		}
-		if t, ok := last[k]; !ok || a.AgreedAt.After(t) {
-			if !ok {
-				keys = append(keys, k)
-			}
-			last[k] = a.AgreedAt
+		if _, ok := recs[k]; !ok {
+			keys = append(keys, k)
 		}
+		recs[k] = append(recs[k], a)
 	}
 	sort.Strings(keys)
+	var written map[*agreements.Agreement]string // 記録から、それを書き足したコミットへ。外れた合意があるときだけ探す
 	index := map[string]int{}
 	for i, e := range es {
 		index[e.key] = i
@@ -632,7 +630,17 @@ func (s *state) detached(es []Entry) ([]Entry, error) {
 				continue
 			}
 		}
-		by, err := s.changedBy(k, last[k])
+		if written == nil {
+			var all []*agreements.Agreement
+			for _, k := range keys {
+				all = append(all, recs[k]...)
+			}
+			var err error
+			if written, err = s.agreementCommits(all); err != nil {
+				return nil, err
+			}
+		}
+		by, err := s.changedBy(k, recs[k], written)
 		if err != nil {
 			return nil, err
 		}
@@ -651,19 +659,28 @@ func (s *state) detached(es []Entry) ([]Entry, error) {
 	return out, nil
 }
 
-// changedBy は、日時 since より後のコミットのうち、鍵 key の中身を変えたもののストーリーの ID を返す。
-// 合意のコミットを履歴から探す代わりに、合意の記録の日時と、コミットの日時を比べる（合意の記録を手で書いた場合も扱えるように）。
-func (s *state) changedBy(key string, since time.Time) ([]string, error) {
+// changedBy は、HEAD の履歴で、記録 recs（そのストーリーの、鍵 key への合意）を最後に書き足したコミットより後のコミットのうち、
+// key の中身を変えたもののストーリーの ID を返す。written は、記録からそれを書き足したコミットへの表。
+// 合意の記録の agreed_at とコミットの日時を比べないのは、rebase や amend でコミットの日時が変わるため（約束 review-detached-shown）。
+// まだコミットしていない記録しかなければ、それより後のコミットはないので空にする。
+func (s *state) changedBy(key string, recs []*agreements.Agreement, written map[*agreements.Agreement]string) ([]string, error) {
 	commits, err := s.h.loadCommits()
 	if err != nil {
 		return nil, err
 	}
+	after := len(commits)
+	found := false
+	for i := len(commits) - 1; i >= 0 && !found; i-- {
+		for _, a := range recs {
+			if written[a] == commits[i].Hash {
+				after, found = i+1, true
+				break
+			}
+		}
+	}
 	seen := map[string]bool{}
 	out := []string{}
-	for _, c := range commits {
-		if !c.Date.After(since) {
-			continue
-		}
+	for _, c := range commits[after:] {
 		cs, err := s.h.changed(c)
 		if err != nil {
 			return nil, err
