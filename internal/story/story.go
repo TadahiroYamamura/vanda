@@ -1,4 +1,4 @@
-// Package story は、ストーリーの置き場所（CM-08）から、ストーリーの題・本文・添付ファイルへのリンクを読む。
+// Package story は、ストーリーストア（CM-08）から、ストーリーの題・本文・添付ファイルへのリンクを読む。
 package story
 
 import (
@@ -49,7 +49,7 @@ func storeErr(msg, fix string) *Error {
 
 const timeout = 20 * time.Second
 
-// AdapterInfo は、組込みのストーリーの置き場所のアダプタ。vanda init の選択肢と、ID の書き方の既定に使う
+// AdapterInfo は、組込みのストーリーストアのアダプタ。vanda init の選択肢と、ID の書き方の既定に使う
 type AdapterInfo struct {
 	Name  string // 設定の [story] の adapter に書く名前
 	Title string // 画面や問いかけに出す名前
@@ -57,12 +57,12 @@ type AdapterInfo struct {
 	DefaultIDPattern string
 }
 
-// Builtins は、組込みのストーリーの置き場所のアダプタの一覧。アダプタを足したら、ここにも足す
+// Builtins は、組込みのストーリーストアのアダプタの一覧。アダプタを足したら、ここにも足す
 var Builtins = []AdapterInfo{
 	{Name: "github", Title: "GitHub Issues", DefaultIDPattern: config.DefaultIDPattern},
 }
 
-// Read は、ストーリー id を、設定の置き場所から読む。
+// Read は、ストーリー id を、設定のストーリーストアから読む。
 func Read(root string, cfg *config.Config, id string) (*Story, *Error) {
 	if cfg.IDFull == nil || !cfg.IDFull.MatchString(id) {
 		return nil, &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("ストーリーの ID %s が、書き方（%s）に合いません。", id, cfg.IDPattern), Fix: "設定の id_pattern に合う ID を渡してください。"}
@@ -73,7 +73,7 @@ func Read(root string, cfg *config.Config, id string) (*Story, *Error) {
 	case cfg.Story.Adapter == "github":
 		return readGitHub(cfg.Story, id)
 	}
-	return nil, &Error{Status: http.StatusNotFound, Message: "ストーリーの置き場所が設定されていません。", Fix: `.vanda/config.toml の [story] に、adapter = "github" と repository を書くか、.vanda/adapters/ に置いたカスタムアダプタの名前を adapter に書いてください。`}
+	return nil, &Error{Status: http.StatusNotFound, Message: "ストーリーストアが設定されていません。", Fix: `.vanda/config.toml の [story] に、adapter = "github" と repository を書くか、.vanda/adapters/ に置いたカスタムアダプタの名前を adapter に書いてください。`}
 }
 
 // tokenSource は、api_url のホストに合う認証キーの読み先（環境変数の名前と、gh auth token に渡すホスト）を返す。
@@ -298,19 +298,19 @@ func readUser(root string, u *config.UserAdapter, id string) (*Story, *Error) {
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := cmd.Run(); err != nil {
 		if e := u.StartError(root, err); e != nil {
-			return nil, storeErr("ストーリーの置き場所の"+e.What+"。", e.Fix+"。")
+			return nil, storeErr("ストーリーストアの"+e.What+"。", e.Fix+"。")
 		}
 		msg := strings.TrimSpace(stderr.String())
 		if msg == "" {
 			msg = err.Error()
 		}
-		return nil, storeErr("ストーリーの置き場所の"+u.Label()+"が "+id+" を読めませんでした（"+msg+"）。", "アダプタが返した理由を確かめてください。")
+		return nil, storeErr("ストーリーストアの"+u.Label()+"が "+id+" を読めませんでした（"+msg+"）。", "アダプタが返した理由を確かめてください。")
 	}
 	var resp userResponse
 	dec := json.NewDecoder(&stdout)
 	dec.DisallowUnknownFields()
 	bad := func(what string) *Error {
-		return storeErr("ストーリーの置き場所の"+u.Label()+"が返した JSON の形が誤っています（"+what+"）。", "アダプタを docs/formats.md の形に合わせて直してください。")
+		return storeErr("ストーリーストアの"+u.Label()+"が返した JSON の形が誤っています（"+what+"）。", "アダプタを docs/formats.md の形に合わせて直してください。")
 	}
 	if err := dec.Decode(&resp); err != nil {
 		return nil, bad(err.Error())
@@ -336,15 +336,15 @@ func readUser(root string, u *config.UserAdapter, id string) (*Story, *Error) {
 	return &Story{ID: id, Title: *resp.Title, Body: *resp.Body, URL: *resp.URL, Attachments: atts}, nil
 }
 
-// Check は、ストーリーの置き場所に繋がるかを確かめ、確かめたことを 1 文で返す（CMD-01）。置き場所が設定になければ、空の文を返す。
+// Check は、ストーリーストアに繋がるかを確かめ、確かめたことを 1 文で返す（CMD-01）。ストーリーストアが設定になければ、空の文を返す。
 func Check(root string, cfg *config.Config) (string, error) {
 	st := cfg.Story
 	switch {
 	case st.User != nil:
 		if e := st.User.Check(root); e != nil {
-			return "", fmt.Errorf("ストーリーの置き場所の%w", e)
+			return "", fmt.Errorf("ストーリーストアの%w", e)
 		}
-		return "ストーリーの置き場所の" + st.User.Label() + "があり、実行できます", nil
+		return "ストーリーストアの" + st.User.Label() + "があり、実行できます", nil
 	case st.Adapter == "github":
 		var repo struct {
 			HasIssues bool `json:"has_issues"`
@@ -356,7 +356,7 @@ func Check(root string, cfg *config.Config) (string, error) {
 		if !repo.HasIssues {
 			return "", errors.New("GitHub の " + st.Repository + " で Issues が使えません。リポジトリの設定で Issues を有効にしてください。")
 		}
-		return "ストーリーの置き場所 GitHub Issues（" + st.Repository + "）に繋がりました", nil
+		return "ストーリーストア GitHub Issues（" + st.Repository + "）に繋がりました", nil
 	}
 	return "", nil
 }

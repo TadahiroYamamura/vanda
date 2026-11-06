@@ -74,7 +74,7 @@ type Config struct {
 	GUIBase string
 }
 
-// StoryStore は、ストーリーの置き場所のアダプタ。Adapter が空で User が nil なら、置き場所につながない。
+// StoryStore は、ストーリーストアのアダプタ。Adapter が空で User が nil なら、ストーリーストアにつながない。
 type StoryStore struct {
 	// Adapter は、組込みのアダプタの名前（github）。カスタムアダプタを使うなら空
 	Adapter    string
@@ -83,7 +83,7 @@ type StoryStore struct {
 	User       *UserAdapter
 }
 
-// Name は、設定の [story] の adapter に書いた名前。置き場所につながないなら空。
+// Name は、設定の [story] の adapter に書いた名前。ストーリーストアにつながないなら空。
 func (s StoryStore) Name() string {
 	if s.User != nil {
 		return s.User.Name

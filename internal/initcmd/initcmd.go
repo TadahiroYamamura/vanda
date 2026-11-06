@@ -38,7 +38,7 @@ type Defaults struct {
 	// Base は、ベースブランチ。origin/HEAD が指すブランチ（例: origin/main）、なければ今のブランチの名前。
 	// コミットのないリポジトリでも、今のブランチの名前（例: main）が入る。どちらも読めなければ空
 	Base string
-	// Store は、ストーリーの置き場所。remote origin が GitHub なら "github"、そうでなければ（origin がないときも）"none"
+	// Store は、ストーリーストア。remote origin が GitHub なら "github"、そうでなければ（origin がないときも）"none"
 	Store string
 	// GitHubRepo は、remote origin が GitHub のときの <owner>/<repo>。そうでなければ空
 	GitHubRepo string
@@ -118,15 +118,15 @@ func GitHubRepository(url string) string {
 type Answers struct {
 	// Base は、ベースブランチ（config.toml の [gui] base）
 	Base string
-	// Store は、ストーリーの置き場所。"github"（GitHub Issues）・"user"（カスタムアダプタ）・"none"（使わない）
+	// Store は、ストーリーストア。"github"（GitHub Issues）・"user"（カスタムアダプタ）・"none"（使わない）
 	Store string
-	// Repository は、Store が "github" のときの <owner>/<repo>。ほかの置き場所では使わない
+	// Repository は、Store が "github" のときの <owner>/<repo>。ほかのストーリーストアでは使わない
 	Repository string
-	// Adapter は、Store が "user" のときの、アダプタの名前（.vanda/adapters/ の下に置く名前）。ほかの置き場所では使わない
+	// Adapter は、Store が "user" のときの、アダプタの名前（.vanda/adapters/ の下に置く名前）。ほかのストーリーストアでは使わない
 	Adapter string
-	// Args は、Store が "user" のときの、アダプタに渡す引数。空なら args を書かない。ほかの置き場所では使わない
+	// Args は、Store が "user" のときの、アダプタに渡す引数。空なら args を書かない。ほかのストーリーストアでは使わない
 	Args []string
-	// IDPattern は、ストーリーの ID の書き方（Go の正規表現）。置き場所によらず書く
+	// IDPattern は、ストーリーの ID の書き方（Go の正規表現）。ストーリーストアによらず書く
 	IDPattern string
 	// Annotations は、選んだ言語と、言語ごとの読むファイルのパターン。並べた順に [[annotation]] を書く。
 	// 空なら [[annotation]] を書かない
@@ -140,7 +140,7 @@ type storeChoice struct {
 	key, title, defaultIDPattern string
 }
 
-// storeChoices は、ストーリーの置き場所の選択肢。組込みのアダプタの一覧から作り、カスタムアダプタと使わないを足す
+// storeChoices は、ストーリーストアの選択肢。組込みのアダプタの一覧から作り、カスタムアダプタと使わないを足す
 func storeChoices() []storeChoice {
 	var out []storeChoice
 	for _, a := range story.Builtins {
@@ -220,7 +220,7 @@ func Ask(root string, d Defaults, t *Terminal) (Answers, error) {
 	for _, c := range choices {
 		opts = append(opts, huh.NewOption(c.title, c))
 	}
-	if err := q.run(huh.NewSelect[storeChoice]().Title("ストーリーの置き場所").Options(opts...).Value(&choice)); err != nil {
+	if err := q.run(huh.NewSelect[storeChoice]().Title("ストーリーストア").Options(opts...).Value(&choice)); err != nil {
 		return a, err
 	}
 	a.Store = choice.key

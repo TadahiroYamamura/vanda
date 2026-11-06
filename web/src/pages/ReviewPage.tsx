@@ -215,19 +215,19 @@ function StoryPanel(props: { id: string; configured: boolean }) {
     <div>
       <h2>ストーリー {props.id}</h2>
       {!props.configured && (
-        <p className="note" title="ストーリーの置き場所が設定されていないため、題と本文を表示しません。.vanda/config.toml の [story] に書くと表示します。">
-          題と本文なし（置き場所が未設定）
+        <p className="note" title="ストーリーストアが設定されていないため、題と本文を表示しません。.vanda/config.toml の [story] に書くと表示します。">
+          題と本文なし（ストーリーストアが未設定）
         </p>
       )}
       {s.loading && <p className="note">読み込んでいます…</p>}
-      {s.error != null && <ErrorBox error={s.error} title="ストーリーの置き場所から読めません" />}
+      {s.error != null && <ErrorBox error={s.error} title="ストーリーストアから読めません" />}
       {s.data && (
         <>
           <p className="story-title user-text">{s.data.title}</p>
           {s.data.url && (
             <p>
               <a href={s.data.url} target="_blank" rel="noopener noreferrer">
-                置き場所で開く
+                ストーリーストアで開く
               </a>
             </p>
           )}

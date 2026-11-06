@@ -139,7 +139,7 @@ func (s *Server) file(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"path": p, "text": text})
 }
 
-// story は、置き場所を読むだけでリポジトリを変えないので、合意と並べて動かしてよい（ロックを取らない）
+// story は、ストーリーストアを読むだけでリポジトリを変えないので、合意と並べて動かしてよい（ロックを取らない）
 func (s *Server) story(w http.ResponseWriter, r *http.Request) {
 	cfg, ok := s.config(w)
 	if !ok {
