@@ -733,6 +733,65 @@ function withoutRecord(text: string, key: string, story: string): string[] {
   return out;
 }
 
+// CL-04。消した後に同じ ID で作り直し、推測だけを変え、横のブランチで変えて合流する。日時は、どのコミットも buildRepo のコミットより後にずらす
+// @vanda:evidence claim-detail-origin
+test("約束の詳細の由来には作り直した後の約束の指紋が変わった合流でないコミットだけが新しい順に出て消すまでのコミットと推測だけを変えたコミットと合流のコミットは出ない", async ({ page }) => {
+  const later = (h: number) => new Date(Date.now() + h * 3600_000).toISOString();
+  const first = repo.git("rev-parse", "main");
+  const storyChange = repo.git("rev-parse", "story-24~1");
+  const termOnly = `[[term]]\nid = "task-id"\nname = "タスクの ID"\ndefinition = "タスクを見分ける名前"\n`;
+  const withGuess = (text: string) => text.replace(`layers = ["model"]\n`, `layers = ["model"]\nguesses = ["作り直した後の推測"]\n`);
+  repo.write(".vanda/promises.toml", termOnly);
+  const deleted = commit(repo, "約束を消す", "#24", later(1));
+  repo.write(".vanda/promises.toml", promisesAt(v4));
+  const recreated = commit(repo, "約束を作り直す", "#24", later(2));
+  repo.write(".vanda/promises.toml", withGuess(promisesAt(v4)));
+  const guessed = commit(repo, "作り直した約束に推測を足す", "#30", later(3));
+  repo.git("switch", "-q", "-c", "side");
+  repo.write(".vanda/promises.toml", withGuess(promisesAt({ ...v4, plan: "横のブランチで変えた予定" })));
+  const side = commit(repo, "横のブランチでエビデンスの予定を変える", "#31", later(4));
+  repo.git("switch", "-q", "story-24");
+  repo.write(".vanda/promises.toml", withGuess(promisesAt({ ...v4, rationale: "作り直した後に変えた理由" })));
+  const changed = commit(repo, "作り直した約束の理由を変える", "#24", later(5));
+  execFileSync("git", ["-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "merge", "-q", "--no-ff", "-m", "合流する\n\nStory: #24", "side"], {
+    cwd: repo.root,
+    env: { ...repo.env, GIT_AUTHOR_DATE: later(6), GIT_COMMITTER_DATE: later(6) },
+  });
+  const merged = repo.git("rev-parse", "HEAD");
+  expect(repo.git("rev-list", "--parents", "-n", "1", "HEAD").split(" ").length, "合流のコミットができていない").toBe(3);
+  // 合流した後の約束リストに、両方のブランチの変更が入っている（合流のコミットでも指紋が変わる）
+  const mergedPromises = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
+  expect(mergedPromises).toContain("横のブランチで変えた予定");
+  expect(mergedPromises).toContain("作り直した後に変えた理由");
+
+  await page.goto(serve.url + "/claims/task-id-unique");
+  await expect(page.getByRole("heading", { name: "由来" })).toBeVisible();
+  const origin = page.getByRole("table").first();
+  await expect(origin.getByText("約束を作り直す")).toBeVisible();
+  const rows = await origin.locator("tbody tr").allTextContents();
+  const want = [
+    [changed, "作り直した約束の理由を変える"],
+    [side, "横のブランチでエビデンスの予定を変える"],
+    [recreated, "約束を作り直す"],
+  ];
+  expect(rows.length, `由来の行: ${rows.join(" / ")}`).toBe(want.length);
+  want.forEach(([hash, subject], i) => {
+    expect(rows[i], `由来の ${i + 1} 行目`).toContain(subject);
+    expect(rows[i], `由来の ${i + 1} 行目`).toContain(hash.slice(0, 7));
+  });
+  const all = rows.join("\n");
+  for (const [hash, subject] of [
+    [merged, "合流する"],
+    [guessed, "作り直した約束に推測を足す"],
+    [deleted, "約束を消す"],
+    [storyChange, "約束を変え、題の約束を足す"],
+    [first, "はじめの約束を置く"],
+  ]) {
+    expect(all, `由来に ${subject} が出ている`).not.toContain(subject);
+    expect(all, `由来に ${subject} のコミットが出ている`).not.toContain(hash.slice(0, 7));
+  }
+});
+
 // 合意の記録のファイルに、コメントと空行を混ぜる（取り消しで、ほかの行が変わらないことを見るため）
 function decorateAgreements(r: Repo) {
   const text = readFileSync(join(r.root, ".vanda/agreements.toml"), "utf8");
