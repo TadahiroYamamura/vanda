@@ -51,12 +51,12 @@ type env struct {
 	story        string
 	changedItems map[string]bool // "<種類>:<ID>"
 	changedFiles map[string]bool
-	// 分かれた点にあって今ないもの。今の項目とファイルを回すだけでは見つからないので、別に持つ
+	// 分岐点にあって今ないもの。今の項目とファイルを回すだけでは見つからないので、別に持つ
 	goneItems []gone
 	goneFiles []string
 }
 
-// gone は、分かれた点にあって今ない約束・用語・機能。file は分かれた点でその項目があった約束リストのファイル
+// gone は、分岐点にあって今ない約束・用語・機能。file は分岐点でその項目があった約束リストのファイル
 type gone struct {
 	kind, id, file string
 }
@@ -129,7 +129,7 @@ func (e *env) prepare(o Options) error {
 	}
 	mb, err := repo.Git(e.root, "merge-base", o.Base, "HEAD")
 	if err != nil {
-		return fmt.Errorf("ベースブランチ %s から分かれた点が分かりません（%v）。--base に、今のブランチと履歴のつながったブランチを渡してください。", o.Base, err)
+		return fmt.Errorf("ベースブランチ %s との分岐点が分かりません（%v）。--base に、今のブランチと履歴のつながったブランチを渡してください。", o.Base, err)
 	}
 	e.mergeBase = strings.TrimSpace(mb)
 	if len(needStory) > 0 {
@@ -140,7 +140,7 @@ func (e *env) prepare(o Options) error {
 	return e.findChanges()
 }
 
-// decideStory は、範囲 story の審査のストーリーを決める。--story（given）を渡しても、分かれた点より後のコミットのトレーラーの誤りは、
+// decideStory は、範囲 story の審査のストーリーを決める。--story（given）を渡しても、分岐点より後のコミットのトレーラーの誤りは、
 // 審査を始める前の誤りにする（--story はストーリーを選ぶためのもので、トレーラーの確かめを飛ばすためのものではない。手元と CI で結果をそろえるため）
 func (e *env) decideStory(given string, checks []string) error {
 	commits, err := e.cfg.CommitStories(e.root, e.mergeBase+"..HEAD")
@@ -171,19 +171,19 @@ func (e *env) decideStory(given string, checks []string) error {
 		e.story = ids[0]
 		return nil
 	case 0:
-		return fmt.Errorf("範囲 story の審査（%s）のストーリーが分かりません（分かれた点より後のコミットに、Story: のトレーラーがありません）。--story <ID> を渡してください。", strings.Join(checks, "・"))
+		return fmt.Errorf("範囲 story の審査（%s）のストーリーが分かりません（分岐点より後のコミットに、Story: のトレーラーがありません）。--story <ID> を渡してください。", strings.Join(checks, "・"))
 	default:
-		return fmt.Errorf("範囲 story の審査（%s）のストーリーが 1 つに決まりません（分かれた点より後のコミットの Story: のトレーラーに、ストーリーの ID が %s とあります）。--story <ID> で 1 つを渡してください。", strings.Join(checks, "・"), strings.Join(ids, "・"))
+		return fmt.Errorf("範囲 story の審査（%s）のストーリーが 1 つに決まりません（分岐点より後のコミットの Story: のトレーラーに、ストーリーの ID が %s とあります）。--story <ID> で 1 つを渡してください。", strings.Join(checks, "・"), strings.Join(ids, "・"))
 	}
 }
 
-// findChanges は、分かれた点の中身と今の中身（HEAD）を比べ、変わった項目とファイルを求める。
+// findChanges は、分岐点の中身と今の中身（HEAD）を比べ、変わった項目とファイルを求める。
 func (e *env) findChanges() error {
 	base, err := snapshot.At(e.root, e.cfg, e.mergeBase)
 	if err != nil {
 		return err
 	}
-	// 分かれた点の約束リストの誤りは、ここでは出さない。読めなかった項目は、増えたものとみなす（合意を求める側に倒す）
+	// 分岐点の約束リストの誤りは、ここでは出さない。読めなかった項目は、増えたものとみなす（合意を求める側に倒す）
 	baseFP := base.ItemFingerprints()
 	e.changedItems = map[string]bool{}
 	now := map[string]bool{}
@@ -217,7 +217,7 @@ func (e *env) findChanges() error {
 		}
 		b, err := base.Read(f)
 		if err != nil {
-			return fmt.Errorf("分かれた点の %s を読めない（%v）", f, err)
+			return fmt.Errorf("分岐点の %s を読めない（%v）", f, err)
 		}
 		cur, err := e.read(f)
 		if err != nil || agreements.FileFingerprint(cur) != agreements.FileFingerprint(b) {

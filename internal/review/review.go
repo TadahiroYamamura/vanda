@@ -35,7 +35,7 @@ type Result struct {
 	Total     int     `json:"total"`
 	Entries   []Entry `json:"entries"`
 	Detached  []Entry `json:"detached"`
-	// BranchStories は、レビュー単位がブランチのとき、分かれた点より後のコミットの Story: のトレーラーにあるストーリーの ID（名前の順）。ストーリーのときは nil
+	// BranchStories は、レビュー単位がブランチのとき、分岐点より後のコミットの Story: のトレーラーにあるストーリーの ID（名前の順）。ストーリーのときは nil
 	BranchStories []string `json:"branchStories"`
 	// StoryFrom は、story をどう決めたか。query（story= で名指しした）・branch（ブランチのコミットから 1 つに決まった）。決まっていなければ空
 	StoryFrom string `json:"storyFrom"`
@@ -114,7 +114,7 @@ func Build(o Options) (*Result, *Error) {
 		}
 		mb, err := repo.Git(o.Root, "merge-base", o.Base, "HEAD")
 		if err != nil {
-			return nil, &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("ベースブランチ %s から分かれた点が分かりません（%v）。", o.Base, err), Fix: "今のブランチと履歴のつながったブランチを選んでください。"}
+			return nil, &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("ベースブランチ %s との分岐点が分かりません（%v）。", o.Base, err), Fix: "今のブランチと履歴のつながったブランチを選んでください。"}
 		}
 		mb = strings.TrimSpace(mb)
 		res.Base, res.MergeBase = &o.Base, &mb
@@ -225,7 +225,7 @@ func (s *state) checkStory(id string) *Error {
 	return nil
 }
 
-// branchStory は、レビュー単位がブランチのときのストーリーを、vanda check と同じく決める。渡されていればそれを、なければ分かれた点より後のコミットの Story: のトレーラーにある ID が 1 つのときだけそれを使う。
+// branchStory は、レビュー単位がブランチのときのストーリーを、vanda check と同じく決める。渡されていればそれを、なければ分岐点より後のコミットの Story: のトレーラーにある ID が 1 つのときだけそれを使う。
 func (s *state) branchStory(mb string) (string, []string, *Error) {
 	ids, err := storyIDsIn(s.o.Root, s.o.Cfg, mb+"..HEAD")
 	if err != nil {

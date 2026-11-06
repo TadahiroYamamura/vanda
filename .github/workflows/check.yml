@@ -12,13 +12,13 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      # vanda check --base origin/main が分かれた点を求められるよう、履歴とブランチをすべて取る
+      # vanda check --base origin/main が分岐点を求められるよう、履歴とブランチをすべて取る
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: cachix/install-nix-action@v31
       - run: nix develop --command make check
-      # main への push では、分かれた点より後のコミットがないので、範囲 all の審査だけを動かす
+      # main への push では、分岐点より後のコミットがないので、範囲 all の審査だけを動かす
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: nix develop --command ./vanda check .vanda/checks/main.toml
       - if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/main') }}

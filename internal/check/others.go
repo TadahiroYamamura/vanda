@@ -14,7 +14,7 @@ import (
 
 func matchPath(p, f string) bool { return glob.Match(p, f) }
 
-// storyOrigin は、由来の審査。分かれた点より後の、合流でないコミットのうち、約束リストを変えたものに、ストーリーの ID があるかを確かめる。
+// storyOrigin は、由来の審査。分岐点より後の、合流でないコミットのうち、約束リストを変えたものに、ストーリーの ID があるかを確かめる。
 func (e *env) storyOrigin() []diag.Error {
 	out, err := repo.Git(e.root, "rev-list", "--no-merges", "--reverse", e.mergeBase+"..HEAD")
 	if err != nil {
@@ -145,7 +145,7 @@ func targetKey(kind, target string) string {
 }
 
 // deletions は、今ないものに、消したことへの合意があるかを確かめる。範囲 all では、中身に合意したことがあって今ないもの。
-// 範囲 story では、分かれた点にあって今ないものを、合意したことがあるかによらず見る（一度も合意していないものを消しても、
+// 範囲 story では、分岐点にあって今ないものを、合意したことがあるかによらず見る（一度も合意していないものを消しても、
 // そのストーリーで変えたものなので、PO が見ないまま合流させない）。
 func (e *env) deletions(scope string) []diag.Error {
 	var errs []diag.Error
@@ -166,10 +166,10 @@ func (e *env) deletions(scope string) []diag.Error {
 	}
 	if scope == ScopeStory {
 		for _, g := range e.goneItems {
-			need(g.kind, g.id, "分かれた点にあり、今の約束リストにありません", diag.Error{File: g.file})
+			need(g.kind, g.id, "分岐点にあり、今の約束リストにありません", diag.Error{File: g.file})
 		}
 		for _, f := range e.goneFiles {
-			need("file", f, "分かれた点では合意の対象のファイルで、今はありません", diag.Error{File: f})
+			need("file", f, "分岐点では合意の対象のファイルで、今はありません", diag.Error{File: f})
 		}
 		return errs
 	}

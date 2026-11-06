@@ -89,7 +89,7 @@ type CommitStory struct {
 	Err     error
 }
 
-// CommitStories は、revRange（例: <分かれた点>..HEAD）のコミットの、トレーラーのストーリーの ID を、git log の順に返す。
+// CommitStories は、revRange（例: <分岐点>..HEAD）のコミットの、トレーラーのストーリーの ID を、git log の順に返す。
 func (c *Config) CommitStories(root, revRange string) ([]CommitStory, error) {
 	out, err := repo.Git(root, "log", "--format=%H%x00%B%x1e", revRange)
 	if err != nil {

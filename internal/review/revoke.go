@@ -24,8 +24,8 @@ type Revocation struct {
 	Others []User `json:"others"`
 }
 
-// branchPoint は、「今のブランチ」の始まり（ベースブランチと分かれた点）を返す。決まらなければ空の文字列。
-// レビュー単位がブランチなら、その分かれた点。レビュー単位がストーリーなら、選んでいるベースブランチか、設定の既定のもの
+// branchPoint は、「今のブランチ」の始まり（分岐点）を返す。決まらなければ空の文字列。
+// レビュー単位がブランチなら、その分岐点。レビュー単位がストーリーなら、選んでいるベースブランチか、設定の既定のもの
 func (s *state) branchPoint(mergeBase string) string {
 	if mergeBase != "" {
 		return mergeBase
@@ -44,7 +44,7 @@ func (s *state) branchPoint(mergeBase string) string {
 	return strings.TrimSpace(mb)
 }
 
-// baseRecords は、分かれた点の時点の合意の記録を読む。読めない記録は、ないものとみなす（取り消せる側に倒さないよう、呼び出し元で扱う）。
+// baseRecords は、分岐点の時点の合意の記録を読む。読めない記録は、ないものとみなす（取り消せる側に倒さないよう、呼び出し元で扱う）。
 func (s *state) baseRecords(point string) (*agreements.Records, error) {
 	snap, err := snapshot.At(s.o.Root, s.o.Cfg, point)
 	if err != nil {
@@ -61,7 +61,7 @@ func (s *state) baseRecords(point string) (*agreements.Records, error) {
 	}
 	recs, errs := agreements.FromSources(matched, srcs)
 	if errs != nil {
-		return nil, fmt.Errorf("分かれた点の合意の記録を読めません（%d 件。最初の 1 件: %s）", len(errs), errs[0].Error())
+		return nil, fmt.Errorf("分岐点の合意の記録を読めません（%d 件。最初の 1 件: %s）", len(errs), errs[0].Error())
 	}
 	return recs, nil
 }
@@ -107,7 +107,7 @@ func (s *state) revocable(kind, key, fp string, deleted bool, point string, base
 		return nil, no("ベースブランチが決まっていないため、このブランチで書いた合意か分かりません。ベースブランチを選んでください。")
 	}
 	if base == nil {
-		return nil, no("ベースブランチと分かれた点の合意の記録を読めないため、このブランチで書いた合意か分かりません。")
+		return nil, no("分岐点の合意の記録を読めないため、このブランチで書いた合意か分かりません。")
 	}
 	var mine []*agreements.Agreement
 	var others []User
