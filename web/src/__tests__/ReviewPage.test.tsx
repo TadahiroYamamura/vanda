@@ -530,11 +530,18 @@ describe("RV-16・RV-17 1 件の詳細の由来と合意の履歴・取り消し
   });
 
   // @vanda:evidence revoke-on-screen
-  it("取り消せない件には取り消しのボタンを出さない", async () => {
-    open([claimEntry(1, "task-id-unique", { state: "agreed", revoke: { possible: false, reason: "ほかの人が書いた合意です", others: [] } })]);
-    await openEntry(/task-id-unique/);
-    await screen.findAllByText(/合意済/);
-    expect(screen.queryByRole("button", { name: /取り消/ })).toBeNull();
+  // @vanda:evidence revoke-reason-shown
+  it("取り消せない件には取り消しのボタンを出さず取り消せない理由を示す", async () => {
+    // 取り消せるかと理由は API（entries[].revoke）が決める。その答えを手で作って渡す
+    for (const reason of ["ほかの人が書いた合意です", "ベースブランチにすでにある合意です", "このストーリーの合意がありません"]) {
+      open([claimEntry(1, "task-id-unique", { state: "agreed", revoke: { possible: false, reason, others: [] } })]);
+      await openEntry(/task-id-unique/);
+      await screen.findAllByText(/合意済/);
+      expect(screen.queryByRole("button", { name: /取り消/ }), `${reason}: 取り消しのボタンがある`).toBeNull();
+      expect(within(detailRegion()).getByText(reason), `${reason}: 理由がない`).toBeTruthy();
+      cleanup();
+      server.resetHandlers();
+    }
   });
 });
 
@@ -1263,5 +1270,343 @@ describe("参照の絞り込み", () => {
     await search("t-apple", { "c-fruit": false, "c-deleted": false, "t-def": false, "c-literal": true, "c-plain": false });
     // 参照と、その後ろの参照でない文字をまたいで当たる
     await search("りんごを数", { "c-fruit": true, "c-deleted": false, "t-def": false, "c-literal": false, "c-plain": false });
+  });
+});
+
+describe("画面の上の帯", () => {
+  // @vanda:evidence header-context
+  it("画面の上の帯に今のブランチとgitのuser.nameとuser.emailとvandaの版を示しブランチにいないときとuser.nameとuser.emailがないときはそう示す", async () => {
+    const cases = [
+      { name: "ブランチにいて人が分かる", over: {}, want: ["story-24", "合意する人", "po@example.com", "0.1.0"], not: ["ブランチにいません", "設定されていません"] },
+      { name: "ブランチにいない", over: { branch: "", version: "2.3.4" }, want: ["ブランチにいません", "合意する人", "po@example.com", "2.3.4"], not: ["story-24"] },
+      { name: "user.nameとuser.emailがない", over: { user: null }, want: ["story-24", "user.name", "user.email", "設定されていません", "0.1.0"], not: ["合意する人", "po@example.com"] },
+    ];
+    for (const c of cases) {
+      open([claimEntry(1, "c-one")], {}, http.get("/api/context", () => HttpResponse.json({ ...ctx, ...c.over })));
+      const banner = screen.getByRole("banner");
+      await waitFor(() => expect(banner.textContent, `${c.name}: 帯に ${c.want[0]} がない`).toContain(c.want[0]));
+      for (const w of c.want) expect(banner.textContent, `${c.name}: 帯に ${w} がない`).toContain(w);
+      for (const w of c.not) expect(banner.textContent, `${c.name}: 帯に ${w} が出ている`).not.toContain(w);
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+});
+
+describe("RV-01 一覧の件数・並び・外れた合意", () => {
+  const listHeading = () => within(listRegion()).getByRole("heading", { level: 2 });
+
+  // @vanda:evidence review-change-counts
+  it("一覧の総数とともに追加と変更と削除のそれぞれの件数を示す", async () => {
+    const add = { change: "added", before: null } as const;
+    const del = { change: "deleted", after: null, fingerprint: null } as const;
+    open([
+      claimEntry(1, "c-add-1", add),
+      claimEntry(2, "c-add-2", add),
+      claimEntry(3, "c-mod-1"),
+      claimEntry(4, "c-mod-2"),
+      claimEntry(5, "c-del-1", del),
+      fileEntry(6, "e2e/add.txtar", add),
+      fileEntry(7, "e2e/mod.txtar"),
+      fileEntry(8, "e2e/mod2.txtar"),
+      fileEntry(9, "e2e/mod3.txtar"),
+    ]);
+    await listRow("c-add-1");
+    expect(listHeading().textContent).toMatch(/(^|[^0-9])9([^0-9]|$)/);
+    const text = listRegion().textContent ?? "";
+    expect(text, "追加の件数").toMatch(/追加\D{0,3}3([^0-9]|$)/);
+    expect(text, "変更の件数").toMatch(/変更\D{0,3}5([^0-9]|$)/);
+    expect(text, "削除の件数").toMatch(/削除\D{0,3}1([^0-9]|$)/);
+  });
+
+  // @vanda:evidence review-detached-on-top
+  it("一覧の外に示す外れた合意はまとまりの上に合意が外れたものとしてまとめ総数に数えないことを添える", async () => {
+    const unchanged = (id: string) => claimEntry(0, id, { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
+    open([claimEntry(1, "c-model"), fileEntry(2, "e2e/a.txtar")], { detached: [unchanged("c-detached-1"), unchanged("c-detached-2")] });
+    await listRow("c-detached-1");
+    const headings = within(listRegion()).getAllByRole("heading", { level: 3 });
+    const top = headings.find((h) => /合意が外れたもの/.test(h.textContent ?? ""));
+    expect(top, "「合意が外れたもの」の見出しがない").toBeTruthy();
+    expect(headings[0], "「合意が外れたもの」の見出しが、まとまりの見出しより上にない").toBe(top);
+    expect(top!.textContent, "総数に数えないことを添えていない").toMatch(/総数に数え(ない|ません)/);
+    const after = (a: Node, b: Node) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+    for (const name of ["c-detached-1", "c-detached-2"]) {
+      const li = await listRow(name);
+      expect(after(top!, li), `${name} が「合意が外れたもの」の見出しの下にない`).toBe(true);
+      expect(after(li, headings[1]), `${name} が、まとまりの見出しより下にある`).toBe(true);
+    }
+    // 総数は、一覧の 2 件だけ
+    expect(listHeading().textContent).toMatch(/(^|[^0-9])2([^0-9]|$)/);
+    expect(listHeading().textContent).not.toMatch(/(^|[^0-9])4([^0-9]|$)/);
+  });
+
+  // @vanda:evidence review-empty-note
+  it("変わったものが0件なら比べる元と今のあいだで変わったものはないと示し1件でもあれば示さない", async () => {
+    const note = "比べる元と今のあいだで、変わったものはありません。";
+    const detached = claimEntry(0, "c-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
+    const cases = [
+      { name: "0 件", entries: [], over: {}, shown: true },
+      { name: "外れた合意だけがある", entries: [], over: { detached: [detached] }, shown: true },
+      { name: "1 件", entries: [claimEntry(1, "c-one")], over: {}, shown: false },
+    ];
+    for (const c of cases) {
+      open(c.entries, c.over);
+      await waitFor(() => expect(listHeading()).toBeTruthy());
+      if (c.shown) expect(await within(listRegion()).findByText(note), c.name).toBeTruthy();
+      else {
+        await listRow("c-one");
+        expect(within(listRegion()).queryByText(note), `${c.name}: 示している`).toBeNull();
+      }
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+
+  // @vanda:evidence review-groups-fold-over-ten
+  it("画面を開いた時11件以上のまとまりはたたみ10件以下のまとまりと選んだ件を含むまとまりは開いておく", async () => {
+    const pad = (i: number) => String(i).padStart(2, "0");
+    const model = Array.from({ length: 10 }, (_, i) => claimEntry(i + 1, `m-${pad(i)}`));
+    const db = Array.from({ length: 11 }, (_, i) => claimEntry(i + 11, `d-${pad(i)}`, { group: "layer:db" }));
+    const files = Array.from({ length: 11 }, (_, i) => fileEntry(i + 22, `e2e/f-${pad(i)}.txtar`));
+    window.history.pushState({}, "", "/?view=branch&base=main&sel=" + encodeURIComponent("path:e2e/f-05.txtar"));
+    open([...model, ...db, ...files]);
+    await listRow("m-00");
+    const shown = (name: string) => within(listRegion()).queryByText(name, { exact: true }) !== null;
+    for (const e of model) expect(shown(e.id!), `10 件のまとまりの ${e.id} が見えない`).toBe(true);
+    for (const e of db) expect(shown(e.id!), `11 件のまとまりの ${e.id} が見えている`).toBe(false);
+    for (const e of files) expect(shown(e.path!), `選んだ件を含む 11 件のまとまりの ${e.path} が見えない`).toBe(true);
+  });
+
+  // @vanda:evidence review-order
+  it("一覧は約束のまとまりを設定のレイヤーの順に用語と機能とエビデンスの本体の順に並べ通し番号を付けて出す", async () => {
+    const term = (no: number, id: string) =>
+      claimEntry(no, id, { kind: "term", group: "terms-features", before: { name: id, definition: plain("定義"), partOf: null }, after: { name: id, definition: plain("定義"), partOf: null } });
+    const feature = (no: number, id: string) =>
+      claimEntry(no, id, { kind: "feature", group: "terms-features", before: { name: id, definition: plain("定義"), core: null, formal: null, formalWaiver: null }, after: { name: id, definition: plain("定義"), core: null, formal: null, formalWaiver: null } });
+    const entries = [
+      claimEntry(1, "m-a"),
+      claimEntry(2, "m-b"),
+      claimEntry(3, "d-a", { group: "layer:db" }),
+      feature(4, "f-a"),
+      term(5, "t-a"),
+      fileEntry(6, "db/a.sql", { fileType: "guardrail" }),
+      fileEntry(7, "e2e/a.txtar"),
+    ];
+    open(entries);
+    await listRow("m-a");
+    const groups = within(listRegion()).getAllByRole("heading", { level: 3 }).map((h) => h.textContent ?? "");
+    const order = [/モデル/, /DB/, /用語と機能/, /エビデンスの本体/];
+    expect(groups.length, `まとまりの見出し: ${groups.join(" / ")}`).toBe(order.length);
+    order.forEach((re, i) => expect(groups[i], `${i + 1} 番目のまとまり`).toMatch(re));
+    const rows = within(listRegion()).getAllByRole("listitem").map((li) => Array.from(within(li).getByRole("button").children).map((el) => el.textContent));
+    expect(rows).toEqual(entries.map((e) => [String(e.no), e.kind === "file" ? e.path : e.id]));
+  });
+});
+
+describe("RV-02 1 件の詳細", () => {
+  // @vanda:evidence review-detail-links
+  it("1件の詳細に約束なら約束の詳細を開くファイルならファイルの画面を開くのリンクを出し削除したものには出さない", async () => {
+    const del = { change: "deleted", after: null, fingerprint: null } as const;
+    const cases = [
+      { e: claimEntry(1, "c-mod"), name: "c-mod", link: "約束の詳細を開く", href: /^\/claims\/c-mod(\?|$)/ },
+      { e: claimEntry(2, "c-add", { change: "added", before: null }), name: "c-add", link: "約束の詳細を開く", href: /^\/claims\/c-add(\?|$)/ },
+      { e: claimEntry(3, "c-del", del), name: "c-del", link: null, href: null },
+      { e: fileEntry(4, "e2e/mod.txtar"), name: "e2e/mod.txtar", link: "ファイルの画面を開く", href: /^\/files\?(.*&)?path=e2e%2Fmod\.txtar(&|$)/ },
+      { e: fileEntry(5, "e2e/add.txtar", { change: "added", before: null }), name: "e2e/add.txtar", link: "ファイルの画面を開く", href: /^\/files\?(.*&)?path=e2e%2Fadd\.txtar(&|$)/ },
+      { e: fileEntry(6, "e2e/del.txtar", del), name: "e2e/del.txtar", link: null, href: null },
+    ];
+    open(cases.map((c) => c.e), {}, http.get("/api/claims/:id", () => HttpResponse.json(claimDetail())));
+    const user = userEvent.setup();
+    for (const c of cases) {
+      await user.click(within(await listRow(c.name)).getByRole("button"));
+      await waitFor(() => expect(within(detailRegion()).getByText(c.name, { selector: "h2", exact: false })).toBeTruthy());
+      for (const name of ["約束の詳細を開く", "ファイルの画面を開く"]) {
+        const links = within(detailRegion()).queryAllByRole("link", { name });
+        expect(links.length, `${c.name} の「${name}」のリンクの数`).toBe(name === c.link ? 1 : 0);
+        if (name === c.link) expect(links[0].getAttribute("href"), `${c.name} のリンクの先`).toMatch(c.href!);
+      }
+    }
+  });
+
+  // @vanda:evidence review-added-content
+  it("追加した約束と用語と機能とファイルは今の中身を示す", async () => {
+    const claim = claimEntry(1, "c-new", {
+      change: "added",
+      before: null,
+      after: {
+        statement: plain("足した約束の文"),
+        rationale: plain("足した約束の理由"),
+        condition: plain("足した約束の条件"),
+        subjects: ["task-id"],
+        layers: ["model", "db"],
+        evidence: [{ stage: "implementation", type: "random-check", layers: ["db"], detail: plain("足したエビデンスの予定の詳細") }],
+        flags: [],
+        guesses: [plain("足した推測の 1 つ目"), plain("足した推測の 2 つ目")],
+        modelCheckWaiver: null,
+      },
+    });
+    const term = claimEntry(2, "t-new", { kind: "term", group: "terms-features", change: "added", before: null, after: { name: "足した用語の名前", definition: plain("足した用語の定義"), partOf: "task" } });
+    const feature = claimEntry(3, "f-new", {
+      kind: "feature",
+      group: "terms-features",
+      change: "added",
+      before: null,
+      after: { name: "足した機能の名前", definition: plain("足した機能の定義"), core: true, formal: false, formalWaiver: plain("足した機能の形式手法を使わない理由") },
+    });
+    const file = fileEntry(4, "e2e/new.txtar", { change: "added", before: null, after: { text: "足したファイルの本文\n" } });
+    open([claim, term, feature, file], {}, http.get("/api/claims/:id", () => HttpResponse.json(claimDetail())));
+    const cases = [
+      { name: "c-new", want: ["足した約束の文", "足した約束の理由", "足した約束の条件", "task-id", "足したエビデンスの予定の詳細", "足した推測の 1 つ目", "足した推測の 2 つ目"], also: [/ランダムチェック|random-check/, /モデル|model/, /DB|db/] },
+      { name: "t-new", want: ["足した用語の名前", "足した用語の定義", "task"], also: [] },
+      { name: "f-new", want: ["足した機能の名前", "足した機能の定義", "足した機能の形式手法を使わない理由"], also: [] },
+      { name: "e2e/new.txtar", want: ["足したファイルの本文"], also: [] },
+    ];
+    const user = userEvent.setup();
+    for (const c of cases) {
+      await user.click(within(await listRow(c.name)).getByRole("button"));
+      await waitFor(() => expect(detailRegion().textContent, `${c.name} の詳細に ${c.want[0]} がない`).toContain(c.want[0]));
+      const text = detailRegion().textContent ?? "";
+      for (const w of c.want) expect(text, `${c.name} の詳細に ${w} がない`).toContain(w);
+      for (const re of c.also) expect(text, `${c.name} の詳細に ${re} がない`).toMatch(re);
+    }
+  });
+});
+
+describe("CM-08 ストーリーの欄", () => {
+  // @vanda:evidence story-open-link
+  it("ストーリーにストーリーストアのURLがあればストーリーストアで開くのリンクを出しなければ出さない", async () => {
+    for (const url of ["https://github.com/owner/app/issues/24", "https://issues.example.com/browse/24", ""]) {
+      open([claimEntry(1, "c-one")], {}, http.get("/api/story", () => HttpResponse.json({ ...story, url })));
+      await screen.findByText(/タスクの ID を重ならないようにする/);
+      const links = screen.queryAllByRole("link", { name: "ストーリーストアで開く" });
+      if (url === "") expect(links.length, "URL がないのにリンクを出した").toBe(0);
+      else {
+        expect(links.length, `${url} のリンクの数`).toBe(1);
+        expect(links[0].getAttribute("href")).toBe(url);
+      }
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+
+  // @vanda:evidence story-undecided-note
+  it("ストーリーが決まっていなければストーリーの欄にストーリーが決まっていないので選ぶよう示し決まっていれば示さない", async () => {
+    const note = "ストーリーが決まっていません。ストーリーを選んでください。";
+    open([claimEntry(1, "c-one")], { story: null, storyChoice: "all", branchStories: [] });
+    await listRow("c-one");
+    const panel = () => document.querySelector(".story-panel") as HTMLElement;
+    expect(await within(panel()).findByText(note)).toBeTruthy();
+    cleanup();
+    server.resetHandlers();
+    open([claimEntry(1, "c-one")]);
+    await screen.findByText(/タスクの ID を重ならないようにする/);
+    expect(screen.queryByText(note)).toBeNull();
+  });
+});
+
+describe("RV-06・RV-17 合意と取り消しのボタン", () => {
+  // @vanda:evidence agree-button-label
+  it("合意のボタンにはストーリーIDで合意すると合意するストーリーのIDを書く", async () => {
+    for (const id of ["#24", "#31"]) {
+      window.history.pushState({}, "", `/?view=branch&base=main&story=${encodeURIComponent(id)}`);
+      open([claimEntry(1, "c-one"), fileEntry(2, "e2e/a.txtar")], { story: id });
+      const user = userEvent.setup();
+      for (const name of ["c-one", "e2e/a.txtar"]) {
+        await user.click(within(await listRow(name)).getByRole("button"));
+        await waitFor(() => expect(within(detailRegion()).getByText(name, { selector: "h2", exact: false })).toBeTruthy());
+        const buttons = within(detailRegion()).getAllByRole("button").filter((b) => /合意/.test(b.textContent ?? ""));
+        expect(buttons.map((b) => b.textContent), `${id} の ${name} の合意のボタン`).toEqual([`ストーリー ${id} で合意する`]);
+      }
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+
+  // @vanda:evidence agree-cannot-reason-shown
+  it("ストーリーが決まっていないかgitのuser.nameとuser.emailがなくて合意できない時は合意のボタンを押せなくし理由を示す", async () => {
+    const cases = [
+      { name: "ストーリーが決まっていない", ctxOver: {}, over: { story: null, storyChoice: "all", branchStories: [] }, reason: "ストーリーを選ぶと、合意できます。" },
+      { name: "user.nameとuser.emailがない", ctxOver: { user: null }, over: {}, reason: "git の user.name と user.email を設定すると、合意できます。" },
+    ];
+    for (const c of cases) {
+      // 合意できるかと理由は API（entries[].agree）が決める。その答えを手で作って渡す
+      open([claimEntry(1, "c-one", { agree: { possible: false, reason: c.reason } })], c.over, http.get("/api/context", () => HttpResponse.json({ ...ctx, ...c.ctxOver })));
+      await userEvent.setup().click(within(await listRow("c-one")).getByRole("button"));
+      const button = await within(detailRegion()).findByRole("button", { name: /合意する/ });
+      expect((button as HTMLButtonElement).disabled, `${c.name}: 合意のボタンを押せる`).toBe(true);
+      expect(within(detailRegion()).getByText(c.reason), `${c.name}: 理由がない`).toBeTruthy();
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+
+  // @vanda:evidence revoke-others-shown
+  it("取り消してもほかの人の合意が残る時は取り消す前にその人の名前と合意済のままになることを示し取り消した後にも合意済のままであることを示す", async () => {
+    const stays = /合意済み?のまま/;
+    const cases = [
+      { name: "ほかの人の合意が残る", others: [{ name: "ほかの合意した人", email: "other@example.com" }, { name: "三人目の人", email: "third@example.com" }], stillAgreed: true },
+      { name: "ほかの人の合意が残らない", others: [], stillAgreed: false },
+    ];
+    for (const c of cases) {
+      let revoked = false;
+      const entry = () =>
+        claimEntry(1, "c-agreed", revoked
+          ? { state: c.stillAgreed ? "agreed" : "proposed", revoke: c.stillAgreed ? { possible: false, reason: "このストーリーの合意がありません", others: [] } : null }
+          : { state: "agreed", agree: { possible: false, reason: "このストーリーで今の中身にもう合意しています" }, revoke: { possible: true, reason: null, others: c.others } });
+      open([], {},
+        http.get("/api/review", () => HttpResponse.json(review([entry()]))),
+        http.post("/api/revoke", () => {
+          revoked = true;
+          return HttpResponse.json({ commit: "c".repeat(40), stillAgreed: c.stillAgreed, removed: 1 });
+        }));
+      const user = userEvent.setup();
+      await user.click(within(await listRow("c-agreed")).getByRole("button"));
+      const button = await within(detailRegion()).findByRole("button", { name: /取り消/ });
+      const before = detailRegion().textContent ?? "";
+      for (const o of c.others) expect(before, `${c.name}: 取り消す前に ${o.name} の名前がない`).toContain(o.name);
+      if (c.others.length > 0) expect(before, `${c.name}: 取り消す前に合意済のままになると示さない`).toMatch(stays);
+      else expect(before, `${c.name}: 取り消す前に合意済のままになると示した`).not.toMatch(stays);
+      await user.click(button);
+      await waitFor(() => expect(within(detailRegion()).queryByRole("button", { name: /取り消/ }), `${c.name}: 取り消した後も取り消しのボタンがある`).toBeNull());
+      await waitFor(() => expect(detailRegion().textContent, `${c.name}: 取り消した後に知らせがない`).toMatch(/取り消しました/));
+      const after = detailRegion().textContent ?? "";
+      if (c.stillAgreed) expect(after, `${c.name}: 取り消した後に合意済のままと示さない`).toMatch(stays);
+      else expect(after, `${c.name}: 取り消した後に合意済のままと示した`).not.toMatch(stays);
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+});
+
+describe("API のエラー", () => {
+  const fail = (status: number, message: string, fix: string) => HttpResponse.json({ error: { message, fix } }, { status });
+
+  // @vanda:evidence api-error-fix-shown
+  it("画面はAPIのエラーを出す時に何がどうなっているかとどうすればよいかの両方を出す", async () => {
+    const cases = [
+      { name: "一覧", method: "get", path: "/api/review", status: 500, message: "一覧の数と差分の数が合いません。", fix: "vanda の不具合として知らせてください。" },
+      { name: "ストーリー", method: "get", path: "/api/story", status: 502, message: "Bad credentials", fix: "GH_TOKEN を確かめてください。" },
+      { name: "画面で選べるもの", method: "get", path: "/api/context", status: 500, message: "設定を読めません（2 件。最初の 1 件: …）。", fix: "vanda doctor で誤りを確かめて、直してください。" },
+      { name: "合意", method: "post", path: "/api/agree", status: 409, message: "約束 c-one の中身が、画面に表示した後に変わりました。", fix: "一覧を読み直し、今の中身を確かめてから合意してください。" },
+    ] as const;
+    for (const c of cases) {
+      open([claimEntry(1, "c-one")], {}, http[c.method](c.path, () => fail(c.status, c.message, c.fix)));
+      if (c.name === "合意") {
+        const user = userEvent.setup();
+        await user.click(within(await listRow("c-one")).getByRole("button"));
+        await user.click(await within(detailRegion()).findByRole("button", { name: /合意する/ }));
+      }
+      expect(await screen.findByText(c.message, { exact: false }), `${c.name}: message がない`).toBeTruthy();
+      expect(await screen.findByText(c.fix, { exact: false }), `${c.name}: fix がない`).toBeTruthy();
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+
+  // @vanda:evidence context-error-shown
+  it("画面を開いた時に今の設定と選べるものを読めなければAPIが返した理由を出す", async () => {
+    server.use(http.get("/api/context", () => apiError(500, "設定（.vanda/config.toml）を読めません（1 件。最初の 1 件: .vanda/config.toml:3: foo は決まった項目ではありません。）。")));
+    render(<App />);
+    expect(await screen.findByText(/\.vanda\/config\.toml:3: foo は決まった項目ではありません/)).toBeTruthy();
   });
 });

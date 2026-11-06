@@ -522,3 +522,106 @@ it("約束の詳細の参照に触れた時とフォーカスした時に用語�
     await waitFor(() => expect(tooltipWith(text), `${name}: フォーカスを外しても消えない`).toBeNull());
   }
 });
+
+// CL-01
+// @vanda:evidence claim-detail-state
+it("約束の詳細の見出しに約束のIDと今の中身が合意済か提案中かを示す", async () => {
+  for (const [state, label, other] of [["proposed", "提案中", "合意済"], ["agreed", "合意済", "提案中"]] as const) {
+    window.history.pushState({}, "", "/claims/task-other-id");
+    open(claimDetail({ id: "task-other-id", state }));
+    const h = await screen.findByRole("heading", { level: 1 });
+    expect(h.textContent, `${state} の見出しに ID がない`).toContain("task-other-id");
+    expect(h.textContent, `${state} の見出しに ${label} がない`).toContain(label);
+    expect(h.textContent, `${state} の見出しに ${other} がある`).not.toContain(other);
+    cleanup();
+    server.resetHandlers();
+  }
+});
+
+// CL-01
+// @vanda:evidence claim-detail-subjects
+it("約束の詳細の対象には用語か機能の名前とIDを示し約束リストにないIDには約束リストにないと添える", async () => {
+  open(claimDetail({
+    subjects: [
+      { kind: "feature", id: "add-task", name: "タスクの登録" },
+      { kind: null, id: "no-such-subject", name: null },
+      { kind: "term", id: "task-id", name: "タスクの ID" },
+    ],
+  }));
+  await screen.findByText(/タスクの ID は重ならない/);
+  const dt = screen.getAllByRole("term").find((el) => el.textContent === "対象");
+  expect(dt, "対象の項目がない").toBeTruthy();
+  const dd = dt!.nextElementSibling as HTMLElement;
+  const text = dd.textContent ?? "";
+  for (const t of ["タスクの登録", "add-task", "タスクの ID", "task-id", "no-such-subject（約束リストにありません）"]) expect(text, `対象に ${t} がない`).toContain(t);
+  // 約束リストにある ID には添えない
+  expect(text.split("（約束リストにありません）").length - 1, "約束リストにありませんを添えた数").toBe(1);
+});
+
+// CL-01
+// @vanda:evidence claim-detail-guesses
+it("約束の詳細に推測があれば1つずつ示す", async () => {
+  const guesses = ["消したタスクの ID は使い回さない", "ID は 1 から数える", "ID は数字だけ"];
+  open(claimDetail({ guesses: guesses.map(plain) }));
+  await screen.findByText(/タスクの ID は重ならない/);
+  const dt = screen.getAllByRole("term").find((el) => el.textContent === "推測");
+  expect(dt, "推測の項目がない").toBeTruthy();
+  const items = within(dt!.nextElementSibling as HTMLElement).getAllByRole("listitem").map((li) => li.textContent);
+  expect(items).toEqual(guesses);
+});
+
+// CL-02
+// @vanda:evidence claim-detail-found-location
+it("実際のエビデンスごとに付いているものの名前とファイルと行を書いたファイルの画面へのリンクを示しTLAならファイル全体へのリンクも示す", async () => {
+  window.history.pushState({}, "", "/claims/task-id-unique" + "?view=branch&base=main&story=%2324");
+  open(detail);
+  await screen.findByText(/タスクの ID は重ならない/);
+  await waitFor(() => expect(bodyText()).toContain("TestUnique"));
+  const fileURL = (file: string) => new RegExp(`^/files\\?(.*&)?path=${encodeURIComponent(file).replace(/\./g, "\\.")}(&|$)`);
+  const founds = [
+    { name: "add-task", file: "e2e/add-task.txtar", line: 1, tla: false },
+    { name: "Unique", file: "spec/Task.tla", line: 5, tla: true },
+    { name: "CREATE UNIQUE INDEX t ON task (id);", file: "db/schema.sql", line: 4, tla: false },
+    { name: "TestUnique", file: "internal/task/task_test.go", line: 6, tla: false },
+  ];
+  for (const f of founds) {
+    const link = screen.getByRole("link", { name: `${f.file}:${f.line}` });
+    expect(link.getAttribute("href"), `${f.file}:${f.line} のリンクの先`).toMatch(fileURL(f.file));
+    // 付いているものの名前は、リンクと同じ所に出す
+    const where = link.closest("li, p, div") as HTMLElement;
+    expect(where.textContent, `${f.file}:${f.line} のそばに ${f.name} がない`).toContain(f.name);
+    const toFile = screen.getAllByRole("link").filter((a) => fileURL(f.file).test(a.getAttribute("href") ?? ""));
+    expect(toFile.length, `${f.file} の画面へのリンクの数`).toBe(f.tla ? 2 : 1);
+  }
+});
+
+// @vanda:evidence file-page-error-shown
+it("ファイルの画面でファイルを読めない時はAPIが返した理由を出す", async () => {
+  window.history.pushState({}, "", "/files?path=" + encodeURIComponent("e2e/none.txtar"));
+  server.use(
+    http.get("/api/context", () => HttpResponse.json(ctx)),
+    http.get("/api/file", () => apiError(404, "e2e/none.txtar は、合意の対象のファイルでもアノテーションを読むファイルでもありません。")),
+  );
+  render(<App />);
+  expect(await screen.findByText(/e2e\/none\.txtar は、合意の対象のファイルでもアノテーションを読むファイルでもありません/)).toBeTruthy();
+});
+
+// @vanda:evidence api-error-fix-shown
+it("約束の詳細の画面とファイルの画面はAPIのエラーを出す時に何がどうなっているかとどうすればよいかの両方を出す", async () => {
+  const cases = [
+    { path: "/claims/task-id-unique", api: "/api/claims/:id", message: "約束 task-id-unique は約束リストにありません。", fix: "約束リストを確かめてください。" },
+    { path: "/files?path=" + encodeURIComponent("e2e/a.txtar"), api: "/api/file", message: "e2e/a.txtar を読めません。", fix: "ファイルをコミットしてください。" },
+  ];
+  for (const c of cases) {
+    window.history.pushState({}, "", c.path);
+    server.use(
+      http.get("/api/context", () => HttpResponse.json(ctx)),
+      http.get(c.api, () => HttpResponse.json({ error: { message: c.message, fix: c.fix } }, { status: 404 })),
+    );
+    render(<App />);
+    expect(await screen.findByText(c.message, { exact: false }), `${c.path}: message がない`).toBeTruthy();
+    expect(await screen.findByText(c.fix, { exact: false }), `${c.path}: fix がない`).toBeTruthy();
+    cleanup();
+    server.resetHandlers();
+  }
+});
