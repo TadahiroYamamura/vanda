@@ -73,7 +73,7 @@ func Read(root string, cfg *config.Config, id string) (*Story, *Error) {
 	case cfg.Story.Adapter == "github":
 		return readGitHub(cfg.Story, id)
 	}
-	return nil, &Error{Status: http.StatusNotFound, Message: "ストーリーの置き場所が設定されていません。", Fix: `.vanda/config.toml の [story] に、adapter = "github" と repository を書くか、.vanda/adapters/ に置いたアダプタの名前を adapter に書いてください。`}
+	return nil, &Error{Status: http.StatusNotFound, Message: "ストーリーの置き場所が設定されていません。", Fix: `.vanda/config.toml の [story] に、adapter = "github" と repository を書くか、.vanda/adapters/ に置いたカスタムアダプタの名前を adapter に書いてください。`}
 }
 
 // tokenSource は、api_url のホストに合う認証キーの読み先（環境変数の名前と、gh auth token に渡すホスト）を返す。

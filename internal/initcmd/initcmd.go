@@ -118,7 +118,7 @@ func GitHubRepository(url string) string {
 type Answers struct {
 	// Base は、ベースブランチ（config.toml の [gui] base）
 	Base string
-	// Store は、ストーリーの置き場所。"github"（GitHub Issues）・"user"（.vanda/adapters/ のアダプタ）・"none"（使わない）
+	// Store は、ストーリーの置き場所。"github"（GitHub Issues）・"user"（カスタムアダプタ）・"none"（使わない）
 	Store string
 	// Repository は、Store が "github" のときの <owner>/<repo>。ほかの置き場所では使わない
 	Repository string
@@ -140,13 +140,13 @@ type storeChoice struct {
 	key, title, defaultIDPattern string
 }
 
-// storeChoices は、ストーリーの置き場所の選択肢。組込みのアダプタの一覧から作り、.vanda/adapters/ のアダプタと使わないを足す
+// storeChoices は、ストーリーの置き場所の選択肢。組込みのアダプタの一覧から作り、カスタムアダプタと使わないを足す
 func storeChoices() []storeChoice {
 	var out []storeChoice
 	for _, a := range story.Builtins {
 		out = append(out, storeChoice{key: a.Name, title: a.Title, defaultIDPattern: a.DefaultIDPattern})
 	}
-	return append(out, storeChoice{key: "user", title: ".vanda/adapters/ のアダプタ"}, storeChoice{key: "none", title: "使わない"})
+	return append(out, storeChoice{key: "user", title: "カスタムアダプタ"}, storeChoice{key: "none", title: "使わない"})
 }
 
 // asker は、huh の問いを 1 つずつ出す。問いの答えで次の問いが変わるので、まとめた 1 つの形でなく、問いごとに出す

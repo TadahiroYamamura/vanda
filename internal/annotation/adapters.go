@@ -350,7 +350,7 @@ func (sqlAdapter) names(file string, src []byte, lines []int) (map[int]string, [
 	return out, errs
 }
 
-// userAdapter は、.vanda/adapters/ のアダプタ。受け渡しの形は docs/formats.md の「.vanda/adapters/ のアダプタ」。
+// userAdapter は、カスタムアダプタ。受け渡しの形は docs/formats.md の「カスタムアダプタ」。
 type userAdapter struct {
 	root    string
 	u       *config.UserAdapter

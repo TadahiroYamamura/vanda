@@ -43,7 +43,7 @@ type Annotation struct {
 	Kind  string
 	Value string // ID か、internal なら理由
 	Name  string // 付いているものの名前（アダプタが読み取ったもの）
-	// Adapter は、読み取ったアダプタ（go・txtar・tla・sql）。.vanda/adapters/ のアダプタなら空
+	// Adapter は、読み取ったアダプタ（go・txtar・tla・sql）。カスタムアダプタなら空
 	Adapter string
 	// Types は、読んだ [[annotation]] の types（このアノテーションが満たせるエビデンスのタイプ）
 	Types []string
@@ -51,7 +51,7 @@ type Annotation struct {
 
 // adapter は、ファイルの中身と、アノテーションのある行を受け取り、行ごとに付いているものの名前を返す。
 // comments は、行ごとに、その言語のコメントの中の文だけを返す（コメントの外の @vanda: を数えないため）。
-// nil を返せば、すべての行の全体を見る（言語を知らない .vanda/adapters/ のアダプタ）。
+// nil を返せば、すべての行の全体を見る（言語を知らないカスタムアダプタ）。
 type adapter interface {
 	comments(file string, src []byte) ([]string, []diag.Error)
 	// kinds は、その言語に書けるアノテーションの種類。nil なら、すべて
@@ -64,7 +64,7 @@ func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotat
 	return ReadWith(root, tomlread.OSReader(root), files, rules)
 }
 
-// ReadWith は、Read と同じく読む。ファイルの中身は read で読む。root は、.vanda/adapters/ のアダプタを動かすディレクトリ。
+// ReadWith は、Read と同じく読む。ファイルの中身は read で読む。root は、カスタムアダプタを動かすディレクトリ。
 func ReadWith(root string, read tomlread.Reader, files []string, rules []config.AnnotationRule) ([]Annotation, diag.Errors) {
 	var out []Annotation
 	var errs []diag.Error
@@ -91,7 +91,7 @@ func ReadWith(root string, read tomlread.Reader, files []string, rules []config.
 		}
 		a := adapterFor(root, hit[0])
 		if a == nil {
-			errs = append(errs, diag.Error{File: f, What: fmt.Sprintf("%s の %d 行目の [[annotation]] のパターンに当たりますが、使うアダプタが決まっていません", config.File, hit[0].Line), Fix: "その [[annotation]] に、adapter（組込みのアダプタか、.vanda/adapters/ のアダプタの名前）を書いてください"})
+			errs = append(errs, diag.Error{File: f, What: fmt.Sprintf("%s の %d 行目の [[annotation]] のパターンに当たりますが、使うアダプタが決まっていません", config.File, hit[0].Line), Fix: "その [[annotation]] に、adapter（組込みのアダプタか、.vanda/adapters/ に置いたカスタムアダプタの名前）を書いてください"})
 			continue
 		}
 		src, err := read(f)
@@ -111,7 +111,7 @@ func ReadWith(root string, read tomlread.Reader, files []string, rules []config.
 		}
 		var asked map[int]string
 		if ua, ok := a.(userAdapter); ok {
-			// .vanda/adapters/ のアダプタは、vanda が言語を知らないので、@vanda: のある行を先に渡し、アダプタがアノテーションだと
+			// カスタムアダプタは、vanda が言語を知らないので、@vanda: のある行を先に渡し、アダプタがアノテーションだと
 			// 答えた行だけを読む（コメントの外の @vanda: を、書き方の誤りにしないため）
 			rows := strings.Split(string(src), "\n")
 			var lines []int

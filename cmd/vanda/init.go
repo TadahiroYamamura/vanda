@@ -91,7 +91,7 @@ func runInit(cmd *cobra.Command, root string, d initcmd.Defaults) error {
 }
 
 // report は、作った設定を vanda doctor と同じく確かめ、作ったファイルと次にすることを出す。
-// .vanda/adapters/ のアダプタは .vanda/ を作った後にしか置けないので、まだないことだけは誤りにせず、置くよう案内する。
+// カスタムアダプタは .vanda/ を作った後にしか置けないので、まだないことだけは誤りにせず、置くよう案内する。
 func report(out io.Writer, root string, files [][2]string, noAnnotations bool) error {
 	cfg, missing, errs := config.LoadAllowingMissingAdapters(root)
 	if errs != nil {
@@ -114,6 +114,6 @@ func report(out io.Writer, root string, files [][2]string, noAnnotations bool) e
 		fmt.Fprintf(out, "  %d. %s/%s にアダプタを置いてください。\n", n, config.AdaptersDir, name)
 		n++
 	}
-	fmt.Fprintln(out, "組込みのアダプタがない言語（TypeScript など）は、.vanda/adapters/ にアダプタを置いて足せます。")
+	fmt.Fprintln(out, "組込みのアダプタがない言語（TypeScript など）は、.vanda/adapters/ にカスタムアダプタを置いて足せます。")
 	return nil
 }

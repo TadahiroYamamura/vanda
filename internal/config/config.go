@@ -76,7 +76,7 @@ type Config struct {
 
 // StoryStore は、ストーリーの置き場所のアダプタ。Adapter が空で User が nil なら、置き場所につながない。
 type StoryStore struct {
-	// Adapter は、組込みのアダプタの名前（github）。.vanda/adapters/ のアダプタを使うなら空
+	// Adapter は、組込みのアダプタの名前（github）。カスタムアダプタを使うなら空
 	Adapter    string
 	Repository string
 	APIURL     string
@@ -94,7 +94,7 @@ func (s StoryStore) Name() string {
 // AdaptersDir は、組込みのほかのアダプタを置くディレクトリ（リポジトリの直下から）
 const AdaptersDir = ".vanda/adapters"
 
-// UserAdapter は、.vanda/adapters/ の直下に置いたアダプタ。
+// UserAdapter は、カスタムアダプタ（.vanda/adapters/ の直下に置いたアダプタ）。
 type UserAdapter struct {
 	Name string
 	// Path は、実行するファイルの、リポジトリの直下からの場所。ファイルならそのもの、ディレクトリなら直下の run
@@ -113,17 +113,17 @@ type Layer struct {
 // AnnotationRule は、読むファイルのパターンと、使うアダプタ。Adapter が空で User が nil なら、アダプタが決まっていない。
 type AnnotationRule struct {
 	Paths []string
-	// Adapter は、組込みのアダプタの名前（go・txtar・tla・sql）。.vanda/adapters/ のアダプタを使うなら空
+	// Adapter は、組込みのアダプタの名前（go・txtar・tla・sql）。カスタムアダプタを使うなら空
 	Adapter string
 	User    *UserAdapter
 	// Types は、このパターンで読んだアノテーションが満たすエビデンスのタイプ
 	Types []string
-	// Timeout は、.vanda/adapters/ のアダプタを、1 つのファイルについて待つ長さ
+	// Timeout は、カスタムアダプタを、1 つのファイルについて待つ長さ
 	Timeout time.Duration
 	Line    int
 }
 
-// DefaultAdapterTimeout は、[[annotation]] の timeout を省いたときに、.vanda/adapters/ のアダプタを待つ長さ
+// DefaultAdapterTimeout は、[[annotation]] の timeout を省いたときに、カスタムアダプタを待つ長さ
 const DefaultAdapterTimeout = 20 * time.Second
 
 type GuardrailRule struct {
@@ -157,7 +157,7 @@ func LoadAllowingMissingAdapters(root string) (cfg *Config, missing []string, er
 }
 
 // LoadCommitted は、Load と同じく読み、確かめる。ただし、.vanda/config.toml はコミット t の中身を読む
-// （審査と画面は、コミットした中身だけを読むため。.vanda/adapters/ のアダプタは、作業ツリーのものを動かす）。
+// （審査と画面は、コミットした中身だけを読むため。カスタムアダプタは、作業ツリーのものを動かす）。
 func LoadCommitted(root string, t *repo.Tree) (*Config, diag.Errors) {
 	if !t.Has(File) {
 		return nil, diag.Errors{{File: File, What: "HEAD のコミットにファイルがありません（コミットしていない設定は読みません）", Fix: File + " をコミットしてください"}}
@@ -233,9 +233,9 @@ func parse(l *loader, top *tomlread.Table) *Config {
 		if n, ok := t.Int("timeout", false); ok {
 			switch {
 			case r.User == nil && r.Adapter != "":
-				t.ErrAt("timeout", "timeout は、カスタムアダプタ（.vanda/adapters/ のアダプタ）のときだけ書けます（"+quote(r.Adapter)+" は組込みのアダプタです）", "timeout を消してください")
+				t.ErrAt("timeout", "timeout は、カスタムアダプタのときだけ書けます（"+quote(r.Adapter)+" は組込みのアダプタです）", "timeout を消してください")
 			case r.User == nil:
-				t.ErrAt("timeout", "timeout は、カスタムアダプタ（.vanda/adapters/ のアダプタ）のときだけ書けます（adapter がありません）", "adapter にカスタムアダプタの名前を書くか、timeout を消してください")
+				t.ErrAt("timeout", "timeout は、カスタムアダプタのときだけ書けます（adapter がありません）", "adapter にカスタムアダプタの名前を書くか、timeout を消してください")
 			case n < 1:
 				t.ErrAt("timeout", fmt.Sprintf("timeout が %d です", n), "timeout には 1 以上の整数（秒）を書いてください")
 			default:
@@ -342,14 +342,14 @@ func evidenceTypes(t *tomlread.Table) []string {
 	return types
 }
 
-// adapterOf は、表の adapter と args を読み、使うアダプタを決める。.vanda/adapters/ に同じ名前のアダプタがあれば、
+// adapterOf は、表の adapter と args を読み、使うアダプタを決める。同じ名前のカスタムアダプタがあれば、
 // 組込みのアダプタ（builtins）より先に使う。fix は、名前のアダプタがどこにもないときの直し方の前半。
 func adapterOf(l *loader, t *tomlread.Table, builtins []string, fix string) (string, *UserAdapter) {
 	name, hasAdapter := t.Str("adapter", false)
 	args, hasArgs := t.Strs("args", false)
 	if !hasAdapter {
 		if hasArgs {
-			t.ErrAt("args", "args は、.vanda/adapters/ のアダプタのときだけ書けます", "adapter に .vanda/adapters/ のアダプタの名前を書くか、args を消してください")
+			t.ErrAt("args", "args は、カスタムアダプタのときだけ書けます", "adapter にカスタムアダプタの名前を書くか、args を消してください")
 		}
 		return "", nil
 	}
@@ -378,19 +378,19 @@ func adapterOf(l *loader, t *tomlread.Table, builtins []string, fix string) (str
 		return "", nil
 	}
 	if hasArgs {
-		t.ErrAt("args", "args は、.vanda/adapters/ のアダプタのときだけ書けます（"+quote(name)+" は組込みのアダプタです）", "args を消してください")
+		t.ErrAt("args", "args は、カスタムアダプタのときだけ書けます（"+quote(name)+" は組込みのアダプタです）", "args を消してください")
 	}
 	return name, nil
 }
 
-// AdapterError は、.vanda/adapters/ のアダプタを動かせない理由（What）と直し方（Fix）。どちらも「。」で終えない。
+// AdapterError は、カスタムアダプタを動かせない理由（What）と直し方（Fix）。どちらも「。」で終えない。
 type AdapterError struct {
 	What, Fix string
 }
 
 func (e *AdapterError) Error() string { return e.What + "。" + e.Fix + "。" }
 
-// Check は、.vanda/adapters/ のアダプタがあって実行できるかを確かめる。
+// Check は、カスタムアダプタがあって実行できるかを確かめる。
 func (u *UserAdapter) Check(root string) *AdapterError {
 	info, err := os.Stat(filepath.Join(root, filepath.FromSlash(u.Path)))
 	switch {
@@ -445,12 +445,12 @@ func readHead(path string, n int) ([]byte, error) {
 	return buf[:k], nil
 }
 
-// Label は、誤りの文で .vanda/adapters/ のアダプタを指す言い方。
+// Label は、誤りの文でカスタムアダプタを指す言い方。
 func (u *UserAdapter) Label() string {
 	return "アダプタ " + u.Name + "（" + u.Path + "）"
 }
 
-// Cmd は、.vanda/adapters/ のアダプタを、リポジトリの根を作業のディレクトリにして動かすコマンドを作る。
+// Cmd は、カスタムアダプタを、リポジトリの根を作業のディレクトリにして動かすコマンドを作る。
 func (u *UserAdapter) Cmd(ctx context.Context, root string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, filepath.Join(root, filepath.FromSlash(u.Path)), u.Args...)
 	cmd.Dir = root
@@ -493,10 +493,10 @@ func parseStoryStore(l *loader, t *tomlread.Table, st *StoryStore) {
 		return
 	}
 	if hasRepo {
-		t.ErrAt("repository", "repository は、組込みの github のアダプタを使うときだけ書けます", `adapter = "github" を書くか、repository を消してください（.vanda/adapters/ に github という名前のアダプタがあれば、そちらを使います）`)
+		t.ErrAt("repository", "repository は、組込みの github のアダプタを使うときだけ書けます", `adapter = "github" を書くか、repository を消してください（.vanda/adapters/ に github という名前のカスタムアダプタがあれば、そちらを使います）`)
 	}
 	if hasAPI {
-		t.ErrAt("api_url", "api_url は、組込みの github のアダプタを使うときだけ書けます", `adapter = "github" を書くか、api_url を消してください（.vanda/adapters/ に github という名前のアダプタがあれば、そちらを使います）`)
+		t.ErrAt("api_url", "api_url は、組込みの github のアダプタを使うときだけ書けます", `adapter = "github" を書くか、api_url を消してください（.vanda/adapters/ に github という名前のカスタムアダプタがあれば、そちらを使います）`)
 	}
 }
 
