@@ -374,7 +374,7 @@ func adapterOf(l *loader, t *tomlread.Table, builtins []string, fix string) (str
 			l.missing = append(l.missing, name)
 			return "", &UserAdapter{Name: name, Path: rel, Args: args}
 		}
-		t.ErrAt("adapter", "アダプタ "+quote(name)+" は、組込みにも "+AdaptersDir+"/ にもありません", fix+"、"+rel+" にアダプタを置いてください")
+		t.ErrAt("adapter", "アダプタ "+quote(name)+" は、組込みにも "+AdaptersDir+"/ にもありません", fix+"、"+rel+" にカスタムアダプタを置いてください")
 		return "", nil
 	}
 	if hasArgs {

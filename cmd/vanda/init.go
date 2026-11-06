@@ -111,7 +111,7 @@ func report(out io.Writer, root string, files [][2]string, noAnnotations bool) e
 		n++
 	}
 	for _, name := range missing {
-		fmt.Fprintf(out, "  %d. %s/%s にアダプタを置いてください。\n", n, config.AdaptersDir, name)
+		fmt.Fprintf(out, "  %d. %s/%s にカスタムアダプタを置いてください。\n", n, config.AdaptersDir, name)
 		n++
 	}
 	fmt.Fprintln(out, "組込みのアダプタがない言語（TypeScript など）は、.vanda/adapters/ にカスタムアダプタを置いて足せます。")
