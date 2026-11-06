@@ -570,3 +570,68 @@ func TestReadはvanda_adaptersのアダプタがtimeoutを過ぎたらどのア�
 		t.Errorf("どのアダプタかを書いたタイムアウトの誤りでない: %v", errs)
 	}
 }
+
+// runAdapter は、docs/a.md を、答え answer を返すカスタムアダプタ ad で読む。
+func runAdapter(t *testing.T, doc, answer string) ([]Annotation, error) {
+	t.Helper()
+	root, files := setup(t, map[string]string{"docs/a.md": doc, "ad.sh": "#!/bin/sh\ncat >/dev/null\necho '" + answer + "'\n"})
+	as, errs := Read(root, files, []config.AnnotationRule{{Paths: []string{"docs/*.md"}, User: &config.UserAdapter{Name: "ad", Path: "ad.sh"}}})
+	if errs != nil {
+		return as, errs
+	}
+	return as, nil
+}
+
+// @vanda:evidence project-adapter-annotation-true-rejected
+func TestReadはvanda_adaptersのアダプタがannotationにtrueを返したらその行の誤りにする(t *testing.T) {
+	const doc = "@vanda:evidence a\n@vanda:evidence b\n"
+	_, err := runAdapter(t, doc, `{"names":[{"line":1,"name":"A"},{"line":2,"annotation":true}]}`)
+	if err == nil || !lineWith(err.Error(), "docs/a.md:2: ", "annotation", "true") {
+		t.Errorf("annotation: true が、その行（2 行目）を指す誤りにならない: %v", err)
+	}
+	if err != nil && strings.Contains(err.Error(), "docs/a.md:1: ") {
+		t.Errorf("名前を返した 1 行目が誤りになった: %v", err)
+	}
+	// false なら誤りにしない
+	if as, err := runAdapter(t, doc, `{"names":[{"line":1,"name":"A"},{"line":2,"annotation":false}]}`); err != nil || len(as) != 1 {
+		t.Errorf("annotation: false で誤りになったか、数えるものが違う: %v %s", err, show(as))
+	}
+}
+
+// @vanda:evidence project-adapter-missing-answer
+func TestReadはvanda_adaptersのアダプタが渡した行に答えなければその行を指して誤りにする(t *testing.T) {
+	const doc = "@vanda:evidence a\nx\n@vanda:evidence b\n@vanda:evidence c\n"
+	cases := []struct {
+		name, answer string
+		missing      []int
+	}{
+		{"1行も答えない", `{"names":[]}`, []int{1, 3, 4}},
+		{"最初の行に答えない", `{"names":[{"line":3,"name":"B"},{"line":4,"annotation":false}]}`, []int{1}},
+		{"最後の行に答えない", `{"names":[{"line":1,"name":"A"},{"line":3,"annotation":false}]}`, []int{4}},
+		{"間の行に答えない", `{"names":[{"line":1,"name":"A"},{"line":4,"name":"C"}]}`, []int{3}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, err := runAdapter(t, doc, c.answer)
+			if err == nil {
+				t.Fatal("誤りにならない")
+			}
+			got := err.Error()
+			for _, l := range []int{1, 3, 4} {
+				want := false
+				for _, m := range c.missing {
+					want = want || m == l
+				}
+				if has := lineWith(got, fmt.Sprintf("docs/a.md:%d: ", l), "ad"); has != want {
+					t.Errorf("%d 行目を指す誤りがあるか: %v（%v のはず）\n%s", l, has, want, got)
+				}
+			}
+			if n := strings.Count(got, "\n") + 1; n != len(c.missing) {
+				t.Errorf("誤りが %d 件（答えのない行の数 %d のはず）\n%s", n, len(c.missing), got)
+			}
+		})
+	}
+	if _, err := runAdapter(t, doc, `{"names":[{"line":1,"name":"A"},{"line":3,"annotation":false},{"line":4,"name":"C"}]}`); err != nil {
+		t.Errorf("すべての行に答えたのに誤りになった: %v", err)
+	}
+}

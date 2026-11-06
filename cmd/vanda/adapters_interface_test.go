@@ -594,3 +594,21 @@ func Test_vanda_adaptersのアダプタがtimeoutを過ぎたら約束の詳細�
 		t.Errorf("どのアダプタかを書いたタイムアウトの誤りでない（%d）: %s", code, msg)
 	}
 }
+
+// @vanda:evidence project-adapter-missing-answer
+func Test_vanda_adaptersのアダプタが渡した行のどれかに答えなければvanda_checkがその行を指して誤りにする(t *testing.T) {
+	t.Parallel()
+	bin := buildVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 1・3・4 行目を渡し、3 行目だけに答えない
+	root := ifaceRepo(t, version, annotationRule("partial", ""), map[string]string{"ext/a.ext": "@vanda:term task\n本文\n@vanda:term task\n@vanda:term task\n"},
+		map[string]string{"partial": "cat >/dev/null\nprintf '%s' '{\"names\":[{\"line\":1,\"name\":\"x\"},{\"line\":4,\"annotation\":false}]}'\n"})
+	newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
+	code, out, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml")
+	if code != 1 || !strings.Contains(out, "審査 annotation-links（all）: 失敗（1 件）") || !strings.HasPrefix(errs, "ext/a.ext:3: ") || strings.Count(errs, "\n") != 1 {
+		t.Errorf("答えのない 3 行目だけを指す 1 件の誤りにならない（%d）\n%s%s", code, out, errs)
+	}
+}
