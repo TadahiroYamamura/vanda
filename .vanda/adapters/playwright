@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// vanda の .vanda/adapters/ のアダプタ（受け渡しの形は docs/formats.md の「.vanda/adapters/ のアダプタ」）。
+// vanda のカスタムアダプタ（受け渡しの形は docs/formats.md の「カスタムアダプタ」）。
 // Playwright の E2E（web/e2e/**/*.spec.ts）のアノテーションを読む。読み方は組込みの ts のアダプタと同じ:
 // test・it・describe から始まる呼び出しの直前のコメント（空行をはさまない）に書き、名前は最後の呼び出しの最初の引数。
 // describe（test.describe を含む）の中なら、外側から順に " > " でつなぐ。

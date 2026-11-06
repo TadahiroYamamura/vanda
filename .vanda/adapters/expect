@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// vanda の .vanda/adapters/ のアダプタ（受け渡しの形は docs/formats.md の「.vanda/adapters/ のアダプタ」）。
+// vanda のカスタムアダプタ（受け渡しの形は docs/formats.md の「カスタムアダプタ」）。
 // Expect のシナリオ（cmd/vanda/testdata/expect/*.exp）のアノテーションを読む。読み方は組込みの txtar のアダプタに倣う:
 // - 書けるのは、ファイルの冒頭のコメント（最初の命令の行より前の、# で始まる行）の中の @vanda:evidence だけ。ファイル全体に付く
 // - 名前は、ファイルの名前から .exp を除いたもの
