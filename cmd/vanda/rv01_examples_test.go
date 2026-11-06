@@ -107,7 +107,7 @@ var rvExamples = []rvExample{
 		story:  map[string][]rvEntry{"#24": nil},
 	},
 	{
-		name: "レビュー単位がブランチのときはベースブランチとの分岐点との差分でベースブランチを変えると一覧も変わる",
+		name: "レビュー単位がブランチのときはベースブランチとの分岐点からの差分でベースブランチを変えると一覧も変わる",
 		build: func(r *rvRepo) {
 			r.addItem("claim", "c-a", 0)
 			r.addItem("claim", "c-b", 0)
