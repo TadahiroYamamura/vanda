@@ -668,3 +668,126 @@ func Test_formalを省いたものとformalをtrueと書いたものは別の指
 		t.Fatal("formal を省いたものと formal = true が同じ指紋になった")
 	}
 }
+
+// 期待値は sha256sum で作った値。どれも sha256: に続けて 16 進の小文字 64 文字
+//
+// @vanda:evidence fingerprint-form
+func Test指紋は元のバイト列のSHA256をsha256と16進の小文字64文字で書いたもの(t *testing.T) {
+	files := map[string]string{
+		"":           "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+		"abc":        "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+		"hello\n":    "sha256:5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03",
+		"\x00\xff\n": "sha256:712450d3c4a79eea9509e75dc1dacdeff58034df538536cfae2da882bd8a0c50",
+		"日本語":        "sha256:77710aedc74ecfa33685e33a6c7df5cc83004da1bdcef7fb280f5c2b2e97e0a5",
+	}
+	for src, want := range files {
+		if got := agreements.FileFingerprint([]byte(src)); got != want {
+			t.Errorf("ファイル %q の指紋: %s（思ったもの %s）", src, got, want)
+		}
+	}
+	// 項目の指紋の元のバイト列は、決まった形の JSON {"definition":"やること","id":"task","name":"タスク"}
+	got, err := agreements.ItemFingerprint(map[string]any{"id": "task", "name": "タスク", "definition": "やること"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "sha256:8d0b08167c5bf0bbb777f239b51dc94e46f55369dce46bea2ff4dfb23325832d"; got != want {
+		t.Errorf("項目の指紋: %s（思ったもの %s）", got, want)
+	}
+}
+
+// 項目の指紋の期待値は、手で書いた決まった形の JSON のバイト列の指紋（ファイルの指紋と同じ作り方）にする
+//
+// @vanda:evidence fingerprint-item-json
+func Test約束と用語と機能の指紋はキーをバイトの順に並べ配列を書いた順にし空白と最後の改行のないJSONから作る(t *testing.T) {
+	src := `[[term]]
+part_of = "whole"
+name = "タスク"
+id = "task"
+definition = "やること"
+
+[[feature]]
+formal_waiver = "状態を持たないため"
+formal = false
+core = true
+name = "タスクの登録"
+id = "add-task"
+definition = "タスクを足す"
+
+[[claim]]
+statement = "タスクの ID は重ならない"
+subjects = ["task", "add-task"]
+rationale = "見分けるため"
+layers = ["model", "db"]
+id = "task-unique"
+condition = "いつも"
+
+[[claim.evidence]]
+type = "unit-test"
+stage = "implementation"
+layers = ["model"]
+detail = "TestUnique"
+
+[[claim.evidence]]
+stage = "plan"
+layers = ["db", "model"]
+type = "guardrail"
+`
+	want := map[string]string{
+		"task":     `{"definition":"やること","id":"task","name":"タスク","part_of":"whole"}`,
+		"add-task": `{"core":true,"definition":"タスクを足す","formal":false,"formal_waiver":"状態を持たないため","id":"add-task","name":"タスクの登録"}`,
+		"task-unique": `{"condition":"いつも","evidence":[{"detail":"TestUnique","layers":["model"],"stage":"implementation","type":"unit-test"},` +
+			`{"layers":["db","model"],"stage":"plan","type":"guardrail"}],"id":"task-unique","layers":["model","db"],` +
+			`"rationale":"見分けるため","statement":"タスクの ID は重ならない","subjects":["task","add-task"]}`,
+	}
+	got := load(t, t.TempDir(), src)
+	for id, j := range want {
+		if fp := agreements.FileFingerprint([]byte(j)); got[id] != fp {
+			t.Errorf("%s の指紋 %s が、次の JSON の指紋 %s でない\n%s", id, got[id], fp, j)
+		}
+		// 空白や最後の改行を入れたものとは違う
+		for _, other := range []string{j + "\n", strings.Replace(j, ",", ", ", 1), strings.Replace(j, ":", ": ", 1)} {
+			if got[id] == agreements.FileFingerprint([]byte(other)) {
+				t.Errorf("%s の指紋が、空白か最後の改行を入れた JSON の指紋と同じ\n%s", id, other)
+			}
+		}
+	}
+}
+
+// @vanda:evidence fingerprint-json-strings
+func Test決まった形のJSONの文字列は決まった文字だけをエスケープし真偽と整数はそのまま書く(t *testing.T) {
+	// U+0000〜U+001F の全部と、エスケープするほかの 2 文字、エスケープしない文字
+	escaped := map[rune]string{'"': `\"`, '\\': `\\`, '\n': `\n`, '\r': `\r`, '\t': `\t`}
+	for r := rune(0); r < 0x20; r++ {
+		if _, ok := escaped[r]; !ok {
+			escaped[r] = fmt.Sprintf(`\u%04x`, r)
+		}
+	}
+	kept := []rune{'<', '>', '&', '\'', '/', 'あ', '漢', '😀', 0x7f, 0x80, 0x2028, 0xfeff, ' '}
+	check := func(r rune, want string) {
+		t.Helper()
+		raw := map[string]any{"id": "t", "name": "n", "definition": "a" + string(r) + "b"}
+		j := `{"definition":"a` + want + `b","id":"t","name":"n"}`
+		got, err := agreements.ItemFingerprint(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if fp := agreements.FileFingerprint([]byte(j)); got != fp {
+			t.Errorf("U+%04X の指紋が、次の JSON の指紋でない\n%s", r, j)
+		}
+	}
+	for r, want := range escaped {
+		check(r, want)
+	}
+	for _, r := range kept {
+		check(r, string(r))
+	}
+	// 真偽は true・false、整数は 10 進
+	raw := map[string]any{"id": "f", "core": true, "formal": false, "n": int64(42), "m": int64(-7), "z": int64(0)}
+	got, err := agreements.ItemFingerprint(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if j := `{"core":true,"formal":false,"id":"f","m":-7,"n":42,"z":0}`; got != agreements.FileFingerprint([]byte(j)) {
+		t.Errorf("真偽と整数の指紋が、次の JSON の指紋でない\n%s", j)
+	}
+}
