@@ -360,3 +360,243 @@ func TestUserAdapterのCheckはない実行できないrunがないアダプタ�
 		}
 	}
 }
+
+// loadErrs は、設定 body を読んだときの誤りを返す。誤りがなければ空。
+func loadErrs(t *testing.T, body string) string {
+	t.Helper()
+	root := writeConfig(t, body)
+	writeAdapter(t, root, "md", "#!/bin/sh\n")
+	if _, errs := Load(root); errs != nil {
+		return errs.Error()
+	}
+	return ""
+}
+
+// @vanda:evidence config-annotation-types-unique
+func TestLoadはannotationのtypesに同じタイプを2つ以上書けば誤りにし違うタイプだけなら受け付ける(t *testing.T) {
+	for name, types := range map[string]string{
+		"同じタイプが2つ":    `["unit-test", "unit-test"]`,
+		"同じタイプが3つ":    `["sensor", "sensor", "sensor"]`,
+		"間をはさんで重なる":   `["unit-test", "random-check", "unit-test"]`,
+		"2組が重なる":      `["unit-test", "sensor", "sensor", "unit-test"]`,
+		"カスタムアダプタの表で": `["scenario-test", "scenario-test"]`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			adapter := "go"
+			if name == "カスタムアダプタの表で" {
+				adapter = "md"
+			}
+			got := loadErrs(t, annConfig("adapter = \""+adapter+"\"\ntypes = "+types+"\n"))
+			if !lineWith(got, ".vanda/config.toml:6: ", "types", "2 つ以上") {
+				t.Errorf("types の行（6 行目）を指す誤りにならない:\n%s", got)
+			}
+		})
+	}
+	if got := loadErrs(t, annConfig("adapter = \"go\"\ntypes = [\"unit-test\", \"random-check\", \"sensor\"]\n")); got != "" {
+		t.Errorf("重ならない types が誤りになった:\n%s", got)
+	}
+}
+
+// @vanda:evidence config-api-url-default
+func TestLoadは組込みのgithubでapi_urlを省けばhttps_api_github_comを使う(t *testing.T) {
+	root := writeConfig(t, "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"o/r\"\n")
+	cfg, errs := Load(root)
+	if errs != nil {
+		t.Fatal(errs)
+	}
+	if cfg.Story.APIURL != "https://api.github.com" {
+		t.Errorf("api_url を省いたときの API の URL: %q", cfg.Story.APIURL)
+	}
+	// 書けば、書いたものを使う
+	root = writeConfig(t, "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"o/r\"\napi_url = \"https://ghe.example.com/api/v3\"\n")
+	if cfg, errs = Load(root); errs != nil {
+		t.Fatal(errs)
+	}
+	if cfg.Story.APIURL != "https://ghe.example.com/api/v3" {
+		t.Errorf("api_url を書いたときの API の URL: %q", cfg.Story.APIURL)
+	}
+}
+
+// @vanda:evidence config-api-url-scheme
+func TestLoadはapi_urlがhttpかhttpsで始まらなければ誤りにする(t *testing.T) {
+	body := func(u string) string {
+		return "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"o/r\"\napi_url = \"" + u + "\"\n"
+	}
+	for _, u := range []string{"api.github.com", "ftp://api.github.com", "//api.github.com", "httpx://a", "http:/a", "", " https://api.github.com"} {
+		if got := loadErrs(t, body(u)); !lineWith(got, ".vanda/config.toml:5: ", "api_url") {
+			t.Errorf("api_url = %q が、api_url の行（5 行目）を指す誤りにならない:\n%s", u, got)
+		}
+	}
+	for _, u := range []string{"http://localhost:8080", "https://api.github.com", "https://ghe.example.com/api/v3/"} {
+		if got := loadErrs(t, body(u)); got != "" {
+			t.Errorf("api_url = %q が誤りになった:\n%s", u, got)
+		}
+	}
+}
+
+// @vanda:evidence config-github-repository
+func TestLoadは組込みのgithubでrepositoryがないかowner_repoの形でなければ誤りにする(t *testing.T) {
+	if got := loadErrs(t, "version = \"0.1.0\"\n[story]\nadapter = \"github\"\n"); !lineWith(got, ".vanda/config.toml:2: ", "repository") {
+		t.Errorf("repository がないのに、[story] の行を指す誤りにならない:\n%s", got)
+	}
+	body := func(r string) string {
+		return "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"" + r + "\"\n"
+	}
+	for _, r := range []string{"", "owner", "owner/", "/repo", "a/b/c", "own er/repo", "owner/re po", "オーナー/repo", "a+b/c", "a/b:c", "a\\b"} {
+		if got := loadErrs(t, body(r)); !lineWith(got, ".vanda/config.toml:4: ", "repository") {
+			t.Errorf("repository = %q が、repository の行（4 行目）を指す誤りにならない:\n%s", r, got)
+		}
+	}
+	for _, r := range []string{"a/b", "TadahiroYamamura/vanda", "Owner_1/re.po-2", "_/.", "-/-"} {
+		if got := loadErrs(t, body(r)); got != "" {
+			t.Errorf("repository = %q が誤りになった:\n%s", r, got)
+		}
+	}
+}
+
+// @vanda:evidence config-guardrail-adapter-file
+func TestLoadはguardrailのadapterにfileのほかを書けば誤りにする(t *testing.T) {
+	body := func(a string) string {
+		return "version = \"0.1.0\"\n\n[[guardrail]]\nadapter = \"" + a + "\"\npaths = [\"db/schema.sql\"]\n"
+	}
+	if got := loadErrs(t, body("file")); got != "" {
+		t.Errorf("adapter = \"file\" が誤りになった:\n%s", got)
+	}
+	for _, a := range []string{"sql", "File", "files", "go", "md", ""} {
+		if got := loadErrs(t, body(a)); !lineWith(got, ".vanda/config.toml:4: ", `"`+a+`"`) {
+			t.Errorf("adapter = %q が、adapter の行（4 行目）を指す誤りにならない:\n%s", a, got)
+		}
+	}
+}
+
+// @vanda:evidence config-id-pattern-default
+func TestLoadはid_patternを省けばストーリーのIDの書き方をシャープと数字にする(t *testing.T) {
+	for name, body := range map[string]string{
+		"storyの表がない":             "version = \"0.1.0\"\n",
+		"storyの表にid_patternがない": "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"o/r\"\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			cfg, errs := Load(writeConfig(t, body))
+			if errs != nil {
+				t.Fatal(errs)
+			}
+			for s, want := range map[string]bool{"#1": true, "#24": true, "#0123456789": true, "#": false, "24": false, "#24a": false, "a#24": false, "# 24": false, "#２４": false, "PROJ-1": false, "": false} {
+				if got := cfg.IDFull.MatchString(s); got != want {
+					t.Errorf("%q がストーリーの ID の書き方に当たるか: %v（思ったもの %v）", s, got, want)
+				}
+			}
+		})
+	}
+}
+
+// @vanda:evidence config-id-pattern-regex
+func TestLoadはid_patternが正規表現として読めなければ誤りにする(t *testing.T) {
+	body := func(p string) string {
+		return "version = \"0.1.0\"\n[story]\nid_pattern = '" + p + "'\n"
+	}
+	// (?=…) の先読みと \1 の後方参照は、RE2 にない
+	for _, p := range []string{"(", "PROJ-[0-9", "x**", "(?=PROJ)[A-Z]+-[0-9]+", `(a)\1`} {
+		if got := loadErrs(t, body(p)); !lineWith(got, ".vanda/config.toml:3: ", "id_pattern", "正規表現") {
+			t.Errorf("id_pattern = %q が、id_pattern の行（3 行目）を指す誤りにならない:\n%s", p, got)
+		}
+	}
+	for _, p := range []string{"PROJ-[0-9]+", `#\d+`, "(?:STORY|BUG)-[0-9]+"} {
+		if got := loadErrs(t, body(p)); got != "" {
+			t.Errorf("id_pattern = %q が誤りになった:\n%s", p, got)
+		}
+	}
+}
+
+// @vanda:evidence config-layer-id
+func TestLoadはlayerのidが決まった形でないかほかのレイヤーと重なれば誤りにする(t *testing.T) {
+	layer := func(id string) string {
+		return "\n[[layer]]\nid = \"" + id + "\"\nname = \"n\"\ndescription = \"d\"\n"
+	}
+	for _, id := range []string{"Model", "1db", "-a", "a-", "a--b", "a_b", "a b", "モデル", "a.b"} {
+		if got := loadErrs(t, "version = \"0.1.0\"\n"+layer(id)); !lineWith(got, ".vanda/config.toml:4: ", "ID", `"`+id+`"`) {
+			t.Errorf("id = %q が、id の行（4 行目）を指す誤りにならない:\n%s", id, got)
+		}
+	}
+	if got := loadErrs(t, "version = \"0.1.0\"\n"+layer("model")+layer("db-2")+layer("a1-b2-c3")); got != "" {
+		t.Errorf("決まった形の重ならない id が誤りになった:\n%s", got)
+	}
+	// 重なれば、後のほうの id の行を指す
+	got := loadErrs(t, "version = \"0.1.0\"\n"+layer("model")+layer("db")+layer("model"))
+	if !lineWith(got, ".vanda/config.toml:14: ", `"model"`, "重な") || strings.Count(got, "\n") != 0 {
+		t.Errorf("重なった id が、後のほうの id の行（14 行目）を指す 1 件の誤りにならない:\n%s", got)
+	}
+}
+
+// @vanda:evidence config-pattern-syntax
+func TestLoadはファイルのパターンの書き方が誤っていればどの項目でも誤りにする(t *testing.T) {
+	// どの項目にも、そのパターンだけを書く。wrap は、項目の行が 3 行目になるように書く
+	wrap := map[string]func(p string) string{
+		"promises":           func(p string) string { return "version = \"0.1.0\"\n\npromises = [\"" + p + "\"]\n" },
+		"agreements":         func(p string) string { return "version = \"0.1.0\"\n\nagreements = [\"" + p + "\"]\n" },
+		"annotationのpaths": func(p string) string {
+			return "version = \"0.1.0\"\n[[annotation]]\npaths = [\"" + p + "\"]\nadapter = \"go\"\ntypes = [\"unit-test\"]\n"
+		},
+		"guardrailのpaths": func(p string) string {
+			return "version = \"0.1.0\"\n[[guardrail]]\npaths = [\"" + p + "\"]\nadapter = \"file\"\n"
+		},
+	}
+	// リポジトリの直下からでない場所（/ で始まる）と、閉じていない [ と、空の文字列
+	bad := []string{"/abs/a.toml", "/", "a/[b.toml", "[", "a/b[", "**/[x/*.go", ""}
+	good := []string{"a.toml", "a/*.toml", "**/*_test.go", "e2e/**/*.txtar", "a/[bc].toml", "a?/b"}
+	for key, w := range wrap {
+		for _, p := range bad {
+			if got := loadErrs(t, w(p)); !lineWith(got, ".vanda/config.toml:3: ", "パターン", `"`+p+`"`) {
+				t.Errorf("%s のパターン %q が、その行（3 行目）を指す誤りにならない:\n%s", key, p, got)
+			}
+		}
+		for _, p := range good {
+			got := loadErrs(t, w(p))
+			// はっきり書いたファイルがないことは、設定を読むときには確かめない
+			if got != "" {
+				t.Errorf("%s のパターン %q が誤りになった:\n%s", key, p, got)
+			}
+		}
+	}
+}
+
+// @vanda:evidence config-patterns-not-empty
+func TestLoadはpromisesとagreementsとannotationとguardrailのpathsにパターンが1つもなければ誤りにする(t *testing.T) {
+	for name, c := range map[string]struct{ body, prefix string }{
+		"promises":          {"version = \"0.1.0\"\npromises = []\n", ".vanda/config.toml:2: "},
+		"agreements":        {"version = \"0.1.0\"\nagreements = []\n", ".vanda/config.toml:2: "},
+		"annotationのpaths": {"version = \"0.1.0\"\n[[annotation]]\npaths = []\nadapter = \"go\"\ntypes = [\"unit-test\"]\n", ".vanda/config.toml:3: "},
+		"guardrailのpaths":  {"version = \"0.1.0\"\n[[guardrail]]\nadapter = \"file\"\npaths = []\n", ".vanda/config.toml:4: "},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if got := loadErrs(t, c.body); !lineWith(got, c.prefix, "パターン") {
+				t.Errorf("パターンのない項目が、その行を指す誤りにならない:\n%s", got)
+			}
+		})
+	}
+}
+
+// @vanda:evidence config-required-fields
+func TestLoadはversionとlayerとannotationとguardrailの必須の項目がなければ誤りにする(t *testing.T) {
+	const layerAll = "\n[[layer]]\nid = \"model\"\nname = \"n\"\ndescription = \"d\"\n"
+	cases := []struct {
+		name, body, prefix, key string
+	}{
+		{"version", "promises = [\".vanda/promises.toml\"]\n", ".vanda/config.toml:", "version"},
+		{"layerのid", "version = \"0.1.0\"\n\n[[layer]]\nname = \"n\"\ndescription = \"d\"\n", ".vanda/config.toml:3: ", "id"},
+		{"layerのname", "version = \"0.1.0\"\n\n[[layer]]\nid = \"model\"\ndescription = \"d\"\n", ".vanda/config.toml:3: ", "name"},
+		{"layerのdescription", "version = \"0.1.0\"\n\n[[layer]]\nid = \"model\"\nname = \"n\"\n", ".vanda/config.toml:3: ", "description"},
+		{"annotationのpaths", "version = \"0.1.0\"\n\n[[annotation]]\nadapter = \"go\"\ntypes = [\"unit-test\"]\n", ".vanda/config.toml:3: ", "paths"},
+		{"guardrailのadapter", "version = \"0.1.0\"\n\n[[guardrail]]\npaths = [\"db/schema.sql\"]\n", ".vanda/config.toml:3: ", "adapter"},
+		{"guardrailのpaths", "version = \"0.1.0\"\n\n[[guardrail]]\nadapter = \"file\"\n", ".vanda/config.toml:3: ", "paths"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := loadErrs(t, c.body); !lineWith(got, c.prefix, c.key, "ありません") {
+				t.Errorf("%s がないのに、%q で始まる誤りにならない:\n%s", c.key, c.prefix, got)
+			}
+		})
+	}
+	if got := loadErrs(t, "version = \"0.1.0\"\n"+layerAll+"\n[[annotation]]\npaths = [\"x/*\"]\nadapter = \"go\"\ntypes = [\"unit-test\"]\n\n[[guardrail]]\nadapter = \"file\"\npaths = [\"db/*.sql\"]\n"); got != "" {
+		t.Errorf("必須の項目を全部書いた設定が誤りになった:\n%s", got)
+	}
+}
