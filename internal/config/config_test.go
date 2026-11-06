@@ -472,7 +472,7 @@ func TestLoadはguardrailのadapterにfileのほかを書けば誤りにする(t
 // @vanda:evidence config-id-pattern-default
 func TestLoadはid_patternを省けばストーリーのIDの書き方をシャープと数字にする(t *testing.T) {
 	for name, body := range map[string]string{
-		"storyの表がない":             "version = \"0.1.0\"\n",
+		"storyの表がない":            "version = \"0.1.0\"\n",
 		"storyの表にid_patternがない": "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"o/r\"\n",
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -531,8 +531,8 @@ func TestLoadはlayerのidが決まった形でないかほかのレイヤーと
 func TestLoadはファイルのパターンの書き方が誤っていればどの項目でも誤りにする(t *testing.T) {
 	// どの項目にも、そのパターンだけを書く。wrap は、項目の行が 3 行目になるように書く
 	wrap := map[string]func(p string) string{
-		"promises":           func(p string) string { return "version = \"0.1.0\"\n\npromises = [\"" + p + "\"]\n" },
-		"agreements":         func(p string) string { return "version = \"0.1.0\"\n\nagreements = [\"" + p + "\"]\n" },
+		"promises":   func(p string) string { return "version = \"0.1.0\"\n\npromises = [\"" + p + "\"]\n" },
+		"agreements": func(p string) string { return "version = \"0.1.0\"\n\nagreements = [\"" + p + "\"]\n" },
 		"annotationのpaths": func(p string) string {
 			return "version = \"0.1.0\"\n[[annotation]]\npaths = [\"" + p + "\"]\nadapter = \"go\"\ntypes = [\"unit-test\"]\n"
 		},
@@ -562,8 +562,8 @@ func TestLoadはファイルのパターンの書き方が誤っていればど�
 // @vanda:evidence config-patterns-not-empty
 func TestLoadはpromisesとagreementsとannotationとguardrailのpathsにパターンが1つもなければ誤りにする(t *testing.T) {
 	for name, c := range map[string]struct{ body, prefix string }{
-		"promises":          {"version = \"0.1.0\"\npromises = []\n", ".vanda/config.toml:2: "},
-		"agreements":        {"version = \"0.1.0\"\nagreements = []\n", ".vanda/config.toml:2: "},
+		"promises":         {"version = \"0.1.0\"\npromises = []\n", ".vanda/config.toml:2: "},
+		"agreements":       {"version = \"0.1.0\"\nagreements = []\n", ".vanda/config.toml:2: "},
 		"annotationのpaths": {"version = \"0.1.0\"\n[[annotation]]\npaths = []\nadapter = \"go\"\ntypes = [\"unit-test\"]\n", ".vanda/config.toml:3: "},
 		"guardrailのpaths":  {"version = \"0.1.0\"\n[[guardrail]]\nadapter = \"file\"\npaths = []\n", ".vanda/config.toml:4: "},
 	} {
