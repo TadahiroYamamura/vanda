@@ -447,7 +447,7 @@ func readHead(path string, n int) ([]byte, error) {
 
 // Label は、誤りの文でカスタムアダプタを指す言い方。
 func (u *UserAdapter) Label() string {
-	return "アダプタ " + u.Name + "（" + u.Path + "）"
+	return "カスタムアダプタ " + u.Name + "（" + u.Path + "）"
 }
 
 // Cmd は、カスタムアダプタを、リポジトリの根を作業のディレクトリにして動かすコマンドを作る。
