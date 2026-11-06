@@ -203,6 +203,28 @@ layers = ["model"]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
+
+# 最初のレイヤー（db）が、設定のレイヤーの順で後ろにある（cli より後）。設定の順で先のレイヤーでなく、最初のレイヤーのまとまりに入る
+[[claim]]
+id = "c-new"
+subjects = ["t-keep"]
+statement = "足した約束"
+rationale = "足した理由"
+condition = "足した条件"
+layers = ["db", "cli"]
+guesses = ["足した推測 1", "足した推測 2"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["db", "cli"]
+detail = "表の制約で確かめる"
+
+[[term]]
+id = "t-new"
+name = "足した用語"
+definition = "足した定義"
+part_of = "t-keep"
 `
 
 const (
@@ -333,18 +355,26 @@ func Testフラグは約束のflagsとguessesと前の合意から決まった�
 }
 
 // RV-10・RV-02
+// z-cli（layers が cli・model）と c-new（layers が db・cli）で、2 つ以上のレイヤーを持つ約束が最初のレイヤーのまとまりに入ることを見る
 // @vanda:evidence review-numbering
-func Test一覧は設定のレイヤーの順の約束と用語と機能とファイルのまとまりに分かれその中はIDか場所の順に並ぶ(t *testing.T) {
+// @vanda:evidence review-order
+// @vanda:evidence review-group-first-layer
+func Test一覧は設定のレイヤーの順の約束と用語と機能とファイルのまとまりに分かれその中はIDか場所の順に並びその順に通し番号が付く(t *testing.T) {
 	t.Parallel()
 	_, _, _, got := setupFields(t)
 	want := []string{"layer:cli z-cli", "layer:model flag-0", "layer:model flag-1", "layer:model flag-2", "layer:model flag-3",
 		"layer:model flag-4", "layer:model flag-5", "layer:model flag-6", "layer:model flag-7", "layer:model flag-agreed",
-		"layer:db a-db",
-		"terms-features f-del", "terms-features f-mod", "terms-features f-new", "terms-features t-del", "terms-features t-mod",
+		"layer:db a-db", "layer:db c-new",
+		"terms-features f-del", "terms-features f-mod", "terms-features f-new", "terms-features t-del", "terms-features t-mod", "terms-features t-new",
 		"files db/a.sql", "files e2e/a.txtar", "files e2e/b.txtar", "files spec/M.tla"}
 	var have []string
-	for _, e := range got.Entries {
+	for i, e := range got.Entries {
 		have = append(have, e.Group+" "+e.key())
+		if e.No == nil {
+			t.Errorf("%d 番目の %s に通し番号がない", i+1, e.key())
+		} else if *e.No != i+1 {
+			t.Errorf("%d 番目の %s の通し番号: %d（%d のはず）", i+1, e.key(), *e.No, i+1)
+		}
 	}
 	if strings.Join(have, "\n") != strings.Join(want, "\n") {
 		t.Errorf("一覧の並び:\n%s\n--- 思ったもの\n%s", strings.Join(have, "\n"), strings.Join(want, "\n"))
@@ -371,6 +401,7 @@ func jsonEqual(t *testing.T, where string, got json.RawMessage, want string) {
 
 // RV-05
 // @vanda:evidence review-before-after
+// @vanda:evidence review-added-content
 func Test変更前と変更後の中身は約束リストに書いたとおりの項目で省いたものはnullになる(t *testing.T) {
 	t.Parallel()
 	_, _, _, got := setupFields(t)
@@ -391,6 +422,9 @@ func Test変更前と変更後の中身は約束リストに書いたとおり�
 		{"e2e/b.txtar", fmt.Sprintf(`{"text":%q}`, fieldsScenarioBase), fmt.Sprintf(`{"text":%q}`, fieldsScenarioStory)},
 		{"spec/M.tla", fmt.Sprintf(`{"text":%q}`, fieldsTLA), `null`},
 		{"e2e/a.txtar", `null`, fmt.Sprintf(`{"text":%q}`, fieldsNewScenario)},
+		{"c-new", `null`,
+			`{"statement":[{"text":"足した約束"}],"rationale":[{"text":"足した理由"}],"condition":[{"text":"足した条件"}],"subjects":["t-keep"],"layers":["db","cli"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["db","cli"],"detail":[{"text":"表の制約で確かめる"}]}],"flags":[],"guesses":[[{"text":"足した推測 1"}],[{"text":"足した推測 2"}]],"modelCheckWaiver":null}`},
+		{"t-new", `null`, `{"name":"足した用語","definition":[{"text":"足した定義"}],"partOf":"t-keep"}`},
 	}
 	for _, c := range cases {
 		var e *reviewEntry

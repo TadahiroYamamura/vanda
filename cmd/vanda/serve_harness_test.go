@@ -3,14 +3,17 @@ package main_test
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -46,6 +49,7 @@ type vandaServer struct {
 
 	mu     sync.Mutex
 	output bytes.Buffer // 標準出力と標準エラー（落ちたときに見せる）
+	stderr bytes.Buffer
 	once   sync.Once
 }
 
@@ -61,17 +65,29 @@ func (s *vandaServer) Output() string {
 	return s.output.String()
 }
 
+func (s *vandaServer) Stderr() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.stderr.String()
+}
+
 // serveSlots は、同時に動かす vanda serve の数の上限。テストを並べて動かすので、vanda サーバーが一度に立ちすぎないよう抑える。
 var serveSlots = make(chan struct{}, 4)
 
 // startServe は、dir で vanda serve を起動し、標準出力に出た URL を読んで返す。
 func startServe(t serveTB, bin, dir string, env []string) *vandaServer {
 	helper(t)
+	return startServeArgs(t, bin, dir, env, "--port", "0", "--no-open")
+}
+
+// startServeArgs は、vanda serve を args の引数で起動する（startServe と同じく、標準出力に出た URL を読んで返す）。
+func startServeArgs(t serveTB, bin, dir string, env []string, args ...string) *vandaServer {
+	helper(t)
 	serveSlots <- struct{}{}
 	// 後に足した Cleanup ほど先に動くので、止めた（s.stop）後に枠を返す
 	t.Cleanup(func() { <-serveSlots })
 	s := &vandaServer{t: t, done: make(chan error, 1)}
-	s.cmd = exec.Command(bin, "serve", "--port", "0", "--no-open")
+	s.cmd = exec.Command(bin, append([]string{"serve"}, args...)...)
 	s.cmd.Dir = dir
 	s.cmd.Env = env
 	stdout, err := s.cmd.StdoutPipe()
@@ -108,6 +124,9 @@ func startServe(t serveTB, bin, dir string, env []string) *vandaServer {
 		sc := bufio.NewScanner(stderr)
 		for sc.Scan() {
 			s.record(sc.Text())
+			s.mu.Lock()
+			s.stderr.WriteString(sc.Text() + "\n")
+			s.mu.Unlock()
 		}
 	}()
 	go func() {
@@ -340,5 +359,297 @@ func Testほかのサイトから来たGETでない要求は403で断りOrigin�
 	}
 	if r.git("rev-parse", "HEAD") != head {
 		t.Errorf("断った要求で、コミットができた")
+	}
+}
+
+// runServeToEnd は、vanda serve を動かし、終わるまで待って、終了コードと標準出力と標準エラーを返す。
+// 待ち受けを始めてしまうと終わらないので、15 秒で止めて落とす。
+func runServeToEnd(t *testing.T, bin, dir string, env []string, args ...string) (int, string, string) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, bin, append([]string{"serve"}, args...)...)
+	cmd.Dir = dir
+	cmd.Env = env
+	var stdout, stderr strings.Builder
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	err := cmd.Run()
+	if ctx.Err() != nil {
+		t.Fatalf("vanda serve %v が 15 秒たっても終わらない（止めた）\n標準出力: %s\n標準エラー: %s", args, stdout.String(), stderr.String())
+	}
+	var exitErr *exec.ExitError
+	switch {
+	case err == nil:
+		return 0, stdout.String(), stderr.String()
+	case errors.As(err, &exitErr):
+		return exitErr.ExitCode(), stdout.String(), stderr.String()
+	default:
+		t.Fatalf("vanda serve %v を動かせない: %v", args, err)
+		return 0, "", ""
+	}
+}
+
+// @vanda:evidence serve-config-error-stops
+func Test設定に誤りがあればvanda_serveは待ち受けを始めずに誤りを標準エラーに出し終了コード1で終わる(t *testing.T) {
+	t.Parallel()
+	bin := buildVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newer, _, err := neighborVersions(version)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		name   string
+		change func(r *reviewRepo)
+	}{
+		{"決まっていない項目がある", func(r *reviewRepo) {
+			writeFile(t, r.Root, ".vanda/config.toml", fmt.Sprintf(reviewConfig, version)+"\nno_such_entry = 1\n")
+		}},
+		{"版が合わない", func(r *reviewRepo) {
+			writeFile(t, r.Root, ".vanda/config.toml", fmt.Sprintf(reviewConfig, newer))
+		}},
+		{"設定のファイルがない", func(r *reviewRepo) {
+			if err := os.Remove(filepath.Join(r.Root, ".vanda", "config.toml")); err != nil {
+				t.Fatal(err)
+			}
+		}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			r := newReviewRepo(t, version)
+			c.change(r)
+			r.g.commitTracked("設定を変える", reviewStory)
+			code, stdout, stderr := runServeToEnd(t, bin, r.Root, r.Env, "--port", "0", "--no-open")
+			if code != 1 {
+				t.Errorf("終了コード %d（1 のはず）\n標準出力: %s\n標準エラー: %s", code, stdout, stderr)
+			}
+			if !strings.Contains(stderr, ".vanda/config.toml") {
+				t.Errorf("標準エラーに、設定の誤りが出ない: %q", stderr)
+			}
+			if serveURLPattern.MatchString(stdout) || serveURLPattern.MatchString(stderr) {
+				t.Errorf("待ち受けを始めて URL を出した\n標準出力: %s\n標準エラー: %s", stdout, stderr)
+			}
+		})
+	}
+}
+
+// wantPortAdvice は、待ち受けられなかった vanda serve が、終了コード 1 で終わり、空いているポートか --port 0 を渡すよう伝えたかを確かめる。
+func wantPortAdvice(t *testing.T, where string, code int, stdout, stderr string) {
+	t.Helper()
+	if code != 1 {
+		t.Errorf("%s: 終了コード %d（1 のはず）\n標準出力: %s\n標準エラー: %s", where, code, stdout, stderr)
+	}
+	for _, w := range []string{"空いているポート", "--port 0"} {
+		if !strings.Contains(stderr, w) {
+			t.Errorf("%s: 標準エラーに「%s」がない: %q", where, w, stderr)
+		}
+	}
+	if serveURLPattern.MatchString(stdout) {
+		t.Errorf("%s: 待ち受けられないのに、起動した URL を出した: %q", where, stdout)
+	}
+}
+
+// @vanda:evidence serve-port-unavailable
+func Test待ち受けられないポートを渡すとvanda_serveは空いているポートか__port_0を渡すよう伝えて終了コード1で終わる(t *testing.T) {
+	t.Parallel()
+	bin := buildVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := newReviewRepo(t, version)
+	for _, port := range []string{"65536", "70000", "-1"} {
+		code, stdout, stderr := runServeToEnd(t, bin, r.Root, r.Env, "--port="+port, "--no-open")
+		wantPortAdvice(t, "--port="+port, code, stdout, stderr)
+	}
+}
+
+// ほかのプロセスが待ち受けている本物のポートを渡す
+// @vanda:evidence serve-port-unavailable
+func Testほかのものが待ち受けているポートを渡すとvanda_serveは空いているポートか__port_0を渡すよう伝えて終了コード1で終わりそのポートを奪わない(t *testing.T) {
+	t.Parallel()
+	bin := buildVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := newReviewRepo(t, version)
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	accepted := make(chan struct{}, 1)
+	go func() {
+		c, err := ln.Accept()
+		if err == nil {
+			c.Close()
+			accepted <- struct{}{}
+		}
+	}()
+	_, port, err := net.SplitHostPort(ln.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, stdout, stderr := runServeToEnd(t, bin, r.Root, r.Env, "--port", port, "--no-open")
+	wantPortAdvice(t, "待ち受けているポート "+port, code, stdout, stderr)
+	// 前から待ち受けていたものは、そのまま受け付ける
+	c, err := net.DialTimeout("tcp", ln.Addr().String(), 5*time.Second)
+	if err != nil {
+		t.Fatalf("vanda serve を動かした後に、前から待ち受けていたポートに繋がらない: %v", err)
+	}
+	c.Close()
+	select {
+	case <-accepted:
+	case <-time.After(5 * time.Second):
+		t.Errorf("前から待ち受けていたものが、繋いだ要求を受け付けない")
+	}
+}
+
+// fakeOpenerPath は、git だけを置いた PATH のディレクトリを作る。fail なら、ブラウザを開くコマンド（xdg-open・open）を、失敗して終わるものにして置く。
+// fail でなければ、ブラウザを開くコマンドは PATH にない。
+func fakeOpenerPath(t *testing.T, fail bool) string {
+	t.Helper()
+	dir := t.TempDir()
+	git, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(git, filepath.Join(dir, "git")); err != nil {
+		t.Fatal(err)
+	}
+	if fail {
+		for _, name := range []string{"xdg-open", "open"} {
+			if err := os.WriteFile(filepath.Join(dir, name), []byte("#!/bin/sh\necho ブラウザがない >&2\nexit 3\n"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	return dir
+}
+
+// @vanda:evidence serve-browser-open-failure
+func Testブラウザを開けなければvanda_serveは開いたURLとそれをブラウザで開くよう促す文を標準エラーに出し動き続ける(t *testing.T) {
+	t.Parallel()
+	bin := buildVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		name string
+		fail bool
+	}{
+		{"ブラウザを開くコマンドがない", false},
+		{"ブラウザを開くコマンドが失敗する", true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			r := newReviewRepo(t, version)
+			var env []string
+			for _, kv := range r.Env {
+				if !strings.HasPrefix(kv, "PATH=") {
+					env = append(env, kv)
+				}
+			}
+			env = append(env, "PATH="+fakeOpenerPath(t, c.fail))
+			s := startServeArgs(t, bin, r.Root, env, "--port", "0")
+			url := s.URL + "/"
+			deadline := time.Now().Add(15 * time.Second)
+			for !(strings.Contains(s.Stderr(), url) && strings.Contains(s.Stderr(), "ブラウザで開いて")) {
+				if time.Now().After(deadline) {
+					t.Fatalf("15 秒たっても、標準エラーに %s とそれをブラウザで開くよう促す文が出ない\n標準エラー: %s", url, s.Stderr())
+				}
+				time.Sleep(20 * time.Millisecond)
+			}
+			// ブラウザを開けなくても、vanda サーバーは動き続ける
+			var got contextResponse
+			if code, msg := s.get("/api/context", &got); code != 200 {
+				t.Errorf("ブラウザを開けなかった後の vanda サーバーが答えない（%d）: %s", code, msg)
+			}
+			select {
+			case err := <-s.done:
+				s.done <- err
+				t.Errorf("ブラウザを開けなかった後に、vanda serve が終わった: %v\n%s", err, s.Output())
+			default:
+			}
+		})
+	}
+}
+
+// @vanda:evidence serve-reloads-config
+func Test起動したvanda_serveはAPIの要求ごとに設定を読み直し読めなければ誤りの数と最初の1件を書いた500を返す(t *testing.T) {
+	t.Parallel()
+	bin := buildVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := newReviewRepo(t, version)
+	s := startServe(t, bin, r.Root, r.Env)
+	layerNames := func() []string {
+		t.Helper()
+		var got contextResponse
+		if code, msg := s.get("/api/context", &got); code != 200 {
+			t.Fatalf("画面で選べるものを読めない（%d）: %s", code, msg)
+		}
+		var names []string
+		for _, l := range got.Layers {
+			names = append(names, l.ID+" "+l.Name)
+		}
+		return names
+	}
+	if got := strings.Join(layerNames(), "・"); got != "model モデル・db DB" {
+		t.Fatalf("起動したときのレイヤー: %s", got)
+	}
+
+	// 起動した後に設定を書き換えると、起動し直さなくても次の要求から効く
+	writeFile(t, r.Root, ".vanda/config.toml", strings.Replace(fmt.Sprintf(reviewConfig, version), `name = "モデル"`, `name = "判定のモデル"`, 1))
+	r.g.commitTracked("レイヤーの名前を変える", reviewStory)
+	if got := strings.Join(layerNames(), "・"); got != "model 判定のモデル・db DB" {
+		t.Errorf("設定を書き換えた後のレイヤー: %s（model 判定のモデル・db DB のはず）", got)
+	}
+
+	// 決まっていない項目を 3 つ書いた設定。最初の誤りは、1 つ目の項目の行
+	lines := strings.Split(fmt.Sprintf(reviewConfig, version), "\n")
+	broken := append([]string{lines[0], "no_such_first = 1", "", "no_such_second = 2", "no_such_third = 3"}, lines[1:]...)
+	writeFile(t, r.Root, ".vanda/config.toml", strings.Join(broken, "\n"))
+	r.g.commitTracked("設定を壊す", reviewStory)
+	count := regexp.MustCompile(`(^|[^0-9])3 ?件`)
+	requests := []struct{ method, path string }{
+		{http.MethodGet, "/api/context"},
+		{http.MethodGet, "/api/review?view=branch&base=main"},
+		{http.MethodGet, "/api/claims/task-id-unique"},
+		{http.MethodGet, "/api/claims/task-id-unique/at/" + r.git("rev-parse", "main")},
+		{http.MethodGet, "/api/file?path=" + q("e2e/add-task.txtar")},
+		{http.MethodGet, "/api/story?id=" + q(reviewStory)},
+		{http.MethodPost, "/api/agree"},
+		{http.MethodPost, "/api/revoke"},
+	}
+	for _, req := range requests {
+		var body any
+		switch req.path {
+		case "/api/agree":
+			body = agreeClaim("task-id-unique", reviewClaimFP)
+		case "/api/revoke":
+			body = revokeClaim("task-id-unique", reviewClaimFP)
+		}
+		code, msg := s.do(req.method, req.path, body, nil)
+		where := req.method + " " + req.path
+		if code != http.StatusInternalServerError {
+			t.Errorf("%s: 読めない設定で %d を返した（500 のはず）: %s", where, code, msg)
+			continue
+		}
+		if !count.MatchString(msg) {
+			t.Errorf("%s: 誤りの数（3 件）が message にない: %s", where, msg)
+		}
+		if !strings.Contains(msg, "no_such_first") || strings.Contains(msg, "no_such_second") || strings.Contains(msg, "no_such_third") {
+			t.Errorf("%s: message に、最初の 1 件（no_such_first）だけを書いていない: %s", where, msg)
+		}
 	}
 }

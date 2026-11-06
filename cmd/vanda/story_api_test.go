@@ -204,6 +204,57 @@ func Testストーリーストアの誤りは理由を画面に出す(t *testing
 	}
 }
 
+// id_pattern を、数字の並びが 0 個・2 個以上の ID も書けるものにする（既定の #[0-9]+ では、数字の並びがいつもちょうど 1 つになる）
+// @vanda:evidence story-github-issue-number
+func Test組込みのgithubのアダプタはストーリーのIDの最後の数字の並びをIssueの番号にし数字がなければ400にする(t *testing.T) {
+	t.Parallel()
+	st := newStorySetup(t)
+	cfg, err := os.ReadFile(filepath.Join(st.r.Root, ".vanda", "config.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, st.r.Root, ".vanda/config.toml", string(cfg)+"id_pattern = \"[#A-Z0-9-]+\"\n")
+	st.r.g.commitTracked("ストーリーの ID の書き方を広げる", "")
+	s := startServe(t, st.bin, st.r.Root, st.env(st.fake.Token))
+	cases := []struct {
+		id    string
+		issue int // 0 なら、数字がないので 400
+	}{
+		{"#24", 24},
+		{"V2-26", 26},
+		{"A26B", 26},
+		{"R1-2-24", 24},
+		{"ABC", 0},
+		{"#-", 0},
+	}
+	for _, c := range cases {
+		before := len(st.fake.Requests())
+		var got storyResponse
+		code, msg := s.get("/api/story?id="+q(c.id), &got)
+		reqs := st.fake.Requests()[before:]
+		if c.issue == 0 {
+			if code != 400 || msg == "" {
+				t.Errorf("数字のない ID %s に %d（%q）を返した。400 で理由を出す", c.id, code, msg)
+			}
+			if len(reqs) != 0 {
+				t.Errorf("数字のない ID %s で、ストーリーストアに要求を送った: %+v", c.id, reqs)
+			}
+			continue
+		}
+		if code != 200 {
+			t.Errorf("ID %s を読めない（%d）: %s", c.id, code, msg)
+			continue
+		}
+		wantPath := fmt.Sprintf("/repos/owner/app/issues/%d", c.issue)
+		if len(reqs) != 1 || reqs[0].Path != wantPath {
+			t.Errorf("ID %s で送った要求: %+v（%s を 1 つのはず）", c.id, reqs, wantPath)
+		}
+		if got.ID != c.id {
+			t.Errorf("ID %s を読んだ結果の id: %q", c.id, got.ID)
+		}
+	}
+}
+
 // writeUserAdapter は、カスタムアダプタ（シェルのスクリプト）を、実行の権限を付けて書く。
 func writeUserAdapter(t *testing.T, root, path, body string) {
 	t.Helper()

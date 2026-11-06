@@ -1,14 +1,19 @@
 package main_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -1132,5 +1137,304 @@ func Testフラグか推測をインラインの表の中か複数行の文字�
 				t.Errorf("断ったのに、約束リストか合意の記録が変わったか、コミットができた")
 			}
 		})
+	}
+}
+
+// ---- 合意と取り消しを 1 件ずつ行う ----
+
+type rawResult struct {
+	what string
+	code int
+	body []byte
+	err  error
+}
+
+// rawCall は、テストのゴルーチンの外からも呼べるよう、t を使わずに API を呼ぶ（vandaServer.do は t.Fatalf を呼ぶため）。
+func rawCall(base, what, method, path string, body any) rawResult {
+	var rd io.Reader
+	if body != nil {
+		data, err := json.Marshal(body)
+		if err != nil {
+			return rawResult{what: what, err: err}
+		}
+		rd = bytes.NewReader(data)
+	}
+	req, err := http.NewRequest(method, base+path, rd)
+	if err != nil {
+		return rawResult{what: what, err: err}
+	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return rawResult{what: what, err: err}
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	return rawResult{what: what, code: resp.StatusCode, body: data, err: err}
+}
+
+// blockingHook は、合意・取り消しのコミットの途中（pre-commit のフック）で止まるフックを置く。
+// フックは、動いた回数を started に 1 行ずつ書き、n 回目は release-<n> のファイルができるまで待つ。
+type blockingHook struct {
+	t   *testing.T
+	dir string
+}
+
+func newBlockingHook(t *testing.T, r *reviewRepo) *blockingHook {
+	t.Helper()
+	h := &blockingHook{t: t, dir: t.TempDir()}
+	script := fmt.Sprintf("#!/bin/sh\necho x >> %q\nn=$(wc -l < %q | tr -d ' ')\nwhile [ ! -f %q-$n ]; do sleep 0.02; done\n",
+		filepath.Join(h.dir, "started"), filepath.Join(h.dir, "started"), filepath.Join(h.dir, "release"))
+	if err := os.WriteFile(filepath.Join(r.Root, ".git", "hooks", "pre-commit"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// テストが途中で落ちても、止まったフックを残さない
+	t.Cleanup(func() {
+		for i := 1; i <= 10; i++ {
+			h.release(i)
+		}
+	})
+	return h
+}
+
+func (h *blockingHook) started() int {
+	data, err := os.ReadFile(filepath.Join(h.dir, "started"))
+	if err != nil {
+		return 0
+	}
+	return strings.Count(string(data), "\n")
+}
+
+func (h *blockingHook) waitStarted(n int) {
+	h.t.Helper()
+	deadline := time.Now().Add(15 * time.Second)
+	for h.started() < n {
+		if time.Now().After(deadline) {
+			h.t.Fatalf("15 秒たっても、合意か取り消しのコミットが %d 回目に入らない（%d 回）", n, h.started())
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func (h *blockingHook) release(n int) {
+	if err := os.WriteFile(filepath.Join(h.dir, fmt.Sprintf("release-%d", n)), nil, 0o644); err != nil {
+		h.t.Errorf("%v", err)
+	}
+}
+
+// claimState は、一覧の中身から、約束 id の state を読む。
+func claimState(body []byte, id string) string {
+	var rv reviewResponse
+	if err := json.Unmarshal(body, &rv); err != nil {
+		return "（一覧を読めない: " + err.Error() + "）"
+	}
+	for _, e := range rv.Entries {
+		if e.Kind == "claim" && str(e.ID) == id {
+			return str(e.State)
+		}
+	}
+	return "（一覧にない）"
+}
+
+// 合意と取り消しのコミットの途中で止めたあいだに、ほかの要求を出し、どれも答えないことを確かめる。
+// 答えないことは、決まった時間（waitWindow）のあいだ答えが来ないことでしか確かめられない
+// @vanda:evidence serve-agree-one-at-a-time
+func Test合意と取り消しのあいだはほかの合意と一覧と約束の詳細とファイルの読み込みを待たせ終わった後に答える(t *testing.T) {
+	t.Parallel()
+	const waitWindow = 500 * time.Millisecond
+	_, r, s := setupAgree(t)
+	h := newBlockingHook(t, r)
+	results := make(chan rawResult, 10)
+	send := func(what, method, path string, body any) {
+		go func() { results <- rawCall(s.URL, what, method, path, body) }()
+	}
+	// noAnswer は、waitWindow のあいだ、どの要求も答えず、合意か取り消しのコミットが started 件より増えないことを確かめる
+	noAnswer := func(phase string, started int) {
+		t.Helper()
+		select {
+		case res := <-results:
+			t.Fatalf("%s: %s が、合意か取り消しのコミットを待たずに答えた（%d）: %s", phase, res.what, res.code, res.body)
+		case <-time.After(waitWindow):
+		}
+		if n := h.started(); n != started {
+			t.Fatalf("%s: 合意か取り消しのコミットが同時に %d 件動いた", phase, n)
+		}
+	}
+	// collect は、n 件の答えを集める。合意か取り消しのコミットが次の回に入ったら、そのつど通す
+	collect := func(phase string, n, next int) map[string]rawResult {
+		t.Helper()
+		got := map[string]rawResult{}
+		deadline := time.After(30 * time.Second)
+		for len(got) < n {
+			select {
+			case res := <-results:
+				got[res.what] = res
+			case <-time.After(10 * time.Millisecond):
+				if h.started() >= next {
+					h.release(next)
+					next++
+				}
+			case <-deadline:
+				t.Fatalf("%s: 30 秒たっても答えが %d 件しか来ない: %v", phase, len(got), got)
+			}
+		}
+		for what, res := range got {
+			if res.err != nil || res.code != 200 {
+				t.Errorf("%s: %s が失敗した（%d、%v）: %s", phase, what, res.code, res.err, res.body)
+			}
+		}
+		return got
+	}
+
+	// 合意のあいだ
+	send("1 件目の合意", http.MethodPost, "/api/agree", agreeClaim("task-id-unique", reviewClaimFP))
+	h.waitStarted(1)
+	send("2 件目の合意", http.MethodPost, "/api/agree", agreeClaim("task-title-required", reviewTitleFP))
+	send("一覧", http.MethodGet, "/api/review?view=branch&base=main", nil)
+	send("約束の詳細", http.MethodGet, "/api/claims/task-id-unique", nil)
+	send("ファイル", http.MethodGet, "/api/file?path="+q("e2e/add-task.txtar"), nil)
+	noAnswer("合意のあいだ", 1)
+	h.release(1)
+	got := collect("合意の後", 5, 2)
+	if st := claimState(got["一覧"].body, "task-id-unique"); st != "agreed" {
+		t.Errorf("合意のあいだに求めた一覧の task-id-unique が %s（合意を待ってから読むので agreed のはず）", st)
+	}
+	var detail claimDetail
+	if err := json.Unmarshal(got["約束の詳細"].body, &detail); err != nil || detail.State != "agreed" {
+		t.Errorf("合意のあいだに求めた約束の詳細の state が %q（合意を待ってから読むので agreed のはず）: %v", detail.State, err)
+	}
+
+	// 取り消しのあいだ
+	send("取り消し", http.MethodPost, "/api/revoke", revokeClaim("task-id-unique", reviewClaimFP))
+	h.waitStarted(3)
+	send("取り消しのあいだの一覧", http.MethodGet, "/api/review?view=branch&base=main", nil)
+	send("取り消しのあいだの約束の詳細", http.MethodGet, "/api/claims/task-id-unique", nil)
+	send("取り消しのあいだのファイル", http.MethodGet, "/api/file?path="+q("e2e/add-task.txtar"), nil)
+	noAnswer("取り消しのあいだ", 3)
+	h.release(3)
+	got = collect("取り消しの後", 4, 4)
+	if st := claimState(got["取り消しのあいだの一覧"].body, "task-id-unique"); st != "proposed" {
+		t.Errorf("取り消しのあいだに求めた一覧の task-id-unique が %s（取り消しを待ってから読むので proposed のはず）", st)
+	}
+	if n := len(readAgreements(t, r.Root)); n != 8 {
+		t.Errorf("合意の記録が %d 件（はじめの 7 件に、2 件足して 1 件消したので 8 件のはず）", n)
+	}
+}
+
+// buildRaceVanda は、データの競合を見つける仕組み（-race）を入れて vanda をビルドする。vanda サーバーは別のプロセスで動くので、
+// テストを go test -race で動かしても、vanda サーバーの中の競合は見つからないため
+func buildRaceVanda(t *testing.T) string {
+	t.Helper()
+	bin := filepath.Join(t.TempDir(), "vanda")
+	if out, err := exec.Command("go", "build", "-race", "-o", bin, ".").CombinedOutput(); err != nil {
+		t.Fatalf("vanda を -race でビルドできない: %v\n%s", err, out)
+	}
+	return bin
+}
+
+// @vanda:evidence serve-agree-one-at-a-time
+func Test同時に出した合意と取り消しと読み込みはどれも失敗せず合意と取り消しが1件ずつ1つのコミットになり競合がない(t *testing.T) {
+	t.Parallel()
+	bin := buildRaceVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := newReviewRepo(t, version)
+	s := startServe(t, bin, r.Root, r.Env)
+	before := r.git("rev-parse", "HEAD")
+
+	reads := []struct{ what, path string }{
+		{"一覧", "/api/review?view=branch&base=main"},
+		{"約束の詳細", "/api/claims/task-id-unique"},
+		{"ファイル", "/api/file?path=" + q("e2e/add-task.txtar")},
+		{"画面で選べるもの", "/api/context"},
+	}
+	// reading は、writes が終わるまで、読み込みを並べて出し続ける
+	reading := func(stop <-chan struct{}, out chan<- rawResult) {
+		var wg sync.WaitGroup
+		for _, rd := range reads {
+			for i := 0; i < 2; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					for {
+						select {
+						case <-stop:
+							return
+						default:
+						}
+						out <- rawCall(s.URL, rd.what, http.MethodGet, rd.path, nil)
+					}
+				}()
+			}
+		}
+		wg.Wait()
+		close(out)
+	}
+	// run は、書き込みの要求を一度に出し、そのあいだ読み込みを出し続け、どれも 200 で答えたかを確かめる
+	run := func(phase string, writes map[string]map[string]any, path string) {
+		t.Helper()
+		stop := make(chan struct{})
+		readResults := make(chan rawResult, 64)
+		go reading(stop, readResults)
+		var wg sync.WaitGroup
+		writeResults := make(chan rawResult, len(writes))
+		for what, body := range writes {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				writeResults <- rawCall(s.URL, what, http.MethodPost, path, body)
+			}()
+		}
+		wg.Wait()
+		close(stop)
+		close(writeResults)
+		for res := range writeResults {
+			if res.err != nil || res.code != 200 {
+				t.Errorf("%s: %s が失敗した（%d、%v）: %s", phase, res.what, res.code, res.err, res.body)
+			}
+		}
+		n := 0
+		for res := range readResults {
+			n++
+			if res.err != nil || res.code != 200 {
+				t.Errorf("%s: 書き込みと同時に出した %s が失敗した（%d、%v）: %s", phase, res.what, res.code, res.err, res.body)
+			}
+		}
+		if n == 0 {
+			t.Errorf("%s: 書き込みと同時に読み込みを出せていない", phase)
+		}
+	}
+
+	run("合意", map[string]map[string]any{
+		"task-id-unique への合意":      agreeClaim("task-id-unique", reviewClaimFP),
+		"task-title-required への合意": agreeClaim("task-title-required", reviewTitleFP),
+		"e2e/add-task.txtar への合意":  agreeFile("e2e/add-task.txtar", reviewFileFP),
+	}, "/api/agree")
+	if n := r.git("rev-list", "--count", before+"..HEAD"); n != "3" {
+		t.Errorf("同時に出した 3 件の合意のコミットが %s 個（1 件ずつ 3 個のはず）", n)
+	}
+	run("取り消し", map[string]map[string]any{
+		"task-id-unique の取り消し":      revokeClaim("task-id-unique", reviewClaimFP),
+		"task-title-required の取り消し": revokeClaim("task-title-required", reviewTitleFP),
+	}, "/api/revoke")
+	if n := r.git("rev-list", "--count", before+"..HEAD"); n != "5" {
+		t.Errorf("合意と取り消しのコミットが %s 個（合意 3 個と取り消し 2 個の 5 個のはず）", n)
+	}
+	var keys []string
+	for _, a := range readAgreements(t, r.Root) {
+		if a.Story == reviewStory {
+			keys = append(keys, a.Kind+" "+a.Key)
+		}
+	}
+	if want := []string{"file " + reviewFileFP}; !reflect.DeepEqual(keys, want) {
+		t.Errorf("#24 の合意の記録: %v（%v のはず）", keys, want)
+	}
+	s.stop()
+	if strings.Contains(s.Output(), "DATA RACE") {
+		t.Errorf("vanda サーバーの中で、データの競合が見つかった:\n%s", s.Output())
 	}
 }

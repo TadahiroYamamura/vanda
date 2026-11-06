@@ -105,6 +105,7 @@ func checkFound(t *testing.T, typ string, got []claimFound, want []wantFound) {
 }
 
 // CL-01・02・04・05
+// @vanda:evidence claim-detail-state
 // @vanda:evidence claim-detail-fields
 // @vanda:evidence claim-detail-evidence-content
 // @vanda:evidence claim-detail-origin
@@ -200,6 +201,9 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 	if code, msg := s.get("/api/claims/task-id-unique", &again); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
 	}
+	if again.ID != "task-id-unique" || again.State != "agreed" {
+		t.Errorf("今の中身に合意した後の id と state: %q %q（task-id-unique と agreed のはず）", again.ID, again.State)
+	}
 	// 合意の履歴は合意した日時の新しい順。agreementTOML はどれも同じ日時なので、ファイルで後に書いた #24 の合意が先
 	if len(again.Agreements) != 2 || !again.Agreements[0].Current || again.Agreements[0].Story != reviewStory || again.Agreements[1].Current {
 		t.Errorf("合意した後の合意の履歴: %+v", again.Agreements)
@@ -225,6 +229,50 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 	wantStates["e2e/add-task.txtar"] = "agreed"
 	if got := foundStates(agreedFile); !reflect.DeepEqual(got, wantStates) {
 		t.Errorf("シナリオに合意した後の found の合意の状態: %v（思ったもの %v）", got, wantStates)
+	}
+}
+
+// CL-01: 約束リストにない ID は、約束リストの形の審査の誤りになるが、約束の詳細は出す
+// @vanda:evidence claim-detail-subjects
+func Test約束の詳細の対象は用語か機能の名前とIDを約束のsubjectsの順に示し約束リストにないIDは種類と名前をnullにする(t *testing.T) {
+	t.Parallel()
+	_, r, s := setupAgree(t)
+	writeFile(t, r.Root, ".vanda/promises.toml", reviewPromisesStory+`
+[[claim]]
+id = "task-subjects"
+subjects = ["add-task", "no-such-subject", "task-id"]
+statement = "対象を 3 つ持つ"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+`)
+	r.g.commitTracked("対象を 3 つ持つ約束を足す", reviewStory)
+	var got struct {
+		Subjects []struct {
+			Kind *string `json:"kind"`
+			ID   string  `json:"id"`
+			Name *string `json:"name"`
+		} `json:"subjects"`
+	}
+	if code, msg := s.get("/api/claims/task-subjects", &got); code != 200 {
+		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
+	}
+	want := []string{"feature add-task タスクの登録", "<null> no-such-subject <null>", "term task-id タスクの ID"}
+	var have []string
+	for _, sub := range got.Subjects {
+		show := func(p *string) string {
+			if p == nil {
+				return "<null>"
+			}
+			return *p
+		}
+		have = append(have, show(sub.Kind)+" "+sub.ID+" "+show(sub.Name))
+	}
+	if strings.Join(have, "\n") != strings.Join(want, "\n") {
+		t.Errorf("対象:\n%s\n--- 思ったもの\n%s", strings.Join(have, "\n"), strings.Join(want, "\n"))
 	}
 }
 
