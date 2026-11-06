@@ -140,6 +140,7 @@ func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]b
 // @vanda:evidence review-view-branch
 // @vanda:evidence review-view-story
 // @vanda:evidence review-other-commits
+// @vanda:evidence branch-point-merge-base
 func TestRV01の一覧はAPIで手で作った例と合う(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)

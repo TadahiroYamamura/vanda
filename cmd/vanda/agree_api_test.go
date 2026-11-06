@@ -6,9 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/BurntSushi/toml"
 )
@@ -501,18 +503,21 @@ func Test自分が今のブランチで書いた合意を取り消すとその�
 	}
 }
 
-// RV-17。人の違う記録は残り、同じ人の同じ記録が 2 つあれば両方消える。ほかのストーリーの記録も残る
+// RV-17。人の違う記録は残り、同じ人の同じ記録が 2 つあれば両方消える。ほかのストーリーの記録と、前の中身への記録も残る
 // @vanda:evidence revoke-own-branch-only
+// @vanda:evidence revoke-removes-all-duplicates
 // @vanda:evidence revoke-returns-to-proposed
 func Test取り消すと今の人の記録だけが消えほかの人とほかのストーリーの記録は残り合意済のままになる(t *testing.T) {
 	t.Parallel()
 	other := inlineRecord(reviewStory, "ほかの人", "other@example.com")
 	story30 := inlineRecord("#30", reviewUserName, reviewUserEmail)
 	self := inlineRecord(reviewStory, reviewUserName, reviewUserEmail)
+	// 自分が、このストーリーで、前の中身に書いた記録（今の中身への合意ではない）
+	stale := strings.Replace(self, reviewClaimFP, sha256Hex([]byte(reviewItemJSON["claim task-id-unique"])), 1)
 	_, r, s, base := setupRevoke(t, func(base string) string {
-		return base + "\n# #24 の合意\n" + self + other + story30 + self
+		return base + "\n# #24 の合意\n" + self + other + stale + story30 + self
 	})
-	want := base + "\n# #24 の合意\n" + other + story30
+	want := base + "\n# #24 の合意\n" + other + stale + story30
 
 	var got revokeResponse
 	if code, msg := s.post("/api/revoke", revokeClaim("task-id-unique", reviewClaimFP), &got); code != 200 {
@@ -893,5 +898,239 @@ func Test今あるファイルを消したことへの合意は断る(t *testing
 	}
 	if r.git("rev-parse", "HEAD") != head {
 		t.Errorf("断ったのにコミットができた")
+	}
+}
+
+// ---- 合意と取り消しのコミットのメッセージ・合意の記録の書き方 ----
+
+// 合意と取り消しの対象。用語と機能は main で #1 が合意済だが、#24 では合意していないので合意できる
+var agreeKinds = []struct {
+	label, kind, id, path, fp string
+}{
+	{"約束", "claim", "task-id-unique", "", reviewClaimFP},
+	{"用語", "term", "task", "", sha256Hex([]byte(reviewItemJSON["term task"]))},
+	{"機能", "feature", "add-task", "", sha256Hex([]byte(reviewItemJSON["feature add-task"]))},
+	{"ファイル", "file", "", "e2e/add-task.txtar", reviewFileFP},
+}
+
+func agreeBody(kind, id, path, fp string) map[string]any {
+	body := map[string]any{"kind": kind, "id": nil, "path": nil, "fingerprint": fp, "story": reviewStory}
+	if kind == "file" {
+		body["path"] = path
+	} else {
+		body["id"] = id
+	}
+	return body
+}
+
+// @vanda:evidence agree-commit-message
+// @vanda:evidence revoke-commit-message
+func Test合意と取り消しのコミットのsubjectは種類とIDか場所をストーリーのIDと合わせて書く(t *testing.T) {
+	t.Parallel()
+	for _, k := range agreeKinds {
+		t.Run(k.label, func(t *testing.T) {
+			t.Parallel()
+			_, r, s := setupAgree(t)
+			target := k.id
+			if k.kind == "file" {
+				target = k.path
+			}
+			if code, msg := s.post("/api/agree", agreeBody(k.kind, k.id, k.path, k.fp), nil); code != 200 {
+				t.Fatalf("合意できない（%d）: %s", code, msg)
+			}
+			if got, want := r.git("log", "-1", "--format=%s"), "(chore) #24 で "+k.label+" "+target+" に合意する"; got != want {
+				t.Errorf("合意のコミットの subject: %q（思ったもの %q）", got, want)
+			}
+			body := agreeBody(k.kind, k.id, k.path, k.fp)
+			body["base"] = "main"
+			if code, msg := s.post("/api/revoke", body, nil); code != 200 {
+				t.Fatalf("取り消せない（%d）: %s", code, msg)
+			}
+			if got, want := r.git("log", "-1", "--format=%s"), "(chore) #24 で "+k.label+" "+target+" の合意を取り消す"; got != want {
+				t.Errorf("取り消しのコミットの subject: %q（思ったもの %q）", got, want)
+			}
+		})
+	}
+}
+
+// appendedText は、合意の前の中身 before に書き足された部分を返す。前の中身を変えていれば落とす
+func appendedText(t *testing.T, before, after string) string {
+	t.Helper()
+	if !strings.HasPrefix(after, before) {
+		t.Fatalf("合意の記録のファイルが、前の中身の終わりに書き足したものでない\n--- 前\n%s\n--- 後\n%s", before, after)
+	}
+	return after[len(before):]
+}
+
+// @vanda:evidence agree-record-form
+func Test書き足す合意の記録はuserをインラインの表で書きagreed_atに手元の時差を付けた秒までの日時を書く(t *testing.T) {
+	t.Parallel()
+	for tz, offset := range map[string]string{"Asia/Tokyo": "+09:00", "Asia/Kolkata": "+05:30"} {
+		t.Run(tz, func(t *testing.T) {
+			t.Parallel()
+			bin := buildVanda(t)
+			version, err := runningVersion(bin)
+			if err != nil {
+				t.Fatal(err)
+			}
+			r := newReviewRepo(t, version)
+			s := startServe(t, bin, r.Root, append(append([]string(nil), r.Env...), "TZ="+tz))
+			before := readFileString(t, r.Root, ".vanda/agreements.toml")
+			// 秒より細かい所を切り捨てて比べる
+			start := time.Now().Truncate(time.Second)
+			if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil); code != 200 {
+				t.Fatalf("合意できない（%d）: %s", code, msg)
+			}
+			end := time.Now()
+			added := appendedText(t, before, readFileString(t, r.Root, ".vanda/agreements.toml"))
+			if !regexp.MustCompile(`(?m)^user = \{ ?name = "` + reviewUserName + `", email = "` + reviewUserEmail + `" ?\}$`).MatchString(added) {
+				t.Errorf("user が user = { name = …, email = … } の 1 行で書かれていない\n%s", added)
+			}
+			if strings.Contains(added, "[agreement.user]") {
+				t.Errorf("user を表の見出しで書いた\n%s", added)
+			}
+			m := regexp.MustCompile(`(?m)^agreed_at = (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})` + regexp.QuoteMeta(offset) + `$`).FindStringSubmatch(added)
+			if m == nil {
+				t.Fatalf("agreed_at が、秒までの日時に手元の時差 %s を付けた形でない\n%s", offset, added)
+			}
+			at, err := time.Parse(time.RFC3339, m[1]+offset)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if at.Before(start) || at.After(end) {
+				t.Errorf("agreed_at %s が、合意した時（%s〜%s）でない", at, start, end)
+			}
+		})
+	}
+}
+
+// @vanda:evidence agree-record-user-from-git
+func Test書き足す合意の記録のuserには合意した時のgitのuser_nameとuser_emailを書く(t *testing.T) {
+	t.Parallel()
+	_, r, s := setupAgree(t)
+	// vanda serve を起こした後に変えた名前とメールを使う
+	r.git("config", "user.name", "後から決めた人")
+	r.git("config", "user.email", "later@example.com")
+	var got agreeResponse
+	if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), &got); code != 200 {
+		t.Fatalf("合意できない（%d）: %s", code, msg)
+	}
+	recs := readAgreements(t, r.Root)
+	if rec := recs[len(recs)-1]; rec.User.Name != "後から決めた人" || rec.User.Email != "later@example.com" {
+		t.Errorf("書き足した合意の記録の user: %+v", rec.User)
+	}
+	if got.Agreement.User.Name != "後から決めた人" || got.Agreement.User.Email != "later@example.com" {
+		t.Errorf("返した合意の記録の user: %+v", got.Agreement.User)
+	}
+	// もう一度変えれば、次の合意はその人になる
+	r.git("config", "user.name", "さらに後の人")
+	if code, msg := s.post("/api/agree", agreeFile("e2e/add-task.txtar", reviewFileFP), nil); code != 200 {
+		t.Fatalf("合意できない（%d）: %s", code, msg)
+	}
+	recs = readAgreements(t, r.Root)
+	if rec := recs[len(recs)-1]; rec.User.Name != "さらに後の人" || rec.User.Email != "later@example.com" {
+		t.Errorf("2 度目の合意の記録の user: %+v", rec.User)
+	}
+}
+
+// @vanda:evidence agree-record-file
+func Test合意の記録はagreementsのパターンの順で最初に当たったファイルに書き足し当たらなければワイルドカードのない最初のパターンのファイルを作る(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name     string
+		patterns string            // 設定の agreements。空なら書かない
+		files    map[string]string // 置く合意の記録のファイル（.vanda/agreements.toml は消す）
+		want     string            // 書き足すファイル。空なら 409 で断る
+	}{
+		{"2つ目のパターンだけに当たる", `[".vanda/agreements/*.toml", ".vanda/b.toml"]`, map[string]string{".vanda/b.toml": "# b\n"}, ".vanda/b.toml"},
+		{"どちらにも当たれば前のパターンのもの", `[".vanda/b.toml", ".vanda/a.toml"]`, map[string]string{".vanda/a.toml": "# a\n", ".vanda/b.toml": "# b\n"}, ".vanda/b.toml"},
+		{"ワイルドカードで当たったもの", `[".vanda/agreements/*.toml"]`, map[string]string{".vanda/agreements/x.toml": "# x\n"}, ".vanda/agreements/x.toml"},
+		// 設定に書かない既定のパターン（.vanda/agreements.toml）は、ファイルがなくても誤りにならない
+		{"当たらず最初のパターンにワイルドカードがない", "", map[string]string{}, ".vanda/agreements.toml"},
+		{"当たらず最初のパターンにワイルドカードがある", `[".vanda/agreements/*.toml", ".vanda/more/*.toml"]`, map[string]string{}, ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			_, r, s := setupAgree(t)
+			cfg := readFileString(t, r.Root, ".vanda/config.toml")
+			first, rest, _ := strings.Cut(cfg, "\n")
+			if c.patterns != "" {
+				writeFile(t, r.Root, ".vanda/config.toml", first+"\nagreements = "+c.patterns+"\n"+rest)
+			}
+			r.git("rm", "-q", ".vanda/agreements.toml")
+			for p, b := range c.files {
+				writeFile(t, r.Root, p, b)
+			}
+			r.g.commitAll("合意の記録のファイルを変える", reviewStory)
+			head := r.git("rev-parse", "HEAD")
+			code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil)
+			if c.want == "" {
+				if code != 409 || msg == "" {
+					t.Errorf("%d（%q）を返した。409 で断り、理由を出す", code, msg)
+				}
+				if r.git("rev-parse", "HEAD") != head || r.git("status", "--porcelain", "--untracked-files=all") != "" {
+					t.Errorf("断ったのに、コミットができたかファイルが変わった")
+				}
+				return
+			}
+			if code != 200 {
+				t.Fatalf("合意できない（%d）: %s", code, msg)
+			}
+			if files := committedFiles(r, "HEAD"); !reflect.DeepEqual(files, []string{".vanda/promises.toml", c.want}) && !reflect.DeepEqual(files, []string{c.want, ".vanda/promises.toml"}) {
+				t.Errorf("コミットに入ったファイル: %v（%s と約束リストのはず）", files, c.want)
+			}
+			now := readFileString(t, r.Root, c.want)
+			added := appendedText(t, c.files[c.want], now)
+			if !strings.Contains(added, `key = "task-id-unique"`) || !strings.Contains(added, reviewClaimFP) {
+				t.Errorf("%s に、合意の記録が書き足されていない\n%s", c.want, now)
+			}
+			for p, b := range c.files {
+				if p != c.want && readFileString(t, r.Root, p) != b {
+					t.Errorf("書き足すファイルでない %s が変わった", p)
+				}
+			}
+		})
+	}
+}
+
+// @vanda:evidence agree-inline-flags-refused
+func Testフラグか推測をインラインの表の中か複数行の文字列で書いた約束には合意を409で断り何も変えない(t *testing.T) {
+	t.Parallel()
+	// task-id-unique を、インラインの表の配列（1 行の claim = [{ … }]）で書き直したもの。task-title-required も同じ配列に入れる
+	// TOML では、表の見出しより後のキーはその表のものになるので、claim = [...] を先頭に置く
+	inline := `claim = [{ id = "task-id-unique", subjects = ["task-id"], statement = "タスクの ID は、すべてのタスクを通して重ならない", layers = ["model", "db"], flags = ["ai-proposal"], guesses = ["タスクは消しても ID を使い回さない"], ` +
+		`evidence = [{ stage = "implementation", type = "scenario-test", layers = ["model"] }, { stage = "plan", type = "model-check", layers = ["model"] }, { stage = "implementation", type = "guardrail", layers = ["db"] }, { stage = "implementation", type = "unit-test", layers = ["model"] }] }, ` +
+		`{ id = "task-title-required", subjects = ["add-task"], statement = "タスクの題は空にできない", layers = ["model"], flags = ["ai-proposal"], guesses = ["題の長さの上限はまだ決めていない"], evidence = [{ stage = "implementation", type = "scenario-test", layers = ["model"] }] }]` + "\n\n" +
+		strings.SplitN(reviewPromisesStory, "# ID の重なり\n", 2)[0]
+	cases := []struct{ name, promises string }{
+		{"インラインの表の中", inline},
+		{"guessesが複数行のリテラル文字列", strings.Replace(reviewPromisesStory, `guesses = ["タスクは消しても ID を使い回さない"]`, "guesses = ['''\nタスクは消しても ID を使い回さない''']", 1)},
+		{"flagsが複数行の基本文字列", strings.Replace(reviewPromisesStory, "flags = [\"ai-proposal\"]\nguesses = [\"タスクは消しても", "flags = [\"\"\"\nai-proposal\"\"\"]\nguesses = [\"タスクは消しても", 1)},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			_, r, s := setupAgree(t)
+			if c.promises == reviewPromisesStory {
+				t.Fatal("約束リストを書き換えられない")
+			}
+			writeFile(t, r.Root, ".vanda/promises.toml", c.promises)
+			r.g.commitTracked("フラグの書き方を変える", reviewStory)
+			// 書き方を変えても指紋は変わらない。今の中身の指紋で合意しようとする
+			var claim claimDetail
+			if code, msg := s.get("/api/claims/task-id-unique", &claim); code != 200 || claim.Fingerprint != reviewClaimFP {
+				t.Fatalf("書き方を変えた約束を読めないか、指紋が変わった（%d、%s）: %s", code, claim.Fingerprint, msg)
+			}
+			promises := readFileString(t, r.Root, ".vanda/promises.toml")
+			agreements := readFileString(t, r.Root, ".vanda/agreements.toml")
+			head := r.git("rev-parse", "HEAD")
+			if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil); code != 409 || msg == "" {
+				t.Errorf("%d（%q）を返した。409 で断り、理由を出す", code, msg)
+			}
+			if r.git("rev-parse", "HEAD") != head || readFileString(t, r.Root, ".vanda/promises.toml") != promises || readFileString(t, r.Root, ".vanda/agreements.toml") != agreements {
+				t.Errorf("断ったのに、約束リストか合意の記録が変わったか、コミットができた")
+			}
+		})
 	}
 }

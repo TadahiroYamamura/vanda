@@ -431,3 +431,47 @@ func Testファイルの中身のAPIは合意の対象とアノテーション�
 		}
 	}
 }
+
+// @vanda:evidence origin-commit-stories
+func Test約束の由来はコミットごとにそのコミットのStoryのトレーラーのストーリーを結ぶ(t *testing.T) {
+	t.Parallel()
+	_, r, s := setupAgree(t)
+	statement := "タスクの ID は、すべてのタスクを通して重ならない"
+	change := func(to, msg string) string {
+		t.Helper()
+		text := readFileString(t, r.Root, ".vanda/promises.toml")
+		writeFile(t, r.Root, ".vanda/promises.toml", strings.Replace(text, statement, to, 1))
+		statement = to
+		// 同じ大きさの書き換えを git が見落とさないよう、索引から外して読み直させる（commitAll と同じ）
+		r.g.run("rm", "-r", "-q", "--cached", "--ignore-unmatch", ".")
+		r.g.run("add", "-A")
+		r.g.run("commit", "-q", "-m", msg)
+		return r.git("rev-parse", "HEAD")
+	}
+	// トレーラーのないコミット（subject と本文の ID は数えない）と、ほかのストーリーのトレーラーのコミット
+	none := change("タスクの ID は重ならない（1）", "#31 で文を変える\n\n本文の #32 も数えない")
+	other := change("タスクの ID は、どのタスクとも重ならない", "文をもう一度変える\n\nStory: #33")
+	want := map[string][]string{
+		r.git("rev-parse", "main"): {"#1"},
+		r.git("log", "-1", "--format=%H", "--fixed-strings", "--grep=タスクの ID の約束を変え", reviewBranch): {"#24"},
+		none:  nil,
+		other: {"#33"},
+	}
+	var got claimDetail
+	if code, msg := s.get("/api/claims/task-id-unique", &got); code != 200 {
+		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
+	}
+	if len(got.Origin) != len(want) {
+		t.Fatalf("由来が %d 件（%d 件のはず）: %+v", len(got.Origin), len(want), got.Origin)
+	}
+	for _, o := range got.Origin {
+		w, ok := want[o.Commit]
+		if !ok {
+			t.Errorf("思っていないコミットが由来にある: %+v", o)
+			continue
+		}
+		if len(o.Stories) != len(w) || (len(w) > 0 && !reflect.DeepEqual(o.Stories, w)) {
+			t.Errorf("コミット %s（%s）のストーリー: %v（思ったもの %v）", o.Commit, o.Subject, o.Stories, w)
+		}
+	}
+}
