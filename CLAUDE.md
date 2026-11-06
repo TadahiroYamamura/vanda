@@ -17,7 +17,7 @@
 
 ## 作り
 
-- Go の 1 つの実行ファイル `vanda`（`cmd/vanda`）が、CLI・GUI のサーバー・MCP のサーバーを兼ねる。GUI は React で作り、できた画面のファイルを Go に埋め込む（段 2 から）
+- Go の 1 つの実行ファイル `vanda`（`cmd/vanda`）が、CLI・vanda サーバー（画面と API）・MCP のサーバーを兼ねる。GUI は React で作り、できた画面のファイルを Go に埋め込む（段 2 から）
 - 開発の道具は nix の flake で揃える
 - `make check` で、ビルド、テスト、TLA+ のモデルの検査をすべて動かす。CI（GitHub Actions）は Linux と macOS の両方で `make check` を動かす
 - `.vanda/` の外の取り決め（アノテーションの書き方、CI からの CLI の呼び方、アダプタとの受け渡しの形、添付の種類）は、v1.0.0 からは変えない。今のうちに形をよく考え、決めたら `docs/` に書く
