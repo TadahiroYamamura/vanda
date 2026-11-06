@@ -1,4 +1,4 @@
-# アノテーションの読み取り: .vanda/adapters/ のアダプタ（.vanda/adapters/ の直下のファイルか、ディレクトリの直下の run）。
+# アノテーションの読み取り: カスタムアダプタ（.vanda/adapters/ の直下のファイルか、ディレクトリの直下の run）。
 # @vanda:evidence annotation-adapter-required
 # @vanda:evidence project-adapter-name
 # @vanda:evidence project-adapter-overrides-builtin

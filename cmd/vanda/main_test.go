@@ -154,7 +154,7 @@ func withoutGH(t *testing.T) {
 }
 
 // @vanda:evidence doctor-github-issues
-func TestDoctorは置き場所が組込みのgithubならリポジトリを読みIssuesが使えるかを確かめる(t *testing.T) {
+func TestDoctorはストーリーストアが組込みのgithubならリポジトリを読みIssuesが使えるかを確かめる(t *testing.T) {
 	for _, c := range []struct {
 		name      string
 		hasIssues bool
@@ -183,7 +183,7 @@ func TestDoctorは置き場所が組込みのgithubならリポジトリを読�
 }
 
 // @vanda:evidence doctor-project-adapter
-func TestDoctorは置き場所がvanda_adaptersのアダプタならあって実行できるかを確かめる(t *testing.T) {
+func TestDoctorはストーリーストアがカスタムアダプタならあって実行できるかを確かめる(t *testing.T) {
 	cfg := "version = \"0.1.0\"\n[story]\nadapter = \"jira\"\n"
 	for _, c := range []struct {
 		name     string
@@ -205,7 +205,7 @@ func TestDoctorは置き場所がvanda_adaptersのアダプタならあって実
 			t.Errorf("%s: code %d（%d のはず）, out %q, stderr %q", c.name, code, c.wantCode, out, errs)
 		}
 		if c.wantCode != 0 && !strings.Contains(errs, ".vanda/adapters/jira") {
-			t.Errorf("%s: 誤りにアダプタの場所が出ていない: %q", c.name, errs)
+			t.Errorf("%s: 誤りにカスタムアダプタの場所が出ていない: %q", c.name, errs)
 		}
 	}
 }

@@ -19,7 +19,7 @@ import (
 )
 
 // API のテストは、ビルドした vanda で `vanda serve --port 0 --no-open` を外から動かして確かめる（監督の決定）。
-// 段 1 と同じく、実装の内部の関数に頼らずに書くため。サーバーはテストの中で起動し、テストの終わりに必ず止め、
+// 段 1 と同じく、実装の内部の関数に頼らずに書くため。vanda サーバーはテストの中で起動し、テストの終わりに必ず止め、
 // 止まったこと（プロセスが終わり、ポートがもう受け付けないこと）も確かめる。
 
 var serveURLPattern = regexp.MustCompile(`http://127\.0\.0\.1:[0-9]+/`)
@@ -61,7 +61,7 @@ func (s *vandaServer) Output() string {
 	return s.output.String()
 }
 
-// serveSlots は、同時に動かす vanda serve の数の上限。テストを並べて動かすので、サーバーが一度に立ちすぎないよう抑える。
+// serveSlots は、同時に動かす vanda serve の数の上限。テストを並べて動かすので、vanda サーバーが一度に立ちすぎないよう抑える。
 var serveSlots = make(chan struct{}, 4)
 
 // startServe は、dir で vanda serve を起動し、標準出力に出た URL を読んで返す。
@@ -129,7 +129,7 @@ func startServe(t serveTB, bin, dir string, env []string) *vandaServer {
 	return s
 }
 
-// stop は、Ctrl+C と同じ割り込みを送ってサーバーを止め、止まったことを確かめる。
+// stop は、Ctrl+C と同じ割り込みを送って vanda サーバーを止め、止まったことを確かめる。
 func (s *vandaServer) stop() {
 	s.once.Do(func() {
 		if err := s.cmd.Process.Signal(os.Interrupt); err != nil && !errors.Is(err, os.ErrProcessDone) {
@@ -149,9 +149,9 @@ func (s *vandaServer) stop() {
 	})
 }
 
-// checkReleased は、サーバーがポートを手放したかを確かめる。
+// checkReleased は、vanda サーバーがポートを手放したかを確かめる。
 // 接続できるかでは確かめない。WSL2 では、誰も待ち受けていないループバックのポートにも接続できてしまうことがあるため。
-// 同じポートで待ち受けられれば、サーバーはポートを手放している。
+// 同じポートで待ち受けられれば、vanda サーバーはポートを手放している。
 func (s *vandaServer) checkReleased() {
 	ln, err := net.Listen("tcp", s.host)
 	if err != nil {
@@ -223,7 +223,7 @@ func (s *vandaServer) post(path string, body, out any) (int, string) {
 
 func q(v string) string { return url.QueryEscape(v) }
 
-// テストの中で起動したサーバーが、テストの終わりに止まることを確かめる（stop が確かめる）。
+// テストの中で起動した vanda サーバーが、テストの終わりに止まることを確かめる（stop が確かめる）。
 // あわせて、Host が 127.0.0.1:<待ち受けているポート>・localhost:<待ち受けているポート> でない要求を断ることも確かめる
 // （CM-01: 自分のマシンの中でだけ開く）。
 // @vanda:evidence serve-rejects-foreign-host

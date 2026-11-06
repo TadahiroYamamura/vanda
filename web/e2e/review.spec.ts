@@ -1,5 +1,5 @@
 // E2E: 一時的な git のリポジトリに対して vanda serve を動かし、Chrome で操作する。本物の GitHub には繋がない
-// （ストーリーの置き場所は設定に書かない）。サーバーはテストの中で起動し、テストの終わりに止め、ポートを手放したことも確かめる。
+// （ストーリーストアは設定に書かない）。vanda サーバーはテストの中で起動し、テストの終わりに止め、ポートを手放したことも確かめる。
 // 動かす vanda は、make build が作るリポジトリの直下の vanda（VANDA_BIN で差し替えられる）。
 import { test, expect, type Page } from "@playwright/test";
 import { spawn, execFileSync, type ChildProcess } from "node:child_process";
@@ -164,7 +164,7 @@ function startServe(r: Repo): Promise<Serve> {
               p.kill("SIGKILL");
               throw new Error("vanda serve が割り込みから 10 秒たっても止まらない");
             }
-            // 同じポートで待ち受けられれば、サーバーはポートを手放している
+            // 同じポートで待ち受けられれば、vanda サーバーはポートを手放している
             await new Promise<void>((res, rej) => {
               const s = createServer();
               s.once("error", (e) => rej(new Error(`vanda serve を止めた後も ${port} を手放していない: ${e}`)));
@@ -826,7 +826,7 @@ for (const w of writers) {
     const can = w.self && !pl.onBase;
     test(`${w.name}が${pl.name}で書いた合意の記録は${can ? "取り消せて記録が消えた1つのコミットになる" : "取り消せず取り消しのボタンが出ない"}`, async ({ page }) => {
       // task-id-unique のフラグを外し、今の中身（#24 の文）への合意の記録を手で書く。ベースブランチなら main に書いて
-      // story-24 に取り込み、分かれた点より前にする
+      // story-24 に取り込み、分岐点より前にする
       repo.write(".vanda/promises.toml", promises(v2Statement, false, true));
       commit(repo, "フラグを外す", "#24");
       const record = agreement("claim", "task-id-unique", sha(claimJSON(v2Statement)), null, "#24")
@@ -920,7 +920,7 @@ test("レビュー単位がストーリーのときはすべてのストーリ�
   await expect.poll(async () => (await storyChoices(page)).sort()).toEqual(["#1", "#24", "#30"]);
 });
 
-test("レビュー単位がブランチでベースブランチを既定から変えるとそのベースブランチと分かれた点より後のストーリーで決まる", async ({ page }) => {
+test("レビュー単位がブランチでベースブランチを既定から変えるとそのベースブランチとの分岐点より後のストーリーで決まる", async ({ page }) => {
   // rel は #24 のコミットの後から分かれたことにする。rel と比べると、ブランチのストーリーは #30 だけ。
   // #30 で task-id-unique を変え、rel と比べても一覧に出るようにする
   repo.git("branch", "rel", "story-24");
@@ -1557,9 +1557,9 @@ test("一覧はまとまりに分かれ通し番号と総数が出てまとま�
   await expect(listItem(page, "task-title-required")).toBeVisible();
 });
 
-// CM-08: ストーリーの置き場所が設定にあれば、題・本文・添付ファイルへのリンクを出す。置き場所は .vanda/adapters/ のアダプタにする
+// CM-08: ストーリーストアが設定にあれば、題・本文・添付ファイルへのリンクを出す。ストーリーストアはカスタムアダプタにする
 // @vanda:evidence story-shown-on-screen
-test("ストーリーの置き場所のアダプタから読んだ題と本文と添付ファイルへのリンクがレビューの画面に出る", async ({ page }) => {
+test("ストーリーストアのカスタムアダプタから読んだ題と本文と添付ファイルへのリンクがレビューの画面に出る", async ({ page }) => {
   const cfg = readFileSync(join(repo.root, ".vanda/config.toml"), "utf8");
   repo.write(".vanda/config.toml", cfg + '\n[story]\nadapter = "story"\n');
   repo.write(".vanda/adapters/story", `#!/bin/sh
@@ -1567,7 +1567,7 @@ cat >/dev/null
 printf '%s' '{"title":"タスクの ID を重ならないようにする","body":"本文の **太字** です","url":"https://example.com/issues/24","attachments":[{"name":"画面の案","url":"https://example.com/a.png"}]}'
 `);
   chmodSync(join(repo.root, ".vanda/adapters/story"), 0o755);
-  commit(repo, "ストーリーの置き場所を設定する", "#24");
+  commit(repo, "ストーリーストアを設定する", "#24");
   await page.goto(serve.url + "/");
   await expect(page.getByText("タスクの ID を重ならないようにする").first(), "ストーリーの題が出ない").toBeVisible();
   await expect(page.getByText("太字").first(), "ストーリーの本文が出ない").toBeVisible();
@@ -1669,7 +1669,7 @@ test("TLAの記号は画面に同梱したNoto Sans Mathを読み込んでその
       { message: "Noto Sans Math を読み込んでいない" },
     )
     .toContain("loaded");
-  // 同梱のファイルを vanda のサーバーから読んだこと
+  // 同梱のファイルを vanda サーバーから読んだこと
   const fontURLs = await page.evaluate(() =>
     performance
       .getEntriesByType("resource")
@@ -1677,7 +1677,7 @@ test("TLAの記号は画面に同梱したNoto Sans Mathを読み込んでその
       .filter((u) => /noto-sans-math.*\.woff2$/.test(u)),
   );
   expect(fontURLs.length, "Noto Sans Math のファイルを読んでいない").toBeGreaterThan(0);
-  for (const u of fontURLs) expect(u.startsWith(serve.url + "/"), `${u} を vanda のサーバーから読んでいない`).toBe(true);
+  for (const u of fontURLs) expect(u.startsWith(serve.url + "/"), `${u} を vanda サーバーから読んでいない`).toBe(true);
 
   // 記号の文字だけを持ついちばん内側の要素に印を付け、Chrome が実際に使った書体を DevTools のプロトコルで聞く。
   // 色付けを終えると画面が要素を作り直し、印が消えることがあるので、印を付けるところから条件で待ち直す

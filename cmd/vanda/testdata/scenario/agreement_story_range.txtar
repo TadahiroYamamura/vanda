@@ -1,4 +1,4 @@
-# CMD-10 合意: 範囲を 1 つのストーリーにすると、ベースブランチから分かれた点より後に変わったものだけが対象になる。
+# CMD-10 合意: 範囲を 1 つのストーリーにすると、ベースブランチとの分岐点より後に変わったものだけが対象になる。
 # @vanda:evidence check-agreement-story-scope
 # @vanda:evidence deleted-item-needs-agreement
 # main には合意していない約束（task-id-unique）が残っているが、ストーリー 2 で変えていないので、ストーリー 2 の範囲の審査では止めない。
@@ -28,7 +28,7 @@ stderr 'a\.toml.*task-id-unique'
 ! stderr 'task-title-required'
 ! stderr '(?m)^panic: '
 
-# ストーリー 2 で、分かれた点にあった約束を消すと、一度も合意していなくても、ストーリー 2 の範囲では消したことへの合意を求める
+# ストーリー 2 で、分岐点にあった約束を消すと、一度も合意していなくても、ストーリー 2 の範囲では消したことへの合意を求める
 cp cases/a-without-claim.toml .vanda/promises/a.toml
 commit '約束を消す' '#2'
 ! exec vanda check .vanda/checks/story.toml --base main

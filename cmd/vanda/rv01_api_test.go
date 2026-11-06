@@ -160,7 +160,7 @@ func TestRV01の一覧はAPIで手で作った例と合う(t *testing.T) {
 					t.Fatalf("ベースブランチ %s の一覧を読めない（%d）: %s", base, code, msg)
 				}
 				if got.View != "branch" || str(got.Base) != base || str(got.MergeBase) != r.mergeBase(base).hash {
-					t.Errorf("view %q、base %q、mergeBase %q（分かれた点は %s）", got.View, str(got.Base), str(got.MergeBase), r.mergeBase(base).hash)
+					t.Errorf("view %q、base %q、mergeBase %q（分岐点は %s）", got.View, str(got.Base), str(got.MergeBase), r.mergeBase(base).hash)
 				}
 				checkReview(t, "ベースブランチ "+base+" の、レビュー単位がブランチのとき", got, rvSet(want))
 			}

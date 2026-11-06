@@ -17,7 +17,7 @@ import (
 	"testing"
 )
 
-// CM-08 のテストで使う、ストーリーの置き場所（GitHub Issues）の偽の HTTP サーバーと、偽の gh。
+// CM-08 のテストで使う、ストーリーストア（GitHub Issues）の偽の HTTP サーバーと、偽の gh。
 // 本物の GitHub には繋がない。サーバーは httptest で 127.0.0.1 の空いているポートに立て、テストの終わりに止める。
 // 偽のサーバーは、GitHub の REST API のうち、段 2 で読む Issue の取得（GET /repos/{owner}/{repo}/issues/{number}）だけを真似る。
 // 段 2 は読むだけなので、GET のほかの要求は 405 を返して記録し、テストで「書き込んでいない」ことを確かめられるようにする。
@@ -228,7 +228,7 @@ func fakeGet(t *testing.T, url, auth string) (int, map[string]any, error) {
 	return resp.StatusCode, v, nil
 }
 
-func Test偽のストーリーの置き場所は正しい鍵でだけIssueを返し誤りをGitHubと同じ形で返す(t *testing.T) {
+func Test偽のストーリーストアは正しい鍵でだけIssueを返し誤りをGitHubと同じ形で返す(t *testing.T) {
 	t.Parallel()
 	f := newFakeIssues(t)
 	f.setIssue("owner/app", 24, "タスクの ID", fakeIssueBodyWithAttachments)

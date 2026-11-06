@@ -11,7 +11,7 @@
 # 種類とタイプの全部の組み合わせと、types の書き方は evidence_types_test.go で確かめる。
 # 1 つのアノテーションが、同じ約束の複数の予定を満たしてよい。proof は今は扱えない誤りにする。
 # 実行しないタイプ（human-review）は確かめない（detail に書いたファイルがなくても止めない）。
-# 範囲を 1 つのストーリーにすると、分かれた点より後に変わった約束だけを見る。
+# 範囲を 1 つのストーリーにすると、分岐点より後に変わった約束だけを見る。
 #
 # txtar のファイルの中身は、この台本の区切りとぶつからないよう、行の頭に > を付けて書き、unquote で外す。
 
@@ -98,7 +98,7 @@ commit '(test) 審査の前にコミットする'
 stderr 'promises\.toml.*proof'
 ! stderr '(?m)^panic: '
 
-# 範囲を 1 つのストーリーにすると、分かれた点より後に変わった約束だけを見る
+# 範囲を 1 つのストーリーにすると、分岐点より後に変わった約束だけを見る
 cp cases/promises-main.toml .vanda/promises.toml
 commit '約束を足す' '#1'
 exec git checkout -q -b story-2

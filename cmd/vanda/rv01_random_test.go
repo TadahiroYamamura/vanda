@@ -108,7 +108,7 @@ func rvRandomOp(rt *rapid.T, r *rvRepo) string {
 	}
 	ops = append(ops, "addFile", "reformat")
 	if len(files) > 0 {
-		// 名前の変更は、分かれた点より前からあるファイルに、変更なしで当たらないと一覧に出ないので、ほかより多く選ぶ
+		// 名前の変更は、分岐点より前からあるファイルに、変更なしで当たらないと一覧に出ないので、ほかより多く選ぶ
 		ops = append(ops, "changeFile", "deleteFile", "renameFile", "renameFile", "renameFile")
 	}
 	op := rapid.SampledFrom(ops).Draw(rt, "操作")
@@ -250,7 +250,7 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 			}
 		}()
 
-		// 変更・削除・名前の変更が一覧に出るには、分かれた点より前からあるものが要るので、はじめにいくつか置く
+		// 変更・削除・名前の変更が一覧に出るには、分岐点より前からあるものが要るので、はじめにいくつか置く
 		for _, kind := range []string{"claim", "term", "feature"} {
 			for _, id := range rvIDs(kind) {
 				if rapid.Bool().Draw(rt, "はじめに置く項目か") {
@@ -268,7 +268,7 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 		r.newBranch("story")
 		rvRandomOps(rt, r, "story", 6, false, &log)
 		r.switchTo("main")
-		rvRandomOps(rt, r, "分かれた後の main", 4, false, &log)
+		rvRandomOps(rt, r, "分岐点より後の main", 4, false, &log)
 		r.switchTo("story")
 		rvRandomOps(rt, r, "story", 8, true, &log)
 

@@ -31,8 +31,8 @@ stderr '--base'
 stderr '--base'
 ! stderr '(?m)^panic: '
 
-# ストーリーは、分かれた点より後のコミットの Story: のトレーラーの ID から決める（subject・本文の ID は数えない）。
-# 分かれた点より後にコミットがない（ID が 0 個）と、--story を求めて止まる
+# ストーリーは、分岐点より後のコミットの Story: のトレーラーの ID から決める（subject・本文の ID は数えない）。
+# 分岐点より後にコミットがない（ID が 0 個）と、--story を求めて止まる
 exec git checkout -q -b story-2
 ! exec vanda check .vanda/checks/story.toml --base main
 stderr '--story'
@@ -45,7 +45,7 @@ commit 'メモを足す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 exec vanda check .vanda/checks/mixed.toml --base main
 
-# 分かれた点より後のコミットに、トレーラーのないものが混じっても、ID が 1 つなら通る。subject に書いた #9 は数えない
+# 分岐点より後のコミットに、トレーラーのないものが混じっても、ID が 1 つなら通る。subject に書いた #9 は数えない
 cp cases/note-2.txt note.txt
 commit '#9 メモを直す'
 exec vanda check .vanda/checks/story.toml --base main

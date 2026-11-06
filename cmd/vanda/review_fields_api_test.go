@@ -489,13 +489,13 @@ func Test画面で選べるものは今の設定とブランチと履歴から�
 	}
 }
 
-// CM-08・CM-09: storyStore は、設定のストーリーの置き場所のアダプタ
+// CM-08・CM-09: storyStore は、設定のストーリーストアのアダプタ
 // @vanda:evidence context-story-store
-func Test画面で選べるもののストーリーの置き場所は設定のアダプタを示す(t *testing.T) {
+func Test画面で選べるもののストーリーストアは設定のアダプタを示す(t *testing.T) {
 	t.Parallel()
 	for _, c := range []struct{ conf, want string }{
 		{"\n[story]\nadapter = \"github\"\nrepository = \"owner/app\"\n", "github"},
-		// .vanda/adapters/ のアダプタは、その名前
+		// カスタムアダプタは、その名前
 		{"\n[story]\nadapter = \"jira-story\"\nargs = [\"--project\", \"APP\"]\n", "jira-story"},
 	} {
 		t.Run(c.want, func(t *testing.T) {
@@ -508,7 +508,7 @@ func Test画面で選べるもののストーリーの置き場所は設定の�
 			r := newReviewRepo(t, version)
 			writeFile(t, r.Root, ".vanda/config.toml", fmt.Sprintf(reviewConfig, version)+c.conf)
 			writeUserAdapter(t, r.Root, ".vanda/adapters/jira-story", "cat >/dev/null\necho '{\"title\":\"t\",\"body\":\"\",\"url\":\"\"}'\n")
-			r.g.commitAll("設定にストーリーの置き場所を足す", "")
+			r.g.commitAll("設定にストーリーストアを足す", "")
 			s := startServe(t, bin, r.Root, r.Env)
 			var got contextResponse
 			if code, msg := s.get("/api/context", &got); code != 200 || got.StoryStore != c.want {
@@ -518,7 +518,7 @@ func Test画面で選べるもののストーリーの置き場所は設定の�
 	}
 }
 
-// RV-13: レビュー単位がブランチで story を省いたときは、分かれた点より後のコミットのメッセージにある ID が 1 つなら
+// RV-13: レビュー単位がブランチで story を省いたときは、分岐点より後のコミットのメッセージにある ID が 1 つなら
 // それを使い、0 か 2 つ以上なら null にする。story を名指ししたときは、それを使う
 // @vanda:evidence review-story-choice
 func Testレビュー単位がブランチのときストーリーはブランチのコミットから1つに決まるときだけ決まり名指ししたものはそのまま使う(t *testing.T) {

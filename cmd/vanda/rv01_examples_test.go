@@ -107,7 +107,7 @@ var rvExamples = []rvExample{
 		story:  map[string][]rvEntry{"#24": nil},
 	},
 	{
-		name: "レビュー単位がブランチのときはベースブランチと分かれた点との差分でベースブランチを変えると一覧も変わる",
+		name: "レビュー単位がブランチのときはベースブランチとの分岐点との差分でベースブランチを変えると一覧も変わる",
 		build: func(r *rvRepo) {
 			r.addItem("claim", "c-a", 0)
 			r.addItem("claim", "c-b", 0)
@@ -118,7 +118,7 @@ var rvExamples = []rvExample{
 			r.newBranch("story-24")
 			r.changeItem("c-b", "rationale")
 			r.commit("#24")
-			// 分かれた後に main で足したものは、main と比べても出ない（main の先端との差分ではない）
+			// 分岐点より後に main で足したものは、main と比べても出ない（main の先端との差分ではない）
 			r.switchTo("main")
 			r.addItem("claim", "c-main", 1)
 			r.commit("#3")

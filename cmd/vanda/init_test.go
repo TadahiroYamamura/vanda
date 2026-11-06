@@ -31,7 +31,7 @@ import (
 // 問いかけは擬似端末（pty）で vanda を動かし、問いを読んで答えを書く（docs/plans/init-test.md）。
 // vanda init は、必ずテストごとの一時ディレクトリの git のリポジトリで動かす。
 //
-// 問いの文言は決まっていないので、問いは計画の順（ベースブランチ、ストーリーの置き場所、リポジトリか.vanda/adapters/ のアダプタ、
+// 問いの文言は決まっていないので、問いは計画の順（ベースブランチ、ストーリーストア、リポジトリかカスタムアダプタ、
 // ID の書き方、言語ごとのアノテーション、作るか）にたどり、それぞれの問いに出るはずの言葉で確かめる。
 // 既定の答えは、計画のとおり、問いの中の [ ] の中から読む。
 
@@ -541,7 +541,7 @@ func (s *initSession) wait() int {
 
 // ---- 問いをたどる ----
 
-var storyChoices = []string{"GitHub Issues", ".vanda/adapters/ のアダプタ", "使わない"}
+var storyChoices = []string{"GitHub Issues", "カスタムアダプタ", "使わない"}
 
 var langNames = []string{"Go", "シナリオ", "TLA+", "SQL", "TypeScript"}
 
@@ -558,8 +558,8 @@ func langOf(line string) string {
 type initPlan struct {
 	base        string
 	story       string // 選択肢の名前
-	detail      string // リポジトリか、.vanda/adapters/ のアダプタの名前
-	adapterArgs string // .vanda/adapters/ のアダプタに渡す引数
+	detail      string // リポジトリか、カスタムアダプタの名前
+	adapterArgs string // カスタムアダプタに渡す引数
 	idPattern   string
 	toggle      []string          // 言語を選ぶ問いで、選びを切り替える言語
 	patterns    map[string]string // 言語 → 読むファイルのパターン
@@ -687,7 +687,7 @@ func (s *initSession) run(plan initPlan) initSeen {
 	s.t.Helper()
 	seen := initSeen{patterns: map[string]string{}}
 	seen.baseDefault = s.input("ベースブランチ", "ベースブランチ", nil, plan.base)
-	def, shown := s.selectOne("ストーリーの置き場所", "ストーリーの置き場所", storyChoices, plan.story)
+	def, shown := s.selectOne("ストーリーストア", "ストーリーストア", storyChoices, plan.story)
 	seen.storyOptions = shown
 	for _, o := range storyChoices {
 		if strings.Contains(def, o) {
@@ -702,11 +702,11 @@ func (s *initSession) run(plan initPlan) initSeen {
 	case "GitHub Issues":
 		seen.detailAsked = true
 		seen.detailDef = s.input("リポジトリ", "リポジトリ", plan.invalid["detail"], plan.detail)
-	case ".vanda/adapters/ のアダプタ":
+	case "カスタムアダプタ":
 		seen.detailAsked = true
-		seen.detailDef = s.input(".vanda/adapters/ のアダプタの名前", "名前", plan.invalid["detail"], plan.detail)
+		seen.detailDef = s.input("カスタムアダプタの名前", "名前", plan.invalid["detail"], plan.detail)
 		seen.argsAsked = true
-		seen.argsDef = s.input(".vanda/adapters/ のアダプタの引数", "引数", nil, plan.adapterArgs)
+		seen.argsDef = s.input("カスタムアダプタの引数", "引数", nil, plan.adapterArgs)
 	}
 	seen.idDefault = s.input("ID の書き方", "ID", plan.invalid["id"], plan.idPattern)
 	var prev string
@@ -997,10 +997,10 @@ func Test既定の答えのまま進めると読み取った値で5つのファ�
 	}
 }
 
-// CMD-11: ストーリーの置き場所の選択肢の全部で、問い 3・4 の出方と既定と、書かれる [story] が合う
+// CMD-11: ストーリーストアの選択肢の全部で、問い 3・4 の出方と既定と、書かれる [story] が合う
 // @vanda:evidence init-store-choices
 // @vanda:evidence init-missing-project-adapter
-func Testストーリーの置き場所の選択肢ごとに問いの出方と既定とstoryの中身が合う(t *testing.T) {
+func Testストーリーストアの選択肢ごとに問いの出方と既定とstoryの中身が合う(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
 	cases := []struct {
@@ -1008,8 +1008,8 @@ func Testストーリーの置き場所の選択肢ごとに問いの出方と�
 		detail      string
 		args        string
 		idPattern   string
-		detailAsked bool   // リポジトリか、.vanda/adapters/ のアダプタの名前の問いが出るか
-		argsAsked   bool   // .vanda/adapters/ のアダプタの引数の問いが出るか
+		detailAsked bool   // リポジトリか、カスタムアダプタの名前の問いが出るか
+		argsAsked   bool   // カスタムアダプタの引数の問いが出るか
 		detailDef   string // 空なら既定なし
 		idDefault   string // 空なら既定なし
 		adapter     string
@@ -1018,8 +1018,8 @@ func Testストーリーの置き場所の選択肢ごとに問いの出方と�
 		wantPattern string
 	}{
 		{"GitHub Issues", "", "", "", true, false, "owner/app", "#[0-9]+", "github", "owner/app", nil, "#[0-9]+"},
-		// .vanda/adapters/ のアダプタの引数は、空白で区切って分ける
-		{".vanda/adapters/ のアダプタ", "jira-story", "--project APP", "PROJ-[0-9]+", true, true, "", "", "jira-story", "", []string{"--project", "APP"}, "PROJ-[0-9]+"},
+		// カスタムアダプタの引数は、空白で区切って分ける
+		{"カスタムアダプタ", "jira-story", "--project APP", "PROJ-[0-9]+", true, true, "", "", "jira-story", "", []string{"--project", "APP"}, "PROJ-[0-9]+"},
 		{"使わない", "", "", "PROJ-[0-9]+", false, false, "", "", "", "", nil, "PROJ-[0-9]+"},
 	}
 	for _, c := range cases {
@@ -1038,14 +1038,14 @@ func Testストーリーの置き場所の選択肢ごとに問いの出方と�
 				t.Errorf("リポジトリか名前の既定: %q（思ったもの %q）", seen.detailDef, c.detailDef)
 			}
 			if seen.argsDef != "" {
-				t.Errorf(".vanda/adapters/ のアダプタの引数に既定がある: %q", seen.argsDef)
+				t.Errorf("カスタムアダプタの引数に既定がある: %q", seen.argsDef)
 			}
 			if seen.idDefault != c.idDefault {
 				t.Errorf("ID の書き方の既定: %q（思ったもの %q。空は既定なし）", seen.idDefault, c.idDefault)
 			}
 			// 作った直後には、まだアダプタを置いていない。誤りにせず、置く場所を案内する
 			if c.adapter == "jira-story" && !strings.Contains(s.guidance(), ".vanda/adapters/jira-story") {
-				t.Errorf("案内に、.vanda/adapters/jira-story にアダプタを置くことが出ていない\n%s", s.screen())
+				t.Errorf("案内に、.vanda/adapters/jira-story にカスタムアダプタを置くことが出ていない\n%s", s.screen())
 			}
 			st := readInitConfig(t, r.root).Story
 			if st == nil || st.Adapter != c.adapter || st.Repository != c.repository || !reflect.DeepEqual(st.Args, c.wantArgs) || st.Command != nil || st.IDPattern != c.wantPattern {
@@ -1091,7 +1091,7 @@ func newEmptyInitRepo(t *testing.T) *initRepo {
 }
 
 // CMD-11: 初期化した直後のリポジトリでも、言語を選んで [[annotation]] を書ける。1 つも選ばなければ、案内に
-// [[annotation]] を書くことが足される（.vanda/adapters/ のアダプタを .vanda/adapters/ に置いて足せることは、いつも出る）
+// [[annotation]] を書くことが足される（.vanda/adapters/ にカスタムアダプタを置いて足せることは、いつも出る）
 // @vanda:evidence init-language-choices
 // @vanda:evidence init-guide
 func Test初期化した直後のリポジトリでも言語を選べ1つも選ばなければ案内にannotationを書くことが出る(t *testing.T) {
@@ -1141,15 +1141,15 @@ func Test初期化した直後のリポジトリでも言語を選べ1つも選�
 		without = s.guidance()
 	})
 	if !strings.Contains(withLangs, ".vanda/adapters/") || !strings.Contains(without, ".vanda/adapters/") {
-		t.Errorf("案内に、.vanda/adapters/ のアダプタを .vanda/adapters/ に置いて足せることが出ていない\n--- 選んだとき\n%s\n--- 選ばないとき\n%s", withLangs, without)
+		t.Errorf("案内に、.vanda/adapters/ にカスタムアダプタを置いて足せることが出ていない\n--- 選んだとき\n%s\n--- 選ばないとき\n%s", withLangs, without)
 	}
 	if annotationLines(without) <= annotationLines(withLangs) {
 		t.Errorf("1 つも選ばなかったときの案内に、[[annotation]] を書くことが足されていない\n--- 選んだとき\n%s\n--- 選ばないとき\n%s", withLangs, without)
 	}
 }
 
-// CMD-11: 答えを変えると、その値で書かれる（ベースブランチ、リポジトリ、ID の書き方、読むファイルのパターン。.vanda/adapters/ のアダプタの名前と引数は
-// ストーリーの置き場所の選択肢のテストで変える）
+// CMD-11: 答えを変えると、その値で書かれる（ベースブランチ、リポジトリ、ID の書き方、読むファイルのパターン。カスタムアダプタの名前と引数は
+// ストーリーストアの選択肢のテストで変える）
 // @vanda:evidence init-patterns
 func Test答えを変えるとその値で書かれる(t *testing.T) {
 	t.Parallel()
@@ -1187,7 +1187,7 @@ func Test形に合わない答えは理由が出て同じ問いにとどまる(t
 		r := newInitRepo(t, "", false)
 		s := startInit(t, bin, r.root, r.g.env)
 		s.run(initPlan{
-			story: ".vanda/adapters/ のアダプタ", detail: "jira-story", idPattern: "PROJ-[0-9]+",
+			story: "カスタムアダプタ", detail: "jira-story", idPattern: "PROJ-[0-9]+",
 			invalid: map[string][]string{"id": {"", "[", "a*"}},
 		})
 		if code := s.wait(); code != 0 {
@@ -1233,7 +1233,7 @@ func Test途中で入力を終えると何も作られない(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
 	// 問いの題に出る言葉。remote が GitHub なのでリポジトリの問いが出る。シナリオだけが見つかる
-	steps := []string{"ベースブランチ", "ストーリーの置き場所", "リポジトリ", "ID", "言語", "読むファイル", "作りますか"}
+	steps := []string{"ベースブランチ", "ストーリーストア", "リポジトリ", "ID", "言語", "読むファイル", "作りますか"}
 	for i, step := range steps {
 		t.Run(step+"で終える", func(t *testing.T) {
 			t.Parallel()
@@ -1442,9 +1442,9 @@ var initRemotes = []struct {
 	{"remoteなし", "", false},
 }
 
-// CMD-11: remote の URL の形ごとに、ストーリーの置き場所・リポジトリ・ベースブランチの既定の答えが決まる
+// CMD-11: remote の URL の形ごとに、ストーリーストア・リポジトリ・ベースブランチの既定の答えが決まる
 // @vanda:evidence init-defaults-from-repository
-func Test_remoteのURLの形ごとにストーリーの置き場所とリポジトリとベースブランチの既定の答えが決まる(t *testing.T) {
+func Test_remoteのURLの形ごとにストーリーストアとリポジトリとベースブランチの既定の答えが決まる(t *testing.T) {
 	t.Parallel()
 	for _, c := range initRemotes {
 		t.Run(c.name, func(t *testing.T) {
@@ -1538,11 +1538,11 @@ func filesToDir(t *testing.T, files [][2]string) string {
 	return root
 }
 
-// CMD-11: 答えから作る 5 つのファイル。置き場所の選択肢の全部と、言語の選び方で、書かれる [story] と [[annotation]] が合う
+// CMD-11: 答えから作る 5 つのファイル。ストーリーストアの選択肢の全部と、言語の選び方で、書かれる [story] と [[annotation]] が合う
 // @vanda:evidence init-writes-files
 // @vanda:evidence init-values-only
 // @vanda:evidence init-default-types
-func Test答えから作る5つのファイルは置き場所と言語の答えのとおりに値だけで書かれる(t *testing.T) {
+func Test答えから作る5つのファイルはストーリーストアと言語の答えのとおりに値だけで書かれる(t *testing.T) {
 	t.Parallel()
 	bin, version := initSetup(t)
 	cases := []struct {
@@ -1603,7 +1603,7 @@ func Test答えから作る5つのファイルは置き場所と言語の答え�
 				}
 			}
 			checkNoComments(t, root)
-			// 作った設定は、vanda に読める（置き場所に繋ぎに行かない「使わない」で、vanda doctor を通す）
+			// 作った設定は、vanda に読める（ストーリーストアに繋ぎに行かない「使わない」で、vanda doctor を通す）
 			if c.a.Store == "none" {
 				g := newRVGit(t, root)
 				g.run("init", "-q", "-b", "main")
@@ -1822,7 +1822,7 @@ func Test_vanda_initは中断や作らないの答えや誤りで終わっても
 	}
 }
 
-// CMD-11: .vanda/adapters/ のアダプタの名前に、組込みのアダプタと同じ名前（github・go など）を答えても断らない
+// CMD-11: カスタムアダプタの名前に、組込みのアダプタと同じ名前（github・go など）を答えても断らない
 // @vanda:evidence init-accepts-builtin-name
 func Test_vanda_adaptersのアダプタの名前に組込みのアダプタと同じ名前を答えても断らない(t *testing.T) {
 	t.Parallel()
@@ -1842,7 +1842,7 @@ func Test_vanda_adaptersのアダプタの名前に組込みのアダプタと�
 	s := startInit(t, bin, r.root, r.g.env)
 	// 名前の問いで断らず（聞き直さず）次の問いへ進み、答えたとおりに書く。.vanda/adapters/github がないので組込みの github が
 	// 使われ、作った後の確かめで、組込みの github に要る repository がない誤りになり、終了コード 1 で終わる（PO の決定）
-	s.run(initPlan{story: ".vanda/adapters/ のアダプタ", detail: "github", adapterArgs: "--project APP", idPattern: "PROJ-[0-9]+"})
+	s.run(initPlan{story: "カスタムアダプタ", detail: "github", adapterArgs: "--project APP", idPattern: "PROJ-[0-9]+"})
 	if code := s.wait(); code != 1 {
 		t.Errorf("終了コードが %d（組込みの github の確かめで誤りになり 1 のはず）\n%s", code, s.stderr.String())
 	}

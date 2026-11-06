@@ -42,7 +42,7 @@ types = ["unit-test"]
 adapter = "file"
 paths = ["db/schema.sql"]
 `)
-	// .vanda/adapters/ のアダプタ md は、.vanda/adapters/ の直下のファイル
+	// カスタムアダプタ md は、.vanda/adapters/ の直下のファイル
 	if err := os.MkdirAll(filepath.Join(root, ".vanda", "adapters"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ paths = ["db/schema.sql"]
 	if len(cfg.Annotations) != 2 || cfg.Annotations[0].Adapter != "go" || cfg.Annotations[0].User != nil {
 		t.Errorf("annotation: %+v", cfg.Annotations)
 	} else if u := cfg.Annotations[1].User; cfg.Annotations[1].Adapter != "" || u == nil || u.Name != "md" || u.Path != ".vanda/adapters/md" || strings.Join(u.Args, ",") != "--json" {
-		t.Errorf(".vanda/adapters/ のアダプタの annotation: %+v（User %+v）", cfg.Annotations[1], u)
+		t.Errorf("カスタムアダプタの annotation: %+v（User %+v）", cfg.Annotations[1], u)
 	}
 	if len(cfg.Guardrails) != 1 || cfg.Guardrails[0].Paths[0] != "db/schema.sql" {
 		t.Errorf("guardrail: %+v", cfg.Guardrails)

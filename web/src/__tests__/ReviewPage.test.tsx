@@ -294,7 +294,7 @@ describe("RV-13・RV-14 レビュー単位と外れた合意", () => {
   });
 });
 
-describe("CM-08 ストーリーの置き場所", () => {
+describe("CM-08 ストーリーストア", () => {
   // @vanda:evidence story-shown-on-screen
   it("ストーリーの題と本文と添付ファイルへのリンクを見せる", async () => {
     open([claimEntry(1, "c-one")]);
@@ -305,19 +305,19 @@ describe("CM-08 ストーリーの置き場所", () => {
   });
 
   // @vanda:evidence story-error-shown-on-screen
-  it("ストーリーの置き場所の誤りは黙って空にせず理由を出す", async () => {
+  it("ストーリーストアの誤りは黙って空にせず理由を出す", async () => {
     open([claimEntry(1, "c-one")], {}, http.get("/api/story", () => apiError(502, "Bad credentials")));
     expect(await screen.findByText(/Bad credentials/)).toBeTruthy();
   });
 
   // @vanda:evidence context-story-store
-  it("ストーリーの置き場所が設定にないときは読みに行かず注記で出す", async () => {
+  it("ストーリーストアが設定にないときは読みに行かず注記で出す", async () => {
     server.use(http.get("/api/context", () => HttpResponse.json({ ...ctx, storyStore: "" })));
     server.use(http.get("/api/review", () => HttpResponse.json(review([claimEntry(1, "c-one")]))));
     render(<App />);
     await screen.findAllByText(/c-one/);
     expect(requests.some((r) => r.url.pathname === "/api/story")).toBe(false);
-    expect(document.body.textContent).toMatch(/置き場所/);
+    expect(document.body.textContent).toContain("題と本文なし（ストーリーストアが未設定）");
   });
 
   // @vanda:evidence review-error-shown
@@ -377,12 +377,12 @@ describe("CM-08 ストーリーの本文の Markdown", () => {
   });
 
   // @vanda:evidence story-links-new-tab
-  it("本文のリンクと置き場所で開くリンクと添付のリンクは新しいタブで開き開いた先から戻れないようにする", async () => {
+  it("本文のリンクとストーリーストアで開くリンクと添付のリンクは新しいタブで開き開いた先から戻れないようにする", async () => {
     open([claimEntry(1, "c-one")], {}, http.get("/api/story", () => HttpResponse.json({ ...story, body: "[資料](https://example.com/doc)" })));
     await screen.findByText(/タスクの ID を重ならないようにする/);
     const links = [
       screen.getByRole("link", { name: "資料" }),
-      screen.getByRole("link", { name: /置き場所で開く/ }),
+      screen.getByRole("link", { name: /ストーリーストアで開く/ }),
       screen.getByRole("link", { name: /画面の案/ }),
     ];
     for (const a of links) {

@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-// vanda と外のもの（.vanda/adapters/ のアダプタ、設定に書いたファイル、GitHub の API）との境目の振る舞い。
+// vanda と外のもの（カスタムアダプタ、設定に書いたファイル、GitHub の API）との境目の振る舞い。
 // ビルドした vanda を一時的な git のリポジトリで動かし、外から確かめる。期待値は約束の文と docs/formats.md から書いた。
 
 // ifaceRepo は、設定（[[layer]] の後に extra を足したもの）と、files（場所 → 中身）と、
@@ -297,7 +297,7 @@ func Test設定のpromisesのパターンに当たるファイルをすべて約
 	}
 }
 
-// CMD-01: vanda doctor は、置き場所が組込みの github なら、GET <api_url>/repos/<repository> を呼んで、Issues が使えるかを確かめる
+// CMD-01: vanda doctor は、ストーリーストアが組込みの github なら、GET <api_url>/repos/<repository> を呼んで、Issues が使えるかを確かめる
 // @vanda:evidence doctor-github-issues
 func Test_vanda_doctorはGitHubのリポジトリを読んでIssuesが使えるかを確かめる(t *testing.T) {
 	t.Parallel()
@@ -438,10 +438,10 @@ func Test_vanda_doctorはapi_urlのホストに合う認証キーで繋ぎ見つ
 	}
 }
 
-// CMD-01: vanda doctor は、置き場所が .vanda/adapters/ のアダプタなら、そこにあって実行できるかを確かめる
+// CMD-01: vanda doctor は、ストーリーストアがカスタムアダプタなら、.vanda/adapters/ にあって実行できるかを確かめる
 // @vanda:evidence doctor-project-adapter
 // @vanda:evidence project-adapter-not-runnable
-func Test_vanda_doctorはストーリーの置き場所のアダプタがあって実行できるかを確かめる(t *testing.T) {
+func Test_vanda_doctorはストーリーストアのカスタムアダプタがあって実行できるかを確かめる(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
@@ -487,8 +487,12 @@ func Test_vanda_doctorはストーリーの置き場所のアダプタがあっ�
 			if (code == 0) != c.ok {
 				t.Errorf("終了コード %d（通るのは %v のはず）\n%s%s", code, c.ok, out, errs)
 			}
-			if c.ok && !strings.Contains(out, "jira") {
-				t.Errorf("確かめたアダプタが出力に出ていない\n%s", out)
+			if c.ok && !strings.Contains(out, "ストーリーストアのカスタムアダプタ jira（") {
+				t.Errorf("確かめたカスタムアダプタが出力に出ていない\n%s", out)
+			}
+			// ないときは、設定を読む所で、組込みにも .vanda/adapters/ にもないという誤りになる
+			if !c.ok && c.adapters != nil && !strings.Contains(errs, "ストーリーストアのカスタムアダプタ jira（") {
+				t.Errorf("誤りに、どのカスタムアダプタかが出ていない\n%s", errs)
 			}
 			if !c.ok && (!strings.Contains(errs, c.where) || !strings.Contains(errs, "ください。")) {
 				t.Errorf("誤りに、場所 %s と直し方が出ていない\n%s", c.where, errs)

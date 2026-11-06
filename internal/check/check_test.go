@@ -463,7 +463,7 @@ const storyAgreement = "[[check]]\nname = \"agreement\"\nscope = \"story\"\n"
 func TestAgreementの範囲storyはそのストーリーで変わったものだけを見る(t *testing.T) {
 	r := goodRepo(t)
 	r.git("checkout", "-q", "-b", "work")
-	// 範囲の外（分かれた点より前から提案中）のものは見ない
+	// 範囲の外（分岐点より前から提案中）のものは見ない
 	r.write(map[string]string{".vanda/agreements.toml": ""})
 	r.commit("(chore) 合意を消す", "#2")
 	pass, out, err := r.run(storyAgreement, "main", "")
@@ -707,7 +707,7 @@ func TestAnnotationLinksは種類ごとに指す先の表が違えば全部の�
 		for table, id := range ids {
 			t.Run(kind+"が"+table, func(t *testing.T) {
 				r := goodRepo(t)
-				// どの種類も書ける .vanda/adapters/ のアダプタで読む
+				// どの種類も書けるカスタムアダプタで読む
 				r.write(map[string]string{
 					".vanda/config.toml":  baseConfig + "\n[[annotation]]\npaths = [\"ext/*.ext\"]\nadapter = \"any\"\ntypes = [\"unit-test\"]\n",
 					".vanda/adapters/any": "#!/bin/sh\ncat >/dev/null\necho '{\"names\":[{\"line\":1,\"name\":\"x\"}]}'\n",
@@ -912,7 +912,7 @@ func TestPromiseListShapeは形式手法を使う機能を対象にする約束�
 }
 
 // 合意の対象のファイルは、どのアダプタで読むかではなく、[[annotation]] の types に scenario-test か model-check を含むかで決まる。
-// .vanda/adapters/ のアダプタで読むシナリオ（E2E など）とオラクルも合意の対象にし、組込みの txtar・tla で読んでも、types が
+// カスタムアダプタで読むシナリオ（E2E など）とオラクルも合意の対象にし、組込みの txtar・tla で読んでも、types が
 // どちらも含まないパターンだけに当たるファイルは合意の対象にしない。どのファイルにもアノテーションは書かない
 //
 // @vanda:evidence check-agreement-targets

@@ -309,7 +309,7 @@ func TestReadは言語ごとに決まった種類のほかを誤りにする(t *
 		}
 	}
 	if len(as) != 1 || as[0].File != "docs/a.md" {
-		t.Errorf(".vanda/adapters/ のアダプタでは、どの種類も書ける: %v", as)
+		t.Errorf("カスタムアダプタでは、どの種類も書ける: %v", as)
 	}
 }
 

@@ -186,7 +186,7 @@ func rvEntryOf(key, kind, change string, others map[string]string) rvEntry {
 	return rvEntry{Kind: kind, Key: k, Change: change, Others: strings.Join(labels, ",")}
 }
 
-// rvBranchView は、レビュー単位がブランチのときの期待値。分かれた点の中身（base）と、作業ツリーの今の中身（cur）を比べる。
+// rvBranchView は、レビュー単位がブランチのときの期待値。分岐点の中身（base）と、作業ツリーの今の中身（cur）を比べる。
 func rvBranchView(base, cur rvState) map[rvEntry]bool {
 	b, a := rvKeyed(base), rvKeyed(cur)
 	return rvDiff(unionKeys(b, a), b, a, nil)

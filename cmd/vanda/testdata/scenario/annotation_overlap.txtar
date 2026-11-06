@@ -9,7 +9,7 @@ expand .vanda/config.toml
 commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/links.toml
 
-# go と、.vanda/adapters/ のアダプタの両方に当たる
+# go と、カスタムアダプタの両方に当たる
 chmod 755 .vanda/adapters/names
 cp cases/config-two.toml .vanda/config.toml
 expand .vanda/config.toml

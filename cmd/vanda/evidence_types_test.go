@@ -32,7 +32,7 @@ var typeKinds = map[string]string{
 // アノテーションの種類の全部（docs/formats.md）
 var annotationKinds = []string{"term", "feature", "claim", "internal", "evidence", "sensor"}
 
-// anyAdapter は、渡された 1 行目のアノテーションに名前を返す .vanda/adapters/ のアダプタ（どの種類も書ける）。
+// anyAdapter は、渡された 1 行目のアノテーションに名前を返すカスタムアダプタ（どの種類も書ける）。
 const anyAdapter = "#!/bin/sh\ncat >/dev/null\nprintf '%s' '{\"names\":[{\"line\":1,\"name\":\"x\"}]}'\n"
 
 // typesRepo は、約束 task-id-unique の予定のタイプを planned にし、ext/a.ext に kind のアノテーションを 1 つ置き、

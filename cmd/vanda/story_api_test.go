@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// CM-08 ストーリーの置き場所（GET /api/story）。GitHub Issues のアダプタを、fake_issues_test.go の偽のサーバーに向ける。
+// CM-08 ストーリーストア（GET /api/story）。GitHub Issues のアダプタを、fake_issues_test.go の偽のサーバーに向ける。
 // 本物の GitHub には繋がない（api_url を偽のサーバーにし、gh も偽のものを PATH の先頭に置く）。
 
 type storyResponse struct {
@@ -57,7 +57,7 @@ func newStorySetup(t *testing.T) *storySetup {
 		t.Fatal(err)
 	}
 	writeFile(t, r.Root, ".vanda/config.toml", string(cfg)+"\n[story]\nadapter = \"github\"\nrepository = \"owner/app\"\napi_url = \""+fake.URL+"\"\n")
-	r.g.commitTracked("設定にストーリーの置き場所を足す", "")
+	r.g.commitTracked("設定にストーリーストアを足す", "")
 	return &storySetup{bin: bin, r: r, fake: fake, gh: fakeGH(t, nil)}
 }
 
@@ -95,7 +95,7 @@ func attachmentList(got storyResponse) []string {
 // CM-08
 // @vanda:evidence story-github-read
 // @vanda:evidence story-github-token
-func Testストーリーの置き場所から題と本文と添付ファイルへのリンクを読める(t *testing.T) {
+func Testストーリーストアから題と本文と添付ファイルへのリンクを読める(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name  string
@@ -171,7 +171,7 @@ func Testストーリーの添付ファイルは決まったURLで始まるリ�
 
 // CM-08: 誤りは、黙って空にせず、理由を出す
 // @vanda:evidence story-errors
-func Testストーリーの置き場所の誤りは理由を画面に出す(t *testing.T) {
+func Testストーリーストアの誤りは理由を画面に出す(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name     string
@@ -179,7 +179,7 @@ func Testストーリーの置き場所の誤りは理由を画面に出す(t *t
 		cut      bool
 		id       string
 		wantCode int
-		wantMsg  string // message に含むもの（置き場所が返した理由）。空なら、空でないことだけを求める
+		wantMsg  string // message に含むもの（ストーリーストアが返した理由）。空なら、空でないことだけを求める
 	}{
 		{"認証の鍵が誤っている", func(*fakeIssues) string { return "gho_wrong" }, false, "#24", 502, "Bad credentials"},
 		{"ghにログインしていない", func(*fakeIssues) string { return "" }, false, "#24", 502, ""},
@@ -204,7 +204,7 @@ func Testストーリーの置き場所の誤りは理由を画面に出す(t *t
 	}
 }
 
-// writeUserAdapter は、.vanda/adapters/ のアダプタ（シェルのスクリプト）を、実行の権限を付けて書く。
+// writeUserAdapter は、カスタムアダプタ（シェルのスクリプト）を、実行の権限を付けて書く。
 func writeUserAdapter(t *testing.T, root, path, body string) {
 	t.Helper()
 	writeFile(t, root, path, "#!/bin/sh\n"+body)
@@ -213,16 +213,16 @@ func writeUserAdapter(t *testing.T, root, path, body string) {
 	}
 }
 
-// ストーリーの置き場所の、.vanda/adapters/ のアダプタ。標準入力をそのまま本文に、引数を題に入れて返す（何が渡ったかを見るため）
+// ストーリーストアの、カスタムアダプタ。標準入力をそのまま本文に、引数を題に入れて返す（何が渡ったかを見るため）
 const userStoryAdapter = `in=$(cat)
 in=$(printf '%s' "$in" | sed 's/"/\\"/g')
 printf '{"title":"args: %s","body":"%s","url":""}' "$*" "$in"
 `
 
-// CM-08: ストーリーの置き場所の.vanda/adapters/ のアダプタは、ファイルの形でもディレクトリの形（直下の run）でも動き、args が渡る。
+// CM-08: ストーリーストアのカスタムアダプタは、ファイルの形でもディレクトリの形（直下の run）でも動き、args が渡る。
 // 組込みのアダプタ（github）と同じ名前なら、.vanda/adapters/ のものを使う
 // @vanda:evidence story-project-adapter
-func Testストーリーの置き場所のvanda_adaptersのアダプタはファイルとディレクトリの形で動きargsが渡り組込みのものより先に使われる(t *testing.T) {
+func Testストーリーストアのカスタムアダプタはファイルとディレクトリの形で動きargsが渡り組込みのものより先に使われる(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name, adapter, path, args, wantTitle string
@@ -245,18 +245,18 @@ func Testストーリーの置き場所のvanda_adaptersのアダプタはファ
 			cfg := fmt.Sprintf(reviewConfig, version) + "\n[story]\nadapter = \"" + c.adapter + "\"\n" + c.args + "\n"
 			writeFile(t, r.Root, ".vanda/config.toml", cfg)
 			writeUserAdapter(t, r.Root, c.path, userStoryAdapter)
-			r.g.commitAll(".vanda/adapters/ のアダプタを置く", "")
+			r.g.commitAll("カスタムアダプタを置く", "")
 			s := startServe(t, bin, r.Root, r.Env)
 			var got storyResponse
 			if code, msg := s.get("/api/story?id="+q("#24"), &got); code != 200 {
 				t.Fatalf("ストーリーを読めない（%d）: %s", code, msg)
 			}
 			if got.Title != c.wantTitle {
-				t.Errorf("題: %q（思ったもの %q。.vanda/adapters/ のアダプタに args が渡っていない）", got.Title, c.wantTitle)
+				t.Errorf("題: %q（思ったもの %q。カスタムアダプタに args が渡っていない）", got.Title, c.wantTitle)
 			}
 			// 標準入力には、docs/formats.md の形で、読むストーリーの ID が来る
 			if !strings.Contains(got.Body, `"action"`) || !strings.Contains(got.Body, `"read"`) || !strings.Contains(got.Body, `#24`) {
-				t.Errorf(".vanda/adapters/ のアダプタの標準入力: %q", got.Body)
+				t.Errorf("カスタムアダプタの標準入力: %q", got.Body)
 			}
 		})
 	}
