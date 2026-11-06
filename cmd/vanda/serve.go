@@ -25,7 +25,7 @@ func newServeCommand() *cobra.Command {
 	var noOpen bool
 	cmd := &cobra.Command{
 		Use:   "serve",
-		Short: "手元のサーバーを起動し、ブラウザで開きます",
+		Short: "vanda サーバーを起動し、ブラウザで開きます",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			root, _, cfg, err := loadCommittedConfig()
@@ -52,14 +52,14 @@ func newServeCommand() *cobra.Command {
 			go func() { done <- srv.Serve(ln) }()
 			select {
 			case err := <-done:
-				return fmt.Errorf("サーバーが止まりました（%v）", err)
+				return fmt.Errorf("vanda サーバーが止まりました（%v）", err)
 			case <-ctx.Done():
 			}
 			if err := srv.Shutdown(context.Background()); err != nil {
-				return fmt.Errorf("サーバーを止められませんでした（%v）", err)
+				return fmt.Errorf("vanda サーバーを止められませんでした（%v）", err)
 			}
 			if err := <-done; err != nil && !errors.Is(err, http.ErrServerClosed) {
-				return fmt.Errorf("サーバーが止まりました（%v）", err)
+				return fmt.Errorf("vanda サーバーが止まりました（%v）", err)
 			}
 			return nil
 		},

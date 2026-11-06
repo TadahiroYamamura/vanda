@@ -1,4 +1,4 @@
-// Package server は、vanda serve の HTTP のサーバー。API と画面のファイルを出す。
+// Package server は、vanda serve が起動する vanda サーバー。API と画面のファイルを出す。
 package server
 
 import (
