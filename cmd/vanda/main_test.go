@@ -12,6 +12,8 @@ import (
 	"testing"
 
 	"github.com/creack/pty"
+
+	"github.com/TadahiroYamamura/vanda/internal/initcmd"
 )
 
 func gitRepo(t *testing.T, config string) string {
@@ -305,5 +307,31 @@ func TestCheckは審査を始める前の誤りを標準エラーに出し結果
 				t.Errorf("標準エラーに審査の結果の行が出た: %q", errs)
 			}
 		})
+	}
+}
+
+// @vanda:evidence init-check-failure-keeps
+func Test_vanda_initは作った設定を読み直して誤りがあれば_vandaを残して直すべき誤りを返す(t *testing.T) {
+	files := [][2]string{
+		{".vanda/config.toml", "version = \"0.1.0\"\n\n[story]\nid_pattern = \"(\"\n"},
+		{".vanda/promises.toml", ""},
+		{".vanda/agreements.toml", ""},
+	}
+	root := gitRepo(t, "")
+	if err := initcmd.Write(root, files); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	err := report(&out, root, files, false)
+	if err == nil || !strings.Contains(err.Error(), ".vanda/config.toml:4: ") || !strings.Contains(err.Error(), "id_pattern") {
+		t.Errorf("作った設定の誤り（4 行目の id_pattern）を返さない: %v", err)
+	}
+	if strings.Contains(out.String(), "作りました") {
+		t.Errorf("誤りがあるのに、作り終えた案内を出した: %q", out.String())
+	}
+	for _, f := range files {
+		if b, rerr := os.ReadFile(filepath.Join(root, f[0])); rerr != nil || string(b) != f[1] {
+			t.Errorf("作った %s が残っていない: %v", f[0], rerr)
+		}
 	}
 }

@@ -1000,6 +1000,7 @@ func Test既定の答えのまま進めると読み取った値で5つのファ�
 // CMD-11: ストーリーストアの選択肢の全部で、問い 3・4 の出方と既定と、書かれる [story] が合う
 // @vanda:evidence init-store-choices
 // @vanda:evidence init-missing-project-adapter
+// @vanda:evidence init-no-store-id-pattern
 func Testストーリーストアの選択肢ごとに問いの出方と既定とstoryの中身が合う(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
