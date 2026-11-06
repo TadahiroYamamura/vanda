@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -949,5 +950,526 @@ func TestAgreementは合意の対象のファイルをアダプタの名前で�
 				t.Errorf("合意の対象でないファイルを足しただけで止まった\n%s", out)
 			}
 		})
+	}
+}
+
+// checkNames は、約束 check-name-known と check-scope-table の文から写した、審査の名前と書ける範囲。
+var checkNames = map[string][]string{
+	"promise-list-shape": {"all"},
+	"annotation-links":   {"all"},
+	"agreement-targets":  {"all"},
+	"unread-files":       {"all"},
+	"story-origin":       {"story"},
+	"agreement":          {"all", "story"},
+	"evidence-present":   {"all", "story"},
+}
+
+// @vanda:evidence check-name-known
+func TestLoadSpecsは決まった審査の名前を受け付けほかの名前を審査の設定の誤りにする(t *testing.T) {
+	for name, scopes := range checkNames {
+		if _, errs := LoadSpecs("c.toml", []byte("[[check]]\nname = \""+name+"\"\nscope = \""+scopes[0]+"\"\n")); errs != nil {
+			t.Errorf("審査 %s が誤りになった: %v", name, errs)
+		}
+	}
+	for _, name := range []string{"Agreement", "agreements", "evidence", "promise_list_shape", "story", "", " agreement"} {
+		_, errs := LoadSpecs("c.toml", []byte("[[check]]\nname = \""+name+"\"\nscope = \"all\"\n"))
+		if errs == nil || !lineWith(errs.Error(), "c.toml:2: ", `"`+name+`"`) {
+			t.Errorf("審査の名前 %q が、name の行を指す誤りにならない: %v", name, errs)
+		}
+	}
+}
+
+// @vanda:evidence check-scope-table
+func TestLoadSpecsは審査ごとに決まった範囲だけを受け付ける(t *testing.T) {
+	for name, scopes := range checkNames {
+		for _, scope := range []string{"all", "story"} {
+			_, errs := LoadSpecs("c.toml", []byte("[[check]]\nname = \""+name+"\"\nscope = \""+scope+"\"\n"))
+			want := contains(scopes, scope)
+			if (errs == nil) != want {
+				t.Errorf("審査 %s の範囲 %s を受け付けるのは %v のはず: %v", name, scope, want, errs)
+			}
+			if !want && (errs == nil || !lineWith(errs.Error(), "c.toml:3: ", name, scope)) {
+				t.Errorf("審査 %s の範囲 %s の誤りが、scope の行を指していない: %v", name, scope, errs)
+			}
+		}
+	}
+}
+
+// @vanda:evidence check-config-unknown-entries-rejected
+func TestLoadSpecsはcheckのほかの表とnameとscopeのほかの項目を審査の設定の誤りにする(t *testing.T) {
+	const ok = "[[check]]\nname = \"agreement\"\nscope = \"all\"\n"
+	cases := []struct{ name, src, prefix, key string }{
+		{"checkの表の決まっていない項目", "[[check]]\nname = \"agreement\"\nscope = \"all\"\nnote = \"x\"\n", "c.toml:4: ", "note"},
+		{"一番上の決まっていない項目", "base = \"main\"\n" + ok, "c.toml:1: ", "base"},
+		{"決まっていない表", ok + "[option]\nfail_fast = true\n", "c.toml:4: ", "option"},
+		{"決まっていない表の配列", ok + "[[rule]]\nname = \"x\"\n", "c.toml:4: ", "rule"},
+		{"checkの中の表", "[[check]]\nname = \"agreement\"\nscope = \"all\"\n[check.extra]\nx = 1\n", "c.toml:4: ", "extra"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, errs := LoadSpecs("c.toml", []byte(c.src))
+			if errs == nil || !lineWith(errs.Error(), c.prefix, c.key) {
+				t.Errorf("%q を指す、%s で始まる誤りにならない: %v", c.key, c.prefix, errs)
+			}
+		})
+	}
+	if _, errs := LoadSpecs("c.toml", []byte(ok)); errs != nil {
+		t.Errorf("name と scope だけの審査の設定が誤りになった: %v", errs)
+	}
+}
+
+// @vanda:evidence check-base-unused-without-story
+func TestRunは範囲storyの審査がなければbaseを使わずないブランチを渡しても誤りにしない(t *testing.T) {
+	r := goodRepo(t)
+	for _, base := range []string{"", "main", "no-such-branch", "origin/nothing"} {
+		pass, out, err := r.run(allChecks, base, "")
+		if err != nil || !pass {
+			t.Errorf("--base %q で止まった: pass=%v err=%v\n%s", base, pass, err, out)
+		}
+	}
+	// 範囲 story の審査があれば、ないブランチは誤り
+	if _, _, err := r.run("[[check]]\nname = \"story-origin\"\nscope = \"story\"\n", "no-such-branch", ""); err == nil || !strings.Contains(err.Error(), "no-such-branch") {
+		t.Errorf("範囲 story の審査で、ないブランチが誤りにならない: %v", err)
+	}
+}
+
+// @vanda:evidence check-output-story-id
+func TestRunは範囲storyのagreementとevidence_presentの結果の行に審査に使ったストーリーのIDを書く(t *testing.T) {
+	r := goodRepo(t)
+	r.git("checkout", "-q", "-b", "work")
+	r.write(map[string]string{"README.md": "x"})
+	r.commit("(docs) 説明を足す", "#7")
+	checks := "[[check]]\nname = \"story-origin\"\nscope = \"story\"\n[[check]]\nname = \"agreement\"\nscope = \"story\"\n[[check]]\nname = \"evidence-present\"\nscope = \"story\"\n[[check]]\nname = \"agreement\"\nscope = \"all\"\n[[check]]\nname = \"evidence-present\"\nscope = \"all\"\n"
+	pass, out, err := r.run(checks, "main", "")
+	if err != nil || !pass {
+		t.Fatalf("pass=%v err=%v\n%s", pass, err, out)
+	}
+	want := "審査 story-origin（story）: 通った\n審査 agreement（story #7）: 通った\n審査 evidence-present（story #7）: 通った\n審査 agreement（all）: 通った\n審査 evidence-present（all）: 通った\n"
+	if out != want {
+		t.Errorf("結果の行:\n%s\n--- 思ったもの\n%s", out, want)
+	}
+	// 失敗の行にも書く。ストーリーは --story で選んだもの
+	r.write(map[string]string{".vanda/promises.toml": strings.Replace(basePromises, "やること", "すること", 1)})
+	r.commit("(feat) 用語を変える", "#8")
+	_, out, err = r.run(checks, "main", "#8")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect(t, out, [][]string{{"審査 agreement（story #8）: 失敗（1 件）"}, {"審査 evidence-present（story #8）: 通った"}, {"審査 story-origin（story）: 通った"}})
+}
+
+// @vanda:evidence branch-point-merge-base
+func Test範囲storyの審査はベースブランチとHEADのmerge_baseを分岐点にする(t *testing.T) {
+	r := goodRepo(t)
+	r.git("checkout", "-q", "-b", "work")
+	r.write(map[string]string{"README.md": "x"})
+	r.commit("(docs) 説明を足す", "#2")
+	// 分岐した後に、ベースブランチにだけ合意していない用語を足す。ベースブランチの先端と比べると、HEAD にない用語として
+	// 消したことへの合意を求めるが、分岐点と比べれば、このストーリーでは何も変わっていない
+	r.git("checkout", "-q", "main")
+	r.write(map[string]string{".vanda/promises.toml": basePromises + "\n[[term]]\nid = \"later\"\nname = \"後の用語\"\ndefinition = \"ベースブランチにだけある\"\n"})
+	r.commit("(feat) 用語を足す", "#3")
+	r.git("checkout", "-q", "work")
+	checks := "[[check]]\nname = \"agreement\"\nscope = \"story\"\n[[check]]\nname = \"evidence-present\"\nscope = \"story\"\n"
+	if pass, out, err := r.run(checks, "main", ""); err != nil || !pass {
+		t.Fatalf("ベースブランチにだけある変更で止まった: pass=%v err=%v\n%s", pass, err, out)
+	}
+	// 分岐点より後に HEAD で変えたものは見る
+	r.write(map[string]string{".vanda/promises.toml": strings.Replace(basePromises, "やること", "すること", 1)})
+	r.commit("(feat) 用語を変える", "#2")
+	_, out, err := r.run(checks, "main", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect(t, out, [][]string{{"審査 agreement（story #2）: 失敗（1 件）"}, {".vanda/promises.toml:2: ", "用語 task"}})
+	if strings.Contains(out, "later") {
+		t.Errorf("ベースブランチにだけある用語が出た\n%s", out)
+	}
+	// ベースブランチを HEAD に取り込むと、分岐点が進み、取り込んだ用語はこのストーリーで変わったものにならない
+	r.git("-c", "core.editor=true", "merge", "-q", "--no-edit", "main")
+	_, out, err = r.run(checks, "main", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect(t, out, [][]string{{"審査 agreement（story #2）: 失敗（1 件）"}})
+	if strings.Contains(out, "later") {
+		t.Errorf("取り込んだ用語が、このストーリーで変わったものとして出た\n%s", out)
+	}
+}
+
+// @vanda:evidence check-guardrail-file-missing
+func TestAgreementはguardrailのpathsに書いたワイルドカードのない場所のファイルがなければ誤りにする(t *testing.T) {
+	r := goodRepo(t)
+	r.write(map[string]string{".vanda/config.toml": strings.Replace(baseConfig, `paths = ["db/schema.sql"]`, `paths = ["db/schema.sql", "db/missing.sql", "db/*.none", "db/**/*.ddl"]`, 1)})
+	r.commit("(test) ないガードレールの定義を設定に書く", "")
+	pass, out, _ := r.run("[[check]]\nname = \"agreement\"\nscope = \"all\"\n", "", "")
+	if pass {
+		t.Fatalf("ないガードレールの定義があるのに通った\n%s", out)
+	}
+	expect(t, out, [][]string{{"審査 agreement（all）: 失敗（1 件）"}, {"db/missing.sql"}})
+	// ワイルドカードのあるパターンが何にも当たらないのは誤りにしない
+	if strings.Contains(out, "*.none") || strings.Contains(out, ".ddl") {
+		t.Errorf("何にも当たらないワイルドカードのパターンが誤りになった\n%s", out)
+	}
+}
+
+// @vanda:evidence check-load-errors-owner
+func Test約束リストとアノテーションと合意の記録の読み込みの誤りとエラーはそれぞれの審査だけが出す(t *testing.T) {
+	cases := []struct {
+		name, file, body string
+		owner, line      string // 誤りを出す審査と、その誤りの行の頭（TOML として読めないエラーの行は、読み手の見つけた所なので決めない）
+	}{
+		{"約束リストのエラー", ".vanda/promises.toml", "[[term]\n", "promise-list-shape", ".vanda/promises.toml:"},
+		{"約束リストの誤り", ".vanda/promises.toml", strings.Replace(basePromises, `subjects = ["task"]`, `subjects = "task"`, 1), "promise-list-shape", ".vanda/promises.toml:13: "},
+		{"アノテーションの誤り", "x/task_test.go", "package x\n\n// @vanda:evidence a b\nfunc TestUnique(t *testing.T) {}\n", "annotation-links", "x/task_test.go:3: "},
+		{"合意の記録のエラー", ".vanda/agreements.toml", "[[agreement]\n", "agreement-targets", ".vanda/agreements.toml:"},
+		{"合意の記録の誤り", ".vanda/agreements.toml", "[[agreement]]\nkind = \"story\"\nkey = \"task\"\nfingerprint = \"sha256:0000000000000000000000000000000000000000000000000000000000000000\"\nuser = { name = \"PO\", email = \"po@example.com\" }\nagreed_at = 2026-10-31T12:00:00Z\nstory = \"#1\"\n", "agreement-targets", ".vanda/agreements.toml:2: "},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			r := goodRepo(t)
+			r.write(map[string]string{c.file: c.body})
+			r.commit("(test) 読み込みで誤る入力にする", "")
+			for name := range checkNames {
+				if name == "story-origin" {
+					continue
+				}
+				_, out, err := r.run("[[check]]\nname = \""+name+"\"\nscope = \"all\"\n", "", "")
+				if err != nil {
+					t.Fatalf("審査 %s を始める前に止まった: %v", name, err)
+				}
+				if got := lineWith(out, c.line); got != (name == c.owner) {
+					t.Errorf("審査 %s が %s の誤りを出したか: %v（出すのは %s だけのはず）\n%s", name, c.line, got, c.owner, out)
+				}
+			}
+		})
+	}
+}
+
+// @vanda:evidence agreements-default-file-may-be-absent
+func TestAgreementTargetsは設定にagreementsを書かず既定のファイルがなければ合意の記録を空とみなす(t *testing.T) {
+	r := goodRepo(t)
+	r.git("rm", "-q", ".vanda/agreements.toml")
+	r.commit("(test) 合意の記録のファイルを消す", "")
+	checks := "[[check]]\nname = \"agreement-targets\"\nscope = \"all\"\n[[check]]\nname = \"agreement\"\nscope = \"all\"\n"
+	_, out, err := r.run(checks, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 合意の記録が空なので、合意の対象はすべて提案中。ファイルがないことは誤りにしない
+	expect(t, out, [][]string{
+		{"審査 agreement-targets（all）: 通った"},
+		{"審査 agreement（all）: 失敗（"},
+		{".vanda/promises.toml:2: ", "用語 task の今の中身", "まだ合意していません"},
+		{".vanda/promises.toml:12: ", "約束 task-unique の今の中身", "まだ合意していません"},
+	})
+	if strings.Contains(out, ".vanda/agreements.toml") {
+		t.Errorf("既定の合意の記録のファイルがないことが誤りになった\n%s", out)
+	}
+	// 設定にはっきり書いたなら、ないファイルは誤り
+	r.write(map[string]string{".vanda/config.toml": strings.Replace(baseConfig, `version = "0.1.0"`, "version = \"0.1.0\"\nagreements = [\".vanda/agreements.toml\"]", 1)})
+	r.commit("(test) 合意の記録のファイルを設定に書く", "")
+	_, out, _ = r.run(checks, "", "")
+	if !lineWith(out, ".vanda/agreements.toml") {
+		t.Errorf("設定に書いた合意の記録のファイルがないのに誤りにならない\n%s", out)
+	}
+}
+
+// agreementTargetsWith は、合意の記録の先頭に records を足し、agreement-targets だけを行う。
+func agreementTargetsWith(t *testing.T, records string) (bool, string) {
+	t.Helper()
+	r := goodRepo(t)
+	r.agreeAll("#1", r.config(), records)
+	r.commit("(test) 合意の記録を足す", "")
+	pass, out, err := r.run("[[check]]\nname = \"agreement-targets\"\nscope = \"all\"\n", "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pass, out
+}
+
+const zeroFP = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+
+func recordOf(fields ...string) string {
+	return "[[agreement]]\n" + strings.Join(fields, "\n") + "\n\n"
+}
+
+// @vanda:evidence agreements-fingerprint-shape
+func TestAgreementTargetsは合意の記録のfingerprintがsha256と16進の小文字64文字でなければ誤りにする(t *testing.T) {
+	hex64 := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+	rec := func(fp string) string {
+		return recordOf(`kind = "claim"`, `key = "task-unique"`, `fingerprint = "`+fp+`"`, `user = { name = "PO", email = "po@example.com" }`, `agreed_at = 2026-10-31T12:00:00Z`, `story = "#1"`)
+	}
+	for _, fp := range []string{
+		"sha256:" + strings.ToUpper(hex64),
+		"sha256:" + hex64[:63],
+		"sha256:" + hex64 + "0",
+		"sha256:" + strings.Repeat("g", 64),
+		"SHA256:" + hex64,
+		"sha-256:" + hex64,
+		"sha1:" + hex64,
+		hex64,
+		"sha256: " + hex64,
+		"sha256:" + hex64[:32] + "-" + hex64[33:],
+		"",
+	} {
+		if pass, out := agreementTargetsWith(t, rec(fp)); pass || !lineWith(out, ".vanda/agreements.toml:4: ", "fingerprint") {
+			t.Errorf("fingerprint %q が、その行（4 行目）を指す誤りにならない\n%s", fp, out)
+		}
+	}
+	for _, fp := range []string{"sha256:" + hex64, zeroFP, "sha256:" + strings.Repeat("f", 64)} {
+		if pass, out := agreementTargetsWith(t, rec(fp)); !pass {
+			t.Errorf("決まった形の fingerprint %q が誤りになった\n%s", fp, out)
+		}
+	}
+}
+
+// @vanda:evidence agreements-required-fields
+func TestAgreementTargetsは合意の記録の必須の項目がないかkindが決まった値でなければ誤りにする(t *testing.T) {
+	full := map[string]string{
+		"kind":        `kind = "claim"`,
+		"key":         `key = "task-unique"`,
+		"fingerprint": `fingerprint = "` + zeroFP + `"`,
+		"user":        `user = { name = "PO", email = "po@example.com" }`,
+		"agreed_at":   `agreed_at = 2026-10-31T12:00:00Z`,
+		"story":       `story = "#1"`,
+	}
+	order := []string{"kind", "key", "fingerprint", "user", "agreed_at", "story"}
+	without := func(drop, user string) string {
+		var fs []string
+		for _, k := range order {
+			switch {
+			case k == drop:
+			case k == "user" && user != "":
+				fs = append(fs, user)
+			default:
+				fs = append(fs, full[k])
+			}
+		}
+		return recordOf(fs...)
+	}
+	for _, k := range order {
+		if pass, out := agreementTargetsWith(t, without(k, "")); pass || !lineWith(out, ".vanda/agreements.toml:", k) {
+			t.Errorf("%s がない合意の記録が、%s を示す誤りにならない\n%s", k, k, out)
+		}
+	}
+	for name, user := range map[string]string{
+		"name":  `user = { email = "po@example.com" }`,
+		"email": `user = { name = "PO" }`,
+	} {
+		if pass, out := agreementTargetsWith(t, without("", user)); pass || !lineWith(out, ".vanda/agreements.toml:", "user の "+name) {
+			t.Errorf("user の %s がない合意の記録が誤りにならない\n%s", name, out)
+		}
+	}
+	// kind の決まった値は claim・term・feature・file
+	valid := map[string]string{
+		"claim":   recordOf(`kind = "claim"`, `key = "task-unique"`, `fingerprint = "`+zeroFP+`"`, full["user"], full["agreed_at"], full["story"]),
+		"term":    recordOf(`kind = "term"`, `key = "task"`, `fingerprint = "`+zeroFP+`"`, full["user"], full["agreed_at"], full["story"]),
+		"feature": recordOf(`kind = "feature"`, `key = "add-task"`, `fingerprint = "`+zeroFP+`"`, full["user"], full["agreed_at"], full["story"]),
+		"file":    recordOf(`kind = "file"`, `key = "`+zeroFP+`"`, `fingerprint = "`+zeroFP+`"`, `path = "e2e/add.txtar"`, full["user"], full["agreed_at"], full["story"]),
+	}
+	for kind, rec := range valid {
+		if pass, out := agreementTargetsWith(t, rec); !pass {
+			t.Errorf("kind = %q の合意の記録が誤りになった\n%s", kind, out)
+		}
+	}
+	for _, kind := range []string{"story", "Claim", "files", "evidence", ""} {
+		rec := strings.Replace(valid["claim"], `kind = "claim"`, `kind = "`+kind+`"`, 1)
+		if pass, out := agreementTargetsWith(t, rec); pass || !lineWith(out, ".vanda/agreements.toml:2: ", "kind", `"`+kind+`"`) {
+			t.Errorf("kind = %q が、kind の行を指す誤りにならない\n%s", kind, out)
+		}
+	}
+}
+
+// shapeOf は、約束リストを promises にして、promise-list-shape だけを行う。
+func shapeOf(t *testing.T, r *repoT, promises string) (bool, string) {
+	t.Helper()
+	r.write(map[string]string{".vanda/promises.toml": promises})
+	r.commit("(test) 約束リストを置き換える", "")
+	pass, out, err := r.run("[[check]]\nname = \"promise-list-shape\"\nscope = \"all\"\n", "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pass, out
+}
+
+// minimalPromises は、省いてよい項目をすべて省いた約束リスト。行は、用語の id が 2 行目、機能の id が 7 行目、
+// 約束の id が 12 行目、エビデンスの stage が 18 行目
+const minimalPromises = `[[term]]
+id = "task"
+name = "タスク"
+definition = "やること"
+
+[[feature]]
+id = "add-task"
+name = "タスクの登録"
+definition = "タスクを足す"
+
+[[claim]]
+id = "c"
+subjects = ["task"]
+statement = "s"
+layers = ["model"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+`
+
+// @vanda:evidence promise-list-required-field-names
+func TestPromiseListShapeは用語と機能と約束とエビデンスの必須の項目がなければ誤りにし省いてよい項目は省いても通す(t *testing.T) {
+	r := goodRepo(t)
+	if pass, out := shapeOf(t, r, minimalPromises); !pass {
+		t.Fatalf("省いてよい項目を省いた約束リストが通らない\n%s", out)
+	}
+	cases := []struct {
+		name, line, key string
+	}{
+		{"用語のid", `id = "task"`, "id"},
+		{"用語のname", `name = "タスク"`, "name"},
+		{"用語のdefinition", `definition = "やること"`, "definition"},
+		{"機能のid", `id = "add-task"`, "id"},
+		{"機能のname", `name = "タスクの登録"`, "name"},
+		{"機能のdefinition", `definition = "タスクを足す"`, "definition"},
+		{"約束のid", `id = "c"`, "id"},
+		{"約束のsubjects", `subjects = ["task"]`, "subjects"},
+		{"約束のstatement", `statement = "s"`, "statement"},
+		{"約束のlayers", "statement = \"s\"\nlayers = [\"model\"]", "layers"},
+		{"約束のevidence", "\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]", "evidence"},
+		{"エビデンスのstage", `stage = "implementation"`, "stage"},
+		{"エビデンスのtype", `type = "unit-test"`, "type"},
+		{"エビデンスのlayers", "type = \"unit-test\"\nlayers = [\"model\"]", "layers"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			// 消す行が 2 か所に当たるもの（layers）は、直前の行と組にして 1 か所にする
+			src := strings.Replace(minimalPromises, c.line+"\n", keepFirstLine(c.line), 1)
+			if src == minimalPromises {
+				t.Fatalf("約束リストに %q がない", c.line)
+			}
+			if pass, out := shapeOf(t, r, src); pass || !lineWith(out, ".vanda/promises.toml:", c.key, "ありません") {
+				t.Errorf("%s がない約束リストが、%s がないことを示す誤りにならない\n%s", c.name, c.key, out)
+			}
+		})
+	}
+}
+
+// keepFirstLine は、複数行の s のうち、最後の行を除いたもの（改行付き）を返す。1 行なら空を返す。
+func keepFirstLine(s string) string {
+	i := strings.LastIndex(s, "\n")
+	if i < 0 {
+		return ""
+	}
+	return s[:i+1]
+}
+
+// @vanda:evidence promise-list-non-empty
+func TestPromiseListShapeは約束のsubjectsとlayersとevidenceとエビデンスのlayersが空なら誤りにする(t *testing.T) {
+	r := goodRepo(t)
+	cases := []struct {
+		name, from, to, prefix, key string
+	}{
+		{"約束のsubjects", `subjects = ["task"]`, `subjects = []`, ".vanda/promises.toml:13: ", "subjects"},
+		{"約束のlayers", "statement = \"s\"\nlayers = [\"model\"]", "statement = \"s\"\nlayers = []", ".vanda/promises.toml:15: ", "layers"},
+		{"約束のevidence", "layers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", "layers = [\"model\"]\nevidence = []\n", ".vanda/promises.toml:16: ", "evidence"},
+		{"エビデンスのlayers", "type = \"unit-test\"\nlayers = [\"model\"]", "type = \"unit-test\"\nlayers = []", ".vanda/promises.toml:20: ", "layers"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			src := strings.Replace(minimalPromises, c.from, c.to, 1)
+			if src == minimalPromises {
+				t.Fatalf("約束リストに %q がない", c.from)
+			}
+			if pass, out := shapeOf(t, r, src); pass || !lineWith(out, c.prefix, c.key) {
+				t.Errorf("空の %s が、%s で始まる誤りにならない\n%s", c.key, c.prefix, out)
+			}
+		})
+	}
+}
+
+// @vanda:evidence promise-list-field-types
+func TestPromiseListShapeは約束リストの項目が決まった型でなければ誤りにする(t *testing.T) {
+	r := goodRepo(t)
+	// 型の違う値に置き換える行。置き換えた行を指す誤りになる
+	cases := []struct {
+		name, from, to string
+		line           int
+	}{
+		{"用語のidが整数", `id = "task"`, `id = 1`, 2},
+		{"用語のnameが真偽", `name = "タスク"`, `name = true`, 3},
+		{"用語のdefinitionが配列", `definition = "やること"`, `definition = ["やること"]`, 4},
+		{"用語のpart_ofが整数", `definition = "やること"`, "definition = \"やること\"\npart_of = 1", 5},
+		{"機能のcoreが文字列", `definition = "タスクを足す"`, "definition = \"タスクを足す\"\ncore = \"yes\"", 10},
+		{"機能のformalが整数", `definition = "タスクを足す"`, "definition = \"タスクを足す\"\nformal = 1", 10},
+		{"機能のformal_waiverが真偽", `definition = "タスクを足す"`, "definition = \"タスクを足す\"\ncore = true\nformal = false\nformal_waiver = true", 12},
+		{"約束のsubjectsが文字列", `subjects = ["task"]`, `subjects = "task"`, 13},
+		{"約束のsubjectsに整数", `subjects = ["task"]`, `subjects = [1]`, 13},
+		{"約束のstatementが整数", `statement = "s"`, `statement = 1`, 14},
+		{"約束のlayersが文字列", "statement = \"s\"\nlayers = [\"model\"]", "statement = \"s\"\nlayers = \"model\"", 15},
+		{"約束のrationaleが整数", `statement = "s"`, "statement = \"s\"\nrationale = 1", 15},
+		{"約束のconditionが配列", `statement = "s"`, "statement = \"s\"\ncondition = [\"c\"]", 15},
+		{"約束のflagsが文字列", `statement = "s"`, "statement = \"s\"\nflags = \"ai-proposal\"", 15},
+		{"約束のguessesが表", `statement = "s"`, "statement = \"s\"\nguesses = { a = \"g\" }", 15},
+		{"約束のevidenceが文字列", "layers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", "layers = [\"model\"]\nevidence = \"unit-test\"\n", 16},
+		{"エビデンスのstageが整数", `stage = "implementation"`, `stage = 1`, 18},
+		{"エビデンスのtypeが真偽", `type = "unit-test"`, `type = true`, 19},
+		{"エビデンスのlayersが文字列", "type = \"unit-test\"\nlayers = [\"model\"]", "type = \"unit-test\"\nlayers = \"model\"", 20},
+		{"エビデンスのdetailが整数", "type = \"unit-test\"\nlayers = [\"model\"]", "type = \"unit-test\"\nlayers = [\"model\"]\ndetail = 1", 21},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			src := strings.Replace(minimalPromises, c.from, c.to, 1)
+			if src == minimalPromises {
+				t.Fatalf("約束リストに %q がない", c.from)
+			}
+			prefix := ".vanda/promises.toml:" + strconv.Itoa(c.line) + ": "
+			if pass, out := shapeOf(t, r, src); pass || !lineWith(out, prefix) {
+				t.Errorf("%s で始まる誤りにならない\n%s", prefix, out)
+			}
+		})
+	}
+	// 決まった型の値なら通る
+	ok := strings.NewReplacer(
+		`definition = "やること"`+"\n", "definition = \"やること\"\npart_of = \"task\"\n",
+		`definition = "タスクを足す"`+"\n", "definition = \"タスクを足す\"\ncore = true\nformal = false\nformal_waiver = \"状態を持たないため\"\n",
+		`statement = "s"`+"\n", "statement = \"s\"\nrationale = \"r\"\ncondition = \"c\"\nflags = [\"ai-proposal\"]\nguesses = [\"g\"]\n",
+	).Replace(minimalPromises) + "detail = \"d\"\n"
+	// part_of が自分を指すと循環になるので、別の用語を指させる
+	ok = strings.Replace(ok, `part_of = "task"`, `part_of = "whole"`, 1) + "\n[[term]]\nid = \"whole\"\nname = \"全体\"\ndefinition = \"まとまり\"\n"
+	if pass, out := shapeOf(t, r, ok); !pass {
+		t.Errorf("決まった型で書いた約束リストが通らない\n%s", out)
+	}
+}
+
+// @vanda:evidence promise-list-fixed-value-list
+func TestPromiseListShapeは決まった値のstageとtypeとflagsを受け付けほかの値を誤りにする(t *testing.T) {
+	r := goodRepo(t)
+	values := []struct {
+		key, from string
+		good, bad []string
+	}{
+		{"stage", `stage = "implementation"`, []string{"plan", "implementation", "release", "operation"}, []string{"Plan", "impl", "test", "someday", ""}},
+		{"type", `type = "unit-test"`, []string{"model-check", "proof", "cross-check", "random-check", "scenario-test", "unit-test", "interface-test", "concurrency-test", "guardrail", "sensor", "human-review"},
+			[]string{"e2e", "unit", "Unit-test", "monitoring", "smoke-test", ""}},
+		{"flags", `statement = "s"`, []string{"ai-proposal"}, []string{"AI-proposal", "ai_proposal", "proposal", "human", ""}},
+	}
+	for _, v := range values {
+		write := func(val string) string {
+			if v.key == "flags" {
+				return strings.Replace(minimalPromises, v.from, v.from+"\nflags = [\""+val+"\"]", 1)
+			}
+			return strings.Replace(minimalPromises, v.from, v.key+" = \""+val+"\"", 1)
+		}
+		for _, val := range v.good {
+			if _, out := shapeOf(t, r, write(val)); lineWith(out, ".vanda/promises.toml:", `"`+val+`"`, "決まった値") {
+				t.Errorf("%s の %q が、決まった値でない誤りになった\n%s", v.key, val, out)
+			}
+		}
+		for _, val := range v.bad {
+			if pass, out := shapeOf(t, r, write(val)); pass || !lineWith(out, ".vanda/promises.toml:", `"`+val+`"`, "決まった値") {
+				t.Errorf("%s の %q が、決まった値でない誤りにならない\n%s", v.key, val, out)
+			}
+		}
 	}
 }
