@@ -1,0 +1,77 @@
+# CMD-03: 設定の誤り、版の違い、審査の設定の誤り、--base・--story の誤りは、審査を始める前に標準エラーに出し、
+# 審査ごとの結果の行を出さずに終了コード 1 で終わる。
+# @vanda:evidence check-errors-before-run
+
+exec git init -q -b main
+expand .vanda/config.toml
+commit '約束リストを置く' '#1'
+exec git checkout -q -b story-2
+cp cases/note.txt note.txt
+commit 'メモを足す' '#2'
+
+# 誤りがなければ、結果の行を出して通る（この後の止まり方が、誤りによるものだと言えるようにするため）
+exec vanda check .vanda/checks/story.toml --base main
+stdout '^審査 agreement（story #2）: 通った$'
+
+# --base がない
+! exec vanda check .vanda/checks/story.toml
+! stdout .
+stderr '--base'
+! stderr '(?m)^審査 '
+
+# --base のブランチがない
+! exec vanda check .vanda/checks/story.toml --base no-such-branch
+! stdout .
+stderr 'no-such-branch'
+
+# --story の形が、ストーリーの ID の書き方に合わない
+! exec vanda check .vanda/checks/story.toml --base main --story 2
+! stdout .
+stderr '--story 2'
+
+# --story が、トレーラーのストーリーと違う
+! exec vanda check .vanda/checks/story.toml --base main --story '#9'
+! stdout .
+stderr '#9'
+
+# 審査の設定の誤り
+! exec vanda check .vanda/checks/broken.toml
+! stdout .
+stderr 'broken\.toml:2: '
+
+# 設定の誤り
+cp cases/config-extra.toml .vanda/config.toml
+expand .vanda/config.toml
+commit '設定に決まっていない項目を足す' '#2'
+! exec vanda check .vanda/checks/story.toml --base main
+! stdout .
+stderr 'config\.toml:2: '
+
+# 版の違い
+cp cases/config-newer.toml .vanda/config.toml
+expand .vanda/config.toml
+commit '設定の版を上げる' '#2'
+! exec vanda check .vanda/checks/story.toml --base main
+! stdout .
+stderr $VANDA_VERSION_NEWER
+! stderr '(?m)^panic: '
+
+-- .vanda/config.toml --
+version = "${VANDA_VERSION}"
+-- .vanda/checks/story.toml --
+[[check]]
+name = "agreement"
+scope = "story"
+-- .vanda/checks/broken.toml --
+[[check]]
+name = "nope"
+scope = "all"
+-- .vanda/promises.toml --
+-- .vanda/agreements.toml --
+-- cases/note.txt --
+メモ
+-- cases/config-extra.toml --
+version = "${VANDA_VERSION}"
+extra = 1
+-- cases/config-newer.toml --
+version = "${VANDA_VERSION_NEWER}"

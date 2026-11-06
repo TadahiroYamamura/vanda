@@ -264,3 +264,46 @@ func Test端末かどうかは端末の属性で決まり_dev_nullもパイプ�
 		}
 	}
 }
+
+// @vanda:evidence check-errors-before-run
+func TestCheckは審査を始める前の誤りを標準エラーに出し結果の行を出さずに終了コード1で終わる(t *testing.T) {
+	const okConfig = "version = \"0.1.0\"\n"
+	const storyChecks = "[[check]]\nname = \"agreement\"\nscope = \"story\"\n"
+	const allChecks = "[[check]]\nname = \"unread-files\"\nscope = \"all\"\n"
+	cases := []struct {
+		name, config, checks string
+		args                 []string
+		want                 string // 標準エラーに出るはずのもの
+	}{
+		{"設定の誤り", okConfig + "extra = 1\n", allChecks, nil, ".vanda/config.toml:2: "},
+		{"版の違い", "version = \"9.9.9\"\n", allChecks, nil, "9.9.9"},
+		{"審査の設定の誤り", okConfig, "[[check]]\nname = \"nope\"\nscope = \"all\"\n", nil, "c.toml:2: "},
+		{"--baseがない", okConfig, storyChecks, nil, "--base"},
+		{"--baseのブランチがない", okConfig, storyChecks, []string{"--base", "no-such-branch"}, "no-such-branch"},
+		{"--storyの形の誤り", okConfig, allChecks, []string{"--story", "24"}, "--story 24"},
+		{"--storyがトレーラーと違う", okConfig, storyChecks, []string{"--base", "main", "--story", "#9"}, "#9"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			dir := gitRepo(t, c.config)
+			if out, err := exec.Command("git", "-C", dir, "branch", "-m", "main").CombinedOutput(); err != nil {
+				t.Fatalf("git branch: %v %s", err, out)
+			}
+			if err := os.WriteFile(filepath.Join(dir, "c.toml"), []byte(c.checks), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			commitIn(t, dir, "はじめ")
+			if out, err := exec.Command("git", "-C", dir, "checkout", "-q", "-b", "work").CombinedOutput(); err != nil {
+				t.Fatalf("git checkout: %v %s", err, out)
+			}
+			commitIn(t, dir, "作業\n\nStory: #2")
+			code, out, errs := runIn(t, dir, append([]string{"check", "c.toml"}, c.args...)...)
+			if code != 1 || out != "" || !strings.Contains(errs, c.want) {
+				t.Errorf("code %d（1 のはず）, 標準出力 %q（空のはず）, 標準エラー %q（%q を含むはず）", code, out, errs, c.want)
+			}
+			if strings.HasPrefix(errs, "審査 ") || strings.Contains(errs, "\n審査 ") {
+				t.Errorf("標準エラーに審査の結果の行が出た: %q", errs)
+			}
+		})
+	}
+}

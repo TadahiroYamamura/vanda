@@ -3,6 +3,8 @@
 # @vanda:evidence check-base-required-for-story
 # @vanda:evidence check-story-from-commits
 # @vanda:evidence story-id-from-trailer
+# @vanda:evidence check-base-unused-without-story
+# @vanda:evidence check-output-story-id
 # 範囲を「1 つのストーリー」にする審査を含む設定では、--base も必須。範囲が全部の審査だけなら、渡さなくてよい。
 
 exec git init -q -b main
@@ -20,6 +22,11 @@ stderr 'no-such\.toml'
 
 # 範囲が全部の審査だけなら、--base なしで通る
 exec vanda check .vanda/checks/all.toml
+! stdout '（story'
+
+# 範囲が全部の審査だけなら、--base を使わないので、ないブランチを渡しても通る
+exec vanda check .vanda/checks/all.toml --base no-such-branch
+stdout '^審査 promise-list-shape（all）: 通った$'
 
 # 範囲を 1 つのストーリーにする審査を含むのに --base がない
 ! exec vanda check .vanda/checks/story.toml
@@ -39,11 +46,15 @@ stderr '--story'
 ! stderr '(?m)^panic: '
 exec vanda check .vanda/checks/story.toml --base main --story '#2'
 
-# ID が 1 つなら、それを使って通る
+# ID が 1 つなら、それを使って通る。範囲 story の agreement・evidence-present の結果の行には、範囲の後に審査に使ったストーリーの ID を書く
 cp cases/note-1.txt note.txt
 commit 'メモを足す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
+stdout '^審査 agreement（story #2）: 通った$'
 exec vanda check .vanda/checks/mixed.toml --base main
+stdout '^審査 promise-list-shape（all）: 通った$'
+stdout '^審査 agreement（story #2）: 通った$'
+stdout '^審査 evidence-present（story #2）: 通った$'
 
 # 分岐点より後のコミットに、トレーラーのないものが混じっても、ID が 1 つなら通る。subject に書いた #9 は数えない
 cp cases/note-2.txt note.txt
@@ -57,6 +68,9 @@ commit 'メモを足す' '#3'
 stderr '--story'
 ! stderr '(?m)^panic: '
 exec vanda check .vanda/checks/story.toml --base main --story '#2'
+stdout '^審査 agreement（story #2）: 通った$'
+exec vanda check .vanda/checks/story.toml --base main --story '#3'
+stdout '^審査 agreement（story #3）: 通った$'
 
 -- .vanda/config.toml --
 version = "${VANDA_VERSION}"
@@ -80,6 +94,10 @@ scope = "all"
 
 [[check]]
 name = "agreement"
+scope = "story"
+
+[[check]]
+name = "evidence-present"
 scope = "story"
 -- .vanda/promises.toml --
 [[term]]
