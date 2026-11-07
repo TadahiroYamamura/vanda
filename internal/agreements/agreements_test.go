@@ -132,7 +132,7 @@ story = "#25"
 name = "PO"
 email = "po@example.com"
 `})
-	r, errs := Load(root, files, []string{".vanda/agreements.toml"}, false)
+	r, errs := Load(root, files, []string{".vanda/agreements.toml"})
 	if errs != nil {
 		t.Fatal(errs)
 	}
@@ -179,7 +179,7 @@ user = { name = "PO" }
 agreed_at = 2026-10-31T12:00:00Z
 story = "#24"
 `})
-	_, errs := Load(root, files, []string{".vanda/agreements.toml"}, false)
+	_, errs := Load(root, files, []string{".vanda/agreements.toml"})
 	want := [][]string{
 		{".vanda/agreements.toml:2: ", `kind "story"`, "決まった値"},
 		{".vanda/agreements.toml:4: ", `fingerprint "md5:abc"`, "指紋の形"},
@@ -207,7 +207,7 @@ const userLine = "user = { name = \"PO\", email = \"po@example.com\" }\nagreed_a
 func TestLoadは消したことへの合意の記録をfingerprintの代わりにdeletedで読み中身への合意と分けて数える(t *testing.T) {
 	root, files := writeFiles(t, map[string]string{".vanda/agreements.toml": "[[agreement]]\nkind = \"file\"\nkey = \"e2e/old.txtar\"\ndeleted = true\npath = \"e2e/old.txtar\"\n" + userLine +
 		"\n[[agreement]]\nkind = \"claim\"\nkey = \"gone\"\ndeleted = true\n" + userLine})
-	r, errs := Load(root, files, []string{".vanda/agreements.toml"}, false)
+	r, errs := Load(root, files, []string{".vanda/agreements.toml"})
 	if errs != nil {
 		t.Fatal(errs)
 	}
@@ -257,7 +257,7 @@ func TestLoadは消したことへの合意の記録の形の誤りを行の付�
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			root, files := writeFiles(t, map[string]string{".vanda/agreements.toml": c.body})
-			_, errs := Load(root, files, []string{".vanda/agreements.toml"}, false)
+			_, errs := Load(root, files, []string{".vanda/agreements.toml"})
 			if errs == nil {
 				t.Fatalf("誤りにならない:\n%s", c.body)
 			}

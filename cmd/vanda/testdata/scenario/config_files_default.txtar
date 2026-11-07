@@ -3,7 +3,8 @@
 # @vanda:evidence promise-list-explicit-file-must-exist
 # @vanda:evidence doctor-ok-line
 # 合意の記録は .vanda/agreements.toml を読む。
-# 既定のファイルがないときは空とみなし、誤りにしない。設定にはっきり書いた、ワイルドカードのないパターンのファイルがないときは誤り。
+# 既定のファイルがないときは空とみなし、誤りにしない。設定にはっきり書いた、ワイルドカードのないパターンのファイルがないときは、
+# 約束リストは誤り、合意の記録は空とみなす（はじめて合意したときに作るため）。
 
 exec git init -q -b main
 expand .vanda/config.toml
@@ -38,18 +39,19 @@ commit '(test) 審査の前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 exec vanda check .vanda/checks/targets.toml
 
-# 設定にはっきり書いたファイルがないと止まる
+# 設定にはっきり書いた約束リストのファイルがないと止まる
 cp cases/config-explicit.toml .vanda/config.toml
 expand .vanda/config.toml
 commit '(test) 審査の前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml'
 ! stderr '(?m)^panic: '
+
+# 設定にはっきり書いた合意の記録のファイルがなくても、空とみなして通る
 cp cases/promises.toml .vanda/promises.toml
 commit '(test) 審査の前にコミットする'
-! exec vanda check .vanda/checks/targets.toml
-stderr 'agreements\.toml'
-! stderr '(?m)^panic: '
+exec vanda check .vanda/checks/targets.toml
+! stderr 'agreements\.toml'
 
 -- cases/config-explicit.toml --
 version = "${VANDA_VERSION}"

@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -1052,6 +1053,9 @@ func Test合意の記録はagreementsのパターンの順で最初に当たっ�
 		{"ワイルドカードで当たったもの", `[".vanda/agreements/*.toml"]`, map[string]string{".vanda/agreements/x.toml": "# x\n"}, ".vanda/agreements/x.toml"},
 		// 設定に書かない既定のパターン（.vanda/agreements.toml）は、ファイルがなくても誤りにならない
 		{"当たらず最初のパターンにワイルドカードがない", "", map[string]string{}, ".vanda/agreements.toml"},
+		// 設定にはっきり書いた、まだないファイルも作る（ないディレクトリの下でも）
+		{"当たらず設定にはっきり書いた最初のパターンにワイルドカードがない", `[".vanda/agreements/po.toml", ".vanda/more/*.toml"]`, map[string]string{}, ".vanda/agreements/po.toml"},
+		{"当たらず設定にはっきり書いた既定と同じ場所", `[".vanda/agreements.toml"]`, map[string]string{}, ".vanda/agreements.toml"},
 		{"当たらず最初のパターンにワイルドカードがある", `[".vanda/agreements/*.toml", ".vanda/more/*.toml"]`, map[string]string{}, ""},
 	}
 	for _, c := range cases {
@@ -1094,6 +1098,51 @@ func Test合意の記録はagreementsのパターンの順で最初に当たっ�
 				if p != c.want && readFileString(t, r.Root, p) != b {
 					t.Errorf("書き足すファイルでない %s が変わった", p)
 				}
+			}
+		})
+	}
+}
+
+// @vanda:evidence agreements-explicit-file-may-be-absent
+func Test設定のagreementsにはっきり書いたファイルがなければ一覧と約束の詳細は誤りにせず合意の記録を空とみなす(t *testing.T) {
+	t.Parallel()
+	hasChanged := func(e *reviewEntry) bool {
+		return e != nil && slices.Contains(e.Flags, "changed-since-agreement")
+	}
+	cases := []struct{ name, patterns string }{
+		{"既定と同じ場所", `[".vanda/agreements.toml"]`},
+		{"既定と違う場所", `[".vanda/agreements/po.toml"]`},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			_, r, s := setupAgree(t)
+			// 合意の記録を読めていれば、#1 で合意した前の中身から変わった task-id-unique に「差分あり」が付く
+			var before reviewResponse
+			if code, msg := s.get("/api/review?view=branch&base=main", &before); code != 200 || !hasChanged(findEntry(before.Entries, "task-id-unique")) {
+				t.Fatalf("用意した合意の記録が読めていない（%d）: %s\n%+v", code, msg, before.Entries)
+			}
+			cfg := readFileString(t, r.Root, ".vanda/config.toml")
+			first, rest, _ := strings.Cut(cfg, "\n")
+			writeFile(t, r.Root, ".vanda/config.toml", first+"\nagreements = "+c.patterns+"\n"+rest)
+			r.git("rm", "-q", ".vanda/agreements.toml")
+			r.g.commitAll("合意の記録のファイルを設定に書き、消す", reviewStory)
+
+			var got reviewResponse
+			if code, msg := s.get("/api/review?view=branch&base=main", &got); code != 200 {
+				t.Fatalf("一覧が %d: %s", code, msg)
+			}
+			if len(got.Entries) == 0 {
+				t.Fatal("一覧が空")
+			}
+			for _, e := range got.Entries {
+				if str(e.State) != "proposed" || hasChanged(&e) {
+					t.Errorf("%s%s: state %q・flags %v（合意の記録が空なので、提案中で差分ありも付かないはず）", str(e.ID), str(e.Path), str(e.State), e.Flags)
+				}
+			}
+			var claim claimDetail
+			if code, msg := s.get("/api/claims/task-id-unique", &claim); code != 200 || claim.State != "proposed" {
+				t.Errorf("約束の詳細が %d・state %q: %s", code, claim.State, msg)
 			}
 		})
 	}

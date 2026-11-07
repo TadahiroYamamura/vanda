@@ -1166,12 +1166,37 @@ func TestAgreementTargetsは設定にagreementsを書かず既定のファイル
 	if strings.Contains(out, ".vanda/agreements.toml") {
 		t.Errorf("既定の合意の記録のファイルがないことが誤りになった\n%s", out)
 	}
-	// 設定にはっきり書いたなら、ないファイルは誤り
-	r.write(map[string]string{".vanda/config.toml": strings.Replace(baseConfig, `version = "0.1.0"`, "version = \"0.1.0\"\nagreements = [\".vanda/agreements.toml\"]", 1)})
-	r.commit("(test) 合意の記録のファイルを設定に書く", "")
-	_, out, _ = r.run(checks, "", "")
-	if !lineWith(out, ".vanda/agreements.toml") {
-		t.Errorf("設定に書いた合意の記録のファイルがないのに誤りにならない\n%s", out)
+}
+
+// @vanda:evidence agreements-explicit-file-may-be-absent
+func TestAgreementTargetsは設定のagreementsにはっきり書いたファイルがなければ誤りにせず合意の記録を空とみなす(t *testing.T) {
+	cases := []struct{ name, patterns, absent string }{
+		{"既定と同じ場所", `[".vanda/agreements.toml"]`, ".vanda/agreements.toml"},
+		{"既定と違う場所", `[".vanda/agreements/po.toml"]`, ".vanda/agreements/po.toml"},
+		{"ワイルドカードのパターンの後", `[".vanda/more/*.toml", ".vanda/po.toml"]`, ".vanda/po.toml"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			r := goodRepo(t)
+			r.git("rm", "-q", ".vanda/agreements.toml")
+			r.write(map[string]string{".vanda/config.toml": strings.Replace(baseConfig, `version = "0.1.0"`, "version = \"0.1.0\"\nagreements = "+c.patterns, 1)})
+			r.commit("(test) ない合意の記録のファイルを設定に書く", "")
+			checks := "[[check]]\nname = \"agreement-targets\"\nscope = \"all\"\n[[check]]\nname = \"agreement\"\nscope = \"all\"\n"
+			_, out, err := r.run(checks, "", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			// 合意の記録が空なので、合意の対象はすべて提案中
+			expect(t, out, [][]string{
+				{"審査 agreement-targets（all）: 通った"},
+				{"審査 agreement（all）: 失敗（"},
+				{".vanda/promises.toml:2: ", "用語 task の今の中身", "まだ合意していません"},
+				{".vanda/promises.toml:12: ", "約束 task-unique の今の中身", "まだ合意していません"},
+			})
+			if strings.Contains(out, c.absent) {
+				t.Errorf("設定にはっきり書いた合意の記録のファイル %s がないことが誤りになった\n%s", c.absent, out)
+			}
+		})
 	}
 }
 
