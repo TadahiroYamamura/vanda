@@ -207,9 +207,12 @@ func parse(l *loader, top *tomlread.Table) *Config {
 	seen := map[string]bool{}
 	for _, t := range layers {
 		var l Layer
-		l.ID, _ = t.Str("id", true)
-		if l.ID != "" {
-			t.Label = `layer "` + l.ID + `"`
+		var hasID bool
+		l.ID, hasID = t.Str("id", true)
+		if hasID {
+			if l.ID != "" {
+				t.Label = `layer "` + l.ID + `"`
+			}
 			if !IsID(l.ID) {
 				t.ErrAt("id", "レイヤーの ID "+quote(l.ID)+" が決まった形ではありません", "英小文字で始め、英小文字・数字をハイフンでつないだ形（例: model、db）にしてください")
 			} else if seen[l.ID] {
