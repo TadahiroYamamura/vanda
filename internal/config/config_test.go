@@ -540,9 +540,11 @@ func TestLoadはファイルのパターンの書き方が誤っていればど�
 			return "version = \"0.1.0\"\n[[guardrail]]\npaths = [\"" + p + "\"]\nadapter = \"file\"\n"
 		},
 	}
-	// リポジトリの直下からでない場所（/ で始まる）と、閉じていない [ と、空の文字列
-	bad := []string{"/abs/a.toml", "/", "a/[b.toml", "[", "a/b[", "**/[x/*.go", ""}
-	good := []string{"a.toml", "a/*.toml", "**/*_test.go", "e2e/**/*.txtar", "a/[bc].toml", "a?/b"}
+	// リポジトリの直下からでない場所（/ で始まる）と、閉じていない [ と、空の文字列と、/ で区切った部分が空・.・.. のもの（ワイルドカードがあっても）
+	bad := []string{"/abs/a.toml", "/", "a/[b.toml", "[", "a/b[", "**/[x/*.go", "",
+		"./a", "../a", "a/../b", "a//b", "a/", ".", "..", "a/.", "a/..",
+		"./**/*.go", "../*.toml", "a/../*.go", "a//*.go", "**/", "*/./b", "**//*.go"}
+	good := []string{"a.toml", "a/*.toml", "**/*_test.go", "e2e/**/*.txtar", "a/[bc].toml", "a?/b", "a/*.go", "**/*.go", ".vanda/a.toml", "a/.b/c", "a..b/c", "...", ".*/a"}
 	for key, w := range wrap {
 		for _, p := range bad {
 			if got := loadErrs(t, w(p)); !lineWith(got, ".vanda/config.toml:3: ", "パターン", `"`+p+`"`) {
