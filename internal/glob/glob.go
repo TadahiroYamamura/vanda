@@ -11,11 +11,15 @@ import (
 )
 
 // Validate は、パターンが書き方に合っているかを確かめる。
+// ファイルの場所は / で始まらず、空・.・.. の部分を含まないので、そうしたパターンはどのファイルにも当たらない。書き間違いに気づけるよう、誤りにする
 func Validate(pattern string) error {
 	if pattern == "" || strings.HasPrefix(pattern, "/") {
 		return path.ErrBadPattern
 	}
 	for _, seg := range strings.Split(pattern, "/") {
+		if seg == "" || seg == "." || seg == ".." {
+			return path.ErrBadPattern
+		}
 		if seg == "**" {
 			continue
 		}
