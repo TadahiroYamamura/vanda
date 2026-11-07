@@ -308,7 +308,7 @@ func Revoke(o Options, req RevokeRequest) (*RevokeResult, *Error) {
 	if err != nil {
 		return nil, fail(err)
 	}
-	after, rerrs := agreements.Load(o.Root, snap.Files, o.Cfg.Agreements, o.Cfg.AgreementsDefault)
+	after, rerrs := agreements.Load(o.Root, snap.Files, o.Cfg.Agreements)
 	if rerrs != nil {
 		return nil, fail(fmt.Errorf("取り消した後の合意の記録を読めません（%s）", rerrs[0].Error()))
 	}

@@ -43,7 +43,7 @@ func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
 	if snap.ListErrs != nil {
 		return fmt.Errorf("フラグを外した後の約束リストを読めません（%s）", snap.ListErrs[0].Error())
 	}
-	recs, rerrs := agreements.Load(s.o.Root, snap.Files, s.o.Cfg.Agreements, s.o.Cfg.AgreementsDefault)
+	recs, rerrs := agreements.Load(s.o.Root, snap.Files, s.o.Cfg.Agreements)
 	if rerrs != nil {
 		return fmt.Errorf("書き足した後の合意の記録を読めません（%s）", rerrs[0].Error())
 	}

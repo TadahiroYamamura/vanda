@@ -108,7 +108,7 @@ func (e *env) prepare(o Options) error {
 	e.files = files
 	e.read = t.Read
 	e.list, e.listErrs = promises.LoadWith(t.Read, files, e.cfg.Promises, e.cfg.PromisesDefault)
-	e.recs, e.recErrs = agreements.LoadWith(t.Read, files, e.cfg.Agreements, e.cfg.AgreementsDefault)
+	e.recs, e.recErrs = agreements.LoadWith(t.Read, files, e.cfg.Agreements)
 	e.anns, e.annErrs = annotation.ReadWith(e.root, t.Read, files, e.cfg.Annotations)
 	e.guards, e.guardErr = guardrail.Files(files, e.cfg.Guardrails)
 

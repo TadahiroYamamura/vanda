@@ -208,7 +208,7 @@ func (s *state) loadCurrent() *Error {
 	if snap.ListErrs != nil {
 		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("約束リストに誤りがあるため、一覧を作れません（%d 件。最初の 1 件: %s）。", len(snap.ListErrs), snap.ListErrs[0].Error()), Fix: "vanda check の promise-list-shape で誤りを確かめて、直してください。"}
 	}
-	recs, rerrs := agreements.LoadWith(tree.Read, snap.Files, s.o.Cfg.Agreements, s.o.Cfg.AgreementsDefault)
+	recs, rerrs := agreements.LoadWith(tree.Read, snap.Files, s.o.Cfg.Agreements)
 	if rerrs != nil {
 		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("合意の記録に誤りがあるため、一覧を作れません（%d 件。最初の 1 件: %s）。", len(rerrs), rerrs[0].Error()), Fix: "vanda check の agreement-targets で誤りを確かめて、直してください。"}
 	}

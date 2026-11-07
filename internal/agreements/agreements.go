@@ -32,21 +32,16 @@ type Records struct {
 	Agreements []*Agreement
 }
 
-// Load は、files（リポジトリの直下からの場所の一覧）のうち patterns に当たるものを、合意の記録として読む。allowMissing なら、ワイルドカードのないパターンのファイルがなくても誤りにしない（設定に書かなかった既定のファイルのため）。
-func Load(root string, files, patterns []string, allowMissing bool) (*Records, diag.Errors) {
-	return LoadWith(tomlread.OSReader(root), files, patterns, allowMissing)
+// Load は、files（リポジトリの直下からの場所の一覧）のうち patterns に当たるものを、合意の記録として読む。
+// ワイルドカードのないパターンのファイルがなくても誤りにしない。そのファイルは、はじめて合意したときに作るため。
+func Load(root string, files, patterns []string) (*Records, diag.Errors) {
+	return LoadWith(tomlread.OSReader(root), files, patterns)
 }
 
 // LoadWith は、Load と同じく読む。ファイルの中身は read で読む。
-func LoadWith(read tomlread.Reader, files, patterns []string, allowMissing bool) (*Records, diag.Errors) {
+func LoadWith(read tomlread.Reader, files, patterns []string) (*Records, diag.Errors) {
 	var errs []diag.Error
-	matched, missing := glob.Select(files, patterns)
-	if allowMissing {
-		missing = nil
-	}
-	for _, m := range missing {
-		errs = append(errs, diag.Error{File: m, What: "合意の記録のファイルがありません", Fix: "ファイルを作るか、.vanda/config.toml の agreements を直してください"})
-	}
+	matched, _ := glob.Select(files, patterns)
 	r := &Records{Files: matched}
 	for _, f := range matched {
 		doc := tomlread.LoadWith(read, f, &errs)
