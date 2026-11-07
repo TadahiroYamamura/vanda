@@ -1292,6 +1292,24 @@ type = "unit-test"
 layers = ["cli"]
 
 [[claim]]
+id = "agreements-explicit-file-may-be-absent"
+subjects = ["store-agreements", "agreement-record"]
+statement = "設定の agreements にワイルドカードのない場所のファイルをはっきり書き、そのファイルがなければ、誤りにせず、そのファイルの合意の記録を空とみなす"
+rationale = "そのファイルは、はじめて合意したときに作られるので、まだ一度も合意していないリポジトリにはない。それを誤りにすると、はじめて合意する前に、審査も画面も使えないため"
+layers = ["cli", "api"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["cli"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["api"]
+
+[[claim]]
 id = "agreements-required-fields"
 subjects = ["store-agreements", "list-check-kinds", "agreement-record"]
 statement = "合意の記録に kind・key・fingerprint・user の name と email・agreed_at・story のどれかがなければ、または kind が claim・term・feature・file のどれでもなければ、agreement-targets の誤りにする"
@@ -2404,7 +2422,8 @@ layers = ["cli"]
 [[claim]]
 id = "config-pattern-syntax"
 subjects = ["store-config"]
-statement = "設定のファイルのパターンの書き方が誤っていれば（リポジトリの直下からの / 区切りの場所でない、閉じていない [ など）、設定の誤りにする"
+statement = "設定のファイルのパターンのうち、次のものは設定の誤りにする。/ で始まるもの。/ で区切った部分のどれかが、空か . か .. のもの。閉じていない [ など、パターンの書き方に合わないもの"
+rationale = "ファイルの場所は / で始まらず、空・.・.. の部分も含まないので、このようなパターンはどのファイルにも当たらない。ワイルドカードのあるパターンは、どのファイルにも当たらなくても誤りにしない決まりなので、書き方を確かめなければ、書き間違いに気づけないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
