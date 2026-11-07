@@ -512,7 +512,7 @@ func TestLoadはlayerのidが決まった形でないかほかのレイヤーと
 	layer := func(id string) string {
 		return "\n[[layer]]\nid = \"" + id + "\"\nname = \"n\"\ndescription = \"d\"\n"
 	}
-	for _, id := range []string{"Model", "1db", "-a", "a-", "a--b", "a_b", "a b", "モデル", "a.b"} {
+	for _, id := range []string{"", "Model", "1db", "-a", "a-", "a--b", "a_b", "a b", "モデル", "a.b"} {
 		if got := loadErrs(t, "version = \"0.1.0\"\n"+layer(id)); !lineWith(got, ".vanda/config.toml:4: ", "ID", `"`+id+`"`) {
 			t.Errorf("id = %q が、id の行（4 行目）を指す誤りにならない:\n%s", id, got)
 		}
