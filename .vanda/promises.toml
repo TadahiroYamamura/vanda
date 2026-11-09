@@ -512,6 +512,11 @@ name = "約束の詳細とファイルの画面で合意する"
 definition = "レビューの画面のほか、{@id:promise}の詳細の画面とファイルの画面でも、1 件に{@id:agreement}し、{@id:agreement}を取り消す"
 
 [[feature]]
+id = "show-term-feature-pages"
+name = "用語と機能の詳細を示す"
+definition = "{@id:term}と{@id:feature}ごとに、その中身と、それを対象に持つ{@id:promise}を、1 つのページに示す"
+
+[[feature]]
 id = "show-claim-fields"
 name = "約束の文・理由・条件・レイヤーを示す"
 definition = "{@id:promise}の詳細に、{@id:promise}の中身を示す"
@@ -788,7 +793,7 @@ layers = ["api"]
 [[claim]]
 id = "reference-shown"
 subjects = ["show-references", "reference"]
-statement = "画面では、{@id:term}と{@id:feature}を指す{@id:reference}をその名前に、{@id:promise}を指す{@id:reference}をその ID に置き換えて、{@id:reference}だと分かる見た目で出す。{@id:promise}を指す{@id:reference}は、その{@id:promise}の詳細へのリンクにする"
+statement = "画面では、{@id:term}と{@id:feature}を指す{@id:reference}をその名前に、{@id:promise}を指す{@id:reference}をその ID に置き換えて、{@id:reference}だと分かる見た目で出す。{@id:reference}は、指す先の詳細のページ（{@id:promise}の詳細、{@id:term}の詳細、{@id:feature}の詳細）へのリンクにする。今の{@id:promise-list}にない指す先は、リンクにしない"
 rationale = "{@id:promise}には名前がなく、ID だけでおよその意味が分かるように付けているため"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
@@ -806,7 +811,8 @@ layers = ["gui"]
 [[claim]]
 id = "reference-popup"
 subjects = ["show-references", "reference"]
-statement = "{@id:reference}に触れた時かフォーカスした時に、{@id:term}と{@id:feature}ならその定義を、{@id:promise}ならその文を出す"
+statement = "{@id:reference}に触れた時かフォーカスした時に、指す先の中身を小さな枠で出す。{@id:promise}なら ID と文を、{@id:term}なら ID と定義を、{@id:feature}なら ID と定義に加えて、{@id:core-feature}か・{@id:formal-feature}かの印を出す"
+rationale = "文を読みながら、指す先の中身をページを移らずに確かめられるようにするため。もっと詳しく見る時は、{@id:reference}のリンクから詳細のページへ移る"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -5063,3 +5069,72 @@ guesses = ["取り消しのコミットにも書く理由は、コードにも�
 stage = "implementation"
 type = "unit-test"
 layers = ["api"]
+
+[[claim]]
+id = "term-page-content"
+subjects = ["show-term-feature-pages", "term"]
+statement = "{@id:term}の詳細のページに、名前・ID・定義と、その{@id:term}の part_of に書いた親の{@id:term}と、part_of にその{@id:term}を書いた子の{@id:term}を示す"
+layers = ["api", "gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "feature-page-content"
+subjects = ["show-term-feature-pages", "feature"]
+statement = "{@id:feature}の詳細のページに、名前・ID・定義と、{@id:core-feature}・{@id:formal-feature}であることの印を示す"
+layers = ["api", "gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "term-feature-page-claims"
+subjects = ["show-term-feature-pages"]
+statement = "{@id:term}と{@id:feature}の詳細のページに、それを subjects に持つ{@id:promise}を、{@id:promise-list}に書いた順に、ID と文で並べ、それぞれをその{@id:promise}の詳細へのリンクにする"
+rationale = "{@id:term}・{@id:feature}から、それを決めている{@id:promise}へたどれるようにするため"
+layers = ["api", "gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "term-feature-page-missing"
+subjects = ["show-term-feature-pages"]
+statement = "今の{@id:promise-list}にない ID の{@id:term}・{@id:feature}の詳細のページを開いたら、その ID が{@id:promise-list}にないことを示す"
+layers = ["api", "gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["gui"]
