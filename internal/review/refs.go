@@ -20,8 +20,10 @@ type RefTarget struct {
 	Name    *string `json:"name"`
 	Text    string  `json:"text"`
 	Current bool    `json:"current"`
-	Core    *bool   `json:"core,omitempty"`
-	Formal  *bool   `json:"formal,omitempty"`
+	// Pieces は、Text を片に分けたもの。中の参照の指す先は、refs に足さない（枠の中の参照は見た目だけにし、次の枠もリンクも出さないため）
+	Pieces []Piece `json:"pieces"`
+	Core   *bool   `json:"core,omitempty"`
+	Formal *bool   `json:"formal,omitempty"`
 }
 
 // refs は、参照を見せる文字に置き換え、応答の中の片が指した先を集める。
@@ -103,7 +105,8 @@ func (r *refs) target(e snapshot.Entry, current bool, base *side) RefTarget {
 	case e.Claim != nil:
 		body = e.Claim.Statement
 	}
-	t.Text = plain(r.split(body, base, false))
+	t.Pieces = r.split(body, base, false)
+	t.Text = plain(t.Pieces)
 	return t
 }
 
