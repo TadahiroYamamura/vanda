@@ -359,13 +359,13 @@ func Testフラグは約束のflagsとguessesと前の合意から決まった�
 // @vanda:evidence review-numbering
 // @vanda:evidence review-order
 // @vanda:evidence review-group-first-layer
-func Test一覧は設定のレイヤーの順の約束と用語と機能とファイルのまとまりに分かれその中はIDか場所の順に並びその順に通し番号が付く(t *testing.T) {
+func Test一覧は用語と機能と設定のレイヤーの順の約束とファイルのまとまりに分かれその中はIDか場所の順に並びその順に通し番号が付く(t *testing.T) {
 	t.Parallel()
 	_, _, _, got := setupFields(t)
-	want := []string{"layer:cli z-cli", "layer:model flag-0", "layer:model flag-1", "layer:model flag-2", "layer:model flag-3",
+	want := []string{"terms t-del", "terms t-mod", "terms t-new", "features f-del", "features f-mod", "features f-new",
+		"layer:cli z-cli", "layer:model flag-0", "layer:model flag-1", "layer:model flag-2", "layer:model flag-3",
 		"layer:model flag-4", "layer:model flag-5", "layer:model flag-6", "layer:model flag-7", "layer:model flag-agreed",
 		"layer:db a-db", "layer:db c-new",
-		"terms-features f-del", "terms-features f-mod", "terms-features f-new", "terms-features t-del", "terms-features t-mod", "terms-features t-new",
 		"files db/a.sql", "files e2e/a.txtar", "files e2e/b.txtar", "files spec/M.tla"}
 	var have []string
 	for i, e := range got.Entries {

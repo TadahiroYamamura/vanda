@@ -153,6 +153,38 @@ describe("RV-10 長い一覧をたたむ", () => {
     await user.click(toggle!);
     expect((await screen.findAllByText(/e2e\/s59\.txtar/)).length).toBeGreaterThan(0);
   });
+
+  // @vanda:evidence review-groups-fold
+  it("用語と機能は別々のまとまりとしてたたみ片方を開いてももう片方はたたんだままで総数と通し番号は変わらない", async () => {
+    const pad = (i: number) => String(i).padStart(2, "0");
+    const terms = Array.from({ length: 11 }, (_, i) =>
+      claimEntry(i + 1, `t-${pad(i)}`, { kind: "term", group: "terms", before: { name: `t-${pad(i)}`, definition: plain("定義"), partOf: null }, after: { name: `t-${pad(i)}`, definition: plain("定義"), partOf: null } }));
+    const features = Array.from({ length: 11 }, (_, i) =>
+      claimEntry(i + 12, `f-${pad(i)}`, { kind: "feature", group: "features", before: { name: `f-${pad(i)}`, definition: plain("定義"), core: null, formal: null, formalWaiver: null }, after: { name: `f-${pad(i)}`, definition: plain("定義"), core: null, formal: null, formalWaiver: null } }));
+    window.history.pushState({}, "", "/?view=branch&base=main&sel=" + encodeURIComponent("path:e2e/a.txtar"));
+    open([...terms, ...features, fileEntry(23, "e2e/a.txtar")]);
+    const one = await listRow("e2e/a.txtar");
+    const shown = (name: string) => within(listRegion()).queryByText(name, { exact: true }) !== null;
+    const heading = (re: RegExp) => {
+      const hs = within(listRegion()).getAllByRole("heading", { level: 3 }).filter((h) => re.test(h.textContent ?? ""));
+      expect(hs.length, `${re} の見出しの数`).toBe(1);
+      return hs[0];
+    };
+    const termHeading = heading(/(?:^|\s)用語\s/);
+    const featureHeading = heading(/(?:^|\s)機能\s/);
+    expect(termHeading.textContent, "用語の見出しにたたんだ件数がない").toMatch(/11/);
+    expect(featureHeading.textContent, "機能の見出しにたたんだ件数がない").toMatch(/11/);
+    for (const e of [...terms, ...features]) expect(shown(e.id!), `たたんだまとまりの ${e.id} が見えている`).toBe(false);
+    expect(within(one).getByRole("button").children[0].textContent, "たたんだ件を飛ばして通し番号を付けている").toBe("23");
+    const user = userEvent.setup();
+    await user.click(within(termHeading).getByRole("button"));
+    for (const e of terms) expect(shown(e.id!), `開いた用語のまとまりの ${e.id} が見えない`).toBe(true);
+    for (const e of features) expect(shown(e.id!), `用語を開いただけで機能の ${e.id} が見えている`).toBe(false);
+    await user.click(within(heading(/(?:^|\s)機能\s/)).getByRole("button"));
+    for (const e of features) expect(shown(e.id!), `開いた機能のまとまりの ${e.id} が見えない`).toBe(true);
+    const rows = within(listRegion()).getAllByRole("listitem").map((li) => within(li).getByRole("button").children[0].textContent);
+    expect(rows).toEqual(Array.from({ length: 23 }, (_, i) => String(i + 1)));
+  });
 });
 
 describe("RV-06 合意する", () => {
@@ -626,9 +658,9 @@ describe("RV-02 一覧の 1 件を選ぶ", () => {
 
 describe("RV-01・RV-02・RV-04 一覧の 1 件の出し方", () => {
   const term = (no: number, id: string) =>
-    claimEntry(no, id, { kind: "term", group: "terms-features", before: { name: id, definition: plain("定義"), partOf: null }, after: { name: id, definition: plain("定義"), partOf: null } });
+    claimEntry(no, id, { kind: "term", group: "terms", before: { name: id, definition: plain("定義"), partOf: null }, after: { name: id, definition: plain("定義"), partOf: null } });
   const feature = (no: number, id: string) =>
-    claimEntry(no, id, { kind: "feature", group: "terms-features", before: { name: id, definition: plain("定義"), core: null, formal: null, formalWaiver: null }, after: { name: id, definition: plain("定義"), core: null, formal: null, formalWaiver: null } });
+    claimEntry(no, id, { kind: "feature", group: "features", before: { name: id, definition: plain("定義"), core: null, formal: null, formalWaiver: null }, after: { name: id, definition: plain("定義"), core: null, formal: null, formalWaiver: null } });
   // 1 行目は名前の所のボタン、2 行目はその後ろ
   const firstLine = (li: HTMLElement) => within(li).getByRole("button");
   const secondLine = (li: HTMLElement) => firstLine(li).nextElementSibling as HTMLElement;
@@ -823,11 +855,11 @@ describe("RV-01 一覧の絞り込み", () => {
   const notAgreedBox = () => within(list()).getByRole("checkbox", { name: "合意済でないものだけ" });
 
   const term = (no: number, id: string, name: string, definition: string, over: Partial<Entry> = {}) =>
-    claimEntry(no, id, { kind: "term", group: "terms-features", before: { name, definition: plain(definition), partOf: null }, after: { name, definition: plain(definition), partOf: null }, ...over });
+    claimEntry(no, id, { kind: "term", group: "terms", before: { name, definition: plain(definition), partOf: null }, after: { name, definition: plain(definition), partOf: null }, ...over });
   const feature = (no: number, id: string, name: string, definition: string) =>
-    claimEntry(no, id, { kind: "feature", group: "terms-features", before: { name, definition: plain(definition), core: null, formal: null, formalWaiver: null }, after: { name, definition: plain(definition), core: null, formal: null, formalWaiver: null } });
+    claimEntry(no, id, { kind: "feature", group: "features", before: { name, definition: plain(definition), core: null, formal: null, formalWaiver: null }, after: { name, definition: plain(definition), core: null, formal: null, formalWaiver: null } });
   // 一覧の API は、まとまりごとに続けて返す（まとまりが飛び飛びだと、同じまとまりが 2 つ出る）
-  const byGroup = (es: Entry[]) => ["layer:model", "terms-features", "files"].flatMap((g) => es.filter((e) => e.group === g));
+  const byGroup = (es: Entry[]) => ["terms", "features", "layer:model", "files"].flatMap((g) => es.filter((e) => e.group === g));
   const statementOf = (statement: string, rationale: string | null = null) => ({
     statement: plain(statement),
     rationale: rationale === null ? null : plain(rationale),
@@ -1067,12 +1099,12 @@ describe("参照", () => {
     } as Partial<Entry>);
   const termWithRefs = () =>
     claimEntry(2, "t-ref", {
-      kind: "term", group: "terms-features", change: "added", before: null,
+      kind: "term", group: "terms", change: "added", before: null,
       after: { name: "参照を持つ用語", definition: [ref(fieldRefs.termDefinition, idOf("termDefinition")), { text: "の一部" }], partOf: null },
     } as Partial<Entry>);
   const featureWithRefs = () =>
     claimEntry(3, "f-ref", {
-      kind: "feature", group: "terms-features", change: "added", before: null,
+      kind: "feature", group: "features", change: "added", before: null,
       after: {
         name: "参照を持つ機能",
         definition: [ref(fieldRefs.featureDefinition, idOf("featureDefinition")), { text: "を使う" }],
@@ -1352,7 +1384,7 @@ describe("参照の絞り込み", () => {
       claimEntry(3, "c-deleted", { change: "deleted", after: null, fingerprint: null, before: deletedBefore } as Partial<Entry>),
       withStatement(4, "c-plain", [{ text: "バナナを数える" }]),
       claimEntry(5, "t-def", {
-        kind: "term", group: "terms-features",
+        kind: "term", group: "terms",
         before: { name: "果物", definition: [ref("りんご", "t-apple"), { text: "の仲間" }], partOf: null },
         after: { name: "果物", definition: [ref("りんご", "t-apple"), { text: "の仲間" }], partOf: null },
       } as Partial<Entry>),
@@ -1485,24 +1517,24 @@ describe("RV-01 一覧の件数・並び・外れた合意", () => {
   });
 
   // @vanda:evidence review-order
-  it("一覧は約束のまとまりを設定のレイヤーの順に用語と機能とエビデンスの本体の順に並べ通し番号を付けて出す", async () => {
+  it("一覧は用語と機能と設定のレイヤーの順の約束とエビデンスの本体のまとまりの順に並べ通し番号を付けて出す", async () => {
     const term = (no: number, id: string) =>
-      claimEntry(no, id, { kind: "term", group: "terms-features", before: { name: id, definition: plain("定義"), partOf: null }, after: { name: id, definition: plain("定義"), partOf: null } });
+      claimEntry(no, id, { kind: "term", group: "terms", before: { name: id, definition: plain("定義"), partOf: null }, after: { name: id, definition: plain("定義"), partOf: null } });
     const feature = (no: number, id: string) =>
-      claimEntry(no, id, { kind: "feature", group: "terms-features", before: { name: id, definition: plain("定義"), core: null, formal: null, formalWaiver: null }, after: { name: id, definition: plain("定義"), core: null, formal: null, formalWaiver: null } });
+      claimEntry(no, id, { kind: "feature", group: "features", before: { name: id, definition: plain("定義"), core: null, formal: null, formalWaiver: null }, after: { name: id, definition: plain("定義"), core: null, formal: null, formalWaiver: null } });
     const entries = [
-      claimEntry(1, "m-a"),
-      claimEntry(2, "m-b"),
-      claimEntry(3, "d-a", { group: "layer:db" }),
-      feature(4, "f-a"),
-      term(5, "t-a"),
+      term(1, "t-a"),
+      feature(2, "f-a"),
+      claimEntry(3, "m-a"),
+      claimEntry(4, "m-b"),
+      claimEntry(5, "d-a", { group: "layer:db" }),
       fileEntry(6, "db/a.sql", { fileType: "guardrail" }),
       fileEntry(7, "e2e/a.txtar"),
     ];
     open(entries);
     await listRow("m-a");
     const groups = within(listRegion()).getAllByRole("heading", { level: 3 }).map((h) => h.textContent ?? "");
-    const order = [/モデル/, /DB/, /用語と機能/, /エビデンスの本体/];
+    const order = [/(?:^|\s)用語\s/, /(?:^|\s)機能\s/, /モデル/, /DB/, /エビデンスの本体/];
     expect(groups.length, `まとまりの見出し: ${groups.join(" / ")}`).toBe(order.length);
     order.forEach((re, i) => expect(groups[i], `${i + 1} 番目のまとまり`).toMatch(re));
     const rows = within(listRegion()).getAllByRole("listitem").map((li) => Array.from(within(li).getByRole("button").children).map((el) => el.textContent));
@@ -1552,10 +1584,10 @@ describe("RV-02 1 件の詳細", () => {
         modelCheckWaiver: null,
       },
     });
-    const term = claimEntry(2, "t-new", { kind: "term", group: "terms-features", change: "added", before: null, after: { name: "足した用語の名前", definition: plain("足した用語の定義"), partOf: "task" } });
+    const term = claimEntry(2, "t-new", { kind: "term", group: "terms", change: "added", before: null, after: { name: "足した用語の名前", definition: plain("足した用語の定義"), partOf: "task" } });
     const feature = claimEntry(3, "f-new", {
       kind: "feature",
-      group: "terms-features",
+      group: "features",
       change: "added",
       before: null,
       after: { name: "足した機能の名前", definition: plain("足した機能の定義"), core: true, formal: false, formalWaiver: plain("足した機能の形式手法を使わない理由") },
@@ -1728,11 +1760,11 @@ describe("一覧を読み込む間に選んだ件を先に出す", () => {
     },
     {
       kind: "用語", sel: "term:t-sel", shown: ["先に出す用語の定義"],
-      entry: claimEntry(1, "t-sel", { kind: "term", group: "terms-features", flags: ["ai-proposal"], before: { name: "先に出す用語", definition: plain("用語の前の定義"), ...tf }, after: { name: "先に出す用語", definition: plain("一覧の用語の定義"), ...tf } }),
+      entry: claimEntry(1, "t-sel", { kind: "term", group: "terms", flags: ["ai-proposal"], before: { name: "先に出す用語", definition: plain("用語の前の定義"), ...tf }, after: { name: "先に出す用語", definition: plain("一覧の用語の定義"), ...tf } }),
     },
     {
       kind: "機能", sel: "feature:f-sel", shown: ["先に出す機能の定義"],
-      entry: claimEntry(1, "f-sel", { kind: "feature", group: "terms-features", flags: ["ai-proposal"],
+      entry: claimEntry(1, "f-sel", { kind: "feature", group: "features", flags: ["ai-proposal"],
         before: { name: "先に出す機能", definition: plain("機能の前の定義"), core: null, formal: null, formalWaiver: null },
         after: { name: "先に出す機能", definition: plain("一覧の機能の定義"), core: null, formal: null, formalWaiver: null } }),
     },
