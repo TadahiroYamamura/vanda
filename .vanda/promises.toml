@@ -1,17 +1,17 @@
 [[term]]
 id = "evidence-first-development"
 name = "エビデンス・ファースト開発"
-definition = "AI がソースコードを書き、人はソースコードを読まずに、約束とエビデンスで開発を進めるやり方"
+definition = "AI がソースコードを書き、人はソースコードを読まずに、{@id:promise}と{@id:evidence}で開発を進めるやり方"
 
 [[term]]
 id = "vanda"
 name = "vanda"
-definition = "エビデンス・ファースト開発を支える道具。約束リストを持ち、変わったものにレビューで合意し、約束がエビデンスで裏付けられているかを審査する"
+definition = "{@id:evidence-first-development}を支える道具。{@id:promise-list}を持ち、変わったものにレビューで{@id:agreement}し、{@id:promise}が{@id:evidence}で裏付けられているかを{@id:check}する"
 
 [[term]]
 id = "software"
 name = "ソフトウェア"
-definition = "vanda で開発するもの。.vanda/ を置いた git のリポジトリで作っているもの"
+definition = "{@id:vanda} で開発するもの。{@id:vanda-dir} を置いた git のリポジトリで作っているもの"
 
 [[term]]
 id = "vanda-server"
@@ -21,88 +21,88 @@ definition = "vanda serve が起動する Web サーバー。画面と、画面�
 [[term]]
 id = "promise-list"
 name = "約束リスト"
-definition = "ソフトウェアについて、使う言葉（用語）、利用者が行う操作（機能）、そこで成り立たせると決めたこと（約束）をまとめた一覧。ソフトウェアの正とする"
+definition = "{@id:software}について、使う言葉（{@id:term}）、利用者が行う操作（{@id:feature}）、そこで成り立たせると決めたこと（{@id:promise}）をまとめた一覧。{@id:software}の正とする"
 
 [[term]]
 id = "promise"
 name = "約束"
-definition = "ソフトウェアが成り立たせると決めたこと"
+definition = "{@id:software}が成り立たせると決めたこと"
 
 [[term]]
 id = "core-feature"
 name = "コア機能"
-definition = "失敗すると著しい損害があるので、十分に確かめると決めた機能。約束リストでの項目名は core"
+definition = "失敗すると著しい損害があるので、十分に確かめると決めた{@id:feature}。{@id:promise-list}での項目名は core"
 
 [[term]]
 id = "formal-feature"
 name = "形式手法を使う機能"
-definition = "オラクル（TLA+）で確かめる機能。約束リストでの項目名は formal。コア機能は、理由を書いて合意しない限り形式手法を使う。形式手法を使う機能の約束は、どれも TLA+ で確かめるか、確かめない理由を書く"
+definition = "{@id:oracle}（TLA+）で確かめる{@id:feature}。{@id:promise-list}での項目名は formal。{@id:core-feature}は、理由を書いて{@id:agreement}しない限り形式手法を使う。形式手法を使う機能の{@id:promise}は、どれも TLA+ で確かめるか、確かめない理由を書く"
 
 [[term]]
 id = "term"
 name = "用語"
-definition = "ものや概念（例: 合意の記録、指紋）。約束の対象の 1 つ"
+definition = "ものや概念（例: {@id:agreement-record}、{@id:fingerprint}）。{@id:promise}の対象の 1 つ"
 
 [[term]]
 id = "feature"
 name = "機能"
-definition = "利用者が行う操作（例: 審査の実行）。約束の対象の 1 つ"
+definition = "利用者が行う操作（例: {@id:check}の実行）。{@id:promise}の対象の 1 つ"
 
 [[term]]
 id = "layer"
 name = "レイヤー"
-definition = "約束がソフトウェアのどの部分の話か"
+definition = "{@id:promise}が{@id:software}のどの部分の話か"
 
 [[term]]
 id = "origin"
 name = "由来"
-definition = "約束が作られたり変わったりした履歴（コミット）"
+definition = "{@id:promise}が作られたり変わったりした履歴（コミット）"
 
 [[term]]
 id = "evidence"
 name = "エビデンス"
-definition = "約束が成り立っていることの裏付け"
+definition = "{@id:promise}が成り立っていることの裏付け"
 
 [[term]]
 id = "stage"
 name = "ステージ"
-definition = "エビデンスを得る開発の段階。約束リストでの項目名は stage"
+definition = "{@id:evidence}を得る開発の段階。{@id:promise-list}での項目名は stage"
 part_of = "evidence"
 
 [[term]]
 id = "plan-stage"
 name = "計画"
-definition = "ソースコードや設定ファイルを編集しなくても得られ、リリースの前に確かめられるエビデンスに合意する段階。例: 約束、モデル、コードベースを分析した結果（カバレッジ、ホットスポットなど）"
+definition = "ソースコードや設定ファイルを編集しなくても得られ、リリースの前に確かめられる{@id:evidence}に{@id:agree-on-review}段階。例: {@id:promise}、モデル、コードベースを分析した結果（カバレッジ、ホットスポットなど）"
 part_of = "stage"
 
 [[term]]
 id = "implementation-stage"
 name = "実装"
-definition = "ソースコードや設定ファイルを足したり、変えたり、消したりして得られ、リリースの前に確かめられるエビデンスに合意する段階。例: 社内に 3 つの案を公開して試した結果"
+definition = "ソースコードや設定ファイルを足したり、変えたり、消したりして得られ、リリースの前に確かめられる{@id:evidence}に{@id:agree-on-review}段階。例: 社内に 3 つの案を公開して試した結果"
 part_of = "stage"
 
 [[term]]
 id = "release-stage"
 name = "リリース"
-definition = "ソフトウェアをリリースする時に確かめられるエビデンスに合意する段階"
+definition = "{@id:software}をリリースする時に確かめられる{@id:evidence}に{@id:agree-on-review}段階"
 part_of = "stage"
 
 [[term]]
 id = "operation-stage"
 name = "運用"
-definition = "リリースした後に、動いているソフトウェアから確かめられるエビデンスに合意する段階。例: センサーで確かめた結果"
+definition = "リリースした後に、動いている{@id:software}から確かめられる{@id:evidence}に{@id:agree-on-review}段階。例: {@id:sensor}で確かめた結果"
 part_of = "stage"
 
 [[term]]
 id = "evidence-type"
 name = "タイプ"
-definition = "エビデンスの種類。約束リストでの項目名は type"
+definition = "{@id:evidence}の種類。{@id:promise-list}での項目名は type"
 part_of = "evidence"
 
 [[term]]
 id = "oracle"
 name = "オラクル"
-definition = "クロスチェックやランダムチェックの正解を出すもの。TLA+ のモデルや、証明した関数など。エビデンスのタイプではない"
+definition = "{@id:cross-check}や{@id:random-check}の正解を出すもの。TLA+ のモデルや、{@id:proof}した関数など。{@id:evidence}の{@id:evidence-type}ではない"
 
 [[term]]
 id = "model-check"
@@ -119,7 +119,7 @@ part_of = "evidence-type"
 [[term]]
 id = "cross-check"
 name = "クロスチェック"
-definition = "オラクルと実装に同じ操作を送り、結果を比べるテスト（モデルベーステスト）"
+definition = "{@id:oracle}と実装に同じ操作を送り、結果を比べるテスト（モデルベーステスト）"
 part_of = "evidence-type"
 
 [[term]]
@@ -143,7 +143,7 @@ part_of = "evidence-type"
 [[term]]
 id = "concurrency-test"
 name = "同時実行のテスト"
-definition = "複数の操作を同時に行っても、約束が成り立つことを確かめるテスト"
+definition = "複数の操作を同時に行っても、{@id:promise}が成り立つことを確かめるテスト"
 part_of = "evidence-type"
 
 [[term]]
@@ -155,75 +155,75 @@ part_of = "evidence-type"
 [[term]]
 id = "guardrail-evidence"
 name = "ガードレールの検証"
-definition = "ガードレールが設定されていて、約束に反するものを本当に拒むことの裏付け。ガードレールの定義と、拒むことを確かめた結果（例: ミューテーションテストの結果）からなる"
+definition = "{@id:guardrail}が設定されていて、{@id:promise}に反するものを本当に拒むことの裏付け。{@id:guardrail-definition}と、拒むことを確かめた結果（例: ミューテーションテストの結果）からなる"
 part_of = "evidence-type"
 
 [[term]]
 id = "sensor-evidence"
 name = "センサーの検証"
-definition = "センサーが実装のコードの中にあり、約束が破れた時に本当に見つけて知らせることの裏付け。センサーの場所と、見つけることを確かめた結果（例: ミューテーションテストの結果）からなる"
+definition = "{@id:sensor}が実装のコードの中にあり、{@id:promise}が破れた時に本当に見つけて知らせることの裏付け。{@id:sensor-location}と、見つけることを確かめた結果（例: ミューテーションテストの結果）からなる"
 part_of = "evidence-type"
 
 [[term]]
 id = "scenario"
 name = "シナリオ"
-definition = "利用者の操作の流れで約束を確かめる台本（エビデンスの本体）"
+definition = "利用者の操作の流れで{@id:promise}を確かめる台本（{@id:evidence}の本体）"
 
 [[term]]
 id = "scenario-test"
 name = "シナリオテスト"
-definition = "シナリオを動かして確かめるテスト。CLI の txtar、端末で問いかけるものの Expect、画面の E2E のどれで書いたシナリオも含む"
+definition = "{@id:scenario}を動かして確かめるテスト。CLI の txtar、端末で問いかけるものの Expect、画面の E2E のどれで書いた{@id:scenario}も含む"
 part_of = "evidence-type"
 
 [[term]]
 id = "guardrail"
 name = "ガードレール"
-definition = "実装のコードとは別の所で、約束に反するものを拒む仕組み。コードを読まない人が確かめられるもの。例: DB の制約・トリガー、ファイルの権限、外との境界のスキーマの検証、サンドボックスや通信の許可の一覧。見つけるだけのもの（センサー、テスト）は含めない"
+definition = "実装のコードとは別の所で、{@id:promise}に反するものを拒む仕組み。コードを読まない人が確かめられるもの。例: DB の制約・トリガー、ファイルの権限、外との境界のスキーマの検証、サンドボックスや通信の許可の一覧。見つけるだけのもの（{@id:sensor}、テスト）は含めない"
 
 [[term]]
 id = "guardrail-definition"
 name = "ガードレールの定義"
-definition = "ガードレールを設定として書いたファイル。例: IaC の設定ファイル、DB のスキーマ"
+definition = "{@id:guardrail}を設定として書いたファイル。例: IaC の設定ファイル、DB のスキーマ"
 
 [[term]]
 id = "sensor"
 name = "センサー"
-definition = "実装のコードの中で、操作の後に約束が成り立っているかを確かめ、破れていたら見つけて知らせる仕組み（事後条件の確認）。拒むのではなく見つける。例: 操作の後の状態を確かめ、破れていればエラーを返して記録する。実装のコードの外で拒むものはガードレール、開発中に確かめるものはテスト"
+definition = "実装のコードの中で、操作の後に{@id:promise}が成り立っているかを確かめ、破れていたら見つけて知らせる仕組み（事後条件の確認）。拒むのではなく見つける。例: 操作の後の状態を確かめ、破れていればエラーを返して記録する。実装のコードの外で拒むものは{@id:guardrail}、開発中に確かめるものはテスト"
 
 [[term]]
 id = "sensor-location"
 name = "センサーの場所"
-definition = "センサーがある、実装のコードの中の場所。sensor のアノテーションで示す"
+definition = "{@id:sensor}がある、実装のコードの中の場所。sensor の{@id:annotation}で示す"
 
 [[term]]
 id = "story"
 name = "ストーリー"
-definition = "開発の単位。ストーリーストア（GitHub Issues など）で管理する"
+definition = "開発の単位。{@id:story-store}（GitHub Issues など）で管理する"
 
 [[term]]
 id = "agreement"
 name = "合意"
-definition = "約束などの今の中身が要求どおりかを人が確かめ、認めること。動作は「合意する」"
+definition = "{@id:promise}などの今の中身が要求どおりかを人が確かめ、認めること。動作は「{@id:agree-on-review}」"
 
 [[term]]
 id = "agreement-record"
 name = "合意の記録"
-definition = "合意を書き留めたもの。約束・用語・機能なら ID と中身の指紋の組、ファイルならファイルパスと中身の指紋の組ごとに、誰が・いつ・どのストーリーで合意したかを書く。約束リストとは別のファイルに置く"
+definition = "{@id:agreement}を書き留めたもの。{@id:promise}・{@id:term}・{@id:feature}なら ID と中身の{@id:fingerprint}の組、ファイルならファイルパスと中身の{@id:fingerprint}の組ごとに、誰が・いつ・どの{@id:story}で{@id:agreement}したかを書く。{@id:promise-list}とは別のファイルに置く"
 
 [[term]]
 id = "proposed"
 name = "提案中"
-definition = "今の中身に、まだ合意していない状態。一度も合意していないものと、前の合意から中身が変わったものの両方を含む"
+definition = "今の中身に、まだ{@id:agreement}していない状態。一度も{@id:agreement}していないものと、前の{@id:agreement}から中身が変わったものの両方を含む"
 
 [[term]]
 id = "agreed"
 name = "合意済"
-definition = "今の中身に合意している状態"
+definition = "今の中身に{@id:agreement}している状態"
 
 [[term]]
 id = "base-branch"
 name = "ベースブランチ"
-definition = "差分を出す時に比べるブランチ。そのブランチとの分岐点と比べる"
+definition = "差分を出す時に比べるブランチ。そのブランチとの{@id:branch-point}と比べる"
 
 [[term]]
 id = "ai-proposal"
@@ -240,187 +240,187 @@ part_of = "flag"
 [[term]]
 id = "changed-since-agreement"
 name = "差分あり"
-definition = "前の合意から中身が変わったもの"
+definition = "前の{@id:agreement}から中身が変わったもの"
 part_of = "flag"
 
 [[term]]
 id = "check"
 name = "審査"
-definition = "CLI の vanda check が行う点検。約束リスト・アノテーション・Story: のトレーラー・合意・エビデンスの予定などを読んで、間違いや矛盾がなく基準を満たすかを判断する"
+definition = "CLI の vanda check が行う点検。{@id:promise-list}・{@id:annotation}・{@id:story-trailer}・{@id:agreement}・{@id:evidence-plan}などを読んで、間違いや矛盾がなく基準を満たすかを判断する"
 
 [[term]]
 id = "promise-list-shape-check"
 name = "約束リストの形の審査"
-definition = "約束リストが決まった形で書かれているかを確かめる審査。審査の設定に書く名前は promise-list-shape"
+definition = "{@id:promise-list}が決まった形で書かれているかを確かめる{@id:check}。{@id:check-config}に書く名前は promise-list-shape"
 part_of = "check"
 
 [[term]]
 id = "annotation-links-check"
 name = "アノテーションのつながりの審査"
-definition = "アノテーションが、約束リストにある用語・機能・約束を正しく指しているかを確かめる審査。審査の設定に書く名前は annotation-links"
+definition = "{@id:annotation}が、{@id:promise-list}にある{@id:term}・{@id:feature}・{@id:promise}を正しく指しているかを確かめる{@id:check}。{@id:check-config}に書く名前は annotation-links"
 part_of = "check"
 
 [[term]]
 id = "story-origin-check"
 name = "由来の審査"
-definition = "約束リストを変えたコミットが、どのストーリーのものか分かるかを確かめる審査。審査の設定に書く名前は story-origin"
+definition = "{@id:promise-list}を変えたコミットが、どの{@id:story}のものか分かるかを確かめる{@id:check}。{@id:check-config}に書く名前は story-origin"
 part_of = "check"
 
 [[term]]
 id = "agreement-check"
 name = "合意の審査"
-definition = "合意の対象の今の中身に、PO が合意しているかを確かめる審査。審査の設定に書く名前は agreement"
+definition = "{@id:agreement}の対象の今の中身に、PO が{@id:agreement}しているかを確かめる{@id:check}。{@id:check-config}に書く名前は agreement"
 part_of = "check"
 
 [[term]]
 id = "agreement-targets-check"
 name = "合意の記録の指す先の審査"
-definition = "合意の記録が、約束リストにあるものを指しているかを確かめる審査。審査の設定に書く名前は agreement-targets"
+definition = "{@id:agreement-record}が、{@id:promise-list}にあるものを指しているかを確かめる{@id:check}。{@id:check-config}に書く名前は agreement-targets"
 part_of = "check"
 
 [[term]]
 id = "evidence-present-check"
 name = "エビデンスが揃っている審査"
-definition = "約束に予定したエビデンスが揃っているかを確かめる審査。審査の設定に書く名前は evidence-present"
+definition = "{@id:promise}に予定した{@id:evidence}が揃っているかを確かめる{@id:check}。{@id:check-config}に書く名前は evidence-present"
 part_of = "check"
 
 [[term]]
 id = "unread-files-check"
 name = "読まれていないファイルの審査"
-definition = ".vanda/ に、vanda が読まないファイルが置かれていないかを確かめる審査。審査の設定に書く名前は unread-files"
+definition = "{@id:vanda-dir} に、{@id:vanda} が読まないファイルが置かれていないかを確かめる{@id:check}。{@id:check-config}に書く名前は unread-files"
 part_of = "check"
 
 [[term]]
 id = "mistake"
 name = "誤り"
-definition = "人が書いたもの（設定・約束リスト・合意の記録・アノテーション・コマンドの引数など）の間違いで、vanda が見つけて知らせるもの。例: 設定の誤り、約束リストの形の誤り、審査で見つかった誤り"
+definition = "人が書いたもの（設定・{@id:promise-list}・{@id:agreement-record}・{@id:annotation}・コマンドの引数など）の間違いで、{@id:vanda} が見つけて知らせるもの。例: 設定の誤り、{@id:promise-list}の形の誤り、{@id:check}で見つかった誤り"
 
 [[term]]
 id = "error"
 name = "エラー"
-definition = "vanda や、vanda が呼んだもの（アダプタ・git・ストーリーストアなど）が、処理を続けられずに失敗すること。0 以外の終了コードや、API の 4xx・5xx で返す。例: アダプタが 0 以外で終わった、GitHub に繋がらない"
+definition = "{@id:vanda} や、{@id:vanda} が呼んだもの（{@id:adapter}・git・{@id:story-store}など）が、処理を続けられずに失敗すること。0 以外の終了コードや、API の 4xx・5xx で返す。例: {@id:adapter}が 0 以外で終わった、GitHub に繋がらない"
 
 [[term]]
 id = "flag"
 name = "フラグ"
-definition = "注意して読む手がかりとして、約束などに立てるもの"
+definition = "注意して読む手がかりとして、{@id:promise}などに立てるもの"
 
 [[term]]
 id = "annotation"
 name = "アノテーション"
-definition = "仕様・テスト・本番のコードに書く注釈。約束などの ID を指す（例: @vanda:evidence <約束の ID>）"
+definition = "仕様・テスト・本番のコードに書く注釈。{@id:promise}などの ID を指す（例: @vanda:evidence <{@id:promise}の ID>）"
 
 [[term]]
 id = "adapter"
 name = "アダプタ"
-definition = "vanda と、言語や道具・ストーリーストア・ガードレールの定義とのあいだで受け渡しをする部品"
+definition = "{@id:vanda} と、言語や道具・{@id:story-store}・{@id:guardrail-definition}とのあいだで受け渡しをする部品"
 
 [[term]]
 id = "builtin-adapter"
 name = "組込みのアダプタ"
-definition = "vanda が中に持つアダプタ"
+definition = "{@id:vanda} が中に持つ{@id:adapter}"
 part_of = "adapter"
 
 [[term]]
 id = "custom-adapter"
 name = "カスタムアダプタ"
-definition = "利用者がアダプタのディレクトリに置いたアダプタ"
+definition = "利用者が{@id:adapter-dir}に置いた{@id:adapter}"
 part_of = "adapter"
 
 [[term]]
 id = "fingerprint"
 name = "指紋"
-definition = "中身が同じかを比べるための値。合意の記録は、合意した時の指紋を持つ"
+definition = "中身が同じかを比べるための値。{@id:agreement-record}は、{@id:agreement}した時の指紋を持つ"
 
 [[term]]
 id = "story-store"
 name = "ストーリーストア"
-definition = "ストーリーを書いて置いておく所。例: GitHub Issues。vanda はここからストーリーを読む"
+definition = "{@id:story}を書いて置いておく所。例: GitHub Issues。{@id:vanda} はここから{@id:story}を読む"
 
 [[term]]
 id = "story-trailer"
 name = "Story: のトレーラー"
-definition = "コミットのメッセージの末尾に書く Story: <ID>（Co-Authored-By: と同じ Git のトレーラー）。そのコミットがどのストーリーのものかを表す"
+definition = "コミットのメッセージの末尾に書く Story: <ID>（Co-Authored-By: と同じ Git のトレーラー）。そのコミットがどの{@id:story}のものかを表す"
 
 [[term]]
 id = "reference"
 name = "参照"
-definition = "約束リストの文の中で、ほかの用語・機能・約束を ID で指したもの"
+definition = "{@id:promise-list}の文の中で、ほかの{@id:term}・{@id:feature}・{@id:promise}を ID で指したもの"
 
 [[term]]
 id = "vanda-dir"
 name = ".vanda/"
-definition = "vanda が読み書きするファイルを置く、リポジトリの直下のディレクトリ（.vanda/）"
+definition = "{@id:vanda} が読み書きするファイルを置く、リポジトリの直下のディレクトリ（.vanda/）"
 
 [[term]]
 id = "config-file"
 name = "設定のファイル"
-definition = "vanda の設定を書いたファイル（.vanda/config.toml）"
+definition = "{@id:vanda} の設定を書いたファイル（{@id:vanda-dir}config.toml）"
 part_of = "vanda-dir"
 
 [[term]]
 id = "default-promise-list-file"
 name = "約束リストの既定のファイル"
-definition = "設定に promises を書かない時に、約束リストとして読むファイル（.vanda/promises.toml）"
+definition = "設定に promises を書かない時に、{@id:promise-list}として読むファイル（{@id:vanda-dir}promises.toml）"
 part_of = "vanda-dir"
 
 [[term]]
 id = "default-agreement-record-file"
 name = "合意の記録の既定のファイル"
-definition = "設定に agreements を書かない時に、合意の記録として読み書きするファイル（.vanda/agreements.toml）"
+definition = "設定に agreements を書かない時に、{@id:agreement-record}として読み書きするファイル（{@id:vanda-dir}agreements.toml）"
 part_of = "vanda-dir"
 
 [[term]]
 id = "check-config-dir"
 name = "審査の設定のディレクトリ"
-definition = "審査の設定を <名前>.toml という名前で置くディレクトリ（.vanda/checks/）"
+definition = "{@id:check-config}を <名前>.toml という名前で置くディレクトリ（{@id:vanda-dir}checks/）"
 part_of = "vanda-dir"
 
 [[term]]
 id = "adapter-dir"
 name = "アダプタのディレクトリ"
-definition = "カスタムアダプタを置くディレクトリ（.vanda/adapters/）"
+definition = "{@id:custom-adapter}を置くディレクトリ（{@id:vanda-dir}adapters/）"
 part_of = "vanda-dir"
 
 [[term]]
 id = "check-config"
 name = "審査の設定"
-definition = "どの審査を、どの範囲で行うかを書いたファイル"
+definition = "どの{@id:check}を、どの{@id:check-scope}で行うかを書いたファイル"
 
 [[term]]
 id = "check-scope"
 name = "範囲"
-definition = "審査が見るもの"
+definition = "{@id:check}が見るもの"
 
 [[term]]
 id = "branch-point"
 name = "分岐点"
-definition = "今のブランチがベースブランチから分かれたコミット"
+definition = "今のブランチが{@id:base-branch}から分かれたコミット"
 
 [[term]]
 id = "detached"
 name = "外れた合意"
-definition = "ストーリーが合意したことがあり、今の中身にそのストーリーの合意がないもの。誰が変えたかを問わない"
+definition = "{@id:story}が{@id:agreement}したことがあり、今の中身にその{@id:story}の{@id:agreement}がないもの。誰が変えたかを問わない"
 
 [[term]]
 id = "evidence-plan"
 name = "エビデンスの予定"
-definition = "約束ごとに、どのステージで、どのタイプのエビデンスを、どのレイヤーで得るかを書いたもの（約束リストの項目は evidence）"
+definition = "{@id:promise}ごとに、どの{@id:stage}で、どの{@id:evidence-type}の{@id:evidence}を、どの{@id:layer}で得るかを書いたもの（{@id:promise-list}の項目は evidence）"
 
 [[feature]]
 id = "start-server"
 name = "vanda サーバーを起動する（vanda serve）"
-definition = "vanda サーバーを起動し、画面をブラウザで開く"
+definition = "{@id:vanda-server}を起動し、画面をブラウザで開く"
 
 [[feature]]
 id = "read-promise-list"
 name = "約束リストを読む"
-definition = "約束リストを読み、形を確かめる"
+definition = "{@id:promise-list}を読み、形を確かめる"
 
 [[feature]]
 id = "show-references"
 name = "参照を、指す先が分かる形で見せる"
-definition = "約束リストの文の中の参照を、指す先が分かる形で見せる"
+definition = "{@id:promise-list}の文の中の参照を、指す先が分かる形で見せる"
 
 [[feature]]
 id = "store-agreements"
@@ -430,17 +430,17 @@ definition = "合意の記録を読み書きする"
 [[feature]]
 id = "build-origins"
 name = "由来を作る"
-definition = "約束ごとの由来を作る"
+definition = "{@id:promise}ごとの由来を作る"
 
 [[feature]]
 id = "choose-base-branch"
 name = "ベースブランチを選ぶ"
-definition = "比べるベースブランチを、画面でその場で選ぶ"
+definition = "比べる{@id:base-branch}を、画面でその場で選ぶ"
 
 [[feature]]
 id = "connect-story-store"
 name = "ストーリーストアと連携する"
-definition = "ストーリーストアから、ストーリーを読む"
+definition = "{@id:story-store}から、{@id:story}を読む"
 
 [[feature]]
 id = "store-config"
@@ -477,7 +477,7 @@ formal = true
 [[feature]]
 id = "show-evidence-status"
 name = "エビデンスの予定と実際を示す"
-definition = "エビデンスの予定ごとに、揃っているかを示す"
+definition = "{@id:evidence-plan}ごとに、揃っているかを示す"
 
 [[feature]]
 id = "fold-groups"
@@ -497,7 +497,7 @@ definition = "外れた合意を示す"
 [[feature]]
 id = "show-entry-history"
 name = "1 件の詳細に由来と合意の履歴を示す"
-definition = "レビューの 1 件の詳細に、約束の由来と合意の履歴を示す"
+definition = "レビューの 1 件の詳細に、{@id:promise}の{@id:origin}と{@id:agreement}の履歴を示す"
 
 [[feature]]
 id = "revoke-agreement"
@@ -509,67 +509,67 @@ formal = true
 [[feature]]
 id = "agree-on-detail-pages"
 name = "約束の詳細とファイルの画面で合意する"
-definition = "約束の詳細の画面と、ファイルの画面でも、合意する・合意を取り消す"
+definition = "{@id:promise}の詳細の画面と、ファイルの画面でも、{@id:agree-on-review}・{@id:revoke-agreement}"
 
 [[feature]]
 id = "show-claim-fields"
 name = "約束の文・理由・条件・レイヤーを示す"
-definition = "約束の詳細に、約束の中身を示す"
+definition = "{@id:promise}の詳細に、{@id:promise}の中身を示す"
 
 [[feature]]
 id = "show-claim-evidence"
 name = "約束のエビデンスを示す"
-definition = "約束の詳細に、エビデンスを示す"
+definition = "{@id:promise}の詳細に、{@id:evidence}を示す"
 
 [[feature]]
 id = "show-claim-origin"
 name = "約束の由来を示す"
-definition = "約束の詳細に、由来を示す"
+definition = "{@id:promise}の詳細に、{@id:origin}を示す"
 
 [[feature]]
 id = "show-claim-agreements"
 name = "約束の合意の履歴を示す"
-definition = "約束の詳細に、合意の履歴を示す"
+definition = "{@id:promise}の詳細に、{@id:agreement}の履歴を示す"
 
 [[feature]]
 id = "render-tla-symbols"
 name = "TLA+ を数学の記号で見せる"
-definition = "オラクルの定義（TLA+）を数学の記号で見せる"
+definition = "{@id:oracle}の定義（TLA+）を数学の記号で見せる"
 
 [[feature]]
 id = "show-claim-at-commit"
 name = "その時点の約束の中身を示す"
-definition = "由来のコミットや合意の記録を選ぶと、その時点の約束の中身を示す"
+definition = "{@id:origin}のコミットや{@id:agreement-record}を選ぶと、その時点の約束の中身を示す"
 
 [[feature]]
 id = "diagnose-setup"
 name = "設定とつながりを確かめる（vanda doctor）"
-definition = "今効いている設定と版と、ストーリーストアにつながるかを確かめる"
+definition = "今効いている設定と版と、{@id:story-store}につながるかを確かめる"
 
 [[feature]]
 id = "run-checks"
 name = "審査を行う（vanda check）"
-definition = "審査の設定のファイルに並べた審査を行う"
+definition = "{@id:check}の設定のファイルに並べた{@id:check}を行う"
 
 [[feature]]
 id = "list-check-kinds"
 name = "審査を列挙する"
-definition = "vanda check で行える審査の種類を用意する。どの種類があるかは、用語「審査」の一部として並べる"
+definition = "vanda check で行える{@id:check}の種類を用意する。どの種類があるかは、{@id:term}「{@id:check}」の一部として並べる"
 
 [[feature]]
 id = "create-vanda-dir"
 name = ".vanda/ を作る（vanda init）"
-definition = "端末で問いかけ、答えで .vanda/ を作る"
+definition = "端末で問いかけ、答えで {@id:vanda-dir} を作る"
 
 [[feature]]
 id = "show-version"
 name = "版を出す（vanda version）"
-definition = "動いている vanda の版を出す"
+definition = "動いている {@id:vanda} の版を出す"
 
 [[feature]]
 id = "read-annotations"
 name = "アノテーションを読み取る"
-definition = "ファイルから、アノテーションと、付いているものの名前を読む"
+definition = "ファイルから、{@id:annotation}と、付いているものの名前を読む"
 
 [[feature]]
 id = "run-custom-adapters"
@@ -579,7 +579,7 @@ definition = "カスタムアダプタを動かす"
 [[claim]]
 id = "promise-list-reads-all-patterns"
 subjects = ["read-promise-list", "promise-list"]
-statement = "設定の promises のパターンに当たるファイルを、すべて約束リストとして読む"
+statement = "設定の promises のパターンに当たるファイルを、すべて{@id:promise-list}として読む"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -601,7 +601,7 @@ layers = ["cli"]
 [[claim]]
 id = "reads-committed-files-only"
 subjects = ["run-checks", "list-changes", "check"]
-statement = "審査とレビューの画面は、設定・約束リスト・合意の記録のファイルと、アノテーションを読むファイルを、HEAD のコミットの中身で読む。コミットしていないファイルと変更（git add したものを含む）は読まない"
+statement = "{@id:check}とレビューの画面は、設定・{@id:promise-list}・{@id:agreement-record}のファイルと、{@id:annotation}を読むファイルを、HEAD のコミットの中身で読む。コミットしていないファイルと変更（git add したものを含む）は読まない"
 rationale = "コミットしていないものは、提出される保証がなく、ないのと同じため。手元と CI で結果が変わらないようにする"
 layers = ["cli", "api"]
 flags = ["ai-proposal"]
@@ -624,7 +624,7 @@ layers = ["api"]
 [[claim]]
 id = "promise-list-default-file-may-be-absent"
 subjects = ["read-promise-list", "promise-list"]
-statement = "設定に promises を書かず、約束リストの既定のファイルがなければ、空の約束リストとみなす"
+statement = "設定に promises を書かず、{@id:default-promise-list-file}がなければ、空の{@id:promise-list}とみなす"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -636,8 +636,8 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-explicit-file-must-exist"
 subjects = ["read-promise-list", "promise-list"]
-statement = "設定にはっきり書いた、ワイルドカードのない場所のファイルがなければ、誤りにする"
-condition = "ワイルドカードのあるパターンが何にも当たらないのは誤りにしない"
+statement = "設定にはっきり書いた、ワイルドカードのない場所のファイルがなければ、{@id:mistake}にする"
+condition = "ワイルドカードのあるパターンが何にも当たらないのは{@id:mistake}にしない"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -654,7 +654,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-unknown-entries-rejected"
 subjects = ["read-promise-list", "list-check-kinds", "promise-list"]
-statement = "約束リストに決まっていない表か項目があれば、promise-list-shape の誤りにする"
+statement = "{@id:promise-list}に決まっていない表か項目があれば、promise-list-shape の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -666,7 +666,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-required-fields"
 subjects = ["read-promise-list", "list-check-kinds", "promise-list"]
-statement = "約束リストの表に必須の項目がなければ、promise-list-shape の誤りにする"
+statement = "{@id:promise-list}の表に必須の項目がなければ、promise-list-shape の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -683,7 +683,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-required-field-names"
 subjects = ["read-promise-list", "list-check-kinds", "promise-list"]
-statement = "約束リストの必須の項目は、用語と機能の id・name・definition、約束の id・subjects・statement・layers・evidence、エビデンスの stage・type・layers とする"
+statement = "{@id:promise-list}の必須の項目は、{@id:term}と{@id:feature}の id・name・definition、{@id:promise}の id・subjects・statement・layers・evidence、{@id:evidence}の stage・type・layers とする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -695,7 +695,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-non-empty"
 subjects = ["read-promise-list", "list-check-kinds", "promise-list"]
-statement = "約束の subjects・layers・evidence と、エビデンスの layers が空なら、promise-list-shape の誤りにする"
+statement = "{@id:promise}の subjects・layers・evidence と、{@id:evidence}の layers が空なら、promise-list-shape の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -707,7 +707,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-field-types"
 subjects = ["read-promise-list", "list-check-kinds", "promise-list"]
-statement = "約束リストの項目の型が、決まった型（core・formal は真偽、約束の subjects・layers・flags・guesses とエビデンスの layers は文字列の配列、evidence は表の配列、ほかの項目は文字列）でなければ、promise-list-shape の誤りにする"
+statement = "{@id:promise-list}の項目の型が、決まった型（core・formal は真偽、{@id:promise}の subjects・layers・flags・guesses と{@id:evidence}の layers は文字列の配列、evidence は表の配列、ほかの項目は文字列）でなければ、promise-list-shape の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -719,7 +719,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-id-shape"
 subjects = ["read-promise-list", "list-check-kinds", "promise-list"]
-statement = "用語・機能・約束の ID が、英小文字で始め、英小文字・数字をハイフンでつないだ形でなければ、promise-list-shape の誤りにする"
+statement = "{@id:term}・{@id:feature}・{@id:promise}の ID が、英小文字で始め、英小文字・数字をハイフンでつないだ形でなければ、promise-list-shape の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -731,8 +731,8 @@ layers = ["cli"]
 [[claim]]
 id = "reference-form"
 subjects = ["read-promise-list", "reference", "promise-list"]
-statement = "名前を除く、自然言語で書く項目の中の {@@id:<ID>} を、その ID の用語・機能・約束を指す参照として読む"
-rationale = "どれがどれを参照しているかを機械的に追えるようにし、後から依存や詳細化などの関係を定義しやすくするため。また、定義していない語が一目で分かるようにするため。名前を除くのは、名前がほかの約束や文書に一言一句同じに載せるものだから。ほかの項目を絞らないのは、ID を変えない限り、参照元と参照先のあいだで、参照を通じて影響が伝わることがないため"
+statement = "名前を除く、自然言語で書く項目の中の {@@id:<ID>} を、その ID の{@id:term}・{@id:feature}・{@id:promise}を指す{@id:reference}として読む"
+rationale = "どれがどれを参照しているかを機械的に追えるようにし、後から依存や詳細化などの関係を定義しやすくするため。また、定義していない語が一目で分かるようにするため。名前を除くのは、名前がほかの{@id:promise}や文書に一言一句同じに載せるものだから。ほかの項目を絞らないのは、ID を変えない限り、{@id:reference}元と{@id:reference}先のあいだで、{@id:reference}を通じて影響が伝わることがないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -744,8 +744,8 @@ layers = ["cli"]
 [[claim]]
 id = "reference-literal"
 subjects = ["read-promise-list", "reference"]
-statement = "{@@@@ は、参照ではなく、文字の {@@ として読む"
-rationale = "ほかの {@@ をすべて参照として読み、種類の書き間違いも含めて、壊れた参照をすべて誤りにするため"
+statement = "{@@@@ は、{@id:reference}ではなく、文字の {@@ として読む"
+rationale = "ほかの {@@ をすべて{@id:reference}として読み、種類の書き間違いも含めて、壊れた{@id:reference}をすべて{@id:mistake}にするため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -757,8 +757,8 @@ layers = ["cli"]
 [[claim]]
 id = "reference-broken"
 subjects = ["read-promise-list", "list-check-kinds", "reference"]
-statement = "{@@@@ でない {@@ が次のどれかに当たれば、promise-list-shape の誤りにする。{@@<種類>:<値>} の形でない。種類が id でない。指す ID の用語・機能・約束がない"
-rationale = "ID を変えたり消したりした時に、古い ID を指したままの参照を見落とさないため"
+statement = "{@@@@ でない {@@ が次のどれかに当たれば、promise-list-shape の{@id:mistake}にする。{@@<種類>:<値>} の形でない。種類が id でない。指す ID の{@id:term}・{@id:feature}・{@id:promise}がない"
+rationale = "ID を変えたり消したりした時に、古い ID を指したままの{@id:reference}を見落とさないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -770,8 +770,8 @@ layers = ["cli"]
 [[claim]]
 id = "reference-fingerprint-raw"
 subjects = ["reference", "fingerprint"]
-statement = "指紋は、参照を置き換える前の、書いたままの文から作る"
-rationale = "参照先の名前や定義を変えても、参照元の合意を外さないため。参照先が変わった時に参照元をどう扱うかは、約束どうしの関係を定義する時に、関係ごとに決める"
+statement = "{@id:fingerprint}は、{@id:reference}を置き換える前の、書いたままの文から作る"
+rationale = "{@id:reference}先の名前や定義を変えても、{@id:reference}元の{@id:agreement}を外さないため。{@id:reference}先が変わった時に{@id:reference}元をどう扱うかは、{@id:promise}どうしの関係を定義する時に、関係ごとに決める"
 layers = ["cli", "api"]
 flags = ["ai-proposal"]
 
@@ -788,8 +788,8 @@ layers = ["api"]
 [[claim]]
 id = "reference-shown"
 subjects = ["show-references", "reference"]
-statement = "画面では、用語と機能を指す参照をその名前に、約束を指す参照をその ID に置き換えて、参照だと分かる見た目で出す。約束を指す参照は、その約束の詳細へのリンクにする"
-rationale = "約束には名前がなく、ID だけでおよその意味が分かるように付けているため"
+statement = "画面では、{@id:term}と{@id:feature}を指す{@id:reference}をその名前に、{@id:promise}を指す{@id:reference}をその ID に置き換えて、{@id:reference}だと分かる見た目で出す。{@id:promise}を指す{@id:reference}は、その{@id:promise}の詳細へのリンクにする"
+rationale = "{@id:promise}には名前がなく、ID だけでおよその意味が分かるように付けているため"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -806,7 +806,7 @@ layers = ["gui"]
 [[claim]]
 id = "reference-popup"
 subjects = ["show-references", "reference"]
-statement = "参照に触れた時かフォーカスした時に、用語と機能ならその定義を、約束ならその文を出す"
+statement = "{@id:reference}に触れた時かフォーカスした時に、{@id:term}と{@id:feature}ならその定義を、{@id:promise}ならその文を出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -823,8 +823,8 @@ layers = ["gui"]
 [[claim]]
 id = "reference-diff"
 subjects = ["show-references", "compare-contents", "reference"]
-statement = "差分は、比べる元と今の文の両方の参照を置き換えてから比べる。置き換える名前は、両方とも今の名前を使う。今はない用語・機能を指す参照だけ、比べる元の時点の名前を使う"
-rationale = "合意する人が、約束の詳細と同じ文で差分を読めるようにするため。比べる元にも今の名前を使うのは、参照先の名前を変えただけの所を、差として出さないため"
+statement = "差分は、比べる元と今の文の両方の{@id:reference}を置き換えてから比べる。置き換える名前は、両方とも今の名前を使う。今はない{@id:term}・{@id:feature}を指す{@id:reference}だけ、比べる元の時点の名前を使う"
+rationale = "{@id:agree-on-review}人が、{@id:promise}の詳細と同じ文で差分を読めるようにするため。比べる元にも今の名前を使うのは、{@id:reference}先の名前を変えただけの所を、差として出さないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -836,7 +836,7 @@ layers = ["api"]
 [[claim]]
 id = "reference-filter"
 subjects = ["show-references", "reference"]
-statement = "一覧を書いた文字で絞り込む時は、参照を置き換えた後の文に当てる"
+statement = "一覧を書いた文字で絞り込む時は、{@id:reference}を置き換えた後の文に当てる"
 rationale = "利用者が読んでいるのは置き換えた後の文なので、画面に見える語で探せるようにするため"
 layers = ["gui"]
 flags = ["ai-proposal"]
@@ -849,7 +849,7 @@ layers = ["gui"]
 [[claim]]
 id = "promise-list-id-unique"
 subjects = ["read-promise-list", "list-check-kinds", "promise-list"]
-statement = "用語・機能・約束の ID が、表の種類やファイルを問わず重なれば、誤りにする。誤りは、後になるほう（ファイルのパスの順、同じファイルなら行の順）の行を指し、先になるほうの場所を書く"
+statement = "{@id:term}・{@id:feature}・{@id:promise}の ID が、表の種類やファイルを問わず重なれば、{@id:mistake}にする。{@id:mistake}は、後になるほう（ファイルのパスの順、同じファイルなら行の順）の行を指し、先になるほうの場所を書く"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -866,7 +866,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-part-of"
 subjects = ["read-promise-list", "list-check-kinds", "term"]
-statement = "用語の part_of の先が用語になければ、または part_of が循環すれば、promise-list-shape の誤りにする"
+statement = "{@id:term}の part_of の先が{@id:term}になければ、または part_of が循環すれば、promise-list-shape の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -878,7 +878,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-subjects-exist"
 subjects = ["read-promise-list", "list-check-kinds", "promise"]
-statement = "約束の subjects の先が用語か機能になければ、promise-list-shape の誤りにする"
+statement = "{@id:promise}の subjects の先が{@id:term}か{@id:feature}になければ、promise-list-shape の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -890,7 +890,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-layers-known"
 subjects = ["read-promise-list", "list-check-kinds", "layer"]
-statement = "約束とエビデンスの layers に、設定のレイヤーにない値があれば、promise-list-shape の誤りにする"
+statement = "{@id:promise}と{@id:evidence}の layers に、設定の{@id:layer}にない値があれば、promise-list-shape の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -902,7 +902,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-evidence-layers-within-claim"
 subjects = ["read-promise-list", "list-check-kinds", "evidence"]
-statement = "エビデンスの layers に、その約束の layers にないレイヤーがあれば、promise-list-shape の誤りにする"
+statement = "{@id:evidence}の layers に、その{@id:promise}の layers にない{@id:layer}があれば、promise-list-shape の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -914,7 +914,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-every-layer-has-evidence"
 subjects = ["read-promise-list", "list-check-kinds", "layer", "evidence"]
-statement = "約束に書いたレイヤーのうち、それを確かめるエビデンスが 1 つもないものがあれば、promise-list-shape の誤りにする"
+statement = "{@id:promise}に書いた{@id:layer}のうち、それを確かめる{@id:evidence}が 1 つもないものがあれば、promise-list-shape の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -926,7 +926,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-fixed-values"
 subjects = ["read-promise-list", "list-check-kinds", "stage", "evidence-type", "flag"]
-statement = "エビデンスの stage・type と、約束の flags が決まった値でなければ、promise-list-shape の誤りにする"
+statement = "{@id:evidence}の stage・type と、{@id:promise}の flags が決まった値でなければ、promise-list-shape の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -950,8 +950,8 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-formal-waiver"
 subjects = ["read-promise-list", "list-check-kinds", "core-feature", "formal-feature"]
-statement = "機能が core = true かつ formal = false なのに formal_waiver がなければ、またそれ以外で formal_waiver を書けば、promise-list-shape の誤りにする"
-rationale = "コア機能は、理由を書いて合意しない限り形式手法を使うため"
+statement = "{@id:feature}が core = true かつ formal = false なのに formal_waiver がなければ、またそれ以外で formal_waiver を書けば、promise-list-shape の{@id:mistake}にする"
+rationale = "{@id:core-feature}は、理由を書いて{@id:agreement}しない限り形式手法を使うため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -963,8 +963,8 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-formal-claims"
 subjects = ["read-promise-list", "list-check-kinds", "formal-feature", "model-check"]
-statement = "形式手法を使う機能（formal が真。省けば core と同じ）を subjects に持つ約束には、model-check の予定と model_check_waiver（TLA+ で確かめない理由）のどちらか一方だけを書く。どちらもないか、両方あれば、promise-list-shape の誤りにする"
-rationale = "コア機能で、仕様の書き忘れや、新しい約束が形式手法を通らないことを、人が見落としても止めるため。確かめない理由は約束の項目なので、合意の対象になる"
+statement = "{@id:formal-feature}（formal が真。省けば core と同じ）を subjects に持つ{@id:promise}には、model-check の予定と model_check_waiver（TLA+ で確かめない理由）のどちらか一方だけを書く。どちらもないか、両方あれば、promise-list-shape の{@id:mistake}にする"
+rationale = "{@id:core-feature}で、仕様の書き忘れや、新しい{@id:promise}が形式手法を通らないことを、人が見落としても止めるため。確かめない理由は{@id:promise}の項目なので、{@id:agreement}の対象になる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -981,8 +981,8 @@ layers = ["cli"]
 [[claim]]
 id = "fingerprint-excludes-flags"
 subjects = ["store-agreements", "flag", "agreement"]
-statement = "約束の指紋は、約束リストの項目から flags と guesses を除いたものから作る"
-rationale = "フラグは注意して読む手がかりで、合意すると外すので、フラグだけを変えても、合意し直さなくてよいようにするため"
+statement = "{@id:promise}の{@id:fingerprint}は、{@id:promise-list}の項目から flags と guesses を除いたものから作る"
+rationale = "{@id:flag}は注意して読む手がかりで、{@id:agree-on-review}と外すので、{@id:flag}だけを変えても、{@id:agreement}し直さなくてよいようにするため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -994,7 +994,7 @@ layers = ["cli"]
 [[claim]]
 id = "fingerprint-ignores-formatting"
 subjects = ["store-agreements", "agreement"]
-statement = "約束リストの項目の指紋は、表の中の項目の順や、空白・引用符の種類・インラインの表かどうかなど、TOML の書き方だけの違いでは変わらない。配列の中の順（subjects・layers・evidence など）と、文字列の中の文字は、変われば指紋も変わる"
+statement = "{@id:promise-list}の項目の{@id:fingerprint}は、表の中の項目の順や、空白・引用符の種類・インラインの表かどうかなど、TOML の書き方だけの違いでは変わらない。配列の中の順（subjects・layers・evidence など）と、文字列の中の文字は、変われば{@id:fingerprint}も変わる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1011,7 +1011,7 @@ layers = ["cli"]
 [[claim]]
 id = "fingerprint-as-written"
 subjects = ["store-agreements", "agreement"]
-statement = "約束リストの項目の指紋は、書いたとおりの項目から作り、省いた項目に既定の値を埋めない（formal を省いたものと formal = true と書いたものは、指紋が違う）"
+statement = "{@id:promise-list}の項目の{@id:fingerprint}は、書いたとおりの項目から作り、省いた項目に既定の値を埋めない（formal を省いたものと formal = true と書いたものは、{@id:fingerprint}が違う）"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1023,7 +1023,7 @@ layers = ["cli"]
 [[claim]]
 id = "fingerprint-file-content"
 subjects = ["store-agreements", "agreement", "scenario", "guardrail", "oracle"]
-statement = "シナリオ・ガードレールの定義・オラクルの定義のファイルの指紋は、ファイルの中身のバイト列そのものから作る"
+statement = "{@id:scenario}・{@id:guardrail-definition}・{@id:oracle}の定義のファイルの{@id:fingerprint}は、ファイルの中身のバイト列そのものから作る"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1035,8 +1035,8 @@ layers = ["cli"]
 [[claim]]
 id = "fingerprint-form"
 subjects = ["store-agreements", "fingerprint"]
-statement = "指紋は、元のバイト列の SHA-256 の値を、sha256: に続けて 16 進の小文字 64 文字で書いたもの"
-rationale = "作り方が変わると、今までの合意がすべて外れるか、違う中身を合意済とみなすため。期待する指紋は、実装とは別の源（手で書いた JSON を sha256sum に通したもの）から作る"
+statement = "{@id:fingerprint}は、元のバイト列の SHA-256 の値を、sha256: に続けて 16 進の小文字 64 文字で書いたもの"
+rationale = "作り方が変わると、今までの{@id:agreement}がすべて外れるか、違う中身を{@id:agreed}とみなすため。期待する{@id:fingerprint}は、実装とは別の源（手で書いた JSON を sha256sum に通したもの）から作る"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1048,8 +1048,8 @@ layers = ["cli"]
 [[claim]]
 id = "fingerprint-item-json"
 subjects = ["store-agreements", "fingerprint"]
-statement = "約束・用語・機能の指紋は、項目の表を決まった形の JSON（キーを UTF-8 のバイトの順に並べ、配列は書いた順、区切りの前後に空白を入れず、最後に改行を付けない）にした UTF-8 のバイト列から作る"
-rationale = "作り方が変わると、今までの合意がすべて外れるか、違う中身を合意済とみなすため。期待する指紋は、実装とは別の源（手で書いた JSON を sha256sum に通したもの）から作る"
+statement = "{@id:promise}・{@id:term}・{@id:feature}の{@id:fingerprint}は、項目の表を決まった形の JSON（キーを UTF-8 のバイトの順に並べ、配列は書いた順、区切りの前後に空白を入れず、最後に改行を付けない）にした UTF-8 のバイト列から作る"
+rationale = "作り方が変わると、今までの{@id:agreement}がすべて外れるか、違う中身を{@id:agreed}とみなすため。期待する{@id:fingerprint}は、実装とは別の源（手で書いた JSON を sha256sum に通したもの）から作る"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1073,7 +1073,7 @@ layers = ["cli"]
 [[claim]]
 id = "agreed-when-fingerprint-matches"
 subjects = ["agree-on-review", "agreement", "agreed", "proposed"]
-statement = "今の中身の指紋に合う合意の記録（ファイルなら、場所も合うもの）が 1 つでもあれば合意済、なければ提案中とする"
+statement = "今の中身の{@id:fingerprint}に合う{@id:agreement-record}（ファイルなら、場所も合うもの）が 1 つでもあれば{@id:agreed}、なければ{@id:proposed}とする"
 layers = ["model", "cli", "api"]
 flags = ["ai-proposal"]
 
@@ -1100,8 +1100,8 @@ layers = ["api"]
 [[claim]]
 id = "pass-only-when-all-seen"
 subjects = ["agree-on-review", "list-check-kinds", "agreement"]
-statement = "範囲 all の agreement が通るなら、次のどちらにも、一度は誰かが合意している。(1) 今ある約束・用語・機能・合意の対象のファイルの今の中身（ファイルなら場所も）。(2) 合意したことのある項目を消して、今はないこと"
-rationale = "PO が一度も見ていない状態で、審査が通らないようにするため。細かい場面（名前を元に戻す、消して足し直す など）の振る舞いは、この性質に反しないように決める"
+statement = "{@id:check-scope} all の agreement が通るなら、次のどちらにも、一度は誰かが{@id:agreement}している。(1) 今ある{@id:promise}・{@id:term}・{@id:feature}・{@id:agreement}の対象のファイルの今の中身（ファイルなら場所も）。(2) {@id:agreement}したことのある項目を消して、今はないこと"
+rationale = "PO が一度も見ていない状態で、{@id:check}が通らないようにするため。細かい場面（名前を元に戻す、消して足し直す など）の振る舞いは、この性質に反しないように決める"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
@@ -1118,8 +1118,8 @@ layers = ["cli"]
 [[claim]]
 id = "story-pass-only-when-seen"
 subjects = ["agree-on-review", "list-check-kinds", "agreement", "story"]
-statement = "ストーリー s の範囲の agreement が通るなら、比べる元と今で違う約束・用語・機能・合意の対象のファイルは、どれも今の状態（今ある中身か、ないこと）に一度は誰かが合意したものである"
-rationale = "ストーリーで変えたものを、PO が見ないまま合流させないため"
+statement = "{@id:story} s の{@id:check-scope}の agreement が通るなら、比べる元と今で違う{@id:promise}・{@id:term}・{@id:feature}・{@id:agreement}の対象のファイルは、どれも今の状態（今ある中身か、ないこと）に一度は誰かが{@id:agreement}したものである"
+rationale = "{@id:story}で変えたものを、PO が見ないまま合流させないため"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
@@ -1136,8 +1136,8 @@ layers = ["cli"]
 [[claim]]
 id = "renamed-file-needs-agreement"
 subjects = ["store-agreements", "agreement", "scenario"]
-statement = "ファイルの名前を変えたら、古い場所を消したものとし、新しい場所のファイルは、その場所に同じ中身への合意の記録がなければ、中身が同じでも提案中とする"
-rationale = "ファイルは場所で見分けるため。中身だけで見分けると、合意済のファイルを写した先が、誰も読まないまま合意済になる。名前を元に戻した時のように、その場所のその中身に一度合意していれば、合意し直さなくてよい"
+statement = "ファイルの名前を変えたら、古い場所を消したものとし、新しい場所のファイルは、その場所に同じ中身への{@id:agreement-record}がなければ、中身が同じでも{@id:proposed}とする"
+rationale = "ファイルは場所で見分けるため。中身だけで見分けると、{@id:agreed}のファイルを写した先が、誰も読まないまま{@id:agreed}になる。名前を元に戻した時のように、その場所のその中身に一度{@id:agreement}していれば、{@id:agreement}し直さなくてよい"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
@@ -1159,7 +1159,7 @@ layers = ["cli"]
 [[claim]]
 id = "old-agreements-kept-as-history"
 subjects = ["agree-on-review", "store-agreements", "agreement-record"]
-statement = "指紋の合わない合意の記録は、消さずに履歴として残す"
+statement = "{@id:fingerprint}の合わない{@id:agreement-record}は、消さずに履歴として残す"
 layers = ["model", "cli"]
 
 [[claim.evidence]]
@@ -1185,7 +1185,7 @@ layers = ["cli"]
 [[claim]]
 id = "detached-agreement"
 subjects = ["show-detached", "agreement", "story"]
-statement = "ストーリー s が合意したことがあり、今の中身に s の合意がないものを、s の外れた合意とする（誰が変えたかを問わない）"
+statement = "{@id:story} s が{@id:agreement}したことがあり、今の中身に s の{@id:agreement}がないものを、s の{@id:detached}とする（誰が変えたかを問わない）"
 layers = ["model", "cli"]
 
 [[claim.evidence]]
@@ -1206,7 +1206,7 @@ layers = ["cli"]
 [[claim]]
 id = "detached-until-story-reagrees"
 subjects = ["show-detached", "agreement", "story"]
-statement = "外れた合意は、ほかのストーリーが今の中身に合意しても、s が今の中身に合意し直すまで外れたままにする"
+statement = "{@id:detached}は、ほかの{@id:story}が今の中身に{@id:agreement}しても、s が今の中身に{@id:agreement}し直すまで外れたままにする"
 layers = ["model", "cli"]
 
 [[claim.evidence]]
@@ -1227,7 +1227,7 @@ layers = ["cli"]
 [[claim]]
 id = "revoke-returns-to-proposed"
 subjects = ["revoke-agreement", "agreement", "proposed"]
-statement = "合意を取り消した後、今の中身に合う合意の記録がほかに残っていなければ、提案中に戻る"
+statement = "{@id:agreement}を取り消した後、今の中身に合う{@id:agreement-record}がほかに残っていなければ、{@id:proposed}に戻る"
 layers = ["model", "cli", "api"]
 
 [[claim.evidence]]
@@ -1258,7 +1258,7 @@ layers = ["api"]
 [[claim]]
 id = "changed-id-is-new"
 subjects = ["store-agreements", "agreement", "promise"]
-statement = "約束・用語・機能の ID を変えたら、新しいものとみなし、合意し直すことを求める"
+statement = "{@id:promise}・{@id:term}・{@id:feature}の ID を変えたら、新しいものとみなし、{@id:agreement}し直すことを求める"
 rationale = "ID はそのものを見分ける名前のため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -1271,7 +1271,7 @@ layers = ["cli"]
 [[claim]]
 id = "agreements-unknown-entries-rejected"
 subjects = ["store-agreements", "list-check-kinds", "agreement-record"]
-statement = "合意の記録に決まっていない表か項目があれば、agreement-targets の誤りにする"
+statement = "{@id:agreement-record}に決まっていない表か項目があれば、agreement-targets の{@id:mistake}にする"
 layers = ["cli"]
 
 [[claim.evidence]]
@@ -1282,7 +1282,7 @@ layers = ["cli"]
 [[claim]]
 id = "agreements-default-file-may-be-absent"
 subjects = ["store-agreements", "agreement-record"]
-statement = "設定に agreements を書かず、合意の記録の既定のファイルがなければ、合意の記録を空とみなす"
+statement = "設定に agreements を書かず、{@id:default-agreement-record-file}がなければ、{@id:agreement-record}を空とみなす"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1294,8 +1294,8 @@ layers = ["cli"]
 [[claim]]
 id = "agreements-explicit-file-may-be-absent"
 subjects = ["store-agreements", "agreement-record"]
-statement = "設定の agreements にワイルドカードのない場所のファイルをはっきり書き、そのファイルがなければ、誤りにせず、そのファイルの合意の記録を空とみなす"
-rationale = "そのファイルは、はじめて合意したときに作られるので、まだ一度も合意していないリポジトリにはない。それを誤りにすると、はじめて合意する前に、審査も画面も使えないため"
+statement = "設定の agreements にワイルドカードのない場所のファイルをはっきり書き、そのファイルがなければ、{@id:mistake}にせず、そのファイルの{@id:agreement-record}を空とみなす"
+rationale = "そのファイルは、はじめて{@id:agreement}したときに作られるので、まだ一度も{@id:agreement}していないリポジトリにはない。それを{@id:mistake}にすると、はじめて{@id:agree-on-review}前に、{@id:check}も画面も使えないため"
 layers = ["cli", "api"]
 flags = ["ai-proposal"]
 
@@ -1312,7 +1312,7 @@ layers = ["api"]
 [[claim]]
 id = "agreements-required-fields"
 subjects = ["store-agreements", "list-check-kinds", "agreement-record"]
-statement = "合意の記録に kind・key・fingerprint・user の name と email・agreed_at・story のどれかがなければ、または kind が claim・term・feature・file のどれでもなければ、agreement-targets の誤りにする"
+statement = "{@id:agreement-record}に kind・key・fingerprint・user の name と email・agreed_at・story のどれかがなければ、または kind が claim・term・feature・file のどれでもなければ、agreement-targets の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1324,7 +1324,7 @@ layers = ["cli"]
 [[claim]]
 id = "agreements-fingerprint-shape"
 subjects = ["store-agreements", "list-check-kinds", "agreement-record", "fingerprint"]
-statement = "合意の記録の fingerprint が、sha256: に続けて 16 進の小文字 64 文字を書いた形でなければ、agreement-targets の誤りにする"
+statement = "{@id:agreement-record}の fingerprint が、sha256: に続けて 16 進の小文字 64 文字を書いた形でなければ、agreement-targets の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1336,8 +1336,8 @@ layers = ["cli"]
 [[claim]]
 id = "agreements-file-record-path"
 subjects = ["store-agreements", "list-check-kinds", "agreement-record"]
-statement = "kind が file の合意の記録に path がなければ、agreement-targets の誤りにする。key が fingerprint と違えば、誤りにする。ただし、消したことへの合意の記録では、key が path と違えば誤りにする。kind が file でない合意の記録に path があれば、誤りにする"
-rationale = "消したファイルには中身がなく指紋もないので、消したことへの合意の記録は場所で指す"
+statement = "kind が file の{@id:agreement-record}に path がなければ、agreement-targets の{@id:mistake}にする。key が fingerprint と違えば、{@id:mistake}にする。ただし、消したことへの{@id:agreement-record}では、key が path と違えば{@id:mistake}にする。kind が file でない{@id:agreement-record}に path があれば、{@id:mistake}にする"
+rationale = "消したファイルには中身がなく{@id:fingerprint}もないので、消したことへの{@id:agreement-record}は場所で指す"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1349,8 +1349,8 @@ layers = ["cli"]
 [[claim]]
 id = "agreements-point-to-existing-items"
 subjects = ["store-agreements", "list-check-kinds", "agreement-record"]
-statement = "kind が claim・term・feature の合意の記録が、約束リストにない項目を指していて、その項目を消したことへの合意の記録がなければ、agreement-targets の誤りにする"
-rationale = "合意の記録は消さずに履歴として残すため、消した項目を指す記録は、消したことへの合意があれば誤りにしない"
+statement = "kind が claim・term・feature の{@id:agreement-record}が、{@id:promise-list}にない項目を指していて、その項目を消したことへの{@id:agreement-record}がなければ、agreement-targets の{@id:mistake}にする"
+rationale = "{@id:agreement-record}は消さずに履歴として残すため、消した項目を指す記録は、消したことへの{@id:agreement}があれば{@id:mistake}にしない"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1367,8 +1367,8 @@ layers = ["cli"]
 [[claim]]
 id = "deleted-item-needs-agreement"
 subjects = ["agree-on-review", "list-check-kinds", "agreement"]
-statement = "agreement は、合意したことのある約束・用語・機能・合意の対象のファイルが今はなく、それを消したことへの合意の記録がなければ誤りにする。範囲 story では、比べる元にあって今にないものを、合意したことがあるかどうかによらず見る"
-rationale = "AI が約束とテストを一緒に消しても、PO が気づけるようにするため。範囲 story では、合意したことのないものを消しても、そのストーリーで変えたものなので、PO が見ないまま合流させない（story-pass-only-when-seen）"
+statement = "agreement は、{@id:agreement}したことのある{@id:promise}・{@id:term}・{@id:feature}・{@id:agreement}の対象のファイルが今はなく、それを消したことへの{@id:agreement-record}がなければ{@id:mistake}にする。{@id:check-scope} story では、比べる元にあって今にないものを、{@id:agreement}したことがあるかどうかによらず見る"
+rationale = "AI が{@id:promise}とテストを一緒に消しても、PO が気づけるようにするため。{@id:check-scope} story では、{@id:agreement}したことのないものを消しても、その{@id:story}で変えたものなので、PO が見ないまま合流させない（story-pass-only-when-seen）"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
@@ -1395,8 +1395,8 @@ layers = ["cli"]
 [[claim]]
 id = "deletion-agreement-record"
 subjects = ["agree-on-review", "store-agreements", "agreement-record"]
-statement = "消したことへの合意の記録は、ほかの合意の記録と同じ kind・key（ファイルなら path）・user・agreed_at・story に、fingerprint の代わりに deleted = true を持つ"
-model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
+statement = "消したことへの{@id:agreement-record}は、ほかの{@id:agreement-record}と同じ kind・key（ファイルなら path）・user・agreed_at・story に、fingerprint の代わりに deleted = true を持つ"
+model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1408,8 +1408,8 @@ layers = ["cli"]
 [[claim]]
 id = "review-deleted-shown"
 subjects = ["list-changes", "agree-on-review", "agreement"]
-statement = "レビューの一覧に、比べる元にあって今にない約束・用語・機能・合意の対象のファイルを「削除」として出し、消す前の中身を示し、消したことに合意できるようにする"
-model_check_waiver = "消したことへの合意そのものは、約束 deleted-item-needs-agreement としてモデルで確かめていて、この約束が決めるのは一覧への出し方だけのため"
+statement = "レビューの一覧に、比べる元にあって今にない{@id:promise}・{@id:term}・{@id:feature}・{@id:agreement}の対象のファイルを「削除」として出し、消す前の中身を示し、消したことに{@id:agreement}できるようにする"
+model_check_waiver = "消したことへの{@id:agreement}そのものは、{@id:promise} deleted-item-needs-agreement としてモデルで確かめていて、この{@id:promise}が決めるのは一覧への出し方だけのため"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -1431,7 +1431,7 @@ layers = ["gui"]
 [[claim]]
 id = "annotation-syntax-errors"
 subjects = ["read-annotations", "annotation"]
-statement = "決まっていない種類、ID のないもの、ID が 2 つ以上あるもの、理由のない internal、1 行に 2 つ以上の @vanda: があるものを、アノテーションの誤りにする"
+statement = "決まっていない種類、ID のないもの、ID が 2 つ以上あるもの、理由のない internal、1 行に 2 つ以上の @vanda: があるものを、{@id:annotation}の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1448,8 +1448,8 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-outside-comment-ignored"
 subjects = ["read-annotations", "annotation", "builtin-adapter"]
-statement = "組込みのアダプタは、文字列の中などコメントの外の @vanda: を、数えず、誤りにもしない"
-condition = "sql のアダプタは、文字列（'…'）の外の -- から行の終わりまでだけをコメントとみなすので、/* */ の中の @vanda: も数えない"
+statement = "{@id:builtin-adapter}は、文字列の中などコメントの外の @vanda: を、数えず、{@id:mistake}にもしない"
+condition = "sql の{@id:adapter}は、文字列（'…'）の外の -- から行の終わりまでだけをコメントとみなすので、/* */ の中の @vanda: も数えない"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1461,7 +1461,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-backquoted-ignored"
 subjects = ["read-annotations", "annotation"]
-statement = "コメントの中で逆引用符で囲んだ @vanda: は、アノテーションとして数えない。同じ行に本物のアノテーションがあっても、1 行に 2 つ以上の @vanda: の誤りにしない（例: @vanda:internal の理由の文で、書き方に触れる時）"
+statement = "コメントの中で逆引用符で囲んだ @vanda: は、{@id:annotation}として数えない。同じ行に本物の{@id:annotation}があっても、1 行に 2 つ以上の @vanda: の{@id:mistake}にしない（例: @vanda:internal の理由の文で、書き方に触れる時）"
 rationale = "説明の文で書き方に触れられるようにするため"
 layers = ["cli"]
 
@@ -1473,7 +1473,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-one-rule-per-file"
 subjects = ["read-annotations", "annotation"]
-statement = "1 つのファイルが 2 つ以上の [[annotation]] のパターンに当たったら、誤りにする"
+statement = "1 つのファイルが 2 つ以上の [[annotation]] のパターンに当たったら、{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1485,7 +1485,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-adapter-required"
 subjects = ["read-annotations", "annotation", "adapter"]
-statement = "[[annotation]] のパターンに当たったのに、その [[annotation]] に adapter がないファイルがあれば、annotation-links の誤りにする。その時アノテーションを読めないので、evidence-present も行えない誤りにする"
+statement = "[[annotation]] のパターンに当たったのに、その [[annotation]] に adapter がないファイルがあれば、annotation-links の{@id:mistake}にする。その時{@id:annotation}を読めないので、evidence-present も行えない{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1497,7 +1497,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-kinds-per-builtin-adapter"
 subjects = ["read-annotations", "builtin-adapter"]
-statement = "組込みのアダプタのファイルに、そのアダプタで書けない種類のアノテーションを書いたら、誤りにする（go は evidence・sensor、txtar・sql・ts は evidence、tla は term・feature・claim・internal）"
+statement = "{@id:builtin-adapter}のファイルに、その{@id:adapter}で書けない種類の{@id:annotation}を書いたら、{@id:mistake}にする（go は evidence・sensor、txtar・sql・ts は evidence、tla は term・feature・claim・internal）"
 layers = ["cli"]
 
 [[claim.evidence]]
@@ -1508,7 +1508,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-go-func-doc"
 subjects = ["read-annotations", "builtin-adapter"]
-statement = "go のアダプタは、func の宣言の直前のコメント（空行をはさまない）のアノテーションだけを受け付け、名前を func の名前（メソッドは 型.名前）とする"
+statement = "go の{@id:adapter}は、func の宣言の直前のコメント（空行をはさまない）の{@id:annotation}だけを受け付け、名前を func の名前（メソッドは 型.名前）とする"
 layers = ["cli"]
 
 [[claim.evidence]]
@@ -1524,7 +1524,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-txtar-comment-lines"
 subjects = ["read-annotations", "builtin-adapter", "scenario"]
-statement = "txtar のアダプタは、最初のファイルの区切りより前の、# で始まるコメントの行だけを読み、名前をファイルの名前から .txtar を除いたものとする"
+statement = "txtar の{@id:adapter}は、最初のファイルの区切りより前の、# で始まるコメントの行だけを読み、名前をファイルの名前から .txtar を除いたものとする"
 rationale = "testscript の命令の行（exec の引数など）にある @vanda: を読まないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -1542,7 +1542,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-tla-definition"
 subjects = ["read-annotations", "builtin-adapter", "oracle"]
-statement = "tla のアダプタは、アノテーションの後の、空行でもコメントでもない最初の行の定義の名前を名前とし、その行が定義でなければ誤りにする"
+statement = "tla の{@id:adapter}は、{@id:annotation}の後の、空行でもコメントでもない最初の行の定義の名前を名前とし、その行が定義でなければ{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1559,7 +1559,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-sql-statement"
 subjects = ["read-annotations", "builtin-adapter", "guardrail"]
-statement = "sql のアダプタは、アノテーションの後の、空行でも -- で始まる行でもない最初の行の中身を、前後の空白を除いて名前とする"
+statement = "sql の{@id:adapter}は、{@id:annotation}の後の、空行でも -- で始まる行でもない最初の行の中身を、前後の空白を除いて名前とする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1571,7 +1571,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-ts-test-call"
 subjects = ["read-annotations", "builtin-adapter"]
-statement = "ts のアダプタは、test・it・describe から始まる呼び出しの直前のコメント（空行をはさまない）のアノテーションだけを受け付け、名前を最後の呼び出しの最初の引数とし、describe の中なら外側から ' > ' でつなぐ"
+statement = "ts の{@id:adapter}は、test・it・describe から始まる呼び出しの直前のコメント（空行をはさまない）の{@id:annotation}だけを受け付け、名前を最後の呼び出しの最初の引数とし、describe の中なら外側から ' > ' でつなぐ"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1588,8 +1588,8 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-ts-fixed-name"
 subjects = ["read-annotations", "builtin-adapter"]
-statement = "ts のアダプタは、名前が文字列でもテンプレート文字列でもなければ誤りにし、テンプレート文字列なら書いてあるとおりの文字（${…} を含む）を名前にする"
-rationale = "vanda はコードを動かさずに読むので、名前を決まった文字から取れないと、どのテストのエビデンスかを決められないため"
+statement = "ts の{@id:adapter}は、名前が文字列でもテンプレート文字列でもなければ{@id:mistake}にし、テンプレート文字列なら書いてあるとおりの文字（${…} を含む）を名前にする"
+rationale = "{@id:vanda} はコードを動かさずに読むので、名前を決まった文字から取れないと、どのテストの{@id:evidence}かを決められないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1601,8 +1601,8 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-ts-hooks-rejected"
 subjects = ["read-annotations", "builtin-adapter"]
-statement = "ts のアダプタは、beforeEach・afterEach・beforeAll・afterAll・step の呼び出しの直前のアノテーションを誤りにする"
-rationale = "フックは多くのテストで動くので、どのテストのエビデンスかが決まらないため。test.step はテストの中の一部で、それだけで通ったか落ちたかが分からないため"
+statement = "ts の{@id:adapter}は、beforeEach・afterEach・beforeAll・afterAll・step の呼び出しの直前の{@id:annotation}を{@id:mistake}にする"
+rationale = "フックは多くのテストで動くので、どのテストの{@id:evidence}かが決まらないため。test.step はテストの中の一部で、それだけで通ったか落ちたかが分からないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1614,7 +1614,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-ts-skipped-not-counted"
 subjects = ["read-annotations", "builtin-adapter", "evidence"]
-statement = "ts のアダプタは、test・it・describe に .skip か .todo を付けた呼び出しと、その中の呼び出しのアノテーションを、エビデンスとして数えない"
+statement = "ts の{@id:adapter}は、test・it・describe に .skip か .todo を付けた呼び出しと、その中の呼び出しの{@id:annotation}を、{@id:evidence}として数えない"
 rationale = "実行しないテストは、何も確かめていないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -1632,7 +1632,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-ts-only-rejected"
 subjects = ["read-annotations", "builtin-adapter"]
-statement = "ts のアダプタは、test・it・describe に .only を付けた呼び出しがあれば、その行を指して annotation-links の誤りにする"
+statement = "ts の{@id:adapter}は、test・it・describe に .only を付けた呼び出しがあれば、その行を指して annotation-links の{@id:mistake}にする"
 rationale = ".only は、同じファイルのほかのテストを黙って実行しなくするため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -1650,7 +1650,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-links-kinds"
 subjects = ["list-check-kinds", "annotation"]
-statement = "annotation-links は、term が用語を、feature が機能を、claim・evidence・sensor が約束を指していなければ誤りにする"
+statement = "annotation-links は、term が{@id:term}を、feature が{@id:feature}を、claim・evidence・sensor が{@id:promise}を指していなければ{@id:mistake}にする"
 layers = ["cli"]
 
 [[claim.evidence]]
@@ -1666,7 +1666,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-links-tla-types"
 subjects = ["list-check-kinds", "annotation", "oracle"]
-statement = "annotation-links は、TLA+ の仕様の型（TypeOK で使う、同じモジュールの最上位の定義）に term か internal がなければ、または feature を付けていれば誤りにする"
+statement = "annotation-links は、TLA+ の仕様の型（TypeOK で使う、同じモジュールの最上位の定義）に term か internal がなければ、または feature を付けていれば{@id:mistake}にする"
 layers = ["cli"]
 
 [[claim.evidence]]
@@ -1677,8 +1677,8 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-types-required"
 subjects = ["store-config", "annotation", "evidence-type"]
-statement = "[[annotation]] に types がなければ、また types に human-review・proof か決まっていないタイプを書けば、設定の誤りにする"
-rationale = "human-review はアノテーションで確かめず、proof はまだ扱えないため"
+statement = "[[annotation]] に types がなければ、また types に human-review・proof か決まっていない{@id:evidence-type}を書けば、設定の{@id:mistake}にする"
+rationale = "human-review は{@id:annotation}で確かめず、proof はまだ扱えないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1690,8 +1690,8 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-types-unsatisfiable-allowed"
 subjects = ["store-config", "annotation", "evidence-type", "builtin-adapter"]
-statement = "組込みのアダプタが書けない種類でしか満たせないタイプ（例: tla に unit-test）を types に書いても、設定の誤りにしない"
-rationale = "エビデンスが揃わずに審査で止まるので害がなく、決まりを足すほどではないため"
+statement = "{@id:builtin-adapter}が書けない種類でしか満たせない{@id:evidence-type}（例: tla に unit-test）を types に書いても、設定の{@id:mistake}にしない"
+rationale = "{@id:evidence}が揃わずに{@id:check}で止まるので害がなく、決まりを足すほどではないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1703,7 +1703,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-types-empty"
 subjects = ["store-config", "annotation", "evidence-type"]
-statement = "types = [] と書いた [[annotation]] で読んだアノテーションは、どのタイプのエビデンスも満たさない"
+statement = "types = [] と書いた [[annotation]] で読んだ{@id:annotation}は、どの{@id:evidence-type}の{@id:evidence}も満たさない"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1715,7 +1715,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-name"
 subjects = ["run-custom-adapters", "adapter"]
-statement = "アダプタのディレクトリの直下のファイルの名前、またはディレクトリの名前をアダプタの名前とし、ファイルならそれを、ディレクトリなら直下の run を実行する"
+statement = "{@id:adapter-dir}の直下のファイルの名前、またはディレクトリの名前を{@id:adapter}の名前とし、ファイルならそれを、ディレクトリなら直下の run を実行する"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1737,8 +1737,8 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-overrides-builtin"
 subjects = ["run-custom-adapters", "builtin-adapter"]
-statement = "組込みのアダプタと同じ名前のカスタムアダプタがあれば、そちらを使う"
-condition = "ガードレールの定義は、今は組込みの file だけを使うので、カスタムアダプタでは置き換えられない（config-guardrail-adapter-file）"
+statement = "{@id:builtin-adapter}と同じ名前の{@id:custom-adapter}があれば、そちらを使う"
+condition = "{@id:guardrail-definition}は、今は組込みの file だけを使うので、{@id:custom-adapter}では置き換えられない（config-guardrail-adapter-file）"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1750,7 +1750,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-args-and-cwd"
 subjects = ["run-custom-adapters", "adapter"]
-statement = "カスタムアダプタは、リポジトリの最上位のディレクトリを作業ディレクトリにし、設定の args をそのまま引数として渡して動かす"
+statement = "{@id:custom-adapter}は、リポジトリの最上位のディレクトリを作業ディレクトリにし、設定の args をそのまま引数として渡して動かす"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1767,8 +1767,8 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-reads-committed-content"
 subjects = ["run-custom-adapters", "adapter"]
-statement = "vanda は、カスタムアダプタに、アノテーションを読むファイルの HEAD のコミットの中身を、標準入力の JSON の content に入れて渡す。カスタムアダプタは、作業ツリーのファイルではなく content を読む"
-rationale = "コミットしていない変更がある時に、カスタムアダプタが作業ツリーのファイルを読むと、vanda が HEAD の中身から選んで渡したアノテーションの行と、アダプタが読む中身が食い違う。そうなると、組込みのアダプタと違って、手元と CI で結果が変わる"
+statement = "{@id:vanda} は、{@id:custom-adapter}に、{@id:annotation}を読むファイルの HEAD のコミットの中身を、標準入力の JSON の content に入れて渡す。{@id:custom-adapter}は、作業ツリーのファイルではなく content を読む"
+rationale = "コミットしていない変更がある時に、{@id:custom-adapter}が作業ツリーのファイルを読むと、{@id:vanda} が HEAD の中身から選んで渡した{@id:annotation}の行と、{@id:adapter}が読む中身が食い違う。そうなると、{@id:builtin-adapter}と違って、手元と CI で結果が変わる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1785,8 +1785,8 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-args-only-for-project"
 subjects = ["run-custom-adapters", "store-config"]
-statement = "args は、カスタムアダプタの時だけ書くことができ、組込みのアダプタに書けば設定の誤りにする"
-rationale = "組込みのアダプタは引数を受け取らないので、書いても黙って無視され、効いているように見えてしまうため"
+statement = "args は、{@id:custom-adapter}の時だけ書くことができ、{@id:builtin-adapter}に書けば設定の{@id:mistake}にする"
+rationale = "{@id:builtin-adapter}は引数を受け取らないので、書いても黙って無視され、効いているように見えてしまうため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1798,7 +1798,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-not-runnable"
 subjects = ["run-custom-adapters", "adapter"]
-statement = "カスタムアダプタがない・実行の権限がない・1 行目に動かし方がないなどで動かせない時は、場所と直し方を書いた誤りにする"
+statement = "{@id:custom-adapter}がない・実行の権限がない・1 行目に動かし方がないなどで動かせない時は、場所と直し方を書いた{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1815,7 +1815,7 @@ layers = ["cli"]
 [[claim]]
 id = "adapter-name-unknown"
 subjects = ["store-config", "adapter"]
-statement = "設定の adapter の名前のアダプタが、組込みのアダプタにもカスタムアダプタにもなければ、設定の誤りにする"
+statement = "設定の adapter の名前の{@id:adapter}が、{@id:builtin-adapter}にも{@id:custom-adapter}にもなければ、設定の{@id:mistake}にする"
 layers = ["cli"]
 
 [[claim.evidence]]
@@ -1826,8 +1826,8 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-not-annotation"
 subjects = ["run-custom-adapters", "annotation"]
-statement = "カスタムアダプタが \"annotation\": false と返した行は、アノテーションとして数えず、書き方も確かめない"
-rationale = "vanda は言語を知らないので、コメントの外の @vanda: をアダプタに見分けてもらうため"
+statement = "{@id:custom-adapter}が \"annotation\": false と返した行は、{@id:annotation}として数えず、書き方も確かめない"
+rationale = "{@id:vanda} は言語を知らないので、コメントの外の @vanda: を{@id:adapter}に見分けてもらうため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1844,7 +1844,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-response-errors"
 subjects = ["run-custom-adapters", "adapter"]
-statement = "カスタムアダプタの答えに、渡していない行・空の名前・同じ行の 2 つ以上の答え・name と annotation の両方・決まっていない項目があれば、誤りにする"
+statement = "{@id:custom-adapter}の答えに、渡していない行・空の名前・同じ行の 2 つ以上の答え・name と annotation の両方・決まっていない項目があれば、{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1861,7 +1861,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-missing-answer"
 subjects = ["run-custom-adapters", "adapter"]
-statement = "カスタムアダプタが、渡した行のどれかに答えを返さなければ、その行を指して誤りにする"
+statement = "{@id:custom-adapter}が、渡した行のどれかに答えを返さなければ、その行を指して{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1878,7 +1878,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-annotation-true-rejected"
 subjects = ["run-custom-adapters", "adapter"]
-statement = "カスタムアダプタが、答えの annotation に true を返したら、誤りにする"
+statement = "{@id:custom-adapter}が、答えの annotation に true を返したら、{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1890,7 +1890,7 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-failure-reason"
 subjects = ["run-custom-adapters", "adapter"]
-statement = "カスタムアダプタが 0 でない終了コードで終わったら、標準エラーに書いた理由を誤りのメッセージに含める"
+statement = "{@id:custom-adapter}が 0 でない終了コードで終わったら、標準エラーに書いた理由を{@id:mistake}のメッセージに含める"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1907,8 +1907,8 @@ layers = ["cli"]
 [[claim]]
 id = "project-adapter-annotation-timeout"
 subjects = ["run-custom-adapters", "read-annotations", "store-config"]
-statement = "カスタムアダプタが、[[annotation]] の timeout（秒。省けば 20）を過ぎても終わらなければ、アダプタを止めて、どのアダプタが時間を過ぎたかを書いたタイムアウトのエラーを知らせる"
-rationale = "アダプタが止まると、審査も画面も止まり、画面では合意のロックを握ったままになるため。構文解析が遅いアダプタもあるので、設定で変えられるようにする"
+statement = "{@id:custom-adapter}が、[[annotation]] の timeout（秒。省けば 20）を過ぎても終わらなければ、{@id:adapter}を止めて、どの{@id:adapter}が時間を過ぎたかを書いたタイムアウトの{@id:error}を知らせる"
+rationale = "{@id:adapter}が止まると、{@id:check}も画面も止まり、画面では{@id:agreement}のロックを握ったままになるため。構文解析が遅い{@id:adapter}もあるので、設定で変えられるようにする"
 layers = ["cli", "api"]
 flags = ["ai-proposal"]
 
@@ -1930,7 +1930,7 @@ layers = ["api"]
 [[claim]]
 id = "config-annotation-timeout"
 subjects = ["store-config", "run-custom-adapters"]
-statement = "[[annotation]] の timeout は、1 以上の整数（秒）でなければ誤りにし、カスタムアダプタを使わない [[annotation]] に書けば誤りにする"
+statement = "[[annotation]] の timeout は、1 以上の整数（秒）でなければ{@id:mistake}にし、{@id:custom-adapter}を使わない [[annotation]] に書けば{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1942,8 +1942,8 @@ layers = ["cli"]
 [[claim]]
 id = "unread-files-excludes-adapters"
 subjects = ["list-check-kinds", "run-custom-adapters"]
-statement = "読まれていないファイルの審査は、アダプタのディレクトリの下のファイルを除く"
-rationale = "アダプタは設定の adapter の名前で動かすもので、約束リストのパターンで読むものではないため"
+statement = "{@id:unread-files-check}は、{@id:adapter-dir}の下のファイルを除く"
+rationale = "{@id:adapter}は設定の adapter の名前で動かすもので、{@id:promise-list}のパターンで読むものではないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1955,8 +1955,8 @@ layers = ["cli"]
 [[claim]]
 id = "check-config-required"
 subjects = ["run-checks", "check"]
-statement = "vanda check は、審査の設定のファイルを必ず引数で受け取り、渡さなければ誤りにする"
-rationale = "既定の審査を持たず、どの審査をどの順番で行うかを各プロジェクトが決めるため"
+statement = "vanda check は、{@id:check}の設定のファイルを必ず引数で受け取り、渡さなければ{@id:mistake}にする"
+rationale = "既定の{@id:check}を持たず、どの{@id:check}をどの順番で行うかを各プロジェクトが決めるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1968,7 +1968,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-base-required-for-story"
 subjects = ["run-checks", "check", "base-branch"]
-statement = "範囲を story にする審査を含む審査の設定では、--base がなければ、審査を始める前に誤りにする"
+statement = "{@id:check-scope}を story にする{@id:check}を含む{@id:check-config}では、--base がなければ、{@id:check}を始める前に{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1980,7 +1980,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-base-unused-without-story"
 subjects = ["run-checks", "base-branch", "check-scope"]
-statement = "範囲を story にする審査を含まない審査の設定では、--base を使わず、渡したブランチがなくても誤りにしない"
+statement = "{@id:check-scope}を story にする{@id:check}を含まない{@id:check-config}では、--base を使わず、渡したブランチがなくても{@id:mistake}にしない"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1997,8 +1997,8 @@ layers = ["cli"]
 [[claim]]
 id = "check-runs-in-order-and-fails"
 subjects = ["run-checks", "check"]
-statement = "審査の設定に書いた順にすべての審査を行い（失敗した審査があっても、残りの審査を行う）、どれかが失敗したら終了コード 1 で終わる"
-rationale = "どの審査も、失敗すれば vanda check を失敗にする（「知らせるだけ」の段は設けない）。失敗しても残りを行うのは、1 度の実行で、すべての審査の誤りを直せるようにするため"
+statement = "{@id:check-config}に書いた順にすべての{@id:check}を行い（失敗した{@id:check}があっても、残りの{@id:check}を行う）、どれかが失敗したら終了コード 1 で終わる"
+rationale = "どの{@id:check}も、失敗すれば vanda check を失敗にする（「知らせるだけ」の段は設けない）。失敗しても残りを行うのは、1 度の実行で、すべての{@id:check}の{@id:mistake}を直せるようにするため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2015,7 +2015,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-errors-before-run"
 subjects = ["run-checks", "check"]
-statement = "設定の誤り、版の違い、審査の設定の誤り、--base・--story の誤りは、審査を始める前に標準エラーに出し、審査ごとの結果の行を出さずに終了コード 1 で終わる"
+statement = "設定の{@id:mistake}、版の違い、{@id:check-config}の{@id:mistake}、--base・--story の{@id:mistake}は、{@id:check}を始める前に標準エラーに出し、{@id:check}ごとの結果の行を出さずに終了コード 1 で終わる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2032,7 +2032,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-scope-per-check"
 subjects = ["run-checks", "check"]
-statement = "その審査に書けない範囲を書いた審査の設定と、審査が 1 つもない審査の設定を、誤りにする"
+statement = "その{@id:check}に書けない{@id:check-scope}を書いた{@id:check-config}と、{@id:check}が 1 つもない{@id:check-config}を、{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2044,7 +2044,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-scope-table"
 subjects = ["run-checks", "check-config", "check-scope"]
-statement = "審査ごとに書ける範囲は、promise-list-shape・annotation-links・agreement-targets・unread-files は all だけ、story-origin は story だけ、agreement・evidence-present は all と story にする"
+statement = "{@id:check}ごとに書ける{@id:check-scope}は、promise-list-shape・annotation-links・agreement-targets・unread-files は all だけ、story-origin は story だけ、agreement・evidence-present は all と story にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2056,7 +2056,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-name-known"
 subjects = ["run-checks", "check-config"]
-statement = "審査の設定の name が、決まった審査の名前（promise-list-shape・annotation-links・story-origin・agreement・agreement-targets・evidence-present・unread-files）のどれでもなければ、審査の設定の誤りにする"
+statement = "{@id:check-config}の name が、決まった{@id:check}の名前（promise-list-shape・annotation-links・story-origin・agreement・agreement-targets・evidence-present・unread-files）のどれでもなければ、{@id:check-config}の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2068,7 +2068,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-config-unknown-entries-rejected"
 subjects = ["run-checks", "check-config"]
-statement = "審査の設定に、[[check]] のほかの表か、name・scope のほかの項目があれば、審査の設定の誤りにする"
+statement = "{@id:check-config}に、[[check]] のほかの表か、name・scope のほかの項目があれば、{@id:check-config}の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2080,7 +2080,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-output-lines"
 subjects = ["run-checks", "check"]
-statement = "審査ごとに「審査 <名前>（<範囲>）: 通った」か「失敗（<件数> 件）」の行を標準出力に出し、誤りの中身を標準エラーに 1 件 1 行で出す"
+statement = "{@id:check}ごとに「{@id:check} <名前>（<{@id:check-scope}>）: 通った」か「失敗（<件数> 件）」の行を標準出力に出し、{@id:mistake}の中身を標準エラーに 1 件 1 行で出す"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2097,7 +2097,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-output-story-id"
 subjects = ["run-checks", "check", "story"]
-statement = "範囲 story の agreement・evidence-present の結果の行には、範囲の後に、審査に使ったストーリーの ID を書く（例: 審査 agreement（story #24）: 通った）"
+statement = "{@id:check-scope} story の agreement・evidence-present の結果の行には、{@id:check-scope}の後に、{@id:check}に使った{@id:story}の ID を書く（例: {@id:check} agreement（story #24）: 通った）"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2114,7 +2114,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-error-order"
 subjects = ["run-checks", "check"]
-statement = "誤りは、審査の設定の順、同じ審査の中ではファイルの場所と行の順で、毎回同じ順に出す"
+statement = "{@id:mistake}は、{@id:check-config}の順、同じ{@id:check}の中ではファイルの場所と行の順で、毎回同じ順に出す"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2126,8 +2126,8 @@ layers = ["cli"]
 [[claim]]
 id = "check-error-form"
 subjects = ["run-checks", "check"]
-statement = "誤りは、1 件ごとに、です・ます調の 1 行で「<何がどうなっているか>。<どうすればよいか>。」の形で出す。ファイルの中の誤りなら、前に「<パス>:<行>: 」を付け、行が分からなければ「<パス>: <表と項目>: 」を付ける"
-condition = "ファイルに結び付かない誤り（Story: のトレーラーの誤り、前の審査の誤りのために行えない審査、審査を始める前の誤りなど）は、パスを付けない"
+statement = "{@id:mistake}は、1 件ごとに、です・ます調の 1 行で「<何がどうなっているか>。<どうすればよいか>。」の形で出す。ファイルの中の{@id:mistake}なら、前に「<パス>:<行>: 」を付け、行が分からなければ「<パス>: <表と項目>: 」を付ける"
+condition = "ファイルに結び付かない{@id:mistake}（{@id:story-trailer}の{@id:mistake}、前の{@id:check}の{@id:mistake}のために行えない{@id:check}、{@id:check}を始める前の{@id:mistake}など）は、パスを付けない"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2144,9 +2144,9 @@ layers = ["cli"]
 [[claim]]
 id = "check-story-from-commits"
 subjects = ["run-checks", "check", "story"]
-statement = "範囲 story の agreement・evidence-present を含む審査の設定では、審査を始める前にストーリーを 1 つに決める。分岐点より後のコミットの Story: のトレーラーにあるストーリーの ID が 1 つなら、それを使う。--story を渡していて、それと違えば、審査を始める前の誤りにする。ID が 0 個か 2 つ以上なら、--story を使う。--story を渡していなければ、--story を求める誤りを、審査を始める前に出す"
-rationale = "--story は、トレーラーのあるコミットがまだないブランチのためのもの。トレーラーと違うストーリーを使うと、本当のストーリーの外れた合意を見ないまま審査が通るため"
-condition = "決めたストーリーを使うのは、agreement がそのストーリーの外れた合意を探す時だけで、範囲 story の evidence-present は、分岐点の中身と今の中身の違いだけを見る"
+statement = "{@id:check-scope} story の agreement・evidence-present を含む{@id:check-config}では、{@id:check}を始める前に{@id:story}を 1 つに決める。{@id:branch-point}より後のコミットの {@id:story-trailer}にある{@id:story}の ID が 1 つなら、それを使う。--story を渡していて、それと違えば、{@id:check}を始める前の{@id:mistake}にする。ID が 0 個か 2 つ以上なら、--story を使う。--story を渡していなければ、--story を求める{@id:mistake}を、{@id:check}を始める前に出す"
+rationale = "--story は、トレーラーのあるコミットがまだないブランチのためのもの。トレーラーと違う{@id:story}を使うと、本当の{@id:story}の{@id:detached}を見ないまま{@id:check}が通るため"
+condition = "決めた{@id:story}を使うのは、agreement がその{@id:story}の{@id:detached}を探す時だけで、{@id:check-scope} story の evidence-present は、{@id:branch-point}の中身と今の中身の違いだけを見る"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2158,7 +2158,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-story-arg-pattern"
 subjects = ["run-checks", "check", "story"]
-statement = "--story の値が id_pattern に全体で当たらなければ、審査を始める前に誤りにする"
+statement = "--story の値が id_pattern に全体で当たらなければ、{@id:check}を始める前に{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2170,7 +2170,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-blocked-by-unreadable-input"
 subjects = ["run-checks", "check"]
-statement = "約束リスト・アノテーション・合意の記録が読めない時は、それを前提にするほかの審査を「<何>が読めないため行えない」の 1 行で失敗にする"
+statement = "{@id:promise-list}・{@id:annotation}・{@id:agreement-record}が読めない時は、それを前提にするほかの{@id:check}を「<何>が読めないため行えない」の 1 行で失敗にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2182,7 +2182,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-load-errors-owner"
 subjects = ["run-checks", "list-check-kinds", "check"]
-statement = "約束リストの読み込みの誤りとエラーは promise-list-shape が、アノテーションの読み込みの誤りとエラーは annotation-links が、合意の記録の読み込みの誤りとエラーは agreement-targets が出す"
+statement = "{@id:promise-list}の読み込みの{@id:mistake}と{@id:error}は promise-list-shape が、{@id:annotation}の読み込みの{@id:mistake}と{@id:error}は annotation-links が、{@id:agreement-record}の読み込みの{@id:mistake}と{@id:error}は agreement-targets が出す"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2194,7 +2194,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-story-origin"
 subjects = ["list-check-kinds", "origin", "story"]
-statement = "story-origin は、分岐点より後の、合流でないコミットのうち、約束リストのファイルを変えたものに Story: のトレーラーがなければ誤りにする"
+statement = "story-origin は、{@id:branch-point}より後の、合流でないコミットのうち、{@id:promise-list}のファイルを変えたものに {@id:story-trailer}がなければ{@id:mistake}にする"
 rationale = "履歴を書き換えないと直せない古いコミットは見ない"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -2212,9 +2212,9 @@ layers = ["cli"]
 [[claim]]
 id = "check-agreement-targets"
 subjects = ["list-check-kinds", "agreement", "proposed"]
-statement = "agreement は、合意の対象の今の中身が合意済でなければ誤りにする。合意の対象は、約束・用語・機能、types に scenario-test か model-check を含む [[annotation]] のパターンに当たるファイル、[[guardrail]] の paths に当たるファイルとする"
-rationale = "シナリオとオラクルとガードレールの定義は、PO が読んで正とするもので、どのアダプタで読むかによらないため。E2E・Expect のシナリオも、合意しないまま審査を通さない"
-condition = "types が scenario-test・model-check のどちらも含まないパターン（Go のテストなど）だけに当たるファイルは、合意の対象にしない"
+statement = "agreement は、{@id:agreement}の対象の今の中身が{@id:agreed}でなければ{@id:mistake}にする。{@id:agreement}の対象は、{@id:promise}・{@id:term}・{@id:feature}、types に scenario-test か model-check を含む [[annotation]] のパターンに当たるファイル、[[guardrail]] の paths に当たるファイルとする"
+rationale = "{@id:scenario}と{@id:oracle}と{@id:guardrail-definition}は、PO が読んで正とするもので、どの{@id:adapter}で読むかによらないため。E2E・Expect の{@id:scenario}も、{@id:agreement}しないまま{@id:check}を通さない"
+condition = "types が scenario-test・model-check のどちらも含まないパターン（Go のテストなど）だけに当たるファイルは、{@id:agreement}の対象にしない"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2231,7 +2231,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-guardrail-file-missing"
 subjects = ["list-check-kinds", "guardrail"]
-statement = "[[guardrail]] の paths に書いた、ワイルドカードのない場所のファイルがなければ、agreement の誤りにする"
+statement = "[[guardrail]] の paths に書いた、ワイルドカードのない場所のファイルがなければ、agreement の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2243,8 +2243,8 @@ layers = ["cli"]
 [[claim]]
 id = "check-agreement-flags-left"
 subjects = ["list-check-kinds", "flag"]
-statement = "agreement は、約束に flags か guesses が残っていれば誤りにする"
-rationale = "合意するとフラグは外れるので、残っているのは合意の後にフラグだけが立てられたか、合意を通さずに書き換えられたもののため"
+statement = "agreement は、{@id:promise}に flags か guesses が残っていれば{@id:mistake}にする"
+rationale = "{@id:agree-on-review}と{@id:flag}は外れるので、残っているのは{@id:agreement}の後に{@id:flag}だけが立てられたか、{@id:agreement}を通さずに書き換えられたもののため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2256,8 +2256,8 @@ layers = ["cli"]
 [[claim]]
 id = "check-agreement-story-scope"
 subjects = ["list-check-kinds", "agreement", "story"]
-statement = "範囲を story にした agreement は、分岐点の中身と今の中身で指紋の違う約束・用語・機能と合意の対象のファイルだけを見て、さらにそのストーリーの外れた合意も誤りにする"
-condition = "ストーリーのコミットで変えて、元の中身に戻したものは、分岐点と指紋が同じなので見ない"
+statement = "{@id:check-scope}を story にした agreement は、{@id:branch-point}の中身と今の中身で{@id:fingerprint}の違う{@id:promise}・{@id:term}・{@id:feature}と{@id:agreement}の対象のファイルだけを見て、さらにその{@id:story}の{@id:detached}も{@id:mistake}にする"
+condition = "{@id:story}のコミットで変えて、元の中身に戻したものは、{@id:branch-point}と{@id:fingerprint}が同じなので見ない"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
 
@@ -2279,7 +2279,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-evidence-present"
 subjects = ["list-check-kinds", "evidence", "evidence-type"]
-statement = "evidence-present は、予定したエビデンスの 1 件ごとに、そのタイプを types に含む [[annotation]] で読んだ、タイプに合う種類のアノテーションがその約束を指していなければ誤りにする"
+statement = "evidence-present は、予定した{@id:evidence}の 1 件ごとに、その{@id:evidence-type}を types に含む [[annotation]] で読んだ、{@id:evidence-type}に合う種類の{@id:annotation}がその{@id:promise}を指していなければ{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2296,8 +2296,8 @@ layers = ["cli"]
 [[claim]]
 id = "check-evidence-guardrail-needs-definition"
 subjects = ["list-check-kinds", "evidence", "guardrail"]
-statement = "evidence-present は、タイプが guardrail の予定を、次の 2 つがどちらもその約束を指している時だけ揃ったとみなす。1 つは、ガードレールの定義（[[guardrail]] の paths に当たるファイル）のアノテーション。もう 1 つは、types に guardrail を含む [[annotation]] で読んだアノテーション（Go のテストなど、ガードレールが拒むことを確かめるもの）"
-rationale = "ガードレールが設定されていることと、本当に働くことの両方を確かめるため。定義がないのにテストだけで揃ったとみなさず、定義があっても拒むことを確かめていなければ揃ったとみなさない"
+statement = "evidence-present は、{@id:evidence-type}が guardrail の予定を、次の 2 つがどちらもその{@id:promise}を指している時だけ揃ったとみなす。1 つは、{@id:guardrail-definition}（[[guardrail]] の paths に当たるファイル）の{@id:annotation}。もう 1 つは、types に guardrail を含む [[annotation]] で読んだ{@id:annotation}（Go のテストなど、{@id:guardrail}が拒むことを確かめるもの）"
+rationale = "{@id:guardrail}が設定されていることと、本当に働くことの両方を確かめるため。定義がないのにテストだけで揃ったとみなさず、定義があっても拒むことを確かめていなければ揃ったとみなさない"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2314,8 +2314,8 @@ layers = ["cli"]
 [[claim]]
 id = "check-evidence-sensor-needs-check"
 subjects = ["list-check-kinds", "evidence", "sensor"]
-statement = "evidence-present は、タイプが sensor の予定を、次の 2 つがどちらもその約束を指している時だけ揃ったとみなす。1 つは、実装のコードの中のセンサーの場所に書いた sensor のアノテーション。もう 1 つは、types に sensor を含む [[annotation]] で読んだ evidence のアノテーション（センサーが、約束が破れた時に見つけることを確かめるテスト）"
-rationale = "センサーが実装のコードの中にあることと、本当に働くことの両方を確かめるため"
+statement = "evidence-present は、{@id:evidence-type}が sensor の予定を、次の 2 つがどちらもその{@id:promise}を指している時だけ揃ったとみなす。1 つは、{@id:implementation-stage}のコードの中の{@id:sensor-location}に書いた sensor の{@id:annotation}。もう 1 つは、types に sensor を含む [[annotation]] で読んだ evidence の{@id:annotation}（{@id:sensor}が、{@id:promise}が破れた時に見つけることを確かめるテスト）"
+rationale = "{@id:sensor}が{@id:implementation-stage}のコードの中にあることと、本当に働くことの両方を確かめるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2327,8 +2327,8 @@ layers = ["cli"]
 [[claim]]
 id = "check-evidence-proof-and-unchecked"
 subjects = ["list-check-kinds", "evidence", "proof"]
-statement = "evidence-present は、proof を予定に書いた約束を誤りにし、human-review の予定は確かめない"
-rationale = "proof を扱うアダプタはまだなく、human-review はアノテーションで確かめないため"
+statement = "evidence-present は、proof を予定に書いた{@id:promise}を{@id:mistake}にし、human-review の予定は確かめない"
+rationale = "proof を扱う{@id:adapter}はまだなく、human-review は{@id:annotation}で確かめないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2340,7 +2340,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-unread-files"
 subjects = ["list-check-kinds", "check"]
-statement = "unread-files は、.vanda/ のファイル（設定のファイルと審査の設定を除く）が promises か agreements のパターンに当たらなければ誤りにする"
+statement = "unread-files は、{@id:vanda-dir} のファイル（{@id:config-file}と{@id:check-config}を除く）が promises か agreements のパターンに当たらなければ{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2357,7 +2357,7 @@ layers = ["cli"]
 [[claim]]
 id = "config-version-mismatch"
 subjects = ["store-config", "diagnose-setup", "run-checks", "start-server"]
-statement = "設定の version が動いている vanda の版と違えば、vanda check・vanda doctor・vanda serve を止める。動いている vanda が設定の版より古ければ、vanda を設定の版に上げるよう知らせ、新しければ、.vanda/ を動いている vanda の版の形に書き換えるよう知らせる"
+statement = "設定の version が動いている {@id:vanda} の版と違えば、vanda check・vanda doctor・vanda serve を止める。動いている {@id:vanda} が設定の版より古ければ、{@id:vanda} を設定の版に上げるよう知らせ、新しければ、{@id:vanda-dir} を動いている {@id:vanda} の版の形に書き換えるよう知らせる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2374,7 +2374,7 @@ layers = ["cli"]
 [[claim]]
 id = "config-unknown-entries-rejected"
 subjects = ["store-config"]
-statement = "設定に決まっていない表か項目があれば、誤りにする"
+statement = "設定に決まっていない表か項目があれば、{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2386,7 +2386,7 @@ layers = ["cli"]
 [[claim]]
 id = "config-required-fields"
 subjects = ["store-config"]
-statement = "設定の version、[[layer]] の id・name・description、[[annotation]] の paths、[[guardrail]] の adapter・paths のどれかがなければ、設定の誤りにする"
+statement = "設定の version、[[layer]] の id・name・description、[[annotation]] の paths、[[guardrail]] の adapter・paths のどれかがなければ、設定の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2398,7 +2398,7 @@ layers = ["cli"]
 [[claim]]
 id = "config-layer-id"
 subjects = ["store-config", "layer"]
-statement = "[[layer]] の id が、英小文字で始め、英小文字・数字をハイフンでつないだ形でなければ、またほかのレイヤーの id と重なれば、設定の誤りにする"
+statement = "[[layer]] の id が、英小文字で始め、英小文字・数字をハイフンでつないだ形でなければ、またほかの{@id:layer}の id と重なれば、設定の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2410,7 +2410,7 @@ layers = ["cli"]
 [[claim]]
 id = "config-patterns-not-empty"
 subjects = ["store-config"]
-statement = "promises・agreements と、[[annotation]]・[[guardrail]] の paths に、パターンが 1 つもなければ、設定の誤りにする"
+statement = "promises・agreements と、[[annotation]]・[[guardrail]] の paths に、パターンが 1 つもなければ、設定の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2422,8 +2422,8 @@ layers = ["cli"]
 [[claim]]
 id = "config-pattern-syntax"
 subjects = ["store-config"]
-statement = "設定のファイルのパターンのうち、次のものは設定の誤りにする。/ で始まるもの。/ で区切った部分のどれかが、空か . か .. のもの。閉じていない [ など、パターンの書き方に合わないもの"
-rationale = "ファイルの場所は / で始まらず、空・.・.. の部分も含まないので、このようなパターンはどのファイルにも当たらない。ワイルドカードのあるパターンは、どのファイルにも当たらなくても誤りにしない決まりなので、書き方を確かめなければ、書き間違いに気づけないため"
+statement = "{@id:config-file}のパターンのうち、次のものは設定の{@id:mistake}にする。/ で始まるもの。/ で区切った部分のどれかが、空か . か .. のもの。閉じていない [ など、パターンの書き方に合わないもの"
+rationale = "ファイルの場所は / で始まらず、空・.・.. の部分も含まないので、このようなパターンはどのファイルにも当たらない。ワイルドカードのあるパターンは、どのファイルにも当たらなくても{@id:mistake}にしない決まりなので、書き方を確かめなければ、書き間違いに気づけないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2435,7 +2435,7 @@ layers = ["cli"]
 [[claim]]
 id = "config-annotation-types-unique"
 subjects = ["store-config", "annotation", "evidence-type"]
-statement = "[[annotation]] の types に同じタイプを 2 つ以上書けば、設定の誤りにする"
+statement = "[[annotation]] の types に同じ{@id:evidence-type}を 2 つ以上書けば、設定の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2447,8 +2447,8 @@ layers = ["cli"]
 [[claim]]
 id = "config-guardrail-adapter-file"
 subjects = ["store-config", "guardrail"]
-statement = "[[guardrail]] の adapter には file だけを書くことができ、ほかの名前を書けば設定の誤りにする"
-rationale = "ガードレールの定義を取り出すアダプタは、今はファイルを読むだけのものしかないため"
+statement = "[[guardrail]] の adapter には file だけを書くことができ、ほかの名前を書けば設定の{@id:mistake}にする"
+rationale = "{@id:guardrail-definition}を取り出す{@id:adapter}は、今はファイルを読むだけのものしかないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2460,7 +2460,7 @@ layers = ["cli"]
 [[claim]]
 id = "config-id-pattern-not-empty-match"
 subjects = ["store-config", "story"]
-statement = "設定の id_pattern が空の文字列に当たる正規表現なら、誤りにする"
+statement = "設定の id_pattern が空の文字列に当たる正規表現なら、{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2472,7 +2472,7 @@ layers = ["cli"]
 [[claim]]
 id = "config-id-pattern-default"
 subjects = ["store-config", "story"]
-statement = "設定の id_pattern を省けば、ストーリーの ID の書き方を #[0-9]+（GitHub Issues）にする"
+statement = "設定の id_pattern を省けば、{@id:story}の ID の書き方を #[0-9]+（GitHub Issues）にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2484,7 +2484,7 @@ layers = ["cli"]
 [[claim]]
 id = "config-id-pattern-regex"
 subjects = ["store-config", "story"]
-statement = "設定の id_pattern が、正規表現（Go の RE2）として読めなければ、設定の誤りにする"
+statement = "設定の id_pattern が、正規表現（Go の RE2）として読めなければ、設定の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2496,7 +2496,7 @@ layers = ["cli"]
 [[claim]]
 id = "config-github-only-fields"
 subjects = ["store-config", "connect-story-store"]
-statement = "[story] の repository と api_url は、組込みの github を使う時だけ書くことができ、ほかの時に書けば誤りにする"
+statement = "[story] の repository と api_url は、組込みの github を使う時だけ書くことができ、ほかの時に書けば{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2508,7 +2508,7 @@ layers = ["cli"]
 [[claim]]
 id = "config-github-repository"
 subjects = ["store-config", "connect-story-store"]
-statement = "組込みの github を使う時に、repository がなければ、または <owner>/<repo> の形（英数字と _・.・- でできた 2 つの名前を、1 つの / でつないだもの）でなければ、設定の誤りにする"
+statement = "組込みの github を使う時に、repository がなければ、または <owner>/<repo> の形（英数字と _・.・- でできた 2 つの名前を、1 つの / でつないだもの）でなければ、設定の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2520,7 +2520,7 @@ layers = ["cli"]
 [[claim]]
 id = "config-api-url-scheme"
 subjects = ["store-config", "connect-story-store"]
-statement = "api_url が http:// か https:// で始まらなければ、設定の誤りにする"
+statement = "api_url が http:// か https:// で始まらなければ、設定の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2544,8 +2544,8 @@ layers = ["cli"]
 [[claim]]
 id = "outside-git-repository"
 subjects = ["store-config", "diagnose-setup", "run-checks", "create-vanda-dir", "start-server"]
-statement = "vanda check・vanda doctor・vanda serve・vanda init は、git のリポジトリの外で動かしたらエラーにする"
-rationale = "由来・合意の取り消し・範囲 story の審査など、vanda の判定は git の履歴に拠っていて、履歴のない所では正しく判定できないため"
+statement = "vanda check・vanda doctor・vanda serve・vanda init は、git のリポジトリの外で動かしたら{@id:error}にする"
+rationale = "{@id:origin}・{@id:agreement}の取り消し・{@id:check-scope} story の{@id:check}など、{@id:vanda} の判定は git の履歴に拠っていて、履歴のない所では正しく判定できないため"
 condition = "vanda version は、git のリポジトリの外でも動く"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -2558,7 +2558,7 @@ layers = ["cli"]
 [[claim]]
 id = "doctor-ok-line"
 subjects = ["diagnose-setup"]
-statement = "vanda doctor は、設定と版に誤りがなく、かつ（ストーリーストアが設定にあれば）そこにつながった時だけ、標準出力に 1 行を出して終了コード 0 で終わる。どれかに誤りかエラーがあれば、それを標準エラーに出して終了コード 1 で終わる"
+statement = "vanda doctor は、設定と版に{@id:mistake}がなく、かつ（{@id:story-store}が設定にあれば）そこにつながった時だけ、標準出力に 1 行を出して終了コード 0 で終わる。どれかに{@id:mistake}か{@id:error}があれば、それを標準エラーに出して終了コード 1 で終わる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2575,7 +2575,7 @@ layers = ["cli"]
 [[claim]]
 id = "doctor-github-issues"
 subjects = ["diagnose-setup", "connect-story-store"]
-statement = "vanda doctor は、ストーリーストアが組込みの github なら、GET <api_url>/repos/<repository> を呼んで、Issues が使えるかを確かめる"
+statement = "vanda doctor は、{@id:story-store}が組込みの github なら、GET <api_url>/repos/<repository> を呼んで、Issues が使えるかを確かめる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2592,7 +2592,7 @@ layers = ["cli"]
 [[claim]]
 id = "doctor-github-token"
 subjects = ["diagnose-setup", "connect-story-store"]
-statement = "vanda doctor が GitHub につなぐ時も、画面でストーリーを読む時と同じ決まりで認証キーを選び、合う認証キーが見つからなければ要求を送らずにエラーにする"
+statement = "vanda doctor が GitHub につなぐ時も、画面で{@id:story}を読む時と同じ決まりで認証キーを選び、合う認証キーが見つからなければ要求を送らずに{@id:error}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2609,9 +2609,9 @@ layers = ["cli"]
 [[claim]]
 id = "doctor-project-adapter"
 subjects = ["diagnose-setup", "run-custom-adapters"]
-statement = "vanda doctor は、ストーリーストアがカスタムアダプタなら、そこにあって実行できるかを確かめる"
-rationale = "vanda doctor は、今効いている設定と、ストーリーストアなどとのつながりを確かめる機能で、カスタムアダプタでは、そこにあって実行できることが、つながることに当たるため"
-condition = "アノテーションを読むカスタムアダプタは、vanda doctor では確かめない"
+statement = "vanda doctor は、{@id:story-store}が{@id:custom-adapter}なら、そこにあって実行できるかを確かめる"
+rationale = "vanda doctor は、今効いている設定と、{@id:story-store}などとのつながりを確かめる{@id:feature}で、{@id:custom-adapter}では、そこにあって実行できることが、つながることに当たるため"
+condition = "{@id:annotation}を読む{@id:custom-adapter}は、vanda doctor では確かめない"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2628,7 +2628,7 @@ layers = ["cli"]
 [[claim]]
 id = "version-always-runs"
 subjects = ["show-version"]
-statement = "vanda version は、.vanda/ がなくても、設定の版が合わなくても、動いている vanda の版を 1 行で出す"
+statement = "vanda version は、{@id:vanda-dir} がなくても、設定の版が合わなくても、動いている {@id:vanda} の版を 1 行で出す"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2680,7 +2680,7 @@ layers = ["cli"]
 [[claim]]
 id = "serve-config-error-stops"
 subjects = ["start-server", "store-config"]
-statement = "vanda serve は、設定に誤りがあれば、待ち受けを始めずに誤りを標準エラーに出し、終了コード 1 で終わる"
+statement = "vanda serve は、設定に{@id:mistake}があれば、待ち受けを始めずに{@id:mistake}を標準エラーに出し、終了コード 1 で終わる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2724,7 +2724,7 @@ subjects = ["start-server"]
 statement = "Host が 127.0.0.1:<ポート>・localhost:<ポート> でない要求を 403 で断る"
 layers = ["api"]
 flags = ["ai-proposal"]
-guesses = ["DNS の名前を差し替えて vanda サーバーを読ませる攻撃を防ぐための決まりだと推し量った"]
+guesses = ["DNS の名前を差し替えて {@id:vanda-server}を読ませる攻撃を防ぐための決まりだと推し量った"]
 
 [[claim.evidence]]
 stage = "implementation"
@@ -2742,7 +2742,7 @@ subjects = ["start-server"]
 statement = "GET・HEAD 以外の要求で、Origin があって http://<Host> でなければ 403 で断る"
 layers = ["api"]
 flags = ["ai-proposal"]
-guesses = ["ほかのサイトから合意を書かせないための決まりだと推し量った"]
+guesses = ["ほかのサイトから{@id:agreement}を書かせないための決まりだと推し量った"]
 
 [[claim.evidence]]
 stage = "implementation"
@@ -2757,7 +2757,7 @@ layers = ["api"]
 [[claim]]
 id = "api-error-shape"
 subjects = ["start-server"]
-statement = "API のエラーは、HTTP の状態コードと、{\"error\": {\"message\": …, \"fix\": …}} で返す。直し方がなければ fix を省く"
+statement = "API の{@id:error}は、HTTP の状態コードと、{\"error\": {\"message\": …, \"fix\": …}} で返す。直し方がなければ fix を省く"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2774,7 +2774,7 @@ layers = ["api"]
 [[claim]]
 id = "serve-reloads-config"
 subjects = ["start-server", "store-config"]
-statement = "vanda serve は、API の要求ごとに設定を読み直し、読めなければ、誤りの数と最初の 1 件を書いた 500 を返す"
+statement = "vanda serve は、API の要求ごとに設定を読み直し、読めなければ、{@id:mistake}の数と最初の 1 件を書いた 500 を返す"
 rationale = "起動した後にブランチを切り替えたり設定を書き換えたりしても、画面を開き直すだけで今の設定が効くようにするため"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -2787,9 +2787,9 @@ layers = ["api"]
 [[claim]]
 id = "serve-agree-one-at-a-time"
 subjects = ["start-server", "agree-on-review", "revoke-agreement"]
-statement = "vanda serve は、合意と取り消しを 1 件ずつ行い、そのあいだは一覧・約束の詳細・ファイルの読み込みを待たせる"
-rationale = "書きかけの合意の記録や約束リストを、一覧が読まないようにするため"
-model_check_waiver = "同時に来た要求を 1 件ずつにする決まりで、合意の記録の移り変わりではないため。同時に動かすテストで確かめる"
+statement = "vanda serve は、{@id:agreement}と取り消しを 1 件ずつ行い、そのあいだは一覧・{@id:promise}の詳細・ファイルの読み込みを待たせる"
+rationale = "書きかけの{@id:agreement-record}や{@id:promise-list}を、一覧が読まないようにするため"
+model_check_waiver = "同時に来た要求を 1 件ずつにする決まりで、{@id:agreement-record}の移り変わりではないため。同時に動かすテストで確かめる"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2806,7 +2806,7 @@ layers = ["api"]
 [[claim]]
 id = "context-default-base"
 subjects = ["choose-base-branch", "base-branch"]
-statement = "画面を開いた時のベースブランチは、設定の [gui] の base にする"
+statement = "画面を開いた時の{@id:base-branch}は、設定の [gui] の base にする"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -2823,7 +2823,7 @@ layers = ["gui"]
 [[claim]]
 id = "context-bases"
 subjects = ["choose-base-branch", "base-branch"]
-statement = "選べるベースブランチは、手元のブランチとリモートを追うブランチから、ほかのブランチを指すだけの名前（origin/HEAD など）を除き、名前の順に並べたもの"
+statement = "選べる{@id:base-branch}は、手元のブランチとリモートを追うブランチから、ほかのブランチを指すだけの名前（origin/HEAD など）を除き、名前の順に並べたもの"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2835,8 +2835,8 @@ layers = ["api"]
 [[claim]]
 id = "context-base-always-shown"
 subjects = ["choose-base-branch", "base-branch"]
-statement = "レビューの画面は、レビュー単位がブランチの時、今どのベースブランチの、どの分岐点のコミットと比べているかを常に示す"
-condition = "レビュー単位がストーリーの時は、ベースブランチを使わないので示さない"
+statement = "レビューの画面は、レビュー単位がブランチの時、今どの{@id:base-branch}の、どの{@id:branch-point}のコミットと比べているかを常に示す"
+condition = "レビュー単位が{@id:story}の時は、{@id:base-branch}を使わないので示さない"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -2853,7 +2853,7 @@ layers = ["gui"]
 [[claim]]
 id = "header-context"
 subjects = ["start-server"]
-statement = "画面の上の帯に、今のブランチ（ブランチにいなければ「ブランチにいません」）と、git の user.name・user.email（なければ設定されていないこと）と、vanda の版を示す"
+statement = "画面の上の帯に、今のブランチ（ブランチにいなければ「ブランチにいません」）と、git の user.name・user.email（なければ設定されていないこと）と、{@id:vanda} の版を示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -2865,9 +2865,9 @@ layers = ["gui"]
 [[claim]]
 id = "context-no-user-cannot-agree"
 subjects = ["agree-on-review", "agreement"]
-statement = "git の user.name か user.email がなければ、合意できない"
-rationale = "合意の記録の「誰が」には、合意した時の git の user.name と user.email を書くため"
-model_check_waiver = "合意を受け付ける前の確かめで、合意の記録の移り変わりを変えないため"
+statement = "git の user.name か user.email がなければ、{@id:agreement}できない"
+rationale = "{@id:agreement-record}の「誰が」には、{@id:agreement}した時の git の user.name と user.email を書くため"
+model_check_waiver = "{@id:agreement}を受け付ける前の確かめで、{@id:agreement-record}の移り変わりを変えないため"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -2884,7 +2884,7 @@ layers = ["gui"]
 [[claim]]
 id = "context-story-store"
 subjects = ["connect-story-store", "story"]
-statement = "設定にストーリーストアがなければ、画面はストーリーを読みに行かず、ストーリーストアが設定にないことを注記で出す"
+statement = "設定に{@id:story-store}がなければ、画面は{@id:story}を読みに行かず、{@id:story-store}が設定にないことを注記で出す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -2901,7 +2901,7 @@ layers = ["gui"]
 [[claim]]
 id = "story-github-read"
 subjects = ["connect-story-store", "story"]
-statement = "組込みの github のアダプタは、GitHub Issues から、ストーリーの題・本文・URL を読む"
+statement = "組込みの github の{@id:adapter}は、GitHub Issues から、{@id:story}の題・本文・URL を読む"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2918,7 +2918,7 @@ layers = ["api"]
 [[claim]]
 id = "story-github-issue-number"
 subjects = ["connect-story-store", "story"]
-statement = "組込みの github のアダプタは、ストーリーの ID の中の最後の数字の並びを Issue の番号とし、ID に数字がなければ 400 のエラーにする"
+statement = "組込みの github の{@id:adapter}は、{@id:story}の ID の中の最後の数字の並びを Issue の番号とし、ID に数字がなければ 400 の{@id:error}にする"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2966,7 +2966,7 @@ layers = ["api"]
 [[claim]]
 id = "story-github-token-missing"
 subjects = ["connect-story-store", "story"]
-statement = "api_url のホストに合う認証キーが見つからなければ、GitHub への要求を送らずに、ストーリーストアのエラーにする"
+statement = "api_url のホストに合う認証キーが見つからなければ、GitHub への要求を送らずに、{@id:story-store}の{@id:error}にする"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -2991,8 +2991,8 @@ layers = ["api"]
 [[claim]]
 id = "story-errors"
 subjects = ["connect-story-store", "story"]
-statement = "状態コードは次のとおりにする。ストーリーストアが設定にない時と、組込みの github で Issue がない時は 404。ストーリーの ID が id_pattern に合わない（github では、ID に Issue の番号がない）時は 400。認証・ネットワーク・アダプタのエラーは 502。どれも、ストーリーストアかアダプタが返した理由をそのまま出す"
-condition = "カスタムアダプタは、ストーリーがないことを 404 として伝える手段を持たないので、ないストーリーも 502 になる"
+statement = "状態コードは次のとおりにする。{@id:story-store}が設定にない時と、組込みの github で Issue がない時は 404。{@id:story}の ID が id_pattern に合わない（github では、ID に Issue の番号がない）時は 400。認証・ネットワーク・{@id:adapter}の{@id:error}は 502。どれも、{@id:story-store}か{@id:adapter}が返した理由をそのまま出す"
+condition = "{@id:custom-adapter}は、{@id:story}がないことを 404 として伝える手段を持たないので、ない{@id:story}も 502 になる"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3009,8 +3009,8 @@ layers = ["api"]
 [[claim]]
 id = "story-project-adapter"
 subjects = ["connect-story-store", "run-custom-adapters"]
-statement = "ストーリーストアがカスタムアダプタなら、標準入力に {\"action\": \"read\", \"story\": <ID>} を渡し、標準出力の title・body・url・attachments を読む"
-condition = "ストーリーがない・認証が通らないなどで返せない時は、アダプタが 0 でない終了コードで終わって標準エラーに理由を書き、vanda はそれを 502 の理由としてそのまま出す"
+statement = "{@id:story-store}が{@id:custom-adapter}なら、標準入力に {\"action\": \"read\", \"story\": <ID>} を渡し、標準出力の title・body・url・attachments を読む"
+condition = "{@id:story}がない・認証が通らないなどで返せない時は、{@id:adapter}が 0 でない終了コードで終わって標準エラーに理由を書き、{@id:vanda} はそれを 502 の理由としてそのまま出す"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3027,7 +3027,7 @@ layers = ["api"]
 [[claim]]
 id = "review-no-omission-no-duplicate"
 subjects = ["list-changes", "story"]
-statement = "一覧には、比べる元と今で中身の指紋が違う約束・用語・機能とエビデンスの本体のファイルを、漏れも重複もなく 1 度ずつ出す"
+statement = "一覧には、比べる元と今で中身の{@id:fingerprint}が違う{@id:promise}・{@id:term}・{@id:feature}と{@id:evidence}の本体のファイルを、漏れも重複もなく 1 度ずつ出す"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3045,7 +3045,7 @@ layers = ["api"]
 id = "review-renamed-file"
 subjects = ["list-changes", "scenario"]
 statement = "中身が同じで場所だけが変わったファイルは、古い場所の削除と新しい場所の追加の 2 件として出す"
-rationale = "ファイルは場所で見分けるので、名前の変更は、古い場所を消して新しい場所に足すことになり、どちらにも合意が要るため"
+rationale = "ファイルは場所で見分けるので、名前の変更は、古い場所を消して新しい場所に足すことになり、どちらにも{@id:agreement}が要るため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3057,8 +3057,8 @@ layers = ["api"]
 [[claim]]
 id = "review-count-verified"
 subjects = ["list-changes"]
-statement = "一覧を返す前に、同じものが 2 度出ていないかと、一覧の数が、比べる元と今で中身の指紋が違う、約束・用語・機能の ID とファイルのファイルパスの数に合うかを確かめ、どちらかを満たさなければ一覧を返さず 500 にする"
-rationale = "中身の指紋が違う ID とファイルパスを、一覧の 1 件ずつにするところで漏れや重複が起きても、PO に誤った一覧を見せないため"
+statement = "一覧を返す前に、同じものが 2 度出ていないかと、一覧の数が、比べる元と今で中身の{@id:fingerprint}が違う、{@id:promise}・{@id:term}・{@id:feature}の ID とファイルのファイルパスの数に合うかを確かめ、どちらかを満たさなければ一覧を返さず 500 にする"
+rationale = "中身の{@id:fingerprint}が違う ID とファイルパスを、一覧の 1 件ずつにするところで漏れや重複が起きても、PO に誤った一覧を見せないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3092,7 +3092,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-order"
 subjects = ["list-changes", "number-changes", "layer"]
-statement = "一覧は、約束のまとまり（設定のレイヤーの順）、用語と機能、エビデンスの本体（ファイル）の順に並べ、同じまとまりの中は ID か場所の順に並べて、その順に通し番号を付ける"
+statement = "一覧は、{@id:promise}のまとまり（設定の{@id:layer}の順）、{@id:term}と{@id:feature}、{@id:evidence}の本体（ファイル）の順に並べ、同じまとまりの中は ID か場所の順に並べて、その順に通し番号を付ける"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3109,7 +3109,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-group-first-layer"
 subjects = ["fold-groups", "layer"]
-statement = "2 つ以上のレイヤーを持つ約束は、layers の最初のレイヤーのまとまりに入れる"
+statement = "2 つ以上の{@id:layer}を持つ{@id:promise}は、layers の最初の{@id:layer}のまとまりに入れる"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3145,7 +3145,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-view-branch"
 subjects = ["switch-review-unit", "base-branch"]
-statement = "レビュー単位がブランチなら、ベースブランチとの分岐点の中身と、HEAD のコミットの中身を比べ、コミットしていない変更は比べない"
+statement = "レビュー単位がブランチなら、{@id:base-branch}との{@id:branch-point}の中身と、HEAD のコミットの中身を比べ、コミットしていない変更は比べない"
 rationale = "コミットしていないものは、提出される保証がなく、ないのと同じため（reads-committed-files-only と同じ考え方）"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -3158,7 +3158,7 @@ layers = ["api"]
 [[claim]]
 id = "review-view-story"
 subjects = ["switch-review-unit", "story"]
-statement = "レビュー単位がストーリーなら、HEAD の履歴のうち、Story: のトレーラーにそのストーリーの ID があるコミットで変わったものすべてを対象に、ストーリーで最初に変える直前の中身と今の中身を比べる。HEAD の履歴にないブランチのコミットは見ない"
+statement = "レビュー単位が{@id:story}なら、HEAD の履歴のうち、{@id:story-trailer}にその{@id:story}の ID があるコミットで変わったものすべてを対象に、{@id:story}で最初に変える直前の中身と今の中身を比べる。HEAD の履歴にないブランチのコミットは見ない"
 rationale = "HEAD に入っていないコミットは、まだ提出されていないとみなすため（コミットしたものだけを読むのと同じ考え方）"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -3171,7 +3171,7 @@ layers = ["api"]
 [[claim]]
 id = "review-other-commits"
 subjects = ["switch-review-unit", "story"]
-statement = "レビュー単位がストーリーの時、ストーリーで最初に変えた後にほかのコミットが同じものを変えていたら、そのコミットを示す"
+statement = "レビュー単位が{@id:story}の時、{@id:story}で最初に変えた後にほかのコミットが同じものを変えていたら、そのコミットを示す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3188,7 +3188,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-story-choice"
 subjects = ["switch-review-unit", "story"]
-statement = "レビュー単位がブランチの時、分岐点より後のコミットの Story: のトレーラーからストーリーが 1 つに決まれば選ばせずに示し、2 つ以上ならそのストーリーから、1 つもなければ HEAD の履歴（合流のコミットを除く）のコミットの Story: のトレーラーにあるストーリーから、新しいコミットの順に選ばせる。story= でほかのストーリーを名指しした時は、それも選べるようにする"
+statement = "レビュー単位がブランチの時、{@id:branch-point}より後のコミットの {@id:story-trailer}から{@id:story}が 1 つに決まれば選ばせずに示し、2 つ以上ならその{@id:story}から、1 つもなければ HEAD の履歴（合流のコミットを除く）のコミットの {@id:story-trailer}にある{@id:story}から、新しいコミットの順に選ばせる。story= でほかの{@id:story}を名指しした時は、それも選べるようにする"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3210,9 +3210,9 @@ layers = ["gui"]
 [[claim]]
 id = "review-detached-shown"
 subjects = ["show-detached", "agreement", "story"]
-statement = "レビューのストーリーが決まっていれば、そのストーリーの外れた合意を「合意が外れた」と示す。あわせて、HEAD の履歴で、そのストーリーが最後に合意の記録を足したコミットより後に、その中身を変えたコミットを探し、そのコミットのストーリーの ID も示す"
-rationale = "rebase や amend で履歴を書き換えるとコミットの日時が変わるので、合意の後かどうかを日時でなく履歴の順で決める。手で書いた合意の記録も、コミットした後は同じに扱える"
-condition = "レビュー単位がブランチの時も出す。ストーリーが決まらない時は出さない。今の約束リストにない約束・用語・機能と、今はその場所にないファイル（名前を変えたものを含む）は、外れた合意として出さない"
+statement = "レビューの{@id:story}が決まっていれば、その{@id:story}の{@id:detached}を「{@id:agreement}が外れた」と示す。あわせて、HEAD の履歴で、その{@id:story}が最後に{@id:agreement-record}を足したコミットより後に、その中身を変えたコミットを探し、そのコミットの{@id:story}の ID も示す"
+rationale = "rebase や amend で履歴を書き換えるとコミットの日時が変わるので、{@id:agreement}の後かどうかを日時でなく履歴の順で決める。手で書いた{@id:agreement-record}も、コミットした後は同じに扱える"
+condition = "レビュー単位がブランチの時も出す。{@id:story}が決まらない時は出さない。今の{@id:promise-list}にない{@id:promise}・{@id:term}・{@id:feature}と、今はその場所にないファイル（名前を変えたものを含む）は、{@id:detached}として出さない"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3239,7 +3239,7 @@ layers = ["api"]
 [[claim]]
 id = "review-detached-unchanged-shown"
 subjects = ["show-detached", "agreement"]
-statement = "比べる元と今のあいだで変わっていない外れた合意も、一覧の外に示す"
+statement = "比べる元と今のあいだで変わっていない{@id:detached}も、一覧の外に示す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3256,7 +3256,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-detached-on-top"
 subjects = ["show-detached", "agreement"]
-statement = "一覧の外に示す外れた合意は、まとまりの上に「合意が外れたもの」としてまとめ、総数に数えないことを添える"
+statement = "一覧の外に示す{@id:detached}は、まとまりの上に「{@id:agreement}が外れたもの」としてまとめ、総数に数えないことを添える"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3268,7 +3268,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-flags"
 subjects = ["raise-flags", "flag", "ai-proposal", "guess", "changed-since-agreement"]
-statement = "約束の flags にあれば AI 案、guesses が空でなければ推測、同じ ID（ファイルならファイルパス）の合意の記録があり今の中身に合う合意がなければ差分ありのフラグを立てる"
+statement = "{@id:promise}の flags にあれば {@id:ai-proposal}、guesses が空でなければ{@id:guess}、同じ ID（ファイルならファイルパス）の{@id:agreement-record}があり今の中身に合う{@id:agreement}がなければ{@id:changed-since-agreement}の{@id:raise-flags}"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3280,7 +3280,7 @@ layers = ["api"]
 [[claim]]
 id = "review-flag-labels"
 subjects = ["raise-flags", "flag"]
-statement = "フラグのラベルには短い言葉だけを出し、説明はラベルに触れた時かフォーカスした時に出す"
+statement = "{@id:flag}のラベルには短い言葉だけを出し、説明はラベルに触れた時かフォーカスした時に出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3297,7 +3297,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-before-after"
 subjects = ["compare-contents"]
-statement = "変更・削除したものは、変更前と変更後の中身（約束なら文・理由・条件・対象・レイヤー・エビデンスの予定・推測、用語と機能なら定義など、ファイルなら本文）を示す"
+statement = "変更・削除したものは、変更前と変更後の中身（{@id:promise}なら文・理由・条件・対象・{@id:layer}・{@id:evidence-plan}・{@id:guess}、{@id:term}と{@id:feature}なら定義など、ファイルなら本文）を示す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3319,7 +3319,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-added-content"
 subjects = ["compare-contents"]
-statement = "追加したものは、今の中身（約束なら文・理由・条件・対象・レイヤー・エビデンスの予定・推測、用語と機能なら定義など、ファイルなら本文）を示す"
+statement = "追加したものは、今の中身（{@id:promise}なら文・理由・条件・対象・{@id:layer}・{@id:evidence-plan}・{@id:guess}、{@id:term}と{@id:feature}なら定義など、ファイルなら本文）を示す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3358,7 +3358,7 @@ layers = ["api"]
 [[claim]]
 id = "review-evidence-diff-pairing"
 subjects = ["compare-contents", "evidence"]
-statement = "エビデンスの予定の差分は、ステージとタイプが同じものを、同じものが 2 つ以上なら現れた順に対応させ、相手のないものは、消したもの・足したものとする"
+statement = "{@id:evidence-plan}の差分は、{@id:stage}と{@id:evidence-type}が同じものを、同じものが 2 つ以上なら現れた順に対応させ、相手のないものは、消したもの・足したものとする"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3370,7 +3370,7 @@ layers = ["api"]
 [[claim]]
 id = "review-groups-fold"
 subjects = ["fold-groups", "layer"]
-statement = "一覧を、約束はレイヤーごと、用語と機能、エビデンスの本体（ファイル）のまとまりに分け、まとまりごとにたためるようにする。たたんだまとまりも一覧から外さず、見出しにたたんだ件数を示し、総数と通し番号はたたまない時と同じにする"
+statement = "一覧を、{@id:promise}は{@id:layer}ごと、{@id:term}と{@id:feature}、{@id:evidence}の本体（ファイル）のまとまりに分け、まとまりごとにたためるようにする。たたんだまとまりも一覧から外さず、見出しにたたんだ件数を示し、総数と通し番号はたたまない時と同じにする"
 rationale = "変わったものが多くても、全体の件数を見失わずに把握できるようにするため"
 layers = ["gui"]
 flags = ["ai-proposal"]
@@ -3400,7 +3400,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-filter-text"
 subjects = ["list-changes"]
-statement = "一覧を、書いた文字で絞り込める。約束・用語・機能は ID・名前・文・定義に、ファイルはパスに、書いた文字を含むものだけを出す（大文字と小文字を区別しない）"
+statement = "一覧を、書いた文字で絞り込める。{@id:promise}・{@id:term}・{@id:feature}は ID・名前・文・定義に、ファイルはパスに、書いた文字を含むものだけを出す（大文字と小文字を区別しない）"
 rationale = "変わったものが数百件になると、1 件を探せないため（PO の依頼）"
 layers = ["gui"]
 flags = ["ai-proposal"]
@@ -3418,8 +3418,8 @@ layers = ["gui"]
 [[claim]]
 id = "review-filter-not-agreed"
 subjects = ["list-changes", "proposed", "detached"]
-statement = "一覧を、合意済でないもの（提案中と、合意が外れたもの）だけに絞り込める。文字の絞り込みと重ねられる"
-rationale = "残りの合意を片付けるため。細かい状態ごとの絞り込みは要らない"
+statement = "一覧を、{@id:agreed}でないもの（{@id:proposed}と、{@id:agreement}が外れたもの）だけに絞り込める。文字の絞り込みと重ねられる"
+rationale = "残りの{@id:agreement}を片付けるため。細かい状態ごとの絞り込みは要らない"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3449,7 +3449,7 @@ layers = ["gui"]
 id = "review-filter-kept"
 subjects = ["list-changes"]
 statement = "絞り込みの条件は、画面の URL に残し、再読み込みや、詳細から戻った時にも消さない"
-rationale = "詳細を読んで合意した後に、一覧へ戻って続きを片付けられるようにするため"
+rationale = "詳細を読んで{@id:agreement}した後に、一覧へ戻って続きを片付けられるようにするため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3466,9 +3466,9 @@ layers = ["gui"]
 [[claim]]
 id = "agree-writes-and-commits"
 subjects = ["agree-on-review", "agreement"]
-statement = "合意すると、合意の記録を書き足し、合意の記録のファイルと約束リストのファイルだけを 1 つのコミットにする"
-rationale = "1 件の合意ごとに 1 つのコミットにする（まとめる形にすると、画面の中に書きかけの合意を持つことになり、閉じた時に消えるおそれがあるため）"
-model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
+statement = "{@id:agree-on-review}と、{@id:agreement-record}を書き足し、{@id:agreement-record}のファイルと{@id:promise-list}のファイルだけを 1 つのコミットにする"
+rationale = "1 件の{@id:agreement}ごとに 1 つのコミットにする（まとめる形にすると、画面の中に書きかけの{@id:agreement}を持つことになり、閉じた時に消えるおそれがあるため）"
+model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3485,8 +3485,8 @@ layers = ["api"]
 [[claim]]
 id = "agree-record-file"
 subjects = ["agree-on-review", "agreement-record"]
-statement = "合意の記録は、設定の agreements のパターンの順で最初に当たったファイルの終わりに書き足す。どれにも当たらない時は、最初のパターンにワイルドカードがなければそのファイルを作り、あれば合意を 409 で断る"
-model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
+statement = "{@id:agreement-record}は、設定の agreements のパターンの順で最初に当たったファイルの終わりに書き足す。どれにも当たらない時は、最初のパターンにワイルドカードがなければそのファイルを作り、あれば{@id:agreement}を 409 で断る"
+model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3498,8 +3498,8 @@ layers = ["api"]
 [[claim]]
 id = "agree-record-form"
 subjects = ["agree-on-review", "agreement-record"]
-statement = "書き足す合意の記録は、user をインラインの表（user = { name = …, email = … }）で書き、agreed_at に、合意した時の日時を、手元の時差を付けて秒まで書く"
-model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
+statement = "書き足す{@id:agreement-record}は、user をインラインの表（user = { name = …, email = … }）で書き、agreed_at に、{@id:agreement}した時の日時を、手元の時差を付けて秒まで書く"
+model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3511,8 +3511,8 @@ layers = ["api"]
 [[claim]]
 id = "agree-record-user-from-git"
 subjects = ["agree-on-review", "agreement-record"]
-statement = "書き足す合意の記録の user には、合意した時の git の user.name と user.email を書く"
-model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
+statement = "書き足す{@id:agreement-record}の user には、{@id:agreement}した時の git の user.name と user.email を書く"
+model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3524,8 +3524,8 @@ layers = ["api"]
 [[claim]]
 id = "agree-commit-message"
 subjects = ["agree-on-review", "story"]
-statement = "合意のコミットのメッセージの subject を「(chore) <ストーリーの ID> で <種類> <ID か場所> に合意する」（種類は 約束・用語・機能・ファイル）にする"
-model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
+statement = "{@id:agreement}のコミットのメッセージの subject を「(chore) <{@id:story}の ID> で <種類> <ID か場所> に{@id:agree-on-review}」（種類は {@id:promise}・{@id:term}・{@id:feature}・ファイル）にする"
+model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3537,8 +3537,8 @@ layers = ["api"]
 [[claim]]
 id = "agree-rejects-stale"
 subjects = ["agree-on-review", "agreement"]
-statement = "画面に見せていた中身の指紋が今の中身の指紋と違えば、合意を 409 で断る"
-model_check_waiver = "合意を受け付ける前の確かめで、合意の記録の移り変わりを変えないため"
+statement = "画面に見せていた中身の{@id:fingerprint}が今の中身の{@id:fingerprint}と違えば、{@id:agreement}を 409 で断る"
+model_check_waiver = "{@id:agreement}を受け付ける前の確かめで、{@id:agreement-record}の移り変わりを変えないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3550,9 +3550,9 @@ layers = ["api"]
 [[claim]]
 id = "agree-removes-flags"
 subjects = ["agree-on-review", "flag"]
-statement = "約束に合意すると、同じコミットで、その約束の flags と guesses を外す"
-rationale = "責任を持つのは合意した人（合意の記録の「誰が」）で、フラグがあってもなくても変わったものはすべて読んで合意するため"
-model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
+statement = "{@id:promise}に{@id:agree-on-review}と、同じコミットで、その{@id:promise}の flags と guesses を外す"
+rationale = "責任を持つのは{@id:agreement}した人（{@id:agreement-record}の「誰が」）で、{@id:flag}があってもなくても変わったものはすべて読んで{@id:agree-on-review}ため"
+model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3569,8 +3569,8 @@ layers = ["api"]
 [[claim]]
 id = "agree-inline-flags-refused"
 subjects = ["agree-on-review", "flag"]
-statement = "約束の flags か guesses を、インラインの表の中か、複数行の文字列を含む形で書いていれば、合意を 409 で断る"
-model_check_waiver = "合意を受け付ける前の確かめで、合意の記録の移り変わりを変えないため"
+statement = "{@id:promise}の flags か guesses を、インラインの表の中か、複数行の文字列を含む形で書いていれば、{@id:agreement}を 409 で断る"
+model_check_waiver = "{@id:agreement}を受け付ける前の確かめで、{@id:agreement-record}の移り変わりを変えないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3582,9 +3582,9 @@ layers = ["api"]
 [[claim]]
 id = "agree-rejects-uncommitted"
 subjects = ["agree-on-review", "agreement"]
-statement = "合意の対象が書いてあるファイルか、合意で変えるファイルにコミットしていない変更があれば、合意を 409 で断る"
-rationale = "合意のコミットの時点のリポジトリが、合意した中身と合うようにするため"
-model_check_waiver = "合意を受け付ける前の確かめで、合意の記録の移り変わりを変えないため"
+statement = "{@id:agreement}の対象が書いてあるファイルか、{@id:agreement}で変えるファイルにコミットしていない変更があれば、{@id:agreement}を 409 で断る"
+rationale = "{@id:agreement}のコミットの時点のリポジトリが、{@id:agreement}した中身と合うようにするため"
+model_check_waiver = "{@id:agreement}を受け付ける前の確かめで、{@id:agreement-record}の移り変わりを変えないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3601,8 +3601,8 @@ layers = ["api"]
 [[claim]]
 id = "agree-rejects-duplicate"
 subjects = ["agree-on-review", "agreement"]
-statement = "同じストーリーで今の中身にもう合意していれば、合意を 409 で断る"
-model_check_waiver = "合意を受け付ける前の確かめで、合意の記録の移り変わりを変えないため"
+statement = "同じ{@id:story}で今の中身にもう{@id:agreement}していれば、{@id:agreement}を 409 で断る"
+model_check_waiver = "{@id:agreement}を受け付ける前の確かめで、{@id:agreement-record}の移り変わりを変えないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3614,7 +3614,7 @@ layers = ["api"]
 [[claim]]
 id = "evidence-presence-shown"
 subjects = ["show-evidence-status", "show-claim-evidence", "evidence"]
-statement = "エビデンスの予定ごとに、evidence-present の審査と同じ判定で、揃っているかを示す"
+statement = "{@id:evidence-plan}ごとに、evidence-present の{@id:check}と同じ判定で、揃っているかを示す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3631,9 +3631,9 @@ layers = ["gui"]
 [[claim]]
 id = "revoke-own-branch-only"
 subjects = ["revoke-agreement", "agreement"]
-statement = "取り消せるのは、今の git の user.name と user.email の人が、今のブランチ（ベースブランチとの分岐点より後）で書いた合意の記録だけ"
-rationale = "ほかの人の合意や、ベースブランチにすでにある合意は取り消せない"
-model_check_waiver = "誰がどのブランチで書いた記録を取り消せるかは、モデルの粒度（ストーリー・項目・中身）では表さないため"
+statement = "取り消せるのは、今の git の user.name と user.email の人が、今のブランチ（{@id:base-branch}との{@id:branch-point}より後）で書いた{@id:agreement-record}だけ"
+rationale = "ほかの人の{@id:agreement}や、{@id:base-branch}にすでにある{@id:agreement}は取り消せない"
+model_check_waiver = "誰がどのブランチで書いた記録を取り消せるかは、モデルの粒度（{@id:story}・項目・中身）では表さないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3650,9 +3650,9 @@ layers = ["api"]
 [[claim]]
 id = "revoke-commits-and-keeps-flags"
 subjects = ["revoke-agreement", "flag"]
-statement = "取り消すと、その合意の記録を消して 1 つのコミットにし、合意の時に外したフラグは戻さない"
+statement = "取り消すと、その{@id:agreement-record}を消して 1 つのコミットにし、{@id:agreement}の時に外した{@id:flag}は戻さない"
 rationale = "人が一度読んだことは変わらないため"
-model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
+model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3669,8 +3669,8 @@ layers = ["api"]
 [[claim]]
 id = "revoke-removes-all-duplicates"
 subjects = ["revoke-agreement", "agreement-record"]
-statement = "取り消すと、今の利用者が今のブランチで書いた、このストーリーの今の中身への合意の記録を、同じものが 2 つ以上あればすべて消し、ほかの人とほかのストーリーの記録は残す"
-model_check_waiver = "モデルの合意の記録は集合で、同じ記録が 2 つ以上ある状態を表さないため"
+statement = "取り消すと、今の利用者が今のブランチで書いた、この{@id:story}の今の中身への{@id:agreement-record}を、同じものが 2 つ以上あればすべて消し、ほかの人とほかの{@id:story}の記録は残す"
+model_check_waiver = "モデルの{@id:agreement-record}は集合で、同じ記録が 2 つ以上ある状態を表さないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3682,8 +3682,8 @@ layers = ["api"]
 [[claim]]
 id = "revoke-commit-message"
 subjects = ["revoke-agreement", "story"]
-statement = "取り消しのコミットのメッセージの subject を「(chore) <ストーリーの ID> で <種類> <ID か場所> の合意を取り消す」（種類は 約束・用語・機能・ファイル）にする"
-model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
+statement = "取り消しのコミットのメッセージの subject を「(chore) <{@id:story}の ID> で <種類> <ID か場所> の{@id:revoke-agreement}」（種類は {@id:promise}・{@id:term}・{@id:feature}・ファイル）にする"
+model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3695,8 +3695,8 @@ layers = ["api"]
 [[claim]]
 id = "detail-origin-and-history"
 subjects = ["show-entry-history", "origin"]
-statement = "レビューの 1 件の詳細に、約束の由来と合意の履歴を示す"
-rationale = "合意するかどうかを決める時に、約束の詳細へ移らずに見られるようにするため"
+statement = "レビューの 1 件の詳細に、{@id:promise}の{@id:origin}と{@id:agreement}の履歴を示す"
+rationale = "{@id:agree-on-review}かどうかを決める時に、{@id:promise}の詳細へ移らずに見られるようにするため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3708,7 +3708,7 @@ layers = ["gui"]
 [[claim]]
 id = "agree-from-detail-pages"
 subjects = ["agree-on-detail-pages", "agreement"]
-statement = "約束の詳細の画面とファイルの画面でも、ストーリーのレビューから移ってきて、その約束・ファイルがレビューの一覧にある時は、合意・取り消しのボタンを出す"
+statement = "{@id:promise}の詳細の画面とファイルの画面でも、{@id:story}のレビューから移ってきて、その{@id:promise}・ファイルがレビューの一覧にある時は、{@id:agreement}・取り消しのボタンを出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3725,7 +3725,7 @@ layers = ["gui"]
 [[claim]]
 id = "agree-from-detail-pages-notes"
 subjects = ["agree-on-detail-pages"]
-statement = "約束の詳細とファイルの画面は、レビューの画面から開いたのでなければ「ストーリーのレビューから開くと、合意できます。」と示す。レビューの画面から開いたのに、その一覧（外れた合意を含む）にないものなら、約束は「このストーリーでは変わっていない約束です。」と、ファイルは「このストーリーでは変わっていないファイルです。」と示す"
+statement = "{@id:promise}の詳細とファイルの画面は、レビューの画面から開いたのでなければ「{@id:story}のレビューから開くと、{@id:agreement}できます。」と示す。レビューの画面から開いたのに、その一覧（{@id:detached}を含む）にないものなら、{@id:promise}は「この{@id:story}では変わっていない{@id:promise}です。」と、ファイルは「この{@id:story}では変わっていないファイルです。」と示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3747,7 +3747,7 @@ layers = ["gui"]
 [[claim]]
 id = "agree-from-detail-pages-stay"
 subjects = ["agree-on-detail-pages"]
-statement = "約束の詳細の画面とファイルの画面で合意・取り消しをした後も、その画面にとどまる"
+statement = "{@id:promise}の詳細の画面とファイルの画面で{@id:agreement}・取り消しをした後も、その画面にとどまる"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3764,7 +3764,7 @@ layers = ["gui"]
 [[claim]]
 id = "claim-detail-fields"
 subjects = ["show-claim-fields"]
-statement = "約束の詳細に、文・理由・条件・レイヤーを示す"
+statement = "{@id:promise}の詳細に、文・理由・条件・{@id:layer}を示す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3786,7 +3786,7 @@ layers = ["gui"]
 [[claim]]
 id = "claim-detail-state"
 subjects = ["show-claim-fields", "agreed", "proposed"]
-statement = "約束の詳細の見出しに、約束の ID と、今の中身が合意済か提案中かを示す"
+statement = "{@id:promise}の詳細の見出しに、{@id:promise}の ID と、今の中身が{@id:agreed}か{@id:proposed}かを示す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3803,7 +3803,7 @@ layers = ["gui"]
 [[claim]]
 id = "claim-detail-subjects"
 subjects = ["show-claim-fields"]
-statement = "約束の詳細の対象には、用語か機能の名前と ID を示し、約束リストにない ID には「（約束リストにありません）」と添える"
+statement = "{@id:promise}の詳細の対象には、{@id:term}か{@id:feature}の名前と ID を示し、{@id:promise-list}にない ID には「（{@id:promise-list}にありません）」と添える"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3820,7 +3820,7 @@ layers = ["gui"]
 [[claim]]
 id = "claim-detail-guesses"
 subjects = ["show-claim-fields", "guess"]
-statement = "約束の詳細に、推測（guesses）があれば、1 つずつ示す"
+statement = "{@id:promise}の詳細に、{@id:guess}（guesses）があれば、1 つずつ示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3832,7 +3832,7 @@ layers = ["gui"]
 [[claim]]
 id = "claim-detail-evidence-grouping"
 subjects = ["show-claim-evidence", "stage", "evidence-type"]
-statement = "約束の詳細のエビデンスを、ステージ（計画・実装・リリース・運用の順）ごとに分け、その中をタイプごとに分けて示す"
+statement = "{@id:promise}の詳細の{@id:evidence}を、{@id:stage}（{@id:plan-stage}・{@id:implementation-stage}・{@id:release-stage}・{@id:operation-stage}の順）ごとに分け、その中を{@id:evidence-type}ごとに分けて示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3844,7 +3844,7 @@ layers = ["gui"]
 [[claim]]
 id = "claim-detail-evidence-content"
 subjects = ["show-claim-evidence", "scenario", "oracle", "guardrail"]
-statement = "エビデンスとして見つかったアノテーションごとに、名前と場所（ファイルと行）を示し、さらに、アダプタが tla なら付いている定義を、txtar・sql・カスタムアダプタ（go・ts 以外）ならファイルの中身全体を示す。go・ts は、テストの名前と場所だけを示す"
+statement = "{@id:evidence}として見つかった{@id:annotation}ごとに、名前と場所（ファイルと行）を示し、さらに、{@id:adapter}が tla なら付いている定義を、txtar・sql・{@id:custom-adapter}（go・ts 以外）ならファイルの中身全体を示す。go・ts は、テストの名前と場所だけを示す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3861,7 +3861,7 @@ layers = ["gui"]
 [[claim]]
 id = "claim-detail-found-location"
 subjects = ["show-claim-evidence"]
-statement = "実際のエビデンスごとに、付いているものの名前と、<ファイル>:<行> を書いたファイルの画面へのリンクを示し、TLA+ ならファイル全体へのリンクも示す"
+statement = "実際の{@id:evidence}ごとに、付いているものの名前と、<ファイル>:<行> を書いたファイルの画面へのリンクを示し、TLA+ ならファイル全体へのリンクも示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3873,8 +3873,8 @@ layers = ["gui"]
 [[claim]]
 id = "claim-detail-origin"
 subjects = ["show-claim-origin", "build-origins", "origin"]
-statement = "約束の由来として、約束の指紋が変わった（作ったものを含む）合流でないコミットを、新しい順に示す"
-condition = "消した後に同じ ID で作り直した約束は新しいものとみなし、消すまでのコミットを入れない"
+statement = "{@id:promise}の{@id:origin}として、{@id:promise}の{@id:fingerprint}が変わった（作ったものを含む）合流でないコミットを、新しい順に示す"
+condition = "消した後に同じ ID で作り直した{@id:promise}は新しいものとみなし、消すまでのコミットを入れない"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3896,7 +3896,7 @@ layers = ["gui"]
 [[claim]]
 id = "origin-commit-stories"
 subjects = ["build-origins", "show-claim-origin", "origin", "story"]
-statement = "約束の由来のコミットごとに、そのコミットの Story: のトレーラーのストーリーを結ぶ"
+statement = "{@id:promise}の{@id:origin}のコミットごとに、そのコミットの {@id:story-trailer}の{@id:story}を結ぶ"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -3908,7 +3908,7 @@ layers = ["api"]
 [[claim]]
 id = "claim-detail-agreements"
 subjects = ["show-claim-agreements", "agreement"]
-statement = "約束の合意の履歴を、合意した日時の新しい順に、今の中身に合うかとともに示す"
+statement = "{@id:promise}の{@id:agreement}の履歴を、{@id:agreement}した日時の新しい順に、今の中身に合うかとともに示す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3925,7 +3925,7 @@ layers = ["gui"]
 [[claim]]
 id = "tla-math-symbols"
 subjects = ["render-tla-symbols", "oracle"]
-statement = "オラクルの定義（TLA+）を、決まった表のとおりの数学の記号に置き換えて見せる"
+statement = "{@id:oracle}の定義（TLA+）を、決まった表のとおりの数学の記号に置き換えて見せる"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4007,8 +4007,8 @@ layers = ["gui"]
 [[claim]]
 id = "claim-at-commit"
 subjects = ["show-claim-at-commit", "origin"]
-statement = "由来のコミットか合意の記録を選ぶと、その時点（合意の記録なら、合意を書いたコミットの時点）の約束の中身を示す"
-rationale = "約束の詳細には今の中身との差分を出さないため、過去の中身はここで見る"
+statement = "{@id:origin}のコミットか{@id:agreement-record}を選ぶと、その時点（{@id:agreement-record}なら、{@id:agreement}を書いたコミットの時点）の{@id:promise}の中身を示す"
+rationale = "{@id:promise}の詳細には今の中身との差分を出さないため、過去の中身はここで見る"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -4030,7 +4030,7 @@ layers = ["gui"]
 [[claim]]
 id = "claim-at-commit-errors"
 subjects = ["show-claim-at-commit"]
-statement = "その時点の約束の中身を求める時、コミットの指定がハッシュの形でなければ 400、ないコミットとその時点にない約束は 404 にする"
+statement = "その時点の{@id:promise}の中身を求める時、コミットの指定がハッシュの形でなければ 400、ないコミットとその時点にない{@id:promise}は 404 にする"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -4077,7 +4077,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-keeps-existing"
 subjects = ["create-vanda-dir"]
-statement = "vanda init は、.vanda/ がすでにあれば、何も書き換えずに止める"
+statement = "vanda init は、{@id:vanda-dir} がすでにあれば、何も書き換えずに止める"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4099,7 +4099,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-defaults-from-repository"
 subjects = ["create-vanda-dir", "base-branch"]
-statement = "問いかけの既定の答えは、リポジトリから読み取った値（ベースブランチ、GitHub の remote、アノテーションを読む言語）にする"
+statement = "問いかけの既定の答えは、リポジトリから読み取った値（{@id:base-branch}、GitHub の remote、{@id:annotation}を読む言語）にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4116,7 +4116,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-store-choices"
 subjects = ["create-vanda-dir", "connect-story-store"]
-statement = "ストーリーストアは、GitHub Issues・カスタムアダプタ・「使わない」から選ばせ、ID の書き方の既定は選んだアダプタが持つものにする"
+statement = "{@id:story-store}は、GitHub Issues・{@id:custom-adapter}・「使わない」から選ばせ、ID の書き方の既定は選んだ{@id:adapter}が持つものにする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4133,8 +4133,8 @@ layers = ["cli"]
 [[claim]]
 id = "init-no-store-id-pattern"
 subjects = ["create-vanda-dir", "connect-story-store"]
-statement = "ストーリーストアにカスタムアダプタか「使わない」を選んだ時は、ストーリーの ID の書き方の問いを、既定の答えのない空の状態から始める"
-rationale = "GitHub 以外では ID の形を推し量れず、カスタムアダプタは init の時点ではまだないので既定を聞けないため。既定を勝手に入れると、気づかずにそのまま進みうる"
+statement = "{@id:story-store}に{@id:custom-adapter}か「使わない」を選んだ時は、{@id:story}の ID の書き方の問いを、既定の答えのない空の状態から始める"
+rationale = "GitHub 以外では ID の形を推し量れず、{@id:custom-adapter}は init の時点ではまだないので既定を聞けないため。既定を勝手に入れると、気づかずにそのまま進みうる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4151,7 +4151,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-language-choices"
 subjects = ["create-vanda-dir", "builtin-adapter"]
-statement = "アノテーションを読む言語は、組込みのアダプタを全部並べて複数選ばせ、リポジトリで見つかった言語を選んだ状態から始める"
+statement = "{@id:annotation}を読む言語は、{@id:builtin-adapter}を全部並べて複数選ばせ、リポジトリで見つかった言語を選んだ状態から始める"
 rationale = "初期化した直後でファイルがないリポジトリでも選べるようにするため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -4169,7 +4169,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-patterns"
 subjects = ["create-vanda-dir", "annotation"]
-statement = "選んだ言語ごとに、読むファイルのパターンを、言語のアダプタが持つ既定を入れた状態で問いかけ、空白で区切って複数書けるようにする"
+statement = "選んだ言語ごとに、読むファイルのパターンを、言語の{@id:adapter}が持つ既定を入れた状態で問いかけ、空白で区切って複数書けるようにする"
 rationale = "ts の既定のパターンが 2 つあるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -4187,7 +4187,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-default-types"
 subjects = ["create-vanda-dir", "evidence-type"]
-statement = "満たすエビデンスのタイプは問いかけず、選んだ言語のアダプタが持つ既定のタイプを書く"
+statement = "満たす{@id:evidence}の{@id:evidence-type}は問いかけず、選んだ言語の{@id:adapter}が持つ既定の{@id:evidence-type}を書く"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4238,7 +4238,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-writes-files"
 subjects = ["create-vanda-dir"]
-statement = "問いかけに答えると、5 つのファイルを作る。設定のファイル・約束リスト・合意の記録と、審査の設定のディレクトリに置く 2 つの審査の設定（ブランチで動かすものと、ベースブランチで動かすもの）"
+statement = "問いかけに答えると、5 つのファイルを作る。{@id:config-file}・{@id:promise-list}・{@id:agreement-record}と、{@id:check-config-dir}に置く 2 つの{@id:check-config}（ブランチで動かすものと、{@id:base-branch}で動かすもの）"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4260,7 +4260,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-write-failure-cleans"
 subjects = ["create-vanda-dir"]
-statement = "ファイルを書く途中で失敗したら、作りかけの .vanda/ を消し、エラーを出して終了コード 1 で終わる"
+statement = "ファイルを書く途中で失敗したら、作りかけの {@id:vanda-dir} を消し、{@id:error}を出して終了コード 1 で終わる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4272,7 +4272,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-check-failure-keeps"
 subjects = ["create-vanda-dir"]
-statement = "作った後に、作った設定を読み直して確かめ、誤りがあれば、作った .vanda/ を残したまま、直すべき誤りを出して終了コード 1 で終わる"
+statement = "作った後に、作った設定を読み直して確かめ、{@id:mistake}があれば、作った {@id:vanda-dir} を残したまま、直すべき{@id:mistake}を出して終了コード 1 で終わる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4284,8 +4284,8 @@ layers = ["cli"]
 [[claim]]
 id = "init-check-configs"
 subjects = ["create-vanda-dir", "check-config", "check-scope"]
-statement = "vanda init が作る ci.toml は、story-origin・agreement・evidence-present を範囲 story に、ほかの審査を範囲 all にし、main.toml は、story-origin を除くすべての審査を範囲 all にする"
-rationale = "ベースブランチへの push のように Story: のトレーラーのないコミットでは、範囲 story の審査が必ず止まるため、ベースブランチでは範囲 all の審査だけを動かす"
+statement = "vanda init が作る ci.toml は、story-origin・agreement・evidence-present を{@id:check-scope} story に、ほかの{@id:check}を{@id:check-scope} all にし、main.toml は、story-origin を除くすべての{@id:check}を{@id:check-scope} all にする"
+rationale = "{@id:base-branch}への push のように {@id:story-trailer}のないコミットでは、{@id:check-scope} story の{@id:check}が必ず止まるため、{@id:base-branch}では{@id:check-scope} all の{@id:check}だけを動かす"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4319,8 +4319,8 @@ layers = ["cli"]
 [[claim]]
 id = "init-guide"
 subjects = ["create-vanda-dir", "layer"]
-statement = "作った後に、[[layer]] を書くことと、CI に vanda check を足すこと（ブランチでは ci.toml を --base <ベースブランチ> で、ベースブランチでは main.toml を動かす）を案内し、言語を 1 つも選ばなかった時は [[annotation]] を書くことも案内する"
-rationale = "レイヤーは問いかけず、作った後に設定へ書いてもらうため"
+statement = "作った後に、[[layer]] を書くことと、CI に vanda check を足すこと（ブランチでは ci.toml を --base <{@id:base-branch}> で、{@id:base-branch}では main.toml を動かす）を案内し、言語を 1 つも選ばなかった時は [[annotation]] を書くことも案内する"
+rationale = "{@id:layer}は問いかけず、作った後に設定へ書いてもらうため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4342,8 +4342,8 @@ layers = ["cli"]
 [[claim]]
 id = "init-missing-project-adapter"
 subjects = ["create-vanda-dir", "run-custom-adapters"]
-statement = "カスタムアダプタを選んだ時は、作った後に確かめる時に、そのアダプタがまだないことを誤りにせず、アダプタを実装して配置するよう案内して、終了コード 0 で終える"
-rationale = "カスタムアダプタは .vanda/ を作った後にしか置けないため"
+statement = "{@id:custom-adapter}を選んだ時は、作った後に確かめる時に、その{@id:adapter}がまだないことを{@id:mistake}にせず、{@id:adapter}を実装して配置するよう案内して、終了コード 0 で終える"
+rationale = "{@id:custom-adapter}は {@id:vanda-dir} を作った後にしか置けないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4360,8 +4360,8 @@ layers = ["cli"]
 [[claim]]
 id = "init-accepts-builtin-name"
 subjects = ["create-vanda-dir", "builtin-adapter"]
-statement = "カスタムアダプタの名前に、組込みのアダプタと同じ名前を答えても断らない"
-rationale = "同じ名前のカスタムアダプタを置かなければ組込みのものが使われ、作った後に確かめると、足りない項目の誤りになる"
+statement = "{@id:custom-adapter}の名前に、{@id:builtin-adapter}と同じ名前を答えても断らない"
+rationale = "同じ名前の{@id:custom-adapter}を置かなければ組込みのものが使われ、作った後に確かめると、足りない項目の{@id:mistake}になる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4397,7 +4397,7 @@ layers = ["cli"]
 [[claim]]
 id = "init-restores-terminal"
 subjects = ["create-vanda-dir"]
-statement = "中断・「作らない」という答え・誤りのどれで終わっても、端末を vanda init を始める前の状態に戻す"
+statement = "中断・「作らない」という答え・{@id:mistake}のどれで終わっても、端末を vanda init を始める前の状態に戻す"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4414,7 +4414,7 @@ layers = ["cli"]
 [[claim]]
 id = "story-shown-on-screen"
 subjects = ["connect-story-store", "story"]
-statement = "ストーリーストアが設定にあれば、レビューの画面に、ストーリーの題・本文・添付ファイルへのリンクを出す"
+statement = "{@id:story-store}が設定にあれば、レビューの画面に、{@id:story}の題・本文・添付ファイルへのリンクを出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4431,7 +4431,7 @@ layers = ["gui"]
 [[claim]]
 id = "story-open-link"
 subjects = ["connect-story-store", "story"]
-statement = "ストーリーにストーリーストアの URL があれば、「ストーリーストアで開く」のリンクを出す"
+statement = "{@id:story}に{@id:story-store}の URL があれば、「{@id:story-store}で開く」のリンクを出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4443,7 +4443,7 @@ layers = ["gui"]
 [[claim]]
 id = "story-undecided-note"
 subjects = ["connect-story-store", "story", "switch-review-unit"]
-statement = "ストーリーが決まっていなければ、ストーリーの欄に「ストーリーが決まっていません。ストーリーを選んでください。」と示す"
+statement = "{@id:story}が決まっていなければ、{@id:story}の欄に「{@id:story}が決まっていません。{@id:story}を選んでください。」と示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4455,7 +4455,7 @@ layers = ["gui"]
 [[claim]]
 id = "story-error-shown-on-screen"
 subjects = ["connect-story-store", "story"]
-statement = "ストーリーを読めない時（ネットワークや認証のエラーなど）は、画面にストーリーストアが返した理由をそのまま出し、黙って空にしない"
+statement = "{@id:story}を読めない時（ネットワークや認証の{@id:error}など）は、画面に{@id:story-store}が返した理由をそのまま出し、黙って空にしない"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4467,8 +4467,8 @@ layers = ["gui"]
 [[claim]]
 id = "agree-on-screen"
 subjects = ["agree-on-review", "agreement"]
-statement = "レビューの画面で 1 件に合意すると、画面に見せていた中身の指紋と、合意するストーリーの ID を添えて、API に合意を求める"
-model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
+statement = "レビューの画面で 1 件に{@id:agree-on-review}と、画面に見せていた中身の{@id:fingerprint}と、{@id:agree-on-review}{@id:story}の ID を添えて、API に{@id:agreement}を求める"
+model_check_waiver = "画面の見せ方の決まりで、{@id:agreement}の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4485,7 +4485,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-detail-links"
 subjects = ["list-changes", "agree-on-detail-pages"]
-statement = "1 件の詳細に、約束なら「約束の詳細を開く」、ファイルなら「ファイルの画面を開く」のリンクを出し、削除したものには出さない"
+statement = "1 件の詳細に、{@id:promise}なら「{@id:promise}の詳細を開く」、ファイルなら「ファイルの画面を開く」のリンクを出し、削除したものには出さない"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4497,8 +4497,8 @@ layers = ["gui"]
 [[claim]]
 id = "agree-button-label"
 subjects = ["agree-on-review", "story"]
-statement = "合意のボタンには、「ストーリー <ID> で合意する」と、合意するストーリーの ID を書く"
-model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
+statement = "{@id:agreement}のボタンには、「{@id:story} <ID> で{@id:agree-on-review}」と、{@id:agree-on-review}{@id:story}の ID を書く"
+model_check_waiver = "画面の見せ方の決まりで、{@id:agreement}の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4510,8 +4510,8 @@ layers = ["gui"]
 [[claim]]
 id = "agree-cannot-reason-shown"
 subjects = ["agree-on-review", "agreement"]
-statement = "ストーリーが決まっていないか、git の user.name・user.email がなくて合意できない時は、合意のボタンを押せなくし、「ストーリーを選ぶと、合意できます。」か「git の user.name と user.email を設定すると、合意できます。」と示す"
-model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
+statement = "{@id:story}が決まっていないか、git の user.name・user.email がなくて{@id:agreement}できない時は、{@id:agreement}のボタンを押せなくし、「{@id:story}を選ぶと、{@id:agreement}できます。」か「git の user.name と user.email を設定すると、{@id:agreement}できます。」と示す"
+model_check_waiver = "画面の見せ方の決まりで、{@id:agreement}の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4523,8 +4523,8 @@ layers = ["gui"]
 [[claim]]
 id = "revoke-on-screen"
 subjects = ["revoke-agreement", "agreement"]
-statement = "レビューの画面で、合意済の件への今の利用者の合意を取り消せる"
-model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
+statement = "レビューの画面で、{@id:agreed}の件への今の利用者の{@id:agreement}を取り消せる"
+model_check_waiver = "画面の見せ方の決まりで、{@id:agreement}の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4541,8 +4541,8 @@ layers = ["gui"]
 [[claim]]
 id = "revoke-others-shown"
 subjects = ["revoke-agreement", "agreement"]
-statement = "取り消してもほかの人の合意が残る時は、取り消す前にその人の名前と合意済のままになることを示し、取り消した後にも合意済のままであることを示す"
-model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
+statement = "取り消してもほかの人の{@id:agreement}が残る時は、取り消す前にその人の名前と{@id:agreed}のままになることを示し、取り消した後にも{@id:agreed}のままであることを示す"
+model_check_waiver = "画面の見せ方の決まりで、{@id:agreement}の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4554,8 +4554,8 @@ layers = ["gui"]
 [[claim]]
 id = "revoke-reason-shown"
 subjects = ["revoke-agreement", "agreement"]
-statement = "合意済の件を今の利用者が取り消せない時は、取り消しのボタンを出さず、取り消せない理由を示す"
-model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
+statement = "{@id:agreed}の件を今の利用者が取り消せない時は、取り消しのボタンを出さず、取り消せない理由を示す"
+model_check_waiver = "画面の見せ方の決まりで、{@id:agreement}の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4567,8 +4567,8 @@ layers = ["gui"]
 [[claim]]
 id = "revoke-refused"
 subjects = ["revoke-agreement", "agreement"]
-statement = "取り消せる件の判定（今の利用者が今のブランチで書いた、このストーリーの今の中身への合意か）に当たらなければ、取り消しを 409 で断り、理由を出す"
-model_check_waiver = "合意を受け付ける前の確かめで、合意の記録の移り変わりを変えないため"
+statement = "取り消せる件の判定（今の利用者が今のブランチで書いた、この{@id:story}の今の中身への{@id:agreement}か）に当たらなければ、取り消しを 409 で断り、理由を出す"
+model_check_waiver = "{@id:agreement}を受け付ける前の確かめで、{@id:agreement-record}の移り変わりを変えないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -4580,8 +4580,8 @@ layers = ["api"]
 [[claim]]
 id = "file-api"
 subjects = ["show-claim-evidence", "oracle", "scenario"]
-statement = "ファイルの API は、合意の対象のファイルと、アノテーションを読むファイルの中身を返し、ほかのファイルは 404 にする"
-rationale = "約束の詳細から、TLA+ のファイル全体へリンクするため"
+statement = "ファイルの API は、{@id:agreement}の対象のファイルと、{@id:annotation}を読むファイルの中身を返し、ほかのファイルは 404 にする"
+rationale = "{@id:promise}の詳細から、TLA+ のファイル全体へリンクするため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -4598,7 +4598,7 @@ layers = ["api"]
 [[claim]]
 id = "claim-detail-error-shown"
 subjects = ["show-claim-fields"]
-statement = "約束の詳細を読めない時は、API が返した理由を画面に出す"
+statement = "{@id:promise}の詳細を読めない時は、API が返した理由を画面に出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4611,7 +4611,7 @@ layers = ["gui"]
 [[claim]]
 id = "api-error-fix-shown"
 subjects = ["start-server"]
-statement = "画面は、API のエラーを出す時、何がどうなっているか（message）と、どうすればよいか（fix）の両方を出す"
+statement = "画面は、API の{@id:error}を出す時、何がどうなっているか（message）と、どうすればよいか（fix）の両方を出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4647,8 +4647,8 @@ layers = ["gui"]
 [[claim]]
 id = "agree-refusal-shown"
 subjects = ["agree-on-review", "agreement"]
-statement = "合意を断られたら、断られた理由を画面に出す"
-model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
+statement = "{@id:agreement}を断られたら、断られた理由を画面に出す"
+model_check_waiver = "画面の見せ方の決まりで、{@id:agreement}の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4674,7 +4674,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-state-shown"
 subjects = ["list-changes", "proposed", "agreed"]
-statement = "変わったものの一覧の 1 件ごとに、合意の状態を提案中か合意済かで示す。削除したものは、消したことへの合意があれば合意済、なければ提案中とする"
+statement = "変わったものの一覧の 1 件ごとに、{@id:agreement}の状態を{@id:proposed}か{@id:agreed}かで示す。削除したものは、消したことへの{@id:agreement}があれば{@id:agreed}、なければ{@id:proposed}とする"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4687,7 +4687,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-list-icons"
 subjects = ["list-changes", "raise-flags", "proposed", "agreed", "detached"]
-statement = "変わったものの一覧では、状態とフラグを、言葉のラベルでなくアイコンで、名前の下の行の種類の後ろに並べる。状態のアイコンは 1 件に 1 つ（合意が外れたものは、提案中でなく合意が外れたことを示す）で、続けて立っているフラグのアイコンを並べる。状態のアイコンは丸の形、フラグのアイコンは丸のない形にし、色だけに頼らずに見分けられるようにする"
+statement = "変わったものの一覧では、状態と{@id:flag}を、言葉のラベルでなくアイコンで、名前の下の行の種類の後ろに並べる。状態のアイコンは 1 件に 1 つ（{@id:agreement}が外れたものは、{@id:proposed}でなく{@id:agreement}が外れたことを示す）で、続けて立っている{@id:flag}のアイコンを並べる。状態のアイコンは丸の形、{@id:flag}のアイコンは丸のない形にし、色だけに頼らずに見分けられるようにする"
 rationale = "一覧は幅が狭く、言葉のラベルを名前の横に並べると折り返して崩れるため"
 layers = ["gui"]
 flags = ["ai-proposal"]
@@ -4705,8 +4705,8 @@ layers = ["gui"]
 [[claim]]
 id = "review-list-first-line"
 subjects = ["list-changes", "number-changes"]
-statement = "変わったものの一覧では、1 件ごとの 1 行目に、通し番号と名前だけを出し、追加・変更・削除の記号は出さない。種類（約束・用語・機能・ファイルの種類）は 2 行目の左端に出す。追加・変更・削除のどれかは、選んだ 1 件の詳細に示す"
-rationale = "一覧は幅が狭く、名前を出す幅を広く取るため。合意するかどうかは、追加か変更かで変わらない"
+statement = "変わったものの一覧では、1 件ごとの 1 行目に、通し番号と名前だけを出し、追加・変更・削除の記号は出さない。種類（{@id:promise}・{@id:term}・{@id:feature}・ファイルの種類）は 2 行目の左端に出す。追加・変更・削除のどれかは、選んだ 1 件の詳細に示す"
+rationale = "一覧は幅が狭く、名前を出す幅を広く取るため。{@id:agree-on-review}かどうかは、追加か変更かで変わらない"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4718,7 +4718,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-icon-names"
 subjects = ["list-changes", "raise-flags"]
-statement = "一覧のアイコンに触れた時か、キーボードでフォーカスした時に、そのアイコンの言葉（合意済・提案中・合意が外れた・AI 案・推測・差分あり）を出し、読み上げにも同じ言葉を渡す"
+statement = "一覧のアイコンに触れた時か、キーボードでフォーカスした時に、そのアイコンの言葉（{@id:agreed}・{@id:proposed}・{@id:agreement}が外れた・{@id:ai-proposal}・{@id:guess}・{@id:changed-since-agreement}）を出し、読み上げにも同じ言葉を渡す"
 rationale = "意味を覚えていない人は、アイコンだけでは読めないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
@@ -4731,8 +4731,8 @@ layers = ["gui"]
 [[claim]]
 id = "agree-on-screen-reloads"
 subjects = ["agree-on-review", "agreement"]
-statement = "画面で合意した後に、変わったものの一覧を読み直し、合意した後の状態を見せる"
-model_check_waiver = "画面の見せ方の決まりで、合意の判定そのものではないため"
+statement = "画面で{@id:agreement}した後に、変わったものの一覧を読み直し、{@id:agreement}した後の状態を見せる"
+model_check_waiver = "画面の見せ方の決まりで、{@id:agreement}の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4745,8 +4745,8 @@ layers = ["gui"]
 [[claim]]
 id = "story-body-markdown"
 subjects = ["connect-story-store", "story"]
-statement = "ストーリーの本文を Markdown として描き（見出し・箇条書き・表・コード・リンク）、生の HTML は要素にしない"
-rationale = "ストーリーストアから読んだ本文の HTML を、vanda の画面の中で動かさないため（CLAUDE.md の依存の表の react-markdown の行）"
+statement = "{@id:story}の本文を Markdown として描き（見出し・箇条書き・表・コード・リンク）、生の HTML は要素にしない"
+rationale = "{@id:story-store}から読んだ本文の HTML を、{@id:vanda} の画面の中で動かさないため（CLAUDE.md の依存の表の react-markdown の行）"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4759,10 +4759,10 @@ layers = ["gui"]
 [[claim]]
 id = "story-links-new-tab"
 subjects = ["connect-story-store", "story"]
-statement = "ストーリーの本文のリンク・「ストーリーストアで開く」のリンク・添付ファイルのリンクは新しいタブで開き、開いた先から vanda の画面に戻って操れないようにする"
+statement = "{@id:story}の本文のリンク・「{@id:story-store}で開く」のリンク・添付ファイルのリンクは新しいタブで開き、開いた先から {@id:vanda} の画面に戻って操れないようにする"
 layers = ["gui"]
 flags = ["ai-proposal"]
-guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）", "開いた先から戻れないようにするのは、開いたページに vanda の画面を操らせないためだと推し量った"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）", "開いた先から戻れないようにするのは、開いたページに {@id:vanda} の画面を操らせないためだと推し量った"]
 
 [[claim.evidence]]
 stage = "implementation"
@@ -4785,7 +4785,7 @@ layers = ["gui"]
 [[claim]]
 id = "config-file-required"
 subjects = ["store-config"]
-statement = "設定のファイルがなければ、vanda doctor と vanda check は誤りで止まる"
+statement = "{@id:config-file}がなければ、vanda doctor と vanda check は{@id:mistake}で止まる"
 layers = ["cli"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4798,10 +4798,10 @@ layers = ["cli"]
 [[claim]]
 id = "back-restores-state"
 subjects = ["switch-review-unit", "show-claim-fields"]
-statement = "約束の詳細やファイルの画面からストーリーのレビューへ戻ると、行く前と同じ状態（ベースブランチ、レビュー単位、ストーリー、選んだ件）に戻る"
+statement = "{@id:promise}の詳細やファイルの画面から{@id:story}のレビューへ戻ると、行く前と同じ状態（{@id:base-branch}、レビュー単位、{@id:story}、選んだ件）に戻る"
 layers = ["gui"]
 flags = ["ai-proposal"]
-guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）", "戻す状態に、ベースブランチ・レビュー単位・ストーリー・選んだ件を含めるのは、E2E の場合分けから推し量った"]
+guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）", "戻す状態に、{@id:base-branch}・レビュー単位・{@id:story}・選んだ件を含めるのは、E2E の場合分けから推し量った"]
 
 [[claim.evidence]]
 stage = "implementation"
@@ -4816,7 +4816,7 @@ layers = ["gui"]
 [[claim]]
 id = "keep-user-whitespace"
 subjects = ["show-claim-fields", "compare-contents"]
-statement = "利用者が書いた文（約束の文・理由・条件、その時点の中身、差分）の連続する空白・全角の空白・改行を、そのまま保って出す"
+statement = "利用者が書いた文（{@id:promise}の文・理由・条件、その時点の中身、差分）の連続する空白・全角の空白・改行を、そのまま保って出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4842,7 +4842,7 @@ layers = ["gui"]
 [[claim]]
 id = "entry-select-anywhere"
 subjects = ["list-changes"]
-statement = "変わったものの一覧の 1 件は、名前のほか、番号・状態のアイコン・フラグのアイコン・枠の端を押しても選ばれる"
+statement = "変わったものの一覧の 1 件は、名前のほか、番号・状態のアイコン・{@id:flag}のアイコン・枠の端を押しても選ばれる"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4855,7 +4855,7 @@ layers = ["gui"]
 [[claim]]
 id = "evidence-presence-three-states"
 subjects = ["show-evidence-status", "evidence"]
-statement = "エビデンスの予定と実際の表で、「揃っている」「ない」「アノテーションでは確かめない」を見分けて示す"
+statement = "{@id:evidence-plan}と実際の表で、「揃っている」「ない」「{@id:annotation}では確かめない」を見分けて示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4868,7 +4868,7 @@ layers = ["gui"]
 [[claim]]
 id = "evidence-detail-no-truncate"
 subjects = ["show-evidence-status", "evidence"]
-statement = "エビデンスの予定と実際の詳細は、長い文も改行も省略せずに全部出し、幅 400px でもページが横にスクロールしない"
+statement = "{@id:evidence-plan}と実際の詳細は、長い文も改行も省略せずに全部出し、幅 400px でもページが横にスクロールしない"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4886,7 +4886,7 @@ layers = ["gui"]
 [[claim]]
 id = "claim-at-commit-unknown-layer"
 subjects = ["show-claim-at-commit", "layer"]
-statement = "その時点の約束の中身のレイヤーのうち、今の設定にないものは ID のまま出す"
+statement = "その時点の{@id:promise}の中身の{@id:layer}のうち、今の設定にないものは ID のまま出す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -4916,7 +4916,7 @@ layers = ["gui"]
 [[claim]]
 id = "claim-at-commit-toggle"
 subjects = ["show-claim-at-commit", "origin"]
-statement = "由来と合意の履歴の行を押すとその時点の中身が開き、もう一度押すと閉じる"
+statement = "{@id:origin}と{@id:agreement}の履歴の行を押すとその時点の中身が開き、もう一度押すと閉じる"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
@@ -4929,7 +4929,7 @@ layers = ["gui"]
 [[claim]]
 id = "claim-at-commit-error-shown"
 subjects = ["show-claim-at-commit"]
-statement = "合意の記録を選んだ時、その時点の約束リストが読めなければ、理由を出す"
+statement = "{@id:agreement-record}を選んだ時、その時点の{@id:promise-list}が読めなければ、理由を出す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -4946,7 +4946,7 @@ layers = ["gui"]
 [[claim]]
 id = "found-file-state-shown"
 subjects = ["show-claim-evidence", "show-evidence-status", "agreement"]
-statement = "実際のエビデンスのうち合意の対象のファイル（シナリオ・オラクルの定義・ガードレールの定義）には、そのファイルの今の中身が合意済か提案中かを示す"
+statement = "実際の{@id:evidence}のうち{@id:agreement}の対象のファイル（{@id:scenario}・{@id:oracle}の定義・{@id:guardrail-definition}）には、そのファイルの今の中身が{@id:agreed}か{@id:proposed}かを示す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -4968,8 +4968,8 @@ layers = ["gui"]
 [[claim]]
 id = "story-id-from-trailer"
 subjects = ["run-checks", "switch-review-unit", "story"]
-statement = "コミットのストーリーの ID は、メッセージの末尾の Story: のトレーラーから読み、subject と本文の中の ID は数えない"
-rationale = "本文で Issue の番号に触れても、ストーリーとして数えないため。数えると、1 つのブランチのストーリーが決まらなくなる"
+statement = "コミットの{@id:story}の ID は、メッセージの末尾の {@id:story-trailer}から読み、subject と本文の中の ID は数えない"
+rationale = "本文で Issue の番号に触れても、{@id:story}として数えないため。数えると、1 つのブランチの{@id:story}が決まらなくなる"
 layers = ["cli", "api"]
 flags = ["ai-proposal"]
 
@@ -4991,7 +4991,7 @@ layers = ["cli"]
 [[claim]]
 id = "branch-point-merge-base"
 subjects = ["branch-point", "base-branch", "run-checks", "switch-review-unit"]
-statement = "分岐点は、ベースブランチと HEAD の git merge-base で求める"
+statement = "{@id:branch-point}は、{@id:base-branch}と HEAD の git merge-base で求める"
 layers = ["cli", "api"]
 flags = ["ai-proposal"]
 
@@ -5008,8 +5008,8 @@ layers = ["api"]
 [[claim]]
 id = "story-trailer-at-most-one"
 subjects = ["run-checks", "list-check-kinds", "story"]
-statement = "分岐点より後のコミットに Story: のトレーラーが 2 つ以上あるものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡した時も審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
-rationale = "1 つのブランチは 1 つのストーリーに当たり、コミットは 1 つのブランチで作るため。--story はストーリーを選ぶためのもので、トレーラーを確かめずに済ませるためのものではないため。また、手元と CI で結果を揃えるため"
+statement = "{@id:branch-point}より後のコミットに {@id:story-trailer}が 2 つ以上あるものがあれば、{@id:check-scope} story の agreement・evidence-present を含む{@id:check-config}では、--story を渡した時も{@id:check}を始める前の{@id:mistake}にし、story-origin では、{@id:promise-list}を変えたそのコミットを{@id:check}の失敗にする"
+rationale = "1 つのブランチは 1 つの{@id:story}に当たり、コミットは 1 つのブランチで作るため。--story は{@id:story}を選ぶためのもので、トレーラーを確かめずに済ませるためのものではないため。また、手元と CI で結果を揃えるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -5021,8 +5021,8 @@ layers = ["cli"]
 [[claim]]
 id = "story-trailer-matches-pattern"
 subjects = ["run-checks", "list-check-kinds", "story"]
-statement = "分岐点より後のコミットに、Story: のトレーラーの値が id_pattern に全体で当たらないものがあれば、範囲 story の agreement・evidence-present を含む審査の設定では、--story を渡した時も審査を始める前の誤りにし、story-origin では、約束リストを変えたそのコミットを審査の失敗にする"
-rationale = "--story を渡した時も誤りにするのは、--story はストーリーを選ぶためのもので、トレーラーを確かめずに済ませるためのものではないため。また、手元と CI で結果を揃えるため"
+statement = "{@id:branch-point}より後のコミットに、{@id:story-trailer}の値が id_pattern に全体で当たらないものがあれば、{@id:check-scope} story の agreement・evidence-present を含む{@id:check-config}では、--story を渡した時も{@id:check}を始める前の{@id:mistake}にし、story-origin では、{@id:promise-list}を変えたそのコミットを{@id:check}の失敗にする"
+rationale = "--story を渡した時も{@id:mistake}にするのは、--story は{@id:story}を選ぶためのもので、トレーラーを確かめずに済ませるためのものではないため。また、手元と CI で結果を揃えるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -5034,8 +5034,8 @@ layers = ["cli"]
 [[claim]]
 id = "story-trailer-errors-shown"
 subjects = ["switch-review-unit", "story"]
-statement = "Story: のトレーラーに誤りのあるコミットがあっても、API はエラーで止めずに 200 で返し、そのコミットのストーリーを空にしたうえで、どのコミットの何が誤りかを返し、画面に出す"
-rationale = "履歴に 1 つ誤ったコミットがあるだけで画面を開けなくならないようにし、そのうえで、ストーリーを読めない時と同じく、理由を画面にそのまま出し、黙って空にしないため"
+statement = "{@id:story-trailer}に{@id:mistake}のあるコミットがあっても、API は{@id:error}で止めずに 200 で返し、そのコミットの{@id:story}を空にしたうえで、どのコミットの何が{@id:mistake}かを返し、画面に出す"
+rationale = "履歴に 1 つ誤ったコミットがあるだけで画面を開けなくならないようにし、そのうえで、{@id:story}を読めない時と同じく、理由を画面にそのまま出し、黙って空にしないため"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -5052,9 +5052,9 @@ layers = ["gui"]
 [[claim]]
 id = "agree-commit-has-story-trailer"
 subjects = ["agree-on-review", "revoke-agreement", "story"]
-statement = "合意と取り消しのコミットのメッセージの末尾に、Story: <ストーリーの ID> のトレーラーを書く"
-rationale = "合意のコミットは（フラグを外すので）約束リストを変えることがあり、そのコミットが story-origin で止まらないようにするため。取り消しのコミットにも書くのは、どのストーリーで取り消したかを、コミットの履歴から追えるようにするため"
-model_check_waiver = "合意の記録とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
+statement = "{@id:agreement}と取り消しのコミットのメッセージの末尾に、Story: <{@id:story}の ID> のトレーラーを書く"
+rationale = "{@id:agreement}のコミットは（{@id:flag}を外すので）{@id:promise-list}を変えることがあり、そのコミットが story-origin で止まらないようにするため。取り消しのコミットにも書くのは、どの{@id:story}で取り消したかを、コミットの履歴から追えるようにするため"
+model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 guesses = ["取り消しのコミットにも書く理由は、コードにも文書にも書いていなかったので推し量った"]
