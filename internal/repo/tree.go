@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"sort"
 	"strings"
+	"sync"
 )
 
 // Tree は、1 つのコミットのファイルの一覧と中身。中身は、要るときに読む。
@@ -13,6 +14,7 @@ type Tree struct {
 	Rev   string // コミットのハッシュ
 	Files []string
 	oid   map[string]string
+	mu    sync.Mutex // cache を守る。1 つのコミットの中身を、同時に読むことがあるため
 	cache map[string][]byte
 }
 
@@ -62,7 +64,10 @@ func (t *Tree) Has(path string) bool {
 
 // Read は、コミットの path のファイルの中身を返す。なければ fs.ErrNotExist を包んだエラーを返す。
 func (t *Tree) Read(path string) ([]byte, error) {
-	if b, ok := t.cache[path]; ok {
+	t.mu.Lock()
+	b, ok := t.cache[path]
+	t.mu.Unlock()
+	if ok {
 		return b, nil
 	}
 	oid, ok := t.oid[path]
@@ -73,8 +78,10 @@ func (t *Tree) Read(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	b := []byte(out)
+	b = []byte(out)
+	t.mu.Lock()
 	t.cache[path] = b
+	t.mu.Unlock()
 	return b, nil
 }
 

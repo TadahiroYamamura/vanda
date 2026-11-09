@@ -3,6 +3,7 @@ package review
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/TadahiroYamamura/vanda/internal/agreements"
@@ -20,6 +21,8 @@ type side struct {
 	types  map[string]string // 場所からファイルの種類へ
 	texts  map[string][]byte
 	ids    map[string]snapshot.Entry // ID から項目へ。参照の指す先を探すため
+	// mu は texts を守る。1 つの時点を、いくつかのコミットの比べ方で同時に読むため
+	mu sync.Mutex
 }
 
 func newSide(s *snapshot.Snapshot) *side {
@@ -51,14 +54,19 @@ func newSide(s *snapshot.Snapshot) *side {
 func (sd *side) byID() map[string]snapshot.Entry { return sd.ids }
 
 func (sd *side) text(path string) ([]byte, error) {
-	if b, ok := sd.texts[path]; ok {
+	sd.mu.Lock()
+	b, ok := sd.texts[path]
+	sd.mu.Unlock()
+	if ok {
 		return b, nil
 	}
 	b, err := sd.snap.Read(path)
 	if err != nil {
 		return nil, err
 	}
+	sd.mu.Lock()
 	sd.texts[path] = b
+	sd.mu.Unlock()
 	return b, nil
 }
 
@@ -112,13 +120,65 @@ type commit struct {
 	StoryErr string
 }
 
-// history は、コミットごとの時点を読み、使い回す。
+// history は、コミットごとの時点を読み、使い回す。sideAt と changed は、同時に呼んでよい。
 type history struct {
 	root    string
 	cfg     *config.Config
-	sides   map[string]*side
 	commits []commit // 古い順
-	changes map[string]*changeSet
+	mu      sync.Mutex
+	sides   map[string]*sideResult
+	changes map[string]*changeResult
+}
+
+// sideResult と changeResult は、読み終えたら done を閉じる。同じコミットを同時に求められたとき、2 度読まずに、先に読み始めたものを待つため
+type sideResult struct {
+	done chan struct{}
+	sd   *side
+	err  error
+}
+
+type changeResult struct {
+	done chan struct{}
+	cs   *changeSet
+	err  error
+}
+
+// jobs は、コミットごとの読み込みを同時に流す数。git を呼ぶプロセスの起動と約束リストの読み込みが重なるよう同時に流す。
+// 手元（20 コア）で計ると、4 本から 8 本で 2.6 秒が 1.6 秒に縮み、8 本より増やしても 1.3 秒ほどまでしか縮まなかった
+const jobs = 8
+
+// parallel は、n 個の仕事 f(0)〜f(n-1) を、jobs 本ずつ同時に流し、すべて終わるのを待つ。
+func parallel(n int, f func(i int)) {
+	next := make(chan int)
+	var wg sync.WaitGroup
+	for w := 0; w < jobs && w < n; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range next {
+				f(i)
+			}
+		}()
+	}
+	for i := 0; i < n; i++ {
+		next <- i
+	}
+	close(next)
+	wg.Wait()
+}
+
+// prefetch は、commits の changed を、前もって同時に求めておく。誤りは、後で changed を呼んだときに返す
+// （順にたどって最初に当たった誤りを返すのを、同時に流す前と変えないため）。
+func (h *history) prefetch(commits []commit) {
+	var todo []commit
+	h.mu.Lock()
+	for _, c := range commits {
+		if _, ok := h.changes[c.Hash]; !ok {
+			todo = append(todo, c)
+		}
+	}
+	h.mu.Unlock()
+	parallel(len(todo), func(i int) { h.changed(todo[i]) })
 }
 
 type changeSet struct {
@@ -127,23 +187,31 @@ type changeSet struct {
 }
 
 func newHistory(root string, cfg *config.Config) *history {
-	return &history{root: root, cfg: cfg, sides: map[string]*side{}, changes: map[string]*changeSet{}}
+	return &history{root: root, cfg: cfg, sides: map[string]*sideResult{}, changes: map[string]*changeResult{}}
 }
 
 func (h *history) sideAt(rev string) (*side, error) {
 	if rev == "" {
 		return newSide(nil), nil
 	}
-	if sd, ok := h.sides[rev]; ok {
-		return sd, nil
+	h.mu.Lock()
+	r, ok := h.sides[rev]
+	if ok {
+		h.mu.Unlock()
+		<-r.done
+		return r.sd, r.err
 	}
+	r = &sideResult{done: make(chan struct{})}
+	h.sides[rev] = r
+	h.mu.Unlock()
+	defer close(r.done)
 	s, err := snapshot.At(h.root, h.cfg, rev)
 	if err != nil {
+		r.err = err
 		return nil, err
 	}
-	sd := newSide(s)
-	h.sides[rev] = sd
-	return sd, nil
+	r.sd = newSide(s)
+	return r.sd, nil
 }
 
 // storyIDs は、コミットのメッセージの末尾の Story: のトレーラーにあるストーリーの ID を返す（0 か 1 つ）。
@@ -224,11 +292,23 @@ func (h *history) loadCommits() ([]commit, error) {
 
 // changed は、コミット c が、1 つ目の親から変えた項目の鍵と、合意の対象のファイルの場所を返す。
 func (h *history) changed(c commit) (*changeSet, error) {
-	if cs, ok := h.changes[c.Hash]; ok {
-		return cs, nil
+	h.mu.Lock()
+	r, ok := h.changes[c.Hash]
+	if ok {
+		h.mu.Unlock()
+		<-r.done
+		return r.cs, r.err
 	}
+	r = &changeResult{done: make(chan struct{})}
+	h.changes[c.Hash] = r
+	h.mu.Unlock()
+	defer close(r.done)
+	r.cs, r.err = h.readChanged(c)
+	return r.cs, r.err
+}
+
+func (h *history) readChanged(c commit) (*changeSet, error) {
 	cs := &changeSet{items: map[string]bool{}, files: map[string]bool{}}
-	h.changes[c.Hash] = cs
 	names, err := repo.Git(h.root, "diff-tree", "--no-commit-id", "--name-only", "-r", "-z", "--root", c.Hash)
 	if err != nil {
 		return nil, fmt.Errorf("コミット %s で変わったファイルを読めません（%v）", short(c.Hash), err)

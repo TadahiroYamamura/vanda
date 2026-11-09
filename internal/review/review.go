@@ -309,6 +309,13 @@ func (s *state) diffStory() ([]rawChange, error) {
 	}
 	first := map[string]int{} // 鍵から、最初に変えたコミットの番号へ
 	var keys []string
+	var mine, others []commit
+	for _, c := range commits {
+		if hasStory(c, s.o.Story) {
+			mine = append(mine, c)
+		}
+	}
+	s.h.prefetch(mine)
 	for i, c := range commits {
 		if !hasStory(c, s.o.Story) {
 			continue
@@ -345,6 +352,13 @@ func (s *state) diffStory() ([]rawChange, error) {
 			continue
 		}
 		rc := rawChange{key: k, before: before, others: []CommitRef{}}
+		others = others[:0]
+		for _, c := range commits[i+1:] {
+			if !hasStory(c, s.o.Story) {
+				others = append(others, c)
+			}
+		}
+		s.h.prefetch(others)
 		for _, c := range commits[i+1:] {
 			if hasStory(c, s.o.Story) {
 				continue
@@ -692,6 +706,7 @@ func (s *state) changedBy(key string, recs []*agreements.Agreement, written map[
 	}
 	seen := map[string]bool{}
 	out := []string{}
+	s.h.prefetch(commits[after:])
 	for _, c := range commits[after:] {
 		cs, err := s.h.changed(c)
 		if err != nil {

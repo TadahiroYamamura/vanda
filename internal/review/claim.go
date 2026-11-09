@@ -195,6 +195,7 @@ func ClaimHistoryOf(o Options, id string) (*ClaimHistory, *Error) {
 	if err != nil {
 		return nil, internalErr(err)
 	}
+	s.h.prefetch(commits)
 	for _, cm := range commits {
 		cs, err := s.h.changed(cm)
 		if err != nil {

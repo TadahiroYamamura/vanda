@@ -89,56 +89,83 @@ func (s *state) agreementCommits(list []*agreements.Agreement) (map[*agreements.
 		return a.Kind == b.Kind && a.Key == b.Key && a.Fingerprint == b.Fingerprint && a.Deleted == b.Deleted && a.Story == b.Story &&
 			a.AgreedAt.Equal(b.AgreedAt) && a.UserName == b.UserName && a.UserEmail == b.UserEmail
 	}
-	for _, c := range commits {
-		if len(out) == len(list) {
-			break
-		}
-		names, err := repo.Git(s.o.Root, "diff-tree", "--no-commit-id", "--name-only", "-r", "-z", "--root", c.Hash)
-		if err != nil {
-			return nil, fmt.Errorf("コミット %s で変わったファイルを読めません（%v）", short(c.Hash), err)
-		}
-		touched := false
-		for _, f := range strings.Split(names, "\x00") {
-			if f == "" {
-				continue
+	// コミットごとの記録の読み込みは、同時に流す。見つけ終えたら先のコミットを読まずに止めるため、window 個ずつ読む
+	const window = 4 * jobs
+	for lo := 0; lo < len(commits) && len(out) < len(list); lo += window {
+		part := commits[lo:min(lo+window, len(commits))]
+		read := make([]recordsAtResult, len(part))
+		parallel(len(part), func(i int) { read[i] = s.recordsAt(part[i]) })
+		for _, r := range read {
+			if len(out) == len(list) {
+				break
 			}
-			for _, p := range s.o.Cfg.Agreements {
-				if glob.Match(p, f) {
-					touched = true
+			if r.err != nil {
+				return nil, r.err
+			}
+			for _, want := range list {
+				if _, done := out[want]; done {
+					continue
 				}
-			}
-		}
-		if !touched {
-			continue
-		}
-		snap, err := snapshot.At(s.o.Root, s.o.Cfg, c.Hash)
-		if err != nil {
-			return nil, err
-		}
-		matched, _ := glob.Select(snap.Files, s.o.Cfg.Agreements)
-		srcs := map[string][]byte{}
-		for _, f := range matched {
-			b, err := snap.Read(f)
-			if err != nil {
-				return nil, err
-			}
-			srcs[f] = b
-		}
-		// その時点の合意の記録に誤りがあっても、読めた記録だけで探す
-		recs, _ := agreements.FromSources(matched, srcs)
-		for _, want := range list {
-			if _, done := out[want]; done {
-				continue
-			}
-			for _, got := range recs.Agreements {
-				if same(want, got) {
-					out[want] = c.Hash
-					break
+				for _, got := range r.recs {
+					if same(want, got) {
+						out[want] = r.hash
+						break
+					}
 				}
 			}
 		}
 	}
 	return out, nil
+}
+
+type recordsAtResult struct {
+	hash string
+	recs []*agreements.Agreement // c が合意の記録のファイルを変えていなければ空
+	err  error
+}
+
+// recordsAt は、コミット c が合意の記録のファイルを変えていれば、その時点の合意の記録を読む。
+func (s *state) recordsAt(c commit) recordsAtResult {
+	r := recordsAtResult{hash: c.Hash}
+	names, err := repo.Git(s.o.Root, "diff-tree", "--no-commit-id", "--name-only", "-r", "-z", "--root", c.Hash)
+	if err != nil {
+		r.err = fmt.Errorf("コミット %s で変わったファイルを読めません（%v）", short(c.Hash), err)
+		return r
+	}
+	touched := false
+	for _, f := range strings.Split(names, "\x00") {
+		if f == "" {
+			continue
+		}
+		for _, p := range s.o.Cfg.Agreements {
+			if glob.Match(p, f) {
+				touched = true
+			}
+		}
+	}
+	if !touched {
+		return r
+	}
+	sd, err := s.h.sideAt(c.Hash)
+	if err != nil {
+		r.err = err
+		return r
+	}
+	snap := sd.snap
+	matched, _ := glob.Select(snap.Files, s.o.Cfg.Agreements)
+	srcs := map[string][]byte{}
+	for _, f := range matched {
+		b, err := snap.Read(f)
+		if err != nil {
+			r.err = err
+			return r
+		}
+		srcs[f] = b
+	}
+	// その時点の合意の記録に誤りがあっても、読めた記録だけで探す
+	recs, _ := agreements.FromSources(matched, srcs)
+	r.recs = recs.Agreements
+	return r
 }
 
 func isHash(s string) bool {
