@@ -3,6 +3,7 @@ import { LayerNames } from "./components/Chips";
 import { ErrorBox, useLoad } from "./components/common";
 import { ClaimPage, FilePage } from "./pages/ClaimPage";
 import { ReviewPage } from "./pages/ReviewPage";
+import { FeaturePage, TermPage } from "./pages/TermFeaturePage";
 import { Link, useRoute } from "./route";
 import "./styles.css";
 
@@ -43,6 +44,8 @@ export function App() {
           </section>
         )}
         {route.page === "claim" && <ClaimPage id={route.id} params={route.params} ctx={ctx.data} />}
+        {route.page === "term" && <TermPage id={route.id} params={route.params} />}
+        {route.page === "feature" && <FeaturePage id={route.id} params={route.params} />}
         {route.page === "file" && <FilePage path={route.path} params={route.params} ctx={ctx.data} />}
         {route.page === "review" && ctx.data && <ReviewPage ctx={ctx.data} params={route.params} onAgreed={ctx.reload} />}
       </main>

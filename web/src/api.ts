@@ -42,6 +42,9 @@ export interface RefTarget {
   name: string | null;
   text: string;
   current: boolean;
+  // core・formal は、機能だけに付く
+  core?: boolean;
+  formal?: boolean;
 }
 
 export type Refs = Record<string, RefTarget>;
@@ -216,6 +219,36 @@ export interface ClaimAt {
   refs: Refs;
 }
 
+export interface ClaimSummary {
+  id: string;
+  statement: Prose;
+}
+
+export interface NamedRef {
+  id: string;
+  name: string | null;
+}
+
+export interface TermDetail {
+  id: string;
+  name: string;
+  definition: Prose;
+  partOf: NamedRef | null;
+  children: NamedRef[];
+  claims: ClaimSummary[];
+  refs: Refs;
+}
+
+export interface FeatureDetail {
+  id: string;
+  name: string;
+  definition: Prose;
+  core: boolean;
+  formal: boolean;
+  claims: ClaimSummary[];
+  refs: Refs;
+}
+
 export interface AgreeResult {
   commit: string;
 }
@@ -264,6 +297,8 @@ export const api = {
   story: (id: string) => call<Story>(`/api/story?${q({ id })}`),
   claim: (id: string) => call<ClaimDetail>(`/api/claims/${encodeURIComponent(id)}`),
   claimAt: (id: string, commit: string) => call<ClaimAt>(`/api/claims/${encodeURIComponent(id)}/at/${encodeURIComponent(commit)}`),
+  term: (id: string) => call<TermDetail>(`/api/terms/${encodeURIComponent(id)}`),
+  feature: (id: string) => call<FeatureDetail>(`/api/features/${encodeURIComponent(id)}`),
   file: (path: string) => call<{ path: string; text: string }>(`/api/file?${q({ path })}`),
   revoke: (e: Entry, story: string, base: string | null) =>
     call<RevokeResult>("/api/revoke", {

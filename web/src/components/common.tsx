@@ -53,6 +53,7 @@ export function useTooltip() {
     anchor,
     tip,
     open,
+    close: () => setOpen(false),
     handlers: {
       onMouseEnter: () => setOpen(true),
       onMouseLeave: () => setOpen(false),

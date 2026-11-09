@@ -1,5 +1,5 @@
-import { createContext, type ReactNode, useContext, useId } from "react";
-import type { Piece, Refs } from "../api";
+import { createContext, type ReactNode, useContext, useEffect, useId } from "react";
+import type { Piece, RefTarget, Refs } from "../api";
 import { Link } from "../route";
 import { useTooltip } from "./common";
 
@@ -17,26 +17,56 @@ export function proseText(ps: Piece[] | null | undefined): string {
   return (ps ?? []).map((p) => p.text).join("");
 }
 
-// RefView は、参照 1 つ。触れたとき・フォーカスしたときに、指す先の定義（用語・機能）か文（約束）を出す。
-// 今の約束リストにある約束を指すものは、約束の詳細へのリンクにする（リンクがフォーカスを受けるので、外の span はフォーカスさせない）
+// detailURL は、約束・用語・機能の詳細のページの URL。レビューの画面の状態（query）を引き継ぐ
+export function detailURL(kind: RefTarget["kind"], id: string, query: string): string {
+  const path = kind === "claim" ? "claims" : kind === "term" ? "terms" : "features";
+  return `/${path}/${encodeURIComponent(id)}${query ? `?${query}` : ""}`;
+}
+
+// FeatureMarks は、コア機能・形式手法を使う機能であることの印。当てはまるものだけを出す
+export function FeatureMarks(props: { core?: boolean; formal?: boolean }) {
+  return (
+    <>
+      {props.core && <span className="badge mark-core">コア機能</span>}
+      {props.formal && <span className="badge mark-formal">形式手法を使う機能</span>}
+    </>
+  );
+}
+
+// RefView は、参照 1 つ。触れたとき・フォーカスしたときに、指す先の中身を枠で出し、Esc で閉じる。
+// 今の約束リストにある指す先は、その詳細のページへのリンクにする（リンクがフォーカスを受けるので、外の span はフォーカスさせない）
 export function RefView(props: { id: string; children: ReactNode }) {
   const { refs, query } = useContext(RefsContext);
   const tipId = useId();
   const t = useTooltip();
   const target = refs[props.id];
-  const link = target?.kind === "claim" && target.current;
+  const link = target?.current === true;
+  const { open, close } = t;
+  useEffect(() => {
+    if (!open) return;
+    // マウスを載せただけで開いた枠も閉じられるよう、フォーカスの場所によらず画面全体で Esc を受ける
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
   return (
     <span ref={t.anchor} className={`ref ref-${target?.kind ?? "unknown"}`} data-ref={props.id} tabIndex={link ? undefined : 0} aria-describedby={target && !link ? tipId : undefined} {...t.handlers}>
       {link ? (
-        <Link to={`/claims/${encodeURIComponent(props.id)}${query ? `?${query}` : ""}`} describedBy={tipId}>
+        <Link to={detailURL(target.kind, props.id, query)} describedBy={tipId}>
           {props.children}
         </Link>
       ) : (
         props.children
       )}
       {target && (
-        <span id={tipId} ref={t.tip} role="tooltip" className="tooltip" hidden={!t.open} style={t.tipStyle}>
-          {target.text}
+        <span id={tipId} ref={t.tip} role="tooltip" className="ref-popup" hidden={!t.open} style={t.tipStyle}>
+          <span className="ref-popup-head">
+            <code>{props.id}</code>
+            {target.kind === "feature" && <FeatureMarks core={target.core} formal={target.formal} />}
+          </span>
+          <span className="ref-popup-text">{target.text}</span>
         </span>
       )}
     </span>
