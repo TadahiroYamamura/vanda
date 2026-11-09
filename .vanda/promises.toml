@@ -3837,7 +3837,6 @@ id = "claim-detail-evidence-grouping"
 subjects = ["show-claim-evidence", "stage", "evidence-type"]
 statement = "{@id:promise}の詳細の{@id:evidence}を、{@id:stage}（{@id:plan-stage}・{@id:implementation-stage}・{@id:release-stage}・{@id:operation-stage}の順）ごとに分け、その中を{@id:evidence-type}ごとに分けて示す"
 layers = ["gui"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "implementation"
