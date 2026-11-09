@@ -66,10 +66,29 @@ export function RefView(props: { id: string; children: ReactNode }) {
             <code>{props.id}</code>
             {target.kind === "feature" && <FeatureMarks core={target.core} formal={target.formal} />}
           </span>
-          <span className="ref-popup-text">{target.text}</span>
+          <span className="ref-popup-text">
+            <PlainProse pieces={target.pieces ?? [{ text: target.text }]} />
+          </span>
         </span>
       )}
     </span>
+  );
+}
+
+// PlainProse は、枠の中の文を出す。参照は参照の見た目にするだけで、リンクにも枠にもしない（枠から次の枠を開かないと PO が決めたため）
+function PlainProse(props: { pieces: Piece[] }) {
+  return (
+    <>
+      {props.pieces.map((p, i) =>
+        p.ref ? (
+          <span key={i} className="ref ref-plain" data-ref={p.ref}>
+            {p.text}
+          </span>
+        ) : (
+          <span key={i}>{p.text}</span>
+        ),
+      )}
+    </>
   );
 }
 

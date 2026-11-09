@@ -86,6 +86,7 @@ main { padding: 20px 28px 40px; }
 .ref-popup-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 4px; }
 .ref-popup-head code { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 .ref-popup-text { display: block; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ref-popup .ref-plain { cursor: inherit; }
 .mark-core { background: #fdecec; color: #9b1c1c; }
 .mark-formal { background: var(--accent-bg); color: var(--accent-dark); }
 .term-feature { display: flex; flex-direction: column; gap: 16px; }

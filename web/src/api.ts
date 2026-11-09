@@ -42,6 +42,8 @@ export interface RefTarget {
   name: string | null;
   text: string;
   current: boolean;
+  // pieces は、text を片に分けたもの。中の参照の指す先は refs にない
+  pieces: Piece[];
   // core・formal は、機能だけに付く
   core?: boolean;
   formal?: boolean;
