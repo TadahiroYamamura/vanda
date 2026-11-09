@@ -430,7 +430,7 @@ definition = "合意の記録を読み書きする"
 [[feature]]
 id = "build-origins"
 name = "由来を作る"
-definition = "{@id:promise}ごとの由来を作る"
+definition = "{@id:promise}ごとの{@id:origin}を作る"
 
 [[feature]]
 id = "choose-base-branch"
