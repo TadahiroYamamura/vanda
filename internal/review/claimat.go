@@ -127,7 +127,7 @@ type recordsAtResult struct {
 // recordsAt は、コミット c が合意の記録のファイルを変えていれば、その時点の合意の記録を読む。
 func (s *state) recordsAt(c commit) recordsAtResult {
 	r := recordsAtResult{hash: c.Hash}
-	names, err := repo.Git(s.o.Root, "diff-tree", "--no-commit-id", "--name-only", "-r", "-z", "--root", c.Hash)
+	names, err := repo.ChangedFiles(s.o.Root, c.Hash)
 	if err != nil {
 		r.err = fmt.Errorf("コミット %s で変わったファイルを読めません（%v）", short(c.Hash), err)
 		return r

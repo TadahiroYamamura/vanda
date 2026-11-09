@@ -309,7 +309,7 @@ func (h *history) changed(c commit) (*changeSet, error) {
 
 func (h *history) readChanged(c commit) (*changeSet, error) {
 	cs := &changeSet{items: map[string]bool{}, files: map[string]bool{}}
-	names, err := repo.Git(h.root, "diff-tree", "--no-commit-id", "--name-only", "-r", "-z", "--root", c.Hash)
+	names, err := repo.ChangedFiles(h.root, c.Hash)
 	if err != nil {
 		return nil, fmt.Errorf("コミット %s で変わったファイルを読めません（%v）", short(c.Hash), err)
 	}

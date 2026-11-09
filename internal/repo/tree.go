@@ -34,7 +34,7 @@ func HeadTree(root string) (*Tree, error) {
 
 // TreeAt は、コミット rev を読む。HEAD が途中で動いても同じ中身を読むよう、rev にはハッシュを渡す。
 func TreeAt(root, rev string) (*Tree, error) {
-	out, err := Git(root, "ls-tree", "-r", "-z", "--full-tree", rev)
+	out, err := gitByID(root, rev, "ls-tree", "-r", "-z", "--full-tree", rev)
 	if err != nil {
 		return nil, fmt.Errorf("コミット %s のファイルの一覧を読めません（%v）。", rev, err)
 	}
@@ -74,7 +74,7 @@ func (t *Tree) Read(path string) ([]byte, error) {
 	if !ok {
 		return nil, fmt.Errorf("コミット %s に %s がありません: %w", short(t.Rev), path, fs.ErrNotExist)
 	}
-	out, err := Git(t.root, "cat-file", "blob", oid)
+	out, err := gitByID(t.root, oid, "cat-file", "blob", oid)
 	if err != nil {
 		return nil, err
 	}
