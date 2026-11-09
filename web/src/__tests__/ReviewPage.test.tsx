@@ -7,7 +7,7 @@ import { http, HttpResponse } from "msw";
 import { App } from "../App";
 import type { Entry } from "../api";
 import { isInaccessible } from "@testing-library/dom";
-import { apiError, claimDetail, claimEntry, claimHistory, claimRef, ctx, defaultHandlers, featureRef, fileEntry, plain, requests, review, server, story, termRef } from "./fixtures";
+import { apiError, claimDetail, claimEntry, claimHistory, expectLoading, gate, claimRef, ctx, defaultHandlers, featureRef, fileEntry, plain, requests, review, server, story, termRef } from "./fixtures";
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterAll(() => server.close());
@@ -1715,5 +1715,91 @@ describe("API のエラー", () => {
     server.use(http.get("/api/context", () => apiError(500, "設定（.vanda/config.toml）を読めません（1 件。最初の 1 件: .vanda/config.toml:3: foo は決まった項目ではありません。）。")));
     render(<App />);
     expect(await screen.findByText(/\.vanda\/config\.toml:3: foo は決まった項目ではありません/)).toBeTruthy();
+  });
+});
+
+describe("一覧を読み込む間に選んだ件を先に出す", () => {
+  // 選んだ 1 件の種類ごと（約束・用語・機能・ファイル）に、詳細の API が返す今の中身と、一覧の件（変更前の中身は「前の」で見分ける）
+  const tf = { partOf: null };
+  const cases = [
+    {
+      kind: "約束", sel: "claim:c-sel", shown: ["先に出す約束の文", "先に出す理由", "先に出す条件"],
+      entry: claimEntry(1, "c-sel", { flags: ["ai-proposal"], before: { ...claimEntry(1, "c-sel").before as object, statement: plain("約束の前の文") } as Entry["before"] }),
+    },
+    {
+      kind: "用語", sel: "term:t-sel", shown: ["先に出す用語の定義"],
+      entry: claimEntry(1, "t-sel", { kind: "term", group: "terms-features", flags: ["ai-proposal"], before: { name: "先に出す用語", definition: plain("用語の前の定義"), ...tf }, after: { name: "先に出す用語", definition: plain("一覧の用語の定義"), ...tf } }),
+    },
+    {
+      kind: "機能", sel: "feature:f-sel", shown: ["先に出す機能の定義"],
+      entry: claimEntry(1, "f-sel", { kind: "feature", group: "terms-features", flags: ["ai-proposal"],
+        before: { name: "先に出す機能", definition: plain("機能の前の定義"), core: null, formal: null, formalWaiver: null },
+        after: { name: "先に出す機能", definition: plain("一覧の機能の定義"), core: null, formal: null, formalWaiver: null } }),
+    },
+    {
+      kind: "ファイル", sel: "path:e2e/sel.txtar", shown: ["先に出すファイルの中身"],
+      entry: fileEntry(1, "e2e/sel.txtar", { before: { text: "ファイルの前の中身\n" } }),
+    },
+  ];
+  const details = [
+    http.get("/api/claims/:id", () => HttpResponse.json(claimDetail({
+      id: "c-sel", statement: plain("先に出す約束の文"), rationale: plain("先に出す理由"), condition: plain("先に出す条件"), state: "proposed", flags: ["ai-proposal"],
+    }))),
+    http.get("/api/terms/:id", () =>
+      HttpResponse.json({ id: "t-sel", name: "先に出す用語", definition: plain("先に出す用語の定義"), partOf: null, children: [], claims: [], refs: {} })),
+    http.get("/api/features/:id", () =>
+      HttpResponse.json({ id: "f-sel", name: "先に出す機能", definition: plain("先に出す機能の定義"), core: false, formal: false, claims: [], refs: {} })),
+    http.get("/api/file", () => HttpResponse.json({ path: "e2e/sel.txtar", text: "先に出すファイルの中身\n" })),
+  ];
+
+  // @vanda:evidence review-detail-shown-before-list
+  // @vanda:evidence loading-indicator
+  it("一覧が届く前でもURLで選んだ約束と用語と機能とファイルの今の中身を出し変更前の中身と状態とフラグと合意のボタンは一覧が届いてから出す", async () => {
+    for (const c of cases) {
+      const g = gate();
+      window.history.pushState({}, "", "/?view=branch&base=main&sel=" + encodeURIComponent(c.sel));
+      open([c.entry], {}, ...details, http.get("/api/review", async () => {
+        await g.wait;
+        return HttpResponse.json(review([c.entry]));
+      }));
+      for (const t of c.shown) await waitFor(() => expect(bodyText(), `${c.kind}: 一覧の前に今の中身 ${t} が出ない`).toContain(t));
+      // 一覧を待つもの: 変更前の中身・状態・フラグ・合意のボタン
+      expect(bodyText(), `${c.kind}: 一覧の前に変更前の中身が出た`).not.toMatch(/の前の(文|定義|中身)/);
+      for (const t of ["提案中", "AI 案"]) expect(bodyText(), `${c.kind}: 一覧の前に ${t} が出た`).not.toContain(t);
+      expect(screen.queryByRole("button", { name: /合意する/ }), `${c.kind}: 一覧の前に合意のボタンが出た`).toBeNull();
+      // 一覧の欄は読み込み中
+      expectLoading(await within(await screen.findByRole("region", { name: "変わったものの一覧" })).findByText("読み込んでいます…"), `${c.kind}: 一覧`);
+      for (const el of screen.getAllByText("読み込んでいます…")) expectLoading(el, `${c.kind}: 一覧の前の読み込み中の欄`);
+
+      g.open();
+      expect(await screen.findByRole("button", { name: /合意する/ }), `${c.kind}: 一覧の後に合意のボタンが出ない`).toBeTruthy();
+      await waitFor(() => expect(bodyText(), `${c.kind}: 一覧の後に変更前の中身が出ない`).toMatch(/の前の(文|定義|中身)/));
+      expect(bodyText(), `${c.kind}: 一覧の後に状態が出ない`).toContain("提案中");
+      if (c.kind !== "ファイル") expect(bodyText(), `${c.kind}: 一覧の後にフラグが出ない`).toContain("AI 案");
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+
+  // 今はない 1 件（消したもの）は、詳細の API では読めないので、一覧を待つ
+  // @vanda:evidence review-detail-shown-before-list
+  it("一覧が届く前にURLで選んだ件が今はないものなら誤りを出さず一覧を待ち一覧が届いたら消す前の中身を出す", async () => {
+    const g = gate();
+    const gone = claimEntry(1, "c-gone", { change: "deleted", after: null, before: { ...claimEntry(1, "c-gone").before as object, statement: plain("消す前の約束の文") } as Entry["before"] });
+    window.history.pushState({}, "", "/?view=branch&base=main&sel=" + encodeURIComponent("claim:c-gone"));
+    open([gone], {},
+      http.get("/api/claims/:id", () => apiError(404, "約束 c-gone は約束リストにありません。")),
+      http.get("/api/review", async () => {
+        await g.wait;
+        return HttpResponse.json(review([gone]));
+      }));
+    expectLoading(await within(await screen.findByRole("region", { name: "変わったものの一覧" })).findByText("読み込んでいます…"), "一覧");
+    // 詳細の API の答え（404）が届くのを待ってから、誤りを出していないか見る
+    await waitFor(() => expect(requests.some((r) => r.url.pathname === "/api/claims/c-gone")).toBe(true));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(bodyText(), "今はない件の誤りを出した").not.toContain("約束リストにありません");
+    g.open();
+    await waitFor(() => expect(bodyText()).toContain("消す前の約束の文"));
+    expect(bodyText()).not.toContain("約束リストにありません");
   });
 });

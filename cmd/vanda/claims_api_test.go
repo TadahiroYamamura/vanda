@@ -1,9 +1,11 @@
 package main_test
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -306,6 +308,80 @@ func Test約束の詳細は指すアノテーションのないエビデンス�
 	}
 	if h := getHistory(t, s, "task-title-required"); len(h.Origin) != 1 || h.Origin[0].Change != "added" || !reflect.DeepEqual(h.Origin[0].Stories, []string{"#24"}) || len(h.Agreements) != 0 {
 		t.Errorf("由来 %+v、合意の履歴 %+v", h.Origin, h.Agreements)
+	}
+}
+
+// claim-detail-shown-before-history: 約束の詳細は由来と合意の履歴を返さず、それらは /history で返す（docs/formats.md）
+// @vanda:evidence claim-detail-shown-before-history
+func Test約束の詳細は由来と合意の履歴を含めず由来と合意の履歴はhistoryで返しない約束は404にする(t *testing.T) {
+	t.Parallel()
+	_, _, s := setupAgree(t)
+	var detail map[string]json.RawMessage
+	if code, msg := s.get("/api/claims/task-id-unique", &detail); code != 200 {
+		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
+	}
+	for _, k := range []string{"origin", "agreements"} {
+		if _, ok := detail[k]; ok {
+			t.Errorf("約束の詳細に %s がある: %s", k, detail[k])
+		}
+	}
+	for _, k := range []string{"id", "state", "statement", "layers", "subjects", "guesses", "evidence"} {
+		if _, ok := detail[k]; !ok {
+			t.Errorf("約束の詳細に %s がない", k)
+		}
+	}
+	var history map[string]json.RawMessage
+	if code, msg := s.get("/api/claims/task-id-unique/history", &history); code != 200 {
+		t.Fatalf("由来と合意の履歴を読めない（%d）: %s", code, msg)
+	}
+	var keys []string
+	for k := range history {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	if !reflect.DeepEqual(keys, []string{"agreements", "origin"}) {
+		t.Errorf("由来と合意の履歴の項目: %v（agreements と origin だけのはず）", keys)
+	}
+	h := getHistory(t, s, "task-id-unique")
+	if len(h.Origin) == 0 || len(h.Agreements) == 0 {
+		t.Errorf("由来か合意の履歴が空: %+v", h)
+	}
+	code, msg := s.get("/api/claims/no-such-claim/history", nil)
+	if code != 404 || msg != "約束 no-such-claim は約束リストにありません。" {
+		t.Errorf("ない約束の由来と合意の履歴: %d %q", code, msg)
+	}
+}
+
+// 合意の履歴は合意した日時の新しい順、同じ日時なら合意の記録のファイルで後に書いたものが先（docs/formats.md）。
+// ファイルの順と日時の順をずらして書き、並べ替えを 2 回かけるような誤りでも並びが崩れれば分かるようにする
+// @vanda:evidence claim-detail-agreements
+func Test合意の履歴は合意した日時の新しい順に並び同じ日時ならファイルで後に書いたものが先になる(t *testing.T) {
+	t.Parallel()
+	_, r, s := setupAgree(t)
+	// ファイルに書く順の合意（ストーリーで見分ける）と、合意した日時
+	recs := []struct{ story, at string }{
+		{"#41", "2026-10-02T12:00:00+09:00"},
+		{"#42", "2026-10-05T12:00:00+09:00"},
+		{"#43", "2026-10-03T12:00:00+09:00"},
+		{"#44", "2026-10-05T12:00:00+09:00"},
+		{"#45", "2026-10-01T12:00:00+09:00"},
+	}
+	want := []string{"#44", "#42", "#43", "#41", "#45"}
+	var b strings.Builder
+	for _, rec := range recs {
+		b.WriteString(strings.Replace(agreementTOML("claim", "task-id-unique", reviewClaimFP, "", rec.story, reviewUserName, reviewUserEmail),
+			"agreed_at = 2026-10-31T12:00:00+09:00", "agreed_at = "+rec.at, 1))
+	}
+	writeFile(t, r.Root, ".vanda/agreements.toml", readFileString(t, r.Root, ".vanda/agreements.toml")+b.String())
+	r.g.commitTracked("日時の違う合意を足す", "#41")
+	var got []string
+	for _, a := range getHistory(t, s, "task-id-unique").Agreements {
+		if strings.HasPrefix(a.Story, "#4") {
+			got = append(got, a.Story)
+		}
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("合意の履歴の並び: %v（思ったもの %v）", got, want)
 	}
 }
 

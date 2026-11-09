@@ -2,6 +2,8 @@
 // 形は docs/formats.md の「GUI の API」。中身は、テストの中で手で作る（vanda の出力から作らない）。
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
+import { isInaccessible } from "@testing-library/dom";
+import { expect } from "vitest";
 import type { ClaimDetail, ClaimHistory, Context, Entry, Piece, RefTarget, Review, Story } from "../api";
 
 export const ctx: Context = {
@@ -172,4 +174,23 @@ export function defaultHandlers(r: Review) {
     http.get("/api/story", () => HttpResponse.json(story)),
     http.get("/api/claims/:id/history", () => HttpResponse.json(claimHistory())),
   ];
+}
+
+// gate は、テストが open を呼ぶまで応答を止めておくための門。API が遅い間の画面を確かめるのに使う
+export function gate() {
+  let open!: () => void;
+  const wait = new Promise<void>((resolve) => (open = resolve));
+  return { open, wait };
+}
+
+// expectLoading は、el（「読み込んでいます…」の文字を持つ要素。getByText で探したもの）が読み込み中の印（loading-indicator）か確かめる。
+// 文字は読み上げられ、回る印（文字のない要素。el の中か、el と並ぶもの）は飾りとして読み上げから外れている
+export function expectLoading(el: HTMLElement, where: string) {
+  expect(el.textContent ?? "", `${where}: 「読み込んでいます…」の文字がない`).toContain("読み込んでいます…");
+  expect(isInaccessible(el), `${where}: 「読み込んでいます…」が読み上げから外れている`).toBe(false);
+  const empty = (x: Element) => (x.textContent ?? "").trim() === "";
+  let marks = Array.from(el.querySelectorAll<HTMLElement>("*")).filter(empty);
+  if (marks.length === 0 && el.parentElement) marks = Array.from(el.parentElement.children).filter((x): x is HTMLElement => x !== el && empty(x));
+  expect(marks.length, `${where}: 回る印がない`).toBeGreaterThan(0);
+  for (const m of marks) expect(isInaccessible(m), `${where}: 回る印が飾りになっていない（読み上げられる）`).toBe(true);
 }

@@ -6,7 +6,7 @@ import { http, HttpResponse } from "msw";
 import { App } from "../App";
 import type { ClaimDetail, ClaimHistory, Entry } from "../api";
 import { isInaccessible } from "@testing-library/dom";
-import { apiError, claimDetail, claimEntry, claimHistory, claimRef, ctx, featureRef, fileEntry, plain, review, server, story, termRef } from "./fixtures";
+import { apiError, claimDetail, claimEntry, claimHistory, expectLoading, gate, claimRef, ctx, featureRef, fileEntry, plain, review, server, story, termRef } from "./fixtures";
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterAll(() => server.close());
@@ -807,5 +807,69 @@ describe("用語と機能の詳細", () => {
       cleanup();
       server.resetHandlers();
     }
+  });
+});
+
+describe("読み込みの間に先に出すもの", () => {
+  // before は、a が b より文書の前にあるか
+  const before = (a: Node, b: Node) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+  // ストーリーのレビューから移ってきた時の合意のボタンの読み込みと混ざらないよう、レビューのクエリを付けずに開く
+  beforeEach(() => window.history.pushState({}, "", "/claims/task-id-unique"));
+
+  // @vanda:evidence claim-detail-shown-before-history
+  // @vanda:evidence loading-indicator
+  it("由来と合意の履歴が届く前に約束の詳細の中身を出し由来と合意の履歴の欄には読み込み中の印を出し届いたら履歴に替える", async () => {
+    const g = gate();
+    server.use(
+      http.get("/api/context", () => HttpResponse.json(ctx)),
+      http.get("/api/claims/:id", () => HttpResponse.json(claimDetail({
+        ...detail,
+        state: "agreed",
+        guesses: [plain("先に出す推測")],
+      }))),
+      http.get("/api/claims/:id/history", async () => {
+        await g.wait;
+        return HttpResponse.json(history);
+      }),
+    );
+    render(<App />);
+    expect(await screen.findByRole("heading", { level: 1, name: /task-id-unique/ })).toBeTruthy();
+    // ID・状態・文・理由・条件・レイヤー・対象・推測・エビデンスの予定と実際のエビデンス
+    for (const t of ["合意済", "タスクの ID は重ならない", "重なると消す相手を決められない", "タスクが 1 つ以上ある", "モデル", "タスクの ID", "先に出す推測",
+      "exec vanda add 買い物", "TestUnique", "internal/task/task_test.go", "spec/Task.tla", "db/schema.sql", "まだ書いていない"]) {
+      expect(bodyText(), `由来と合意の履歴の前に ${t} が出ない`).toContain(t);
+    }
+    // 由来と合意の履歴はまだ出さず、それぞれの欄に読み込み中の印を出す
+    for (const t of ["#1 はじめの約束を置く", "#24 文を変える", "前に合意した人"]) expect(bodyText(), `届く前に ${t} が出た`).not.toContain(t);
+    const origin = screen.getByRole("heading", { name: "由来" });
+    const agreements = screen.getByRole("heading", { name: "合意の履歴" });
+    const loads = screen.getAllByText("読み込んでいます…");
+    expect(loads.length, "読み込み中の印が由来と合意の履歴の 2 つでない").toBe(2);
+    expect(before(origin, loads[0]) && before(loads[0], agreements) && before(agreements, loads[1]), "読み込み中の印が由来と合意の履歴の欄にない").toBe(true);
+    loads.forEach((el, i) => expectLoading(el, ["由来", "合意の履歴"][i]));
+
+    g.open();
+    await waitFor(() => expect(bodyText()).toContain("#24 文を変える"));
+    for (const t of ["#1 はじめの約束を置く", "前に合意した人"]) expect(bodyText()).toContain(t);
+    expect(screen.queryByText("読み込んでいます…"), "届いた後も読み込み中の印が残る").toBeNull();
+  });
+
+  // @vanda:evidence loading-indicator
+  it("約束の詳細が届く前は読み込み中の印を出す", async () => {
+    const g = gate();
+    server.use(
+      http.get("/api/context", () => HttpResponse.json(ctx)),
+      http.get("/api/claims/:id", async () => {
+        await g.wait;
+        return HttpResponse.json(detail);
+      }),
+      http.get("/api/claims/:id/history", () => HttpResponse.json(history)),
+    );
+    render(<App />);
+    expectLoading(await screen.findByText("読み込んでいます…"), "約束の詳細");
+    expect(bodyText()).not.toContain("タスクの ID は重ならない");
+    g.open();
+    expect(await screen.findByText(/タスクの ID は重ならない/)).toBeTruthy();
+    await waitFor(() => expect(screen.queryByText("読み込んでいます…")).toBeNull());
   });
 });
