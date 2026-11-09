@@ -93,16 +93,20 @@ main { padding: 20px 28px 40px; }
 .ref-popup .ref-plain { cursor: inherit; }
 .mark-core { background: #fdecec; color: #9b1c1c; }
 .mark-formal { background: var(--accent-bg); color: var(--accent-dark); }
-.term-feature { display: flex; flex-direction: column; gap: 16px; }
+/* 用語と機能の詳細は、横に広い画面でも 1 行が長くなりすぎないよう、中身の幅に上限を設けて中央に置く */
+.term-feature { display: flex; flex-direction: column; gap: 16px; max-width: 960px; margin: 0 auto; }
 .term-feature > h1 { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0; }
 .term-feature > h1 .marks { display: inline-flex; gap: 6px; }
-.term-feature > h2 { margin: 4px 0 0; font-size: 16px; }
+.term-feature > h2 { margin: 12px 0 0; font-size: 16px; }
 .term-feature > .note, .term-feature > dl { margin: 0; }
+.term-feature > .fields { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; grid-template-columns: 6em minmax(0, 1fr); gap: 10px 16px; align-items: baseline; font-size: 14px; line-height: 1.7; }
+.term-feature > .fields dt { font-size: 13px; }
+.term-feature > .fields code { font-family: var(--mono); font-size: 13px; }
 .term-feature dd ul { margin: 0; padding-left: 1.2em; }
-.claim-list { list-style: none; padding: 0; margin: 0; }
-.claim-list li { padding: 8px 0; border-bottom: 1px solid var(--line2); }
-.claim-list li:last-child { border-bottom: none; }
-.claim-list .claim-id { font-family: var(--mono); font-size: 13px; margin-right: 8px; }
+.claim-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.claim-list li { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+.claim-list .claim-id { display: inline-block; font-family: var(--mono); font-size: 13px; }
+.claim-list .claim-id + .user-text { display: block; margin-top: 4px; font-size: 14px; line-height: 1.7; }
 
 /* 誤りと注意 */
 .error { margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: var(--bad-bg); color: var(--bad); font-size: 13px; white-space: pre-wrap; }
