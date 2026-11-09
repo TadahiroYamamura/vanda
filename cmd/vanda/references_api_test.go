@@ -241,6 +241,8 @@ func wantFrags(t *testing.T, where string, got, want frags) {
 
 func strp(s string) *string { return &s }
 
+// wantRefs は、refs の鍵がちょうど want の鍵で、それぞれの中身が want と同じことを確かめる。
+// 指す先の pieces の中の参照の指す先は refs に足さないので、余分な鍵があっても誤りにする
 func wantRefs(t *testing.T, where string, got map[string]refInfo, want map[string]refInfo) {
 	t.Helper()
 	for id, w := range want {
@@ -249,21 +251,38 @@ func wantRefs(t *testing.T, where string, got map[string]refInfo, want map[strin
 			t.Errorf("%s の refs に %s がない: %+v", where, id, got)
 			continue
 		}
+		wantFrags(t, where+" の refs の "+id+" の pieces", g.Pieces, w.Pieces)
+		g.Pieces, w.Pieces = nil, nil
 		if !reflect.DeepEqual(g, w) {
-			t.Errorf("%s の refs の %s: %+v（思ったもの %+v、name %v）", where, id, g, w, str(g.Name))
+			t.Errorf("%s の refs の %s: %+v（思ったもの %+v、name %v、core %v、formal %v）", where, id, g, w, str(g.Name), boolStr(g.Core), boolStr(g.Formal))
+		}
+	}
+	for id := range got {
+		if _, ok := want[id]; !ok {
+			t.Errorf("%s の refs に、応答の片が指していない %s がある", where, id)
 		}
 	}
 }
 
-// 今の約束リスト（story-24）の、参照先の中身。用語と機能は名前と定義、約束は文（中の参照は見せる文字に置き換えた文字列）
+func boolp(b bool) *bool { return &b }
+
+func boolStr(b *bool) string {
+	if b == nil {
+		return "（なし）"
+	}
+	return fmt.Sprint(*b)
+}
+
+// 今の約束リスト（story-24）の、参照先の中身。用語と機能は名前と定義、約束は文（中の参照は見せる文字に置き換えた文字列と、片の配列）。
+// 機能は core・formal を持ち、どちらも書いていないので偽
 var refNow = map[string]refInfo{
-	"t-keep":   {Kind: "term", Name: strp("タスク"), Text: "やること", Current: true},
-	"t-rename": {Kind: "term", Name: strp("新しい用語"), Text: "後の定義", Current: true},
-	"f-rename": {Kind: "feature", Name: strp("新しい機能"), Text: "タスクを足す", Current: true},
-	"c-other":  {Kind: "claim", Name: nil, Text: "ほかの約束はタスクを数える", Current: true},
+	"t-keep":   {Kind: "term", Name: strp("タスク"), Text: "やること", Current: true, Pieces: textOf("やること")},
+	"t-rename": {Kind: "term", Name: strp("新しい用語"), Text: "後の定義", Current: true, Pieces: textOf("後の定義")},
+	"f-rename": {Kind: "feature", Name: strp("新しい機能"), Text: "タスクを足す", Current: true, Pieces: fragsOf("タスク>t-keep", "を足す"), Core: boolp(false), Formal: boolp(false)},
+	"c-other":  {Kind: "claim", Name: nil, Text: "ほかの約束はタスクを数える", Current: true, Pieces: fragsOf("ほかの約束は", "タスク>t-keep", "を数える")},
 	// 今ない用語と機能は、比べる元（main）の名前と定義
-	"t-gone": {Kind: "term", Name: strp("消える用語"), Text: "消える定義", Current: false},
-	"f-gone": {Kind: "feature", Name: strp("消える機能"), Text: "消える機能の定義", Current: false},
+	"t-gone": {Kind: "term", Name: strp("消える用語"), Text: "消える定義", Current: false, Pieces: textOf("消える定義")},
+	"f-gone": {Kind: "feature", Name: strp("消える機能"), Text: "消える機能の定義", Current: false, Pieces: textOf("消える機能の定義"), Core: boolp(false), Formal: boolp(false)},
 }
 
 func refsOf(ids ...string) map[string]refInfo {
@@ -337,7 +356,8 @@ func Test約束の詳細とその時点の中身は自然言語で書く項目�
 	}
 	wantRefs(t, "約束の詳細", detail.Refs, refsOf("t-keep", "t-rename", "f-rename", "c-other"))
 
-	// main の時点の中身。今もある t-rename・f-rename は今の名前、今ない t-gone・f-gone はその時点の名前
+	// main の時点の中身。今もある t-rename・f-rename は今の名前、今ない t-gone・f-gone はその時点の名前。
+	// t-keep は f-rename の定義と c-other の文の中にしかないので、refs に入らない
 	var at struct {
 		Content refClaimContent    `json:"content"`
 		Refs    map[string]refInfo `json:"refs"`

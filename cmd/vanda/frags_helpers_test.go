@@ -70,10 +70,13 @@ func fragsList(fss []frags) []string {
 	return out
 }
 
-// refInfo は、応答の最上位の refs の 1 つ。
+// refInfo は、応答の最上位の refs の 1 つ。Core・Formal は機能だけに付き、用語と約束では nil（項目がない）になる。
 type refInfo struct {
 	Kind    string  `json:"kind"`
 	Name    *string `json:"name"`
 	Text    string  `json:"text"`
 	Current bool    `json:"current"`
+	Pieces  frags   `json:"pieces"`
+	Core    *bool   `json:"core"`
+	Formal  *bool   `json:"formal"`
 }
