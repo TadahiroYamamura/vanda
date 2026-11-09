@@ -91,10 +91,12 @@ def candidates(path, skip=()):
                 q = p + len(name)
                 if (no, si, p, name) in skip:
                     pass
+                elif tid == owner:
+                    # 自分の名前は参照にしない。字も押さえない（押さえると、名前の中の短い名前を見落とす）
+                    pass
                 elif all(q <= a or p >= b for a, b in taken):
                     taken.append((p, q))
-                    if tid != owner:
-                        found.append((p, q, tid, kind, name))
+                    found.append((p, q, tid, kind, name))
                 start = p + 1
         for p, q, tid, kind, name in sorted(found):
             out.append({
