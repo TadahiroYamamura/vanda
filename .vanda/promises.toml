@@ -969,7 +969,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-formal-claims"
 subjects = ["read-promise-list", "list-check-kinds", "formal-feature", "model-check"]
-statement = "{@id:formal-feature}（formal が真。省けば core と同じ）を subjects に持つ{@id:promise}には、model-check の予定と model_check_waiver（TLA+ で確かめない理由）のどちらか一方だけを書く。どちらもないか、両方あれば、{@id:promise-list-shape-check}の{@id:mistake}にする"
+statement = "{@id:formal-feature}（formal が真。省けば core と同じ）を subjects に持つ{@id:promise}には、{@id:model-check}の予定と model_check_waiver（TLA+ で確かめない理由）のどちらか一方だけを書く。どちらもないか、両方あれば、{@id:promise-list-shape-check}の{@id:mistake}にする"
 rationale = "{@id:core-feature}で、仕様の書き忘れや、新しい{@id:promise}が形式手法を通らないことを、人が見落としても止めるため。確かめない理由は{@id:promise}の項目なので、{@id:agreement}の対象になる"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -1414,7 +1414,7 @@ layers = ["cli"]
 id = "review-deleted-shown"
 subjects = ["list-changes", "agree-on-review", "agreement"]
 statement = "レビューの一覧に、比べる元にあって今にない{@id:promise}・{@id:term}・{@id:feature}・{@id:agreement}の対象のファイルを「削除」として出し、消す前の中身を示し、消したことに{@id:agreement}できるようにする"
-model_check_waiver = "消したことへの{@id:agreement}そのものは、{@id:promise} deleted-item-needs-agreement としてモデルで確かめていて、この{@id:promise}が決めるのは一覧への出し方だけのため"
+model_check_waiver = "消したことへの{@id:agreement}そのものは、{@id:promise} {@id:deleted-item-needs-agreement} としてモデルで確かめていて、この{@id:promise}が決めるのは一覧への出し方だけのため"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -1683,7 +1683,7 @@ layers = ["cli"]
 id = "annotation-types-required"
 subjects = ["store-config", "annotation", "evidence-type"]
 statement = "[[annotation]] に types がなければ、また types に human-review・proof か決まっていない{@id:evidence-type}を書けば、設定の{@id:mistake}にする"
-rationale = "human-review は{@id:annotation}で確かめず、proof はまだ扱えないため"
+rationale = "{@id:human-review}は{@id:annotation}で確かめず、{@id:proof}はまだ扱えないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1743,7 +1743,7 @@ layers = ["cli"]
 id = "project-adapter-overrides-builtin"
 subjects = ["run-custom-adapters", "builtin-adapter"]
 statement = "{@id:builtin-adapter}と同じ名前の{@id:custom-adapter}があれば、そちらを使う"
-condition = "{@id:guardrail-definition}は、今は組み込みの file だけを使うので、{@id:custom-adapter}では置き換えられない（config-guardrail-adapter-file）"
+condition = "{@id:guardrail-definition}は、今は組み込みの file だけを使うので、{@id:custom-adapter}では置き換えられない（{@id:config-guardrail-adapter-file}）"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2332,8 +2332,8 @@ layers = ["cli"]
 [[claim]]
 id = "check-evidence-proof-and-unchecked"
 subjects = ["list-check-kinds", "evidence", "proof"]
-statement = "{@id:evidence-present-check}は、proof を予定に書いた{@id:promise}を{@id:mistake}にし、human-review の予定は確かめない"
-rationale = "proof を扱う{@id:adapter}はまだなく、human-review は{@id:annotation}で確かめないため"
+statement = "{@id:evidence-present-check}は、{@id:proof}を予定に書いた{@id:promise}を{@id:mistake}にし、{@id:human-review}の予定は確かめない"
+rationale = "{@id:proof}を扱う{@id:adapter}はまだなく、{@id:human-review}は{@id:annotation}で確かめないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -3150,7 +3150,7 @@ layers = ["gui"]
 id = "review-view-branch"
 subjects = ["switch-review-unit", "base-branch"]
 statement = "レビュー単位がブランチなら、{@id:base-branch}との{@id:branch-point}の中身と、HEAD のコミットの中身を比べ、コミットしていない変更は比べない"
-rationale = "コミットしていないものは、提出される保証がなく、ないのと同じため（reads-committed-files-only と同じ考え方）"
+rationale = "コミットしていないものは、提出される保証がなく、ないのと同じため（{@id:reads-committed-files-only}と同じ考え方）"
 layers = ["api"]
 
 [[claim.evidence]]
