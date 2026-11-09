@@ -67,7 +67,7 @@ export function RefView(props: { id: string; children: ReactNode }) {
             {target.kind === "feature" && <FeatureMarks core={target.core} formal={target.formal} />}
           </span>
           <span className="ref-popup-text">
-            <PlainProse pieces={target.pieces ?? [{ text: target.text }]} />
+            <PlainProse pieces={target.pieces} />
           </span>
         </span>
       )}
