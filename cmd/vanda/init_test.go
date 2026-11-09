@@ -564,7 +564,7 @@ type initPlan struct {
 	toggle      []string          // 言語を選ぶ問いで、選びを切り替える言語
 	patterns    map[string]string // 言語 → 読むファイルのパターン
 	confirm     string            // y・n
-	// 形に合わない答え。問い（detail・id）ごとに、正しい答えの前に順に書く
+	// 形に合わない答え。問い（detail・id・読むファイルのパターンを聞く言語の名前）ごとに、正しい答えの前に順に書く
 	invalid map[string][]string
 }
 
@@ -726,7 +726,7 @@ func (s *initSession) run(plan initPlan) initSeen {
 			s.t.Fatalf("言語ごとのパターンの問いでも、作るかの問いでもない\n%s", s.screen())
 		}
 		seen.langsAsked = append(seen.langsAsked, lang)
-		seen.patterns[lang] = s.input(lang+" のパターン", f.title, nil, plan.patterns[lang])
+		seen.patterns[lang] = s.input(lang+" のパターン", f.title, plan.invalid[lang], plan.patterns[lang])
 		prev = f.title
 	}
 }
@@ -1210,6 +1210,33 @@ func Test形に合わない答えは理由が出て同じ問いにとどまる(t
 			t.Errorf("聞き直した後の答えで書かれていない: %+v", c.Story)
 		}
 	})
+}
+
+// CMD-11: 読むファイルのパターンの書き方の誤り（config-pattern-syntax）は、理由が出て同じ問いにとどまり、設定に書かれない。
+// 聞き直すことは PO の決定で、約束にはしないため、エビデンスにしない
+func Test読むファイルのパターンの書き方が誤っていると理由が出て聞き直し入れ直したパターンだけが書かれる(t *testing.T) {
+	t.Parallel()
+	bin, _ := initSetup(t)
+	r := newInitRepo(t, "https://github.com/owner/app.git", true, "internal/x/x_test.go")
+	s := startInit(t, bin, r.root, r.g.env)
+	s.run(initPlan{
+		patterns: map[string]string{"Go": "internal/**/*_test.go cmd/**/*_test.go"},
+		invalid: map[string][]string{"Go": {
+			"./**/*_test.go",           // . の部分
+			"a/../b",                   // .. の部分
+			"a//b",                     // 空の部分
+			"a/",                       // 終わりの空の部分
+			"/a",                       // / で始まる
+			"[",                        // 閉じていない [
+			"internal/**/*_test.go /a", // 空白で区切った 2 つのうち 1 つだけが誤り
+		}},
+	})
+	if code := s.wait(); code != 0 {
+		t.Fatalf("vanda init が %d で終わった\n%s", code, s.screen())
+	}
+	if got, want := annotationsOf(readInitConfig(t, r.root)), []string{"go internal/**/*_test.go,cmd/**/*_test.go"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("[[annotation]]: %v（思ったもの %v）", got, want)
+	}
 }
 
 // CMD-11: 作る前の確かめで n と答えると、何も作られない
