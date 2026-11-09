@@ -72,25 +72,25 @@ part_of = "evidence"
 [[term]]
 id = "plan-stage"
 name = "計画"
-definition = "ソースコードや設定ファイルを編集しなくても得られ、リリースの前に確かめられる{@id:evidence}に{@id:agree-on-review}段階。例: {@id:promise}、モデル、コードベースを分析した結果（カバレッジ、ホットスポットなど）"
+definition = "ソースコードや設定ファイルを編集しなくても得られ、リリースの前に確かめられる{@id:evidence}に{@id:agreement}する段階。例: {@id:promise}、モデル、コードベースを分析した結果（カバレッジ、ホットスポットなど）"
 part_of = "stage"
 
 [[term]]
 id = "implementation-stage"
 name = "実装"
-definition = "ソースコードや設定ファイルを足したり、変えたり、消したりして得られ、リリースの前に確かめられる{@id:evidence}に{@id:agree-on-review}段階。例: 社内に 3 つの案を公開して試した結果"
+definition = "ソースコードや設定ファイルを足したり、変えたり、消したりして得られ、リリースの前に確かめられる{@id:evidence}に{@id:agreement}する段階。例: 社内に 3 つの案を公開して試した結果"
 part_of = "stage"
 
 [[term]]
 id = "release-stage"
 name = "リリース"
-definition = "{@id:software}をリリースする時に確かめられる{@id:evidence}に{@id:agree-on-review}段階"
+definition = "{@id:software}をリリースする時に確かめられる{@id:evidence}に{@id:agreement}する段階"
 part_of = "stage"
 
 [[term]]
 id = "operation-stage"
 name = "運用"
-definition = "リリースした後に、動いている{@id:software}から確かめられる{@id:evidence}に{@id:agree-on-review}段階。例: {@id:sensor}で確かめた結果"
+definition = "リリースした後に、動いている{@id:software}から確かめられる{@id:evidence}に{@id:agreement}する段階。例: {@id:sensor}で確かめた結果"
 part_of = "stage"
 
 [[term]]
@@ -355,31 +355,31 @@ definition = "{@id:vanda} が読み書きするファイルを置く、リポジ
 [[term]]
 id = "config-file"
 name = "設定のファイル"
-definition = "{@id:vanda} の設定を書いたファイル（{@id:vanda-dir}config.toml）"
+definition = "{@id:vanda} の設定を書いたファイル（.vanda/config.toml）"
 part_of = "vanda-dir"
 
 [[term]]
 id = "default-promise-list-file"
 name = "約束リストの既定のファイル"
-definition = "設定に promises を書かない時に、{@id:promise-list}として読むファイル（{@id:vanda-dir}promises.toml）"
+definition = "設定に promises を書かない時に、{@id:promise-list}として読むファイル（.vanda/promises.toml）"
 part_of = "vanda-dir"
 
 [[term]]
 id = "default-agreement-record-file"
 name = "合意の記録の既定のファイル"
-definition = "設定に agreements を書かない時に、{@id:agreement-record}として読み書きするファイル（{@id:vanda-dir}agreements.toml）"
+definition = "設定に agreements を書かない時に、{@id:agreement-record}として読み書きするファイル（.vanda/agreements.toml）"
 part_of = "vanda-dir"
 
 [[term]]
 id = "check-config-dir"
 name = "審査の設定のディレクトリ"
-definition = "{@id:check-config}を <名前>.toml という名前で置くディレクトリ（{@id:vanda-dir}checks/）"
+definition = "{@id:check-config}を <名前>.toml という名前で置くディレクトリ（.vanda/checks/）"
 part_of = "vanda-dir"
 
 [[term]]
 id = "adapter-dir"
 name = "アダプタのディレクトリ"
-definition = "{@id:custom-adapter}を置くディレクトリ（{@id:vanda-dir}adapters/）"
+definition = "{@id:custom-adapter}を置くディレクトリ（.vanda/adapters/）"
 part_of = "vanda-dir"
 
 [[term]]
@@ -824,7 +824,7 @@ layers = ["gui"]
 id = "reference-diff"
 subjects = ["show-references", "compare-contents", "reference"]
 statement = "差分は、比べる元と今の文の両方の{@id:reference}を置き換えてから比べる。置き換える名前は、両方とも今の名前を使う。今はない{@id:term}・{@id:feature}を指す{@id:reference}だけ、比べる元の時点の名前を使う"
-rationale = "{@id:agree-on-review}人が、{@id:promise}の詳細と同じ文で差分を読めるようにするため。比べる元にも今の名前を使うのは、{@id:reference}先の名前を変えただけの所を、差として出さないため"
+rationale = "{@id:agreement}する人が、{@id:promise}の詳細と同じ文で差分を読めるようにするため。比べる元にも今の名前を使うのは、{@id:reference}先の名前を変えただけの所を、差として出さないため"
 layers = ["api"]
 flags = ["ai-proposal"]
 
@@ -1295,7 +1295,7 @@ layers = ["cli"]
 id = "agreements-explicit-file-may-be-absent"
 subjects = ["store-agreements", "agreement-record"]
 statement = "設定の agreements にワイルドカードのない場所のファイルをはっきり書き、そのファイルがなければ、{@id:mistake}にせず、そのファイルの{@id:agreement-record}を空とみなす"
-rationale = "そのファイルは、はじめて{@id:agreement}したときに作られるので、まだ一度も{@id:agreement}していないリポジトリにはない。それを{@id:mistake}にすると、はじめて{@id:agree-on-review}前に、{@id:check}も画面も使えないため"
+rationale = "そのファイルは、はじめて{@id:agreement}したときに作られるので、まだ一度も{@id:agreement}していないリポジトリにはない。それを{@id:mistake}にすると、はじめて{@id:agreement}する前に、{@id:check}も画面も使えないため"
 layers = ["cli", "api"]
 flags = ["ai-proposal"]
 
@@ -2244,7 +2244,7 @@ layers = ["cli"]
 id = "check-agreement-flags-left"
 subjects = ["list-check-kinds", "flag"]
 statement = "agreement は、{@id:promise}に flags か guesses が残っていれば{@id:mistake}にする"
-rationale = "{@id:agree-on-review}と{@id:flag}は外れるので、残っているのは{@id:agreement}の後に{@id:flag}だけが立てられたか、{@id:agreement}を通さずに書き換えられたもののため"
+rationale = "{@id:agreement}すると{@id:flag}は外れるので、残っているのは{@id:agreement}の後に{@id:flag}だけが立てられたか、{@id:agreement}を通さずに書き換えられたもののため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -3524,7 +3524,7 @@ layers = ["api"]
 [[claim]]
 id = "agree-commit-message"
 subjects = ["agree-on-review", "story"]
-statement = "{@id:agreement}のコミットのメッセージの subject を「(chore) <ストーリーの ID> で <種類> <ID か場所> に合意する」（種類は {@id:promise}・{@id:term}・{@id:feature}・ファイル）にする"
+statement = "{@id:agreement}のコミットのメッセージの subject を「(chore) <ストーリーの ID> で <種類> <ID か場所> に合意する」（種類は 約束・用語・機能・ファイル）にする"
 model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -3682,7 +3682,7 @@ layers = ["api"]
 [[claim]]
 id = "revoke-commit-message"
 subjects = ["revoke-agreement", "story"]
-statement = "取り消しのコミットのメッセージの subject を「(chore) <ストーリーの ID> で <種類> <ID か場所> の合意を取り消す」（種類は {@id:promise}・{@id:term}・{@id:feature}・ファイル）にする"
+statement = "取り消しのコミットのメッセージの subject を「(chore) <ストーリーの ID> で <種類> <ID か場所> の合意を取り消す」（種類は 約束・用語・機能・ファイル）にする"
 model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -4497,7 +4497,7 @@ layers = ["gui"]
 [[claim]]
 id = "agree-button-label"
 subjects = ["agree-on-review", "story"]
-statement = "{@id:agreement}のボタンには、「ストーリー <ID> で合意する」と、{@id:agree-on-review}{@id:story}の ID を書く"
+statement = "{@id:agreement}のボタンには、「ストーリー <ID> で合意する」と、{@id:agreement}する{@id:story}の ID を書く"
 model_check_waiver = "画面の見せ方の決まりで、{@id:agreement}の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
@@ -4706,7 +4706,7 @@ layers = ["gui"]
 id = "review-list-first-line"
 subjects = ["list-changes", "number-changes"]
 statement = "変わったものの一覧では、1 件ごとの 1 行目に、通し番号と名前だけを出し、追加・変更・削除の記号は出さない。種類（{@id:promise}・{@id:term}・{@id:feature}・ファイルの種類）は 2 行目の左端に出す。追加・変更・削除のどれかは、選んだ 1 件の詳細に示す"
-rationale = "一覧は幅が狭く、名前を出す幅を広く取るため。{@id:agree-on-review}かどうかは、追加か変更かで変わらない"
+rationale = "一覧は幅が狭く、名前を出す幅を広く取るため。{@id:agreement}するかどうかは、追加か変更かで変わらない"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
