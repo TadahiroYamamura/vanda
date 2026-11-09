@@ -12,13 +12,13 @@ import (
 
 const fingerprintPrefix = "sha256:"
 
-// FileFingerprint は、ファイルの中身そのものから指紋を作る。
+// FileFingerprint は、ファイルの中身そのものからフィンガープリントを作る。
 func FileFingerprint(src []byte) string {
 	sum := sha256.Sum256(src)
 	return fingerprintPrefix + hex.EncodeToString(sum[:])
 }
 
-// ItemFingerprint は、約束リストの項目の表から flags と guesses を除き、決まった形の JSON にしてから指紋を作る。
+// ItemFingerprint は、約束リストの項目の表から flags と guesses を除き、決まった形の JSON にしてからフィンガープリントを作る。
 func ItemFingerprint(raw map[string]any) (string, error) {
 	m := make(map[string]any, len(raw))
 	for k, v := range raw {
@@ -36,7 +36,7 @@ func ItemFingerprint(raw map[string]any) (string, error) {
 }
 
 // CanonicalJSON は、表を、キーを名前の順（UTF-8 のバイトの順）に並べ、空白を入れない JSON にする。
-// encoding/json を使わないのは、文字列の書き方（どの文字を \u にするか）を Go の版に左右されず、docs/formats.md のとおりに固定するため。
+// encoding/json を使わないのは、文字列の書き方（どの文字を \u にするか）を Go のバージョンに左右されず、docs/formats.md のとおりに固定するため。
 // 約束リストの項目に書ける値（文字列・真偽・整数・配列・表）だけを扱い、ほかの値はエラーにする。
 func CanonicalJSON(v any) (string, error) {
 	var b strings.Builder
@@ -98,7 +98,7 @@ func writeJSON(b *strings.Builder, v any) error {
 		}
 		b.WriteByte('}')
 	default:
-		return fmt.Errorf("指紋を作れない種類の値（%T）があります", v)
+		return fmt.Errorf("フィンガープリントを作れない種類の値（%T）があります", v)
 	}
 	return nil
 }

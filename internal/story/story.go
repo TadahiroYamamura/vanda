@@ -49,7 +49,7 @@ func storeErr(msg, fix string) *Error {
 
 const timeout = 20 * time.Second
 
-// AdapterInfo は、組込みのストーリーストアのアダプタ。vanda init の選択肢と、ID の書き方の既定に使う
+// AdapterInfo は、組み込みのストーリーストアのアダプタ。vanda init の選択肢と、ID の書き方の既定に使う
 type AdapterInfo struct {
 	Name  string // 設定の [story] の adapter に書く名前
 	Title string // 画面や問いかけに出す名前
@@ -57,7 +57,7 @@ type AdapterInfo struct {
 	DefaultIDPattern string
 }
 
-// Builtins は、組込みのストーリーストアのアダプタの一覧。アダプタを足したら、ここにも足す
+// Builtins は、組み込みのストーリーストアのアダプタの一覧。アダプタを足したら、ここにも足す
 var Builtins = []AdapterInfo{
 	{Name: "github", Title: "GitHub Issues", DefaultIDPattern: config.DefaultIDPattern},
 }

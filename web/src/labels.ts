@@ -16,9 +16,9 @@ export const changeLabel: Record<Change, string> = {
   unchanged: "変更なし",
 };
 
-export const stateLabel: Record<State, string> = { proposed: "提案中", agreed: "合意済" };
+export const stateLabel: Record<State, string> = { proposed: "提案中", agreed: "承認済" };
 
-export const detachedLabel = "合意が外れた";
+export const detachedLabel = "承認が失効した";
 
 export const flagLabel: Record<Flag, string> = {
   "ai-proposal": "AI 案",
@@ -29,7 +29,7 @@ export const flagLabel: Record<Flag, string> = {
 export const flagHelp: Record<Flag, string> = {
   "ai-proposal": "要求にも質疑にもなく、AI が自分で決めたもの",
   guess: "AI が確かめずに推し量って書いた所があるもの",
-  "changed-since-agreement": "前の合意から中身が変わったもの",
+  "changed-since-agreement": "前の承認から中身が変わったもの",
 };
 
 export const stageLabel: Record<string, string> = {

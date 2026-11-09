@@ -12,7 +12,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/tomlread"
 )
 
-// AdapterInfo は、組込みのアノテーションの読み取りのアダプタの、言語の見つけ方と既定のパターン。
+// AdapterInfo は、組み込みのアノテーションの読み取りのアダプタの、言語の見つけ方と既定のパターン。
 // vanda init が、見つかった言語ごとに、読むファイルのパターンを問いかけるときに使う
 type AdapterInfo struct {
 	Name            string   // 設定の [[annotation]] の adapter に書く名前
@@ -23,7 +23,7 @@ type AdapterInfo struct {
 	DefaultTypes []string
 }
 
-// Builtins は、組込みのアノテーションの読み取りのアダプタの一覧。アダプタを足したら、ここにも足す
+// Builtins は、組み込みのアノテーションの読み取りのアダプタの一覧。アダプタを足したら、ここにも足す
 var Builtins = []AdapterInfo{
 	{Name: "go", Title: "Go のテスト（*_test.go）", Suffixes: []string{"_test.go"}, DefaultPatterns: []string{"**/*_test.go"}, DefaultTypes: []string{"unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"}},
 	{Name: "txtar", Title: "シナリオ（*.txtar）", Suffixes: []string{".txtar"}, DefaultPatterns: []string{"**/*.txtar"}, DefaultTypes: []string{"scenario-test"}},
@@ -91,7 +91,7 @@ func ReadWith(root string, read tomlread.Reader, files []string, rules []config.
 		}
 		a := adapterFor(root, hit[0])
 		if a == nil {
-			errs = append(errs, diag.Error{File: f, What: fmt.Sprintf("%s の %d 行目の [[annotation]] のパターンに当たりますが、使うアダプタが決まっていません", config.File, hit[0].Line), Fix: "その [[annotation]] に、adapter（組込みのアダプタか、.vanda/adapters/ に置いたカスタムアダプタの名前）を書いてください"})
+			errs = append(errs, diag.Error{File: f, What: fmt.Sprintf("%s の %d 行目の [[annotation]] のパターンに当たりますが、使うアダプタが決まっていません", config.File, hit[0].Line), Fix: "その [[annotation]] に、adapter（組み込みのアダプタか、.vanda/adapters/ に置いたカスタムアダプタの名前）を書いてください"})
 			continue
 		}
 		src, err := read(f)

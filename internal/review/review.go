@@ -35,7 +35,7 @@ type Result struct {
 	Total     int     `json:"total"`
 	Entries   []Entry `json:"entries"`
 	Detached  []Entry `json:"detached"`
-	// BranchStories は、レビュー単位がブランチのとき、分岐点より後のコミットの Story: のトレーラーにあるストーリーの ID（名前の順）。ストーリーのときは nil
+	// BranchStories は、レビュー単位がブランチのとき、マージベースより後のコミットの Story: のトレーラーにあるストーリーの ID（名前の順）。ストーリーのときは nil
 	BranchStories []string `json:"branchStories"`
 	// StoryFrom は、story をどう決めたか。query（story= で名指しした）・branch（ブランチのコミットから 1 つに決まった）。決まっていなければ空
 	StoryFrom string `json:"storyFrom"`
@@ -114,7 +114,7 @@ func Build(o Options) (*Result, *Error) {
 		}
 		mb, err := repo.Git(o.Root, "merge-base", o.Base, "HEAD")
 		if err != nil {
-			return nil, &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("ベースブランチ %s との分岐点が分かりません（%v）。", o.Base, err), Fix: "今のブランチと履歴のつながったブランチを選んでください。"}
+			return nil, &Error{Status: http.StatusBadRequest, Message: fmt.Sprintf("ベースブランチ %s とのマージベースが分かりません（%v）。", o.Base, err), Fix: "今のブランチと履歴のつながったブランチを選んでください。"}
 		}
 		mb = strings.TrimSpace(mb)
 		res.Base, res.MergeBase = &o.Base, &mb
@@ -210,7 +210,7 @@ func (s *state) loadCurrent() *Error {
 	}
 	recs, rerrs := agreements.LoadWith(tree.Read, snap.Files, s.o.Cfg.Agreements)
 	if rerrs != nil {
-		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("合意の記録に誤りがあるため、一覧を作れません（%d 件。最初の 1 件: %s）。", len(rerrs), rerrs[0].Error()), Fix: "vanda check の agreement-targets で誤りを確かめて、直してください。"}
+		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("承認の記録に誤りがあるため、一覧を作れません（%d 件。最初の 1 件: %s）。", len(rerrs), rerrs[0].Error()), Fix: "vanda check の agreement-targets で誤りを確かめて、直してください。"}
 	}
 	s.cur = newSide(snap)
 	s.recs = recs
@@ -225,7 +225,7 @@ func (s *state) checkStory(id string) *Error {
 	return nil
 }
 
-// branchStory は、レビュー単位がブランチのときのストーリーを、vanda check と同じく決める。渡されていればそれを、なければ分岐点より後のコミットの Story: のトレーラーにある ID が 1 つのときだけそれを使う。
+// branchStory は、レビュー単位がブランチのときのストーリーを、vanda check と同じく決める。渡されていればそれを、なければマージベースより後のコミットの Story: のトレーラーにある ID が 1 つのときだけそれを使う。
 func (s *state) branchStory(mb string) (string, []string, *Error) {
 	ids, err := storyIDsIn(s.o.Root, s.o.Cfg, mb+"..HEAD")
 	if err != nil {
@@ -398,7 +398,7 @@ func sortedKeys(cs *changeSet) []string {
 var kindName = map[string]string{"term": "用語", "feature": "機能", "claim": "約束", "file": "ファイル"}
 
 // entries は、違う鍵を一覧の 1 件ずつにする。中身が同じで場所だけが変わったファイルも、まとめずに、古い場所の削除と新しい場所の追加の 2 件にする
-// （ファイルは場所で見分け、どちらの場所にも合意が要るため）。
+// （ファイルは場所で見分け、どちらの場所にも承認が要るため）。
 func (s *state) entries(changes []rawChange) ([]Entry, error) {
 	var out []Entry
 	for _, rc := range changes {
@@ -466,7 +466,7 @@ func others(rc rawChange) []CommitRef {
 	return rc.others
 }
 
-// itemState は、今の項目の、合意の状態・指紋・フラグを埋める。
+// itemState は、今の項目の、承認の状態・フィンガープリント・フラグを埋める。
 func (s *state) itemState(e *Entry, cur snapshot.Entry) {
 	fp := s.cur.itemFP[cur.Key()]
 	if fp != "" {
@@ -581,7 +581,7 @@ func (s *state) order(es []Entry) {
 		if r, ok := rank[g]; ok {
 			return 2, fmt.Sprintf("%08d", r)
 		}
-		// 設定にないレイヤーの約束は、約束リストの形の審査で誤りになる。設定のレイヤーの後に、名前の順で置く
+		// 設定にないレイヤーの約束は、約束リストの形のチェックで誤りになる。設定のレイヤーの後に、名前の順で置く
 		return 3, g
 	}
 	name := func(e Entry) string {
@@ -603,18 +603,18 @@ func (s *state) order(es []Entry) {
 	})
 }
 
-// detached は、ストーリーの外れた合意（RV-14）を探す。一覧にあるものはその件に印を付け、ないものを返す。
+// detached は、ストーリーの失効した承認（RV-14）を探す。一覧にあるものはその件に印を付け、ないものを返す。
 func (s *state) detached(es []Entry) ([]Entry, error) {
 	out := []Entry{}
 	story := s.o.Story
 	if story == "" {
 		return out, nil
 	}
-	// 鍵ごとの、そのストーリーの中身への合意の記録
+	// 鍵ごとの、そのストーリーの中身への承認の記録
 	recs := map[string][]*agreements.Agreement{}
 	var keys []string
 	for _, a := range s.recs.Agreements {
-		// 消したことにだけ合意したものを足し直しても、外れた合意にしない（中身に合意したことがないため）
+		// 消したことにだけ承認したものを足し直しても、失効した承認にしない（中身を承認したことがないため）
 		if a.Story != story || a.Deleted {
 			continue
 		}
@@ -628,7 +628,7 @@ func (s *state) detached(es []Entry) ([]Entry, error) {
 		recs[k] = append(recs[k], a)
 	}
 	sort.Strings(keys)
-	var written map[*agreements.Agreement]string // 記録から、それを書き足したコミットへ。外れた合意があるときだけ探す
+	var written map[*agreements.Agreement]string // 記録から、それを書き足したコミットへ。失効した承認があるときだけ探す
 	index := map[string]int{}
 	for i, e := range es {
 		index[e.key] = i
@@ -649,7 +649,7 @@ func (s *state) detached(es []Entry) ([]Entry, error) {
 		} else {
 			cur, ok := s.cur.items[k]
 			if !ok {
-				continue // 消した項目は、合意の記録の指す先の審査で出す
+				continue // 消した項目は、承認の記録の指す先のチェックで出す
 			}
 			fp = s.cur.itemFP[k]
 			if fp != "" && s.recs.AgreedBy(cur.Kind, cur.ID, fp, story) {
@@ -685,9 +685,9 @@ func (s *state) detached(es []Entry) ([]Entry, error) {
 	return out, nil
 }
 
-// changedBy は、HEAD の履歴で、記録 recs（そのストーリーの、鍵 key への合意）を最後に書き足したコミットより後のコミットのうち、
+// changedBy は、HEAD の履歴で、記録 recs（そのストーリーの、鍵 key への承認）を最後に書き足したコミットより後のコミットのうち、
 // key の中身を変えたもののストーリーの ID を返す。written は、記録からそれを書き足したコミットへの表。
-// 合意の記録の agreed_at とコミットの日時を比べないのは、rebase や amend でコミットの日時が変わるため（約束 review-detached-shown）。
+// 承認の記録の agreed_at とコミットの日時を比べないのは、rebase や amend でコミットの日時が変わるため（約束 review-detached-shown）。
 // まだコミットしていない記録しかなければ、それより後のコミットはないので空にする。
 func (s *state) changedBy(key string, recs []*agreements.Agreement, written map[*agreements.Agreement]string) ([]string, error) {
 	commits, err := s.h.loadCommits()
@@ -725,7 +725,7 @@ func (s *state) changedBy(key string, recs []*agreements.Agreement, written map[
 	return out, nil
 }
 
-// unchanged は、比べる元と今で変わっていない、外れた合意の 1 件を作る。
+// unchanged は、比べる元と今で変わっていない、失効した承認の 1 件を作る。
 func (s *state) unchanged(key string) (Entry, error) {
 	if f, ok := strings.CutPrefix(key, "path:"); ok {
 		e := Entry{Kind: "file", Path: ptr(f), Change: "unchanged", Flags: []string{}, Group: "files", OtherCommits: []CommitRef{}, key: key}

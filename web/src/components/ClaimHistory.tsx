@@ -5,16 +5,16 @@ import { LayerChips } from "./Chips";
 import { EvidenceGroups } from "./EvidenceGroups";
 import { Prose, ProseLines, RefsProvider } from "./Prose";
 
-// ClaimHistory は、約束の由来（CL-04）と合意の履歴（CL-05）。約束の詳細の画面と、レビューの画面の 1 件の詳細（RV-16）で使う。
-// 由来と合意の履歴は、約束の詳細と同時に読み始めるため、読み込みは使う側が持つ（ここで読むと、詳細を読み終えるまで読み始められない）
+// ClaimHistory は、約束の変更履歴（CL-04）と承認の履歴（CL-05）。約束の詳細の画面と、レビューの画面の 1 件の詳細（RV-16）で使う。
+// 変更履歴と承認の履歴は、約束の詳細と同時に読み始めるため、読み込みは使う側が持つ（ここで読むと、詳細を読み終えるまで読み始められない）
 export function ClaimHistory(props: { id: string; history: { data: History | null; error: unknown }; level: "h2" | "h3" }) {
   const id = props.id;
   const c = props.history.data;
   const error = props.history.error;
   const H = props.level;
-  // その時点の中身のステージの見出しは、由来・合意の履歴の見出しの 1 つ下の段にする
+  // その時点の中身のステージの見出しは、変更履歴・承認の履歴の見出しの 1 つ下の段にする
   const sub = props.level === "h2" ? "h3" : "h4";
-  // 選んだ時点（由来のコミットか、合意の記録を書いたコミット）。押した行のすぐ下に、表の行を開く形で中身を出す（CL-08）。
+  // 選んだ時点（変更履歴のコミットか、承認の記録を書いたコミット）。押した行のすぐ下に、表の行を開く形で中身を出す（CL-08）。
   // 表の下にまとめて出すと、押した行から離れて画面の外に出ることがあり、押しても何も起きないように見えたため
   // 開いている行の鍵（"origin:<コミット>" か "agreement:<番号>"）。見比べられるよう、いくつでも同時に開ける
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -34,9 +34,9 @@ export function ClaimHistory(props: { id: string; history: { data: History | nul
   };
   return (
     <>
-      <H>由来</H>
+      <H>変更履歴</H>
       {error != null ? (
-        <ErrorBox error={error} title="由来を読めません" />
+        <ErrorBox error={error} title="変更履歴を読めません" />
       ) : !c ? (
         <Loading />
       ) : c.origin.length === 0 ? (
@@ -73,13 +73,13 @@ export function ClaimHistory(props: { id: string; history: { data: History | nul
         </table>
       )}
 
-      <H>合意の履歴</H>
+      <H>承認の履歴</H>
       {error != null ? (
-        <ErrorBox error={error} title="合意の履歴を読めません" />
+        <ErrorBox error={error} title="承認の履歴を読めません" />
       ) : !c ? (
         <Loading />
       ) : c.agreements.length === 0 ? (
-        <p className="note">まだ合意していません。</p>
+        <p className="note">まだ承認していません。</p>
       ) : (
         <table className="history">
           <thead>
@@ -88,7 +88,7 @@ export function ClaimHistory(props: { id: string; history: { data: History | nul
               <th>いつ</th>
               <th>ストーリー</th>
               <th>今の中身に</th>
-              <th>合意を書いた時点の中身</th>
+              <th>承認を書いた時点の中身</th>
             </tr>
           </thead>
           <tbody>
@@ -100,7 +100,7 @@ export function ClaimHistory(props: { id: string; history: { data: History | nul
                 </td>
                 <td>{a.agreedAt}</td>
                 <td>{a.story}</td>
-                <td>{a.current ? "合います" : "合いません（前の中身への合意です）"}</td>
+                <td>{a.current ? "合います" : "合いません（前の中身への承認です）"}</td>
                 <td>
                   {a.commit ? (
                     <ExpandButton open={isOpen(`agreement:${i}`)} onClick={() => toggle(`agreement:${i}`)} />

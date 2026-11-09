@@ -22,7 +22,7 @@ type AgreeRequest struct {
 	Path        *string `json:"path"`
 	Fingerprint string  `json:"fingerprint"`
 	Story       string  `json:"story"`
-	// Deleted は、消したことに合意するか。真なら fingerprint は見ない
+	// Deleted は、消したことを承認するか。真なら fingerprint は見ない
 	Deleted bool `json:"deleted"`
 }
 
@@ -34,7 +34,7 @@ type AgreeResult struct {
 type AgreementRecord struct {
 	Kind string `json:"kind"`
 	Key  string `json:"key"`
-	// Fingerprint は、消したことへの合意では nil
+	// Fingerprint は、消したことへの承認では nil
 	Fingerprint *string `json:"fingerprint"`
 	Deleted     bool    `json:"deleted"`
 	Path        *string `json:"path"`
@@ -59,7 +59,7 @@ func badRequest(msg, fix string) *Error {
 	return &Error{Status: http.StatusBadRequest, Message: msg, Fix: fix}
 }
 
-// Agree は、1 件に合意する（RV-06）。合意の記録を書き足し、約束ならフラグを外し、その 2 つのファイルだけを 1 つのコミットにする。
+// Agree は、1 件を承認する（RV-06）。承認の記録を書き足し、約束ならフラグを外し、その 2 つのファイルだけを 1 つのコミットにする。
 func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	s := &state{o: o, h: newHistory(o.Root, o.Cfg)}
 	if e := s.checkStory(req.Story); e != nil {
@@ -67,7 +67,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	}
 	user := GitUser(o.Root)
 	if user == nil {
-		return nil, badRequest("git の user.name か user.email が設定されていないため、誰が合意したかを記録できません。", "git config user.name と git config user.email を設定してください。")
+		return nil, badRequest("git の user.name か user.email が設定されていないため、誰が承認したかを記録できません。", "git config user.name と git config user.email を設定してください。")
 	}
 	if e := s.loadCurrent(); e != nil {
 		return nil, e
@@ -76,11 +76,11 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	rec := AgreementRecord{Kind: req.Kind, User: *user, AgreedAt: now.Format(time.RFC3339), Story: req.Story}
 	var target string // 一覧の名前（コミットのメッセージに書く）
 	var claim *promises.Claim
-	var source string // 合意の対象が書いてあるファイル。消した約束・用語・機能では空
+	var source string // 承認の対象が書いてあるファイル。消した約束・用語・機能では空
 	var fp string
 	switch {
 	case req.Deleted:
-		key, t, e := s.deletedTarget(req.Kind, req.ID, req.Path, "合意")
+		key, t, e := s.deletedTarget(req.Kind, req.ID, req.Path, "承認")
 		if e != nil {
 			return nil, e
 		}
@@ -90,7 +90,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		}
 	case req.Kind == "claim" || req.Kind == "term" || req.Kind == "feature":
 		if req.ID == nil || *req.ID == "" {
-			return nil, badRequest(kindName[req.Kind]+"の合意に id がありません。", "id に ID を書いてください。")
+			return nil, badRequest(kindName[req.Kind]+"の承認に id がありません。", "id に ID を書いてください。")
 		}
 		key := req.Kind + ":" + *req.ID
 		cur, ok := s.cur.items[key]
@@ -99,18 +99,18 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		}
 		rec.Key, fp = cur.ID, s.cur.itemFP[key]
 		if fp == "" {
-			return nil, conflict(kindName[req.Kind]+" "+cur.ID+" の指紋を作れません。", "vanda check の promise-list-shape で誤りを確かめて、直してください。")
+			return nil, conflict(kindName[req.Kind]+" "+cur.ID+" のフィンガープリントを作れません。", "vanda check の promise-list-shape で誤りを確かめて、直してください。")
 		}
 		target = kindName[req.Kind] + " " + cur.ID
 		claim = cur.Claim
 		source = cur.Table.Doc.File
 	case req.Kind == "file":
 		if req.Path == nil || *req.Path == "" {
-			return nil, badRequest("ファイルの合意に path がありません。", "path にファイルの場所を書いてください。")
+			return nil, badRequest("ファイルの承認に path がありません。", "path にファイルの場所を書いてください。")
 		}
 		p := *req.Path
 		if _, ok := s.cur.types[p]; !ok {
-			return nil, &Error{Status: http.StatusNotFound, Message: p + " は合意の対象のファイルではありません。", Fix: "一覧を読み直してください。"}
+			return nil, &Error{Status: http.StatusNotFound, Message: p + " は承認の対象のファイルではありません。", Fix: "一覧を読み直してください。"}
 		}
 		var err error
 		if fp, err = s.cur.fileFP(p); err != nil {
@@ -133,7 +133,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		promiseFile = claim.Table.Doc.File
 		files = append(files, promiseFile)
 	}
-	// 合意の対象のファイルにコミットしていない変更があると、合意のコミットの時点のリポジトリが、合意した中身と合わなくなる
+	// 承認の対象のファイルにコミットしていない変更があると、承認のコミットの時点のリポジトリが、承認した中身と合わなくなる
 	sources := []string{source}
 	if source == "" {
 		// 消した約束・用語・機能には書いてあるファイルがないので、約束リストのどのファイル（消したファイルを含む）にも、
@@ -143,7 +143,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 			return nil, internalErr(err)
 		}
 		if len(dirty) > 0 {
-			return nil, conflict("約束リスト（"+strings.Join(dirty, "・")+"）に、コミットしていない変更があります（このまま合意すると、消したことと、合意のコミットの時点のリポジトリが合わなくなります）。", "先に約束リストの変更をコミットしてから、合意してください。")
+			return nil, conflict("約束リスト（"+strings.Join(dirty, "・")+"）に、コミットしていない変更があります（このまま承認すると、消したことと、承認のコミットの時点のリポジトリが合わなくなります）。", "先に約束リストの変更をコミットしてから、承認してください。")
 		}
 		sources, _ = glob.Select(s.cur.snap.Files, o.Cfg.Promises)
 	} else {
@@ -152,7 +152,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 			return nil, internalErr(err)
 		}
 		if dirty != "" {
-			return nil, conflict(target+" が書いてある "+source+" に、コミットしていない変更があります（このまま合意すると、合意した中身と、合意のコミットの時点のリポジトリが合わなくなります）。", "先に "+source+" の変更をコミットしてから、合意してください。")
+			return nil, conflict(target+" が書いてある "+source+" に、コミットしていない変更があります（このまま承認すると、承認した中身と、承認のコミットの時点のリポジトリが合わなくなります）。", "先に "+source+" の変更をコミットしてから、承認してください。")
 		}
 	}
 	dirty, err := repo.Git(o.Root, append([]string{"status", "--porcelain", "-z", "--"}, files...)...)
@@ -160,21 +160,21 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		return nil, internalErr(err)
 	}
 	if dirty != "" {
-		return nil, conflict("合意で変えるファイル（"+strings.Join(files, "・")+"）に、コミットしていない変更があります。", "そのファイルの変更をコミットするか元に戻してから、合意してください。")
+		return nil, conflict("承認で変えるファイル（"+strings.Join(files, "・")+"）に、コミットしていない変更があります。", "そのファイルの変更をコミットするか元に戻してから、承認してください。")
 	}
 
-	// 書きかけの確かめを指紋の比べより先にする。今の中身は HEAD のコミットなので、書きかけがあると指紋の違いで断ることになり、先にコミットするよう知らせられないため
+	// 書きかけの確かめをフィンガープリントの比べより先にする。今の中身は HEAD のコミットなので、書きかけがあるとフィンガープリントの違いで断ることになり、先にコミットするよう知らせられないため
 	if req.Deleted {
 		if s.recs.DeletionAgreedBy(rec.Kind, rec.target(), req.Story) {
-			return nil, conflict(target+" を消したことには、ストーリー "+req.Story+" ですでに合意しています。", "一覧を読み直してください。")
+			return nil, conflict(target+" を消したことには、ストーリー "+req.Story+" ですでに承認しています。", "一覧を読み直してください。")
 		}
 	} else {
 		rec.Fingerprint = &fp
 		if fp != req.Fingerprint {
-			return nil, conflict(target+" の中身が、画面に表示した後に変わりました（画面 "+req.Fingerprint+"、今 "+fp+"）。", "一覧を読み直し、今の中身を確かめてから合意してください。")
+			return nil, conflict(target+" の中身が、画面に表示した後に変わりました（画面 "+req.Fingerprint+"、今 "+fp+"）。", "一覧を読み直し、今の中身を確かめてから承認してください。")
 		}
 		if s.recs.AgreedBy(rec.Kind, rec.target(), fp, req.Story) {
-			return nil, conflict(target+" の今の中身には、ストーリー "+req.Story+" ですでに合意しています。", "一覧を読み直してください。")
+			return nil, conflict(target+" の今の中身には、ストーリー "+req.Story+" ですでに承認しています。", "一覧を読み直してください。")
 		}
 	}
 
@@ -207,15 +207,15 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	}
 	fail := func(err error) *Error {
 		if rerr := restore(); rerr != nil {
-			return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("合意を書けず（%v）、ファイルを元に戻すこともできませんでした（%v）。", err, rerr), Fix: "git status で " + strings.Join(files, "・") + " を確かめて、直してください。"}
+			return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("承認を書けず（%v）、ファイルを元に戻すこともできませんでした（%v）。", err, rerr), Fix: "git status で " + strings.Join(files, "・") + " を確かめて、直してください。"}
 		}
-		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("合意を書けませんでした（%v）。ファイルは元に戻しました。", err), Fix: "git の状態を確かめてください。"}
+		return &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("承認を書けませんでした（%v）。ファイルは元に戻しました。", err), Fix: "git の状態を確かめてください。"}
 	}
 
 	if promiseFile != "" {
 		out, err := removeFlags(originals[promiseFile], claim)
 		if err != nil {
-			return nil, conflict(err.Error(), "flags と guesses を [[claim]] の表の行として書き直すか、手で消してから合意してください。")
+			return nil, conflict(err.Error(), "flags と guesses を [[claim]] の表の行として書き直すか、手で消してから承認してください。")
 		}
 		if err := os.WriteFile(filepath.Join(o.Root, filepath.FromSlash(promiseFile)), out, 0o644); err != nil {
 			return nil, fail(err)
@@ -241,9 +241,9 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 			return nil, fail(err)
 		}
 	}
-	msg := fmt.Sprintf("(chore) %s で %s に合意する", req.Story, target)
+	msg := fmt.Sprintf("(chore) %s で %s を承認する", req.Story, target)
 	if req.Deleted {
-		msg = fmt.Sprintf("(chore) %s で %s を消したことに合意する", req.Story, target)
+		msg = fmt.Sprintf("(chore) %s で %s を消したことを承認する", req.Story, target)
 	}
 	// パスを渡すと、索引に足してあるほかのファイルの変更を入れず、渡したファイルだけをコミットする
 	if _, err := repo.Git(o.Root, append([]string{"commit", "-q", "-m", msg, "-m", config.StoryTrailerKey + ": " + req.Story, "--"}, files...)...); err != nil {
@@ -257,12 +257,12 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		Hooks.AfterAgreeCommit(o.Root)
 	}
 	if err := checkAgreeCommit(o.Root, files, sources); err != nil {
-		return nil, sensorErr("合意", strings.TrimSpace(head), err)
+		return nil, sensorErr("承認", strings.TrimSpace(head), err)
 	}
 	return &AgreeResult{Commit: strings.TrimSpace(head), Agreement: rec}, nil
 }
 
-// agreementsFile は、合意の記録を書き足すファイルを返す。設定の agreements のパターンの順で、最初に当たったファイル。
+// agreementsFile は、承認の記録を書き足すファイルを返す。設定の agreements のパターンの順で、最初に当たったファイル。
 // どれにも当たらず、最初のパターンにワイルドカードがなければ、そのファイルを作る（create が真）。
 func (s *state) agreementsFile() (string, bool, *Error) {
 	for _, p := range s.o.Cfg.Agreements {
@@ -274,7 +274,7 @@ func (s *state) agreementsFile() (string, bool, *Error) {
 	}
 	first := s.o.Cfg.Agreements[0]
 	if glob.HasMeta(first) {
-		return "", false, conflict("合意の記録のファイルがなく、設定の agreements の最初のパターン "+first+" にワイルドカードがあるため、どこに作るかを決められません。", "合意の記録のファイルを作ってから、合意してください。")
+		return "", false, conflict("承認の記録のファイルがなく、設定の agreements の最初のパターン "+first+" にワイルドカードがあるため、どこに作るかを決められません。", "承認の記録のファイルを作ってから、承認してください。")
 	}
 	return first, true, nil
 }
@@ -367,7 +367,7 @@ func valueEnd(lines []string, i int) (int, error) {
 	return 0, errors.New("配列が閉じていません")
 }
 
-// appendRecord は、合意の記録のファイルの中身 src の終わりに、1 件の [[agreement]] を書き足す。
+// appendRecord は、承認の記録のファイルの中身 src の終わりに、1 件の [[agreement]] を書き足す。
 func appendRecord(src []byte, rec AgreementRecord) []byte {
 	var b strings.Builder
 	b.Write(src)
@@ -427,15 +427,15 @@ func dirtyMatching(root string, patterns []string) ([]string, error) {
 	return dirty, nil
 }
 
-// Agreeable は、1 件に、今の人がこのストーリーで合意できるか。合意済でも、このストーリーの合意がなければ合意できる
-// （ストーリー s の合意が外れた後に、ほかのストーリーが今の中身に合意していても、s が合意し直すまで外れたままのため）。
+// Agreeable は、1 件に、今の人がこのストーリーで承認できるか。承認済でも、このストーリーの承認がなければ承認できる
+// （ストーリー s の承認が失効した後に、ほかのストーリーが今の中身を承認していても、s が承認し直すまで失効したままのため）。
 type Agreeable struct {
 	Possible bool `json:"possible"`
-	// Reason は、合意できないときの理由。合意できるときは nil
+	// Reason は、承認できないときの理由。承認できるときは nil
 	Reason *string `json:"reason"`
 }
 
-// setAgreeables は、各件に、合意できるかを付ける。判定は Agree が断る条件と合わせる。
+// setAgreeables は、各件に、承認できるかを付ける。判定は Agree が断る条件と合わせる。
 func (s *state) setAgreeables(es []Entry) {
 	story := s.o.Story
 	user := GitUser(s.o.Root)
@@ -450,19 +450,19 @@ func (s *state) setAgreeables(es []Entry) {
 		}
 		switch {
 		case story == "":
-			no("ストーリーを選ぶと、合意できます。")
+			no("ストーリーを選ぶと、承認できます。")
 		case user == nil:
-			no("git の user.name と user.email を設定すると、合意できます。")
+			no("git の user.name と user.email を設定すると、承認できます。")
 		case e.Change == "deleted":
 			if s.recs.DeletionAgreedBy(e.Kind, target, story) {
-				no("消したことには、ストーリー " + story + " ですでに合意しています。")
+				no("消したことには、ストーリー " + story + " ですでに承認しています。")
 			} else {
 				e.Agree = &Agreeable{Possible: true}
 			}
 		case e.Fingerprint == nil:
-			no("指紋を作れないため、合意できません。vanda check の promise-list-shape で誤りを確かめて、直してください。")
+			no("フィンガープリントを作れないため、承認できません。vanda check の promise-list-shape で誤りを確かめて、直してください。")
 		case s.recs.AgreedBy(e.Kind, target, *e.Fingerprint, story):
-			no("今の中身には、ストーリー " + story + " ですでに合意しています。")
+			no("今の中身には、ストーリー " + story + " ですでに承認しています。")
 		default:
 			e.Agree = &Agreeable{Possible: true}
 		}

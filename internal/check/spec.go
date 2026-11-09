@@ -1,4 +1,4 @@
-// Package check は、審査の設定（.vanda/checks/<名前>.toml）を読み、審査を行う。
+// Package check は、チェックの設定（.vanda/checks/<名前>.toml）を読み、チェックする。
 package check
 
 import (
@@ -13,7 +13,7 @@ const (
 	ScopeStory = "story"
 )
 
-// Names は、審査の名前と、書ける範囲。
+// Names は、チェックの名前と、書けるスコープ。
 var Names = []struct {
 	Name   string
 	Scopes []string
@@ -32,7 +32,7 @@ type Spec struct {
 	Scope string
 }
 
-// LoadSpecs は、審査の設定の中身 src を読む。file はエラーに出す場所。
+// LoadSpecs は、チェックの設定の中身 src を読む。file はエラーに出す場所。
 func LoadSpecs(file string, src []byte) ([]Spec, diag.Errors) {
 	var errs []diag.Error
 	doc := tomlread.Parse(file, src, &errs)
@@ -42,7 +42,7 @@ func LoadSpecs(file string, src []byte) ([]Spec, diag.Errors) {
 	top := doc.Top()
 	ts, _ := top.Tables("check", true)
 	if ts != nil && len(ts) == 0 {
-		top.ErrAt("check", "審査が 1 つもありません", "[[check]] に name と scope を書いてください")
+		top.ErrAt("check", "チェックが 1 つもありません", "[[check]] に name と scope を書いてください")
 	}
 	var names []string
 	for _, n := range Names {
@@ -65,13 +65,13 @@ func LoadSpecs(file string, src []byte) ([]Spec, diag.Errors) {
 		}
 		switch {
 		case scopes == nil:
-			t.ErrAt("name", "審査 "+quote(name)+" はありません", "name を "+strings.Join(names, "・")+" のどれかにしてください")
+			t.ErrAt("name", "チェック "+quote(name)+" はありません", "name を "+strings.Join(names, "・")+" のどれかにしてください")
 			continue
 		case scope != ScopeAll && scope != ScopeStory:
-			t.ErrAt("scope", "範囲 "+quote(scope)+" は決まった値ではありません", `scope を "all" か "story" にしてください`)
+			t.ErrAt("scope", "スコープ "+quote(scope)+" は決まった値ではありません", `scope を "all" か "story" にしてください`)
 			continue
 		case !contains(scopes, scope):
-			t.ErrAt("scope", "審査 "+name+" は範囲 "+scope+" では行えません", "scope を "+strings.Join(scopes, " か ")+" にしてください")
+			t.ErrAt("scope", "チェック "+name+" はスコープ "+scope+" では行えません", "scope を "+strings.Join(scopes, " か ")+" にしてください")
 			continue
 		}
 		s.Name, s.Scope = name, scope

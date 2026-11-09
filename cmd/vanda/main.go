@@ -46,17 +46,17 @@ func newRootCommand() *cobra.Command {
 	return root
 }
 
-// errFailed は、審査が失敗したことを表す。中身はすでに出しているので、もう出さない。
-var errFailed = errors.New("審査が失敗しました")
+// errFailed は、チェックが失敗したことを表す。中身はすでに出しているので、もう出さない。
+var errFailed = errors.New("チェックが失敗しました")
 
 func newCheckCommand() *cobra.Command {
 	var base, story string
 	cmd := &cobra.Command{
-		Use:   "check <審査の設定のファイル>",
-		Short: "審査を行います",
+		Use:   "check <チェックの設定のファイル>",
+		Short: "チェックします",
 		Args: func(_ *cobra.Command, args []string) error {
 			if len(args) != 1 {
-				return errors.New("審査の設定のファイルがありません。審査の設定のファイルを 1 つ渡してください（例: vanda check .vanda/checks/push.toml。既定の審査はありません）。")
+				return errors.New("チェックの設定のファイルがありません。チェックの設定のファイルを 1 つ渡してください（例: vanda check .vanda/checks/push.toml。既定のチェックはありません）。")
 			}
 			return nil
 		},
@@ -67,7 +67,7 @@ func newCheckCommand() *cobra.Command {
 			}
 			src, err := os.ReadFile(args[0])
 			if err != nil {
-				return errors.New(args[0] + ": 審査の設定のファイルを読めません（" + err.Error() + "）。今のディレクトリからの場所を確かめてください。")
+				return errors.New(args[0] + ": チェックの設定のファイルを読めません（" + err.Error() + "）。今のディレクトリからの場所を確かめてください。")
 			}
 			specs, errs := check.LoadSpecs(args[0], src)
 			if errs != nil {
@@ -83,16 +83,16 @@ func newCheckCommand() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&base, "base", "", `ベースブランチ（scope = "story" の審査があるときに必要です）`)
+	cmd.Flags().StringVar(&base, "base", "", `ベースブランチ（scope = "story" のチェックがあるときに必要です）`)
 	cmd.Flags().StringVar(&story, "story", "", "ストーリーの ID（コミットの Story: のトレーラーから決まらないときに渡します）")
 	return cmd
 }
 
-// version は、.vanda/ がなくても、版が合わなくても動く（版が合わないときに、どの版かを確かめるため）。
+// version は、.vanda/ がなくても、バージョンが合わなくても動く（バージョンが合わないときに、どのバージョンかを確かめるため）。
 func newVersionCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
-		Short: "版を表示します",
+		Short: "バージョンを表示します",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			fmt.Fprintln(cmd.OutOrStdout(), version.Current)
@@ -104,7 +104,7 @@ func newVersionCommand() *cobra.Command {
 func newDoctorCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "doctor",
-		Short: "設定と版を確かめます",
+		Short: "設定とバージョンを確かめます",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			root, cfg, err := loadConfig()
@@ -118,13 +118,13 @@ func newDoctorCommand() *cobra.Command {
 			if conn != "" {
 				conn = "。" + conn
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "設定を確かめました: %s（リポジトリ %s、版 %s）%s\n", config.File, root, cfg.Version, conn)
+			fmt.Fprintf(cmd.OutOrStdout(), "設定を確かめました: %s（リポジトリ %s、バージョン %s）%s\n", config.File, root, cfg.Version, conn)
 			return nil
 		},
 	}
 }
 
-// loadConfig は、git のリポジトリの根を探し、作業ツリーの設定を読んで版を確かめる。
+// loadConfig は、git のリポジトリの根を探し、作業ツリーの設定を読んでバージョンを確かめる。
 func loadConfig() (string, *config.Config, error) {
 	root, err := findRoot()
 	if err != nil {
@@ -137,7 +137,7 @@ func loadConfig() (string, *config.Config, error) {
 	return root, cfg, nil
 }
 
-// loadCommittedConfig は、git のリポジトリの根を探し、HEAD のコミットの設定を読んで版を確かめる（審査と画面は、コミットした中身だけを読むため）。
+// loadCommittedConfig は、git のリポジトリの根を探し、HEAD のコミットの設定を読んでバージョンを確かめる（チェックと画面は、コミットした中身だけを読むため）。
 func loadCommittedConfig() (string, *repo.Tree, *config.Config, error) {
 	root, err := findRoot()
 	if err != nil {

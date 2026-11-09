@@ -101,7 +101,7 @@ func report(out io.Writer, root string, files [][2]string, noAnnotations bool) e
 	for _, f := range files {
 		fmt.Fprintln(out, "  "+f[0])
 	}
-	fmt.Fprintf(out, "設定を確かめました: %s（版 %s）\n", config.File, cfg.Version)
+	fmt.Fprintf(out, "設定を確かめました: %s（バージョン %s）\n", config.File, cfg.Version)
 	fmt.Fprintln(out, "\n次にすること:")
 	fmt.Fprintln(out, "  1. "+config.File+" に、約束のレイヤーを [[layer]] で書いてください（id・name・description）。")
 	fmt.Fprintf(out, "  2. CI で vanda check を動かすよう、CI の設定に足してください。ブランチでは vanda check %s --base %s を、ベースブランチでは vanda check %s を動かします。\n", initcmd.CIChecksFile, cfg.GUIBase, initcmd.MainChecksFile)
@@ -114,6 +114,6 @@ func report(out io.Writer, root string, files [][2]string, noAnnotations bool) e
 		fmt.Fprintf(out, "  %d. %s/%s にカスタムアダプタを置いてください。\n", n, config.AdaptersDir, name)
 		n++
 	}
-	fmt.Fprintln(out, "組込みのアダプタがない言語（TypeScript など）は、.vanda/adapters/ にカスタムアダプタを置いて足せます。")
+	fmt.Fprintln(out, "組み込みのアダプタがない言語（TypeScript など）は、.vanda/adapters/ にカスタムアダプタを置いて足せます。")
 	return nil
 }

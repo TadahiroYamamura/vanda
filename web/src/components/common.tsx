@@ -227,13 +227,13 @@ export function PresentIcon(props: { present: boolean | null }) {
   );
 }
 
-// AgreementIcon は、エビデンスの本体のファイルの合意の状態のアイコン（API の found の state）。
-// 揃っているかのアイコン（丸のないチェック・バツ・横棒）と見間違えないよう、丸の中に描く。合意済は青の塗りの丸に白のチェック、
+// AgreementIcon は、エビデンスの本体のファイルの承認の状態のアイコン（API の found の state）。
+// 揃っているかのアイコン（丸のないチェック・バツ・横棒）と見間違えないよう、丸の中に描く。承認済は青の塗りの丸に白のチェック、
 // 提案中は橙の枠の丸に時計の針（まだ決まっていない、待っている）
 export function AgreementIcon(props: { state: State | null | undefined }) {
   if (!props.state) return null;
   const agreed = props.state === "agreed";
-  const label = agreed ? "合意済" : "提案中";
+  const label = agreed ? "承認済" : "提案中";
   return (
     <span className={`agreement-icon ${agreed ? "agreement-agreed" : "agreement-proposed"}`} role="img" aria-label={label} title={label}>
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">

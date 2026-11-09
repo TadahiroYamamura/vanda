@@ -1,7 +1,7 @@
 // Package promises は、約束リスト（既定は .vanda/promises.toml）を読む。
 //
 // ここでは、読めること、決まった表と項目だけがあること、必須の項目があること、項目の型を確かめる。
-// 値が決まった語の中にあるか、ID の形と重なり、指す先があるかは、審査で確かめる。
+// 値が決まった語の中にあるか、ID の形と重なり、指す先があるかは、チェックで確かめる。
 package promises
 
 import (
@@ -17,7 +17,7 @@ type List struct {
 	Claims   []*Claim
 }
 
-// Item は、用語・機能・約束に共通するもの。Raw は読み込んだ表そのもの（指紋を作る元）。
+// Item は、用語・機能・約束に共通するもの。Raw は読み込んだ表そのもの（フィンガープリントを作る元）。
 type Item struct {
 	ID    string
 	Table *tomlread.Table
@@ -166,7 +166,7 @@ func nonEmpty(t *tomlread.Table, key, what string) []string {
 }
 
 // FromSources は、読み込み済みの中身 srcs（場所から中身へ）を、names の順に約束リストとして読む。
-// 分岐点の中身を読むときに使う。
+// マージベースの中身を読むときに使う。
 func FromSources(names []string, srcs map[string][]byte) (*List, diag.Errors) {
 	var errs []diag.Error
 	l := &List{Files: names}

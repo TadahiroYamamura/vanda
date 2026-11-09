@@ -29,7 +29,7 @@ const (
 	DefaultIDPattern  = "#[0-9]+"
 )
 
-// 組込みのアノテーションの読み取りのアダプタ
+// 組み込みのアノテーションの読み取りのアダプタ
 var BuiltinAdapters = []string{"go", "txtar", "tla", "sql", "ts"}
 
 // EvidenceKinds は、[[annotation]] の types に書けるエビデンスのタイプ（書ける順）と、そのタイプのエビデンスとして
@@ -76,7 +76,7 @@ type Config struct {
 
 // StoryStore は、ストーリーストアのアダプタ。Adapter が空で User が nil なら、ストーリーストアにつながない。
 type StoryStore struct {
-	// Adapter は、組込みのアダプタの名前（github）。カスタムアダプタを使うなら空
+	// Adapter は、組み込みのアダプタの名前（github）。カスタムアダプタを使うなら空
 	Adapter    string
 	Repository string
 	APIURL     string
@@ -91,7 +91,7 @@ func (s StoryStore) Name() string {
 	return s.Adapter
 }
 
-// AdaptersDir は、組込みのほかのアダプタを置くディレクトリ（リポジトリの直下から）
+// AdaptersDir は、組み込みのほかのアダプタを置くディレクトリ（リポジトリの直下から）
 const AdaptersDir = ".vanda/adapters"
 
 // UserAdapter は、カスタムアダプタ（.vanda/adapters/ の直下に置いたアダプタ）。
@@ -113,7 +113,7 @@ type Layer struct {
 // AnnotationRule は、読むファイルのパターンと、使うアダプタ。Adapter が空で User が nil なら、アダプタが決まっていない。
 type AnnotationRule struct {
 	Paths []string
-	// Adapter は、組込みのアダプタの名前（go・txtar・tla・sql）。カスタムアダプタを使うなら空
+	// Adapter は、組み込みのアダプタの名前（go・txtar・tla・sql）。カスタムアダプタを使うなら空
 	Adapter string
 	User    *UserAdapter
 	// Types は、このパターンで読んだアノテーションが満たすエビデンスのタイプ
@@ -150,14 +150,14 @@ func Load(root string) (*Config, diag.Errors) {
 	return cfg, errs
 }
 
-// LoadAllowingMissingAdapters は、Load と同じく読み、確かめる。ただし、名前のアダプタが組込みにも .vanda/adapters/ にもないことは
+// LoadAllowingMissingAdapters は、Load と同じく読み、確かめる。ただし、名前のアダプタが組み込みにも .vanda/adapters/ にもないことは
 // 誤りにせず、その名前を missing に返す（.vanda/ を作った直後で、アダプタをまだ置いていないときに使う）。
 func LoadAllowingMissingAdapters(root string) (cfg *Config, missing []string, errs diag.Errors) {
 	return load(&loader{root: root, allowMissing: true})
 }
 
 // LoadCommitted は、Load と同じく読み、確かめる。ただし、.vanda/config.toml はコミット t の中身を読む
-// （審査と画面は、コミットした中身だけを読むため。カスタムアダプタは、作業ツリーのものを動かす）。
+// （チェックと画面は、コミットした中身だけを読むため。カスタムアダプタは、作業ツリーのものを動かす）。
 func LoadCommitted(root string, t *repo.Tree) (*Config, diag.Errors) {
 	if !t.Has(File) {
 		return nil, diag.Errors{{File: File, What: "HEAD のコミットにファイルがありません（コミットしていない設定は読みません）", Fix: File + " をコミットしてください"}}
@@ -236,7 +236,7 @@ func parse(l *loader, top *tomlread.Table) *Config {
 		if n, ok := t.Int("timeout", false); ok {
 			switch {
 			case r.User == nil && r.Adapter != "":
-				t.ErrAt("timeout", "timeout は、カスタムアダプタのときだけ書けます（"+quote(r.Adapter)+" は組込みのアダプタです）", "timeout を消してください")
+				t.ErrAt("timeout", "timeout は、カスタムアダプタのときだけ書けます（"+quote(r.Adapter)+" は組み込みのアダプタです）", "timeout を消してください")
 			case r.User == nil:
 				t.ErrAt("timeout", "timeout は、カスタムアダプタのときだけ書けます（adapter がありません）", "adapter にカスタムアダプタの名前を書くか、timeout を消してください")
 			case n < 1:
@@ -254,7 +254,7 @@ func parse(l *loader, top *tomlread.Table) *Config {
 		var g GuardrailRule
 		if a, ok := t.Str("adapter", true); ok {
 			if a != "file" {
-				t.ErrAt("adapter", "ガードレールの定義の取り出しのアダプタ "+quote(a)+" は組込みにありません", `adapter = "file" にしてください（今は、ファイルを読むだけのアダプタしかありません）`)
+				t.ErrAt("adapter", "ガードレールの定義の取り出しのアダプタ "+quote(a)+" は組み込みにありません", `adapter = "file" にしてください（今は、ファイルを読むだけのアダプタしかありません）`)
 			}
 			g.Adapter = a
 		}
@@ -346,7 +346,7 @@ func evidenceTypes(t *tomlread.Table) []string {
 }
 
 // adapterOf は、表の adapter と args を読み、使うアダプタを決める。同じ名前のカスタムアダプタがあれば、
-// 組込みのアダプタ（builtins）より先に使う。fix は、名前のアダプタがどこにもないときの直し方の前半。
+// 組み込みのアダプタ（builtins）より先に使う。fix は、名前のアダプタがどこにもないときの直し方の前半。
 func adapterOf(l *loader, t *tomlread.Table, builtins []string, fix string) (string, *UserAdapter) {
 	name, hasAdapter := t.Str("adapter", false)
 	args, hasArgs := t.Strs("args", false)
@@ -357,7 +357,7 @@ func adapterOf(l *loader, t *tomlread.Table, builtins []string, fix string) (str
 		return "", nil
 	}
 	if name == "" || name == "." || name == ".." || strings.ContainsAny(name, `/\`) {
-		t.ErrAt("adapter", "アダプタの名前 "+quote(name)+" が誤っています（空の名前、/ か \\ を含む名前、. と .. は使えません）", "組込みのアダプタの名前か、.vanda/adapters/ の直下のファイルかディレクトリの名前を書いてください")
+		t.ErrAt("adapter", "アダプタの名前 "+quote(name)+" が誤っています（空の名前、/ か \\ を含む名前、. と .. は使えません）", "組み込みのアダプタの名前か、.vanda/adapters/ の直下のファイルかディレクトリの名前を書いてください")
 		return "", nil
 	}
 	rel := AdaptersDir + "/" + name
@@ -377,11 +377,11 @@ func adapterOf(l *loader, t *tomlread.Table, builtins []string, fix string) (str
 			l.missing = append(l.missing, name)
 			return "", &UserAdapter{Name: name, Path: rel, Args: args}
 		}
-		t.ErrAt("adapter", "アダプタ "+quote(name)+" は、組込みにも "+AdaptersDir+"/ にもありません", fix+"、"+rel+" にカスタムアダプタを置いてください")
+		t.ErrAt("adapter", "アダプタ "+quote(name)+" は、組み込みにも "+AdaptersDir+"/ にもありません", fix+"、"+rel+" にカスタムアダプタを置いてください")
 		return "", nil
 	}
 	if hasArgs {
-		t.ErrAt("args", "args は、カスタムアダプタのときだけ書けます（"+quote(name)+" は組込みのアダプタです）", "args を消してください")
+		t.ErrAt("args", "args は、カスタムアダプタのときだけ書けます（"+quote(name)+" は組み込みのアダプタです）", "args を消してください")
 	}
 	return name, nil
 }
@@ -496,10 +496,10 @@ func parseStoryStore(l *loader, t *tomlread.Table, st *StoryStore) {
 		return
 	}
 	if hasRepo {
-		t.ErrAt("repository", "repository は、組込みの github のアダプタを使うときだけ書けます", `adapter = "github" を書くか、repository を消してください（.vanda/adapters/ に github という名前のカスタムアダプタがあれば、そちらを使います）`)
+		t.ErrAt("repository", "repository は、組み込みの github のアダプタを使うときだけ書けます", `adapter = "github" を書くか、repository を消してください（.vanda/adapters/ に github という名前のカスタムアダプタがあれば、そちらを使います）`)
 	}
 	if hasAPI {
-		t.ErrAt("api_url", "api_url は、組込みの github のアダプタを使うときだけ書けます", `adapter = "github" を書くか、api_url を消してください（.vanda/adapters/ に github という名前のカスタムアダプタがあれば、そちらを使います）`)
+		t.ErrAt("api_url", "api_url は、組み込みの github のアダプタを使うときだけ書けます", `adapter = "github" を書くか、api_url を消してください（.vanda/adapters/ に github という名前のカスタムアダプタがあれば、そちらを使います）`)
 	}
 }
 
@@ -511,14 +511,14 @@ func checkVersion(top *tomlread.Table, v string) {
 	}
 	cur, err := version.Parse(version.Current)
 	if err != nil {
-		top.ErrAt("version", "動いている vanda の版 "+quote(version.Current)+" を読めません", "vanda の不具合です。開発者に知らせてください")
+		top.ErrAt("version", "動いている vanda のバージョン "+quote(version.Current)+" を読めません", "vanda の不具合です。開発者に知らせてください")
 		return
 	}
 	switch c := version.Compare(cur, want); {
 	case c < 0:
-		top.ErrAt("version", "動いている vanda（"+version.Current+"）が、設定の版（"+v+"）より古いです", "vanda を "+v+" に上げてください")
+		top.ErrAt("version", "動いている vanda（"+version.Current+"）が、設定のバージョン（"+v+"）より古いです", "vanda を "+v+" に上げてください")
 	case c > 0:
-		top.ErrAt("version", "動いている vanda（"+version.Current+"）が、設定の版（"+v+"）より新しいです", ".vanda/ を、動いている vanda（"+version.Current+"）の形に書き換え、version を "+version.Current+" にしてください")
+		top.ErrAt("version", "動いている vanda（"+version.Current+"）が、設定のバージョン（"+v+"）より新しいです", ".vanda/ を、動いている vanda（"+version.Current+"）の形に書き換え、version を "+version.Current+" にしてください")
 	}
 }
 

@@ -1,5 +1,5 @@
-// Package snapshot は、ある時点（コミットか作業ツリー）の、約束リストと合意の対象のファイルを読む。
-// 審査（vanda check）の「1 つのストーリーで変わったもの」と、画面の一覧が、同じ比べ方を使うためにある。
+// Package snapshot は、ある時点（コミットか作業ツリー）の、約束リストと承認の対象のファイルを読む。
+// チェック（vanda check）の「1 つのストーリーで変わったもの」と、画面の一覧が、同じ比べ方を使うためにある。
 package snapshot
 
 import (
@@ -56,13 +56,13 @@ const (
 	Guardrail = "guardrail"
 )
 
-// Target は、合意の対象のファイル。
+// Target は、承認の対象のファイル。
 type Target struct {
 	Path string
 	Type string
 }
 
-// Targets は、files のうち合意の対象になるファイル（types に scenario-test か model-check を含む [[annotation]] のパターンと、
+// Targets は、files のうち承認の対象になるファイル（types に scenario-test か model-check を含む [[annotation]] のパターンと、
 // [[guardrail]] の paths に当たるもの）を、場所の順で返す。2 つに当たるファイルは、アノテーションのほうの種類にする。
 func Targets(files []string, cfg *config.Config) []Target {
 	kind := map[string]string{}
@@ -96,9 +96,9 @@ func Targets(files []string, cfg *config.Config) []Target {
 	return out
 }
 
-// targetType は、[[annotation]] の types から、そのパターンに当たるファイルの種類を決める。合意の対象でなければ空。
+// targetType は、[[annotation]] の types から、そのパターンに当たるファイルの種類を決める。承認の対象でなければ空。
 // シナリオとオラクルの定義は PO が読んで正とするもので、どのアダプタで読むかによらないので、アダプタの名前では決めない。
-// 両方を含むときはシナリオにする（どちらでも合意の対象になることは変わらず、画面の見出しが変わるだけ）
+// 両方を含むときはシナリオにする（どちらでも承認の対象になることは変わらず、画面の見出しが変わるだけ）
 func targetType(types []string) string {
 	oracle := false
 	for _, t := range types {
@@ -115,7 +115,7 @@ func targetType(types []string) string {
 	return ""
 }
 
-// Snapshot は、ある時点のファイルの一覧と、約束リストと、合意の対象のファイル。
+// Snapshot は、ある時点のファイルの一覧と、約束リストと、承認の対象のファイル。
 type Snapshot struct {
 	Files    []string
 	List     *promises.List
@@ -125,7 +125,7 @@ type Snapshot struct {
 	read     func(path string) ([]byte, error)
 }
 
-// Working は、作業ツリーの今の中身を読む。合意と取り消しが、書いた後のファイルをコミットする前に読み直すときに使う。
+// Working は、作業ツリーの今の中身を読む。承認と取り消しが、書いた後のファイルをコミットする前に読み直すときに使う。
 func Working(root string, cfg *config.Config) (*Snapshot, error) {
 	files, err := glob.Files(root)
 	if err != nil {
@@ -177,7 +177,7 @@ func (s *Snapshot) Read(path string) ([]byte, error) {
 	return s.read(path)
 }
 
-// ItemFingerprints は、項目の鍵から指紋への表を返す。指紋を作れない項目は入れない。
+// ItemFingerprints は、項目の鍵からフィンガープリントへの表を返す。フィンガープリントを作れない項目は入れない。
 func (s *Snapshot) ItemFingerprints() map[string]string {
 	out := map[string]string{}
 	for _, e := range Entries(s.List) {

@@ -15,7 +15,7 @@ type ClaimContent struct {
 	Evidence  []EvidenceContent `json:"evidence"`
 	Flags     []string          `json:"flags"`
 	Guesses   [][]Piece         `json:"guesses"`
-	// ModelCheckWaiver は、TLA+ で確かめない理由。合意の対象の中身なので、一覧で見せる
+	// ModelCheckWaiver は、TLA+ で確かめない理由。承認の対象の中身なので、一覧で見せる
 	ModelCheckWaiver []Piece `json:"modelCheckWaiver"`
 }
 

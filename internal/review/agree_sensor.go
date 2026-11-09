@@ -1,6 +1,6 @@
 package review
 
-// このファイルは、合意と取り消しの事後条件の確かめ（センサー）を持つ。設定の [[annotation]] の **/*_sensor.go で読む
+// このファイルは、承認と取り消しの事後条件の確かめ（センサー）を持つ。設定の [[annotation]] の **/*_sensor.go で読む
 // （本番のコードのうち、センサーを持つファイルだけを読むため。**/*_test.go と同じファイルに当たらないよう、名前で分ける）。
 
 import (
@@ -20,17 +20,17 @@ import (
 // Hooks は、テストから、事後条件を破る状態を作るための口。本番では nil のまま使わない。
 // 呼ばれるのは、それぞれの確かめ（センサー）の直前で、root はリポジトリの根。
 var Hooks struct {
-	// AfterAgreeWrite は、合意の記録を書き足し（約束ならフラグを外し）た後、verify の前に呼ぶ
+	// AfterAgreeWrite は、承認の記録を書き足し（約束ならフラグを外し）た後、verify の前に呼ぶ
 	AfterAgreeWrite func(root string)
-	// AfterAgreeCommit は、合意のコミットの後、checkAgreeCommit の前に呼ぶ
+	// AfterAgreeCommit は、承認のコミットの後、checkAgreeCommit の前に呼ぶ
 	AfterAgreeCommit func(root string)
-	// AfterRevokeWrite は、取り消しで合意の記録を書き換えた後、checkRevokeOwn・checkRevokeKept の前に呼ぶ
+	// AfterRevokeWrite は、取り消しで承認の記録を書き換えた後、checkRevokeOwn・checkRevokeKept の前に呼ぶ
 	AfterRevokeWrite func(root string)
 	// AfterRevokeCommit は、取り消しのコミットの後、checkRevokeCommit の前に呼ぶ
 	AfterRevokeCommit func(root string)
 }
 
-// verify は、書いた後の合意の記録と約束リストを読み直し、合意が今の中身に合い、フラグが外れたかを確かめる（コミットする前の事後条件）。
+// verify は、書いた後の承認の記録と約束リストを読み直し、承認が今の中身に合い、フラグが外れたかを確かめる（コミットする前の事後条件）。
 // 破れていれば誤りを返し、Agree は書いたファイルを元に戻して 500 にする。
 //
 // @vanda:sensor agree-writes-and-commits
@@ -45,7 +45,7 @@ func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
 	}
 	recs, rerrs := agreements.Load(s.o.Root, snap.Files, s.o.Cfg.Agreements)
 	if rerrs != nil {
-		return fmt.Errorf("書き足した後の合意の記録を読めません（%s）", rerrs[0].Error())
+		return fmt.Errorf("書き足した後の承認の記録を読めません（%s）", rerrs[0].Error())
 	}
 	if err := checkAgreeKept(s.recs.Agreements, recs.Agreements); err != nil {
 		return err
@@ -53,7 +53,7 @@ func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
 	found := rec.Deleted && recs.DeletionAgreedBy(rec.Kind, rec.target(), rec.Story) ||
 		rec.Fingerprint != nil && recs.AgreedBy(rec.Kind, rec.target(), *rec.Fingerprint, rec.Story)
 	if !found {
-		return errors.New("書き足した合意が、読み直した合意の記録に見つかりません")
+		return errors.New("書き足した承認が、読み直した承認の記録に見つかりません")
 	}
 	if claim == nil {
 		return nil
@@ -61,7 +61,7 @@ func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
 	after := newSide(snap)
 	key := "claim:" + claim.ID
 	if rec.Fingerprint == nil || after.itemFP[key] != *rec.Fingerprint {
-		return errors.New("フラグを外したら、約束の指紋が変わりました")
+		return errors.New("フラグを外したら、約束のフィンガープリントが変わりました")
 	}
 	want := map[string]any{}
 	for k, v := range claim.Raw {
@@ -99,18 +99,18 @@ func recordPlace(a *agreements.Agreement) string {
 	return fmt.Sprintf("%s:%d", a.Table.Doc.File, a.Table.Line(""))
 }
 
-// checkAgreeKept は、合意の記録を書き足した後に、書き足す前の記録がすべて残っているかを確かめる（コミットする前の事後条件）。
-// 書き足すだけで消さないので、指紋の合わない古い合意の記録も、履歴として残っているはず。
+// checkAgreeKept は、承認の記録を書き足した後に、書き足す前の記録がすべて残っているかを確かめる（コミットする前の事後条件）。
+// 書き足すだけで消さないので、フィンガープリントの合わない古い承認の記録も、履歴として残っているはず。
 //
 // @vanda:sensor old-agreements-kept-as-history
 func checkAgreeKept(before, after []*agreements.Agreement) error {
 	if lost := lostRecords(before, after); len(lost) > 0 {
-		return fmt.Errorf("合意を書き足したら、%s の合意の記録が消えました", recordPlace(lost[0]))
+		return fmt.Errorf("承認を書き足したら、%s の承認の記録が消えました", recordPlace(lost[0]))
 	}
 	return nil
 }
 
-// checkRevokeKept は、取り消しで合意の記録を書き換えた後に、消えた記録が、取り消した対象 kind・key の今の中身 fp
+// checkRevokeKept は、取り消しで承認の記録を書き換えた後に、消えた記録が、取り消した対象 kind・key の今の中身 fp
 // （deleted なら、消したこと）への、ストーリー story の記録だけかを確かめる（コミットする前の事後条件）。
 // 取り消す記録の選び方（revocable）を信じず、書き換える前と後の記録の違いから確かめる。
 //
@@ -118,14 +118,14 @@ func checkAgreeKept(before, after []*agreements.Agreement) error {
 func checkRevokeKept(before, after []*agreements.Agreement, kind, key, fp string, deleted bool, story string) error {
 	for _, a := range lostRecords(before, after) {
 		if a.Kind != kind || a.Target() != key || a.Story != story || a.Deleted != deleted || !deleted && a.Fingerprint != fp {
-			return fmt.Errorf("取り消したら、取り消した対象の今の中身への合意ではない、%s の合意の記録が消えました", recordPlace(a))
+			return fmt.Errorf("取り消したら、取り消した対象の今の中身への承認ではない、%s の承認の記録が消えました", recordPlace(a))
 		}
 	}
 	return nil
 }
 
-// checkRevokeOwn は、取り消しで合意の記録を書き換えた後に、消えた記録が、今の人 user が、今のブランチ
-// （分岐点の時点の記録 base になかったもの）で書いたものだけかを確かめる（コミットする前の事後条件）。
+// checkRevokeOwn は、取り消しで承認の記録を書き換えた後に、消えた記録が、今の人 user が、今のブランチ
+// （マージベースの時点の記録 base になかったもの）で書いたものだけかを確かめる（コミットする前の事後条件）。
 //
 // @vanda:sensor revoke-own-branch-only
 func checkRevokeOwn(before, after []*agreements.Agreement, user *User, base *agreements.Records) error {
@@ -134,24 +134,24 @@ func checkRevokeOwn(before, after []*agreements.Agreement, user *User, base *agr
 		return nil
 	}
 	if user == nil || base == nil {
-		return fmt.Errorf("今の人か分岐点の時点の合意の記録が分からないのに、%s の合意の記録が消えました", recordPlace(lost[0]))
+		return fmt.Errorf("今の人かマージベースの時点の承認の記録が分からないのに、%s の承認の記録が消えました", recordPlace(lost[0]))
 	}
 	for _, a := range lost {
 		if a.UserName != user.Name || a.UserEmail != user.Email {
-			return fmt.Errorf("取り消したら、ほかの人（%s <%s>）が書いた %s の合意の記録が消えました", a.UserName, a.UserEmail, recordPlace(a))
+			return fmt.Errorf("取り消したら、ほかの人（%s <%s>）が書いた %s の承認の記録が消えました", a.UserName, a.UserEmail, recordPlace(a))
 		}
 		for _, b := range base.Agreements {
 			if sameRecord(a, b) {
-				return fmt.Errorf("取り消したら、ベースブランチにすでにある %s の合意の記録が消えました", recordPlace(a))
+				return fmt.Errorf("取り消したら、ベースブランチにすでにある %s の承認の記録が消えました", recordPlace(a))
 			}
 		}
 	}
 	return nil
 }
 
-// checkAgreeCommit は、合意のコミットの後に、コミットが合意で変えるファイル files だけを含み、合意の対象が書いてあるファイル sources
+// checkAgreeCommit は、承認のコミットの後に、コミットが承認で変えるファイル files だけを含み、承認の対象が書いてあるファイル sources
 // （消した約束・用語・機能なら、約束リストのファイル）と files に、コミットしていない変更が残っていないかを確かめる
-// （合意のコミットの時点のリポジトリが、合意した中身と合うこと）。
+// （承認のコミットの時点のリポジトリが、承認した中身と合うこと）。
 //
 // @vanda:sensor agree-writes-and-commits
 // @vanda:sensor agree-rejects-uncommitted
@@ -170,7 +170,7 @@ func checkAgreeCommit(root string, files, sources []string) error {
 	return nil
 }
 
-// checkRevokeCommit は、取り消しのコミットの後に、コミットが合意の記録のファイル files だけを含む（約束リストのフラグを戻していない）かを確かめる。
+// checkRevokeCommit は、取り消しのコミットの後に、コミットが承認の記録のファイル files だけを含む（約束リストのフラグを戻していない）かを確かめる。
 //
 // @vanda:sensor revoke-commits-and-keeps-flags
 func checkRevokeCommit(root string, files []string) error {

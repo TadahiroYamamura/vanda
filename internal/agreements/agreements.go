@@ -1,4 +1,4 @@
-// Package agreements は、合意の記録（既定は .vanda/agreements.toml）を読み、合意済かを判定する。
+// Package agreements は、承認の記録（既定は .vanda/agreements.toml）を読み、承認済かを判定する。
 package agreements
 
 import (
@@ -18,8 +18,8 @@ type Agreement struct {
 	Kind        string
 	Key         string
 	Fingerprint string
-	Path        string // 対象がファイルのときだけ。合意したときの場所
-	// Deleted は、消したことへの合意か。真なら Fingerprint は空で、ファイルなら Key は場所
+	Path        string // 対象がファイルのときだけ。承認したときの場所
+	// Deleted は、消したことへの承認か。真なら Fingerprint は空で、ファイルなら Key は場所
 	Deleted   bool
 	UserName  string
 	UserEmail string
@@ -32,8 +32,8 @@ type Records struct {
 	Agreements []*Agreement
 }
 
-// Load は、files（リポジトリの直下からの場所の一覧）のうち patterns に当たるものを、合意の記録として読む。
-// ワイルドカードのないパターンのファイルがなくても誤りにしない。そのファイルは、はじめて合意したときに作るため。
+// Load は、files（リポジトリの直下からの場所の一覧）のうち patterns に当たるものを、承認の記録として読む。
+// ワイルドカードのないパターンのファイルがなくても誤りにしない。そのファイルは、はじめて承認したときに作るため。
 func Load(root string, files, patterns []string) (*Records, diag.Errors) {
 	return LoadWith(tomlread.OSReader(root), files, patterns)
 }
@@ -70,17 +70,17 @@ func (r *Records) read(top *tomlread.Table) {
 		a.Key, _ = t.Str("key", true)
 		if d, ok := t.Bool("deleted", false); ok {
 			if !d {
-				t.ErrAt("deleted", "deleted = false と書いてあります", "消したことへの合意なら deleted = true に、中身への合意なら deleted を消して fingerprint を書いてください")
+				t.ErrAt("deleted", "deleted = false と書いてあります", "消したことへの承認なら deleted = true に、中身への承認なら deleted を消して fingerprint を書いてください")
 			}
 			a.Deleted = d
 		}
 		if a.Deleted {
 			if t.Has("fingerprint") {
-				t.ErrAt("fingerprint", "消したことへの合意の記録に、fingerprint があります", "消したものには中身がないので、fingerprint を消してください")
+				t.ErrAt("fingerprint", "消したことへの承認の記録に、fingerprint があります", "消したものには中身がないので、fingerprint を消してください")
 			}
 		} else if fp, ok := t.Str("fingerprint", true); ok {
 			if !isFingerprint(fp) {
-				t.ErrAt("fingerprint", "fingerprint "+quote(fp)+" が指紋の形ではありません", "sha256: に続けて、16 進の小文字 64 文字で書いてください")
+				t.ErrAt("fingerprint", "fingerprint "+quote(fp)+" がフィンガープリントの形ではありません", "sha256: に続けて、16 進の小文字 64 文字で書いてください")
 			}
 			a.Fingerprint = fp
 		}
@@ -88,16 +88,16 @@ func (r *Records) read(top *tomlread.Table) {
 		a.Path = path
 		if a.Kind == "file" {
 			if !t.Has("path") {
-				t.ErrAt("", "対象がファイルの合意に、path がありません", `path = "…" に、合意したときのファイルの場所を書いてください`)
+				t.ErrAt("", "対象がファイルの承認に、path がありません", `path = "…" に、承認したときのファイルの場所を書いてください`)
 			}
 			if a.Deleted && t.Has("path") && a.Key != "" && a.Key != a.Path {
-				t.ErrAt("key", "消したファイルへの合意の記録の key が、path と違います", "key にも、消したファイルの場所を書いてください")
+				t.ErrAt("key", "消したファイルへの承認の記録の key が、path と違います", "key にも、消したファイルの場所を書いてください")
 			}
 			if !a.Deleted && a.Key != "" && a.Fingerprint != "" && a.Key != a.Fingerprint {
-				t.ErrAt("key", "対象がファイルの合意の key が、fingerprint と違います", "key にも、ファイルの中身の指紋を書いてください")
+				t.ErrAt("key", "対象がファイルの承認の key が、fingerprint と違います", "key にも、ファイルの中身のフィンガープリントを書いてください")
 			}
 		} else if hasPath && a.Kind != "" {
-			t.ErrAt("path", "対象が "+a.Kind+" の合意に、path があります", "path は対象がファイルのときだけ書けます。消してください")
+			t.ErrAt("path", "対象が "+a.Kind+" の承認に、path があります", "path は対象がファイルのときだけ書けます。消してください")
 		}
 		if u, ok := t.Table("user", true); ok {
 			a.UserName, _ = u.Str("name", true)
@@ -120,8 +120,8 @@ func (a *Agreement) Target() string {
 	return a.Key
 }
 
-// Agreed は、対象の種類 kind・指す先 target（約束・用語・機能なら ID、ファイルなら場所）の今の中身の指紋 fp に合う合意が 1 つでもあるかを返す。
-// ファイルは場所でも見分ける。指紋だけで当てると、合意済のファイルを写した先が、誰も読まないまま合意済になる
+// Agreed は、対象の種類 kind・指す先 target（約束・用語・機能なら ID、ファイルなら場所）の今の中身のフィンガープリント fp に合う承認が 1 つでもあるかを返す。
+// ファイルは場所でも見分ける。フィンガープリントだけで当てると、承認済のファイルを写した先が、誰も読まないまま承認済になる
 func (r *Records) Agreed(kind, target, fp string) bool {
 	for _, a := range r.Agreements {
 		if a.Kind == kind && a.Target() == target && !a.Deleted && a.Fingerprint == fp {
@@ -151,7 +151,7 @@ func contains(xs []string, s string) bool {
 
 func quote(s string) string { return `"` + s + `"` }
 
-// AgreedBy は、ストーリー story の合意のうち、kind・target・fp に合うものがあるかを返す。
+// AgreedBy は、ストーリー story の承認のうち、kind・target・fp に合うものがあるかを返す。
 func (r *Records) AgreedBy(kind, target, fp, story string) bool {
 	for _, a := range r.Agreements {
 		if a.Kind == kind && a.Target() == target && !a.Deleted && a.Fingerprint == fp && a.Story == story {
@@ -161,7 +161,7 @@ func (r *Records) AgreedBy(kind, target, fp, story string) bool {
 	return false
 }
 
-// DeletionAgreed は、kind・target を消したことへの合意が 1 つでもあるかを返す。
+// DeletionAgreed は、kind・target を消したことへの承認が 1 つでもあるかを返す。
 func (r *Records) DeletionAgreed(kind, target string) bool {
 	for _, a := range r.Agreements {
 		if a.Kind == kind && a.Target() == target && a.Deleted {
@@ -171,7 +171,7 @@ func (r *Records) DeletionAgreed(kind, target string) bool {
 	return false
 }
 
-// DeletionAgreedBy は、ストーリー story の合意のうち、kind・target を消したことへの合意があるかを返す。
+// DeletionAgreedBy は、ストーリー story の承認のうち、kind・target を消したことへの承認があるかを返す。
 func (r *Records) DeletionAgreedBy(kind, target, story string) bool {
 	for _, a := range r.Agreements {
 		if a.Kind == kind && a.Target() == target && a.Deleted && a.Story == story {
@@ -181,7 +181,7 @@ func (r *Records) DeletionAgreedBy(kind, target, story string) bool {
 	return false
 }
 
-// EverAgreed は、kind・target の中身に合意したことがあるかを返す（消したことへの合意は数えない）。
+// EverAgreed は、kind・target の中身を承認したことがあるかを返す（消したことへの承認は数えない）。
 func (r *Records) EverAgreed(kind, target string) bool {
 	for _, a := range r.Agreements {
 		if a.Kind == kind && a.Target() == target && !a.Deleted {
@@ -191,8 +191,8 @@ func (r *Records) EverAgreed(kind, target string) bool {
 	return false
 }
 
-// FromSources は、読み込み済みの中身 srcs（場所から中身へ）を、names の順に合意の記録として読む。
-// 過去のコミットの合意の記録を読むときに使う。
+// FromSources は、読み込み済みの中身 srcs（場所から中身へ）を、names の順に承認の記録として読む。
+// 過去のコミットの承認の記録を読むときに使う。
 func FromSources(names []string, srcs map[string][]byte) (*Records, diag.Errors) {
 	var errs []diag.Error
 	r := &Records{Files: names}

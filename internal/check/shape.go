@@ -16,7 +16,7 @@ var Types = []string{"model-check", "proof", "cross-check", "random-check", "sce
 
 var Flags = []string{"ai-proposal"}
 
-// promiseListShape は、約束リストの形の審査。読み込みの誤りに加えて、値・ID・指す先を確かめる。
+// promiseListShape は、約束リストの形のチェック。読み込みの誤りに加えて、値・ID・指す先を確かめる。
 func (e *env) promiseListShape() []diag.Error {
 	errs := append([]diag.Error{}, e.listErrs...)
 	if e.list == nil {

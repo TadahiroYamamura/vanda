@@ -1,4 +1,4 @@
-// Package version は、vanda の版と、その比べ方を持つ。
+// Package version は、vanda のバージョンと、その比べ方を持つ。
 package version
 
 import (
@@ -9,19 +9,19 @@ import (
 
 const Current = "0.1.0"
 
-// Semver は、major.minor.patch の 3 つの数だけを扱う。段 1 では、版の後ろの印（-rc.1 など）を使う場面がないため。
+// Semver は、major.minor.patch の 3 つの数だけを扱う。段 1 では、バージョンの後ろの印（-rc.1 など）を使う場面がないため。
 type Semver [3]int
 
 func Parse(s string) (Semver, error) {
 	var v Semver
 	parts := strings.Split(s, ".")
 	if len(parts) != 3 {
-		return v, fmt.Errorf("版 %q が major.minor.patch の形ではありません", s)
+		return v, fmt.Errorf("バージョン %q が major.minor.patch の形ではありません", s)
 	}
 	for i, p := range parts {
 		n, err := strconv.Atoi(p)
 		if err != nil || n < 0 || p != strconv.Itoa(n) {
-			return v, fmt.Errorf("版 %q が major.minor.patch の形ではありません", s)
+			return v, fmt.Errorf("バージョン %q が major.minor.patch の形ではありません", s)
 		}
 		v[i] = n
 	}

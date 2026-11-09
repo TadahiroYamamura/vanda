@@ -29,11 +29,11 @@ type ClaimAt struct {
 func ClaimAtCommit(o Options, id, rev string) (*ClaimAt, *Error) {
 	// git の引数として読まれないよう、コミットのハッシュの形のものだけを受け付ける
 	if !isHash(rev) {
-		return nil, &Error{Status: http.StatusBadRequest, Message: "コミット " + rev + " が、コミットのハッシュ（16 進の 4〜64 文字）の形ではありません。", Fix: "由来か合意の履歴から、もう一度選んでください。"}
+		return nil, &Error{Status: http.StatusBadRequest, Message: "コミット " + rev + " が、コミットのハッシュ（16 進の 4〜64 文字）の形ではありません。", Fix: "変更履歴か承認の履歴から、もう一度選んでください。"}
 	}
 	full, err := repo.Git(o.Root, "rev-parse", "--verify", "-q", rev+"^{commit}")
 	if err != nil {
-		return nil, &Error{Status: http.StatusNotFound, Message: "コミット " + rev + " はありません。", Fix: "由来か合意の履歴から、もう一度選んでください。"}
+		return nil, &Error{Status: http.StatusNotFound, Message: "コミット " + rev + " はありません。", Fix: "変更履歴か承認の履歴から、もう一度選んでください。"}
 	}
 	full = strings.TrimSpace(full)
 	info, err := repo.Git(o.Root, "log", "-1", "--format=%cI%x00%B", full)
@@ -70,11 +70,11 @@ func ClaimAtCommit(o Options, id, rev string) (*ClaimAt, *Error) {
 			return &ClaimAt{ID: id, Commit: full, Date: date, Subject: subject, Stories: strs(storyIDs(o.Cfg, msg)), Content: c, Layers: layers, Refs: s.refs.targets()}, nil
 		}
 	}
-	return nil, &Error{Status: http.StatusNotFound, Message: fmt.Sprintf("コミット %s の時点には、約束 %s はありません。", short(full), id), Fix: "由来か合意の履歴から、ほかの時点を選んでください。"}
+	return nil, &Error{Status: http.StatusNotFound, Message: fmt.Sprintf("コミット %s の時点には、約束 %s はありません。", short(full), id), Fix: "変更履歴か承認の履歴から、ほかの時点を選んでください。"}
 }
 
-// agreementCommits は、合意の記録ごとに、その記録を書き足したコミットを探す。
-// HEAD の履歴を古い順にたどり、合意の記録のファイルを変えたコミットの時点の記録に、同じ記録（種類・鍵・指紋・ストーリー・日時・誰が）が初めて現れたコミットとする。
+// agreementCommits は、承認の記録ごとに、その記録を書き足したコミットを探す。
+// HEAD の履歴を古い順にたどり、承認の記録のファイルを変えたコミットの時点の記録に、同じ記録（種類・鍵・フィンガープリント・ストーリー・日時・誰が）が初めて現れたコミットとする。
 // まだコミットしていない記録は、見つからない（空の文字列）。
 func (s *state) agreementCommits(list []*agreements.Agreement) (map[*agreements.Agreement]string, error) {
 	out := map[*agreements.Agreement]string{}
@@ -120,11 +120,11 @@ func (s *state) agreementCommits(list []*agreements.Agreement) (map[*agreements.
 
 type recordsAtResult struct {
 	hash string
-	recs []*agreements.Agreement // c が合意の記録のファイルを変えていなければ空
+	recs []*agreements.Agreement // c が承認の記録のファイルを変えていなければ空
 	err  error
 }
 
-// recordsAt は、コミット c が合意の記録のファイルを変えていれば、その時点の合意の記録を読む。
+// recordsAt は、コミット c が承認の記録のファイルを変えていれば、その時点の承認の記録を読む。
 func (s *state) recordsAt(c commit) recordsAtResult {
 	r := recordsAtResult{hash: c.Hash}
 	names, err := repo.ChangedFiles(s.o.Root, c.Hash)
@@ -162,7 +162,7 @@ func (s *state) recordsAt(c commit) recordsAtResult {
 		}
 		srcs[f] = b
 	}
-	// その時点の合意の記録に誤りがあっても、読めた記録だけで探す
+	// その時点の承認の記録に誤りがあっても、読めた記録だけで探す
 	recs, _ := agreements.FromSources(matched, srcs)
 	r.recs = recs.Agreements
 	return r

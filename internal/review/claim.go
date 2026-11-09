@@ -45,7 +45,7 @@ type SubjectRef struct {
 type EvidenceDetail struct {
 	EvidenceContent
 	Found []Found `json:"found"`
-	// Present は、エビデンスが揃っている審査と同じ判定。アノテーションで確かめないタイプ（human-review）は nil
+	// Present は、エビデンスが揃っているチェックと同じ判定。アノテーションで確かめないタイプ（human-review）は nil
 	Present *bool `json:"present"`
 }
 
@@ -55,12 +55,12 @@ type Found struct {
 	Line    int     `json:"line"`
 	Name    string  `json:"name"`
 	Text    *string `json:"text"`
-	// State は、ファイルが合意の対象（シナリオ・オラクルの定義・ガードレールの定義）のとき、今の中身の指紋に合う合意の記録があるか
-	// （agreed・proposed。ストーリーによらない）。合意の対象でないもの（Go のテストなど）は nil
+	// State は、ファイルが承認の対象（シナリオ・オラクルの定義・ガードレールの定義）のとき、今の中身のフィンガープリントに合う承認の記録があるか
+	// （agreed・proposed。ストーリーによらない）。承認の対象でないもの（Go のテストなど）は nil
 	State *string `json:"state"`
 }
 
-// ClaimHistory は、約束の由来と合意の履歴
+// ClaimHistory は、約束の変更履歴と承認の履歴
 type ClaimHistory struct {
 	Origin     []OriginRef    `json:"origin"`
 	Agreements []AgreementRef `json:"agreements"`
@@ -80,11 +80,11 @@ type AgreementRef struct {
 	Story       string `json:"story"`
 	Fingerprint string `json:"fingerprint"`
 	Current     bool   `json:"current"`
-	// Commit は、この合意の記録を書き足したコミット（CL-08）。まだコミットしていなければ nil
+	// Commit は、この承認の記録を書き足したコミット（CL-08）。まだコミットしていなければ nil
 	Commit *string `json:"commit"`
 }
 
-// Claim は、約束の詳細を返す。由来と合意の履歴は、履歴のコミットをたどって時間がかかるので、ClaimHistoryOf で別に返す。
+// Claim は、約束の詳細を返す。変更履歴と承認の履歴は、履歴のコミットをたどって時間がかかるので、ClaimHistoryOf で別に返す。
 func Claim(o Options, id string) (*ClaimDetail, *Error) {
 	s := &state{o: o, h: newHistory(o.Root, o.Cfg)}
 	cur, e := s.currentClaim(id)
@@ -158,7 +158,7 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 			}
 			ed.Present = ptr(present)
 		} else if ev.Type == "proof" {
-			// 段 1 の審査では、proof を予定に書いたら誤り（扱えるアダプタがない）
+			// 段 1 のチェックでは、proof を予定に書いたら誤り（扱えるアダプタがない）
 			ed.Present = ptr(false)
 		}
 		d.Evidence = append(d.Evidence, ed)
@@ -179,7 +179,7 @@ func (s *state) currentClaim(id string) (snapshot.Entry, *Error) {
 	return cur, nil
 }
 
-// ClaimHistoryOf は、約束の由来と合意の履歴を返す。
+// ClaimHistoryOf は、約束の変更履歴と承認の履歴を返す。
 func ClaimHistoryOf(o Options, id string) (*ClaimHistory, *Error) {
 	s := &state{o: o, h: newHistory(o.Root, o.Cfg)}
 	cur, e := s.currentClaim(id)
@@ -213,7 +213,7 @@ func ClaimHistoryOf(o Options, id string) (*ClaimHistory, *Error) {
 			return nil, internalErr(err)
 		}
 		if _, inAfter := after.items[key]; !inAfter {
-			// 消した後に同じ ID で作り直したものは、新しい約束とみなすので、消すまでの由来を捨てる
+			// 消した後に同じ ID で作り直したものは、新しい約束とみなすので、消すまでの変更履歴を捨てる
 			d.Origin = d.Origin[:0]
 			continue
 		}
@@ -226,7 +226,7 @@ func ClaimHistoryOf(o Options, id string) (*ClaimHistory, *Error) {
 
 	var mine []*agreements.Agreement
 	for _, a := range s.recs.Agreements {
-		// 消したことへの合意は中身を持たず、合意の履歴（中身ごとの合意）に並べられないので除く
+		// 消したことへの承認は中身を持たず、承認の履歴（中身ごとの承認）に並べられないので除く
 		if a.Kind == "claim" && a.Key == c.ID && !a.Deleted {
 			mine = append(mine, a)
 		}
@@ -267,9 +267,9 @@ func evidenceText(cur *side, a annotation.Annotation) (*string, int, error) {
 	return &text, line, nil
 }
 
-// File は、合意の対象のファイルか、アノテーションを読むファイルの中身を返す。
+// File は、承認の対象のファイルか、アノテーションを読むファイルの中身を返す。
 func File(o Options, path string) (string, *Error) {
-	notFound := &Error{Status: http.StatusNotFound, Message: path + " は、合意の対象のファイルでも、アノテーションを読むファイルでもありません。", Fix: "ファイルの場所を確かめてください。"}
+	notFound := &Error{Status: http.StatusNotFound, Message: path + " は、承認の対象のファイルでも、アノテーションを読むファイルでもありません。", Fix: "ファイルの場所を確かめてください。"}
 	tree, err := repo.HeadTree(o.Root)
 	if err != nil {
 		return "", internalErr(err)
@@ -308,9 +308,9 @@ func File(o Options, path string) (string, *Error) {
 	return string(b), nil
 }
 
-// newestFirst は、由来と合意の履歴を、新しいものが上の順に並べる。
-// 由来はコミットの日時の新しい順、同じ日時なら履歴で後のコミットを先に。合意の履歴は合意した日時（agreed_at）の新しい順、
-// 同じ日時なら合意の記録のファイルで後に書いた記録を先に（同じ日時のときも、後から足したものが上に来るように）
+// newestFirst は、変更履歴と承認の履歴を、新しいものが上の順に並べる。
+// 変更履歴はコミットの日時の新しい順、同じ日時なら履歴で後のコミットを先に。承認の履歴は承認した日時（agreed_at）の新しい順、
+// 同じ日時なら承認の記録のファイルで後に書いた記録を先に（同じ日時のときも、後から足したものが上に来るように）
 func newestFirst(d *ClaimHistory, commits []commit, recs []*agreements.Agreement) {
 	order := map[string]int{}
 	date := map[string]time.Time{}

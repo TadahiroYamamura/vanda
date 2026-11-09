@@ -7,7 +7,7 @@ import (
 
 var targetKind = map[string]string{"term": "term", "feature": "feature", "claim": "claim", "evidence": "claim", "sensor": "claim"}
 
-// annotationLinks は、アノテーションのつながりの審査。
+// annotationLinks は、アノテーションのつながりのチェック。
 func (e *env) annotationLinks() []diag.Error {
 	errs := append([]diag.Error{}, e.annErrs...)
 	if e.listErrs != nil {

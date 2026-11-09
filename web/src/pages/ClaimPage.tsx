@@ -12,7 +12,7 @@ import { Link, reviewQuery, reviewURL } from "../route";
 // ClaimPage は、約束の詳細（CL-01・02・04・05・07）。
 export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: Context | null }) {
   const d = useLoad(() => api.claim(props.id), props.id);
-  // 由来と合意の履歴は時間がかかるので、詳細と別に読み、詳細を先に出す（claim-detail-shown-before-history）
+  // 変更履歴と承認の履歴は時間がかかるので、詳細と別に読み、詳細を先に出す（claim-detail-shown-before-history）
   const h = useLoad(() => api.claimHistory(props.id), props.id);
   if (d.error != null) return <ErrorBox error={d.error} title="約束の詳細を読めません" />;
   if (!d.data) {

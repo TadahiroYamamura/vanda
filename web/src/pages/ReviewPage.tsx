@@ -42,8 +42,8 @@ function searchable(e: Entry): string[] {
   return out;
 }
 
-// 合意済でないものは、提案中と、合意が外れたもの。合意が外れたものは、ほかのストーリーの合意で合意済のこともあるので、状態とは別に見る。
-// 消したものは合意できない（状態がない）ので、どちらにも当たらない
+// 承認済でないものは、提案中と、承認が失効したもの。承認が失効したものは、ほかのストーリーの承認で承認済のこともあるので、状態とは別に見る。
+// 消したものは承認できない（状態がない）ので、どちらにも当たらない
 export function matchesFilter(e: Entry, f: Filter): boolean {
   if (f.notAgreed && e.state !== "proposed" && !e.detachedAgreement) return false;
   if (f.text === "") return true;
@@ -72,7 +72,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
   const review = useLoad<Review>(canLoad ? () => api.review(view, base, storyParam) : null, `${view}|${base}|${storyParam}`);
   const story = review.data?.story ?? storyParam;
   // ほかの画面へ引き継ぐクエリ。URL に書いていない既定のもの（レビュー単位、設定のベースブランチ、ブランチのコミットから決まったストーリー）も
-  // いつも書く。移った先（約束の詳細・ファイルの画面）が、同じ一覧を引いて合意の部品を出すため（RV-18）
+  // いつも書く。移った先（約束の詳細・ファイルの画面）が、同じ一覧を引いて承認の部品を出すため（RV-18）
   const carried = (() => {
     const q = new URLSearchParams(params);
     const before = new URLSearchParams(params);
@@ -84,7 +84,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
     return reviewQuery(q);
   })();
   // 選択肢の中は短い名前にし、何と何を比べているかの説明は、触れたときに出す（欄に収まらないため）
-  const branchHelp = `ブランチ（${base ?? "ベースブランチ"} との分岐点から HEAD のコミットまでの、このブランチの変更）`;
+  const branchHelp = `ブランチ（${base ?? "ベースブランチ"} とのマージベースから HEAD のコミットまでの、このブランチの変更）`;
   const storyHelp = story ? `ストーリー（HEAD の履歴にある、${story} のコミットすべての変更。合流したほかのブランチのものも含む）` : "ストーリー（HEAD の履歴にある、そのストーリーのコミットすべての変更。合流したほかのブランチのものも含む）";
   const viewHelp = view === "branch" ? branchHelp : storyHelp;
 
@@ -125,7 +125,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
         <p className="comparing" aria-live="polite">
           {view === "branch"
             ? base
-              ? `レビュー単位はブランチです（${base} との分岐点${review.data?.mergeBase ? ` ${shortCommit(review.data.mergeBase)}` : ""} から HEAD のコミットまでの、このブランチの変更）`
+              ? `レビュー単位はブランチです（${base} とのマージベース${review.data?.mergeBase ? ` ${shortCommit(review.data.mergeBase)}` : ""} から HEAD のコミットまでの、このブランチの変更）`
               : "ベースブランチを選んでください"
             : storyParam
               ? `レビュー単位はストーリーです（HEAD の履歴にある、${storyParam} のコミットすべての変更。合流したほかのブランチのものも含む）`
@@ -197,7 +197,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
   );
 }
 
-// StoryChoice は、合意の記録に書くストーリーを示す・選ぶ所（RV-13）。1 つに決まったか・選ばせるものは、API（branchStories・storyFrom）の判定をそのまま使う。
+// StoryChoice は、承認の記録に書くストーリーを示す・選ぶ所（RV-13）。1 つに決まったか・選ばせるものは、API（branchStories・storyFrom）の判定をそのまま使う。
 // レビュー単位がブランチで、ブランチのコミットから 1 つに決まったときは、選ばせずに示すだけにする
 function StoryChoice(props: { view: string; storyParam: string | null; review: Review | null; pending: boolean; ctx: Context; onChange: (v: string) => void }) {
   const { storyParam, review, ctx } = props;
@@ -371,7 +371,7 @@ function EntryList(props: {
       </p>
       {detached.length > 0 && (
         <div className="detached">
-          <h3>合意が外れたもの（{detached.length} 件。比べる元から変わっていないため、総数に数えません）</h3>
+          <h3>承認が失効したもの（{detached.length} 件。比べる元から変わっていないため、総数に数えません）</h3>
           <ul className="entries">
             {detached.map((e) => (
               <EntryRow key={entryKey(e)} e={e} selected={props.selected === entryKey(e)} onSelect={props.onSelect} />
@@ -391,7 +391,7 @@ function EntryList(props: {
 }
 
 // ListHead は、一覧の見出しと絞り込みの欄。読み込み中の印は、見出しの行に重ねて出す。
-// 合意の後の読み直しで、行を差し込んで一覧を 1 行ぶん動かさないため
+// 承認の後の読み直しで、行を差し込んで一覧を 1 行ぶん動かさないため
 function ListHead(props: { total: string; loading: boolean; filter: Filter; onFilterText: (v: string) => void; onFilterNotAgreed: (v: boolean) => void }) {
   return (
     <>
@@ -406,7 +406,7 @@ function ListHead(props: { total: string; loading: boolean; filter: Filter; onFi
         </label>
         <label>
           <input type="checkbox" checked={props.filter.notAgreed} onChange={(e) => props.onFilterNotAgreed(e.target.checked)} />
-          合意済でないものだけ
+          承認済でないものだけ
         </label>
       </div>
     </>
@@ -480,7 +480,7 @@ function EntryRow(props: { e: Entry; selected: boolean; onSelect: (key: string) 
       </button>
       <div className="entry-line2">
         <span className="kind">{e.kind === "file" && e.fileType ? fileTypeLabel[e.fileType] : kindLabel[e.kind]}</span>
-        {/* 状態のアイコンは 1 つだけ。外れた合意は、提案中より先に気づくべきなので、外れたほうを出す */}
+        {/* 状態のアイコンは 1 つだけ。失効した承認は、提案中より先に気づくべきなので、失効したほうを出す */}
         {e.detachedAgreement ? <ListIcon name="detached" /> : e.state && <ListIcon name={e.state} />}
         {e.flags.length > 0 && <i className="entry-sep" aria-hidden="true" />}
         {e.flags.map((f) => (
@@ -569,7 +569,7 @@ function SelectedPreview(props: { sel: string; query: string }) {
     <div>
       <p className="note">{kindLabel[target.kind]}</p>
       <h2 className="entry-title">{target.name}</h2>
-      {/* 合意のボタンの欄は一覧を待つ。読み込み中の印をその場所に置き、一覧が届いてボタンが出ても中身の表を動かさない */}
+      {/* 承認のボタンの欄は一覧を待つ。読み込み中の印をその場所に置き、一覧が届いてボタンが出ても中身の表を動かさない */}
       <div className="agree">
         <Loading />
       </div>
@@ -598,7 +598,7 @@ function SelectedPreview(props: { sel: string; query: string }) {
 
 function EntryDetail(props: { entry: Entry; total: number; story: string | null; base: string | null; ctx: Context; query: string; onAgreed: () => void }) {
   const { entry: e } = props;
-  // 合意・取り消しのたびに増やし、由来と合意の履歴（RV-16）を読み直す
+  // 承認・取り消しのたびに増やし、変更履歴と承認の履歴（RV-16）を読み直す
   const [written, setWritten] = useState(0);
 
   return (
@@ -614,8 +614,8 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
       </h2>
       {e.detachedAgreement && (
         <p className="warn">
-          ストーリー {props.story} の合意が外れています。
-          {e.detachedAgreement.by.length > 0 && `（合意の後に変えたコミットのストーリー: ${e.detachedAgreement.by.join("・")}）`}
+          ストーリー {props.story} の承認が失効しています。
+          {e.detachedAgreement.by.length > 0 && `（承認の後に変えたコミットのストーリー: ${e.detachedAgreement.by.join("・")}）`}
         </p>
       )}
       {e.otherCommits.length > 0 && (
@@ -658,8 +658,8 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
   );
 }
 
-// AgreeControls は、1 件の合意の状態と、「合意する」「合意を取り消す」のボタン、合意できない・取り消せない理由（RV-06・RV-17）。
-// 合意済か・取り消せるかは API（/api/review の state・revoke）の判定をそのまま使う。レビューの画面と、そこから移った約束の詳細・ファイルの画面（RV-18）で使う
+// AgreeControls は、1 件の承認の状態と、「承認する」「承認を取り消す」のボタン、承認できない・取り消せない理由（RV-06・RV-17）。
+// 承認済か・取り消せるかは API（/api/review の state・revoke）の判定をそのまま使う。レビューの画面と、そこから移った約束の詳細・ファイルの画面（RV-18）で使う
 export function AgreeControls(props: { entry: Entry; story: string | null; base: string | null; user: User | null; onDone: () => void }) {
   const { entry: e } = props;
   const [agreeing, setAgreeing] = useState(false);
@@ -681,20 +681,20 @@ export function AgreeControls(props: { entry: Entry; story: string | null; base:
   };
   const deleted = e.change === "deleted";
   const agree = () =>
-    run(async () => `${deleted ? "消したことに合意しました" : "合意しました"}（コミット ${shortCommit((await api.agree(e, props.story as string)).commit)}）`);
+    run(async () => `${deleted ? "消したことを承認しました" : "承認しました"}（コミット ${shortCommit((await api.agree(e, props.story as string)).commit)}）`);
   const revoke = () =>
     run(async () => {
       const r = await api.revoke(e, props.story as string, props.base);
       return r.stillAgreed
-        ? `合意を取り消しました（コミット ${shortCommit(r.commit)}）。ほかの合意が残っているため、合意済みのままです。`
-        : `合意を取り消しました（コミット ${shortCommit(r.commit)}）。`;
+        ? `承認を取り消しました（コミット ${shortCommit(r.commit)}）。ほかの承認が残っているため、承認済みのままです。`
+        : `承認を取り消しました（コミット ${shortCommit(r.commit)}）。`;
     });
 
-  // 合意できるかは API（entries[].agree）の判定を使う。合意済でも、このストーリーの合意がなければ合意し直せる（外れた合意を解くため）
+  // 承認できるかは API（entries[].agree）の判定を使う。承認済でも、このストーリーの承認がなければ承認し直せる（失効した承認を解くため）
   const possible = e.agree?.possible ?? false;
   const agreeButton = (
     <button type="button" className="primary" disabled={agreeing || !possible} onClick={agree}>
-      {agreeing ? "合意しています…" : `${props.story ? `ストーリー ${props.story} で` : ""}${deleted ? "消したことに合意する" : "合意する"}`}
+      {agreeing ? "承認しています…" : `${props.story ? `ストーリー ${props.story} で` : ""}${deleted ? "消したことを承認する" : "承認する"}`}
     </button>
   );
 
@@ -706,21 +706,21 @@ export function AgreeControls(props: { entry: Entry; story: string | null; base:
           {!possible && e.agree?.reason && <span className="note">{e.agree.reason}</span>}
         </>
       )}
-      {e.state === "agreed" && <span className="note">{deleted ? "消したことに合意済みです。" : "今の中身に合意済みです。"}</span>}
+      {e.state === "agreed" && <span className="note">{deleted ? "消したことを承認済みです。" : "今の中身を承認済みです。"}</span>}
       {e.state === "agreed" && possible && agreeButton}
       {e.state === "agreed" && e.revoke?.possible && (
         <>
           <button type="button" className="revoke" disabled={agreeing} onClick={revoke}>
-            {agreeing ? "取り消しています…" : "合意を取り消す"}
+            {agreeing ? "取り消しています…" : "承認を取り消す"}
           </button>
           {e.revoke.others.length > 0 && (
-            <span className="note">取り消しても、ほかの人（{e.revoke.others.map((u) => u.name).join("・")}）の合意が残るため、合意済みのままです。</span>
+            <span className="note">取り消しても、ほかの人（{e.revoke.others.map((u) => u.name).join("・")}）の承認が残るため、承認済みのままです。</span>
           )}
         </>
       )}
       {e.state === "agreed" && e.revoke && !e.revoke.possible && e.revoke.reason && <span className="note revoke-reason">{e.revoke.reason}</span>}
       {done && <span className="note">{done}</span>}
-      {agreeError != null && <ErrorBox error={agreeError} title="合意できません" />}
+      {agreeError != null && <ErrorBox error={agreeError} title="承認できません" />}
     </div>
   );
 }
@@ -875,7 +875,7 @@ function UnifiedEvidence(props: { before: EvidenceContent[]; after: EvidenceCont
   return <EvidenceList items={items} marks={marks} side="both" others={props.before} />;
 }
 
-// ClaimSections は、約束のエビデンスの予定と実際の表（RV-08。合格したかは段 3 で足す）と、由来と合意の履歴（RV-16）。
+// ClaimSections は、約束のエビデンスの予定と実際の表（RV-08。合格したかは段 3 で足す）と、変更履歴と承認の履歴（RV-16）。
 export function ClaimSections(props: { id: string; query?: string }) {
   const d = useLoad(() => api.claim(props.id), props.id);
   const h = useLoad(() => api.claimHistory(props.id), props.id);

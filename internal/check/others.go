@@ -14,7 +14,7 @@ import (
 
 func matchPath(p, f string) bool { return glob.Match(p, f) }
 
-// storyOrigin は、由来の審査。分岐点より後の、合流でないコミットのうち、約束リストを変えたものに、ストーリーの ID があるかを確かめる。
+// storyOrigin は、コミットのストーリーのチェック。マージベースより後の、合流でないコミットのうち、約束リストを変えたものに、ストーリーの ID があるかを確かめる。
 func (e *env) storyOrigin() []diag.Error {
 	out, err := repo.Git(e.root, "rev-list", "--no-merges", "--reverse", e.mergeBase+"..HEAD")
 	if err != nil {
@@ -64,20 +64,20 @@ func short(c string) string {
 	return c
 }
 
-// agreement は、合意の審査。今の中身が合意済で、フラグが残っていないことを確かめる。
+// agreement は、承認のチェック。今の中身が承認済で、フラグが残っていないことを確かめる。
 func (e *env) agreement(scope string) []diag.Error {
 	if e.listErrs != nil {
 		return cannot("約束リスト", len(e.listErrs), "promise-list-shape")
 	}
 	if e.recErrs != nil {
-		return cannot("合意の記録", len(e.recErrs), "agreement-targets")
+		return cannot("承認の記録", len(e.recErrs), "agreement-targets")
 	}
 	errs := append([]diag.Error{}, e.guardErr...)
 	inScope := func(key string, changed map[string]bool) bool {
 		return scope == ScopeAll || changed[key]
 	}
-	// 範囲 story では、そのストーリーが前に中身に合意したもの（外れた合意を探す先）も見る。
-	// 消したことにだけ合意したものは、足し直しても外れた合意にしない（約束 detached-agreement の「中身に合意した」）
+	// スコープ story では、そのストーリーが前に中身を承認したもの（失効した承認を探す先）も見る。
+	// 消したことにだけ承認したものは、足し直しても失効した承認にしない（約束 detached-agreement の「中身を承認した」）
 	storyAgreed := map[string]bool{}
 	if scope == ScopeStory {
 		for _, a := range e.recs.Agreements {
@@ -93,30 +93,30 @@ func (e *env) agreement(scope string) []diag.Error {
 		}
 		fp, err := agreements.ItemFingerprint(it.raw)
 		if err != nil {
-			errs = append(errs, it.table.Err("", kindName[it.kind]+" "+it.id+" の指紋を作れません（"+err.Error()+"）", "約束リストに書ける値（文字列・真偽・配列・表）だけにしてください"))
+			errs = append(errs, it.table.Err("", kindName[it.kind]+" "+it.id+" のフィンガープリントを作れません（"+err.Error()+"）", "約束リストに書ける値（文字列・真偽・配列・表）だけにしてください"))
 			continue
 		}
 		switch {
 		case changed && !e.recs.Agreed(it.kind, it.id, fp):
-			errs = append(errs, it.table.Err("id", kindName[it.kind]+" "+it.id+" の今の中身に、まだ合意していません（提案中。指紋 "+fp+"）", "中身を確かめてから合意し、合意の記録に書いてください"))
+			errs = append(errs, it.table.Err("id", kindName[it.kind]+" "+it.id+" の今の中身に、まだ承認していません（提案中。フィンガープリント "+fp+"）", "中身を確かめてから承認し、承認の記録に書いてください"))
 		case storyAgreed[it.key()] && !e.recs.AgreedBy(it.kind, it.id, fp, e.story):
-			errs = append(errs, it.table.Err("id", kindName[it.kind]+" "+it.id+" の、ストーリー "+e.story+" の合意が外れています（前に合意した後に中身が変わり、今の中身 "+fp+" に "+e.story+" の合意がありません）", "今の中身を確かめ、ストーリー "+e.story+" で合意し直してください"))
+			errs = append(errs, it.table.Err("id", kindName[it.kind]+" "+it.id+" の、ストーリー "+e.story+" の承認が失効しています（前に承認した後に中身が変わり、今の中身 "+fp+" に "+e.story+" の承認がありません）", "今の中身を確かめ、ストーリー "+e.story+" で承認し直してください"))
 		}
 		if !changed {
 			continue
 		}
 		if it.claim != nil {
 			if len(it.claim.Flags) > 0 {
-				errs = append(errs, it.table.Err("flags", "約束 "+it.id+" にフラグ（"+strings.Join(it.claim.Flags, "・")+"）が残っています", "合意するときに、フラグを外してください（合意の後にフラグだけを立てたなら、中身を確かめ直してから外してください）"))
+				errs = append(errs, it.table.Err("flags", "約束 "+it.id+" にフラグ（"+strings.Join(it.claim.Flags, "・")+"）が残っています", "承認するときに、フラグを外してください（承認の後にフラグだけを立てたなら、中身を確かめ直してから外してください）"))
 			}
 			if len(it.claim.Guesses) > 0 {
-				errs = append(errs, it.table.Err("guesses", "約束 "+it.id+" に推測（guesses）が残っています", "推測を確かめ、合意するときに guesses を外してください"))
+				errs = append(errs, it.table.Err("guesses", "約束 "+it.id+" に推測（guesses）が残っています", "推測を確かめ、承認するときに guesses を外してください"))
 			}
 		}
 	}
 	for _, f := range e.targetFiles() {
 		changed := inScope(f, e.changedFiles)
-		// ファイルの外れた合意は、合意の記録の path で今のファイルを探す（名前を変えたファイルは追わない）
+		// ファイルの失効した承認は、承認の記録の path で今のファイルを探す（名前を変えたファイルは追わない）
 		if !changed && !storyAgreed["path:"+f] {
 			continue
 		}
@@ -128,15 +128,15 @@ func (e *env) agreement(scope string) []diag.Error {
 		fp := agreements.FileFingerprint(src)
 		switch {
 		case changed && !e.recs.Agreed("file", f, fp):
-			errs = append(errs, diag.Error{File: f, What: "ファイルの今の中身に、まだ合意していません（提案中。指紋 " + fp + "）", Fix: "中身を確かめてから合意し、合意の記録に書いてください"})
+			errs = append(errs, diag.Error{File: f, What: "ファイルの今の中身に、まだ承認していません（提案中。フィンガープリント " + fp + "）", Fix: "中身を確かめてから承認し、承認の記録に書いてください"})
 		case storyAgreed["path:"+f] && !e.recs.AgreedBy("file", f, fp, e.story):
-			errs = append(errs, diag.Error{File: f, What: "ストーリー " + e.story + " の合意が外れています（前に合意した後に中身が変わり、今の中身 " + fp + " に " + e.story + " の合意がありません）", Fix: "今の中身を確かめ、ストーリー " + e.story + " で合意し直してください"})
+			errs = append(errs, diag.Error{File: f, What: "ストーリー " + e.story + " の承認が失効しています（前に承認した後に中身が変わり、今の中身 " + fp + " に " + e.story + " の承認がありません）", Fix: "今の中身を確かめ、ストーリー " + e.story + " で承認し直してください"})
 		}
 	}
 	return append(errs, e.deletions(scope)...)
 }
 
-// targetKey は、合意の対象の鍵。約束・用語・機能は "<種類>:<ID>"、ファイルは "path:<場所>"。
+// targetKey は、承認の対象の鍵。約束・用語・機能は "<種類>:<ID>"、ファイルは "path:<場所>"。
 func targetKey(kind, target string) string {
 	if kind == "file" {
 		return "path:" + target
@@ -144,8 +144,8 @@ func targetKey(kind, target string) string {
 	return kind + ":" + target
 }
 
-// deletions は、今ないものに、消したことへの合意があるかを確かめる。範囲 all では、中身に合意したことがあって今ないもの。
-// 範囲 story では、分岐点にあって今ないものを、合意したことがあるかによらず見る（一度も合意していないものを消しても、
+// deletions は、今ないものに、消したことへの承認があるかを確かめる。スコープ all では、中身を承認したことがあって今ないもの。
+// スコープ story では、マージベースにあって今ないものを、承認したことがあるかによらず見る（一度も承認していないものを消しても、
 // そのストーリーで変えたものなので、PO が見ないまま合流させない）。
 func (e *env) deletions(scope string) []diag.Error {
 	var errs []diag.Error
@@ -160,16 +160,16 @@ func (e *env) deletions(scope string) []diag.Error {
 				name = "ファイル" // 誤りの行の頭に消したファイルの場所を書くので、場所は繰り返さない
 			}
 		}
-		at.What = name + "を消したことに、まだ合意していません（" + why + "）"
-		at.Fix = "消してよいかを確かめてから、消したことに合意してください"
+		at.What = name + "を消したことに、まだ承認していません（" + why + "）"
+		at.Fix = "消してよいかを確かめてから、消したことを承認してください"
 		errs = append(errs, at)
 	}
 	if scope == ScopeStory {
 		for _, g := range e.goneItems {
-			need(g.kind, g.id, "分岐点にあり、今の約束リストにありません", diag.Error{File: g.file})
+			need(g.kind, g.id, "マージベースにあり、今の約束リストにありません", diag.Error{File: g.file})
 		}
 		for _, f := range e.goneFiles {
-			need("file", f, "分岐点では合意の対象のファイルで、今はありません", diag.Error{File: f})
+			need("file", f, "マージベースでは承認の対象のファイルで、今はありません", diag.Error{File: f})
 		}
 		return errs
 	}
@@ -198,16 +198,16 @@ func (e *env) deletions(scope string) []diag.Error {
 	}
 	for _, k := range keys {
 		a := last[k]
-		what := "前に中身に合意していて、今の約束リストにありません"
+		what := "前に中身を承認していて、今の約束リストにありません"
 		if a.Kind == "file" {
-			what = "前に中身に合意していて、今は合意の対象のファイルにありません"
+			what = "前に中身を承認していて、今は承認の対象のファイルにありません"
 		}
 		need(a.Kind, a.Target(), what, a.Table.Err("key", "", ""))
 	}
 	return errs
 }
 
-// agreementTargets は、合意の記録の指す先の審査。
+// agreementTargets は、承認の記録の指す先のチェック。
 func (e *env) agreementTargets() []diag.Error {
 	errs := append([]diag.Error{}, e.recErrs...)
 	if e.recs == nil {
@@ -225,13 +225,13 @@ func (e *env) agreementTargets() []diag.Error {
 			continue
 		}
 		if !have[a.Kind+":"+a.Key] && !e.recs.DeletionAgreed(a.Kind, a.Key) {
-			errs = append(errs, a.Table.Err("key", "合意の記録が、約束リストにない"+kindName[a.Kind]+" "+quote(a.Key)+" を指しています", "約束リストに戻すか、消したことに合意してください"))
+			errs = append(errs, a.Table.Err("key", "承認の記録が、約束リストにない"+kindName[a.Kind]+" "+quote(a.Key)+" を指しています", "約束リストに戻すか、消したことを承認してください"))
 		}
 	}
 	return errs
 }
 
-// evidencePresent は、エビデンスが揃っているかの審査。
+// evidencePresent は、エビデンスが揃っているかのチェック。
 func (e *env) evidencePresent(scope string) []diag.Error {
 	if e.listErrs != nil {
 		return cannot("約束リスト", len(e.listErrs), "promise-list-shape")
@@ -254,7 +254,7 @@ func (e *env) evidencePresent(scope string) []diag.Error {
 			}
 			kind := config.EvidenceKind(ev.Type)
 			if kind == "" {
-				continue // 決まった値でないタイプは、約束リストの形の審査で出す
+				continue // 決まった値でないタイプは、約束リストの形のチェックで出す
 			}
 			parts := annotation.Evidence(e.anns, e.guards, c.ID, ev.Type)
 			if len(parts) == 1 {

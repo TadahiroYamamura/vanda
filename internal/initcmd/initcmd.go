@@ -26,7 +26,7 @@ import (
 // ErrDeclined は、作るかの確かめに n と答えたため、何も作らなかったことを表す。
 var ErrDeclined = errors.New("作らないと答えたため、何も作りませんでした。")
 
-// Language は、アノテーションを読む言語（組込みのアダプタ）と、読むファイルのパターン。
+// Language は、アノテーションを読む言語（組み込みのアダプタ）と、読むファイルのパターン。
 // Detect が返すものでは Patterns はアダプタの既定、Answers の中では答えのパターン（書いた順）。
 type Language struct {
 	annotation.AdapterInfo
@@ -140,7 +140,7 @@ type storeChoice struct {
 	key, title, defaultIDPattern string
 }
 
-// storeChoices は、ストーリーストアの選択肢。組込みのアダプタの一覧から作り、カスタムアダプタと使わないを足す
+// storeChoices は、ストーリーストアの選択肢。組み込みのアダプタの一覧から作り、カスタムアダプタと使わないを足す
 func storeChoices() []storeChoice {
 	var out []storeChoice
 	for _, a := range story.Builtins {
@@ -268,7 +268,7 @@ func Ask(root string, d Defaults, t *Terminal) (Answers, error) {
 		return a, err
 	}
 
-	// 読む言語は、組込みのアダプタを全部並べて選ばせる（初期化した直後でファイルがないリポジトリでも選べるように）。
+	// 読む言語は、組み込みのアダプタを全部並べて選ばせる（初期化した直後でファイルがないリポジトリでも選べるように）。
 	// リポジトリで見つかった言語は、選んだ状態から始める
 	found := map[string]bool{}
 	for _, l := range d.Languages {
@@ -358,15 +358,15 @@ func ConfigText(a Answers) string {
 	return b.String()
 }
 
-// ChecksText は、.vanda/checks/ci.toml（ブランチで動かす審査の設定）の中身。今ある審査を全部、審査の種類の順に並べる。
-// 1 つのストーリーで変わったものを見られる審査は、範囲を story にする
+// ChecksText は、.vanda/checks/ci.toml（ブランチで動かすチェックの設定）の中身。今あるチェックを全部、チェックの種類の順に並べる。
+// 1 つのストーリーで変わったものを見られるチェックは、スコープを story にする
 func ChecksText() string {
 	return checksText(true)
 }
 
-// MainChecksText は、.vanda/checks/main.toml（ベースブランチで動かす審査の設定）の中身。
-// 範囲 story だけで行える審査（story-origin）を除き、ほかの審査を全部、範囲 all で並べる。
-// ベースブランチへの push のように Story: のトレーラーのないコミットでは、範囲 story の審査が必ず止まるため
+// MainChecksText は、.vanda/checks/main.toml（ベースブランチで動かすチェックの設定）の中身。
+// スコープ story だけで行えるチェック（story-origin）を除き、ほかのチェックを全部、スコープ all で並べる。
+// ベースブランチへの push のように Story: のトレーラーのないコミットでは、スコープ story のチェックが必ず止まるため
 func MainChecksText() string {
 	return checksText(false)
 }
@@ -394,7 +394,7 @@ func checksText(story bool) string {
 	return b.String()
 }
 
-// CIChecksFile と MainChecksFile は、vanda init が作る審査の設定の場所。CIChecksFile はブランチで、MainChecksFile はベースブランチで動かす
+// CIChecksFile と MainChecksFile は、vanda init が作るチェックの設定の場所。CIChecksFile はブランチで、MainChecksFile はベースブランチで動かす
 const (
 	CIChecksFile   = ".vanda/checks/ci.toml"
 	MainChecksFile = ".vanda/checks/main.toml"

@@ -13,11 +13,11 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
 )
 
-// side は、ある時点の、項目と合意の対象のファイル。ファイルの中身は、要るときに読む。
+// side は、ある時点の、項目と承認の対象のファイル。ファイルの中身は、要るときに読む。
 type side struct {
 	snap   *snapshot.Snapshot // nil なら、何もない時点（最初のコミットの親）
 	items  map[string]snapshot.Entry
-	itemFP map[string]string // 指紋を作れない項目は空の文字列
+	itemFP map[string]string // フィンガープリントを作れない項目は空の文字列
 	types  map[string]string // 場所からファイルの種類へ
 	texts  map[string][]byte
 	ids    map[string]snapshot.Entry // ID から項目へ。参照の指す先を探すため
@@ -31,7 +31,7 @@ func newSide(s *snapshot.Snapshot) *side {
 		return sd
 	}
 	for _, e := range snapshot.Entries(s.List) {
-		// 重なった ID は、約束リストの形の審査で誤りになる。ここでは最初のものを使う
+		// 重なった ID は、約束リストの形のチェックで誤りになる。ここでは最初のものを使う
 		if _, dup := sd.items[e.Key()]; dup {
 			continue
 		}
@@ -78,7 +78,7 @@ func (sd *side) fileFP(path string) (string, error) {
 	return agreements.FileFingerprint(b), nil
 }
 
-// sameItem は、項目 key が、2 つの時点で同じ中身か（どちらにもないときも同じ）を返す。指紋を作れない項目は、変わったとみなす。
+// sameItem は、項目 key が、2 つの時点で同じ中身か（どちらにもないときも同じ）を返す。フィンガープリントを作れない項目は、変わったとみなす。
 func sameItem(a, b *side, key string) bool {
 	fa, ina := a.itemFP[key]
 	fb, inb := b.itemFP[key]
@@ -88,7 +88,7 @@ func sameItem(a, b *side, key string) bool {
 	return !ina || fa != "" && fa == fb
 }
 
-// sameFile は、場所 path の合意の対象のファイルが、2 つの時点で同じ中身か（どちらでも対象でないときも同じ）を返す。
+// sameFile は、場所 path の承認の対象のファイルが、2 つの時点で同じ中身か（どちらでも対象でないときも同じ）を返す。
 func sameFile(a, b *side, path string) (bool, error) {
 	_, ina := a.types[path]
 	_, inb := b.types[path]
@@ -290,7 +290,7 @@ func (h *history) loadCommits() ([]commit, error) {
 	return h.commits, nil
 }
 
-// changed は、コミット c が、1 つ目の親から変えた項目の鍵と、合意の対象のファイルの場所を返す。
+// changed は、コミット c が、1 つ目の親から変えた項目の鍵と、承認の対象のファイルの場所を返す。
 func (h *history) changed(c commit) (*changeSet, error) {
 	h.mu.Lock()
 	r, ok := h.changes[c.Hash]

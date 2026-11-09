@@ -25,7 +25,7 @@ type Server struct {
 	Cfg *config.Config
 	// UI は、画面のファイル。index.html がなければ、画面を作っていないと知らせる
 	UI fs.FS
-	// mu は、合意（ファイルを書いてコミットする）のあいだに、一覧が書きかけの中身を読まないようにする
+	// mu は、承認（ファイルを書いてコミットする）のあいだに、一覧が書きかけの中身を読まないようにする
 	mu sync.RWMutex
 }
 
@@ -181,7 +181,7 @@ func (s *Server) file(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"path": p, "text": text})
 }
 
-// story は、ストーリーストアを読むだけでリポジトリを変えないので、合意と並べて動かしてよい（ロックを取らない）
+// story は、ストーリーストアを読むだけでリポジトリを変えないので、承認と並べて動かしてよい（ロックを取らない）
 func (s *Server) story(w http.ResponseWriter, r *http.Request) {
 	cfg, ok := s.config(w)
 	if !ok {
@@ -220,7 +220,7 @@ func (s *Server) ui() http.Handler {
 
 // localOnly は、Host が 127.0.0.1:<ポート>・localhost:<ポート> でない要求と、ほかのサイトから送られた書き込みの要求を断る。
 // 127.0.0.1 で待ち受けるだけでは、ブラウザで開いたほかのサイトの頁から、DNS の付け替えや、フォームの送信で、
-// 合意（コミットを作る）を送らせることができてしまうため。
+// 承認（コミットを作る）を送らせることができてしまうため。
 func localOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !isLocalHost(r.Host, listeningPort(r)) {
@@ -292,7 +292,7 @@ func (s *Server) agree(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "合意の要求の JSON を読めません（"+err.Error()+"）。", "docs/formats.md の POST /api/agree の形で送ってください。")
+		writeError(w, http.StatusBadRequest, "承認の要求の JSON を読めません（"+err.Error()+"）。", "docs/formats.md の POST /api/agree の形で送ってください。")
 		return
 	}
 	s.mu.Lock()

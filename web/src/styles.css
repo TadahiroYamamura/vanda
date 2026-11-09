@@ -277,7 +277,7 @@ button.revoke { color: var(--bad); border-color: #e3b4b4; }
 .story-fixed { margin: 0; font-size: 12px; color: var(--muted); }
 .story-fixed strong { font-family: var(--mono); font-size: 13px; color: var(--fg); font-weight: 500; }
 
-/* 由来と合意の履歴の表も、狭い幅でページが横にスクロールしないよう、見出しと中身を折り返す */
+/* 変更履歴と承認の履歴の表も、狭い幅でページが横にスクロールしないよう、見出しと中身を折り返す */
 table.history th { white-space: normal; }
 table.history td { overflow-wrap: anywhere; }
 tr.claim-at-row > td { padding: 0 0 8px; background: transparent; }
