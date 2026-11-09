@@ -1081,7 +1081,6 @@ id = "agreed-when-fingerprint-matches"
 subjects = ["agree-on-review", "agreement", "agreed", "proposed"]
 statement = "今の中身の{@id:fingerprint}に合う{@id:agreement-record}（ファイルなら、場所も合うもの）が 1 つでもあれば{@id:agreed}、なければ{@id:proposed}とする"
 layers = ["model", "cli", "api"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "implementation"
