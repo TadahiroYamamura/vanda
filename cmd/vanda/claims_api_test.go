@@ -32,10 +32,10 @@ func foundStates(d claimDetail) map[string]string {
 }
 
 type claimDetail struct {
-	ID        string  `json:"id"`
-	Statement frags `json:"statement"`
-	Rationale frags `json:"rationale"`
-	Condition frags `json:"condition"`
+	ID        string `json:"id"`
+	Statement frags  `json:"statement"`
+	Rationale frags  `json:"rationale"`
+	Condition frags  `json:"condition"`
 	Layers    []struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
@@ -56,6 +56,10 @@ type claimDetail struct {
 		Detail frags        `json:"detail"`
 		Found  []claimFound `json:"found"`
 	} `json:"evidence"`
+}
+
+// claimHistory は、約束の由来と合意の履歴（GET /api/claims/<約束の ID>/history）
+type claimHistory struct {
 	Origin []struct {
 		Commit  string   `json:"commit"`
 		Subject string   `json:"subject"`
@@ -67,10 +71,21 @@ type claimDetail struct {
 			Name  string `json:"name"`
 			Email string `json:"email"`
 		} `json:"user"`
-		Story       string `json:"story"`
-		Fingerprint string `json:"fingerprint"`
-		Current     bool   `json:"current"`
+		Story       string  `json:"story"`
+		Fingerprint string  `json:"fingerprint"`
+		Current     bool    `json:"current"`
+		Commit      *string `json:"commit"`
 	} `json:"agreements"`
+}
+
+// getHistory は、約束 id の由来と合意の履歴を読む。
+func getHistory(t *testing.T, s *vandaServer, id string) claimHistory {
+	t.Helper()
+	var h claimHistory
+	if code, msg := s.get("/api/claims/"+id+"/history", &h); code != 200 {
+		t.Fatalf("約束 %s の由来と合意の履歴を読めない（%d）: %s", id, code, msg)
+	}
+	return h
 }
 
 // 期待する found。line は、アノテーションが付いているもの（定義・関数・SQL の文）の行（監督の決定）。
@@ -167,11 +182,12 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 
 	first := r.git("rev-parse", "main")
 	changed := r.git("log", "-1", "--format=%H", "--fixed-strings", "--grep=タスクの ID の約束を変え", reviewBranch)
-	if len(got.Origin) != 2 {
-		t.Fatalf("由来が 2 件（作ったコミットと、文を変えたコミット）でない: %+v", got.Origin)
+	h := getHistory(t, s, "task-id-unique")
+	if len(h.Origin) != 2 {
+		t.Fatalf("由来が 2 件（作ったコミットと、文を変えたコミット）でない: %+v", h.Origin)
 	}
 	// 由来はコミットの日時の新しい順（同じ日時なら、履歴で後のコミットが先）。どちらでも、文を変えたコミットが先
-	o0, o1 := got.Origin[0], got.Origin[1]
+	o0, o1 := h.Origin[0], h.Origin[1]
 	if o0.Commit != changed || !reflect.DeepEqual(o0.Stories, []string{"#24"}) || o0.Change != "modified" {
 		t.Errorf("由来の 1 件目: %+v", o0)
 	}
@@ -179,9 +195,9 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 		t.Errorf("由来の 2 件目: %+v", o1)
 	}
 
-	if len(got.Agreements) != 1 || got.Agreements[0].Story != "#1" || got.Agreements[0].Current ||
-		got.Agreements[0].Fingerprint != sha256Hex([]byte(reviewItemJSON["claim task-id-unique"])) || got.Agreements[0].User.Name != "テスト担当" {
-		t.Errorf("合意の履歴: %+v", got.Agreements)
+	if len(h.Agreements) != 1 || h.Agreements[0].Story != "#1" || h.Agreements[0].Current ||
+		h.Agreements[0].Fingerprint != sha256Hex([]byte(reviewItemJSON["claim task-id-unique"])) || h.Agreements[0].User.Name != "テスト担当" {
+		t.Errorf("合意の履歴: %+v", h.Agreements)
 	}
 
 	// 今の中身に合意すると、合意の履歴に足され、今の中身に合うと分かる。前の合意は消えず、合わないまま
@@ -205,8 +221,8 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 		t.Errorf("今の中身に合意した後の id と state: %q %q（task-id-unique と agreed のはず）", again.ID, again.State)
 	}
 	// 合意の履歴は合意した日時の新しい順。agreementTOML はどれも同じ日時なので、ファイルで後に書いた #24 の合意が先
-	if len(again.Agreements) != 2 || !again.Agreements[0].Current || again.Agreements[0].Story != reviewStory || again.Agreements[1].Current {
-		t.Errorf("合意した後の合意の履歴: %+v", again.Agreements)
+	if ah := getHistory(t, s, "task-id-unique"); len(ah.Agreements) != 2 || !ah.Agreements[0].Current || ah.Agreements[0].Story != reviewStory || ah.Agreements[1].Current {
+		t.Errorf("合意した後の合意の履歴: %+v", ah.Agreements)
 	}
 
 	// シナリオの今の中身に、#24 でないストーリー（#30）で合意しても、合意の状態は agreed になる（ストーリーによらない）
@@ -288,8 +304,8 @@ func Test約束の詳細は指すアノテーションのないエビデンス�
 	if len(got.Evidence) != 1 || got.Evidence[0].Type != "scenario-test" || got.Evidence[0].Found == nil || len(got.Evidence[0].Found) != 0 {
 		t.Errorf("エビデンス: %+v", got.Evidence)
 	}
-	if len(got.Origin) != 1 || got.Origin[0].Change != "added" || !reflect.DeepEqual(got.Origin[0].Stories, []string{"#24"}) || len(got.Agreements) != 0 {
-		t.Errorf("由来 %+v、合意の履歴 %+v", got.Origin, got.Agreements)
+	if h := getHistory(t, s, "task-title-required"); len(h.Origin) != 1 || h.Origin[0].Change != "added" || !reflect.DeepEqual(h.Origin[0].Stories, []string{"#24"}) || len(h.Agreements) != 0 {
+		t.Errorf("由来 %+v、合意の履歴 %+v", h.Origin, h.Agreements)
 	}
 }
 
@@ -365,14 +381,9 @@ func Testその時点の約束の中身は由来のコミットと合意の記�
 		}
 	}
 	// 合意の記録の commit（記録を書き足したコミット）を渡すと、その時点の中身を返す。#1 の合意は main のコミットで書いた
-	var detail struct {
-		Agreements []struct {
-			Commit *string `json:"commit"`
-			Story  string  `json:"story"`
-		} `json:"agreements"`
-	}
-	if code, msg := s.get("/api/claims/task-id-unique", &detail); code != 200 || len(detail.Agreements) == 0 || detail.Agreements[0].Commit == nil {
-		t.Fatalf("合意の履歴の commit を読めない（%d %q）: %+v", code, msg, detail)
+	detail := getHistory(t, s, "task-id-unique")
+	if len(detail.Agreements) == 0 || detail.Agreements[0].Commit == nil {
+		t.Fatalf("合意の履歴の commit を読めない: %+v", detail)
 	}
 	if *detail.Agreements[0].Commit != r.git("rev-parse", "main") {
 		t.Errorf("#1 の合意の commit が main のコミットでない: %s", *detail.Agreements[0].Commit)
@@ -505,10 +516,7 @@ func Test約束の由来はコミットごとにそのコミットのStoryのト
 		none:  nil,
 		other: {"#33"},
 	}
-	var got claimDetail
-	if code, msg := s.get("/api/claims/task-id-unique", &got); code != 200 {
-		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
-	}
+	got := getHistory(t, s, "task-id-unique")
 	if len(got.Origin) != len(want) {
 		t.Fatalf("由来が %d 件（%d 件のはず）: %+v", len(got.Origin), len(want), got.Origin)
 	}

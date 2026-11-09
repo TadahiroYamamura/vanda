@@ -4,9 +4,9 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { App } from "../App";
-import type { ClaimDetail, Entry } from "../api";
+import type { ClaimDetail, ClaimHistory, Entry } from "../api";
 import { isInaccessible } from "@testing-library/dom";
-import { apiError, claimDetail, claimEntry, claimRef, ctx, featureRef, fileEntry, plain, review, server, story, termRef } from "./fixtures";
+import { apiError, claimDetail, claimEntry, claimHistory, claimRef, ctx, featureRef, fileEntry, plain, review, server, story, termRef } from "./fixtures";
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterAll(() => server.close());
@@ -27,10 +27,11 @@ const shownText = (root: HTMLElement = document.body) => {
   return out;
 };
 
-function open(d: ClaimDetail) {
+function open(d: ClaimDetail, h: ClaimHistory = claimHistory()) {
   server.use(
     http.get("/api/context", () => HttpResponse.json(ctx)),
     http.get("/api/claims/:id", () => HttpResponse.json(d)),
+    http.get("/api/claims/:id/history", () => HttpResponse.json(h)),
   );
   render(<App />);
 }
@@ -49,6 +50,9 @@ const detail = claimDetail({
       found: [{ adapter: "go", file: "internal/task/task_test.go", line: 6, name: "TestUnique", text: null }] },
     { stage: "implementation", type: "random-check", layers: ["model"], detail: plain("まだ書いていない"), present: false, found: [] },
   ],
+});
+
+const history = claimHistory({
   origin: [
     { commit: "1".repeat(40), date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" },
     { commit: "2".repeat(40), date: "2026-10-20T12:00:00+09:00", subject: "#24 文を変える", stories: ["#24"], change: "modified" },
@@ -89,7 +93,7 @@ it("エビデンスをタイプごとにシナリオは本文をTLAは定義を�
 // @vanda:evidence claim-detail-origin
 // @vanda:evidence claim-detail-agreements
 it("由来にコミットとストーリーを合意の履歴に合意した人とストーリーと今の中身に合うかを見せる", async () => {
-  open(detail);
+  open(detail, history);
   await screen.findByText(/タスクの ID は重ならない/);
   await waitFor(() => expect(bodyText()).toContain("#24 文を変える"));
   for (const t of ["#1 はじめの約束を置く", "#24", "前に合意した人"]) expect(bodyText()).toContain(t);
@@ -118,6 +122,7 @@ function openFromReview(path: string, entries: Entry[], d: ClaimDetail = claimDe
     http.get("/api/review", () => HttpResponse.json(review(entries))),
     http.get("/api/story", () => HttpResponse.json(story)),
     http.get("/api/claims/:id", () => HttpResponse.json(d)),
+    http.get("/api/claims/:id/history", () => HttpResponse.json(claimHistory())),
     http.get("/api/file", () => HttpResponse.json({ path: "e2e/add-task.txtar", text: "exec vanda add 買い物\n" })),
   );
   render(<App />);
@@ -207,7 +212,7 @@ it("由来のコミットと合意の記録を開くとその時点の約束の�
       }),
     ),
   );
-  open(claimDetail({
+  open(claimDetail(), claimHistory({
     origin: [{ commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" }],
     agreements: [{ user: { name: "前に合意した人", email: "a@example.com" }, agreedAt: "2026-10-02T12:00:00+09:00", story: "#1", fingerprint: "sha256:" + "b".repeat(64), current: false, commit: agreedAt }],
   }));
@@ -323,14 +328,14 @@ it("約束の詳細とその時点の中身は利用者が書いた文の続い�
       }),
     ),
   );
-  open(claimDetail({
-    statement: plain(spaced), rationale: plain("今の理由の" + spaced), condition: plain("今の条件の" + spaced),
-    origin: [{ commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" }],
-  }));
+  open(
+    claimDetail({ statement: plain(spaced), rationale: plain("今の理由の" + spaced), condition: plain("今の条件の" + spaced) }),
+    claimHistory({ origin: [{ commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" }] }),
+  );
   const has = (t: string) => Array.from(document.querySelectorAll<HTMLElement>("*")).some((el) => el.textContent === t);
   await waitFor(() => expect(has(spaced), "約束の文").toBe(true));
   for (const t of ["今の理由の" + spaced, "今の条件の" + spaced]) expect(has(t), t).toBe(true);
-  const row = screen.getByText(/#1 はじめの約束を置く/).closest("tr")!;
+  const row = (await screen.findByText(/#1 はじめの約束を置く/)).closest("tr")!;
   await userEvent.setup().click(within(row).getByRole("button", { name: "その時点の中身を開く" }));
   await waitFor(() => expect(has("その時点の" + spaced), "その時点の文").toBe(true));
   for (const t of ["理由の" + spaced, "条件の" + spaced]) expect(has(t), t).toBe(true);
@@ -348,7 +353,7 @@ function openHistory(at: Parameters<typeof http.get>[1] = ({ params }) =>
     refs: {},
   })) {
   server.use(http.get("/api/claims/:id/at/:commit", at));
-  open(claimDetail({
+  open(claimDetail(), claimHistory({
     origin: [
       { commit: atCommits.second, date: "2026-10-20T12:00:00+09:00", subject: "#24 文を変える", stories: ["#24"], change: "modified" },
       { commit: atCommits.first, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" },
@@ -518,7 +523,7 @@ it("約束の履歴で開いたその時点の中身の参照もその時点のr
       }),
     ),
   );
-  open(detailWithRefs({ origin: [{ commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" }] }));
+  open(detailWithRefs(), claimHistory({ origin: [{ commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" }] }));
   const row = (await screen.findByText(/#1 はじめの約束を置く/)).closest("tr")!;
   await userEvent.setup().click(within(row).getByRole("button", { name: "その時点の中身を開く" }));
   await waitFor(() => expect(bodyText()).toContain("その時点だけの用語"));

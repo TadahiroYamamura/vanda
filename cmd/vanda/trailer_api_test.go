@@ -137,7 +137,7 @@ func TestStoryのトレーラーが誤ったコミットがあってもAPIは200
 	}
 
 	// ほかの API も 200 で返し、誤ったコミットのストーリーを空にする
-	for _, path := range []string{"/api/review?view=branch&base=main", "/api/review?view=story&story=%2324", "/api/review?view=story&story=%231", "/api/claims/task-id-unique"} {
+	for _, path := range []string{"/api/review?view=branch&base=main", "/api/review?view=story&story=%2324", "/api/review?view=story&story=%231", "/api/claims/task-id-unique", "/api/claims/task-id-unique/history"} {
 		var body json.RawMessage
 		if code, msg := s.get(path, &body); code != 200 {
 			t.Errorf("%s が %d: %s", path, code, msg)
@@ -190,8 +190,7 @@ func TestStoryのトレーラーが誤ったコミットがあってもAPIは200
 	if !found {
 		t.Errorf("#1 の一覧に、外れた task-id-unique がない")
 	}
-	var detail claimDetail
-	s.get("/api/claims/task-id-unique", &detail)
+	detail := getHistory(t, s, "task-id-unique")
 	n := 0
 	for _, o := range detail.Origin {
 		if o.Commit == two || o.Commit == bad {

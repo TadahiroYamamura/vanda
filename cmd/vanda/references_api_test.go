@@ -561,19 +561,16 @@ func Test参照先の名前と定義を変えても約束の詳細の指紋は�
 		State       string `json:"state"`
 		Fingerprint string `json:"fingerprint"`
 		Statement   frags  `json:"statement"`
-		Agreements  []struct {
-			Story   string `json:"story"`
-			Current bool   `json:"current"`
-		} `json:"agreements"`
 	}
 	if code, msg := s.get("/api/claims/c", &detail); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
 	}
+	h := getHistory(t, s, "c")
 	if want := sha256Hex([]byte(fpClaimJSON)); detail.Fingerprint != want {
 		t.Errorf("約束 c の指紋 %s が、書いたままの文の指紋 %s でない", detail.Fingerprint, want)
 	}
-	if detail.State != "agreed" || len(detail.Agreements) != 1 || !detail.Agreements[0].Current {
-		t.Errorf("参照先を変えた後の約束 c: state %q、合意 %+v", detail.State, detail.Agreements)
+	if detail.State != "agreed" || len(h.Agreements) != 1 || !h.Agreements[0].Current {
+		t.Errorf("参照先を変えた後の約束 c: state %q、合意 %+v", detail.State, h.Agreements)
 	}
 	// 見せる文は今の名前に置き換わっている（指紋は置き換える前の文から作る）
 	wantFrags(t, "約束 c の statement", detail.Statement, fragsOf("仕事>t", "は", "仕事の登録>f", "で足し、{@id:x}は文字"))

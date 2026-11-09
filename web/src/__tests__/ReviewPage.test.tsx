@@ -7,7 +7,7 @@ import { http, HttpResponse } from "msw";
 import { App } from "../App";
 import type { Entry } from "../api";
 import { isInaccessible } from "@testing-library/dom";
-import { apiError, claimDetail, claimEntry, claimRef, ctx, defaultHandlers, featureRef, fileEntry, plain, requests, review, server, story, termRef } from "./fixtures";
+import { apiError, claimDetail, claimEntry, claimHistory, claimRef, ctx, defaultHandlers, featureRef, fileEntry, plain, requests, review, server, story, termRef } from "./fixtures";
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterAll(() => server.close());
@@ -503,8 +503,8 @@ describe("RV-05 変更前と変更後の差分", () => {
 describe("RV-16・RV-17 1 件の詳細の由来と合意の履歴・取り消し", () => {
   // @vanda:evidence detail-origin-and-history
   it("約束の1件の詳細に由来のコミットと合意の履歴を見せる", async () => {
-    open([claimEntry(1, "task-id-unique")], {}, http.get("/api/claims/:id", () =>
-      HttpResponse.json(claimDetail({
+    open([claimEntry(1, "task-id-unique")], {}, http.get("/api/claims/:id/history", () =>
+      HttpResponse.json(claimHistory({
         origin: [{ commit: "1".repeat(40), date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" }],
         agreements: [{ user: { name: "前に合意した人", email: "a@example.com" }, agreedAt: "2026-10-02T12:00:00+09:00", story: "#1", fingerprint: "sha256:" + "b".repeat(64), current: false }],
       })),

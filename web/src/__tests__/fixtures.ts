@@ -2,7 +2,7 @@
 // 形は docs/formats.md の「GUI の API」。中身は、テストの中で手で作る（vanda の出力から作らない）。
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import type { ClaimDetail, Context, Entry, Piece, RefTarget, Review, Story } from "../api";
+import type { ClaimDetail, ClaimHistory, Context, Entry, Piece, RefTarget, Review, Story } from "../api";
 
 export const ctx: Context = {
   version: "0.1.0",
@@ -133,11 +133,14 @@ export function claimDetail(over: Partial<ClaimDetail> = {}): ClaimDetail {
     flags: [],
     guesses: [],
     evidence: [],
-    origin: [],
-    agreements: [],
     refs: {},
     ...over,
   };
+}
+
+// claimHistory は、約束の由来と合意の履歴（GET /api/claims/<ID>/history）
+export function claimHistory(over: Partial<ClaimHistory> = {}): ClaimHistory {
+  return { origin: [], agreements: [], ...over };
 }
 
 export function apiError(status: number, message: string) {
@@ -167,5 +170,6 @@ export function defaultHandlers(r: Review) {
     http.get("/api/context", () => HttpResponse.json(ctx)),
     http.get("/api/review", () => HttpResponse.json(r)),
     http.get("/api/story", () => HttpResponse.json(story)),
+    http.get("/api/claims/:id/history", () => HttpResponse.json(claimHistory())),
   ];
 }
