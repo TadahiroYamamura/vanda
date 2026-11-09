@@ -36,7 +36,7 @@ definition = "失敗すると著しい損害があるので、十分に確かめ
 [[term]]
 id = "formal-feature"
 name = "形式手法を使う機能"
-definition = "{@id:oracle}（TLA+）で確かめる{@id:feature}。{@id:promise-list}での項目名は formal。{@id:core-feature}は、理由を書いて{@id:agreement}しない限り形式手法を使う。形式手法を使う機能の{@id:promise}は、どれも TLA+ で確かめるか、確かめない理由を書く"
+definition = "{@id:oracle}（TLA+）で確かめる{@id:feature}。{@id:promise-list}での項目名は formal。{@id:core-feature}は、理由を書いて{@id:agreement}しない限り形式手法を使う。形式手法を使う{@id:feature}の{@id:promise}は、どれも TLA+ で確かめるか、確かめない理由を書く"
 
 [[term]]
 id = "term"
@@ -420,12 +420,12 @@ definition = "{@id:promise-list}を読み、形を確かめる"
 [[feature]]
 id = "show-references"
 name = "参照を、指す先が分かる形で見せる"
-definition = "{@id:promise-list}の文の中の参照を、指す先が分かる形で見せる"
+definition = "{@id:promise-list}の文の中の{@id:reference}を、指す先が分かる形で見せる"
 
 [[feature]]
 id = "store-agreements"
 name = "合意の記録を読み書きする"
-definition = "合意の記録を読み書きする"
+definition = "{@id:agreement-record}を読み書きする"
 
 [[feature]]
 id = "build-origins"
@@ -460,7 +460,7 @@ definition = "一覧に通し番号と総数を示す"
 [[feature]]
 id = "raise-flags"
 name = "フラグを立てる"
-definition = "注意して読む手がかりとして、フラグを立てる"
+definition = "注意して読む手がかりとして、{@id:flag}を立てる"
 
 [[feature]]
 id = "compare-contents"
@@ -492,7 +492,7 @@ definition = "レビュー単位を切り替える"
 [[feature]]
 id = "show-detached"
 name = "外れた合意を示す"
-definition = "外れた合意を示す"
+definition = "{@id:detached}を示す"
 
 [[feature]]
 id = "show-entry-history"
@@ -502,7 +502,7 @@ definition = "レビューの 1 件の詳細に、{@id:promise}の{@id:origin}�
 [[feature]]
 id = "revoke-agreement"
 name = "合意を取り消す"
-definition = "合意を取り消す"
+definition = "{@id:agreement}を取り消す"
 core = true
 formal = true
 
@@ -544,7 +544,7 @@ definition = "{@id:oracle}の定義（TLA+）を数学の記号で見せる"
 [[feature]]
 id = "show-claim-at-commit"
 name = "その時点の約束の中身を示す"
-definition = "{@id:origin}のコミットや{@id:agreement-record}を選ぶと、その時点の約束の中身を示す"
+definition = "{@id:origin}のコミットや{@id:agreement-record}を選ぶと、その時点の{@id:promise}の中身を示す"
 
 [[feature]]
 id = "diagnose-setup"
@@ -559,7 +559,7 @@ definition = "{@id:check-config}のファイルに並べた{@id:check}を行う"
 [[feature]]
 id = "list-check-kinds"
 name = "審査を列挙する"
-definition = "vanda check で行える{@id:check}の種類を用意する。どの種類があるかは、{@id:term}「審査」の一部として並べる"
+definition = "vanda check で行える{@id:check}の種類を用意する。どの種類があるかは、{@id:term}「{@id:check}」の一部として並べる"
 
 [[feature]]
 id = "create-vanda-dir"
@@ -579,7 +579,7 @@ definition = "ファイルから、{@id:annotation}と、付いているもの�
 [[feature]]
 id = "run-custom-adapters"
 name = "カスタムアダプタを動かす"
-definition = "カスタムアダプタを動かす"
+definition = "{@id:custom-adapter}を動かす"
 
 [[claim]]
 id = "promise-list-reads-all-patterns"
