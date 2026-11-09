@@ -6,7 +6,8 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { App } from "../App";
 import type { Entry } from "../api";
-import { apiError, claimDetail, claimEntry, ctx, defaultHandlers, fileEntry, plain, requests, review, server, story } from "./fixtures";
+import { isInaccessible } from "@testing-library/dom";
+import { apiError, claimDetail, claimEntry, claimRef, ctx, defaultHandlers, featureRef, fileEntry, plain, requests, review, server, story, termRef } from "./fixtures";
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterAll(() => server.close());
@@ -1036,13 +1037,16 @@ describe("参照", () => {
   type Field = keyof typeof fieldRefs;
   const idOf = (field: Field) => `t-${field.toLowerCase()}`;
   const termRefs = Object.fromEntries(
-    (Object.keys(fieldRefs) as Field[]).map((f) => [idOf(f), { kind: "term", name: fieldRefs[f], text: `${fieldRefs[f]}の定義`, current: true }]),
+    (Object.keys(fieldRefs) as Field[]).map((f) => [idOf(f), termRef(fieldRefs[f], `${fieldRefs[f]}の定義`)]),
   );
   const allRefs = {
     ...termRefs,
-    "f-sort": { kind: "feature", name: "並べ替え", text: "タスクを順に並べる", current: true },
-    "c-other": { kind: "claim", name: null, text: "ほかの約束の文", current: true },
-    "c-gone": { kind: "claim", name: null, text: "消えた約束の文", current: false },
+    "f-sort": featureRef("並べ替え", "タスクを順に並べる", { core: false, formal: false }),
+    "c-other": claimRef("ほかの約束の文"),
+    "c-gone": claimRef("消えた約束の文", false),
+    // 比べる元にだけある（今の約束リストにない）用語と機能
+    "t-past": termRef("今ない用語", "今ない用語の定義", false),
+    "f-past": featureRef("今ない機能", "今ない機能の定義", { current: false, core: false, formal: false }),
   };
 
   const claimWithRefs = () =>
@@ -1050,7 +1054,7 @@ describe("参照", () => {
       change: "added",
       before: null,
       after: {
-        statement: [ref(fieldRefs.statement, idOf("statement")), { text: "と" }, ref("並べ替え", "f-sort"), { text: "と" }, ref("c-other", "c-other"), { text: "と" }, ref("c-gone", "c-gone"), { text: "の文" }],
+        statement: [ref(fieldRefs.statement, idOf("statement")), { text: "と" }, ref("並べ替え", "f-sort"), { text: "と" }, ref("c-other", "c-other"), { text: "と" }, ref("c-gone", "c-gone"), { text: "と" }, ref("今ない用語", "t-past"), { text: "と" }, ref("今ない機能", "f-past"), { text: "の文" }],
         rationale: [ref(fieldRefs.rationale, idOf("rationale")), { text: "の理由" }],
         condition: [ref(fieldRefs.condition, idOf("condition")), { text: "の条件" }],
         subjects: ["task-id"],
@@ -1087,6 +1091,15 @@ describe("参照", () => {
     focusable.sort((a, b) => (a.textContent ?? "").length - (b.textContent ?? "").length);
     return focusable[0];
   };
+  // shownText は、root の中の、見えている文字（閉じた枠のように、見えなくしたものの中の文字を除く）
+  const shownText = (root: HTMLElement) => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let out = "";
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (n.parentElement && !isInaccessible(n.parentElement)) out += n.textContent ?? "";
+    }
+    return out;
+  };
   // expectRefLook は、参照が、前後の参照でない文字と見分けられる形で出ているか（参照だけの要素で、囲む要素と違う見た目の印を持つ）を確かめる。
   // jsdom は描かないので、下線や色そのものは見ない
   const expectRefLook = (el: HTMLElement | undefined, name: string, where: string) => {
@@ -1120,40 +1133,53 @@ describe("参照", () => {
       await waitFor(() => expect(within(detailRegion()).queryAllByText(entry).length).toBeGreaterThan(0));
       await waitFor(() => expect(detailRegion().textContent).toContain(fieldRefs[fields[0]]));
       for (const f of fields) expectRefLook(refElement(detailRegion(), fieldRefs[f]), fieldRefs[f], `${entry.source} の ${f}`);
-      // 置き換えた文字だけを出し、書いたままの参照も、用語と機能の参照の指す ID も出さない
-      expect(detailRegion().textContent, `${entry.source} に書いたままの参照が出た`).not.toContain("{@id:");
-      for (const f of fields) expect(detailRegion().textContent, `${entry.source} に ${f} の参照の指す ID が出た`).not.toContain(idOf(f));
+      // 置き換えた文字だけを出し、書いたままの参照も、用語と機能の参照の指す ID も出さない（ID は、触れた時の枠にだけ出る）
+      expect(shownText(detailRegion()), `${entry.source} に書いたままの参照が出た`).not.toContain("{@id:");
+      for (const f of fields) expect(shownText(detailRegion()), `${entry.source} に ${f} の参照の指す ID が出た`).not.toContain(idOf(f));
     }
     await openEntry(/c-all/);
     await waitFor(() => expect(detailRegion().textContent).toContain("並べ替え"));
     expectRefLook(refElement(detailRegion(), "並べ替え"), "並べ替え", "機能を指す参照");
     expectRefLook(refElement(detailRegion(), "c-other"), "c-other", "約束を指す参照");
     expectRefLook(refElement(detailRegion(), "c-gone"), "c-gone", "今ない約束を指す参照");
-    expect(detailRegion().textContent, "機能の参照の指す ID が出た").not.toContain("f-sort");
+    expectRefLook(refElement(detailRegion(), "今ない用語"), "今ない用語", "今ない用語を指す参照");
+    expectRefLook(refElement(detailRegion(), "今ない機能"), "今ない機能", "今ない機能を指す参照");
+    for (const id of ["f-sort", "t-past", "f-past"]) expect(shownText(detailRegion()), `参照の指す ID ${id} が出た`).not.toContain(id);
   });
 
   // @vanda:evidence reference-shown
-  it("約束を指す参照のうち今ある約束はその約束の詳細へのリンクにし用語と機能と今ない約束はリンクにしない", async () => {
+  it("参照のうち今の約束リストにある約束と用語と機能はその詳細のページへのリンクにし今の約束リストにないものはリンクにしない", async () => {
     window.history.pushState({}, "", "/");
     open([claimWithRefs()], { refs: allRefs },
-      http.get("/api/claims/:id", ({ params }) => HttpResponse.json(claimDetail({ id: String(params.id), statement: plain(`${String(params.id)} の詳細の文`) }))));
+      http.get("/api/claims/:id", ({ params }) => HttpResponse.json(claimDetail({ id: String(params.id), statement: plain(`${String(params.id)} の詳細の文`) }))),
+      http.get("/api/terms/:id", ({ params }) =>
+        HttpResponse.json({ id: String(params.id), name: `${String(params.id)} の詳細の名前`, definition: plain("用語の詳細の定義"), partOf: null, children: [], claims: [], refs: {} })),
+      http.get("/api/features/:id", ({ params }) =>
+        HttpResponse.json({ id: String(params.id), name: `${String(params.id)} の詳細の名前`, definition: plain("機能の詳細の定義"), core: false, formal: false, claims: [], refs: {} })));
     await openEntry(/c-all/);
     await waitFor(() => expect(detailRegion().textContent).toContain("並べ替え"));
-    const region = detailRegion();
-    for (const name of [fieldRefs.statement, "並べ替え", "c-gone"]) {
-      expect(within(region).queryByRole("link", { name }), `${name} がリンクになっている`).toBeNull();
-    }
-    const link = within(region).getByRole("link", { name: "c-other" });
-    expect(new URL((link as HTMLAnchorElement).href).pathname).toBe("/claims/c-other");
     const beforeURL = window.location.pathname + window.location.search;
+    for (const name of ["c-gone", "今ない用語", "今ない機能"]) {
+      expect(within(detailRegion()).queryByRole("link", { name }), `${name} がリンクになっている`).toBeNull();
+    }
+    const cases: [string, string, string][] = [
+      ["c-other", "/claims/c-other", "c-other の詳細の文"],
+      [fieldRefs.statement, "/terms/t-statement", "t-statement の詳細の名前"],
+      ["並べ替え", "/features/f-sort", "f-sort の詳細の名前"],
+    ];
     const user = userEvent.setup();
-    await user.click(link);
-    expect(await screen.findByText("c-other の詳細の文")).toBeTruthy();
-    expect(window.location.pathname).toBe("/claims/c-other");
-    // 参照から移った先からも、行く前の画面の状態に戻れる（pitfall link-drops-default-state）
-    await user.click(await screen.findByRole("link", { name: "ストーリーのレビューへ戻る" }));
-    await waitFor(() => expect(window.location.pathname).toBe("/"));
-    expect(window.location.pathname + window.location.search).toBe(beforeURL);
+    for (const [name, path, shown] of cases) {
+      await waitFor(() => expect(detailRegion().textContent).toContain("並べ替え"));
+      const link = within(detailRegion()).getByRole("link", { name });
+      expect(new URL((link as HTMLAnchorElement).href).pathname, `${name} のリンク先`).toBe(path);
+      await user.click(link);
+      expect(await screen.findByText(shown), `${name} から移った先に詳細が出ない`).toBeTruthy();
+      expect(window.location.pathname).toBe(path);
+      // 参照から移った先からも、行く前の画面の状態に戻れる（pitfall link-drops-default-state）
+      await user.click(await screen.findByRole("link", { name: "ストーリーのレビューへ戻る" }));
+      await waitFor(() => expect(window.location.pathname).toBe("/"));
+      expect(window.location.pathname + window.location.search, `${name} の先から戻った URL`).toBe(beforeURL);
+    }
   });
 
   // @vanda:evidence reference-shown
@@ -1176,9 +1202,9 @@ describe("参照", () => {
       } as Partial<Entry>),
     ], {
       refs: {
-        "t-both": { kind: "term", name: "前も後もある用語", text: "両方の定義", current: true },
-        "t-gone": { kind: "term", name: "消した用語", text: "消した定義", current: false },
-        "t-new": { kind: "term", name: "足した用語", text: "足した定義", current: true },
+        "t-both": termRef("前も後もある用語", "両方の定義"),
+        "t-gone": termRef("消した用語", "消した定義", false),
+        "t-new": termRef("足した用語", "足した定義"),
       },
     });
     await openEntry(/c-diff/);
@@ -1189,29 +1215,72 @@ describe("参照", () => {
     expect(refElement(detailRegion(), "前も後もある用語")!.closest("del, ins"), "変わっていない参照が del・ins の中にある").toBeNull();
   });
 
-  // tooltipWith は、text を含む説明（role=tooltip）
-  const tooltipWith = (text: string) => screen.queryAllByRole("tooltip").find((t) => (t.textContent ?? "").includes(text)) ?? null;
+  // shownTips は、今見えている枠（role=tooltip）
+  const shownTips = () => screen.queryAllByRole("tooltip");
+  const tipWith = (text: string) => shownTips().find((t) => (t.textContent ?? "").includes(text)) ?? null;
+
+  // popupTargets は、枠に出す中身を、指す先の種類ごとに分けたもの（popupRefs はその refs）。機能は、コア機能か・形式手法を使う機能かの組み合わせを全部置く。
+  // 機能の定義の中の参照（文の用語）は、refs にもある ID を指す（枠の中の参照に枠を付けてしまうと、その枠が出る）
+  const popupTargets: { id: string; name: string; text: string; core?: boolean; formal?: boolean; current: boolean }[] = [
+    { id: "t-statement", name: "文の用語", text: "文の用語の定義", current: true },
+    { id: "t-past", name: "今ない用語", text: "今ない用語の定義", current: false },
+    { id: "f-both", name: "両方の機能", text: "両方の機能の定義", core: true, formal: true, current: true },
+    { id: "f-core", name: "コアだけの機能", text: "コアだけの機能の定義", core: true, formal: false, current: true },
+    { id: "f-formal", name: "形式だけの機能", text: "形式だけの機能の定義", core: false, formal: true, current: true },
+    { id: "f-none", name: "印のない機能", text: "印のない機能の定義", core: false, formal: false, current: false },
+    { id: "c-other", name: "c-other", text: "ほかの約束の文", current: true },
+    { id: "c-gone", name: "c-gone", text: "消えた約束の文", current: false },
+  ];
+  const popupRefs = Object.fromEntries(
+    popupTargets.map((p) => [
+      p.id,
+      p.id.startsWith("t-") ? termRef(p.name, p.text, p.current)
+        : p.id.startsWith("f-") ? featureRef(p.name, `文の用語を使う${p.text}`, { current: p.current, core: p.core!, formal: p.formal!, pieces: [ref("文の用語", "t-statement"), { text: `を使う${p.text}` }] })
+        : claimRef(p.text, p.current),
+    ]),
+  );
+  const popupEntry = () =>
+    claimEntry(1, "c-pop", {
+      change: "added",
+      before: null,
+      after: {
+        ...claimEntry(1, "c-pop").after!,
+        statement: popupTargets.flatMap((p) => [ref(p.name, p.id), { text: "と" }]),
+      },
+    } as Partial<Entry>);
+  // expectTipContent は、枠が、指す先の ID と中身（用語と機能は定義、約束は文）と、機能ならコア機能か・形式手法を使う機能かの印を持つかを確かめる
+  const expectTipContent = (tip: HTMLElement, p: (typeof popupTargets)[number], how: string) => {
+    const text = tip.textContent ?? "";
+    expect(text, `${p.name}: ${how}の枠に ID がない`).toContain(p.id);
+    expect(text, `${p.name}: ${how}の枠に中身がない`).toContain(p.text);
+    const marks: [string, boolean][] = [["コア機能", p.core === true], ["形式手法を使う機能", p.formal === true]];
+    for (const [mark, want] of marks) {
+      if (want) expect(text, `${p.name}: ${how}の枠に「${mark}」の印がない`).toContain(mark);
+      else expect(text, `${p.name}: ${how}の枠に「${mark}」の印がある`).not.toContain(mark);
+    }
+  };
 
   // @vanda:evidence reference-popup
-  it("参照に触れた時とキーボードでフォーカスした時に用語と機能はその定義を約束はその文を出し離れると消す", async () => {
-    open([claimWithRefs()], { refs: allRefs });
-    await openEntry(/c-all/);
-    await waitFor(() => expect(detailRegion().textContent).toContain("並べ替え"));
+  it("参照に触れた時とフォーカスした時に指す先のIDと中身と機能ならコア機能か形式手法を使う機能かの印を枠で出し離れるかEscで消す", async () => {
+    open([popupEntry()], { refs: popupRefs });
+    await openEntry(/c-pop/);
+    await waitFor(() => expect(detailRegion().textContent).toContain("印のない機能"));
     const user = userEvent.setup();
-    const cases: [string, string][] = [
-      [fieldRefs.statement, `${fieldRefs.statement}の定義`],
-      ["並べ替え", "タスクを順に並べる"],
-      ["c-other", "ほかの約束の文"],
-      ["c-gone", "消えた約束の文"],
-    ];
-    for (const [name, text] of cases) {
-      const el = refElement(detailRegion(), name)!;
-      expect(el, `参照 ${name} がない`).toBeTruthy();
-      expect(tooltipWith(text), `${name}: 触れる前から出ている`).toBeNull();
+    for (const p of popupTargets) {
+      const el = refElement(detailRegion(), p.name)!;
+      expect(el, `参照 ${p.name} がない`).toBeTruthy();
+      expect(tipWith(p.text), `${p.name}: 触れる前から出ている`).toBeNull();
       await user.hover(el);
-      await waitFor(() => expect(tooltipWith(text), `${name}: 触れても ${text} が出ない`).toBeTruthy());
+      await waitFor(() => expect(tipWith(p.text), `${p.name}: 触れても枠が出ない`).toBeTruthy());
+      expectTipContent(tipWith(p.text)!, p, "触れた時");
       await user.unhover(el);
-      await waitFor(() => expect(tooltipWith(text), `${name}: 離れても消えない`).toBeNull());
+      await waitFor(() => expect(tipWith(p.text), `${p.name}: 離れても消えない`).toBeNull());
+      // 触れて開いた枠は Esc で閉じる
+      await user.hover(el);
+      await waitFor(() => expect(tipWith(p.text)).toBeTruthy());
+      await user.keyboard("{Escape}");
+      await waitFor(() => expect(tipWith(p.text), `${p.name}: 触れて開いた枠が Esc で消えない`).toBeNull());
+      await user.unhover(el);
       // キーボードで（Tab で）たどり着ける
       (document.activeElement as HTMLElement | null)?.blur();
       let reached = false;
@@ -1219,11 +1288,49 @@ describe("参照", () => {
         await user.tab();
         reached = document.activeElement === el;
       }
-      expect(reached, `${name}: Tab でフォーカスできない`).toBe(true);
-      await waitFor(() => expect(tooltipWith(text), `${name}: フォーカスしても ${text} が出ない`).toBeTruthy());
+      expect(reached, `${p.name}: Tab でフォーカスできない`).toBe(true);
+      await waitFor(() => expect(tipWith(p.text), `${p.name}: フォーカスしても枠が出ない`).toBeTruthy());
+      expectTipContent(tipWith(p.text)!, p, "フォーカスした時");
+      await user.keyboard("{Escape}");
+      await waitFor(() => expect(tipWith(p.text), `${p.name}: フォーカスして開いた枠が Esc で消えない`).toBeNull());
       el.blur();
-      await waitFor(() => expect(tooltipWith(text), `${name}: フォーカスを外しても消えない`).toBeNull());
+      await waitFor(() => expect(tipWith(p.text), `${p.name}: フォーカスを外しても消えない`).toBeNull());
     }
+  });
+
+  // @vanda:evidence reference-popup
+  it("枠の中の文の参照は参照の見た目で出しリンクにもせず触れてもフォーカスしても次の枠を出さない", async () => {
+    open([popupEntry()], { refs: popupRefs });
+    await openEntry(/c-pop/);
+    await waitFor(() => expect(detailRegion().textContent).toContain("両方の機能"));
+    const user = userEvent.setup();
+    // 枠の外の「文の用語」に触れれば、待たずにすぐ枠が出る（下で、枠の中の参照に触れた直後に枠がないことを見る時の、比べる相手）
+    const outer = refElement(detailRegion(), "文の用語")!;
+    await user.hover(outer);
+    expect(tipWith("文の用語の定義"), "枠の外の参照に触れても、すぐに枠が出ない").toBeTruthy();
+    await user.unhover(outer);
+    await waitFor(() => expect(tipWith("文の用語の定義")).toBeNull());
+    await user.hover(refElement(detailRegion(), "両方の機能")!);
+    await waitFor(() => expect(tipWith("両方の機能の定義")).toBeTruthy());
+    const tip = tipWith("両方の機能の定義")!;
+    // 枠の中の「文の用語」（いちばん短い、ちょうどその文字の要素）
+    const inner = Array.from(tip.querySelectorAll<HTMLElement>("*")).filter((x) => x.textContent === "文の用語").pop();
+    expect(inner, "枠の中の参照が、それだけを包む要素で出ていない").toBeTruthy();
+    // 参照の見た目: 同じ枠の中の参照でない文字（「を使う両方の機能の定義」）を包む要素と、見た目の印が違う
+    const look = (x: Element) => x.tagName + " " + x.className;
+    let around = inner!.parentElement!;
+    while ((around.textContent ?? "").length <= "文の用語".length) around = around.parentElement!;
+    const plainLeaves = Array.from(around.querySelectorAll("*")).filter((x) => x.children.length === 0 && (x.textContent ?? "").includes("を使う"));
+    const others = plainLeaves.length > 0 ? plainLeaves : [around];
+    for (const o of others) expect(look(inner!), `枠の中の参照の見た目が、参照でない文字「${o.textContent}」と同じ`).not.toBe(look(o));
+    // リンクにしない・フォーカスさせない
+    expect(within(tip).queryAllByRole("link"), "枠の中にリンクがある").toHaveLength(0);
+    expect(inner!.closest("a[href]"), "枠の中の参照がリンクの中にある").toBeNull();
+    expect(Array.from(tip.querySelectorAll<HTMLElement>("*")).filter((x) => x.tabIndex >= 0), "枠の中にフォーカスできるものがある").toHaveLength(0);
+    // 触れても、文の用語の枠（文の用語の定義）は出ず、見えている枠は 1 つのまま
+    await user.hover(inner!);
+    expect(tipWith("文の用語の定義"), "枠の中の参照に触れたら、次の枠が出た").toBeNull();
+    expect(shownTips(), "見えている枠の数").toHaveLength(1);
   });
 });
 
@@ -1250,7 +1357,7 @@ describe("参照の絞り込み", () => {
         after: { name: "果物", definition: [ref("りんご", "t-apple"), { text: "の仲間" }], partOf: null },
       } as Partial<Entry>),
     ];
-    open(entries, { refs: { "t-apple": { kind: "term", name: "りんご", text: "赤い果物", current: true } } });
+    open(entries, { refs: { "t-apple": termRef("りんご", "赤い果物") } });
     await waitFor(() => expect(shown("c-fruit")).toBe(true));
     const user = userEvent.setup();
     const search = async (text: string, want: Record<string, boolean>) => {

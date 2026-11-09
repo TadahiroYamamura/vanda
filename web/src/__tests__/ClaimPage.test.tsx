@@ -1,11 +1,12 @@
 // CL（約束の詳細）の画面が、API の結果を正しく見せるか。API は MSW で差し替える。
-import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { App } from "../App";
 import type { ClaimDetail, Entry } from "../api";
-import { apiError, claimDetail, claimEntry, ctx, fileEntry, plain, review, server, story } from "./fixtures";
+import { isInaccessible } from "@testing-library/dom";
+import { apiError, claimDetail, claimEntry, claimRef, ctx, featureRef, fileEntry, plain, review, server, story, termRef } from "./fixtures";
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterAll(() => server.close());
@@ -16,6 +17,15 @@ afterEach(() => {
 });
 
 const bodyText = () => document.body.textContent ?? "";
+// shownText は、見えている文字（閉じた枠のように、見えなくしたものの中の文字を除く）
+const shownText = (root: HTMLElement = document.body) => {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let out = "";
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    if (n.parentElement && !isInaccessible(n.parentElement)) out += n.textContent ?? "";
+  }
+  return out;
+};
 
 function open(d: ClaimDetail) {
   server.use(
@@ -419,18 +429,21 @@ it("その時点の約束リストが読めない合意の記録を選ぶとAPI�
 // 参照（show-references）。約束の詳細とその時点の中身の、自然言語で書く項目の片と refs（docs/plans/stage4-references.md の「API の形」と「画面」）
 const ref = (text: string, id: string) => ({ text, ref: id });
 const claimRefs = {
-  "t-statement": { kind: "term", name: "文の用語", text: "文の用語の定義", current: true },
-  "t-rationale": { kind: "term", name: "理由の用語", text: "理由の用語の定義", current: true },
-  "t-condition": { kind: "term", name: "条件の用語", text: "条件の用語の定義", current: true },
-  "t-guess": { kind: "term", name: "推測の用語", text: "推測の用語の定義", current: true },
-  "t-detail": { kind: "term", name: "詳細の用語", text: "詳細の用語の定義", current: true },
-  "f-sort": { kind: "feature", name: "並べ替え", text: "タスクを順に並べる", current: true },
-  "c-other": { kind: "claim", name: null, text: "ほかの約束の文", current: true },
-  "c-gone": { kind: "claim", name: null, text: "消えた約束の文", current: false },
+  "t-statement": termRef("文の用語", "文の用語の定義"),
+  "t-rationale": termRef("理由の用語", "理由の用語の定義"),
+  "t-condition": termRef("条件の用語", "条件の用語の定義"),
+  "t-guess": termRef("推測の用語", "推測の用語の定義"),
+  "t-detail": termRef("詳細の用語", "詳細の用語の定義"),
+  "f-sort": featureRef("並べ替え", "タスクを順に並べる", { core: true, formal: false }),
+  "c-other": claimRef("ほかの約束の文"),
+  "c-gone": claimRef("消えた約束の文", false),
+  // 比べる元にだけある（今の約束リストにない）用語と機能
+  "t-past": termRef("今ない用語", "今ない用語の定義", false),
+  "f-past": featureRef("今ない機能", "今ない機能の定義", { current: false, core: false, formal: false }),
 };
 const detailWithRefs = (over: Partial<ClaimDetail> = {}) =>
   claimDetail({
-    statement: [ref("文の用語", "t-statement"), { text: "と" }, ref("並べ替え", "f-sort"), { text: "と" }, ref("c-other", "c-other"), { text: "と" }, ref("c-gone", "c-gone"), { text: "の文" }],
+    statement: [ref("文の用語", "t-statement"), { text: "と" }, ref("並べ替え", "f-sort"), { text: "と" }, ref("c-other", "c-other"), { text: "と" }, ref("c-gone", "c-gone"), { text: "と" }, ref("今ない用語", "t-past"), { text: "と" }, ref("今ない機能", "f-past"), { text: "の文" }],
     rationale: [ref("理由の用語", "t-rationale"), { text: "の理由" }],
     condition: [ref("条件の用語", "t-condition"), { text: "の条件" }],
     guesses: [[ref("推測の用語", "t-guess"), { text: "の推測" }]],
@@ -467,17 +480,29 @@ const expectRefLookIn = (el: HTMLElement | undefined, name: string, where: strin
 };
 
 // @vanda:evidence reference-shown
-it("約束の詳細では文と理由と条件と推測とエビデンスの詳細の参照を用語と機能は名前で約束はIDで参照だと分かる見た目で出し今ある約束だけをリンクにする", async () => {
+it("約束の詳細では文と理由と条件と推測とエビデンスの詳細の参照を用語と機能は名前で約束はIDで参照だと分かる見た目で出し今の約束リストにあるものだけを詳細のページへのリンクにする", async () => {
   open(detailWithRefs());
   await waitFor(() => expect(bodyText()).toContain("詳細の用語"));
-  for (const name of ["文の用語", "理由の用語", "条件の用語", "推測の用語", "詳細の用語", "並べ替え", "c-other", "c-gone"]) {
+  for (const name of ["文の用語", "理由の用語", "条件の用語", "推測の用語", "詳細の用語", "並べ替え", "c-other", "c-gone", "今ない用語", "今ない機能"]) {
     expectRefLookIn(refElementIn(document.body, name), name, "約束の詳細");
   }
-  expect(bodyText(), "書いたままの参照が出た").not.toContain("{@id:");
-  for (const id of ["t-statement", "t-rationale", "t-condition", "t-guess", "t-detail", "f-sort"]) expect(bodyText(), `用語・機能の参照の指す ID ${id} が出た`).not.toContain(id);
-  for (const name of ["文の用語", "並べ替え", "c-gone"]) expect(screen.queryByRole("link", { name }), `${name} がリンクになっている`).toBeNull();
-  const link = screen.getByRole("link", { name: "c-other" });
-  expect(new URL((link as HTMLAnchorElement).href).pathname).toBe("/claims/c-other");
+  // ID は、触れた時の枠にだけ出る
+  expect(shownText(), "書いたままの参照が出た").not.toContain("{@id:");
+  for (const id of ["t-statement", "t-rationale", "t-condition", "t-guess", "t-detail", "f-sort", "t-past", "f-past"]) expect(shownText(), `用語・機能の参照の指す ID ${id} が出た`).not.toContain(id);
+  for (const name of ["c-gone", "今ない用語", "今ない機能"]) expect(screen.queryByRole("link", { name }), `${name} がリンクになっている`).toBeNull();
+  const links: [string, string][] = [
+    ["c-other", "/claims/c-other"],
+    ["文の用語", "/terms/t-statement"],
+    ["理由の用語", "/terms/t-rationale"],
+    ["条件の用語", "/terms/t-condition"],
+    ["推測の用語", "/terms/t-guess"],
+    ["詳細の用語", "/terms/t-detail"],
+    ["並べ替え", "/features/f-sort"],
+  ];
+  for (const [name, path] of links) {
+    const link = screen.getByRole("link", { name });
+    expect(new URL((link as HTMLAnchorElement).href).pathname, `${name} のリンク先`).toBe(path);
+  }
 });
 
 // @vanda:evidence reference-shown
@@ -489,7 +514,7 @@ it("約束の履歴で開いたその時点の中身の参照もその時点のr
         id: "task-id-unique", commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめ", stories: ["#1"],
         content: { statement: [ref("その時点だけの用語", "t-old"), { text: "を使っていた" }], rationale: null, condition: null, subjects: ["task-id"], layers: ["model"], evidence: [], flags: [], guesses: [] },
         layers: [{ id: "model", name: "モデル" }],
-        refs: { "t-old": { kind: "term", name: "その時点だけの用語", text: "今はない用語の定義", current: false } },
+        refs: { "t-old": termRef("その時点だけの用語", "今はない用語の定義", false) },
       }),
     ),
   );
@@ -498,21 +523,35 @@ it("約束の履歴で開いたその時点の中身の参照もその時点のr
   await userEvent.setup().click(within(row).getByRole("button", { name: "その時点の中身を開く" }));
   await waitFor(() => expect(bodyText()).toContain("その時点だけの用語"));
   expectRefLookIn(refElementIn(document.body, "その時点だけの用語"), "その時点だけの用語", "その時点の中身");
-  expect(bodyText()).not.toContain("t-old");
+  expect(shownText()).not.toContain("t-old");
+  expect(screen.queryByRole("link", { name: "その時点だけの用語" }), "今の約束リストにない用語がリンクになっている").toBeNull();
 });
 
 // @vanda:evidence reference-popup
-it("約束の詳細の参照に触れた時とフォーカスした時に用語と機能はその定義を約束はその文を出し離れると消す", async () => {
+it("約束の詳細の参照に触れた時とフォーカスした時に指す先のIDと用語と機能はその定義を約束はその文を枠で出し離れると消す", async () => {
   open(detailWithRefs());
   await waitFor(() => expect(bodyText()).toContain("詳細の用語"));
   const tooltipWith = (text: string) => screen.queryAllByRole("tooltip").find((t) => (t.textContent ?? "").includes(text)) ?? null;
   const user = userEvent.setup();
-  for (const [name, text] of [["理由の用語", "理由の用語の定義"], ["並べ替え", "タスクを順に並べる"], ["c-other", "ほかの約束の文"], ["c-gone", "消えた約束の文"]] as const) {
+  const cases = [
+    ["理由の用語", "理由の用語の定義", "t-rationale"],
+    ["今ない用語", "今ない用語の定義", "t-past"],
+    ["並べ替え", "タスクを順に並べる", "f-sort"],
+    ["c-other", "ほかの約束の文", "c-other"],
+    ["c-gone", "消えた約束の文", "c-gone"],
+  ] as const;
+  for (const [name, text, id] of cases) {
     const el = refElementIn(document.body, name)!;
     expect(el, `参照 ${name} がない`).toBeTruthy();
     expect(tooltipWith(text), `${name}: 触れる前から出ている`).toBeNull();
     await user.hover(el);
     await waitFor(() => expect(tooltipWith(text), `${name}: 触れても ${text} が出ない`).toBeTruthy());
+    expect(tooltipWith(text)!.textContent, `${name}: 枠に ID がない`).toContain(id);
+    // f-sort は、コア機能で、形式手法を使う機能ではない
+    if (id === "f-sort") {
+      expect(tooltipWith(text)!.textContent, "並べ替え: 枠にコア機能の印がない").toContain("コア機能");
+      expect(tooltipWith(text)!.textContent, "並べ替え: 枠に形式手法を使う機能の印がある").not.toContain("形式手法を使う機能");
+    }
     await user.unhover(el);
     await waitFor(() => expect(tooltipWith(text), `${name}: 離れても消えない`).toBeNull());
     el.focus();
@@ -624,4 +663,144 @@ it("約束の詳細の画面とファイルの画面はAPIのエラーを出す�
     cleanup();
     server.resetHandlers();
   }
+});
+
+// 用語と機能の詳細のページ（show-term-feature-pages）。API の形は docs/formats.md の GET /api/terms/<ID>・GET /api/features/<ID>
+describe("用語と機能の詳細", () => {
+  const openAt = (path: string, ...handlers: Parameters<typeof server.use>) => {
+    window.history.pushState({}, "", path);
+    server.use(http.get("/api/context", () => HttpResponse.json(ctx)), ...handlers);
+    render(<App />);
+  };
+  // 約束リストに書いた順（ID の順と違う）
+  const claims = [
+    { id: "c-z", statement: [{ text: "最初に書いた約束は" }, ref("定義の中の用語", "t-in-def"), { text: "を数える" }] },
+    { id: "c-a", statement: plain("次に書いた約束の文") },
+    { id: "c-m", statement: plain("最後に書いた約束の文") },
+  ];
+  const tfRefs = { "t-parent": termRef("親にした用語", "親の定義"), "t-in-def": termRef("定義の中の用語", "定義の中の用語の定義") };
+  const termDetail = (over = {}) => ({
+    id: "t-mid", name: "まん中の用語",
+    definition: [ref("定義の中の用語", "t-in-def"), { text: "を見分ける名前" }],
+    partOf: { id: "t-parent", name: "親にした用語" },
+    children: [{ id: "t-child-b", name: "子にした用語 B" }, { id: "t-child-a", name: "子にした用語 A" }],
+    claims, refs: tfRefs, ...over,
+  });
+  const featureDetail = (over = {}) => ({
+    id: "f-sort", name: "並べ替える機能",
+    definition: [ref("定義の中の用語", "t-in-def"), { text: "を順に並べる" }],
+    core: false, formal: false, claims, refs: tfRefs, ...over,
+  });
+  // inOrder は、texts が見えている文字の中に、この順に出ているか
+  const expectInOrder = (texts: string[], where: string) => {
+    const shown = shownText();
+    let at = -1;
+    for (const t of texts) {
+      const i = shown.indexOf(t, at + 1);
+      expect(i, `${where}: ${t} が ${texts.join("・")} の順に出ていない`).toBeGreaterThan(at);
+      at = i;
+    }
+  };
+  // expectClaimList は、約束の一覧が、書いた順に、ID と文で並び、それぞれその約束の詳細へのリンクになっているか
+  const expectClaimList = (where: string) => {
+    expectInOrder(["c-z", "最初に書いた約束は定義の中の用語を数える", "c-a", "次に書いた約束の文", "c-m", "最後に書いた約束の文"], where);
+    const claimLinks = screen.getAllByRole("link").map((a) => new URL((a as HTMLAnchorElement).href).pathname).filter((p) => p.startsWith("/claims/"));
+    expect(claimLinks, `${where}: 約束の詳細へのリンク`).toEqual(["/claims/c-z", "/claims/c-a", "/claims/c-m"]);
+    for (const id of ["c-z", "c-a", "c-m"]) {
+      expect(new URL((screen.getByRole("link", { name: id }) as HTMLAnchorElement).href).pathname, `${where}: ${id} のリンク`).toBe(`/claims/${id}`);
+    }
+  };
+
+  // @vanda:evidence term-page-content
+  it("用語の詳細のページに名前とIDと定義と親の用語と子の用語を示し定義の参照は参照の見た目で出す", async () => {
+    openAt("/terms/t-mid?view=branch&base=main", http.get("/api/terms/:id", () => HttpResponse.json(termDetail())));
+    await waitFor(() => expect(shownText()).toContain("まん中の用語"));
+    const shown = shownText();
+    for (const t of ["まん中の用語", "t-mid", "定義の中の用語を見分ける名前", "親にした用語", "子にした用語 B", "子にした用語 A"]) expect(shown, `${t} がない`).toContain(t);
+    expectRefLookIn(refElementIn(document.body, "定義の中の用語"), "定義の中の用語", "用語の詳細の定義");
+    // 子は API が返した順（約束リストに書いた順）
+    expectInOrder(["子にした用語 B", "子にした用語 A"], "子の用語");
+  });
+
+  // @vanda:evidence term-page-content
+  it("用語の詳細のページは親の用語がなければ親を示さず親が約束リストにないIDならそのIDを示す", async () => {
+    openAt("/terms/t-mid", http.get("/api/terms/:id", () => HttpResponse.json(termDetail({ partOf: null, children: [], claims: [] }))));
+    await waitFor(() => expect(shownText()).toContain("まん中の用語"));
+    // 定義の参照（定義の中の用語）のほかに、用語の詳細へのリンクがない（約束の文の参照も除くため、約束も置かない）
+    const termLinks = screen.getAllByRole("link").map((a) => new URL((a as HTMLAnchorElement).href).pathname).filter((p) => p.startsWith("/terms/"));
+    expect(termLinks, "親も子もないのに用語へのリンクがある").toEqual(["/terms/t-in-def"]);
+    cleanup();
+    server.resetHandlers();
+    openAt("/terms/t-mid", http.get("/api/terms/:id", () => HttpResponse.json(termDetail({ partOf: { id: "t-missing-parent", name: null } }))));
+    await waitFor(() => expect(shownText()).toContain("まん中の用語"));
+    expect(shownText(), "約束リストにない親の ID がない").toContain("t-missing-parent");
+  });
+
+  // @vanda:evidence feature-page-content
+  it("機能の詳細のページに名前とIDと定義とコア機能か形式手法を使う機能かの印を示す", async () => {
+    for (const core of [true, false]) {
+      for (const formal of [true, false]) {
+        const where = `core=${core}・formal=${formal}`;
+        openAt("/features/f-sort", http.get("/api/features/:id", () => HttpResponse.json(featureDetail({ core, formal }))));
+        await waitFor(() => expect(shownText()).toContain("並べ替える機能"));
+        const shown = shownText();
+        for (const t of ["並べ替える機能", "f-sort", "定義の中の用語を順に並べる"]) expect(shown, `${where}: ${t} がない`).toContain(t);
+        expectRefLookIn(refElementIn(document.body, "定義の中の用語"), "定義の中の用語", `${where}: 機能の詳細の定義`);
+        if (core) expect(shown, `${where}: コア機能の印がない`).toContain("コア機能");
+        else expect(shown, `${where}: コア機能の印がある`).not.toContain("コア機能");
+        if (formal) expect(shown, `${where}: 形式手法を使う機能の印がない`).toContain("形式手法を使う機能");
+        else expect(shown, `${where}: 形式手法を使う機能の印がある`).not.toContain("形式手法を使う機能");
+        cleanup();
+        server.resetHandlers();
+      }
+    }
+  });
+
+  // @vanda:evidence term-feature-page-claims
+  it("用語と機能の詳細のページにそれを対象に持つ約束を書いた順にIDと文で並べそれぞれ約束の詳細へのリンクにする", async () => {
+    openAt("/terms/t-mid?view=branch&base=main", http.get("/api/terms/:id", () => HttpResponse.json(termDetail())));
+    await waitFor(() => expect(shownText()).toContain("最後に書いた約束の文"));
+    expectClaimList("用語の詳細");
+    cleanup();
+    server.resetHandlers();
+    openAt("/features/f-sort?view=branch&base=main", http.get("/api/features/:id", () => HttpResponse.json(featureDetail())));
+    await waitFor(() => expect(shownText()).toContain("最後に書いた約束の文"));
+    expectClaimList("機能の詳細");
+    // 一覧のリンクから、その約束の詳細へ移る
+    server.use(http.get("/api/claims/:id", ({ params }) => HttpResponse.json(claimDetail({ id: String(params.id), statement: plain(`${String(params.id)} の詳細の文`) }))));
+    await userEvent.setup().click(screen.getByRole("link", { name: "c-a" }));
+    expect(await screen.findByText("c-a の詳細の文")).toBeTruthy();
+    expect(window.location.pathname).toBe("/claims/c-a");
+  });
+
+  // @vanda:evidence term-feature-page-claims
+  it("用語と機能の詳細のページはそれを対象に持つ約束がなければ約束の詳細へのリンクを出さない", async () => {
+    for (const [path, handler] of [
+      ["/terms/t-mid", http.get("/api/terms/:id", () => HttpResponse.json(termDetail({ claims: [] })))],
+      ["/features/f-sort", http.get("/api/features/:id", () => HttpResponse.json(featureDetail({ claims: [] })))],
+    ] as const) {
+      openAt(path, handler);
+      await waitFor(() => expect(shownText()).toContain("定義の中の用語"));
+      const claimLinks = screen.getAllByRole("link").filter((a) => new URL((a as HTMLAnchorElement).href).pathname.startsWith("/claims/"));
+      expect(claimLinks, `${path}: 約束がないのに約束の詳細へのリンクがある`).toHaveLength(0);
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+
+  // @vanda:evidence term-feature-page-missing
+  it("今の約束リストにないIDの用語と機能の詳細のページを開くとそのIDが約束リストにないことを示す", async () => {
+    for (const [path, api, message] of [
+      ["/terms/t-none", "/api/terms/:id", "用語 t-none は約束リストにありません。"],
+      ["/features/f-none", "/api/features/:id", "機能 f-none は約束リストにありません。"],
+    ] as const) {
+      openAt(path, http.get(api, () => apiError(404, message)));
+      const id = path.split("/")[2];
+      await waitFor(() => expect(shownText(), `${path}: 約束リストにないことを示さない`).toContain("約束リストにありません"));
+      expect(shownText(), `${path}: ID がない`).toContain(id);
+      expect(shownText(), `${path}: 読み込み中のまま`).not.toContain("読み込んでいます");
+      cleanup();
+      server.resetHandlers();
+    }
+  });
 });

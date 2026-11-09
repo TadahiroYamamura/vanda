@@ -2,7 +2,7 @@
 // 形は docs/formats.md の「GUI の API」。中身は、テストの中で手で作る（vanda の出力から作らない）。
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
-import type { ClaimDetail, Context, Entry, Review, Story } from "../api";
+import type { ClaimDetail, Context, Entry, Piece, RefTarget, Review, Story } from "../api";
 
 export const ctx: Context = {
   version: "0.1.0",
@@ -25,6 +25,14 @@ export const ctx: Context = {
 
 // plain は、参照のない文を片の配列にする（自然言語で書く項目は、API で片の配列になる。docs/plans/stage4-references.md）。
 export const plain = (text: string) => [{ text }];
+
+// termRef・featureRef・claimRef は、応答の最上位の refs の 1 つ（docs/formats.md の「自然言語で書く項目（片の配列）」）。
+// pieces を省けば、text を参照のない 1 つの片にする
+export const termRef = (name: string, text: string, current = true, pieces: Piece[] = plain(text)): RefTarget => ({ kind: "term", name, text, current, pieces });
+export const featureRef = (name: string, text: string, o: { current?: boolean; core: boolean; formal: boolean; pieces?: Piece[] }): RefTarget => ({
+  kind: "feature", name, text, current: o.current ?? true, pieces: o.pieces ?? plain(text), core: o.core, formal: o.formal,
+});
+export const claimRef = (text: string, current = true, pieces: Piece[] = plain(text)): RefTarget => ({ kind: "claim", name: null, text, current, pieces });
 
 export function claimEntry(no: number, id: string, over: Partial<Entry> = {}): Entry {
   return {
