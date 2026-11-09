@@ -823,3 +823,11 @@ fingerprint = "sha256:5d41e8d89437492e7d0dff3a8f88590955baf96997dda1e5cca9fd5a41
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-09T17:19:28+09:00
 story = "#4"
+
+[[agreement]]
+kind = "feature"
+key = "fold-groups"
+fingerprint = "sha256:e242c41a76a4a3682c5595944611a3ff2219806893e0c04266fadae16e488c3f"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-09T17:20:02+09:00
+story = "#4"
