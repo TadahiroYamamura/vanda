@@ -55,7 +55,7 @@ definition = "{@id:promise}が{@id:software}のどの部分の話か"
 
 [[term]]
 id = "origin"
-name = "由来"
+name = "変更履歴"
 definition = "{@id:promise}が作られたり変わったりした履歴（コミット）"
 
 [[term]]
@@ -202,12 +202,12 @@ definition = "開発の単位。{@id:story-store}（GitHub Issues など）で�
 
 [[term]]
 id = "agreement"
-name = "合意"
+name = "承認"
 definition = "{@id:promise}などの今の中身が要求どおりかを人が確かめ、認めること。動作は「合意する」"
 
 [[term]]
 id = "agreement-record"
-name = "合意の記録"
+name = "承認の記録"
 definition = "{@id:agreement}を書き留めたもの。{@id:promise}・{@id:term}・{@id:feature}なら ID と中身の{@id:fingerprint}の組、ファイルならファイルパスと中身の{@id:fingerprint}の組ごとに、誰が・いつ・どの{@id:story}で{@id:agreement}したかを書く。{@id:promise-list}とは別のファイルに置く"
 
 [[term]]
@@ -217,7 +217,7 @@ definition = "今の中身に、まだ{@id:agreement}していない状態。一
 
 [[term]]
 id = "agreed"
-name = "合意済"
+name = "承認済"
 definition = "今の中身に{@id:agreement}している状態"
 
 [[term]]
@@ -245,48 +245,48 @@ part_of = "flag"
 
 [[term]]
 id = "check"
-name = "審査"
+name = "チェック"
 definition = "CLI の vanda check が行う点検。{@id:promise-list}・{@id:annotation}・{@id:story-trailer}・{@id:agreement}・{@id:evidence-plan}などを読んで、間違いや矛盾がなく基準を満たすかを判断する"
 
 [[term]]
 id = "promise-list-shape-check"
-name = "約束リストの形の審査"
+name = "約束リストの形のチェック"
 definition = "{@id:promise-list}が決まった形で書かれているかを確かめる{@id:check}。{@id:check-config}に書く名前は promise-list-shape"
 part_of = "check"
 
 [[term]]
 id = "annotation-links-check"
-name = "アノテーションのつながりの審査"
+name = "アノテーションのつながりのチェック"
 definition = "{@id:annotation}が、{@id:promise-list}にある{@id:term}・{@id:feature}・{@id:promise}を正しく指しているかを確かめる{@id:check}。{@id:check-config}に書く名前は annotation-links"
 part_of = "check"
 
 [[term]]
 id = "story-origin-check"
-name = "由来の審査"
+name = "コミットのストーリーのチェック"
 definition = "{@id:promise-list}を変えたコミットが、どの{@id:story}のものか分かるかを確かめる{@id:check}。{@id:check-config}に書く名前は story-origin"
 part_of = "check"
 
 [[term]]
 id = "agreement-check"
-name = "合意の審査"
+name = "承認のチェック"
 definition = "{@id:agreement}の対象の今の中身に、PO が{@id:agreement}しているかを確かめる{@id:check}。{@id:check-config}に書く名前は agreement"
 part_of = "check"
 
 [[term]]
 id = "agreement-targets-check"
-name = "合意の記録の指す先の審査"
+name = "承認の記録の指す先のチェック"
 definition = "{@id:agreement-record}が、{@id:promise-list}にあるものを指しているかを確かめる{@id:check}。{@id:check-config}に書く名前は agreement-targets"
 part_of = "check"
 
 [[term]]
 id = "evidence-present-check"
-name = "エビデンスが揃っている審査"
+name = "エビデンスが揃っているチェック"
 definition = "{@id:promise}に予定した{@id:evidence}が揃っているかを確かめる{@id:check}。{@id:check-config}に書く名前は evidence-present"
 part_of = "check"
 
 [[term]]
 id = "unread-files-check"
-name = "読まれていないファイルの審査"
+name = "読まれていないファイルのチェック"
 definition = "{@id:vanda-dir} に、{@id:vanda} が読まないファイルが置かれていないかを確かめる{@id:check}。{@id:check-config}に書く名前は unread-files"
 part_of = "check"
 
@@ -317,7 +317,7 @@ definition = "{@id:vanda} と、言語や道具・{@id:story-store}・{@id:guard
 
 [[term]]
 id = "builtin-adapter"
-name = "組込みのアダプタ"
+name = "組み込みのアダプタ"
 definition = "{@id:vanda} が中に持つ{@id:adapter}"
 part_of = "adapter"
 
@@ -329,7 +329,7 @@ part_of = "adapter"
 
 [[term]]
 id = "fingerprint"
-name = "指紋"
+name = "フィンガープリント"
 definition = "中身が同じかを比べるための値。{@id:agreement-record}は、{@id:agreement}した時の指紋を持つ"
 
 [[term]]
@@ -366,13 +366,13 @@ part_of = "vanda-dir"
 
 [[term]]
 id = "default-agreement-record-file"
-name = "合意の記録の既定のファイル"
+name = "承認の記録の既定のファイル"
 definition = "設定に agreements を書かない時に、{@id:agreement-record}として読み書きするファイル（.vanda/agreements.toml）"
 part_of = "vanda-dir"
 
 [[term]]
 id = "check-config-dir"
-name = "審査の設定のディレクトリ"
+name = "チェックの設定のディレクトリ"
 definition = "{@id:check-config}を <名前>.toml という名前で置くディレクトリ（.vanda/checks/）"
 part_of = "vanda-dir"
 
@@ -384,22 +384,22 @@ part_of = "vanda-dir"
 
 [[term]]
 id = "check-config"
-name = "審査の設定"
+name = "チェックの設定"
 definition = "どの{@id:check}を、どの{@id:check-scope}で行うかを書いたファイル"
 
 [[term]]
 id = "check-scope"
-name = "範囲"
+name = "スコープ"
 definition = "{@id:check}が見るもの"
 
 [[term]]
 id = "branch-point"
-name = "分岐点"
+name = "マージベース"
 definition = "今のブランチが{@id:base-branch}から分かれたコミット"
 
 [[term]]
 id = "detached"
-name = "外れた合意"
+name = "失効した承認"
 definition = "{@id:story}が{@id:agreement}したことがあり、今の中身にその{@id:story}の{@id:agreement}がないもの。誰が変えたかを問わない"
 
 [[term]]
@@ -424,12 +424,12 @@ definition = "{@id:promise-list}の文の中の{@id:reference}を、指す先が
 
 [[feature]]
 id = "store-agreements"
-name = "合意の記録を読み書きする"
+name = "承認の記録を読み書きする"
 definition = "{@id:agreement-record}を読み書きする"
 
 [[feature]]
 id = "build-origins"
-name = "由来を作る"
+name = "変更履歴を作る"
 definition = "{@id:promise}ごとの{@id:origin}を作る"
 
 [[feature]]
@@ -469,7 +469,7 @@ definition = "変更・削除したものの、変更前と変更後の中身と
 
 [[feature]]
 id = "agree-on-review"
-name = "レビューで合意する"
+name = "レビューで承認する"
 definition = "{@id:story}のレビューで、1 件に{@id:agreement}する"
 core = true
 formal = true
@@ -491,24 +491,24 @@ definition = "レビュー単位を切り替える"
 
 [[feature]]
 id = "show-detached"
-name = "外れた合意を示す"
+name = "失効した承認を示す"
 definition = "{@id:detached}を示す"
 
 [[feature]]
 id = "show-entry-history"
-name = "1 件の詳細に由来と合意の履歴を示す"
+name = "1 件の詳細に変更履歴と承認の履歴を示す"
 definition = "レビューの 1 件の詳細に、{@id:promise}の{@id:origin}と{@id:agreement}の履歴を示す"
 
 [[feature]]
 id = "revoke-agreement"
-name = "合意を取り消す"
+name = "承認を取り消す"
 definition = "{@id:agreement}を取り消す"
 core = true
 formal = true
 
 [[feature]]
 id = "agree-on-detail-pages"
-name = "約束の詳細とファイルの画面で合意する"
+name = "約束の詳細とファイルの画面で承認する"
 definition = "レビューの画面のほか、{@id:promise}の詳細の画面とファイルの画面でも、1 件に{@id:agreement}し、{@id:agreement}を取り消す"
 
 [[feature]]
@@ -528,12 +528,12 @@ definition = "{@id:promise}の詳細に、{@id:evidence}を示す"
 
 [[feature]]
 id = "show-claim-origin"
-name = "約束の由来を示す"
+name = "約束の変更履歴を示す"
 definition = "{@id:promise}の詳細に、{@id:origin}を示す"
 
 [[feature]]
 id = "show-claim-agreements"
-name = "約束の合意の履歴を示す"
+name = "約束の承認の履歴を示す"
 definition = "{@id:promise}の詳細に、{@id:agreement}の履歴を示す"
 
 [[feature]]
@@ -553,12 +553,12 @@ definition = "今効いている設定と版と、{@id:story-store}につなが�
 
 [[feature]]
 id = "run-checks"
-name = "審査を行う（vanda check）"
+name = "チェックする（vanda check）"
 definition = "{@id:check-config}のファイルに並べた{@id:check}を行う"
 
 [[feature]]
 id = "list-check-kinds"
-name = "審査を列挙する"
+name = "チェックを列挙する"
 definition = "vanda check で行える{@id:check}の種類を用意する。どの種類があるかは、{@id:term}「{@id:check}」の一部として並べる"
 
 [[feature]]
@@ -568,7 +568,7 @@ definition = "端末で問いかけ、答えで {@id:vanda-dir} を作る"
 
 [[feature]]
 id = "show-version"
-name = "版を出す（vanda version）"
+name = "バージョンを出す（vanda version）"
 definition = "動いている {@id:vanda} の版を出す"
 
 [[feature]]
