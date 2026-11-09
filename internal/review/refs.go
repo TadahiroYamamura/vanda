@@ -14,11 +14,14 @@ type Piece struct {
 }
 
 // RefTarget は、片が指す先。Name は用語と機能なら名前、約束なら nil。Text は、用語と機能なら定義、約束なら文を、参照を見せる文字に置き換えたもの。
+// Core・Formal は、機能のときだけ持つ（コア機能か・形式手法を使う機能か）。
 type RefTarget struct {
 	Kind    string  `json:"kind"`
 	Name    *string `json:"name"`
 	Text    string  `json:"text"`
 	Current bool    `json:"current"`
+	Core    *bool   `json:"core,omitempty"`
+	Formal  *bool   `json:"formal,omitempty"`
 }
 
 // refs は、参照を見せる文字に置き換え、応答の中の片が指した先を集める。
@@ -96,6 +99,7 @@ func (r *refs) target(e snapshot.Entry, current bool, base *side) RefTarget {
 		t.Name, body = ptr(e.Term.Name), e.Term.Definition
 	case e.Feature != nil:
 		t.Name, body = ptr(e.Feature.Name), e.Feature.Definition
+		t.Core, t.Formal = ptr(e.Feature.Core), ptr(e.Feature.Formal)
 	case e.Claim != nil:
 		body = e.Claim.Statement
 	}
