@@ -203,7 +203,7 @@ definition = "開発の単位。{@id:story-store}（GitHub Issues など）で�
 [[term]]
 id = "agreement"
 name = "合意"
-definition = "{@id:promise}などの今の中身が要求どおりかを人が確かめ、認めること。動作は「{@id:agree-on-review}」"
+definition = "{@id:promise}などの今の中身が要求どおりかを人が確かめ、認めること。動作は「合意する」"
 
 [[term]]
 id = "agreement-record"
@@ -549,12 +549,12 @@ definition = "今効いている設定と版と、{@id:story-store}につなが�
 [[feature]]
 id = "run-checks"
 name = "審査を行う（vanda check）"
-definition = "{@id:check}の設定のファイルに並べた{@id:check}を行う"
+definition = "{@id:check-config}のファイルに並べた{@id:check}を行う"
 
 [[feature]]
 id = "list-check-kinds"
 name = "審査を列挙する"
-definition = "vanda check で行える{@id:check}の種類を用意する。どの種類があるかは、{@id:term}「{@id:check}」の一部として並べる"
+definition = "vanda check で行える{@id:check}の種類を用意する。どの種類があるかは、{@id:term}「審査」の一部として並べる"
 
 [[feature]]
 id = "create-vanda-dir"
@@ -1955,7 +1955,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-config-required"
 subjects = ["run-checks", "check"]
-statement = "vanda check は、{@id:check}の設定のファイルを必ず引数で受け取り、渡さなければ{@id:mistake}にする"
+statement = "vanda check は、{@id:check-config}のファイルを必ず引数で受け取り、渡さなければ{@id:mistake}にする"
 rationale = "既定の{@id:check}を持たず、どの{@id:check}をどの順番で行うかを各プロジェクトが決めるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -2080,7 +2080,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-output-lines"
 subjects = ["run-checks", "check"]
-statement = "{@id:check}ごとに「{@id:check} <名前>（<{@id:check-scope}>）: 通った」か「失敗（<件数> 件）」の行を標準出力に出し、{@id:mistake}の中身を標準エラーに 1 件 1 行で出す"
+statement = "{@id:check}ごとに「審査 <名前>（<範囲>）: 通った」か「失敗（<件数> 件）」の行を標準出力に出し、{@id:mistake}の中身を標準エラーに 1 件 1 行で出す"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2314,8 +2314,8 @@ layers = ["cli"]
 [[claim]]
 id = "check-evidence-sensor-needs-check"
 subjects = ["list-check-kinds", "evidence", "sensor"]
-statement = "evidence-present は、{@id:evidence-type}が sensor の予定を、次の 2 つがどちらもその{@id:promise}を指している時だけ揃ったとみなす。1 つは、{@id:implementation-stage}のコードの中の{@id:sensor-location}に書いた sensor の{@id:annotation}。もう 1 つは、types に sensor を含む [[annotation]] で読んだ evidence の{@id:annotation}（{@id:sensor}が、{@id:promise}が破れた時に見つけることを確かめるテスト）"
-rationale = "{@id:sensor}が{@id:implementation-stage}のコードの中にあることと、本当に働くことの両方を確かめるため"
+statement = "evidence-present は、{@id:evidence-type}が sensor の予定を、次の 2 つがどちらもその{@id:promise}を指している時だけ揃ったとみなす。1 つは、実装のコードの中の{@id:sensor-location}に書いた sensor の{@id:annotation}。もう 1 つは、types に sensor を含む [[annotation]] で読んだ evidence の{@id:annotation}（{@id:sensor}が、{@id:promise}が破れた時に見つけることを確かめるテスト）"
+rationale = "{@id:sensor}が実装のコードの中にあることと、本当に働くことの両方を確かめるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -3210,7 +3210,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-detached-shown"
 subjects = ["show-detached", "agreement", "story"]
-statement = "レビューの{@id:story}が決まっていれば、その{@id:story}の{@id:detached}を「{@id:agreement}が外れた」と示す。あわせて、HEAD の履歴で、その{@id:story}が最後に{@id:agreement-record}を足したコミットより後に、その中身を変えたコミットを探し、そのコミットの{@id:story}の ID も示す"
+statement = "レビューの{@id:story}が決まっていれば、その{@id:story}の{@id:detached}を「合意が外れた」と示す。あわせて、HEAD の履歴で、その{@id:story}が最後に{@id:agreement-record}を足したコミットより後に、その中身を変えたコミットを探し、そのコミットの{@id:story}の ID も示す"
 rationale = "rebase や amend で履歴を書き換えるとコミットの日時が変わるので、{@id:agreement}の後かどうかを日時でなく履歴の順で決める。手で書いた{@id:agreement-record}も、コミットした後は同じに扱える"
 condition = "レビュー単位がブランチの時も出す。{@id:story}が決まらない時は出さない。今の{@id:promise-list}にない{@id:promise}・{@id:term}・{@id:feature}と、今はその場所にないファイル（名前を変えたものを含む）は、{@id:detached}として出さない"
 layers = ["api", "gui"]
@@ -3256,7 +3256,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-detached-on-top"
 subjects = ["show-detached", "agreement"]
-statement = "一覧の外に示す{@id:detached}は、まとまりの上に「{@id:agreement}が外れたもの」としてまとめ、総数に数えないことを添える"
+statement = "一覧の外に示す{@id:detached}は、まとまりの上に「合意が外れたもの」としてまとめ、総数に数えないことを添える"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3524,7 +3524,7 @@ layers = ["api"]
 [[claim]]
 id = "agree-commit-message"
 subjects = ["agree-on-review", "story"]
-statement = "{@id:agreement}のコミットのメッセージの subject を「(chore) <{@id:story}の ID> で <種類> <ID か場所> に{@id:agree-on-review}」（種類は {@id:promise}・{@id:term}・{@id:feature}・ファイル）にする"
+statement = "{@id:agreement}のコミットのメッセージの subject を「(chore) <ストーリーの ID> で <種類> <ID か場所> に合意する」（種類は {@id:promise}・{@id:term}・{@id:feature}・ファイル）にする"
 model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -3682,7 +3682,7 @@ layers = ["api"]
 [[claim]]
 id = "revoke-commit-message"
 subjects = ["revoke-agreement", "story"]
-statement = "取り消しのコミットのメッセージの subject を「(chore) <{@id:story}の ID> で <種類> <ID か場所> の{@id:revoke-agreement}」（種類は {@id:promise}・{@id:term}・{@id:feature}・ファイル）にする"
+statement = "取り消しのコミットのメッセージの subject を「(chore) <ストーリーの ID> で <種類> <ID か場所> の合意を取り消す」（種類は {@id:promise}・{@id:term}・{@id:feature}・ファイル）にする"
 model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -3725,7 +3725,7 @@ layers = ["gui"]
 [[claim]]
 id = "agree-from-detail-pages-notes"
 subjects = ["agree-on-detail-pages"]
-statement = "{@id:promise}の詳細とファイルの画面は、レビューの画面から開いたのでなければ「{@id:story}のレビューから開くと、{@id:agreement}できます。」と示す。レビューの画面から開いたのに、その一覧（{@id:detached}を含む）にないものなら、{@id:promise}は「この{@id:story}では変わっていない{@id:promise}です。」と、ファイルは「この{@id:story}では変わっていないファイルです。」と示す"
+statement = "{@id:promise}の詳細とファイルの画面は、レビューの画面から開いたのでなければ「ストーリーのレビューから開くと、合意できます。」と示す。レビューの画面から開いたのに、その一覧（{@id:detached}を含む）にないものなら、{@id:promise}は「このストーリーでは変わっていない約束です。」と、ファイルは「このストーリーでは変わっていないファイルです。」と示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -3803,7 +3803,7 @@ layers = ["gui"]
 [[claim]]
 id = "claim-detail-subjects"
 subjects = ["show-claim-fields"]
-statement = "{@id:promise}の詳細の対象には、{@id:term}か{@id:feature}の名前と ID を示し、{@id:promise-list}にない ID には「（{@id:promise-list}にありません）」と添える"
+statement = "{@id:promise}の詳細の対象には、{@id:term}か{@id:feature}の名前と ID を示し、{@id:promise-list}にない ID には「（約束リストにありません）」と添える"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -4431,7 +4431,7 @@ layers = ["gui"]
 [[claim]]
 id = "story-open-link"
 subjects = ["connect-story-store", "story"]
-statement = "{@id:story}に{@id:story-store}の URL があれば、「{@id:story-store}で開く」のリンクを出す"
+statement = "{@id:story}に{@id:story-store}の URL があれば、「ストーリーストアで開く」のリンクを出す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4443,7 +4443,7 @@ layers = ["gui"]
 [[claim]]
 id = "story-undecided-note"
 subjects = ["connect-story-store", "story", "switch-review-unit"]
-statement = "{@id:story}が決まっていなければ、{@id:story}の欄に「{@id:story}が決まっていません。{@id:story}を選んでください。」と示す"
+statement = "{@id:story}が決まっていなければ、{@id:story}の欄に「ストーリーが決まっていません。ストーリーを選んでください。」と示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4467,7 +4467,7 @@ layers = ["gui"]
 [[claim]]
 id = "agree-on-screen"
 subjects = ["agree-on-review", "agreement"]
-statement = "レビューの画面で 1 件に{@id:agree-on-review}と、画面に見せていた中身の{@id:fingerprint}と、{@id:agree-on-review}{@id:story}の ID を添えて、API に{@id:agreement}を求める"
+statement = "レビューの画面で 1 件に{@id:agree-on-review}と、画面に見せていた中身の{@id:fingerprint}と、合意する{@id:story}の ID を添えて、API に{@id:agreement}を求める"
 model_check_waiver = "画面の見せ方の決まりで、{@id:agreement}の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
@@ -4485,7 +4485,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-detail-links"
 subjects = ["list-changes", "agree-on-detail-pages"]
-statement = "1 件の詳細に、{@id:promise}なら「{@id:promise}の詳細を開く」、ファイルなら「ファイルの画面を開く」のリンクを出し、削除したものには出さない"
+statement = "1 件の詳細に、{@id:promise}なら「約束の詳細を開く」、ファイルなら「ファイルの画面を開く」のリンクを出し、削除したものには出さない"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4497,7 +4497,7 @@ layers = ["gui"]
 [[claim]]
 id = "agree-button-label"
 subjects = ["agree-on-review", "story"]
-statement = "{@id:agreement}のボタンには、「{@id:story} <ID> で{@id:agree-on-review}」と、{@id:agree-on-review}{@id:story}の ID を書く"
+statement = "{@id:agreement}のボタンには、「ストーリー <ID> で合意する」と、{@id:agree-on-review}{@id:story}の ID を書く"
 model_check_waiver = "画面の見せ方の決まりで、{@id:agreement}の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
@@ -4510,7 +4510,7 @@ layers = ["gui"]
 [[claim]]
 id = "agree-cannot-reason-shown"
 subjects = ["agree-on-review", "agreement"]
-statement = "{@id:story}が決まっていないか、git の user.name・user.email がなくて{@id:agreement}できない時は、{@id:agreement}のボタンを押せなくし、「{@id:story}を選ぶと、{@id:agreement}できます。」か「git の user.name と user.email を設定すると、{@id:agreement}できます。」と示す"
+statement = "{@id:story}が決まっていないか、git の user.name・user.email がなくて{@id:agreement}できない時は、{@id:agreement}のボタンを押せなくし、「ストーリーを選ぶと、合意できます。」か「git の user.name と user.email を設定すると、合意できます。」と示す"
 model_check_waiver = "画面の見せ方の決まりで、{@id:agreement}の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
@@ -4759,7 +4759,7 @@ layers = ["gui"]
 [[claim]]
 id = "story-links-new-tab"
 subjects = ["connect-story-store", "story"]
-statement = "{@id:story}の本文のリンク・「{@id:story-store}で開く」のリンク・添付ファイルのリンクは新しいタブで開き、開いた先から {@id:vanda} の画面に戻って操れないようにする"
+statement = "{@id:story}の本文のリンク・「ストーリーストアで開く」のリンク・添付ファイルのリンクは新しいタブで開き、開いた先から {@id:vanda} の画面に戻って操れないようにする"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）", "開いた先から戻れないようにするのは、開いたページに {@id:vanda} の画面を操らせないためだと推し量った"]
@@ -4855,7 +4855,7 @@ layers = ["gui"]
 [[claim]]
 id = "evidence-presence-three-states"
 subjects = ["show-evidence-status", "evidence"]
-statement = "{@id:evidence-plan}と実際の表で、「揃っている」「ない」「{@id:annotation}では確かめない」を見分けて示す"
+statement = "{@id:evidence-plan}と実際の表で、「揃っている」「ない」「アノテーションでは確かめない」を見分けて示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
