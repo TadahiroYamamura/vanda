@@ -1,5 +1,5 @@
-# CMD-03: 設定の誤り、版の違い、審査の設定の誤り、--base・--story の誤りは、審査を始める前に標準エラーに出し、
-# 審査ごとの結果の行を出さずに終了コード 1 で終わる。
+# CMD-03: 設定の誤り、バージョンの違い、チェックの設定の誤り、--base・--story の誤りは、チェックを始める前に標準エラーに出し、
+# チェックごとの結果の行を出さずに終了コード 1 で終わる。
 # @vanda:evidence check-errors-before-run
 
 exec git init -q -b main
@@ -11,13 +11,13 @@ commit 'メモを足す' '#2'
 
 # 誤りがなければ、結果の行を出して通る（この後の止まり方が、誤りによるものだと言えるようにするため）
 exec vanda check .vanda/checks/story.toml --base main
-stdout '^審査 agreement（story #2）: 通った$'
+stdout '^チェック agreement（story #2）: 通った$'
 
 # --base がない
 ! exec vanda check .vanda/checks/story.toml
 ! stdout .
 stderr '--base'
-! stderr '(?m)^審査 '
+! stderr '(?m)^チェック '
 
 # --base のブランチがない
 ! exec vanda check .vanda/checks/story.toml --base no-such-branch
@@ -34,7 +34,7 @@ stderr '--story 2'
 ! stdout .
 stderr '#9'
 
-# 審査の設定の誤り
+# チェックの設定の誤り
 ! exec vanda check .vanda/checks/broken.toml
 ! stdout .
 stderr 'broken\.toml:2: '
@@ -47,10 +47,10 @@ commit '設定に決まっていない項目を足す' '#2'
 ! stdout .
 stderr 'config\.toml:2: '
 
-# 版の違い
+# バージョンの違い
 cp cases/config-newer.toml .vanda/config.toml
 expand .vanda/config.toml
-commit '設定の版を上げる' '#2'
+commit '設定のバージョンを上げる' '#2'
 ! exec vanda check .vanda/checks/story.toml --base main
 ! stdout .
 stderr $VANDA_VERSION_NEWER

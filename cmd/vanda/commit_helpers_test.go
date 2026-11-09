@@ -17,14 +17,14 @@ func storyMessage(subject, story string) string {
 
 // commitAll は、作業ツリーのすべて（git が追っていないファイルも）を 1 つのコミットにする。
 // 同じ大きさのファイルを同じ時刻のうちに書き換えると、git add -A が stat の一致から変わっていないとみなし、
-// 書き換えをコミットに入れないことがある。索引から一度外して、毎回すべてを読み直させる
+// 書き換えをコミットに入れないことがある。インデックスから一度外して、毎回すべてを読み直させる
 func (g *rvGit) commitAll(subject, story string) {
 	g.run("rm", "-r", "-q", "--cached", "--ignore-unmatch", ".")
 	g.run("add", "-A")
 	g.run("commit", "-q", "--allow-empty", "-m", storyMessage(subject, story))
 }
 
-// commitTracked は、git が追っているファイルの変更だけを 1 つのコミットにする（git commit -a に当たる。追っていないファイルは残す）。
+// commitTracked は、git が追っているファイルの変更だけを 1 つのコミットにする（git commit -a に相当する。追っていないファイルは残す）。
 // 読み直させる理由は commitAll と同じ
 func (g *rvGit) commitTracked(subject, story string) {
 	var keep []string
@@ -32,7 +32,7 @@ func (g *rvGit) commitTracked(subject, story string) {
 		if f == "" {
 			continue
 		}
-		// 作業ツリーで消したものは、索引から外したままにして、消したことをコミットする
+		// 作業ツリーで消したものは、インデックスから外したままにして、消したことをコミットする
 		if _, err := os.Lstat(filepath.Join(g.root, filepath.FromSlash(f))); err == nil {
 			keep = append(keep, f)
 		}

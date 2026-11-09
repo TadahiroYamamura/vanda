@@ -1,12 +1,12 @@
-# CMD-10 合意: エビデンスの本体のファイル（シナリオ、ガードレールの定義、オラクルの定義）も、今の中身に合意していないと止まる。
+# CMD-10 承認: エビデンスの本体のファイル（シナリオ、ガードレールの定義、オラクルの定義）も、今の中身を承認していないと止まる。
 # @vanda:evidence renamed-file-needs-agreement
 # @vanda:evidence deleted-item-needs-agreement
 # @vanda:evidence check-agreement-targets
-# ファイルは場所と中身の指紋で見分ける。名前を変えると、古い場所は消したもの、新しい場所は（中身が同じでも）提案中になる。
-# 合意済のファイルを写した先も提案中。中身を 1 文字変えると提案中になる。
+# ファイルは場所と中身のフィンガープリントで見分ける。名前を変えると、古い場所は消したもの、新しい場所は（中身が同じでも）提案中になる。
+# 承認済のファイルを写した先も提案中。中身を 1 文字変えると提案中になる。
 #
-# 合意の対象のファイルは、txtar と tla のアダプタのパターンに当たるファイル（アノテーションがなくても）と、ガードレールの paths に当たるファイル。
-# go のアダプタのパターンに当たるファイルは対象にしない。
+# 承認の対象のファイルは、txtar と tla のアダプタのパターンにマッチするファイル（アノテーションがなくても）と、ガードレールの paths にマッチするファイル。
+# go のアダプタのパターンにマッチするファイルは対象にしない。
 #
 # txtar のファイルの中身は、この台本の区切りとぶつからないよう、行の頭に > を付けて書き、unquote で外す。
 
@@ -16,8 +16,8 @@ agree .vanda/agreements.toml '#1' term task fp/term-task.json
 agree .vanda/agreements.toml '#1' claim task-id-unique fp/claim.json
 unquote scenarios/plain.txtar
 
-# エビデンスの本体のファイルのどれにも合意していないと止まる。Go のファイルは対象にしない
-commit '審査する前にコミットする'
+# エビデンスの本体のファイルのどれにも承認していないと止まる。Go のファイルは対象にしない
+commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stderr 'scenarios/task-id\.txtar'
 stderr 'scenarios/plain\.txtar'
@@ -27,116 +27,116 @@ stderr 'db/schema\.sql'
 ! stderr 'task_test\.go'
 ! stderr '(?m)^panic: '
 
-# 合意すると通る
+# 承認すると通る
 agree .vanda/agreements.toml '#1' file scenarios/task-id.txtar
 agree .vanda/agreements.toml '#1' file spec/Task.tla
 agree .vanda/agreements.toml '#1' file scenarios/plain.txtar
 agree .vanda/agreements.toml '#1' file spec/Helper.tla
 agree .vanda/agreements.toml '#1' file db/schema.sql
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
-# 合意したことのある約束を消すと、消したことに合意するまで止まる
+# 承認したことのある約束を消すと、消したことを承認するまで止まる
 cp .vanda/promises.toml promises-before.toml
 cp cases/without-claim.toml .vanda/promises.toml
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stdout '失敗（1 件）'
-stderr '約束 task-id-unique を消したことに、まだ合意していません'
+stderr '約束 task-id-unique を消したことに、まだ承認していません'
 ! stderr '(?m)^panic: '
 agree -deleted .vanda/agreements.toml '#1' claim task-id-unique
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 cp promises-before.toml .vanda/promises.toml
 rm promises-before.toml
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
-# 合意したことのないファイルを消しても、全部の範囲では止めない（合意の対象がなかった）
+# 承認したことのないファイルを消しても、スコープ all では止めない（承認の対象がなかった）
 cp cases/never-agreed.txtar scenarios/never-agreed.txtar
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stderr 'scenarios/never-agreed\.txtar'
 rm scenarios/never-agreed.txtar
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
-# 合意済のファイルを写した先は、中身が同じでも提案中
+# 承認済のファイルを写した先は、中身が同じでも提案中
 cp scenarios/plain.txtar scenarios/plain-copy.txtar
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stderr 'scenarios/plain-copy\.txtar'
 ! stderr 'scenarios/plain\.txtar'
 ! stderr '(?m)^panic: '
 rm scenarios/plain-copy.txtar
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
 # ファイルの名前を変えると、古い場所は消したものになり、新しい場所は中身が同じでも提案中になる
 mv scenarios/task-id.txtar scenarios/unique-task-id.txtar
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stdout '失敗（2 件）'
 stderr 'scenarios/unique-task-id\.txtar'
-stderr '\.vanda/agreements\.toml:[0-9]+: ファイル scenarios/task-id\.txtar を消したことに、まだ合意していません'
+stderr '\.vanda/agreements\.toml:[0-9]+: ファイル scenarios/task-id\.txtar を消したことに、まだ承認していません'
 ! stderr '(?m)^panic: '
 
-# 新しい場所に合意しても、古い場所を消したことに合意するまで止まる
+# 新しい場所を承認しても、古い場所を消したことを承認するまで止まる
 agree .vanda/agreements.toml '#2' file scenarios/unique-task-id.txtar
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stdout '失敗（1 件）'
-stderr '\.vanda/agreements\.toml:[0-9]+: ファイル scenarios/task-id\.txtar を消したことに、まだ合意していません'
+stderr '\.vanda/agreements\.toml:[0-9]+: ファイル scenarios/task-id\.txtar を消したことに、まだ承認していません'
 agree -deleted .vanda/agreements.toml '#2' file scenarios/task-id.txtar
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
-# 名前を元に戻すと、元の場所は同じ中身への記録があるので合意済。合意したことのある新しい場所を消したことへの合意を求める
+# 名前を元に戻すと、元の場所は同じ中身への記録があるので承認済。承認したことのある新しい場所を消したことへの承認を求める
 mv scenarios/unique-task-id.txtar scenarios/task-id.txtar
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stdout '失敗（1 件）'
-stderr '\.vanda/agreements\.toml:[0-9]+: ファイル scenarios/unique-task-id\.txtar を消したことに、まだ合意していません'
+stderr '\.vanda/agreements\.toml:[0-9]+: ファイル scenarios/unique-task-id\.txtar を消したことに、まだ承認していません'
 ! stderr 'scenarios/task-id\.txtar'
 agree -deleted .vanda/agreements.toml '#2' file scenarios/unique-task-id.txtar
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
 # もう一度名前を変えると、どちらの場所にも、その状態（中身か、消したこと）への記録があるので通る
 mv scenarios/task-id.txtar scenarios/unique-task-id.txtar
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
 # シナリオの中身を 1 文字変えると止まる
 cp cases/task-id-changed.txtar scenarios/unique-task-id.txtar
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stderr 'scenarios/unique-task-id\.txtar'
 ! stderr 'spec/Task\.tla'
 ! stderr 'db/schema\.sql'
 ! stderr '(?m)^panic: '
 agree .vanda/agreements.toml '#2' file scenarios/unique-task-id.txtar
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
 # オラクルの定義の中身を 1 文字変えると止まる
 cp cases/Task-changed.tla spec/Task.tla
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stderr 'spec/Task\.tla'
 ! stderr '(?m)^panic: '
 agree .vanda/agreements.toml '#2' file spec/Task.tla
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
 # ガードレールの定義の中身を 1 文字変えると止まる
 cp cases/schema-changed.sql db/schema.sql
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stderr 'db/schema\.sql'
 ! stderr '(?m)^panic: '
 agree .vanda/agreements.toml '#2' file db/schema.sql
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
 -- .vanda/config.toml --

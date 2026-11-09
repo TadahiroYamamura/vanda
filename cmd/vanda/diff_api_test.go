@@ -487,10 +487,10 @@ func Test約束のエビデンスの予定の差分はステージとタイプ�
 		return out
 	}
 	if !reflect.DeepEqual(ops(d.Evidence.Before), wantBefore) {
-		t.Errorf("変更前の印: %v（思ったもの %v）", ops(d.Evidence.Before), wantBefore)
+		t.Errorf("変更前のマーク: %v（思ったもの %v）", ops(d.Evidence.Before), wantBefore)
 	}
 	if !reflect.DeepEqual(ops(d.Evidence.After), wantAfter) {
-		t.Errorf("変更後の印: %v（思ったもの %v）", ops(d.Evidence.After), wantAfter)
+		t.Errorf("変更後のマーク: %v（思ったもの %v）", ops(d.Evidence.After), wantAfter)
 	}
 	check := func(where string, m evidenceMark, sd side) {
 		for _, f := range []struct {

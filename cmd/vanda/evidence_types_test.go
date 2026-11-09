@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// CMD-10 エビデンスが揃っている審査と、[[annotation]] の types（docs/plans/annotation-types.md の 1）。
+// CMD-10 エビデンスが揃っているチェックと、[[annotation]] の types（docs/plans/annotation-types.md の 1）。
 // 予定のタイプを types に含む [[annotation]] から読んだアノテーションのうち、タイプに合う種類のものがあれば揃う。
 // 種類とタイプの組み合わせは、計画の表から手で書いた。
 
@@ -201,7 +201,7 @@ func Test_typesが空の配列なら設定の誤りにならずどのタイプ�
 	if code == 0 {
 		t.Fatalf("types = [] の [[annotation]] のアノテーションで、unit-test が揃った\n%s", out)
 	}
-	if !strings.Contains(out, "審査 evidence-present") || !strings.Contains(out, "unit-test") {
+	if !strings.Contains(out, "チェック evidence-present") || !strings.Contains(out, "unit-test") {
 		t.Errorf("設定の誤りでなく、unit-test が揃わないとして止まるはず\n%s", out)
 	}
 }

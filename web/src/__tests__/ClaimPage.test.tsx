@@ -58,7 +58,7 @@ const history = claimHistory({
     { commit: "2".repeat(40), date: "2026-10-20T12:00:00+09:00", subject: "#24 文を変える", stories: ["#24"], change: "modified" },
   ],
   agreements: [
-    { user: { name: "前に合意した人", email: "a@example.com" }, agreedAt: "2026-10-02T12:00:00+09:00", story: "#1", fingerprint: "sha256:" + "b".repeat(64), current: false },
+    { user: { name: "前に承認した人", email: "a@example.com" }, agreedAt: "2026-10-02T12:00:00+09:00", story: "#1", fingerprint: "sha256:" + "b".repeat(64), current: false },
   ],
 });
 
@@ -92,12 +92,12 @@ it("エビデンスをタイプごとにシナリオは本文をTLAは定義を�
 // CL-04・CL-05
 // @vanda:evidence claim-detail-origin
 // @vanda:evidence claim-detail-agreements
-it("由来にコミットとストーリーを合意の履歴に合意した人とストーリーと今の中身に合うかを見せる", async () => {
+it("変更履歴にコミットとストーリーを承認の履歴に承認した人とストーリーと今の中身に合うかを見せる", async () => {
   open(detail, history);
   await screen.findByText(/タスクの ID は重ならない/);
   await waitFor(() => expect(bodyText()).toContain("#24 文を変える"));
-  for (const t of ["#1 はじめの約束を置く", "#24", "前に合意した人"]) expect(bodyText()).toContain(t);
-  // 今の中身に合わない合意しかないので、合意済とは見せない
+  for (const t of ["#1 はじめの約束を置く", "#24", "前に承認した人"]) expect(bodyText()).toContain(t);
+  // 今の中身に合わない承認しかないので、承認済とは見せない
   expect(bodyText()).toContain("提案中");
 });
 
@@ -112,7 +112,7 @@ it("約束の詳細を読めないときは理由を出す", async () => {
 });
 
 // RV-18: 約束の詳細の画面とファイルの画面でも、ストーリーのレビューから移ってきて、そのものがレビューの一覧にあれば、
-// 合意・取り消しのボタンを出す。レビューから移ってきたかは、レビューの画面と同じ URL のクエリ（view・base・story）で分かる
+// 承認・取り消しのボタンを出す。レビューから移ってきたかは、レビューの画面と同じ URL のクエリ（view・base・story）で分かる
 const fromReview = "?view=branch&base=main&story=%2324";
 
 function openFromReview(path: string, entries: Entry[], d: ClaimDetail = claimDetail()) {
@@ -129,39 +129,39 @@ function openFromReview(path: string, entries: Entry[], d: ClaimDetail = claimDe
 }
 
 // @vanda:evidence agree-from-detail-pages
-it("ストーリーのレビューから移ってきた約束の詳細の画面とファイルの画面で一覧にあるものには合意のボタンを出す", async () => {
+it("ストーリーのレビューから移ってきた約束の詳細の画面とファイルの画面で一覧にあるものには承認のボタンを出す", async () => {
   openFromReview("/claims/task-id-unique" + fromReview, [claimEntry(1, "task-id-unique")]);
-  expect(await screen.findByRole("button", { name: /合意する/ })).toBeTruthy();
+  expect(await screen.findByRole("button", { name: /承認する/ })).toBeTruthy();
   cleanup();
   openFromReview("/files" + fromReview + "&path=" + encodeURIComponent("e2e/add-task.txtar"), [fileEntry(1, "e2e/add-task.txtar")]);
-  expect(await screen.findByRole("button", { name: /合意する/ })).toBeTruthy();
+  expect(await screen.findByRole("button", { name: /承認する/ })).toBeTruthy();
 });
 
 // @vanda:evidence agree-from-detail-pages
-it("ストーリーのレビューから移ってきた約束の詳細の画面で合意済の約束には取り消しのボタンを出す", async () => {
+it("ストーリーのレビューから移ってきた約束の詳細の画面で承認済の約束には取り消しのボタンを出す", async () => {
   const e = claimEntry(1, "task-id-unique", { state: "agreed", revoke: { possible: true, reason: null, others: [] } });
   openFromReview("/claims/task-id-unique" + fromReview, [e], claimDetail({ state: "agreed" }));
   expect(await screen.findByRole("button", { name: /取り消/ })).toBeTruthy();
 });
 
 // @vanda:evidence agree-from-detail-pages-notes
-it("一覧にない約束とファイルは変わっていないと示しストーリーが分からないときはレビューから開くと合意できると示す", async () => {
+it("一覧にない約束とファイルは変わっていないと示しストーリーが分からないときはレビューから開くと承認できると示す", async () => {
   openFromReview("/claims/task-id-unique" + fromReview, [claimEntry(1, "other-claim")]);
   expect(await screen.findByText("このストーリーでは変わっていない約束です。")).toBeTruthy();
-  expect(screen.queryByRole("button", { name: /合意する/ })).toBeNull();
+  expect(screen.queryByRole("button", { name: /承認する/ })).toBeNull();
   cleanup();
   openFromReview("/files" + fromReview + "&path=" + encodeURIComponent("e2e/add-task.txtar"), [claimEntry(1, "task-id-unique")]);
   expect(await screen.findByText("このストーリーでは変わっていないファイルです。")).toBeTruthy();
-  expect(screen.queryByRole("button", { name: /合意する/ })).toBeNull();
+  expect(screen.queryByRole("button", { name: /承認する/ })).toBeNull();
   cleanup();
   // URL にレビューのクエリがない（直接開いた）
   openFromReview("/claims/task-id-unique", [claimEntry(1, "task-id-unique")]);
-  expect(await screen.findByText("ストーリーのレビューから開くと、合意できます。")).toBeTruthy();
-  expect(screen.queryByRole("button", { name: /合意する/ })).toBeNull();
+  expect(await screen.findByText("ストーリーのレビューから開くと、承認できます。")).toBeTruthy();
+  expect(screen.queryByRole("button", { name: /承認する/ })).toBeNull();
 });
 
 // @vanda:evidence agree-from-detail-pages-stay
-it("約束の詳細の画面で合意した後もその画面にとどまる", async () => {
+it("約束の詳細の画面で承認した後もその画面にとどまる", async () => {
   const e = claimEntry(1, "task-id-unique");
   let posted: unknown = null;
   openFromReview("/claims/task-id-unique" + fromReview, [e]);
@@ -171,7 +171,7 @@ it("約束の詳細の画面で合意した後もその画面にとどまる", a
       return HttpResponse.json({ commit: "c".repeat(40), agreement: {} });
     }),
   );
-  const button = await screen.findByRole("button", { name: /合意する/ });
+  const button = await screen.findByRole("button", { name: /承認する/ });
   await userEvent.setup().click(button);
   await waitFor(() => expect(posted).toMatchObject({ kind: "claim", id: "task-id-unique", story: "#24" }));
   expect(window.location.pathname).toBe("/claims/task-id-unique");
@@ -197,12 +197,12 @@ it("エビデンスをステージの順の見出しの下にタイプの見出�
   }
 });
 
-// CL-08: 由来のコミットか合意の記録を選ぶと、その時点の約束の中身を示す
+// CL-08: 変更履歴のコミットか承認の記録を選ぶと、その時点の約束の中身を示す
 // @vanda:evidence claim-at-commit
-it("由来のコミットと合意の記録を開くとその時点の約束の中身を読んで見せる", async () => {
+it("変更履歴のコミットと承認の記録を開くとその時点の約束の中身を読んで見せる", async () => {
   const commit = "1".repeat(40);
   const agreedAt = "2".repeat(40);
-  const at = new Map<string, string>([[commit, "作った時点の文"], [agreedAt, "合意した時点の文"]]);
+  const at = new Map<string, string>([[commit, "作った時点の文"], [agreedAt, "承認した時点の文"]]);
   server.use(
     http.get("/api/claims/:id/at/:commit", ({ params }) =>
       HttpResponse.json({
@@ -214,15 +214,15 @@ it("由来のコミットと合意の記録を開くとその時点の約束の�
   );
   open(claimDetail(), claimHistory({
     origin: [{ commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" }],
-    agreements: [{ user: { name: "前に合意した人", email: "a@example.com" }, agreedAt: "2026-10-02T12:00:00+09:00", story: "#1", fingerprint: "sha256:" + "b".repeat(64), current: false, commit: agreedAt }],
+    agreements: [{ user: { name: "前に承認した人", email: "a@example.com" }, agreedAt: "2026-10-02T12:00:00+09:00", story: "#1", fingerprint: "sha256:" + "b".repeat(64), current: false, commit: agreedAt }],
   }));
   const user = userEvent.setup();
   const originRow = (await screen.findByText(/#1 はじめの約束を置く/)).closest("tr")!;
   await user.click(within(originRow).getByRole("button", { name: "その時点の中身を開く" }));
   expect(await screen.findByText("作った時点の文")).toBeTruthy();
-  const agreementRow = screen.getByText(/前に合意した人/).closest("tr")!;
+  const agreementRow = screen.getByText(/前に承認した人/).closest("tr")!;
   await user.click(within(agreementRow).getByRole("button", { name: "その時点の中身を開く" }));
-  expect(await screen.findByText("合意した時点の文")).toBeTruthy();
+  expect(await screen.findByText("承認した時点の文")).toBeTruthy();
 });
 
 // CL-02・RV-08: 揃っているかの 3 つ（揃っている・ない・アノテーションでは確かめない）を、エビデンスの予定ごとに全部回す。
@@ -260,8 +260,8 @@ it("エビデンスの予定ごとに揃っているとないとアノテーシ�
 });
 
 // @vanda:evidence found-file-state-shown
-it("実際のエビデンスのうち合意の対象のファイルには今の中身が合意済か提案中かを示し合意の対象でないものには示さない", async () => {
-  const states: ["agreed" | "proposed" | null, string | null][] = [["agreed", "合意済"], ["proposed", "提案中"], [null, null]];
+it("実際のエビデンスのうち承認の対象のファイルには今の中身が承認済か提案中かを示し承認の対象でないものには示さない", async () => {
+  const states: ["agreed" | "proposed" | null, string | null][] = [["agreed", "承認済"], ["proposed", "提案中"], [null, null]];
   const files: Record<string, [string, string, string]> = {
     agreed: ["txtar", "e2e/agreed.txtar", "agreed"],
     proposed: ["tla", "spec/Proposed.tla", "Proposed"],
@@ -290,7 +290,7 @@ it("実際のエビデンスのうち合意の対象のファイルには今の�
   for (const [st, name] of states) {
     const [, file] = files[String(st)];
     const item = itemOf(file);
-    for (const label of ["合意済", "提案中"]) {
+    for (const label of ["承認済", "提案中"]) {
       const got = within(item).queryAllByRole("img", { name: label }).length;
       expect(got, `${file} の「${label}」のアイコンの数`).toBe(label === name ? 1 : 0);
     }
@@ -341,9 +341,9 @@ it("約束の詳細とその時点の中身は利用者が書いた文の続い�
   for (const t of ["理由の" + spaced, "条件の" + spaced]) expect(has(t), t).toBe(true);
 });
 
-// CL-08 の、その時点の中身の開け閉め。由来の 2 つと合意の記録の 1 つを使う
+// CL-08 の、その時点の中身の開け閉め。変更履歴の 2 つと承認の記録の 1 つを使う
 const atCommits = { first: "1".repeat(40), second: "2".repeat(40), agreed: "3".repeat(40) };
-const atStatement: Record<string, string> = { [atCommits.first]: "はじめの時点の文", [atCommits.second]: "次の時点の文", [atCommits.agreed]: "合意した時点の文" };
+const atStatement: Record<string, string> = { [atCommits.first]: "はじめの時点の文", [atCommits.second]: "次の時点の文", [atCommits.agreed]: "承認した時点の文" };
 
 function openHistory(at: Parameters<typeof http.get>[1] = ({ params }) =>
   HttpResponse.json({
@@ -358,7 +358,7 @@ function openHistory(at: Parameters<typeof http.get>[1] = ({ params }) =>
       { commit: atCommits.second, date: "2026-10-20T12:00:00+09:00", subject: "#24 文を変える", stories: ["#24"], change: "modified" },
       { commit: atCommits.first, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" },
     ],
-    agreements: [{ user: { name: "前に合意した人", email: "a@example.com" }, agreedAt: "2026-10-02T12:00:00+09:00", story: "#1", fingerprint: "sha256:" + "b".repeat(64), current: false, commit: atCommits.agreed }],
+    agreements: [{ user: { name: "前に承認した人", email: "a@example.com" }, agreedAt: "2026-10-02T12:00:00+09:00", story: "#1", fingerprint: "sha256:" + "b".repeat(64), current: false, commit: atCommits.agreed }],
   }));
 }
 
@@ -366,25 +366,25 @@ const historyRow = async (text: RegExp) => (await screen.findByText(text)).close
 const toggleOf = (row: HTMLElement) => within(row).getByRole("button", { name: /その時点の中身を(開く|たたむ)/ });
 
 // @vanda:evidence claim-at-commit-toggle
-it("由来と合意の履歴の行を押すとその時点の中身が開きもう一度押すとたたまりボタンを押しても1回だけ切り替わる", async () => {
+it("変更履歴と承認の履歴の行をクリックするとその時点の中身が開きもう一度クリックするとたたまりボタンをクリックしても1回だけ切り替わる", async () => {
   openHistory();
   const user = userEvent.setup();
-  for (const [text, statement] of [[/#24 文を変える/, "次の時点の文"], [/前に合意した人/, "合意した時点の文"]] as const) {
+  for (const [text, statement] of [[/#24 文を変える/, "次の時点の文"], [/前に承認した人/, "承認した時点の文"]] as const) {
     const row = await historyRow(text);
     const cell = within(row).getByText(text);
     expect(toggleOf(row).getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByText(statement)).toBeNull();
     await user.click(cell);
-    expect(await screen.findByText(statement), "行を押しても開かない").toBeTruthy();
+    expect(await screen.findByText(statement), "行をクリックしても開かない").toBeTruthy();
     expect(toggleOf(row).getAttribute("aria-expanded")).toBe("true");
     await user.click(cell);
-    await waitFor(() => expect(screen.queryByText(statement), "行をもう一度押してもたたまない").toBeNull());
+    await waitFor(() => expect(screen.queryByText(statement), "行をもう一度クリックしてもたたまない").toBeNull());
     expect(toggleOf(row).getAttribute("aria-expanded")).toBe("false");
-    // ボタンは行の中にあるので、行の動きと二重に切り替わると、押しても閉じたままになる
+    // ボタンは行の中にあるので、行の動きと二重に切り替わると、クリックしても閉じたままになる
     await user.click(toggleOf(row));
-    expect(await screen.findByText(statement), "ボタンを押しても開かない").toBeTruthy();
+    expect(await screen.findByText(statement), "ボタンをクリックしても開かない").toBeTruthy();
     await user.click(toggleOf(row));
-    await waitFor(() => expect(screen.queryByText(statement), "ボタンを押してもたたまない").toBeNull());
+    await waitFor(() => expect(screen.queryByText(statement), "ボタンをクリックしてもたたまない").toBeNull());
   }
 });
 
@@ -392,7 +392,7 @@ it("由来と合意の履歴の行を押すとその時点の中身が開きも�
 it("その時点の中身を2つ以上開くとそれぞれが同時に出たままになり1つをたたんでもほかは開いたままにする", async () => {
   openHistory();
   const user = userEvent.setup();
-  const rows: [RegExp, string][] = [[/#24 文を変える/, "次の時点の文"], [/#1 はじめの約束を置く/, "はじめの時点の文"], [/前に合意した人/, "合意した時点の文"]];
+  const rows: [RegExp, string][] = [[/#24 文を変える/, "次の時点の文"], [/#1 はじめの約束を置く/, "はじめの時点の文"], [/前に承認した人/, "承認した時点の文"]];
   for (const [text] of rows) await user.click(toggleOf(await historyRow(text)));
   for (const [, statement] of rows) expect(await screen.findByText(statement), `${statement} が、ほかを開いた後に出ていない`).toBeTruthy();
   await user.click(toggleOf(await historyRow(rows[0][0])));
@@ -424,14 +424,14 @@ it("その時点の中身のレイヤーのうち今の設定にないものはI
 });
 
 // @vanda:evidence claim-at-commit-error-shown
-it("その時点の約束リストが読めない合意の記録を選ぶとAPIが返した理由を出す", async () => {
+it("その時点の約束リストが読めない承認の記録を選ぶとAPIが返した理由を出す", async () => {
   openHistory(() => apiError(500, "コミット 3333333 の .vanda/promises.toml を読めません（4 行目）"));
-  const row = await historyRow(/前に合意した人/);
+  const row = await historyRow(/前に承認した人/);
   await userEvent.setup().click(toggleOf(row));
   expect(await screen.findByText(/コミット 3333333 の \.vanda\/promises\.toml を読めません/)).toBeTruthy();
 });
 
-// 参照（show-references）。約束の詳細とその時点の中身の、自然言語で書く項目の片と refs（docs/plans/stage4-references.md の「API の形」と「画面」）
+// 参照（show-references）。約束の詳細とその時点の中身の、自然言語で書く項目のセグメントと refs（docs/plans/stage4-references.md の「API の形」と「画面」）
 const ref = (text: string, id: string) => ({ text, ref: id });
 const claimRefs = {
   "t-statement": termRef("文の用語", "文の用語の定義"),
@@ -465,7 +465,7 @@ const refElementIn = (root: HTMLElement, name: string) => {
   focusable.sort((a, b) => (a.textContent ?? "").length - (b.textContent ?? "").length);
   return focusable[0];
 };
-// 参照だけの要素で、囲む要素と違う見た目の印を持つか（jsdom は描かないので、下線や色そのものは見ない）
+// 参照だけの要素で、囲む要素と見た目が違うか（jsdom は描かないので、下線や色そのものは見ない）
 const expectRefLookIn = (el: HTMLElement | undefined, name: string, where: string) => {
   expect(el, `${where}: 参照 ${name} が、フォーカスできる要素で出ていない`).toBeTruthy();
   expect((el!.textContent ?? "").startsWith(name), `${where}: 参照 ${name} の要素が、前の文字も含んでいる`).toBe(true);
@@ -475,7 +475,7 @@ const expectRefLookIn = (el: HTMLElement | undefined, name: string, where: strin
   expect(parent, `${where}: 参照 ${name} の前後の文字を含む要素がない`).toBeTruthy();
   if (!parent) return;
   expect(el!.tagName + " " + el!.className, `${where}: 参照 ${name} の見た目が、囲む要素と同じ`).not.toBe(parent.tagName + " " + parent.className);
-  // 前後の参照でない文字を包む要素（ほかの参照の中のものを除く）とも、見た目の印が違う
+  // 前後の参照でない文字を包む要素（ほかの参照の中のものを除く）とも、見た目が違う
   const look = (x: Element) => x.tagName + " " + x.className;
   const inRef = (x: Element) => x.closest("[tabindex], a[href]") !== null;
   for (const other of Array.from(parent.querySelectorAll("*"))) {
@@ -491,7 +491,7 @@ it("約束の詳細では文と理由と条件と推測とエビデンスの詳�
   for (const name of ["文の用語", "理由の用語", "条件の用語", "推測の用語", "詳細の用語", "並べ替え", "c-other", "c-gone", "今ない用語", "今ない機能"]) {
     expectRefLookIn(refElementIn(document.body, name), name, "約束の詳細");
   }
-  // ID は、触れた時の枠にだけ出る
+  // ID は、マウスを乗せた時のポップアップにだけ出る
   expect(shownText(), "書いたままの参照が出た").not.toContain("{@id:");
   for (const id of ["t-statement", "t-rationale", "t-condition", "t-guess", "t-detail", "f-sort", "t-past", "f-past"]) expect(shownText(), `用語・機能の参照の指す ID ${id} が出た`).not.toContain(id);
   for (const name of ["c-gone", "今ない用語", "今ない機能"]) expect(screen.queryByRole("link", { name }), `${name} がリンクになっている`).toBeNull();
@@ -533,7 +533,7 @@ it("約束の履歴で開いたその時点の中身の参照もその時点のr
 });
 
 // @vanda:evidence reference-popup
-it("約束の詳細の参照に触れた時とフォーカスした時に指す先のIDと用語と機能はその定義を約束はその文を枠で出し離れると消す", async () => {
+it("約束の詳細の参照にマウスを乗せた時とフォーカスした時に指す先のIDと用語と機能はその定義を約束はその文をポップアップで出し離れると消す", async () => {
   open(detailWithRefs());
   await waitFor(() => expect(bodyText()).toContain("詳細の用語"));
   const tooltipWith = (text: string) => screen.queryAllByRole("tooltip").find((t) => (t.textContent ?? "").includes(text)) ?? null;
@@ -548,14 +548,14 @@ it("約束の詳細の参照に触れた時とフォーカスした時に指す�
   for (const [name, text, id] of cases) {
     const el = refElementIn(document.body, name)!;
     expect(el, `参照 ${name} がない`).toBeTruthy();
-    expect(tooltipWith(text), `${name}: 触れる前から出ている`).toBeNull();
+    expect(tooltipWith(text), `${name}: マウスを乗せる前から出ている`).toBeNull();
     await user.hover(el);
-    await waitFor(() => expect(tooltipWith(text), `${name}: 触れても ${text} が出ない`).toBeTruthy());
-    expect(tooltipWith(text)!.textContent, `${name}: 枠に ID がない`).toContain(id);
+    await waitFor(() => expect(tooltipWith(text), `${name}: マウスを乗せても ${text} が出ない`).toBeTruthy());
+    expect(tooltipWith(text)!.textContent, `${name}: ポップアップに ID がない`).toContain(id);
     // f-sort は、コア機能で、形式手法を使う機能ではない
     if (id === "f-sort") {
-      expect(tooltipWith(text)!.textContent, "並べ替え: 枠にコア機能の印がない").toContain("コア機能");
-      expect(tooltipWith(text)!.textContent, "並べ替え: 枠に形式手法を使う機能の印がある").not.toContain("形式手法を使う機能");
+      expect(tooltipWith(text)!.textContent, "並べ替え: ポップアップにコア機能のマークがない").toContain("コア機能");
+      expect(tooltipWith(text)!.textContent, "並べ替え: ポップアップに形式手法を使う機能のマークがある").not.toContain("形式手法を使う機能");
     }
     await user.unhover(el);
     await waitFor(() => expect(tooltipWith(text), `${name}: 離れても消えない`).toBeNull());
@@ -569,8 +569,8 @@ it("約束の詳細の参照に触れた時とフォーカスした時に指す�
 
 // CL-01
 // @vanda:evidence claim-detail-state
-it("約束の詳細の見出しに約束のIDと今の中身が合意済か提案中かを示す", async () => {
-  for (const [state, label, other] of [["proposed", "提案中", "合意済"], ["agreed", "合意済", "提案中"]] as const) {
+it("約束の詳細の見出しに約束のIDと今の中身が承認済か提案中かを示す", async () => {
+  for (const [state, label, other] of [["proposed", "提案中", "承認済"], ["agreed", "承認済", "提案中"]] as const) {
     window.history.pushState({}, "", "/claims/task-other-id");
     open(claimDetail({ id: "task-other-id", state }));
     const h = await screen.findByRole("heading", { level: 1 });
@@ -644,10 +644,10 @@ it("ファイルの画面でファイルを読めない時はAPIが返した理�
   window.history.pushState({}, "", "/files?path=" + encodeURIComponent("e2e/none.txtar"));
   server.use(
     http.get("/api/context", () => HttpResponse.json(ctx)),
-    http.get("/api/file", () => apiError(404, "e2e/none.txtar は、合意の対象のファイルでもアノテーションを読むファイルでもありません。")),
+    http.get("/api/file", () => apiError(404, "e2e/none.txtar は、承認の対象のファイルでもアノテーションを読むファイルでもありません。")),
   );
   render(<App />);
-  expect(await screen.findByText(/e2e\/none\.txtar は、合意の対象のファイルでもアノテーションを読むファイルでもありません/)).toBeTruthy();
+  expect(await screen.findByText(/e2e\/none\.txtar は、承認の対象のファイルでもアノテーションを読むファイルでもありません/)).toBeTruthy();
 });
 
 // @vanda:evidence api-error-fix-shown
@@ -742,7 +742,7 @@ describe("用語と機能の詳細", () => {
   });
 
   // @vanda:evidence feature-page-content
-  it("機能の詳細のページに名前とIDと定義とコア機能か形式手法を使う機能かの印を示す", async () => {
+  it("機能の詳細のページに名前とIDと定義とコア機能か形式手法を使う機能かのマークを示す", async () => {
     for (const core of [true, false]) {
       for (const formal of [true, false]) {
         const where = `core=${core}・formal=${formal}`;
@@ -751,10 +751,10 @@ describe("用語と機能の詳細", () => {
         const shown = shownText();
         for (const t of ["並べ替える機能", "f-sort", "定義の中の用語を順に並べる"]) expect(shown, `${where}: ${t} がない`).toContain(t);
         expectRefLookIn(refElementIn(document.body, "定義の中の用語"), "定義の中の用語", `${where}: 機能の詳細の定義`);
-        if (core) expect(shown, `${where}: コア機能の印がない`).toContain("コア機能");
-        else expect(shown, `${where}: コア機能の印がある`).not.toContain("コア機能");
-        if (formal) expect(shown, `${where}: 形式手法を使う機能の印がない`).toContain("形式手法を使う機能");
-        else expect(shown, `${where}: 形式手法を使う機能の印がある`).not.toContain("形式手法を使う機能");
+        if (core) expect(shown, `${where}: コア機能のマークがない`).toContain("コア機能");
+        else expect(shown, `${where}: コア機能のマークがある`).not.toContain("コア機能");
+        if (formal) expect(shown, `${where}: 形式手法を使う機能のマークがない`).toContain("形式手法を使う機能");
+        else expect(shown, `${where}: 形式手法を使う機能のマークがある`).not.toContain("形式手法を使う機能");
         cleanup();
         server.resetHandlers();
       }
@@ -813,12 +813,12 @@ describe("用語と機能の詳細", () => {
 describe("読み込みの間に先に出すもの", () => {
   // before は、a が b より文書の前にあるか
   const before = (a: Node, b: Node) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
-  // ストーリーのレビューから移ってきた時の合意のボタンの読み込みと混ざらないよう、レビューのクエリを付けずに開く
+  // ストーリーのレビューから移ってきた時の承認のボタンの読み込みと混ざらないよう、レビューのクエリを付けずに開く
   beforeEach(() => window.history.pushState({}, "", "/claims/task-id-unique"));
 
   // @vanda:evidence claim-detail-shown-before-history
   // @vanda:evidence loading-indicator
-  it("由来と合意の履歴が届く前に約束の詳細の中身を出し由来と合意の履歴の欄には読み込み中の印を出し届いたら履歴に替える", async () => {
+  it("変更履歴と承認の履歴が届く前に約束の詳細の中身を出し変更履歴と承認の履歴の欄には読み込み中のマークを出し届いたら履歴に替える", async () => {
     const g = gate();
     server.use(
       http.get("/api/context", () => HttpResponse.json(ctx)),
@@ -835,27 +835,27 @@ describe("読み込みの間に先に出すもの", () => {
     render(<App />);
     expect(await screen.findByRole("heading", { level: 1, name: /task-id-unique/ })).toBeTruthy();
     // ID・状態・文・理由・条件・レイヤー・対象・推測・エビデンスの予定と実際のエビデンス
-    for (const t of ["合意済", "タスクの ID は重ならない", "重なると消す相手を決められない", "タスクが 1 つ以上ある", "モデル", "タスクの ID", "先に出す推測",
+    for (const t of ["承認済", "タスクの ID は重ならない", "重なると消す相手を決められない", "タスクが 1 つ以上ある", "モデル", "タスクの ID", "先に出す推測",
       "exec vanda add 買い物", "TestUnique", "internal/task/task_test.go", "spec/Task.tla", "db/schema.sql", "まだ書いていない"]) {
-      expect(bodyText(), `由来と合意の履歴の前に ${t} が出ない`).toContain(t);
+      expect(bodyText(), `変更履歴と承認の履歴の前に ${t} が出ない`).toContain(t);
     }
-    // 由来と合意の履歴はまだ出さず、それぞれの欄に読み込み中の印を出す
-    for (const t of ["#1 はじめの約束を置く", "#24 文を変える", "前に合意した人"]) expect(bodyText(), `届く前に ${t} が出た`).not.toContain(t);
-    const origin = screen.getByRole("heading", { name: "由来" });
-    const agreements = screen.getByRole("heading", { name: "合意の履歴" });
+    // 変更履歴と承認の履歴はまだ出さず、それぞれの欄に読み込み中のマークを出す
+    for (const t of ["#1 はじめの約束を置く", "#24 文を変える", "前に承認した人"]) expect(bodyText(), `届く前に ${t} が出た`).not.toContain(t);
+    const origin = screen.getByRole("heading", { name: "変更履歴" });
+    const agreements = screen.getByRole("heading", { name: "承認の履歴" });
     const loads = screen.getAllByText("読み込んでいます…");
-    expect(loads.length, "読み込み中の印が由来と合意の履歴の 2 つでない").toBe(2);
-    expect(before(origin, loads[0]) && before(loads[0], agreements) && before(agreements, loads[1]), "読み込み中の印が由来と合意の履歴の欄にない").toBe(true);
-    loads.forEach((el, i) => expectLoading(el, ["由来", "合意の履歴"][i]));
+    expect(loads.length, "読み込み中のマークが変更履歴と承認の履歴の 2 つでない").toBe(2);
+    expect(before(origin, loads[0]) && before(loads[0], agreements) && before(agreements, loads[1]), "読み込み中のマークが変更履歴と承認の履歴の欄にない").toBe(true);
+    loads.forEach((el, i) => expectLoading(el, ["変更履歴", "承認の履歴"][i]));
 
     g.open();
     await waitFor(() => expect(bodyText()).toContain("#24 文を変える"));
-    for (const t of ["#1 はじめの約束を置く", "前に合意した人"]) expect(bodyText()).toContain(t);
-    expect(screen.queryByText("読み込んでいます…"), "届いた後も読み込み中の印が残る").toBeNull();
+    for (const t of ["#1 はじめの約束を置く", "前に承認した人"]) expect(bodyText()).toContain(t);
+    expect(screen.queryByText("読み込んでいます…"), "届いた後も読み込み中のマークが残る").toBeNull();
   });
 
   // @vanda:evidence loading-indicator
-  it("約束の詳細が届く前は読み込み中の印を出す", async () => {
+  it("約束の詳細が届く前は読み込み中のマークを出す", async () => {
     const g = gate();
     server.use(
       http.get("/api/context", () => HttpResponse.json(ctx)),

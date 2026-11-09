@@ -10,12 +10,12 @@ import (
 	"testing"
 )
 
-// 組込みの ts のアダプタと、vanda のリポジトリの .vanda/adapters/playwright が付ける名前
+// 組み込みの ts のアダプタと、vanda のリポジトリの .vanda/adapters/playwright が付ける名前
 // （docs/plans/annotation-types.md の 2・3）。名前は、呼び出しの最初の引数の文字列で、describe の中なら外側の
 // describe の名前から順に " > " でつなぐ。約束の詳細（GET /api/claims/<ID>）の found の名前で確かめる。
 
 // tsNamesFile は、入れ子の describe を含むテストのファイル。期待する名前は tsNamesWant。
-// 組込みの ts は .skip・.todo を数えず .only を誤りにする（annotation_ts.txtar で確かめる）ので、ここには書かない
+// 組み込みの ts は .skip・.todo を数えず .only を誤りにする（annotation_ts.txtar で確かめる）ので、ここには書かない
 const tsNamesFile = `import { describe, it, test } from "vitest";
 
 // @vanda:evidence task-id-unique
@@ -25,9 +25,9 @@ describe("ReviewPage", () => {
   // @vanda:evidence task-id-unique
   it("一覧を出す", () => {});
 
-  describe("合意", () => {
+  describe("承認", () => {
     // @vanda:evidence task-id-unique
-    test("合意すると合意済になる", () => {});
+    test("承認すると承認済になる", () => {});
 
     /* @vanda:evidence task-id-unique */
     it("取り消すと提案中に戻る", () => {});
@@ -39,23 +39,23 @@ describe("まとまり", () => {});
 
 test.describe("Playwright の形", () => {
   // @vanda:evidence task-id-unique
-  test.each(["合意", "取り消し"])("%s をする", (op) => {});
+  test.each(["承認", "取り消し"])("%s をする", (op) => {});
 
   // @vanda:evidence task-id-unique
-  test(` + "`${op} を合意する`" + `, () => {});
+  test(` + "`${op} を承認する`" + `, () => {});
 });
 `
 
 var tsNamesWant = []string{
 	"いちばん外",
 	"ReviewPage > 一覧を出す",
-	"ReviewPage > 合意 > 合意すると合意済になる",
-	"ReviewPage > 合意 > 取り消すと提案中に戻る",
+	"ReviewPage > 承認 > 承認すると承認済になる",
+	"ReviewPage > 承認 > 取り消すと提案中に戻る",
 	"まとまり",
 	// .each(表)("名前", …) は、最後の呼び出しの最初の引数
 	"Playwright の形 > %s をする",
 	// テンプレート文字列は、書いてあるとおりの文字
-	"Playwright の形 > ${op} を合意する",
+	"Playwright の形 > ${op} を承認する",
 }
 
 // foundNames は、annotation の設定と、ファイル path に中身 body を置いたリポジトリを作り、約束の詳細の found の名前を返す。
@@ -101,8 +101,8 @@ func foundNames(t *testing.T, annotation string, files map[string]string, adapte
 	return names, root
 }
 
-// 組込みの ts は、入れ子の describe の名前を " > " でつなぐ
-func Test組込みのtsのアダプタは呼び出しの最初の引数を名前にし入れ子のdescribeをつなぐ(t *testing.T) {
+// 組み込みの ts は、入れ子の describe の名前を " > " でつなぐ
+func Test組み込みのtsのアダプタは呼び出しの最初の引数を名前にし入れ子のdescribeをつなぐ(t *testing.T) {
 	t.Parallel()
 	names, _ := foundNames(t, "[[annotation]]\npaths = [\"**/*.test.ts\"]\nadapter = \"ts\"\ntypes = [\"unit-test\"]\n",
 		map[string]string{"web/src/a.test.ts": tsNamesFile}, nil)
@@ -114,7 +114,7 @@ func Test組込みのtsのアダプタは呼び出しの最初の引数を名前
 }
 
 // vanda のリポジトリの .vanda/adapters/playwright は、E2E にアノテーションを付けるとシナリオテストとして揃え、
-// 組込みの ts と同じく名前を " > " でつなぐ
+// 組み込みの ts と同じく名前を " > " でつなぐ
 func Test_vanda_adaptersのplaywrightはE2Eのアノテーションをシナリオテストとして揃え名前をつなぐ(t *testing.T) {
 	t.Parallel()
 	adapter := filepath.Join("..", "..", ".vanda", "adapters", "playwright")
@@ -122,12 +122,12 @@ func Test_vanda_adaptersのplaywrightはE2Eのアノテーションをシナリ�
 
 test.describe("レビューの画面", () => {
   // @vanda:evidence task-id-unique
-  test("合意する", async ({ page }) => {});
+  test("承認する", async ({ page }) => {});
 });
 `
 	cfg := "[[annotation]]\npaths = [\"web/e2e/**/*.spec.ts\"]\nadapter = \"playwright\"\ntypes = [\"scenario-test\"]\n"
 	names, root := foundNames(t, cfg, map[string]string{"web/e2e/review.spec.ts": e2e}, map[string]string{".vanda/adapters/playwright": adapter})
-	if want := []string{"レビューの画面 > 合意する"}; !reflect.DeepEqual(names, want) {
+	if want := []string{"レビューの画面 > 承認する"}; !reflect.DeepEqual(names, want) {
 		t.Errorf("名前: %v（思ったもの %v）", names, want)
 	}
 	// シナリオテストの予定は、E2E のアノテーションで揃う（unit-test の予定は揃わない）
@@ -156,14 +156,14 @@ func containsLine(out, s string) bool {
 func Test_vanda_adaptersのplaywrightはE2Eの文字列の中の書き方をアノテーションとしないのでvandaのE2Eで止まらない(t *testing.T) {
 	t.Parallel()
 	adapter := filepath.Join("..", "..", ".vanda", "adapters", "playwright")
-	strs := "import { test } from \"@playwright/test\";\n\nconst bad = \"@vanda:foo two ids\";\nconst tpl = `# @vanda:evidence no-such-id ${bad}`;\n\n// @vanda:evidence task-id-unique\ntest(\"合意する\", async () => {});\n"
+	strs := "import { test } from \"@playwright/test\";\n\nconst bad = \"@vanda:foo two ids\";\nconst tpl = `# @vanda:evidence no-such-id ${bad}`;\n\n// @vanda:evidence task-id-unique\ntest(\"承認する\", async () => {});\n"
 	spec, err := os.ReadFile(filepath.Join("..", "..", "web", "e2e", "review.spec.ts"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	cfg := "[[annotation]]\npaths = [\"web/e2e/**/*.spec.ts\"]\nadapter = \"playwright\"\ntypes = [\"scenario-test\"]\n"
 	names, root := foundNames(t, cfg, map[string]string{"web/e2e/strings.spec.ts": strs, "web/e2e/review.spec.ts": string(spec)}, map[string]string{".vanda/adapters/playwright": adapter})
-	if want := []string{"合意する"}; !reflect.DeepEqual(names, want) {
+	if want := []string{"承認する"}; !reflect.DeepEqual(names, want) {
 		t.Errorf("名前: %v（思ったもの %v。文字列の中の @vanda: を数えている）", names, want)
 	}
 	writeFile(t, root, ".vanda/checks/links.toml", "[[check]]\nname = \"annotation-links\"\nscope = \"all\"\n")

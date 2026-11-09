@@ -12,7 +12,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/config"
 )
 
-// 期待値は docs/formats.md の「組込みのアダプタ」の表から、例ごとに手で書いた。
+// 期待値は docs/formats.md の「組み込みのアダプタ」の表から、例ごとに手で書いた。
 
 type want struct {
 	Line  int

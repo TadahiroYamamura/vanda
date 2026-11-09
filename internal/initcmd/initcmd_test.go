@@ -15,7 +15,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/initcmd"
 )
 
-// syncBuffer は、問いの出力を受ける。問いを出す goroutine と、待つテストの goroutine の両方が触る
+// syncBuffer は、プロンプトの出力を受ける。プロンプトを出す goroutine と、待つテストの goroutine の両方が触る
 type syncBuffer struct {
 	mu sync.Mutex
 	b  bytes.Buffer
@@ -38,12 +38,12 @@ type askResult struct {
 	err error
 }
 
-// askSession は、擬似端末で Ask を動かす。端末に出たものはバッファに写し、問いの題が出るのを待ってから、キーを 1 回だけ送る
+// askSession は、擬似端末で Ask を動かす。端末に出たものはバッファに写し、質問の題が出るのを待ってから、キーを 1 回だけ送る
 type askSession struct {
 	t    *testing.T
 	in   interface{ Write([]byte) (int, error) }
 	out  *syncBuffer
-	pos  int // ここまでの出力は、前の問いのもの
+	pos  int // ここまでの出力は、前の質問のもの
 	done chan askResult
 }
 
@@ -65,7 +65,7 @@ func startAsk(t *testing.T, d initcmd.Defaults) *askSession {
 		t.Fatal(err)
 	}
 	s := &askSession{t: t, in: ptmx, out: &syncBuffer{}, done: make(chan askResult, 1)}
-	// 問いは、vanda init と同じく端末に出す（端末でない出力では、問いの大きさが決まらず描かれない）
+	// 質問は、vanda init と同じく端末に出す（端末でない出力では、質問の大きさが決まらず描かれない）
 	go func() {
 		buf := make([]byte, 4096)
 		for {
@@ -86,7 +86,7 @@ func startAsk(t *testing.T, d initcmd.Defaults) *askSession {
 	return s
 }
 
-// answer は、題 title の問いが出るまで待ち、keys を送る。決まった時間だけ待たず、題が出たかを見に行く
+// answer は、題 title の質問が出るまで待ち、keys を送る。決まった時間だけ待たず、題が出たかを見に行く
 func (s *askSession) answer(title, keys string) {
 	s.t.Helper()
 	deadline := time.Now().Add(5 * time.Second)
@@ -97,7 +97,7 @@ func (s *askSession) answer(title, keys string) {
 			break
 		}
 		if time.Now().After(deadline) {
-			s.t.Fatalf("問い %q が 5 秒たっても出ない\n--- 出力\n%s", title, out)
+			s.t.Fatalf("質問 %q が 5 秒たっても出ない\n--- 出力\n%s", title, out)
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
@@ -125,11 +125,11 @@ const (
 // ID の書き方の欄に書いたものが、そのまま答えになれば、欄は空から始まっている（既定の答えがあれば、その後ろに書き足される）
 //
 // @vanda:evidence init-no-store-id-pattern
-func TestAskはストーリーストアにカスタムアダプタか使わないを選ぶとIDの書き方の問いを空の欄から始める(t *testing.T) {
+func TestAskはストーリーストアにカスタムアダプタか使わないを選ぶとIDの書き方の質問を空の欄から始める(t *testing.T) {
 	const typed = "ABC-[0-9]+"
 	cases := []struct {
 		choice string
-		keys   string // ストーリーストアの問いで送るキー（既定は GitHub Issues）
+		keys   string // ストーリーストアの質問で送るキー（既定は GitHub Issues）
 		store  string
 		empty  bool
 	}{

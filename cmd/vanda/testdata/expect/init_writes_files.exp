@@ -1,10 +1,10 @@
 # @vanda:evidence init-writes-files
 # @vanda:evidence init-check-configs
-# vanda init の問いに答え、作るかの確かめに「作る」と答えると、.vanda/ に設定・約束リスト・合意の記録・
-# 審査の設定（ブランチで動かす .vanda/checks/ci.toml と、ベースブランチで動かす .vanda/checks/main.toml）の 5 つのファイルだけができる。確かめに答えるまでは何も作らない。
-# main.toml は story-origin を除く審査を範囲 all にするので、作ったものを Story: のトレーラーなしでコミットしたベースブランチで通る。
+# vanda init の質問に答え、作るかの確かめに「作る」と答えると、.vanda/ に設定・約束リスト・承認の記録・
+# チェックの設定（ブランチで動かす .vanda/checks/ci.toml と、ベースブランチで動かす .vanda/checks/main.toml）の 5 つのファイルだけができる。確かめに答えるまでは何も作らない。
+# main.toml は story-origin を除くチェックをスコープ all にするので、作ったものを Story: のトレーラーなしでコミットしたベースブランチで通る。
 # remote のないリポジトリなので、ストーリーストアの既定は「使わない」（GitHub に繋ぎに行かない）。
-# 問いは、題が出てから 1 度だけ答えを送る。待つのは画面の文字が出るまでで、時間では待たない（timeout は止まったときの上限）
+# 質問は、題が出てから 1 度だけ答えを送る。待つのは画面の文字が出るまでで、時間では待たない（timeout は止まったときの上限）
 
 set timeout 30
 # 画面の描き直しの制御文字が多いので、落ちたときだけ、そこまでの画面の出力を出す
@@ -13,7 +13,7 @@ log_user 0
 exec git init -q -b main
 exec git -c user.name=テスト担当 -c user.email=tester@example.com commit -q --allow-empty -m "はじめ"
 
-# expect の擬似端末は、既定では大きさが 0 で、問いが描かれないので大きさを決める
+# expect の擬似端末は、既定では大きさが 0 で、質問が描かれないので大きさを決める
 set stty_init "rows 40 cols 120"
 spawn vanda init
 # expect_after は今の spawn_id に付くので、spawn の後に置く（前に置くと、expect 自身の標準入力の終わりで落ちる）
@@ -56,7 +56,7 @@ if {![string match "*id_pattern = \"#\\\[0-9\\\]+\"*" $cfg]} {
     puts stderr "\n設定に、答えた ID の書き方がない:\n$cfg"
     exit 1
 }
-# 審査の設定の [[check]] を「名前 範囲」で並べる
+# チェックの設定の [[check]] を「名前 スコープ」で並べる
 proc checks {path} {
     set got {}
     set name ""
@@ -69,21 +69,21 @@ proc checks {path} {
 set want_ci [list "promise-list-shape all" "annotation-links all" "story-origin story" "agreement story" "agreement-targets all" "evidence-present story" "unread-files all"]
 set got_ci [checks .vanda/checks/ci.toml]
 if {$got_ci ne $want_ci} {
-    puts stderr "\nci.toml の審査が $got_ci（思ったもの $want_ci）"
+    puts stderr "\nci.toml のチェックが $got_ci（思ったもの $want_ci）"
     exit 1
 }
 set want_main [list "promise-list-shape all" "annotation-links all" "agreement all" "agreement-targets all" "evidence-present all" "unread-files all"]
 set got_main [checks .vanda/checks/main.toml]
 if {$got_main ne $want_main} {
-    puts stderr "\nmain.toml の審査が $got_main（思ったもの $want_main）"
+    puts stderr "\nmain.toml のチェックが $got_main（思ったもの $want_main）"
     exit 1
 }
 
-# ベースブランチに、Story: のトレーラーなしでコミットして、main.toml の審査を動かす
+# ベースブランチに、Story: のトレーラーなしでコミットして、main.toml のチェックを動かす
 exec git add .vanda
 exec git -c user.name=テスト担当 -c user.email=tester@example.com commit -q -m "vanda を使いはじめる"
 if {[catch {exec vanda check .vanda/checks/main.toml} out]} {
     puts stderr "\nベースブランチで vanda check .vanda/checks/main.toml が通らない:\n$out"
     exit 1
 }
-puts "\nvanda init で 5 つのファイルができ、ベースブランチで main.toml の審査が通った"
+puts "\nvanda init で 5 つのファイルができ、ベースブランチで main.toml のチェックが通った"

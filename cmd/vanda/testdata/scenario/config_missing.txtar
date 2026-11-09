@@ -6,7 +6,7 @@ exec git init -q -b main
 stderr 'config\.toml'
 ! stderr '(?m)^panic: '
 
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
 stderr 'config\.toml'
 ! stderr '(?m)^panic: '

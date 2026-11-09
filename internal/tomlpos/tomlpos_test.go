@@ -3,7 +3,7 @@ package tomlpos
 import "testing"
 
 func TestLines(t *testing.T) {
-	src := `version = "0.1.0"  # 版
+	src := `version = "0.1.0"  # バージョン
 
 [[term]]
 id = "task"

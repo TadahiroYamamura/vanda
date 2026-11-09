@@ -1,8 +1,8 @@
-# 審査は、設定・約束リスト・合意の記録のファイルと、アノテーションを読むファイルを、HEAD のコミットの中身で読む。
+# チェックは、設定・約束リスト・承認の記録のファイルと、アノテーションを読むファイルを、HEAD のコミットの中身で読む。
 # コミットしていないファイルと変更（git add したものを含む）は読まない。
 # @vanda:evidence reads-committed-files-only
-# ファイルの種類ごとに、作業ツリーで誤りになるように書き換えても、コミットするまでは審査が通り、コミットすると止まることを確かめる。
-# 作業ツリーにだけある、どのパターンにも当たらない .vanda/ の下のファイルも、コミットするまでは読まない。
+# ファイルの種類ごとに、作業ツリーで誤りになるように書き換えても、コミットするまではチェックが通り、コミットすると止まることを確かめる。
+# 作業ツリーにだけある、どのパターンにもマッチしない .vanda/ の下のファイルも、コミットするまでは読まない。
 
 exec git init -q -b main
 expand .vanda/config.toml
@@ -31,22 +31,22 @@ exec git add -A
 exec vanda check .vanda/checks/all.toml
 commit '(test) 約束リストを誤らせる'
 ! exec vanda check .vanda/checks/all.toml
-stdout '審査 promise-list-shape（all）: 失敗'
+stdout 'チェック promise-list-shape（all）: 失敗'
 stderr '\.vanda/promises\.toml:[0-9]+: .*Task_ID'
 cp cases/promises.toml .vanda/promises.toml
 commit '(test) 約束リストを戻す'
 
-# 合意の記録
+# 承認の記録
 cp cases/agreements-bad.toml .vanda/agreements.toml
 exec vanda check .vanda/checks/all.toml
 exec git add -A
 exec vanda check .vanda/checks/all.toml
-commit '(test) 合意の記録を誤らせる'
+commit '(test) 承認の記録を誤らせる'
 ! exec vanda check .vanda/checks/all.toml
-stdout '審査 agreement-targets（all）: 失敗'
+stdout 'チェック agreement-targets（all）: 失敗'
 stderr '\.vanda/agreements\.toml:1: '
 cp cases/agreements.toml .vanda/agreements.toml
-commit '(test) 合意の記録を戻す'
+commit '(test) 承認の記録を戻す'
 
 # アノテーションを読むファイル（約束リストにない ID を指す）
 cp cases/task_test.go.bad task_test.go
@@ -55,7 +55,7 @@ exec git add -A
 exec vanda check .vanda/checks/all.toml
 commit '(test) アノテーションを誤らせる'
 ! exec vanda check .vanda/checks/all.toml
-stdout '審査 annotation-links（all）: 失敗'
+stdout 'チェック annotation-links（all）: 失敗'
 stderr 'task_test\.go:3: .*no-such-claim'
 cp cases/task_test.go.orig task_test.go
 commit '(test) アノテーションを戻す'
@@ -65,7 +65,7 @@ cp cases/task_test.go.none task_test.go
 exec vanda check .vanda/checks/all.toml
 commit '(test) アノテーションを消す'
 ! exec vanda check .vanda/checks/all.toml
-stdout '審査 evidence-present（all）: 失敗'
+stdout 'チェック evidence-present（all）: 失敗'
 cp cases/task_test.go.orig task_test.go
 commit '(test) アノテーションを戻す'
 
@@ -76,7 +76,7 @@ exec git add -A
 exec vanda check .vanda/checks/all.toml
 commit '(test) 読まれないファイルを足す'
 ! exec vanda check .vanda/checks/all.toml
-stdout '審査 unread-files（all）: 失敗'
+stdout 'チェック unread-files（all）: 失敗'
 stderr '\.vanda/memo\.md: '
 
 -- .vanda/config.toml --

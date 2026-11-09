@@ -14,7 +14,7 @@ import (
 // sensor は、センサーの場所（all.go の sensor）と、センサーの検証（all_test.go の evidence）の 2 つで揃う。
 // 約束 half-a・half-b は、guardrail と sensor の予定の、2 つのうち片方だけがある。
 
-// 期待値は docs/formats.md の「エビデンスが揃っている審査」の表と evidence[].present の説明から手で書く。
+// 期待値は docs/formats.md の「エビデンスが揃っているチェック」の表と evidence[].present の説明から手で書く。
 // 値は、アノテーションがあるとき・ないときの present（nil は null）。
 var presentTypes = []struct {
 	typ            string

@@ -6,7 +6,7 @@ import (
 )
 
 // コミットのストーリーの ID（docs/formats.md の「コミットのストーリーの ID」）。メッセージは手で書き、
-// 範囲 story の agreement がどのストーリーに決まったか（結果の行）か、決まらなかった誤りで見る。
+// スコープ story の agreement がどのストーリーに決まったか（結果の行）か、決まらなかった誤りで見る。
 
 // @vanda:evidence story-id-from-trailer
 func Testストーリーの_IDはメッセージの最後の段落のStoryのトレーラーからだけ読みsubjectと本文のIDは数えない(t *testing.T) {
@@ -37,19 +37,19 @@ func Testストーリーの_IDはメッセージの最後の段落のStoryのト
 				}
 				return
 			}
-			if err != nil || !strings.Contains(out, "審査 agreement（story "+c.want+"）") {
+			if err != nil || !strings.Contains(out, "チェック agreement（story "+c.want+"）") {
 				t.Errorf("ストーリーが %s に決まらない: err=%v\n%s", c.want, err, out)
 			}
 		})
 	}
 }
 
-// 範囲 story の agreement・evidence-present を含む設定では、トレーラーの誤りは --story を渡しても審査の前の誤り。
-// story-origin だけなら、約束リストを変えたそのコミットだけが story-origin の失敗。範囲がすべて all なら見ない
+// スコープ story の agreement・evidence-present を含む設定では、トレーラーの誤りは --story を渡してもチェックの前の誤り。
+// story-origin だけなら、約束リストを変えたそのコミットだけが story-origin の失敗。スコープがすべて all なら見ない
 // @vanda:evidence story-trailer-at-most-one
 // @vanda:evidence story-trailer-matches-pattern
 // @vanda:evidence check-story-arg-pattern
-func TestStoryのトレーラーの誤りは決める審査では審査の前に止めstory_originではそのコミットの失敗にしallでは見ない(t *testing.T) {
+func TestStoryのトレーラーの誤りは決めるチェックではチェックの前に止めstory_originではそのコミットの失敗にしallでは見ない(t *testing.T) {
 	const (
 		storyEvidence = "[[check]]\nname = \"evidence-present\"\nscope = \"story\"\n"
 		storyOrigin   = "[[check]]\nname = \"story-origin\"\nscope = \"story\"\n"
@@ -61,7 +61,7 @@ func TestStoryのトレーラーの誤りは決める審査では審査の前に
 	}{
 		{"2つ", "Story: #2\nStory: #3", []string{"2 つ", "#2・#3"}},
 		{"id_patternに合わない", "Story: PROJ-1", []string{"PROJ-1", "#[0-9]+"}},
-		{"id_patternに一部だけ当たる", "Story: #2a", []string{"#2a", "#[0-9]+"}},
+		{"id_patternに一部だけマッチする", "Story: #2a", []string{"#2a", "#[0-9]+"}},
 	}
 	for _, bad := range bads {
 		for _, promisesChanged := range []bool{true, false} {
@@ -91,18 +91,18 @@ func TestStoryのトレーラーの誤りは決める審査では審査の前に
 					}
 				}
 
-				// ストーリーを決める審査を含む設定は、--story があってもなくても審査の前に止まる（結果の行が出ない）
+				// ストーリーを決めるチェックを含む設定は、--story があってもなくてもチェックの前に止まる（結果の行が出ない）
 				for _, checks := range []string{storyAgreement, storyEvidence, storyOrigin + storyAgreement} {
 					for _, story := range []string{"", "#2"} {
 						what := strings.ReplaceAll(checks, "\n", " ") + " --story " + story
 						_, out, err := r.run(checks, "main", story)
 						if err == nil {
-							t.Errorf("%s: 審査の前に止まらない\n%s", what, out)
+							t.Errorf("%s: チェックの前に止まらない\n%s", what, out)
 							continue
 						}
 						wantErr(t, what, err.Error())
-						if strings.Contains(out, "審査 ") {
-							t.Errorf("%s: 審査の結果の行が出た\n%s", what, out)
+						if strings.Contains(out, "チェック ") {
+							t.Errorf("%s: チェックの結果の行が出た\n%s", what, out)
 						}
 					}
 				}
@@ -112,11 +112,11 @@ func TestStoryのトレーラーの誤りは決める審査では審査の前に
 					t.Errorf("--story の形の誤りが先に出ない: %v", err)
 				}
 
-				// story-origin だけなら審査の前には止まらず、約束リストを変えたそのコミットだけが失敗
+				// story-origin だけならチェックの前には止まらず、約束リストを変えたそのコミットだけが失敗
 				for _, story := range []string{"", "#2"} {
 					pass, out, err := r.run(storyOrigin, "main", story)
 					if err != nil {
-						t.Errorf("story-origin だけで審査の前に止まった: %v", err)
+						t.Errorf("story-origin だけでチェックの前に止まった: %v", err)
 						continue
 					}
 					if !promisesChanged {
@@ -125,16 +125,16 @@ func TestStoryのトレーラーの誤りは決める審査では審査の前に
 						}
 						continue
 					}
-					if pass || !strings.Contains(out, "審査 story-origin（story）: 失敗（1 件）") {
+					if pass || !strings.Contains(out, "チェック story-origin（story）: 失敗（1 件）") {
 						t.Errorf("約束リストを変えたコミットで story-origin が 1 件の失敗にならない\n%s", out)
 					}
 					wantErr(t, "story-origin", out)
 				}
 
-				// 範囲がすべて all なら、--base があってもなくても見ない
+				// スコープがすべて all なら、--base があってもなくても見ない
 				for _, base := range []string{"", "main"} {
 					if _, out, err := r.run(allOnly, base, ""); err != nil || strings.Contains(out, hash) {
-						t.Errorf("範囲がすべて all（--base %q）でトレーラーの誤りを見た: err=%v\n%s", base, err, out)
+						t.Errorf("スコープがすべて all（--base %q）でトレーラーの誤りを見た: err=%v\n%s", base, err, out)
 					}
 				}
 			})

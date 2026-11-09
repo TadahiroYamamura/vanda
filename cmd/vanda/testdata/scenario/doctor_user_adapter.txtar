@@ -44,7 +44,7 @@ stderr '\.vanda/adapters/empty-dir/run'
 stderr 'ください。'
 ! stderr '(?m)^panic: '
 
-# 組込みの github には args を書けない
+# 組み込みの github には args を書けない
 cp cases/config-github-args.toml .vanda/config.toml
 expand .vanda/config.toml
 ! exec vanda doctor

@@ -173,7 +173,7 @@ func TestStoryのトレーラーが誤ったコミットがあってもAPIは200
 			t.Errorf("otherCommits に、誤ったトレーラーの 2 つのコミットがない: %+v", e.OtherCommits)
 		}
 	}
-	// #1 が main で合意した task-id-unique は、#24 と誤ったトレーラーの 2 つのコミットが変えた。外れた合意は 200 で出て、
+	// #1 が main で承認した task-id-unique は、#24 と誤ったトレーラーの 2 つのコミットが変えた。失効した承認は 200 で出て、
 	// by に #24 は出る（誤ったコミットのストーリーが出ないことは、上で応答の全体から見た）
 	var one reviewResponse
 	s.get("/api/review?view=story&story=%231", &one)
@@ -188,7 +188,7 @@ func TestStoryのトレーラーが誤ったコミットがあってもAPIは200
 		}
 	}
 	if !found {
-		t.Errorf("#1 の一覧に、外れた task-id-unique がない")
+		t.Errorf("#1 の一覧に、承認が失効した task-id-unique がない")
 	}
 	detail := getHistory(t, s, "task-id-unique")
 	n := 0

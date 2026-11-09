@@ -1,4 +1,4 @@
-# アノテーションの読み取り: 組込みの TypeScript のアダプタ（ts。docs/plans/annotation-types.md の 2）。
+# アノテーションの読み取り: 組み込みの TypeScript のアダプタ（ts。docs/plans/annotation-types.md の 2）。
 # @vanda:evidence annotation-kinds-per-builtin-adapter
 # @vanda:evidence annotation-ts-test-call
 # @vanda:evidence annotation-ts-fixed-name
@@ -14,27 +14,27 @@ exec git init -q -b main
 expand .vanda/config.toml
 
 # 元のファイルでは通り、unit-test の予定が揃う
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/links.toml
 exec vanda check .vanda/checks/present.toml
 
 # 書ける所: test・it・describe と、修飾（.skip・.todo・.each(…)(…)・test.describe・test.describe.serial）が
 # 付いたものの直前のコメント。// でも /* */ でもよい。名前はテンプレート文字列でもよい
 cp cases/places-ok.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/links.toml
 exec vanda check .vanda/checks/present.toml
 cp orig/a.test.ts.orig web/a.test.ts
 
 # .test.tsx のファイルも読む
 cp cases/places-ok.ts web/b.test.tsx
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/links.toml
 rm web/b.test.tsx
 
 # アノテーションがなければ、unit-test の予定が揃わない（上の確かめが、ts のアノテーションで揃っていることを見るため）
 cp cases/none.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/present.toml
 stderr 'unit-test'
 ! stderr '(?m)^panic: '
@@ -42,7 +42,7 @@ cp orig/a.test.ts.orig web/a.test.ts
 
 # evidence のほかの種類は書けない
 cp cases/kind-claim.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:3: '
 ! stderr '(?m)^panic: '
@@ -50,7 +50,7 @@ cp orig/a.test.ts.orig web/a.test.ts
 
 # 書けない所: 変数の宣言の前
 cp cases/place-const.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:3: '
 ! stderr '(?m)^panic: '
@@ -58,7 +58,7 @@ cp orig/a.test.ts.orig web/a.test.ts
 
 # 書けない所: test( でない呼び出し（expect）の前
 cp cases/place-expect.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:5: '
 ! stderr '(?m)^panic: '
@@ -66,7 +66,7 @@ cp orig/a.test.ts.orig web/a.test.ts
 
 # 書けない所: コメントと test( のあいだに空行がある
 cp cases/place-gap.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:3: '
 ! stderr '(?m)^panic: '
@@ -74,7 +74,7 @@ cp orig/a.test.ts.orig web/a.test.ts
 
 # 最初の引数が文字列の決まった値でない（変数）と誤り
 cp cases/name-variable.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:[45]: '
 ! stderr '(?m)^panic: '
@@ -82,27 +82,27 @@ cp orig/a.test.ts.orig web/a.test.ts
 
 # 書けない所: フック（beforeEach・afterEach・beforeAll・afterAll）と test.step の直前
 cp cases/hook-beforeEach.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:[34]: '
 ! stderr '(?m)^panic: '
 cp cases/hook-afterEach.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:[34]: '
 ! stderr '(?m)^panic: '
 cp cases/hook-beforeAll.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:[34]: '
 ! stderr '(?m)^panic: '
 cp cases/hook-afterAll.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:[34]: '
 ! stderr '(?m)^panic: '
 cp cases/step.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:[45]: '
 ! stderr '(?m)^panic: '
@@ -111,7 +111,7 @@ cp orig/a.test.ts.orig web/a.test.ts
 # .skip・.todo を付けた呼び出しと、.skip を付けた describe の中のテストのアノテーションは、書いてよいが数えない。
 # それしかなければ unit-test の予定が揃わない
 cp cases/skipped-only.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/links.toml
 ! exec vanda check .vanda/checks/present.toml
 stderr 'unit-test'
@@ -120,12 +120,12 @@ cp orig/a.test.ts.orig web/a.test.ts
 
 # .only を付けた呼び出しは、アノテーションがあってもなくても、その行を指して annotation-links の誤り
 cp cases/only-annotated.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:7: .*\.only'
 ! stderr '(?m)^panic: '
 cp cases/only-plain.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:6: .*\.only'
 ! stderr '(?m)^panic: '
@@ -133,7 +133,7 @@ cp orig/a.test.ts.orig web/a.test.ts
 
 # 文字列とテンプレート文字列の中の `@vanda:` は数えず、誤りにもしない
 cp cases/strings.ts web/a.test.ts
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/links.toml
 cp orig/a.test.ts.orig web/a.test.ts
 
@@ -216,7 +216,7 @@ describe("タスク", () => {
   });
 
   // @vanda:evidence task-id-unique
-  test.each(["合意", "取り消し"])(`${op} をすると記録が変わる`, (op) => {});
+  test.each(["承認", "取り消し"])(`${op} をすると記録が変わる`, (op) => {});
 });
 -- cases/skipped-only.ts --
 import { describe, it, test } from "vitest";

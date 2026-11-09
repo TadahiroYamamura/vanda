@@ -15,7 +15,7 @@ const bin = process.env.VANDA_BIN ?? resolve(here, "..", "..", "vanda");
 
 const sha = (s: string) => "sha256:" + createHash("sha256").update(s, "utf8").digest("hex");
 
-// 指紋の元の JSON は、docs/formats.md の決まった形を手で書く（約束リストを読んで作らない）
+// フィンガープリントの元の JSON は、docs/formats.md の決まった形を手で書く（約束リストを読んで作らない）
 const termJSON = `{"definition":"タスクを見分ける名前","id":"task-id","name":"タスクの ID"}`;
 const claimJSON = (statement: string) =>
   `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"}],"id":"task-id-unique","layers":["model"],"statement":"${statement}","subjects":["task-id"]}`;
@@ -112,12 +112,12 @@ function makeRepo(): Repo {
   return { root, env, git, write, vanda };
 }
 
-// buildRepo は、main（#1 で合意済）と、ストーリー #24 が約束を変え・足し、シナリオを変えた story-24 を作る。HEAD は story-24。
+// buildRepo は、main（#1 で承認済）と、ストーリー #24 が約束を変え・足し、シナリオを変えた story-24 を作る。HEAD は story-24。
 function buildRepo(): Repo {
   const r = makeRepo();
   const version = execFileSync(bin, ["version"], { encoding: "utf8" }).match(/\d+\.\d+\.\d+/)![0];
   r.git("init", "-q", "-b", "main");
-  r.git("config", "user.name", "合意する人");
+  r.git("config", "user.name", "承認する人");
   r.git("config", "user.email", "po@example.com");
   r.write(".vanda/config.toml", config(version));
   r.write(".vanda/checks/merge.toml", '[[check]]\nname = "story-origin"\nscope = "story"\n\n[[check]]\nname = "agreement"\nscope = "story"\n');
@@ -193,7 +193,7 @@ test.afterEach(async () => {
 });
 
 const listItem = (page: Page, text: string) => page.getByRole("listitem").filter({ hasText: text }).first();
-// listIcon は、一覧の 1 件の状態やフラグのアイコンを、読み上げの名前で探す
+// listIcon は、一覧の 1 件の状態やフラグのアイコンを、スクリーンリーダーが読み上げる名前で探す
 const listIcon = (page: Page, text: string, name: string) => listItem(page, text).getByRole("img", { name, exact: true });
 
 // select は、一覧の 1 件を選ぶ。
@@ -204,11 +204,11 @@ async function select(page: Page, text: string) {
 async function agreeAll(page: Page, items: string[]) {
   for (const item of items) {
     await select(page, item);
-    const button = page.getByRole("button", { name: /合意する/ });
+    const button = page.getByRole("button", { name: /承認する/ });
     await expect(button).toBeEnabled();
     const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
     await button.click();
-    expect((await res).status(), `${item} に合意できない`).toBe(200);
+    expect((await res).status(), `${item} を承認できない`).toBe(200);
   }
 }
 
@@ -217,8 +217,8 @@ const items = ["task-id-unique", "task-title-required", "e2e/add-task.txtar"];
 // @vanda:evidence context-base-always-shown
 // @vanda:evidence agree-on-screen
 // @vanda:evidence review-numbering
-test("ブランチのコミットからストーリーが決まるブランチで一覧を見て全部に合意するとvanda checkの合意の審査が通る", async ({ page }) => {
-  expect(repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main").code, "合意する前から審査が通っている").toBe(1);
+test("ブランチのコミットからストーリーが決まるブランチで一覧を見て全部を承認するとvanda checkの承認のチェックが通る", async ({ page }) => {
+  expect(repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main").code, "承認する前からチェックが通っている").toBe(1);
   await page.goto(serve.url + "/");
   // 開いたときの既定は、設定のベースブランチ。今どのベースブランチと比べているかを、選ぶ所のほかにも示す
   const baseSelect = page.getByRole("combobox", { name: "ベースブランチ" });
@@ -231,11 +231,11 @@ test("ブランチのコミットからストーリーが決まるブランチ�
   await agreeAll(page, items);
   const check = repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main");
   expect(check.code, check.out).toBe(0);
-  // 合意は 1 件ごとに 1 つのコミット
+  // 承認は 1 件ごとに 1 つのコミット
   expect(repo.git("rev-list", "--count", "main..HEAD")).toBe(String(2 + items.length));
 });
 
-test("合意した約束を変えると一覧に差分ありとして戻る", async ({ page }) => {
+test("承認した約束を変えると一覧に差分ありとして戻る", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await agreeAll(page, ["task-id-unique"]);
   const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
@@ -244,8 +244,8 @@ test("合意した約束を変えると一覧に差分ありとして戻る", as
   await page.reload();
   await select(page, "task-id-unique");
   await expect(listIcon(page, "task-id-unique", "差分あり")).toBeVisible();
-  // 同じストーリーが合意した後に変えたので、一覧の状態のアイコンは提案中でなく合意が外れたを出す。提案中であることは詳細の札で見る
-  await expect(listIcon(page, "task-id-unique", "合意が外れた")).toBeVisible();
+  // 同じストーリーが承認した後に変えたので、一覧の状態のアイコンは提案中でなく承認が失効したを出す。提案中であることは詳細のバッジで見る
+  await expect(listIcon(page, "task-id-unique", "承認が失効した")).toBeVisible();
   await expect(page.getByRole("region", { name: "1 件の中身" }).getByText("提案中", { exact: true }).first()).toBeVisible();
 });
 
@@ -344,13 +344,13 @@ for (const v of states) {
         if (before.story !== null) await expect(storyField(page)).toHaveValue(before.story);
         else await expect(page.getByText(/ストーリー\s*[:：]\s*#24/).first(), "戻った後に、決まったストーリーが示されない").toBeVisible();
         await expect(page.getByRole("link", { name: "約束の詳細を開く" }), "選んでいた task-id-unique の 1 件の詳細に戻っていない").toHaveAttribute("href", /task-id-unique/);
-        await expect(page.getByRole("button", { name: /合意する/ })).toBeVisible();
+        await expect(page.getByRole("button", { name: /承認する/ })).toBeVisible();
       });
   }
 }
 
 // RV-16 と CL-08 の前提: task-id-unique を、main（v1）、#24 の最初のコミット（v2）の後に、さらに 2 回変える（v3・v4）。
-// 版ごとに、文・理由・条件・レイヤー・エビデンスの予定に、ほかの版に出てこない文字を入れる。
+// バージョンごとに、文・理由・条件・レイヤー・エビデンスの予定に、ほかのバージョンに出てこない文字を入れる。
 interface ClaimVersion {
   statement: string;
   rationale?: string;
@@ -400,7 +400,7 @@ detail = "${c.plan}"
 
 // commit は、作業ツリーのすべてを 1 つのコミットにする。story を渡せば、メッセージの末尾に Story: のトレーラーを書く
 // （vanda はストーリーの ID をトレーラーからだけ読む）。同じ大きさのファイルを同じ時刻のうちに書き換えると、git add -A が
-// stat の一致から変わっていないとみなし、書き換えをコミットに入れないことがあるので、索引から一度外して読み直させる。
+// stat の一致から変わっていないとみなし、書き換えをコミットに入れないことがあるので、インデックスから一度外して読み直させる。
 // date を渡せば、作者とコミッターの日時をそれにする
 function commit(r: Repo, subject: string, story: string | null, date?: string): string {
   r.git("rm", "-r", "-q", "--cached", "--ignore-unmatch", ".");
@@ -421,8 +421,8 @@ function commitV3(r: Repo, date?: string): string {
   return commit(r, "理由と条件を足す", "#24", date);
 }
 
-// 由来の行と合意の記録の行は、CL の約束の詳細と同じく表の行として探す。その時点の中身は、行の中の開く・たたむを
-// 切り替えるボタンで開く。押すと aria-expanded と名前が切り替わる
+// 変更履歴の行と承認の記録の行は、CL の約束の詳細と同じく表の行として探す。その時点の中身は、行の中の開く・たたむを
+// 切り替えるボタンで開く。クリックすると aria-expanded と名前が切り替わる
 type Row = ReturnType<Page["getByRole"]>;
 async function choose(row: Row) {
   await expect(row).toBeVisible();
@@ -443,44 +443,44 @@ async function openReviewDetail(page: Page) {
   await expect(page.getByRole("link", { name: "約束の詳細を開く" })).toBeVisible();
 }
 
-// RV-16。中身は CL-04・CL-05 と同じ（由来はコミットとストーリーの ID、合意の履歴は合意した人・ストーリー・今の中身に合うか）
-test("レビューの画面の1件の詳細に約束の由来と合意の履歴が出て合意すると今の中身に合う合意が履歴に足される", async ({ page }) => {
+// RV-16。中身は CL-04・CL-05 と同じ（変更履歴はコミットとストーリーの ID、承認の履歴は承認した人・ストーリー・今の中身に合うか）
+test("レビューの画面の1件の詳細に約束の変更履歴と承認の履歴が出て承認すると今の中身に合う承認が履歴に足される", async ({ page }) => {
   const c1 = repo.git("rev-parse", "main");
   const c2 = repo.git("rev-parse", "story-24~1");
   const c3 = commitV3(repo);
   await openReviewDetail(page);
 
-  // 由来: 約束を作り・変えたコミットだけ。シナリオだけを変えたコミットは出ない
+  // 変更履歴: 約束を作り・変えたコミットだけ。シナリオだけを変えたコミットは出ない
   for (const [hash, subject, story] of [
     [c1, "はじめの約束を置く", "#1"],
     [c2, "約束を変え、題の約束を足す", "#24"],
     [c3, "理由と条件を足す", "#24"],
   ]) {
     const row = rowOf(page, subject);
-    await expect(row, `由来に ${subject} がない`).toBeVisible();
+    await expect(row, `変更履歴に ${subject} がない`).toBeVisible();
     await expect(row).toContainText(hash.slice(0, 7));
     await expect(row).toContainText(story);
   }
   await expect(page.getByText("シナリオを変える")).toHaveCount(0);
 
-  // 合意の履歴: #1 の合意は v1 への合意なので、今の中身に合わない
+  // 承認の履歴: #1 の承認は v1 への承認なので、今の中身に合わない
   const old = rowOf(page, "テスト担当");
   await expect(old).toContainText("#1");
   await expect(old).toContainText(/合いません/);
-  await expect(page.getByRole("row").filter({ hasText: "合意する人" })).toHaveCount(0);
+  await expect(page.getByRole("row").filter({ hasText: "承認する人" })).toHaveCount(0);
 
   const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
-  await page.getByRole("button", { name: /合意する/ }).click();
+  await page.getByRole("button", { name: /承認する/ }).click();
   expect((await res).status()).toBe(200);
-  const now = rowOf(page, "合意する人");
-  await expect(now, "合意した後に、合意の履歴に足されていない").toBeVisible();
+  const now = rowOf(page, "承認する人");
+  await expect(now, "承認した後に、承認の履歴に足されていない").toBeVisible();
   await expect(now).toContainText("#24");
   await expect(now).toContainText(/合います/);
   await expect(rowOf(page, "テスト担当")).toContainText(/合いません/);
 });
 
-// CL-08。今の中身として画面に出ている版（約束の詳細では v4、レビューの画面では変更前の v1 と変更後の v4）は、選んで出たか
-// 見分けられないので、その画面で出ていない版だけを選ぶ。選ぶ前に出ていないことも確かめる
+// CL-08。今の中身として画面に出ているバージョン（約束の詳細では v4、レビューの画面では変更前の v1 と変更後の v4）は、選んで出たか
+// 見分けられないので、その画面で出ていないバージョンだけを選ぶ。選ぶ前に出ていないことも確かめる
 const pages = [
   { name: "約束の詳細の画面", open: async (page: Page) => page.goto(serve.url + "/claims/task-id-unique"), showsV1: false },
   { name: "レビューの画面", open: openReviewDetail, showsV1: true },
@@ -488,7 +488,7 @@ const pages = [
 
 for (const pg of pages) {
   // @vanda:evidence claim-at-commit
-  test(`${pg.name}で由来の各コミットを選ぶとそのコミットの時点の約束の中身が出る`, async ({ page }) => {
+  test(`${pg.name}で変更履歴の各コミットを選ぶとそのコミットの時点の約束の中身が出る`, async ({ page }) => {
     commitV3(repo);
     repo.write(".vanda/promises.toml", promisesAt(v4));
     commit(repo, "文を直す", "#24");
@@ -511,7 +511,7 @@ for (const pg of pages) {
     }
   });
 
-  test(`${pg.name}で由来のコミットを選ぶとその時点のレイヤーのうち今の設定にないものはIDのまま出る`, async ({ page }) => {
+  test(`${pg.name}で変更履歴のコミットを選ぶとその時点のレイヤーのうち今の設定にないものはIDのまま出る`, async ({ page }) => {
     // レイヤーの名前は今の設定から引く。v3 で足した db を、v4 で設定からも約束からも消す
     commitV3(repo);
     const cfg = readFileSync(join(repo.root, ".vanda/config.toml"), "utf8");
@@ -530,12 +530,12 @@ for (const pg of pages) {
   });
 
   // @vanda:evidence claim-at-commit
-  test(`${pg.name}で約束を変える前の合意の記録を選ぶと今の中身でなく合意を書いたコミットの時点の中身が出る`, async ({ page }) => {
+  test(`${pg.name}で約束を変える前の承認の記録を選ぶと今の中身でなく承認を書いたコミットの時点の中身が出る`, async ({ page }) => {
     commitV3(repo);
-    // v3 のときに画面で合意し、その後に v4 へ変える
+    // v3 のときに画面で承認し、その後に v4 へ変える
     await openReviewDetail(page);
     const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
-    await page.getByRole("button", { name: /合意する/ }).click();
+    await page.getByRole("button", { name: /承認する/ }).click();
     expect((await res).status()).toBe(200);
     repo.write(".vanda/promises.toml", promisesAt(v4));
     commit(repo, "文を直す", "#24");
@@ -543,11 +543,11 @@ for (const pg of pages) {
     await pg.open(page);
     await expect(page.getByText(v4.statement).first()).toBeVisible();
     for (const m of [v3.statement, v3.rationale!]) await expect(page.getByText(m)).toHaveCount(0);
-    await choose(rowOf(page, "合意する人"));
+    await choose(rowOf(page, "承認する人"));
     for (const m of [v3.statement, v3.rationale!, v3.condition!, v3.plan!]) {
-      await expect(page.getByText(m, { exact: false }).first(), `合意の記録を選んでも、合意した時点の ${m} が出ない`).toBeVisible();
+      await expect(page.getByText(m, { exact: false }).first(), `承認の記録を選んでも、承認した時点の ${m} が出ない`).toBeVisible();
     }
-    // #1 の合意は、#1 のコミットで書いたので v1 の中身
+    // #1 の承認は、#1 のコミットで書いたので v1 の中身
     if (!pg.showsV1) {
       await expect(page.getByText(v1Statement, { exact: true })).toHaveCount(0);
       await choose(rowOf(page, "テスト担当"));
@@ -555,8 +555,8 @@ for (const pg of pages) {
     }
   });
 
-  test(`${pg.name}で由来のコミットを開くとその時点の推測と対象が出る`, async ({ page }) => {
-    // 前の版は、対象が用語 task-old（後で消す）で、推測が 1 つ。後の版で、対象を task-id に、推測を別のものに変える
+  test(`${pg.name}で変更履歴のコミットを開くとその時点の推測と対象が出る`, async ({ page }) => {
+    // 前のバージョンは、対象が用語 task-old（後で消す）で、推測が 1 つ。後のバージョンで、対象を task-id に、推測を別のものに変える
     const at = (statement: string, subject: string, guess: string, oldTerm: boolean) => `[[term]]
 id = "task-id"
 name = "タスクの ID"
@@ -594,19 +594,19 @@ layers = ["model"]
     commitV3(repo);
     await openReviewDetail(page);
     const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
-    await page.getByRole("button", { name: /合意する/ }).click();
+    await page.getByRole("button", { name: /承認する/ }).click();
     expect((await res).status()).toBe(200);
     repo.write(".vanda/promises.toml", promisesAt(v4));
     commit(repo, "文を直す", "#24");
 
     await pg.open(page);
     await expect(page.getByText(v4.statement).first()).toBeVisible();
-    // 開くもの: 由来の #1（v1）と #24 の最初のコミット（v2）、v3 のときの合意（v3）。レビューの画面では v1 の文が
+    // 開くもの: 変更履歴の #1（v1）と #24 の最初のコミット（v2）、v3 のときの承認（v3）。レビューの画面では v1 の文が
     // 変更前として出ているので、出ている数が 1 つ増えるかで見る
     const opened: [string, string][] = [
       ["はじめの約束を置く", v1Statement],
       ["約束を変え、題の約束を足す", v2Statement],
-      ["合意する人", v3.statement],
+      ["承認する人", v3.statement],
     ];
     const count = (text: string) => page.getByText(text, { exact: false }).count();
     const before = new Map<string, number>();
@@ -623,14 +623,14 @@ layers = ["model"]
     }
   });
 
-  test(`${pg.name}で由来と合意の履歴の行を押すとその時点の中身が開きもう一度押すとたたまり山形のボタンを押しても1回だけ切り替わる`, async ({ page }) => {
+  test(`${pg.name}で変更履歴と承認の履歴の行をクリックするとその時点の中身が開きもう一度クリックするとたたまり山形のボタンをクリックしても1回だけ切り替わる`, async ({ page }) => {
     commitV3(repo);
     repo.write(".vanda/promises.toml", promisesAt(v4));
     commit(repo, "文を直す", "#24");
     await pg.open(page);
     await expect(page.getByText(v4.statement).first()).toBeVisible();
 
-    // 由来の v3 のコミットの行と、合意の履歴の #1 の合意（v1）の行。レビューの画面では v1 の文が変更前として出ているので、
+    // 変更履歴の v3 のコミットの行と、承認の履歴の #1 の承認（v1）の行。レビューの画面では v1 の文が変更前として出ているので、
     // 出ている数が 1 つ増えるか・戻るかで見る
     const count = (text: string) => page.getByText(text, { exact: false }).count();
     for (const [rowText, text] of [["理由と条件を足す", v3.statement], ["テスト担当", v1Statement]]) {
@@ -641,15 +641,15 @@ layers = ["model"]
       await expect(toggle).toHaveAttribute("aria-expanded", "false");
 
       await cell.click();
-      await expect(toggle, `${rowText} の行を押しても開かない`).toHaveAttribute("aria-expanded", "true");
+      await expect(toggle, `${rowText} の行をクリックしても開かない`).toHaveAttribute("aria-expanded", "true");
       await expect.poll(() => count(text)).toBe(base + 1);
       await cell.click();
-      await expect(toggle, `${rowText} の行をもう一度押してもたたまない`).toHaveAttribute("aria-expanded", "false");
+      await expect(toggle, `${rowText} の行をもう一度クリックしてもたたまない`).toHaveAttribute("aria-expanded", "false");
       await expect.poll(() => count(text)).toBe(base);
 
-      // ボタンは行の中にあるので、行の動きと二重に切り替わると、押しても閉じたままになる
+      // ボタンは行の中にあるので、行の動きと二重に切り替わると、クリックしても閉じたままになる
       await row.getByRole("button", { name: "その時点の中身を開く" }).click();
-      await expect(toggle, `${rowText} のボタンを押すと、二重に切り替わって閉じたまま`).toHaveAttribute("aria-expanded", "true");
+      await expect(toggle, `${rowText} のボタンをクリックすると、二重に切り替わって閉じたまま`).toHaveAttribute("aria-expanded", "true");
       await expect.poll(() => count(text)).toBe(base + 1);
       await row.getByRole("button", { name: "その時点の中身をたたむ" }).click();
       await expect(toggle, `${rowText} のボタンでたたむと、二重に切り替わって開いたまま`).toHaveAttribute("aria-expanded", "false");
@@ -657,19 +657,19 @@ layers = ["model"]
     }
   });
 
-  test(`${pg.name}の由来と合意の履歴は新しいものが上に並ぶ`, async ({ page }) => {
-    // 日時が同じときの順はまだ決まっていないので、日時をずらしたコミットと合意の記録だけの前後を見る。
+  test(`${pg.name}の変更履歴と承認の履歴は新しいものが上に並ぶ`, async ({ page }) => {
+    // 日時が同じときの順はまだ決まっていないので、日時をずらしたコミットと承認の記録だけの前後を見る。
     // buildRepo の #1 と #24 のコミットは今の日時なので、足すコミットはその 1 時間後と 2 時間後にする
     const later = (h: number) => new Date(Date.now() + h * 3600_000).toISOString();
     commitV3(repo, later(1));
     repo.write(".vanda/promises.toml", promisesAt(v4));
-    // 合意の記録は、ファイルの中では日時の順にしない（一月の #1 の記録の後に、三月、二月）
+    // 承認の記録は、ファイルの中では日時の順にしない（一月の #1 の記録の後に、三月、二月）
     const agreements = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
     const rec = (who: string, at: string) =>
       agreement("claim", "task-id-unique", sha(claimJSON(v4.statement)), null, "#24")
         .replace("テスト担当", who)
         .replace("agreed_at = 2026-01-01T10:00:00+09:00", `agreed_at = ${at}`);
-    repo.write(".vanda/agreements.toml", agreements + rec("三月に合意した人", "2026-03-01T10:00:00+09:00") + rec("二月に合意した人", "2026-02-01T10:00:00+09:00"));
+    repo.write(".vanda/agreements.toml", agreements + rec("三月に承認した人", "2026-03-01T10:00:00+09:00") + rec("二月に承認した人", "2026-02-01T10:00:00+09:00"));
     commit(repo, "文を直す", "#24", later(2));
 
     await pg.open(page);
@@ -681,26 +681,26 @@ layers = ["model"]
       return i;
     };
     const oldest = Math.min(at("はじめの約束を置く"), at("約束を変え、題の約束を足す"));
-    expect(at("文を直す"), "由来の 2 時間後のコミットが、1 時間後のコミットより下にある").toBeLessThan(at("理由と条件を足す"));
-    expect(at("理由と条件を足す"), "由来の 1 時間後のコミットが、はじめのコミットより下にある").toBeLessThan(oldest);
-    expect(at("三月に合意した人"), "合意の履歴の三月の合意が、二月の合意より下にある").toBeLessThan(at("二月に合意した人"));
-    expect(at("二月に合意した人"), "合意の履歴の二月の合意が、一月の合意より下にある").toBeLessThan(at("テスト担当"));
+    expect(at("文を直す"), "変更履歴の 2 時間後のコミットが、1 時間後のコミットより下にある").toBeLessThan(at("理由と条件を足す"));
+    expect(at("理由と条件を足す"), "変更履歴の 1 時間後のコミットが、はじめのコミットより下にある").toBeLessThan(oldest);
+    expect(at("三月に承認した人"), "承認の履歴の三月の承認が、二月の承認より下にある").toBeLessThan(at("二月に承認した人"));
+    expect(at("二月に承認した人"), "承認の履歴の二月の承認が、一月の承認より下にある").toBeLessThan(at("テスト担当"));
   });
 
-  test(`${pg.name}で合意を書いたコミットの時点に約束リストが読めない合意の記録を選ぶと理由が出る`, async ({ page }) => {
+  test(`${pg.name}で承認を書いたコミットの時点に約束リストが読めない承認の記録を選ぶと理由が出る`, async ({ page }) => {
     commitV3(repo);
-    // 合意の記録を足したコミットで、約束リストの形を壊す。次のコミットで直す
+    // 承認の記録を足したコミットで、約束リストの形を壊す。次のコミットで直す
     const agreements = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
-    repo.write(".vanda/agreements.toml", agreements + agreement("claim", "task-id-unique", sha(claimJSON(v3.statement)), null, "#24").replace("テスト担当", "壊れた時に合意した人"));
+    repo.write(".vanda/agreements.toml", agreements + agreement("claim", "task-id-unique", sha(claimJSON(v3.statement)), null, "#24").replace("テスト担当", "壊れた時に承認した人"));
     repo.write(".vanda/promises.toml", promisesAt(v3) + "\n[[claim]\n");
-    commit(repo, "合意を書き約束リストを壊す", "#24");
+    commit(repo, "承認を書き約束リストを壊す", "#24");
     repo.write(".vanda/promises.toml", promisesAt(v4));
     commit(repo, "文を直す", "#24");
 
     await pg.open(page);
     await expect(page.getByText(v4.statement).first()).toBeVisible();
     await expect(page.getByText(/promises\.toml/)).toHaveCount(0);
-    await choose(rowOf(page, "壊れた時に合意した人"));
+    await choose(rowOf(page, "壊れた時に承認した人"));
     await expect(page.getByText(/promises\.toml/).first(), "その時点の約束リストが読めない理由が出ない").toBeVisible();
   });
 }
@@ -711,7 +711,7 @@ const unagreeButton = (page: Page) => page.getByRole("button", { name: /取り�
 const commitCount = () => Number(repo.git("rev-list", "--count", "HEAD"));
 const nonBlank = (t: string) => t.split("\n").filter((l) => l.trim() !== "");
 
-// withoutRecord は、合意の記録のファイルの空行でない行から、key と story の記録 1 件（[[agreement]] から、コメント・次の記録の前まで）を除く
+// withoutRecord は、承認の記録のファイルの空行でない行から、key と story の記録 1 件（[[agreement]] から、コメント・次の記録の前まで）を除く
 function withoutRecord(text: string, key: string, story: string): string[] {
   const lines = nonBlank(text);
   const out: string[] = [];
@@ -733,9 +733,9 @@ function withoutRecord(text: string, key: string, story: string): string[] {
   return out;
 }
 
-// CL-04。消した後に同じ ID で作り直し、推測だけを変え、横のブランチで変えて合流する。日時は、どのコミットも buildRepo のコミットより後にずらす
+// CL-04。消した後に同じ ID で作り直し、推測だけを変え、横のブランチで変えてマージする。日時は、どのコミットも buildRepo のコミットより後にずらす
 // @vanda:evidence claim-detail-origin
-test("約束の詳細の由来には作り直した後の約束の指紋が変わった合流でないコミットだけが新しい順に出て消すまでのコミットと推測だけを変えたコミットと合流のコミットは出ない", async ({ page }) => {
+test("約束の詳細の変更履歴には作り直した後の約束のフィンガープリントが変わったマージでないコミットだけが新しい順に出て消すまでのコミットと推測だけを変えたコミットとマージのコミットは出ない", async ({ page }) => {
   const later = (h: number) => new Date(Date.now() + h * 3600_000).toISOString();
   const first = repo.git("rev-parse", "main");
   const storyChange = repo.git("rev-parse", "story-24~1");
@@ -753,19 +753,19 @@ test("約束の詳細の由来には作り直した後の約束の指紋が変�
   repo.git("switch", "-q", "story-24");
   repo.write(".vanda/promises.toml", withGuess(promisesAt({ ...v4, rationale: "作り直した後に変えた理由" })));
   const changed = commit(repo, "作り直した約束の理由を変える", "#24", later(5));
-  execFileSync("git", ["-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "merge", "-q", "--no-ff", "-m", "合流する\n\nStory: #24", "side"], {
+  execFileSync("git", ["-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "merge", "-q", "--no-ff", "-m", "マージする\n\nStory: #24", "side"], {
     cwd: repo.root,
     env: { ...repo.env, GIT_AUTHOR_DATE: later(6), GIT_COMMITTER_DATE: later(6) },
   });
   const merged = repo.git("rev-parse", "HEAD");
-  expect(repo.git("rev-list", "--parents", "-n", "1", "HEAD").split(" ").length, "合流のコミットができていない").toBe(3);
-  // 合流した後の約束リストに、両方のブランチの変更が入っている（合流のコミットでも指紋が変わる）
+  expect(repo.git("rev-list", "--parents", "-n", "1", "HEAD").split(" ").length, "マージのコミットができていない").toBe(3);
+  // マージした後の約束リストに、両方のブランチの変更が入っている（マージのコミットでもフィンガープリントが変わる）
   const mergedPromises = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
   expect(mergedPromises).toContain("横のブランチで変えた予定");
   expect(mergedPromises).toContain("作り直した後に変えた理由");
 
   await page.goto(serve.url + "/claims/task-id-unique");
-  await expect(page.getByRole("heading", { name: "由来" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "変更履歴" })).toBeVisible();
   const origin = page.getByRole("table").first();
   await expect(origin.getByText("約束を作り直す")).toBeVisible();
   const rows = await origin.locator("tbody tr").allTextContents();
@@ -774,39 +774,39 @@ test("約束の詳細の由来には作り直した後の約束の指紋が変�
     [side, "横のブランチでエビデンスの予定を変える"],
     [recreated, "約束を作り直す"],
   ];
-  expect(rows.length, `由来の行: ${rows.join(" / ")}`).toBe(want.length);
+  expect(rows.length, `変更履歴の行: ${rows.join(" / ")}`).toBe(want.length);
   want.forEach(([hash, subject], i) => {
-    expect(rows[i], `由来の ${i + 1} 行目`).toContain(subject);
-    expect(rows[i], `由来の ${i + 1} 行目`).toContain(hash.slice(0, 7));
+    expect(rows[i], `変更履歴の ${i + 1} 行目`).toContain(subject);
+    expect(rows[i], `変更履歴の ${i + 1} 行目`).toContain(hash.slice(0, 7));
   });
   const all = rows.join("\n");
   for (const [hash, subject] of [
-    [merged, "合流する"],
+    [merged, "マージする"],
     [guessed, "作り直した約束に推測を足す"],
     [deleted, "約束を消す"],
     [storyChange, "約束を変え、題の約束を足す"],
     [first, "はじめの約束を置く"],
   ]) {
-    expect(all, `由来に ${subject} が出ている`).not.toContain(subject);
-    expect(all, `由来に ${subject} のコミットが出ている`).not.toContain(hash.slice(0, 7));
+    expect(all, `変更履歴に ${subject} が出ている`).not.toContain(subject);
+    expect(all, `変更履歴に ${subject} のコミットが出ている`).not.toContain(hash.slice(0, 7));
   }
 });
 
-// 合意の記録のファイルに、コメントと空行を混ぜる（取り消しで、ほかの行が変わらないことを見るため）
+// 承認の記録のファイルに、コメントと空行を混ぜる（取り消しで、ほかの行が変わらないことを見るため）
 function decorateAgreements(r: Repo) {
   const text = readFileSync(join(r.root, ".vanda/agreements.toml"), "utf8");
   const parts = text.split("\n[[agreement]]");
-  r.write(".vanda/agreements.toml", "# 合意の記録（E2E の例）\n\n" + parts[0] + "\n[[agreement]]" + parts[1] + "\n# 用語の次は約束\n\n\n[[agreement]]" + parts.slice(2).join("\n[[agreement]]") + "\n# 終わりのコメント\n");
+  r.write(".vanda/agreements.toml", "# 承認の記録（E2E の例）\n\n" + parts[0] + "\n[[agreement]]" + parts[1] + "\n# 用語の次は約束\n\n\n[[agreement]]" + parts.slice(2).join("\n[[agreement]]") + "\n# 終わりのコメント\n");
   r.write("README.md", "# 例\n");
-  commit(r, "合意の記録にコメントを足す", "#24");
+  commit(r, "承認の記録にコメントを足す", "#24");
 }
 
 // @vanda:evidence revoke-on-screen
-test("合意済の約束で合意を取り消すとストーリーの今の中身への合意の記録だけが1つのコミットで消え提案中に戻り審査で止まりもう一度合意すると通る", async ({ page }) => {
+test("承認済の約束で承認を取り消すとストーリーの今の中身への承認の記録だけが1つのコミットで消え提案中に戻りチェックで止まりもう一度承認すると通る", async ({ page }) => {
   decorateAgreements(repo);
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await select(page, "task-id-unique");
-  await expect(page.getByRole("button", { name: /合意する/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /承認する/ })).toBeVisible();
   await expect(unagreeButton(page), "提案中のものに取り消しが出ている").toHaveCount(0);
   await agreeAll(page, items);
   const passed = repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main");
@@ -815,7 +815,7 @@ test("合意済の約束で合意を取り消すとストーリーの今の中�
   const agreementsBefore = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
   const promisesBefore = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
   const countBefore = commitCount();
-  // 合意と関係のない書きかけの変更（追跡しているファイルと、追跡していないファイル）
+  // 承認と関係のない書きかけの変更（追跡しているファイルと、追跡していないファイル）
   repo.write("README.md", "# 例\n書きかけ\n");
   repo.write("メモ.txt", "書きかけ\n");
 
@@ -824,12 +824,12 @@ test("合意済の約束で合意を取り消すとストーリーの今の中�
   await expect.poll(commitCount, { message: "取り消しがコミットにならない" }).toBe(countBefore + 1);
 
   expect(repo.git("log", "-1", "--format=%B"), "コミットのメッセージにストーリーの ID がない").toContain("#24");
-  expect(repo.git("diff", "--name-only", "HEAD~1", "HEAD").split("\n"), "合意の記録のファイルのほかに変わったものがある").toEqual([".vanda/agreements.toml"]);
+  expect(repo.git("diff", "--name-only", "HEAD~1", "HEAD").split("\n"), "承認の記録のファイルのほかに変わったものがある").toEqual([".vanda/agreements.toml"]);
   const agreementsAfter = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
   // #24 の task-id-unique への記録だけが消え、#1 の記録とコメントは同じ順で残る
   expect(nonBlank(agreementsAfter)).toEqual(withoutRecord(agreementsBefore, "task-id-unique", "#24"));
   expect(nonBlank(agreementsAfter).length).toBeLessThan(nonBlank(agreementsBefore).length);
-  for (const c of ["# 合意の記録（E2E の例）", "# 用語の次は約束", "# 終わりのコメント"]) expect(agreementsAfter).toContain(c);
+  for (const c of ["# 承認の記録（E2E の例）", "# 用語の次は約束", "# 終わりのコメント"]) expect(agreementsAfter).toContain(c);
   // フラグは戻らない
   const promisesAfter = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
   expect(promisesAfter).toBe(promisesBefore);
@@ -839,11 +839,11 @@ test("合意済の約束で合意を取り消すとストーリーの今の中�
   expect(repo.git("-c", "core.quotePath=false", "status", "--porcelain", "--untracked-files=all").split("\n").map((l) => l.trim()).sort()).toEqual(["?? メモ.txt", "M README.md"]);
 
   await expect(listIcon(page, "task-id-unique", "提案中")).toBeVisible();
-  // 自分で取り消したものは、RV-14 の「合意が外れた」としては出さない
-  await expect(page.getByText(/合意が外れた/)).toHaveCount(0);
-  await expect(page.getByRole("img", { name: "合意が外れた" })).toHaveCount(0);
+  // 自分で取り消したものは、RV-14 の「承認が失効した」としては出さない
+  await expect(page.getByText(/承認が失効した/)).toHaveCount(0);
+  await expect(page.getByRole("img", { name: "承認が失効した" })).toHaveCount(0);
   const stopped = repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main");
-  expect(stopped.code, "取り消した後も合意の審査が通る").toBe(1);
+  expect(stopped.code, "取り消した後も承認のチェックが通る").toBe(1);
   expect(stopped.out).toContain("task-id-unique");
 
   await agreeAll(page, ["task-id-unique"]);
@@ -851,28 +851,28 @@ test("合意済の約束で合意を取り消すとストーリーの今の中�
   expect(again.code, again.out).toBe(0);
 });
 
-test("合意の記録のファイルに書きかけの変更があると合意の取り消しを断り理由を出しコミットしない", async ({ page }) => {
+test("承認の記録のファイルに書きかけの変更があると承認の取り消しを断り理由を出しコミットしない", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await agreeAll(page, ["task-id-unique"]);
   const dirty = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + "# 書きかけ\n";
   repo.write(".vanda/agreements.toml", dirty);
   const countBefore = commitCount();
-  await expect(page.getByText(/agreements\.toml|合意の記録/)).toHaveCount(0);
+  await expect(page.getByText(/agreements\.toml|承認の記録/)).toHaveCount(0);
 
   await select(page, "task-id-unique");
   await unagreeButton(page).click();
-  await expect(page.getByText(/agreements\.toml|合意の記録/).first(), "断った理由が出ない").toBeVisible();
+  await expect(page.getByText(/agreements\.toml|承認の記録/).first(), "断った理由が出ない").toBeVisible();
   expect(commitCount()).toBe(countBefore);
   expect(readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8")).toBe(dirty);
-  await expect(listIcon(page, "task-id-unique", "合意済")).toBeVisible();
+  await expect(listIcon(page, "task-id-unique", "承認済")).toBeVisible();
 });
 
-// 取り消せるのは、今の git の人（buildRepo の user.name「合意する人」・user.email「po@example.com」）が今のブランチで書いた
-// 合意の記録だけ。誰が × どこで書いたか、の組み合わせを全部回す。ほかの人は、名前だけ・メールだけ・両方の違いを分ける
+// 取り消せるのは、今の git の人（buildRepo の user.name「承認する人」・user.email「po@example.com」）が今のブランチで書いた
+// 承認の記録だけ。誰が × どこで書いたか、の組み合わせを全部回す。ほかの人は、名前だけ・メールだけ・両方の違いを分ける
 const writers = [
-  { name: "自分", user: { name: "合意する人", email: "po@example.com" }, self: true },
+  { name: "自分", user: { name: "承認する人", email: "po@example.com" }, self: true },
   { name: "名前だけ違うほかの人", user: { name: "ほかの人", email: "po@example.com" }, self: false },
-  { name: "メールだけ違うほかの人", user: { name: "合意する人", email: "other@example.com" }, self: false },
+  { name: "メールだけ違うほかの人", user: { name: "承認する人", email: "other@example.com" }, self: false },
   { name: "名前もメールも違うほかの人", user: { name: "ほかの人", email: "other@example.com" }, self: false },
 ];
 const places = [
@@ -883,9 +883,9 @@ const places = [
 for (const w of writers) {
   for (const pl of places) {
     const can = w.self && !pl.onBase;
-    test(`${w.name}が${pl.name}で書いた合意の記録は${can ? "取り消せて記録が消えた1つのコミットになる" : "取り消せず取り消しのボタンが出ない"}`, async ({ page }) => {
-      // task-id-unique のフラグを外し、今の中身（#24 の文）への合意の記録を手で書く。ベースブランチなら main に書いて
-      // story-24 に取り込み、分岐点より前にする
+    test(`${w.name}が${pl.name}で書いた承認の記録は${can ? "取り消せて記録が消えた1つのコミットになる" : "取り消せず取り消しのボタンが出ない"}`, async ({ page }) => {
+      // task-id-unique のフラグを外し、今の中身（#24 の文）への承認の記録を手で書く。ベースブランチなら main に書いて
+      // story-24 に取り込み、マージベースより前にする
       repo.write(".vanda/promises.toml", promises(v2Statement, false, true));
       commit(repo, "フラグを外す", "#24");
       const record = agreement("claim", "task-id-unique", sha(claimJSON(v2Statement)), null, "#24")
@@ -893,12 +893,12 @@ for (const w of writers) {
       if (pl.onBase) {
         repo.git("switch", "-q", "main");
         repo.write(".vanda/agreements.toml", readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + record);
-        commit(repo, "合意の記録を書く", "#24");
+        commit(repo, "承認の記録を書く", "#24");
         repo.git("switch", "-q", "story-24");
         repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "merge", "-q", "--no-edit", "main");
       } else {
         repo.write(".vanda/agreements.toml", readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + record);
-        commit(repo, "合意の記録を書く", "#24");
+        commit(repo, "承認の記録を書く", "#24");
       }
       const agreementsBefore = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
       const promisesBefore = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
@@ -906,7 +906,7 @@ for (const w of writers) {
 
       await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
       await select(page, "task-id-unique");
-      await expect(page.getByText("今の中身に合意済みです。").first(), "手で書いた合意の記録が今の中身への合意になっていない").toBeVisible();
+      await expect(page.getByText("今の中身を承認済みです。").first(), "手で書いた承認の記録が今の中身への承認になっていない").toBeVisible();
       if (!can) {
         await expect(unagreeButton(page)).toHaveCount(0);
         expect(commitCount()).toBe(countBefore);
@@ -933,12 +933,12 @@ async function storyChoices(page: Page): Promise<string[]> {
 async function agreeTaskIdUnique(page: Page) {
   await select(page, "task-id-unique");
   const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
-  await page.getByRole("button", { name: /合意する/ }).click();
+  await page.getByRole("button", { name: /承認する/ }).click();
   expect((await res).status()).toBe(200);
 }
 
 // @vanda:evidence review-story-choice
-test("レビュー単位がブランチでブランチのコミットからストーリーが1つに決まるときは選ぶ欄を出さずに示しそのストーリーで合意できる", async ({ page }) => {
+test("レビュー単位がブランチでブランチのコミットからストーリーが1つに決まるときは選ぶ欄を出さずに示しそのストーリーで承認できる", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main");
   await expect(page.getByText(/ストーリー\s*[:：]\s*#24/).first(), "決まったストーリーが示されない").toBeVisible();
   await expect(storyField(page)).toHaveCount(0);
@@ -969,7 +969,7 @@ test("レビュー単位がブランチでURLのstoryでストーリーを名指
   repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "直す\n\nStory: #30");
   await page.goto(serve.url + "/?view=branch&base=main&story=%2330");
   await agreeTaskIdUnique(page);
-  expect(repo.git("log", "-1", "--format=%s"), "名指ししたストーリーで合意していない").toContain("#30 で");
+  expect(repo.git("log", "-1", "--format=%s"), "名指ししたストーリーで承認していない").toContain("#30 で");
 });
 
 test("レビュー単位がストーリーのときはすべてのストーリーから1度ずつ選ばせる", async ({ page }) => {
@@ -979,7 +979,7 @@ test("レビュー単位がストーリーのときはすべてのストーリ�
   await expect.poll(async () => (await storyChoices(page)).sort()).toEqual(["#1", "#24", "#30"]);
 });
 
-test("レビュー単位がブランチでベースブランチを既定から変えるとそのベースブランチとの分岐点より後のストーリーで決まる", async ({ page }) => {
+test("レビュー単位がブランチでベースブランチを既定から変えるとそのベースブランチとのマージベースより後のストーリーで決まる", async ({ page }) => {
   // rel は #24 のコミットの後から分かれたことにする。rel と比べると、ブランチのストーリーは #30 だけ。
   // #30 で task-id-unique を変え、rel と比べても一覧に出るようにする
   repo.git("branch", "rel", "story-24");
@@ -1066,12 +1066,12 @@ test("エビデンスの予定と実際の詳細は長い文も改行も省略�
   expect(page_.scroll, "幅 400px で、ページが横にスクロールする").toBeLessThanOrEqual(page_.view);
 });
 
-// 一覧の 1 件は、枠のどこを押しても選ばれる（番号・種類・状態のアイコン・フラグのアイコン・枠の端）
-test("変わったものの一覧の1件は名前のほかに番号や種類や状態のアイコンやフラグのアイコンや枠の端を押しても選ばれる", async ({ page }) => {
+// 一覧の 1 件は、枠のどこをクリックしても選ばれる（番号・種類・状態のアイコン・フラグのアイコン・枠の端）
+test("変わったものの一覧の1件は名前のほかに番号や種類や状態のアイコンやフラグのアイコンや枠の端をクリックしても選ばれる", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   const detailOf = (id: string) => expect(page.getByRole("link", { name: "約束の詳細を開く" }), `${id} が選ばれていない`).toHaveAttribute("href", new RegExp(`/claims/${id}`));
   // task-title-required は 2 件目で、提案中のアイコンと AI 案のアイコンを持つ
-  // 種類とアイコンは名前のボタンの外にあるので、1 件の枠（listitem）の中で押す
+  // 種類とアイコンは名前のボタンの外にあるので、1 件の枠（listitem）の中でクリックする
   const frame = page.getByRole("listitem").filter({ hasText: "task-title-required" }).first();
   await expect(frame).toBeVisible();
   const spots: [string, () => Promise<void>][] = [
@@ -1089,7 +1089,7 @@ test("変わったものの一覧の1件は名前のほかに番号や種類や�
     await select(page, "task-id-unique");
     await detailOf("task-id-unique");
     await click();
-    await expect(page.getByRole("link", { name: "約束の詳細を開く" }), `${spot}を押しても task-title-required が選ばれない`).toHaveAttribute("href", /\/claims\/task-title-required/);
+    await expect(page.getByRole("link", { name: "約束の詳細を開く" }), `${spot}をクリックしても task-title-required が選ばれない`).toHaveAttribute("href", /\/claims\/task-title-required/);
   }
 });
 
@@ -1149,7 +1149,7 @@ for (const pg of pages) {
   }
 }
 
-test("約束の詳細の画面で由来のコミットを開くとその時点のエビデンスもステージとタイプの見出しで分けて出る", async ({ page }) => {
+test("約束の詳細の画面で変更履歴のコミットを開くとその時点のエビデンスもステージとタイプの見出しで分けて出る", async ({ page }) => {
   repo.write(".vanda/promises.toml", promisesWithEvidence(v3.statement, allStagesEvidence));
   commit(repo, "エビデンスの予定を書く", "#24");
   repo.write(".vanda/promises.toml", promisesWithEvidence(v4.statement, twoStagesEvidence));
@@ -1167,7 +1167,7 @@ test("約束の詳細の画面で由来のコミットを開くとその時点�
   checkHeadings(after.slice(before.length), allStagesEvidence, "その時点の中身");
 });
 
-// RV-18: 約束の詳細の画面とファイルの画面でも、ストーリーのレビューから移ったときは合意・取り消しができる
+// RV-18: 約束の詳細の画面とファイルの画面でも、ストーリーのレビューから移ったときは承認・取り消しができる
 const annotatedScenario = "# シナリオ\n# @vanda:evidence task-id-unique\n! exec vanda-task add a\n-- a.txt --\na\n";
 const recordsOf = (key: string, story: string) => {
   const text = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
@@ -1176,11 +1176,11 @@ const recordsOf = (key: string, story: string) => {
 async function agreeHere(page: Page, url: RegExp) {
   const count = commitCount();
   const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
-  await page.getByRole("button", { name: /合意する/ }).click();
+  await page.getByRole("button", { name: /承認する/ }).click();
   expect((await res).status()).toBe(200);
-  await expect.poll(commitCount, { message: "合意が 1 つのコミットにならない" }).toBe(count + 1);
-  await expect(page, "合意した後に、画面を移った").toHaveURL(url);
-  await expect(page.getByText("合意済").first(), "合意した後に、合意済と出ない").toBeVisible();
+  await expect.poll(commitCount, { message: "承認が 1 つのコミットにならない" }).toBe(count + 1);
+  await expect(page, "承認した後に、画面を移った").toHaveURL(url);
+  await expect(page.getByText("承認済").first(), "承認した後に、承認済と出ない").toBeVisible();
 }
 
 async function revokeHere(page: Page, url: RegExp) {
@@ -1195,33 +1195,33 @@ async function revokeHere(page: Page, url: RegExp) {
 // ブランチのコミットから決まる（#24）
 // @vanda:evidence agree-from-detail-pages
 // @vanda:evidence agree-from-detail-pages-stay
-test("レビューの画面から約束の詳細へ移って合意すると1コミットで記録が増えその画面で合意済になり履歴に足され戻ると一覧でも合意済でその画面で取り消せる", async ({ page }) => {
+test("レビューの画面から約束の詳細へ移って承認すると1コミットで記録が増えその画面で承認済になり履歴に足され戻ると一覧でも承認済でその画面で取り消せる", async ({ page }) => {
   await page.goto(serve.url + "/");
   await select(page, "task-id-unique");
   await page.getByRole("link", { name: "約束の詳細を開く" }).click();
   await expect(page).toHaveURL(/\/claims\/task-id-unique/);
   expect(recordsOf("task-id-unique", "#24")).toBe(0);
   await agreeHere(page, /\/claims\/task-id-unique/);
-  expect(recordsOf("task-id-unique", "#24"), "合意の記録が 1 件増えていない").toBe(1);
+  expect(recordsOf("task-id-unique", "#24"), "承認の記録が 1 件増えていない").toBe(1);
   expect(repo.git("diff", "--name-only", "HEAD~1", "HEAD").split("\n").sort()).toEqual([".vanda/agreements.toml", ".vanda/promises.toml"]);
-  const row = rowOf(page, "合意する人");
-  await expect(row, "合意の履歴に足されていない").toBeVisible();
+  const row = rowOf(page, "承認する人");
+  await expect(row, "承認の履歴に足されていない").toBeVisible();
   await expect(row).toContainText("#24");
   await expect(row).toContainText(/合います/);
 
   await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
-  await expect(listIcon(page, "task-id-unique", "合意済"), "戻った一覧で合意済になっていない").toBeVisible();
+  await expect(listIcon(page, "task-id-unique", "承認済"), "戻った一覧で承認済になっていない").toBeVisible();
 
   await page.getByRole("link", { name: "約束の詳細を開く" }).click();
   await revokeHere(page, /\/claims\/task-id-unique/);
-  expect(recordsOf("task-id-unique", "#24"), "取り消しても合意の記録が残っている").toBe(0);
+  expect(recordsOf("task-id-unique", "#24"), "取り消しても承認の記録が残っている").toBe(0);
   await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
   await expect(listIcon(page, "task-id-unique", "提案中")).toBeVisible();
 });
 
 // @vanda:evidence agree-from-detail-pages
 // @vanda:evidence agree-from-detail-pages-stay
-test("エビデンスのファイルのリンクからファイルの画面へ移って合意すると1コミットで記録が増えその画面で合意済になり戻ると一覧でも合意済でその画面で取り消せる", async ({ page }) => {
+test("エビデンスのファイルのリンクからファイルの画面へ移って承認すると1コミットで記録が増えその画面で承認済になり戻ると一覧でも承認済でその画面で取り消せる", async ({ page }) => {
   repo.write("e2e/add-task.txtar", annotatedScenario);
   commit(repo, "シナリオをエビデンスにする", "#24");
   const fp = sha(annotatedScenario);
@@ -1231,21 +1231,21 @@ test("エビデンスのファイルのリンクからファイルの画面へ�
   await expect(page).toHaveURL(/\/files\?/);
   expect(recordsOf(fp, "#24")).toBe(0);
   await agreeHere(page, /\/files\?/);
-  expect(recordsOf(fp, "#24"), "ファイルへの合意の記録が 1 件増えていない").toBe(1);
+  expect(recordsOf(fp, "#24"), "ファイルへの承認の記録が 1 件増えていない").toBe(1);
   expect(repo.git("diff", "--name-only", "HEAD~1", "HEAD")).toBe(".vanda/agreements.toml");
 
   await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
-  await expect(listIcon(page, "e2e/add-task.txtar", "合意済"), "戻った一覧でファイルが合意済になっていない").toBeVisible();
+  await expect(listIcon(page, "e2e/add-task.txtar", "承認済"), "戻った一覧でファイルが承認済になっていない").toBeVisible();
 
   await select(page, "task-id-unique");
   await page.getByRole("link", { name: /e2e\/add-task\.txtar:1/ }).first().click();
   await revokeHere(page, /\/files\?/);
-  expect(recordsOf(fp, "#24"), "取り消してもファイルへの合意の記録が残っている").toBe(0);
+  expect(recordsOf(fp, "#24"), "取り消してもファイルへの承認の記録が残っている").toBe(0);
 });
 
 // @vanda:evidence agree-from-detail-pages
 // @vanda:evidence agree-from-detail-pages-stay
-test("レビューの画面の一覧のファイルからファイルの画面へ移って合意すると1コミットで記録が増えその画面で合意済になり戻ると一覧でも合意済でその画面で取り消せる", async ({ page }) => {
+test("レビューの画面の一覧のファイルからファイルの画面へ移って承認すると1コミットで記録が増えその画面で承認済になり戻ると一覧でも承認済でその画面で取り消せる", async ({ page }) => {
   const fp = sha(scenarioStory);
   await page.goto(serve.url + "/");
   await select(page, "e2e/add-task.txtar");
@@ -1256,13 +1256,13 @@ test("レビューの画面の一覧のファイルからファイルの画面�
   await expect(page).toHaveURL(/\/files\?/);
   expect(recordsOf(fp, "#24")).toBe(0);
   await agreeHere(page, /\/files\?/);
-  expect(recordsOf(fp, "#24"), "ファイルへの合意の記録が 1 件増えていない").toBe(1);
+  expect(recordsOf(fp, "#24"), "ファイルへの承認の記録が 1 件増えていない").toBe(1);
   await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
-  await expect(listIcon(page, "e2e/add-task.txtar", "合意済"), "戻った一覧でファイルが合意済になっていない").toBeVisible();
+  await expect(listIcon(page, "e2e/add-task.txtar", "承認済"), "戻った一覧でファイルが承認済になっていない").toBeVisible();
   await select(page, "e2e/add-task.txtar");
   await page.locator('a[href*="/files"]').first().click();
   await revokeHere(page, /\/files\?/);
-  expect(recordsOf(fp, "#24"), "取り消してもファイルへの合意の記録が残っている").toBe(0);
+  expect(recordsOf(fp, "#24"), "取り消してもファイルへの承認の記録が残っている").toBe(0);
 });
 
 // 取り消せる範囲は RV-17 と同じ。約束の詳細の画面で、誰が × どこで書いたかを全部回す
@@ -1270,7 +1270,7 @@ for (const w of writers) {
   for (const pl of places) {
     const can = w.self && !pl.onBase;
     // @vanda:evidence agree-from-detail-pages
-    test(`約束の詳細の画面で${w.name}が${pl.name}で書いた合意の記録は${can ? "取り消せる" : "取り消せず取り消しのボタンが出ない"}`, async ({ page }) => {
+    test(`約束の詳細の画面で${w.name}が${pl.name}で書いた承認の記録は${can ? "取り消せる" : "取り消せず取り消しのボタンが出ない"}`, async ({ page }) => {
       repo.write(".vanda/promises.toml", promises(v2Statement, false, true));
       commit(repo, "フラグを外す", "#24");
       const record = agreement("claim", "task-id-unique", sha(claimJSON(v2Statement)), null, "#24")
@@ -1278,17 +1278,17 @@ for (const w of writers) {
       if (pl.onBase) {
         repo.git("switch", "-q", "main");
         repo.write(".vanda/agreements.toml", readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + record);
-        commit(repo, "合意の記録を書く", "#24");
+        commit(repo, "承認の記録を書く", "#24");
         repo.git("switch", "-q", "story-24");
         repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "merge", "-q", "--no-edit", "main");
       } else {
         repo.write(".vanda/agreements.toml", readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + record);
-        commit(repo, "合意の記録を書く", "#24");
+        commit(repo, "承認の記録を書く", "#24");
       }
       await page.goto(serve.url + "/");
       await select(page, "task-id-unique");
       await page.getByRole("link", { name: "約束の詳細を開く" }).click();
-      await expect(page.getByText("合意済").first()).toBeVisible();
+      await expect(page.getByText("承認済").first()).toBeVisible();
       if (!can) {
         await expect(unagreeButton(page)).toHaveCount(0);
         return;
@@ -1299,7 +1299,7 @@ for (const w of writers) {
 }
 
 // @vanda:evidence agree-from-detail-pages-notes
-test("ストーリーのレビューから一覧にないファイルや約束を開くと合意のボタンがなくこのストーリーでは変わっていないと示す", async ({ page }) => {
+test("ストーリーのレビューから一覧にないファイルや約束を開くと承認のボタンがなくこのストーリーでは変わっていないと示す", async ({ page }) => {
   // release は story-24 の今と同じ。release と比べると一覧は空なので、どのファイルも約束も一覧にない
   repo.git("branch", "release", "story-24");
   await page.goto(serve.url + "/?view=branch&base=main");
@@ -1316,18 +1316,18 @@ test("ストーリーのレビューから一覧にないファイルや約束�
   };
   await page.goto(serve.url + fromReview("/claims/task-id-unique"));
   await expect(page.getByText("このストーリーでは変わっていない約束です。").first()).toBeVisible();
-  await expect(page.getByRole("button", { name: /合意する/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /承認する/ })).toHaveCount(0);
   await page.goto(serve.url + fromReview("/files") + "&path=" + encodeURIComponent("e2e/add-task.txtar"));
   await expect(page.getByText("このストーリーでは変わっていないファイルです。").first()).toBeVisible();
-  await expect(page.getByRole("button", { name: /合意する/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /承認する/ })).toHaveCount(0);
 });
 
 // @vanda:evidence agree-from-detail-pages-notes
-test("約束の詳細とファイルの画面をURLで直接開くと合意のボタンがなくストーリーのレビューから開くと合意できると示す", async ({ page }) => {
+test("約束の詳細とファイルの画面をURLで直接開くと承認のボタンがなくストーリーのレビューから開くと承認できると示す", async ({ page }) => {
   for (const path of ["/claims/task-id-unique", "/files?path=" + encodeURIComponent("e2e/add-task.txtar")]) {
     await page.goto(serve.url + path);
-    await expect(page.getByText("ストーリーのレビューから開くと、合意できます。").first(), `${path} に示されない`).toBeVisible();
-    await expect(page.getByRole("button", { name: /合意する/ })).toHaveCount(0);
+    await expect(page.getByText("ストーリーのレビューから開くと、承認できます。").first(), `${path} に示されない`).toBeVisible();
+    await expect(page.getByRole("button", { name: /承認する/ })).toHaveCount(0);
     await expect(unagreeButton(page)).toHaveCount(0);
   }
 });
@@ -1341,7 +1341,7 @@ const ws = {
   detail: "詳細の   文　全角\n詳細の 2 行目",
   definition: "タスクを   見分ける　名前\n定義の 2 行目",
 };
-// 後の版: 文に足し、定義に空白だけを足し、理由から空白だけを消す
+// 後のバージョン: 文に足し、定義に空白だけを足し、理由から空白だけを消す
 const wsAfter = {
   ...ws,
   statement: ws.statement + "（後）",
@@ -1370,7 +1370,7 @@ layers = ["model"]
 detail = ${q2(w.detail)}
 `;
 
-// wsRepo は、空白を書いた版のコミット（wsbase はそこを指す）と、それを変えた今のコミットを作る
+// wsRepo は、空白を書いたバージョンのコミット（wsbase はそこを指す）と、それを変えた今のコミットを作る
 function wsRepo() {
   repo.write(".vanda/promises.toml", wsPromises(ws));
   commit(repo, "空白を書く", "#24");
@@ -1391,7 +1391,7 @@ test("約束の詳細の画面は利用者が書いた文の続いた空白と�
   }
 });
 
-test("レビューの1列の差分は利用者が書いた文の続いた空白と全角の空白と改行を保ち空白だけを足した消した所にも印を出す", async ({ page }) => {
+test("レビューの1列の差分は利用者が書いた文の続いた空白と全角の空白と改行を保ち空白だけを足した消した所にもマークを出す", async ({ page }) => {
   wsRepo();
   await page.goto(serve.url + "/?view=branch&base=wsbase&story=%2324");
   await select(page, "task-id-unique");
@@ -1401,12 +1401,12 @@ test("レビューの1列の差分は利用者が書いた文の続いた空白�
   for (const [name, s] of Object.entries({ 文: wsAfter.statement, 条件: ws.condition, 推測: ws.guess, 詳細: ws.detail })) {
     expect(text.includes(s), `${name}の空白か改行が保たれていない: ${JSON.stringify(s)}`).toBe(true);
   }
-  // 理由から消した空白だけの所に、印（del）が出て、幅がある
+  // 理由から消した空白だけの所に、マーク（del）が出て、幅がある
   const blankMark = async (tag: "del" | "ins") => {
     const marks = page.locator(tag).filter({ hasText: /^\s+$/ });
     await expect(marks.first(), `空白だけを${tag === "del" ? "消した" : "足した"}所に ${tag} がない`).toBeAttached();
     const box = await marks.first().boundingBox();
-    expect(box && box.width > 0, `空白だけの ${tag} に幅がない（印が見えない）`).toBe(true);
+    expect(box && box.width > 0, `空白だけの ${tag} に幅がない（マークが見えない）`).toBe(true);
   };
   await blankMark("del");
   // 用語の定義に空白だけを足した所
@@ -1422,7 +1422,7 @@ for (const pg of pages) {
     wsRepo();
     await pg.open(page);
     await expect(page.getByText("（後）").first()).toBeVisible();
-    // エビデンスと由来は後から読み込まれるので、出そろってから数える
+    // エビデンスと変更履歴は後から読み込まれるので、出そろってから数える
     await expect(page.getByRole("heading", { name: "シナリオテスト", exact: true }).first()).toBeVisible();
     await expect(rowOf(page, "空白を書く")).toBeVisible();
     const fields = { 文: ws.statement, 条件: ws.condition, 理由: ws.rationale, 推測: ws.guess, 詳細: ws.detail };
@@ -1437,8 +1437,8 @@ for (const pg of pages) {
   });
 }
 
-// 実際のエビデンスのうち合意の対象になるファイルには、合意の状態（今の中身の指紋に合う合意の記録があるか）のアイコン
-// （名前と title が「提案中」「合意済」）を付ける。Go の単体テストは合意の対象でないので付けない
+// 実際のエビデンスのうち承認の対象になるファイルには、承認の状態（今の中身のフィンガープリントに合う承認の記録があるか）のアイコン
+// （名前と title が「提案中」「承認済」）を付ける。Go の単体テストは承認の対象でないので付けない
 function withGoEvidence(r: Repo) {
   const cfg = readFileSync(join(r.root, ".vanda/config.toml"), "utf8");
   r.write(".vanda/config.toml", cfg.replace("[gui]", '[[annotation]]\npaths = ["internal/task/*_test.go"]\nadapter = "go"\ntypes = ["unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"]\n\n[gui]'));
@@ -1454,47 +1454,47 @@ function withGoEvidence(r: Repo) {
   r.write("e2e/add-task.txtar", annotatedScenario);
   commit(r, "シナリオと単体テストをエビデンスにする", "#24");
 }
-async function expectFileStates(page: Page, scenario: "提案中" | "合意済", where: string) {
+async function expectFileStates(page: Page, scenario: "提案中" | "承認済", where: string) {
   const sc = typeGroup(page, "シナリオテスト");
   const icon = sc.getByRole("img", { name: scenario, exact: true });
   await expect(icon, `${where}: シナリオに「${scenario}」のアイコンがない`).toBeVisible();
   await expect(icon).toHaveAttribute("title", scenario);
-  await expect(sc.getByRole("img", { name: scenario === "提案中" ? "合意済" : "提案中", exact: true }), `${where}: シナリオに逆のアイコンがある`).toHaveCount(0);
+  await expect(sc.getByRole("img", { name: scenario === "提案中" ? "承認済" : "提案中", exact: true }), `${where}: シナリオに逆のアイコンがある`).toHaveCount(0);
   const unit = typeGroup(page, "単体テスト");
   await expect(unit.getByText("TestUnique").first()).toBeVisible();
-  for (const name of ["提案中", "合意済"]) {
+  for (const name of ["提案中", "承認済"]) {
     await expect(unit.getByRole("img", { name, exact: true }), `${where}: Go の単体テストに「${name}」のアイコンがある`).toHaveCount(0);
   }
 }
 
 for (const pg of pages) {
   // @vanda:evidence found-file-state-shown
-  test(`${pg.name}の実際のエビデンスのシナリオには合意の状態のアイコンが付き合意すると合意済に合意してから変えると提案中になりGoの単体テストには付かない`, async ({ page }) => {
+  test(`${pg.name}の実際のエビデンスのシナリオには承認の状態のアイコンが付き承認すると承認済に承認してから変えると提案中になりGoの単体テストには付かない`, async ({ page }) => {
     withGoEvidence(repo);
     await pg.open(page);
-    await expectFileStates(page, "提案中", "合意する前");
+    await expectFileStates(page, "提案中", "承認する前");
 
     await page.goto(serve.url + "/");
     await agreeAll(page, ["e2e/add-task.txtar"]);
     await pg.open(page);
-    await expectFileStates(page, "合意済", "合意した後");
+    await expectFileStates(page, "承認済", "承認した後");
 
     repo.write("e2e/add-task.txtar", annotatedScenario + "-- b.txt --\nb\n");
     commit(repo, "シナリオを足す", "#24");
     await pg.open(page);
-    await expectFileStates(page, "提案中", "合意してから中身を変えた後");
+    await expectFileStates(page, "提案中", "承認してから中身を変えた後");
   });
 }
 
-test("エビデンスのファイルの画面で合意して戻るとエビデンスの予定と実際のシナリオのアイコンが合意済になる", async ({ page }) => {
+test("エビデンスのファイルの画面で承認して戻るとエビデンスの予定と実際のシナリオのアイコンが承認済になる", async ({ page }) => {
   withGoEvidence(repo);
   await page.goto(serve.url + "/");
   await select(page, "task-id-unique");
-  await expectFileStates(page, "提案中", "合意する前");
+  await expectFileStates(page, "提案中", "承認する前");
   await page.getByRole("link", { name: /e2e\/add-task\.txtar:1/ }).first().click();
   await agreeHere(page, /\/files\?/);
   await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
-  await expectFileStates(page, "合意済", "ファイルの画面で合意して戻った後");
+  await expectFileStates(page, "承認済", "ファイルの画面で承認して戻った後");
 });
 
 // CL-01: 約束の詳細に、文・理由・条件・レイヤーを示す（レイヤーは設定の名前で）
@@ -1522,23 +1522,23 @@ test("レビューの画面で変えた約束とファイルの変更前と変�
   await expect(page.getByText(/^exec vanda-task add a$/).first(), "ファイルの変更前の行が出ない").toBeVisible();
 });
 
-// RV-14: そのストーリーが合意した後に中身が変わったものを「合意が外れた」と示す
+// RV-14: そのストーリーが承認した後に中身が変わったものを「承認が失効した」と示す
 // @vanda:evidence review-detached-shown
-test("ストーリーが合意した約束を変えると一覧に合意が外れたと出る", async ({ page }) => {
+test("ストーリーが承認した約束を変えると一覧に承認が失効したと出る", async ({ page }) => {
   await page.goto(serve.url + "/");
   await agreeAll(page, ["task-id-unique"]);
   const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
   repo.write(".vanda/promises.toml", text.replace("すべてのタスクを通して重ならない", "どのタスクとも重ならない"));
   commit(repo, "文を直す", "#24");
   await page.reload();
-  await expect(listIcon(page, "task-id-unique", "合意が外れた"), "合意が外れたと出ない").toBeVisible();
-  await expect(listIcon(page, "task-id-unique", "提案中"), "合意が外れたものに提案中と出ている").toHaveCount(0);
+  await expect(listIcon(page, "task-id-unique", "承認が失効した"), "承認が失効したと出ない").toBeVisible();
+  await expect(listIcon(page, "task-id-unique", "提案中"), "承認が失効したものに提案中と出ている").toHaveCount(0);
   await select(page, "task-id-unique");
   await expect(page.getByText(/#24/).first()).toBeVisible();
 });
 
 // @vanda:evidence review-deleted-shown
-test("消したファイルは一覧に削除として出て消す前の中身を見せ消したことに合意すると合意済になりストーリーの合意の審査が通る", async ({ page }) => {
+test("消したファイルは一覧に削除として出て消す前の中身を見せ消したことを承認すると承認済になりストーリーの承認のチェックが通る", async ({ page }) => {
   rmSync(join(repo.root, "e2e/add-task.txtar"));
   commit(repo, "シナリオを消す", "#24");
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
@@ -1549,19 +1549,19 @@ test("消したファイルは一覧に削除として出て消す前の中身�
   await expect(detail.getByText(/exec vanda-task add a/).first()).toBeVisible();
   await expect(listIcon(page, "e2e/add-task.txtar", "提案中")).toBeVisible();
   const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
-  await detail.getByRole("button", { name: /消したことに合意する/ }).click();
-  expect((await res).status(), "消したことに合意できない").toBe(200);
-  await expect(listIcon(page, "e2e/add-task.txtar", "合意済")).toBeVisible();
+  await detail.getByRole("button", { name: /消したことを承認する/ }).click();
+  expect((await res).status(), "消したことを承認できない").toBe(200);
+  await expect(listIcon(page, "e2e/add-task.txtar", "承認済")).toBeVisible();
   const recs = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
-  expect(recs, "消したことへの合意の記録が書かれていない").toMatch(/kind = "file"\nkey = "e2e\/add-task\.txtar"\ndeleted = true/);
+  expect(recs, "消したことへの承認の記録が書かれていない").toMatch(/kind = "file"\nkey = "e2e\/add-task\.txtar"\ndeleted = true/);
   await agreeAll(page, ["task-id-unique", "task-title-required"]);
   const check = repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main");
   expect(check.code, check.out).toBe(0);
 });
 
-// RV-01・RV-04: 一覧の 1 件の 2 行目に、種類・状態のアイコン・フラグのアイコンを並べる。合意すると合意済に、合意した後に中身が変わると合意が外れたに変わる
+// RV-01・RV-04: 一覧の 1 件の 2 行目に、種類・状態のアイコン・フラグのアイコンを並べる。承認すると承認済に、承認した後に中身が変わると承認が失効したに変わる
 // @vanda:evidence review-list-icons
-test("一覧の1件の2行目に種類と状態のアイコンとフラグのアイコンが並び触れると言葉が出て合意すると合意済に合意の後に変えると合意が外れたに変わる", async ({ page }) => {
+test("一覧の1件の2行目に種類と状態のアイコンとフラグのアイコンが並びマウスを乗せると言葉が出て承認すると承認済に承認の後に変えると承認が失効したに変わる", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   const row = listItem(page, "task-title-required");
   await expect(row).toBeVisible();
@@ -1579,22 +1579,22 @@ test("一覧の1件の2行目に種類と状態のアイコンとフラグのア
     expect(box.x, `${i + 1} 番目のアイコンが種類の後ろにない`).toBeGreaterThanOrEqual(kindBox.x + kindBox.width - 1);
     expect(Math.abs(box.y + box.height / 2 - (kindBox.y + kindBox.height / 2)), `${i + 1} 番目のアイコンが種類と同じ行にない`).toBeLessThanOrEqual(6);
   }
-  // 触れると言葉が出る
+  // マウスを乗せると言葉が出る
   await icons.nth(1).hover();
-  await expect(row.getByRole("tooltip"), "触れても AI 案と出ない").toContainText("AI 案");
+  await expect(row.getByRole("tooltip"), "マウスを乗せても AI 案と出ない").toContainText("AI 案");
   await page.mouse.move(0, 0);
   await expect(row.getByRole("tooltip")).toHaveCount(0);
 
   await agreeAll(page, ["task-title-required"]);
-  await expect(listIcon(page, "task-title-required", "合意済"), "合意した後に合意済のアイコンにならない").toBeVisible();
+  await expect(listIcon(page, "task-title-required", "承認済"), "承認した後に承認済のアイコンにならない").toBeVisible();
   await expect(listIcon(page, "task-title-required", "提案中")).toHaveCount(0);
 
   const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
   repo.write(".vanda/promises.toml", text.replace("タスクの題は空にできない", "タスクの題は空にも空白だけにもできない"));
   commit(repo, "題の約束を直す", "#24");
   await page.reload();
-  await expect(listIcon(page, "task-title-required", "合意が外れた"), "合意の後に変えても合意が外れたのアイコンにならない").toBeVisible();
-  for (const name of ["提案中", "合意済"]) await expect(listIcon(page, "task-title-required", name), `合意が外れたものに${name}のアイコンもある`).toHaveCount(0);
+  await expect(listIcon(page, "task-title-required", "承認が失効した"), "承認の後に変えても承認が失効したのアイコンにならない").toBeVisible();
+  for (const name of ["提案中", "承認済"]) await expect(listIcon(page, "task-title-required", name), `承認が失効したものに${name}のアイコンもある`).toHaveCount(0);
 });
 
 // RV-10・RV-02: 一覧は約束のレイヤー・用語と機能・ファイルのまとまりに分け、たたむとたたんだ件数を示す。1 件ごとに通し番号と総数
@@ -1738,8 +1738,8 @@ test("TLAの記号は画面に同梱したNoto Sans Mathを読み込んでその
   expect(fontURLs.length, "Noto Sans Math のファイルを読んでいない").toBeGreaterThan(0);
   for (const u of fontURLs) expect(u.startsWith(serve.url + "/"), `${u} を vanda サーバーから読んでいない`).toBe(true);
 
-  // 記号の文字だけを持ついちばん内側の要素に印を付け、Chrome が実際に使った書体を DevTools のプロトコルで聞く。
-  // 色付けを終えると画面が要素を作り直し、印が消えることがあるので、印を付けるところから条件で待ち直す
+  // 記号の文字だけを持ついちばん内側の要素にマークを付け、Chrome が実際に使った書体を DevTools のプロトコルで聞く。
+  // シンタックスハイライトを終えると画面が要素を作り直し、マークが消えることがあるので、マークを付けるところから条件で待ち直す
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("DOM.enable");
   await cdp.send("CSS.enable");
@@ -1783,11 +1783,11 @@ async function expectListed(page: Page, want: string[], where: string) {
 
 // @vanda:evidence review-filter-text
 // @vanda:evidence review-filter-not-agreed
-test("一覧を文字で絞り込み合意した後に合意済でないものだけにすると合意したものが消え文字の絞り込みと重ねられる", async ({ page }) => {
+test("一覧を文字で絞り込み承認した後に承認済でないものだけにすると承認したものが消え文字の絞り込みと重ねられる", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await expectListed(page, items, "絞り込む前");
   const box = filterList(page).getByRole("searchbox", { name: "絞り込み" });
-  // ID・文・パスに、大文字と小文字を変えて当てる
+  // ID・文・パスに、大文字と小文字を変えてマッチさせる
   await box.fill("TITLE");
   await expectListed(page, ["task-title-required"], "ID で絞り込んだとき");
   await box.fill("すべてのタスクを通して");
@@ -1798,18 +1798,18 @@ test("一覧を文字で絞り込み合意した後に合意済でないもの�
   await expectListed(page, items, "文字を消したとき");
 
   await agreeAll(page, ["task-id-unique"]);
-  const notAgreed = filterList(page).getByRole("checkbox", { name: "合意済でないものだけ" });
+  const notAgreed = filterList(page).getByRole("checkbox", { name: "承認済でないものだけ" });
   await notAgreed.check();
-  await expectListed(page, ["task-title-required", "e2e/add-task.txtar"], "合意済でないものだけにしたとき");
+  await expectListed(page, ["task-title-required", "e2e/add-task.txtar"], "承認済でないものだけにしたとき");
   await box.fill("task");
-  await expectListed(page, ["task-title-required", "e2e/add-task.txtar"], "合意済でないものだけと task を重ねたとき");
+  await expectListed(page, ["task-title-required", "e2e/add-task.txtar"], "承認済でないものだけと task を重ねたとき");
   await box.fill("required");
-  await expectListed(page, ["task-title-required"], "合意済でないものだけと required を重ねたとき");
+  await expectListed(page, ["task-title-required"], "承認済でないものだけと required を重ねたとき");
   await box.fill("unique");
-  await expectListed(page, [], "合意済でないものだけと合意した件の文字を重ねたとき");
-  await expect(filterList(page).getByText(/絞り込みの条件に当たるものはありません/)).toBeVisible();
+  await expectListed(page, [], "承認済でないものだけと承認した件の文字を重ねたとき");
+  await expect(filterList(page).getByText(/絞り込みの条件にマッチするものはありません/)).toBeVisible();
   await notAgreed.uncheck();
-  await expectListed(page, ["task-id-unique"], "合意済でないものだけを外したとき");
+  await expectListed(page, ["task-id-unique"], "承認済でないものだけを外したとき");
 });
 
 // @vanda:evidence review-filter-kept
@@ -1817,13 +1817,13 @@ test("絞り込みの条件は約束の詳細から戻っても読み込み直�
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await expectListed(page, items, "絞り込む前");
   const box = filterList(page).getByRole("searchbox", { name: "絞り込み" });
-  const notAgreed = filterList(page).getByRole("checkbox", { name: "合意済でないものだけ" });
+  const notAgreed = filterList(page).getByRole("checkbox", { name: "承認済でないものだけ" });
   await box.fill("Title");
   await notAgreed.check();
   await expectListed(page, ["task-title-required"], "絞り込んだとき");
   const kept = async (where: string) => {
     await expect(box, `${where}: 文字が消えた`).toHaveValue("Title");
-    await expect(notAgreed, `${where}: 合意済でないものだけが外れた`).toBeChecked();
+    await expect(notAgreed, `${where}: 承認済でないものだけが外れた`).toBeChecked();
     await expectListed(page, ["task-title-required"], where);
   };
   await select(page, "task-title-required");

@@ -98,7 +98,7 @@ name = "モデル"
 description = "判定と状態の変化"
 `
 
-// refCheck は、約束リスト promises のリポジトリを作ってコミットし、promise-list-shape の審査を動かす。
+// refCheck は、約束リスト promises のリポジトリを作ってコミットし、promise-list-shape のチェックを動かす。
 func refCheck(t *testing.T, bin, version, promises string) (int, string) {
 	t.Helper()
 	root := t.TempDir()
@@ -107,7 +107,7 @@ func refCheck(t *testing.T, bin, version, promises string) (int, string) {
 	writeFile(t, root, ".vanda/config.toml", fmt.Sprintf(refShapeConfig, version))
 	writeFile(t, root, ".vanda/checks/shape.toml", "[[check]]\nname = \"promise-list-shape\"\nscope = \"all\"\n")
 	writeFile(t, root, ".vanda/promises.toml", promises)
-	g.commitAll("審査の前にコミットする", "#1")
+	g.commitAll("チェックの前にコミットする", "#1")
 	return runCheck(t, bin, root, ".vanda/checks/shape.toml")
 }
 
@@ -148,11 +148,11 @@ func wantErrorsAt(t *testing.T, promises, out string, ids map[string]string) {
 	}
 }
 
-// 前提: 参照のない約束リストは、形の審査を通る（通らなければ、ほかのテストの誤りが参照のせいと言えない）
+// 前提: 参照のない約束リストは、形のチェックを通る（通らなければ、ほかのテストの誤りが参照のせいと言えない）
 func refBaseline(t *testing.T, bin, version string) {
 	t.Helper()
 	if code, out := refCheck(t, bin, version, refPromises(nil, "", "")); code != 0 {
-		t.Fatalf("参照のない約束リストが形の審査を通らない（%d）\n%s", code, out)
+		t.Fatalf("参照のない約束リストが形のチェックを通らない（%d）\n%s", code, out)
 	}
 }
 
@@ -165,7 +165,7 @@ func Test自然言語で書く項目のどれでも参照を読み用語と機�
 	// 用語・機能・約束のそれぞれを指す参照は、どの項目でも通る
 	ok := refPromises(allFields("{@id:t} と {@id:f-waived} と {@id:c} を指す"), "", "")
 	if code, out := refCheck(t, bin, version, ok); code != 0 {
-		t.Errorf("今ある用語・機能・約束を指す参照で、形の審査が通らない（%d）\n%s", code, out)
+		t.Errorf("今ある用語・機能・約束を指す参照で、形のチェックが通らない（%d）\n%s", code, out)
 	}
 
 	// ない ID を指すと、どの項目でも誤りになる（参照として読んでいる）。項目ごとに別の ID にして、どの誤りかを見分ける
@@ -198,7 +198,7 @@ func Test用語と機能の名前の中の参照の形の文字は参照とし�
 		{"形でない文字の名前", "タスク{@id:nope", "{@term:t}を足す"},
 	} {
 		if code, out := refCheck(t, bin, version, refPromises(nil, c.term, c.feature)); code != 0 {
-			t.Errorf("%sに参照の形の文字を書くと、形の審査が通らない（%d）\n%s", c.what, code, out)
+			t.Errorf("%sに参照の形の文字を書くと、形のチェックが通らない（%d）\n%s", c.what, code, out)
 		}
 	}
 }
@@ -222,7 +222,7 @@ func Test二つ重ねたアットは文字として読み参照にも誤りに�
 		"{@@{@id:t}",
 	} {
 		if code, out := refCheck(t, bin, version, refPromises(allFields(val), "", "")); code != 0 {
-			t.Errorf("どの項目にも %q を書くと、形の審査が通らない（%d）\n%s", val, code, out)
+			t.Errorf("どの項目にも %q を書くと、形のチェックが通らない（%d）\n%s", val, code, out)
 		}
 	}
 }
@@ -269,7 +269,7 @@ func Test壊れた参照は壊れ方のどれでも自然言語で書く項目�
 			if code != 1 {
 				t.Errorf("%s の参照で、終了コードが %d\n%s", c.what, code, out)
 			}
-			if !regexp.MustCompile(`(?m)^審査 promise-list-shape（all）: 失敗`).MatchString(out) {
+			if !regexp.MustCompile(`(?m)^チェック promise-list-shape（all）: 失敗`).MatchString(out) {
 				t.Errorf("promise-list-shape の失敗として出ていない\n%s", out)
 			}
 			ids := map[string]string{}
@@ -281,7 +281,7 @@ func Test壊れた参照は壊れ方のどれでも自然言語で書く項目�
 	}
 }
 
-// 指紋の元の JSON は、約束リストの書いたままの文（参照を置き換える前）から手で書いた（docs/formats.md の「指紋」）。
+// フィンガープリントの元の JSON は、約束リストの書いたままの文（参照を置き換える前）から手で書いた（docs/formats.md の「フィンガープリント」）。
 const (
 	fpClaimJSON = `{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"c","layers":["model"],"statement":"{@id:t}は{@id:f}で足し、{@@id:x}は文字","subjects":["t"]}`
 	fpTermV1    = `{"definition":"やること","id":"t","name":"タスク"}`
@@ -315,7 +315,7 @@ layers = ["model"]
 }
 
 // @vanda:evidence reference-fingerprint-raw
-func Test参照先の用語と機能の名前と定義を変えても参照元の約束の合意は外れない(t *testing.T) {
+func Test参照先の用語と機能の名前と定義を変えても参照元の約束の承認は失効しない(t *testing.T) {
 	t.Parallel()
 	bin, version := refSetup(t)
 	root := t.TempDir()
@@ -326,20 +326,20 @@ func Test参照先の用語と機能の名前と定義を変えても参照元�
 	who := func(kind, id, json string) string {
 		return agreementTOML(kind, id, sha256Hex([]byte(json)), "", "#1", "テスト担当", "tester@example.com")
 	}
-	// 約束 c には、書いたままの文の指紋で 1 度だけ合意する
+	// 約束 c には、書いたままの文のフィンガープリントで 1 度だけ承認する
 	writeFile(t, root, ".vanda/promises.toml", fpPromises("タスク", "やること", "タスクの登録", "タスクを足す"))
 	writeFile(t, root, ".vanda/agreements.toml", who("claim", "c", fpClaimJSON)+who("term", "t", fpTermV1)+who("feature", "f", fpFeatureV1))
-	g.commitAll("約束を置いて合意する", "#1")
+	g.commitAll("約束を置いて承認する", "#1")
 	if code, out := runCheck(t, bin, root, ".vanda/checks/agreement.toml"); code != 0 {
-		t.Fatalf("書いたままの文の指紋に合意した約束が、合意済にならない（%d）\n%s", code, out)
+		t.Fatalf("書いたままの文のフィンガープリントを承認した約束が、承認済にならない（%d）\n%s", code, out)
 	}
 
-	// 参照先の用語と機能の名前と定義を変え、その今の中身にだけ合意し直す。約束 c には合意し直さない
+	// 参照先の用語と機能の名前と定義を変え、その今の中身にだけ承認し直す。約束 c には承認し直さない
 	writeFile(t, root, ".vanda/promises.toml", fpPromises("仕事", "やるべきこと", "仕事の登録", "仕事を足す"))
 	writeFile(t, root, ".vanda/agreements.toml", who("claim", "c", fpClaimJSON)+who("term", "t", fpTermV1)+who("feature", "f", fpFeatureV1)+
 		who("term", "t", fpTermV2)+who("feature", "f", fpFeatureV2))
 	g.commitAll("用語と機能の名前と定義を変える", "#1")
 	if code, out := runCheck(t, bin, root, ".vanda/checks/agreement.toml"); code != 0 {
-		t.Errorf("参照先の名前と定義を変えると、参照元の約束の合意が外れた（%d）\n%s", code, out)
+		t.Errorf("参照先の名前と定義を変えると、参照元の約束の承認が失効した（%d）\n%s", code, out)
 	}
 }

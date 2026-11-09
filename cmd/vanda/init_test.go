@@ -26,14 +26,14 @@ import (
 
 // CMD-11 vanda init。テストは並べて動かす。どれもテストごとの一時ディレクトリで動くので、互いに関わらない。
 // 既定の答えの読み取り（remote の形・言語）と、答えから作るファイルの中身は、組み合わせが多いので、
-// initcmd の公開の関数（Detect・Files など）を直に呼んで確かめる。擬似端末を通すのは、問いの流れ・聞き直し・
+// initcmd の公開の関数（Detect・Files など）を直に呼んで確かめる。擬似端末を通すのは、質問の流れ・聞き直し・
 // 止める場合を確かめるものだけにする（擬似端末を通すと、1 件ごとに vanda を動かして画面を待つので遅い）。
-// 問いかけは擬似端末（pty）で vanda を動かし、問いを読んで答えを書く（docs/plans/init-test.md）。
+// 質問は擬似端末（pty）で vanda を動かし、質問を読んで答えを書く（docs/plans/init-test.md）。
 // vanda init は、必ずテストごとの一時ディレクトリの git のリポジトリで動かす。
 //
-// 問いの文言は決まっていないので、問いは計画の順（ベースブランチ、ストーリーストア、リポジトリかカスタムアダプタ、
-// ID の書き方、言語ごとのアノテーション、作るか）にたどり、それぞれの問いに出るはずの言葉で確かめる。
-// 既定の答えは、計画のとおり、問いの中の [ ] の中から読む。
+// 質問の文言は決まっていないので、質問は計画の順（ベースブランチ、ストーリーストア、リポジトリかカスタムアダプタ、
+// ID の書き方、言語ごとのアノテーション、作るか）にたどり、それぞれの質問に出るはずの言葉で確かめる。
+// 既定の答えは、計画のとおり、質問の中の [ ] の中から読む。
 
 // ---- 一時的なリポジトリ ----
 
@@ -77,8 +77,8 @@ func (r *initRepo) exists(path string) bool {
 
 // ---- 擬似端末の画面 ----
 
-// vtScreen は、擬似端末に書かれた文字から、今の画面の文字を組み立てる小さな端末。huh は、問いを書くたびに
-// カーソルを上へ戻して消し（CSI A・CSI J）、描き直すので、書かれた文字を並べただけでは今の問いが読めない。
+// vtScreen は、擬似端末に書かれた文字から、今の画面の文字を組み立てる小さな端末。huh は、質問を書くたびに
+// カーソルを上へ戻して消し（CSI A・CSI J）、描き直すので、書かれた文字を並べただけでは今の質問が読めない。
 // 扱うのは、改行・復帰・後退・カーソルの移動・消去だけ。色などほかの制御は読み捨てる。行は捨てずに下へ伸ばす。
 type vtScreen struct {
 	lines              [][]rune
@@ -346,7 +346,7 @@ func (s *initSession) screen() string {
 	return s.vt.text()
 }
 
-// all は、画面に出た文字を返す（消された問いは残らないが、作った後の案内は残る）。
+// all は、画面に出た文字を返す（消された質問は残らないが、作った後の案内は残る）。
 func (s *initSession) all() string { return s.screen() }
 
 func (s *initSession) keys(k string) {
@@ -405,19 +405,19 @@ func (s *initSession) waitFor(what string, cond func(string) bool) string {
 }
 
 // press は、キーを 1 回だけ送り、画面が cond を満たすまで待つ（vanda init が終わったら、それも待ち終わりとみなす）。
-// 送り直さない。問いが出た後に送ったキーを vanda が読み落とすなら、それは不具合なので、隠さずに落とす。
+// 送り直さない。質問が出た後に送ったキーを vanda が読み落とすなら、それは不具合なので、隠さずに落とす。
 func (s *initSession) press(what, k string, cond func(string) bool) string {
 	s.t.Helper()
 	s.keys(k)
 	return s.waitFor(what, func(sc string) bool { return cond(sc) || s.finished() })
 }
 
-// initField は、画面の一番下の問い（行の頭が ┃ のまとまり）。
+// initField は、画面の一番下の質問（行の頭が ┃ のまとまり）。
 type initField struct {
 	title string
 	lines []string // 2 行目から。行の頭の ┃ と、続く空白 1 つを除いたもの
-	// done は、問いの下の操作の案内（enter submit など）まで描かれているか。huh は問いを上から描くので、
-	// 案内が出ていれば、その問いは描き終わっている
+	// done は、質問の下の操作の案内（enter submit など）まで描かれているか。huh は質問を上から描くので、
+	// 案内が出ていれば、その質問は描き終わっている
 	done bool
 }
 
@@ -470,7 +470,7 @@ func cursorOf(screen string) string {
 	return c
 }
 
-// errorText は、画面の一番下の問いより後に出た、理由（* で始まり。を含む行）を返す。
+// errorText は、画面の一番下の質問より後に出た、理由（* で始まり。を含む行）を返す。
 func errorText(screen string) string {
 	ls := strings.Split(screen, "\n")
 	last := -1
@@ -487,7 +487,7 @@ func errorText(screen string) string {
 	return ""
 }
 
-// fieldIs は、題に keyword を含む問いが描き終わっているか。
+// fieldIs は、題に keyword を含む質問が描き終わっているか。
 func fieldIs(keyword string) func(string) bool {
 	return func(sc string) bool {
 		f, ok := fieldOf(sc)
@@ -495,7 +495,7 @@ func fieldIs(keyword string) func(string) bool {
 	}
 }
 
-// fieldIsNot は、題が title でない問いが描き終わっているか。
+// fieldIsNot は、題が title でない質問が描き終わっているか。
 func fieldIsNot(title string) func(string) bool {
 	return func(sc string) bool {
 		f, ok := fieldOf(sc)
@@ -503,10 +503,10 @@ func fieldIsNot(title string) func(string) bool {
 	}
 }
 
-// waitField は、題に keyword を含む問いが、画面の一番下に描き終わるまで待つ。
+// waitField は、題に keyword を含む質問が、画面の一番下に描き終わるまで待つ。
 func (s *initSession) waitField(what, keyword string) initField {
 	s.t.Helper()
-	f, _ := fieldOf(s.waitFor(what+" の問い", fieldIs(keyword)))
+	f, _ := fieldOf(s.waitFor(what+" の質問", fieldIs(keyword)))
 	return f
 }
 
@@ -539,7 +539,7 @@ func (s *initSession) wait() int {
 	return 0
 }
 
-// ---- 問いをたどる ----
+// ---- 質問をたどる ----
 
 var storyChoices = []string{"GitHub Issues", "カスタムアダプタ", "使わない"}
 
@@ -554,17 +554,17 @@ func langOf(line string) string {
 	return ""
 }
 
-// initPlan は、問いへの答え。空の文字列は、既定の答えのまま Enter を押すこと。
+// initPlan は、質問への答え。空の文字列は、既定の答えのまま Enter を押すこと。
 type initPlan struct {
 	base        string
 	story       string // 選択肢の名前
 	detail      string // リポジトリか、カスタムアダプタの名前
 	adapterArgs string // カスタムアダプタに渡す引数
 	idPattern   string
-	toggle      []string          // 言語を選ぶ問いで、選びを切り替える言語
+	toggle      []string          // 言語を選ぶ質問で、選びを切り替える言語
 	patterns    map[string]string // 言語 → 読むファイルのパターン
 	confirm     string            // y・n
-	// 形に合わない答え。問い（detail・id・読むファイルのパターンを聞く言語の名前）ごとに、正しい答えの前に順に書く
+	// 形に合わない答え。質問（detail・id・読むファイルのパターンを聞く言語の名前）ごとに、正しい答えの前に順に書く
 	invalid map[string][]string
 }
 
@@ -578,7 +578,7 @@ type initSeen struct {
 	argsDef      string
 	idDefault    string
 	langOptions  []string
-	langSelected []string // 選ぶ問いが始まったときに選ばれていた言語
+	langSelected []string // 選ぶ質問が始まったときに選ばれていた言語
 	langsAsked   []string // パターンを聞かれた言語
 	patterns     map[string]string
 }
@@ -594,8 +594,8 @@ func (s *initSession) typeAnswer(what, a string) {
 	}
 }
 
-// input は、入力の問いで、欄に入っている既定の答えを読み、形に合わない答えを順に書いて、そのたびに理由が出て
-// 同じ問いにとどまることを確かめ、最後に a を書く（空なら既定のまま）。
+// input は、入力の質問で、欄に入っている既定の答えを読み、形に合わない答えを順に書いて、そのたびに理由が出て
+// 同じ質問にとどまることを確かめ、最後に a を書く（空なら既定のまま）。
 func (s *initSession) input(what, keyword string, invalid []string, a string) string {
 	s.t.Helper()
 	f := s.waitField(what, keyword)
@@ -606,7 +606,7 @@ func (s *initSession) input(what, keyword string, invalid []string, a string) st
 			return errorText(sc) != "" || fieldIsNot(f.title)(sc)
 		})
 		if again, ok := fieldOf(sc); !ok || again.title != f.title {
-			s.t.Errorf("%s に形に合わない答え %q を書いても、同じ問いにとどまらない\n%s", what, bad, sc)
+			s.t.Errorf("%s に形に合わない答え %q を書いても、同じ質問にとどまらない\n%s", what, bad, sc)
 		} else if errorText(sc) == "" {
 			s.t.Errorf("%s に形に合わない答え %q を書いても、理由が出ない\n%s", what, bad, sc)
 		}
@@ -618,8 +618,8 @@ func (s *initSession) input(what, keyword string, invalid []string, a string) st
 	return def
 }
 
-// selectOne は、1 つ選ぶ問いで、カーソルのある選択肢（既定）と選択肢を読み、want を選ぶ（空なら既定のまま）。
-// 1 つ選ぶ問いは、一番下で下へ動かすと一番上へ戻るので、今のカーソルから下へ動かして want を探す。
+// selectOne は、1 つ選ぶ質問で、カーソルのある選択肢（既定）と選択肢を読み、want を選ぶ（空なら既定のまま）。
+// 1 つ選ぶ質問は、一番下で下へ動かすと一番上へ戻るので、今のカーソルから下へ動かして want を探す。
 func (s *initSession) selectOne(what, keyword string, options []string, want string) (string, []string) {
 	s.t.Helper()
 	f := s.waitField(what, keyword)
@@ -645,9 +645,9 @@ func (s *initSession) selectOne(what, keyword string, options []string, want str
 	return def, shown
 }
 
-// multiSelect は、複数選ぶ問いで、カーソルを一番上（Go）へ動かしてから一番下（SQL）まで動かして、選択肢と
-// 選ばれているか（✓）を読み、toggle にある言語の選びをスペースで切り替える。問いの題も返す。複数選ぶ問いは、
-// 1 つ選ぶ問いと違い端で止まり、カーソルは、はじめに選ばれていた言語から始まる。
+// multiSelect は、複数選ぶ質問で、カーソルを一番上（Go）へ動かしてから一番下（SQL）まで動かして、選択肢と
+// 選ばれているか（✓）を読み、toggle にある言語の選びをスペースで切り替える。質問の題も返す。複数選ぶ質問は、
+// 1 つ選ぶ質問と違い端で止まり、カーソルは、はじめに選ばれていた言語から始まる。
 func (s *initSession) multiSelect(what, keyword string, toggle []string) (title string, options, selected []string) {
 	s.t.Helper()
 	title = s.waitField(what, keyword).title
@@ -682,7 +682,7 @@ func (s *initSession) multiSelect(what, keyword string, toggle []string) (title 
 	return title, options, selected
 }
 
-// run は、計画の順に問いをたどり、plan の答えを書く。作るかの問いに答えたところで返す。
+// run は、計画の順に質問をたどり、plan の答えを書く。作るかの質問に答えたところで返す。
 func (s *initSession) run(plan initPlan) initSeen {
 	s.t.Helper()
 	seen := initSeen{patterns: map[string]string{}}
@@ -712,7 +712,7 @@ func (s *initSession) run(plan initPlan) initSeen {
 	var prev string
 	prev, seen.langOptions, seen.langSelected = s.multiSelect("言語", "言語", plan.toggle)
 	for {
-		f, _ := fieldOf(s.waitFor("言語のパターンか作るかの問い", fieldIsNot(prev)))
+		f, _ := fieldOf(s.waitFor("言語のパターンか作るかの質問", fieldIsNot(prev)))
 		if strings.Contains(f.title, "作りますか") {
 			key := "y"
 			if plan.confirm == "n" {
@@ -723,7 +723,7 @@ func (s *initSession) run(plan initPlan) initSeen {
 		}
 		lang := langOf(f.title)
 		if lang == "" || !strings.Contains(f.title, "読むファイル") {
-			s.t.Fatalf("言語ごとのパターンの問いでも、作るかの問いでもない\n%s", s.screen())
+			s.t.Fatalf("言語ごとのパターンの質問でも、作るかの質問でもない\n%s", s.screen())
 		}
 		seen.langsAsked = append(seen.langsAsked, lang)
 		seen.patterns[lang] = s.input(lang+" のパターン", f.title, plan.invalid[lang], plan.patterns[lang])
@@ -788,7 +788,7 @@ func annotationsOf(c initConfig) []string {
 	return out
 }
 
-// 組込みのアダプタの既定のタイプ（docs/plans/annotation-types.md の 1）。vanda init は、選んだ言語のものをそのまま書く
+// 組み込みのアダプタの既定のタイプ（docs/plans/annotation-types.md の 1）。vanda init は、選んだ言語のものをそのまま書く
 var defaultTypes = map[string][]string{
 	"go":    {"unit-test", "cross-check", "random-check", "interface-test", "concurrency-test", "sensor"},
 	"txtar": {"scenario-test"},
@@ -890,7 +890,7 @@ func (f *fakeRepoAPI) called() bool {
 // @vanda:evidence init-values-only
 // @vanda:evidence init-default-types
 // @vanda:evidence init-guide
-func Test既定の答えのまま進めると読み取った値で5つのファイルができdoctorとciの審査が通る(t *testing.T) {
+func Test既定の答えのまま進めると読み取った値で5つのファイルができdoctorとciのチェックが通る(t *testing.T) {
 	t.Parallel()
 	bin, version := initSetup(t)
 	var files []string
@@ -939,7 +939,7 @@ func Test既定の答えのまま進めると読み取った値で5つのファ�
 	if got := annotationsOf(c); !reflect.DeepEqual(got, want) {
 		t.Errorf("[[annotation]]: %v（思ったもの %v）", got, want)
 	}
-	// 既定のタイプは問いかけずに書く
+	// 既定のタイプは質問せずに書く
 	checkDefaultTypes(t, c)
 	for _, f := range []string{"promises.toml", "agreements.toml"} {
 		data, err := os.ReadFile(filepath.Join(r.root, ".vanda", f))
@@ -972,7 +972,7 @@ func Test既定の答えのまま進めると読み取った値で5つのファ�
 		t.Fatal(err)
 	}
 	writeFile(t, r.root, ".vanda/config.toml", strings.Replace(string(cfgText), "[story]\n", "[story]\napi_url = \""+gh.URL+"\"\n", 1))
-	// 偽の GitHub（127.0.0.1）は api.github.com でないので、認証キーは GH_ENTERPRISE_TOKEN から読まれる
+	// 偽の GitHub（127.0.0.1）は api.github.com でないので、トークンは GH_ENTERPRISE_TOKEN から読まれる
 	env := ghEnv(r.g.env, fakeGH(t, nil), "GH_ENTERPRISE_TOKEN="+fakeRepoToken)
 	doctor := exec.Command(bin, "doctor")
 	doctor.Dir, doctor.Env = r.root, env
@@ -982,7 +982,7 @@ func Test既定の答えのまま進めると読み取った値で5つのファ�
 	if !gh.called() {
 		t.Errorf("vanda doctor が、偽の GitHub のリポジトリを読みに来ていない")
 	}
-	// 審査は HEAD のコミットの中身だけを読むので、作ったファイルをストーリー #1 のコミットにしてから動かす。
+	// チェックは HEAD のコミットの中身だけを読むので、作ったファイルをストーリー #1 のコミットにしてから動かす。
 	// ストーリーはトレーラーから #1 に決まるので --story はいらず、--story #1 でも通る
 	r.g.commitAll("(chore) vanda init で作ったファイルを足す", "#1")
 	for _, args := range [][]string{
@@ -992,16 +992,16 @@ func Test既定の答えのまま進めると読み取った値で5つのファ�
 		check := exec.Command(bin, args...)
 		check.Dir, check.Env = r.root, env
 		if out, err := check.CombinedOutput(); err != nil {
-			t.Errorf("作った審査の設定で vanda %v が通らない: %v\n%s", args, err, out)
+			t.Errorf("作ったチェックの設定で vanda %v が通らない: %v\n%s", args, err, out)
 		}
 	}
 }
 
-// CMD-11: ストーリーストアの選択肢の全部で、問い 3・4 の出方と既定と、書かれる [story] が合う
+// CMD-11: ストーリーストアの選択肢の全部で、質問 3・4 の出方と既定と、書かれる [story] が合う
 // @vanda:evidence init-store-choices
 // @vanda:evidence init-missing-project-adapter
 // @vanda:evidence init-no-store-id-pattern
-func Testストーリーストアの選択肢ごとに問いの出方と既定とstoryの中身が合う(t *testing.T) {
+func Testストーリーストアの選択肢ごとに質問の出方と既定とstoryの中身が合う(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
 	cases := []struct {
@@ -1009,8 +1009,8 @@ func Testストーリーストアの選択肢ごとに問いの出方と既定�
 		detail      string
 		args        string
 		idPattern   string
-		detailAsked bool   // リポジトリか、カスタムアダプタの名前の問いが出るか
-		argsAsked   bool   // カスタムアダプタの引数の問いが出るか
+		detailAsked bool   // リポジトリか、カスタムアダプタの名前の質問が出るか
+		argsAsked   bool   // カスタムアダプタの引数の質問が出るか
 		detailDef   string // 空なら既定なし
 		idDefault   string // 空なら既定なし
 		adapter     string
@@ -1033,7 +1033,7 @@ func Testストーリーストアの選択肢ごとに問いの出方と既定�
 				t.Fatalf("vanda init が %d で終わった\n%s", code, s.screen())
 			}
 			if seen.detailAsked != c.detailAsked || seen.argsAsked != c.argsAsked {
-				t.Errorf("リポジトリか名前の問いが出たか %v・引数の問いが出たか %v（思ったもの %v・%v）", seen.detailAsked, seen.argsAsked, c.detailAsked, c.argsAsked)
+				t.Errorf("リポジトリか名前の質問が出たか %v・引数の質問が出たか %v（思ったもの %v・%v）", seen.detailAsked, seen.argsAsked, c.detailAsked, c.argsAsked)
 			}
 			if seen.detailDef != c.detailDef {
 				t.Errorf("リポジトリか名前の既定: %q（思ったもの %q）", seen.detailDef, c.detailDef)
@@ -1058,7 +1058,7 @@ func Testストーリーストアの選択肢ごとに問いの出方と既定�
 
 // CMD-11: 見つからなかった言語を選ぶと書かれ、選びを外すと書かれない
 // @vanda:evidence init-language-choices
-func Test言語を選ぶ問いで見つからなかった言語を選ぶと書かれ選びを外すと書かれない(t *testing.T) {
+func Test言語を選ぶ質問で見つからなかった言語を選ぶと書かれ選びを外すと書かれない(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
 	r := newInitRepo(t, "", false, "e2e/a.txtar", "db/schema.sql")
@@ -1178,12 +1178,12 @@ func Test答えを変えるとその値で書かれる(t *testing.T) {
 	}
 }
 
-// CMD-11: 形に合わない答えは、理由が出て同じ問いにとどまる（選択肢は矢印キーで選ぶので、選択肢にない番号は書けない）
+// CMD-11: 形に合わない答えは、理由が出て同じ質問にとどまる（選択肢は矢印キーで選ぶので、選択肢にない番号は書けない）
 // @vanda:evidence init-validates-answers
-func Test形に合わない答えは理由が出て同じ問いにとどまる(t *testing.T) {
+func Test形に合わない答えは理由が出て同じ質問にとどまる(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
-	t.Run("既定のないIDの書き方の空と正規表現の誤りと空の文字列に当たる正規表現", func(t *testing.T) {
+	t.Run("既定のないIDの書き方の空と正規表現の誤りと空の文字列にマッチする正規表現", func(t *testing.T) {
 		t.Parallel()
 		r := newInitRepo(t, "", false)
 		s := startInit(t, bin, r.root, r.g.env)
@@ -1212,7 +1212,7 @@ func Test形に合わない答えは理由が出て同じ問いにとどまる(t
 	})
 }
 
-// CMD-11: 読むファイルのパターンの書き方の誤り（config-pattern-syntax）は、理由が出て同じ問いにとどまり、設定に書かれない。
+// CMD-11: 読むファイルのパターンの書き方の誤り（config-pattern-syntax）は、理由が出て同じ質問にとどまり、設定に書かれない。
 // @vanda:evidence init-validates-answers
 func Test読むファイルのパターンの書き方が誤っていると理由が出て聞き直し入れ直したパターンだけが書かれる(t *testing.T) {
 	t.Parallel()
@@ -1255,12 +1255,12 @@ func Test作る前の確かめでnと答えると何も作られない(t *testin
 	}
 }
 
-// CMD-11: 途中で入力を終える（Ctrl+D）と、何も作られない。問いごとに回す
+// CMD-11: 途中で入力を終える（Ctrl+D）と、何も作られない。質問ごとに回す
 // @vanda:evidence init-decline-creates-nothing
 func Test途中で入力を終えると何も作られない(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
-	// 問いの題に出る言葉。remote が GitHub なのでリポジトリの問いが出る。シナリオだけが見つかる
+	// 質問の題に出る言葉。remote が GitHub なのでリポジトリの質問が出る。シナリオだけが見つかる
 	steps := []string{"ベースブランチ", "ストーリーストア", "リポジトリ", "ID", "言語", "読むファイル", "作りますか"}
 	for i, step := range steps {
 		t.Run(step+"で終える", func(t *testing.T) {
@@ -1372,7 +1372,7 @@ func Test止める場合は何も書かず理由を標準エラーに出し終�
 					return 0
 				case <-time.After(15 * time.Second):
 					_ = cmd.Process.Kill()
-					t.Fatalf("端末でないのに vanda init が止まらない（問いかけて待っている）")
+					t.Fatalf("端末でないのに vanda init が止まらない（プロンプトを出して待っている）")
 					return -1
 				}
 			}
@@ -1526,7 +1526,7 @@ func Test言語のあるなしの全部の組み合わせで見つかる言語�
 		}
 		t.Run(label, func(t *testing.T) {
 			t.Parallel()
-			// 見つけ方に当たらないファイル（_test.go でない Go）も置いておく
+			// 見つけ方にマッチしないファイル（_test.go でない Go）も置いておく
 			r := newInitRepo(t, "", false, append(files, "internal/x/x.go")...)
 			d, err := initcmd.Detect(r.root)
 			if err != nil {
@@ -1645,13 +1645,13 @@ func Test答えから作る5つのファイルはストーリーストアと言�
 	}
 }
 
-// CMD-11: 審査の設定には、今ある審査を、docs/formats.md の「審査の種類」の順に書く。ブランチで動かす ci.toml は審査ごとに決まった範囲で全部を、
-// ベースブランチで動かす main.toml は story-origin を除いて範囲 all で書く
+// CMD-11: チェックの設定には、今あるチェックを、docs/formats.md の「チェックの種類」の順に書く。ブランチで動かす ci.toml はチェックごとに決まったスコープで全部を、
+// ベースブランチで動かす main.toml は story-origin を除いてスコープ all で書く
 // @vanda:evidence init-writes-files
 // @vanda:evidence init-check-configs
-func Test審査の設定のci_tomlには今ある審査が全部決まった範囲で入りmain_tomlにはstory_originを除いて範囲allで入る(t *testing.T) {
+func Testチェックの設定のci_tomlには今あるチェックが全部決まったスコープで入りmain_tomlにはstory_originを除いてスコープallで入る(t *testing.T) {
 	t.Parallel()
-	// 書ける範囲が 1 つのものはそれ。all と story の両方を書ける agreement と evidence-present は、ブランチではストーリーで変わったものを見る story
+	// 書けるスコープが 1 つのものはそれ。all と story の両方を書ける agreement と evidence-present は、ブランチではストーリーで変わったものを見る story
 	want := map[string][]string{
 		".vanda/checks/ci.toml": {
 			"promise-list-shape all", "annotation-links all", "story-origin story", "agreement story",
@@ -1701,10 +1701,10 @@ func Test審査の設定のci_tomlには今ある審査が全部決まった範�
 // initRepeat は、読み落としを見つけやすくするために、同じ流れを回す回数。1 回 1〜2 秒で、並べて動かす
 const initRepeat = 30
 
-// CMD-11: 問いが出るのを待ってから答えを 1 回だけ送ると、2 問目以降の答えも読み落とされずに最後まで進む。
+// CMD-11: 質問が出るのを待ってから答えを 1 回だけ送ると、2 問目以降の答えも読み落とされずに最後まで進む。
 // 読み落としはときどきしか起きないので、同じ流れを initRepeat 回まわす
 // @vanda:evidence init-reads-answers-sent-after-prompt
-func Test問いが出てから1回だけ答えを送ると2問目以降の答えも読み落とされずに最後まで進む(t *testing.T) {
+func Test質問が出てから1回だけ答えを送ると2問目以降の答えも読み落とされずに最後まで進む(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
 	for i := 0; i < initRepeat; i++ {
@@ -1723,7 +1723,7 @@ func Test問いが出てから1回だけ答えを送ると2問目以降の答え
 	}
 }
 
-// ---- 端末の状態を戻すことと、組込みと同じ名前のアダプタ ----
+// ---- 端末の状態を戻すことと、組み込みと同じ名前のアダプタ ----
 
 // sttyOf は、端末 tty の今の設定を、stty -g の形で返す。
 func sttyOf(t *testing.T, tty *os.File) string {
@@ -1815,7 +1815,7 @@ func Test_vanda_initは中断や作らないの答えや誤りで終わっても
 		{"作らないと答える", func(t *testing.T, s *initSession, r *initRepo) {
 			s.run(initPlan{confirm: "n"})
 		}},
-		// 作るときにリポジトリの根に書けないと、誤りで終わる
+		// 作るときにリポジトリのルートに書けないと、誤りで終わる
 		{"書けずに誤りで終わる", func(t *testing.T, s *initSession, r *initRepo) {
 			if err := os.Chmod(r.root, 0o555); err != nil {
 				t.Fatal(err)
@@ -1830,10 +1830,10 @@ func Test_vanda_initは中断や作らないの答えや誤りで終わっても
 			r := newInitRepo(t, "https://github.com/owner/app.git", true, "e2e/a.txtar")
 			// vanda を動かす前の端末の設定と比べる
 			s, tty, before := startInitOnTTY(t, bin, r.root, r.g.env)
-			// 問いかけの間は端末を raw にしている（戻すことの確かめが、何もしていないから通るのでないことを見る）
+			// 質問の間は端末を raw にしている（戻すことの確かめが、何もしていないから通るのでないことを見る）
 			s.waitField("ベースブランチ", "ベースブランチ")
 			if during := sttyOf(t, tty); during == before {
-				t.Errorf("問いかけの間も、端末の設定が始める前と同じ")
+				t.Errorf("質問の間も、端末の設定が始める前と同じ")
 			}
 			c.end(t, s, r)
 			code := s.wait()
@@ -1850,13 +1850,13 @@ func Test_vanda_initは中断や作らないの答えや誤りで終わっても
 	}
 }
 
-// CMD-11: カスタムアダプタの名前に、組込みのアダプタと同じ名前（github・go など）を答えても断らない
+// CMD-11: カスタムアダプタの名前に、組み込みのアダプタと同じ名前（github・go など）を答えても断らない
 // @vanda:evidence init-accepts-builtin-name
-func Test_vanda_adaptersのアダプタの名前に組込みのアダプタと同じ名前を答えても断らない(t *testing.T) {
+func Test_vanda_adaptersのアダプタの名前に組み込みのアダプタと同じ名前を答えても断らない(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
 	builtins := []string{"github", "go", "txtar", "tla", "sql", "ts"}
-	// 答えから作るファイル（問いかけを通さない）
+	// 答えから作るファイル（質問を通さない）
 	for _, name := range builtins {
 		a := initcmd.Answers{Base: "main", Store: "user", Adapter: name, Args: []string{"--x"}, IDPattern: "PROJ-[0-9]+"}
 		root := filesToDir(t, initcmd.Files(a))
@@ -1865,21 +1865,21 @@ func Test_vanda_adaptersのアダプタの名前に組込みのアダプタと�
 			t.Errorf("名前 %s の [story]: %+v", name, st)
 		}
 	}
-	// 端末で問いかけて、名前に github と答える
+	// 端末で質問して、名前に github と答える
 	r := newInitRepo(t, "", false)
 	s := startInit(t, bin, r.root, r.g.env)
-	// 名前の問いで断らず（聞き直さず）次の問いへ進み、答えたとおりに書く。.vanda/adapters/github がないので組込みの github が
-	// 使われ、作った後の確かめで、組込みの github に要る repository がない誤りになり、終了コード 1 で終わる（PO の決定）
+	// 名前の質問で断らず（聞き直さず）次の質問へ進み、答えたとおりに書く。.vanda/adapters/github がないので組み込みの github が
+	// 使われ、作った後の確かめで、組み込みの github に要る repository がない誤りになり、終了コード 1 で終わる（PO の決定）
 	s.run(initPlan{story: "カスタムアダプタ", detail: "github", adapterArgs: "--project APP", idPattern: "PROJ-[0-9]+"})
 	if code := s.wait(); code != 1 {
-		t.Errorf("終了コードが %d（組込みの github の確かめで誤りになり 1 のはず）\n%s", code, s.stderr.String())
+		t.Errorf("終了コードが %d（組み込みの github の確かめで誤りになり 1 のはず）\n%s", code, s.stderr.String())
 	}
 	found := false
 	for _, l := range strings.Split(s.stderr.String(), "\n") {
 		found = found || (strings.HasPrefix(l, ".vanda/config.toml:") && strings.Contains(l, "repository がありません"))
 	}
 	if !found {
-		t.Errorf("標準エラーに、組込みの github に repository がない誤りが出ていない\n%s", s.stderr.String())
+		t.Errorf("標準エラーに、組み込みの github に repository がない誤りが出ていない\n%s", s.stderr.String())
 	}
 	if st := readInitConfig(t, r.root).Story; st == nil || st.Adapter != "github" || !reflect.DeepEqual(st.Args, []string{"--project", "APP"}) || st.Repository != "" {
 		t.Errorf("名前に github と答えたときの [story]: %+v", st)

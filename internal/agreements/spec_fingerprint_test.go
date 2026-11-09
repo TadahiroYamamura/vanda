@@ -17,7 +17,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/promises"
 )
 
-// CM-03 の指紋のテスト。期待値は docs/formats.md の「指紋」から作る。
+// CM-03 のフィンガープリントのテスト。期待値は docs/formats.md の「フィンガープリント」から作る。
 // 決まった形の JSON は、実装の CanonicalJSON を使わず、このファイルの canonical で作る。
 
 // @vanda:evidence fingerprint-file-content
@@ -156,7 +156,7 @@ func (e evidenceM) fields() obj {
 	return o
 }
 
-// fields は、指紋に入る項目だけを返す。flags と guesses は render で別に足す。
+// fields は、フィンガープリントに入る項目だけを返す。flags と guesses は render で別に足す。
 func (c claimM) fields() obj {
 	o := obj{{"id", c.ID}, {"subjects", c.Subjects}, {"statement", c.Statement}, {"layers", c.Layers}}
 	if c.Rationale != nil {
@@ -244,7 +244,7 @@ func canonical(v any) string {
 			}
 			b.WriteByte('}')
 		default:
-			// 指紋が合わなくなり、テストの失敗の JSON に型が出る
+			// フィンガープリントが合わなくなり、テストの失敗の JSON に型が出る
 			fmt.Fprintf(&b, "<テストの写しに知らない型 %T>", v)
 		}
 	}
@@ -259,7 +259,7 @@ func expectedFingerprint(o obj) string {
 
 // ---- TOML の書き方 ----
 
-// style は、指紋に関わらない書き方の違い。plainStyle はいつも同じ書き方をする。
+// style は、フィンガープリントに関わらない書き方の違い。plainStyle はいつも同じ書き方をする。
 type style interface {
 	perm(n int) []int
 	eq() string
@@ -378,7 +378,7 @@ func renderTable(b *strings.Builder, st style, header string, o obj) {
 			continue
 		}
 		if st.comment() {
-			b.WriteString("# 指紋に入らないコメント\n")
+			b.WriteString("# フィンガープリントに入らないコメント\n")
 		}
 		fmt.Fprintf(b, "%s%s%s\n", f.key, st.eq(), renderValue(st, f.val, false))
 	}
@@ -412,7 +412,7 @@ func render(st style, l promiseList) string {
 	return b.String()
 }
 
-// load は、TOML を約束リストとして読み、ID ごとの指紋を返す。
+// load は、TOML を約束リストとして読み、ID ごとのフィンガープリントを返す。
 func load(t interface {
 	Helper()
 	Fatalf(string, ...any)
@@ -433,7 +433,7 @@ func load(t interface {
 	add := func(id string, raw map[string]any) {
 		fp, err := agreements.ItemFingerprint(raw)
 		if err != nil {
-			t.Fatalf("%s の指紋を作れない: %v", id, err)
+			t.Fatalf("%s のフィンガープリントを作れない: %v", id, err)
 		}
 		fps[id] = fp
 	}
@@ -522,7 +522,7 @@ func listGen(t *rapid.T) promiseList {
 }
 
 // @vanda:evidence fingerprint-ignores-formatting
-func Test約束リストの項目の順と空白と引用符とコメントの違いでは指紋が変わらず決まった形のJSONの指紋になる(t *testing.T) {
+func Test約束リストの項目の順と空白と引用符とコメントの違いではフィンガープリントが変わらず決まった形のJSONのフィンガープリントになる(t *testing.T) {
 	root := t.TempDir()
 	rapid.Check(t, func(rt *rapid.T) {
 		l := listGen(rt)
@@ -531,10 +531,10 @@ func Test約束リストの項目の順と空白と引用符とコメントの�
 		other := load(rt, root, render(randomStyle{rt}, l))
 		for id, w := range want {
 			if plain[id] != w {
-				rt.Fatalf("%s: 決まった書き方の指紋 %s が、決まった形の JSON の指紋 %s と違う\nJSON: %s", id, plain[id], w, jsonOf(l, id))
+				rt.Fatalf("%s: 決まった書き方のフィンガープリント %s が、決まった形の JSON のフィンガープリント %s と違う\nJSON: %s", id, plain[id], w, jsonOf(l, id))
 			}
 			if other[id] != w {
-				rt.Fatalf("%s: 書き方を変えると指紋が %s になった（%s のはず）", id, other[id], w)
+				rt.Fatalf("%s: 書き方を変えるとフィンガープリントが %s になった（%s のはず）", id, other[id], w)
 			}
 		}
 	})
@@ -580,7 +580,7 @@ func baseList() promiseList {
 }
 
 // @vanda:evidence fingerprint-excludes-flags
-func Test指紋に入る項目のどれを変えても指紋が変わりflagsとguessesでは変わらない(t *testing.T) {
+func Testフィンガープリントに入る項目のどれを変えてもフィンガープリントが変わりflagsとguessesでは変わらない(t *testing.T) {
 	type change struct {
 		name    string
 		id      string
@@ -629,14 +629,14 @@ func Test指紋に入る項目のどれを変えても指紋が変わりflagsと
 			c.mutate(&l)
 			after := load(t, root, render(plainStyle{}, l))
 			if c.changes && after[c.id] == before[c.id] {
-				t.Fatalf("%s を変えても指紋が変わらない", c.name)
+				t.Fatalf("%s を変えてもフィンガープリントが変わらない", c.name)
 			}
 			if !c.changes && after[c.id] != before[c.id] {
-				t.Fatalf("%s を変えると指紋が変わった", c.name)
+				t.Fatalf("%s を変えるとフィンガープリントが変わった", c.name)
 			}
 			for id, fp := range before {
 				if id != c.id && after[id] != fp {
-					t.Fatalf("変えていない %s の指紋が変わった", id)
+					t.Fatalf("変えていない %s のフィンガープリントが変わった", id)
 				}
 			}
 		})
@@ -644,19 +644,19 @@ func Test指紋に入る項目のどれを変えても指紋が変わりflagsと
 }
 
 // @vanda:evidence changed-id-is-new
-func Test約束リストのIDを変えると指紋が変わる(t *testing.T) {
+func Test約束リストのIDを変えるとフィンガープリントが変わる(t *testing.T) {
 	root := t.TempDir()
 	before := load(t, root, render(plainStyle{}, baseList()))
 	l := baseList()
 	l.claims[0].ID = "task-ids-unique"
 	after := load(t, root, render(plainStyle{}, l))
 	if after["task-ids-unique"] == before["task-id-unique"] {
-		t.Fatal("ID を変えても指紋が変わらない")
+		t.Fatal("ID を変えてもフィンガープリントが変わらない")
 	}
 }
 
 // @vanda:evidence fingerprint-as-written
-func Test_formalを省いたものとformalをtrueと書いたものは別の指紋になる(t *testing.T) {
+func Test_formalを省いたものとformalをtrueと書いたものは別のフィンガープリントになる(t *testing.T) {
 	root := t.TempDir()
 	a := baseList()
 	a.features[0].Core = boolp(true)
@@ -665,14 +665,14 @@ func Test_formalを省いたものとformalをtrueと書いたものは別の指
 	fa := load(t, root, render(plainStyle{}, a))["task-add"]
 	fb := load(t, root, render(plainStyle{}, b))["task-add"]
 	if fa == fb {
-		t.Fatal("formal を省いたものと formal = true が同じ指紋になった")
+		t.Fatal("formal を省いたものと formal = true が同じフィンガープリントになった")
 	}
 }
 
 // 期待値は sha256sum で作った値。どれも sha256: に続けて 16 進の小文字 64 文字
 //
 // @vanda:evidence fingerprint-form
-func Test指紋は元のバイト列のSHA256をsha256と16進の小文字64文字で書いたもの(t *testing.T) {
+func Testフィンガープリントは元のバイト列のSHA256をsha256と16進の小文字64文字で書いたもの(t *testing.T) {
 	files := map[string]string{
 		"":           "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 		"abc":        "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
@@ -682,23 +682,23 @@ func Test指紋は元のバイト列のSHA256をsha256と16進の小文字64文�
 	}
 	for src, want := range files {
 		if got := agreements.FileFingerprint([]byte(src)); got != want {
-			t.Errorf("ファイル %q の指紋: %s（思ったもの %s）", src, got, want)
+			t.Errorf("ファイル %q のフィンガープリント: %s（思ったもの %s）", src, got, want)
 		}
 	}
-	// 項目の指紋の元のバイト列は、決まった形の JSON {"definition":"やること","id":"task","name":"タスク"}
+	// 項目のフィンガープリントの元のバイト列は、決まった形の JSON {"definition":"やること","id":"task","name":"タスク"}
 	got, err := agreements.ItemFingerprint(map[string]any{"id": "task", "name": "タスク", "definition": "やること"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if want := "sha256:8d0b08167c5bf0bbb777f239b51dc94e46f55369dce46bea2ff4dfb23325832d"; got != want {
-		t.Errorf("項目の指紋: %s（思ったもの %s）", got, want)
+		t.Errorf("項目のフィンガープリント: %s（思ったもの %s）", got, want)
 	}
 }
 
-// 項目の指紋の期待値は、手で書いた決まった形の JSON のバイト列の指紋（ファイルの指紋と同じ作り方）にする
+// 項目のフィンガープリントの期待値は、手で書いた決まった形の JSON のバイト列のフィンガープリント（ファイルのフィンガープリントと同じ作り方）にする
 //
 // @vanda:evidence fingerprint-item-json
-func Test約束と用語と機能の指紋はキーをバイトの順に並べ配列を書いた順にし空白と最後の改行のないJSONから作る(t *testing.T) {
+func Test約束と用語と機能のフィンガープリントはキーをバイトの順に並べ配列を書いた順にし空白と最後の改行のないJSONから作る(t *testing.T) {
 	src := `[[term]]
 part_of = "whole"
 name = "タスク"
@@ -742,12 +742,12 @@ type = "guardrail"
 	got := load(t, t.TempDir(), src)
 	for id, j := range want {
 		if fp := agreements.FileFingerprint([]byte(j)); got[id] != fp {
-			t.Errorf("%s の指紋 %s が、次の JSON の指紋 %s でない\n%s", id, got[id], fp, j)
+			t.Errorf("%s のフィンガープリント %s が、次の JSON のフィンガープリント %s でない\n%s", id, got[id], fp, j)
 		}
 		// 空白や最後の改行を入れたものとは違う
 		for _, other := range []string{j + "\n", strings.Replace(j, ",", ", ", 1), strings.Replace(j, ":", ": ", 1)} {
 			if got[id] == agreements.FileFingerprint([]byte(other)) {
-				t.Errorf("%s の指紋が、空白か最後の改行を入れた JSON の指紋と同じ\n%s", id, other)
+				t.Errorf("%s のフィンガープリントが、空白か最後の改行を入れた JSON のフィンガープリントと同じ\n%s", id, other)
 			}
 		}
 	}
@@ -772,7 +772,7 @@ func Test決まった形のJSONの文字列は決まった文字だけをエス�
 			t.Fatal(err)
 		}
 		if fp := agreements.FileFingerprint([]byte(j)); got != fp {
-			t.Errorf("U+%04X の指紋が、次の JSON の指紋でない\n%s", r, j)
+			t.Errorf("U+%04X のフィンガープリントが、次の JSON のフィンガープリントでない\n%s", r, j)
 		}
 	}
 	for r, want := range escaped {
@@ -788,6 +788,6 @@ func Test決まった形のJSONの文字列は決まった文字だけをエス�
 		t.Fatal(err)
 	}
 	if j := `{"core":true,"formal":false,"id":"f","m":-7,"n":42,"z":0}`; got != agreements.FileFingerprint([]byte(j)) {
-		t.Errorf("真偽と整数の指紋が、次の JSON の指紋でない\n%s", j)
+		t.Errorf("真偽と整数のフィンガープリントが、次の JSON のフィンガープリントでない\n%s", j)
 	}
 }

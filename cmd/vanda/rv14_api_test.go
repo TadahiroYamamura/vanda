@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// RV-14: ストーリーが前に合意したのに、今の中身にそのストーリーの合意がなくなったものを示す（GET /api/review）。
+// RV-14: ストーリーが前に承認したのに、今の中身にそのストーリーの承認がなくなったものを示す（GET /api/review）。
 // 一覧に出るもの（比べる元と今で変わったもの）は entries[].detachedAgreement に、変わっていないものは detached に出る。
 
 const rv14Term = "[[term]]\nid = \"t\"\nname = \"n\"\ndefinition = \"d\"\n"
@@ -22,7 +22,7 @@ func rv14Promises(a, b int) string {
 	return rv14Term + claim("item-a", a) + claim("item-b", b)
 }
 
-// rv14FP は、docs/formats.md の決まった形の JSON を手で書き、その指紋を返す。
+// rv14FP は、docs/formats.md の決まった形の JSON を手で書き、そのフィンガープリントを返す。
 func rv14FP(id string, v int) string {
 	return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":%q,"layers":["model"],"statement":"v%d","subjects":["t"]}`, id, v)))
 }
@@ -39,8 +39,8 @@ func rv14Time(d time.Duration) string {
 	return time.Date(2026, 1, 1, 10, 0, 0, 0, time.FixedZone("", 9*60*60)).Add(d).Format(time.RFC3339)
 }
 
-// agree は、合意の記録を 1 件書き足す。合意した日時は、minute 分のコミットの 30 秒前にする。
-// 外れた合意の by は、合意の記録の agreed_at とコミットの日時を比べて決める（docs/formats.md）ので、日時を本物らしく並べる。
+// agree は、承認の記録を 1 件書き足す。承認した日時は、minute 分のコミットの 30 秒前にする。
+// 失効した承認の by は、承認の記録の agreed_at とコミットの日時を比べて決める（docs/formats.md）ので、日時を本物らしく並べる。
 func (r *rv14Repo) agree(id string, v int, story string, minute int) {
 	rec := agreementTOML("claim", id, rv14FP(id, v), "", story, "テスト担当", "tester@example.com")
 	rec = strings.Replace(rec, "agreed_at = 2026-10-31T12:00:00+09:00", "agreed_at = "+rv14Time(time.Duration(minute)*time.Minute-30*time.Second), 1)
@@ -66,12 +66,12 @@ func (r *rv14Repo) commit(subject, story string, minute int) {
 
 // newRV14Repo は、次の履歴を作る（分は、コミットの日時）。
 //
-//	main:     0 分 #9 はじめ（item-a・item-b は v0。#9 が合意）
-//	          1 分 #24 が item-b の v0 に合意
+//	main:     0 分 #9 はじめ（item-a・item-b は v0。#9 が承認）
+//	          1 分 #24 が item-b の v0 を承認
 //	          2 分 #30 が item-b を v1 に変える
-//	          3 分 #30 が item-b の v1 に合意       ← story-24 はここから分かれる
+//	          3 分 #30 が item-b の v1 を承認       ← story-24 はここから分かれる
 //	story-24: 4 分 #24 が item-a を v1 に変える
-//	          5 分 #24 が item-a の v1 に合意
+//	          5 分 #24 が item-a の v1 を承認
 //	          6 分 #30 が item-a を v2 に変える
 func newRV14Repo(t *testing.T, version string) *rv14Repo {
 	root := t.TempDir()
@@ -89,16 +89,16 @@ func newRV14Repo(t *testing.T, version string) *rv14Repo {
 	r.agree("item-b", 0, "#9", 0)
 	r.commit("はじめ", "#9", 0)
 	r.agree("item-b", 0, "#24", 1)
-	r.commit("item-b に合意する", "#24", 1)
+	r.commit("item-b を承認する", "#24", 1)
 	writeFile(t, root, ".vanda/promises.toml", rv14Promises(0, 1))
 	r.commit("item-b を変える", "#30", 2)
 	r.agree("item-b", 1, "#30", 3)
-	r.commit("item-b に合意する", "#30", 3)
+	r.commit("item-b を承認する", "#30", 3)
 	r.g.run("switch", "-q", "-c", "story-24")
 	writeFile(t, root, ".vanda/promises.toml", rv14Promises(1, 1))
 	r.commit("item-a を変える", "#24", 4)
 	r.agree("item-a", 1, "#24", 5)
-	r.commit("item-a に合意する", "#24", 5)
+	r.commit("item-a を承認する", "#24", 5)
 	writeFile(t, root, ".vanda/promises.toml", rv14Promises(2, 1))
 	r.commit("item-a を変える", "#30", 6)
 	return r
@@ -145,7 +145,7 @@ func checkDetached(t *testing.T, where string, got reviewResponse) {
 // @vanda:evidence review-detached-shown
 // @vanda:evidence review-detached-unchanged-shown
 // @vanda:evidence review-other-commits
-func TestRV14はストーリーの合意が外れたものをレビュー単位がブランチのときもストーリーのときも変えたストーリーと一緒に示す(t *testing.T) {
+func TestRV14はストーリーの承認が失効したものをレビュー単位がブランチのときもストーリーのときも変えたストーリーと一緒に示す(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
@@ -154,13 +154,13 @@ func TestRV14はストーリーの合意が外れたものをレビュー単位�
 	}
 	r := newRV14Repo(t, version)
 
-	// 用意した履歴が、段 1 の合意の審査から見ても、#24 の外れた合意が item-a と item-b であることを確かめておく
+	// 用意した履歴が、段 1 の承認のチェックから見ても、#24 の失効した承認が item-a と item-b であることを確かめておく
 	checks := t.TempDir()
 	writeFile(t, checks, "story.toml", "[[check]]\nname = \"agreement\"\nscope = \"story\"\n")
 	rr := &reviewRepo{t: t, Root: r.root, Env: r.env}
 	code, _, errs := rr.vanda(bin, "check", filepath.Join(checks, "story.toml"), "--base", "main", "--story", "#24")
 	if code != 1 || !strings.Contains(errs, "item-a") || !strings.Contains(errs, "item-b") {
-		t.Fatalf("段 1 の審査で、#24 の item-a と item-b が止まらない（%d）\n%s", code, errs)
+		t.Fatalf("段 1 のチェックで、#24 の item-a と item-b が止まらない（%d）\n%s", code, errs)
 	}
 
 	s := startServe(t, bin, r.root, r.env)
@@ -182,28 +182,28 @@ func TestRV14はストーリーの合意が外れたものをレビュー単位�
 		}
 	}
 
-	// #24 が今の中身に合意し直すと、外れた合意ではなくなる
+	// #24 が今の中身を承認し直すと、失効した承認ではなくなる
 	r.agree("item-a", 2, "#24", 7)
 	r.agree("item-b", 1, "#24", 7)
-	r.commit("合意し直す", "#24", 7)
+	r.commit("承認し直す", "#24", 7)
 	var again reviewResponse
 	if code, msg := s.get("/api/review?view=branch&base=main&story="+q("#24"), &again); code != 200 {
 		t.Fatalf("一覧を読めない（%d）: %s", code, msg)
 	}
 	a := findEntry(again.Entries, "item-a")
 	if a == nil || a.DetachedAgreement != nil || str(a.State) != "agreed" || len(a.Flags) != 0 {
-		t.Errorf("合意し直した item-a が、合意済で外れていないものになっていない: %+v", a)
+		t.Errorf("承認し直した item-a が、承認済で失効していないものになっていない: %+v", a)
 	}
 	if len(again.Detached) != 0 {
-		t.Errorf("合意し直したのに detached が残っている: %+v", again.Detached)
+		t.Errorf("承認し直したのに detached が残っている: %+v", again.Detached)
 	}
 
-	// ほかのストーリーの合意しかない #30 から見ると、#30 の合意は外れていない（item-b は #30 が合意した v1 のまま）
+	// ほかのストーリーの承認しかない #30 から見ると、#30 の承認は失効していない（item-b は #30 が承認した v1 のまま）
 	var other reviewResponse
 	if code, msg := s.get("/api/review?view=branch&base=main&story="+q("#30"), &other); code != 200 {
 		t.Fatalf("一覧を読めない（%d）: %s", code, msg)
 	}
 	if len(other.Detached) != 0 {
-		t.Errorf("#30 の合意は外れていないのに detached がある: %+v", other.Detached)
+		t.Errorf("#30 の承認は失効していないのに detached がある: %+v", other.Detached)
 	}
 }

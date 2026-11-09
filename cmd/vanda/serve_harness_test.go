@@ -187,7 +187,7 @@ type apiErrorBody struct {
 	} `json:"error"`
 }
 
-// do は、API を呼び、状態コードと中身を返す。out が nil でなければ、200 の中身を out に読む。
+// do は、API を呼び、ステータスコードと中身を返す。out が nil でなければ、200 の中身を out に読む。
 // 200 でなければ、誤りの形（{"error": {...}}）で読めることを確かめ、その message を返す。
 func (s *vandaServer) do(method, path string, body any, out any) (int, string) {
 	helper(s.t)
@@ -243,12 +243,12 @@ func (s *vandaServer) post(path string, body, out any) (int, string) {
 func q(v string) string { return url.QueryEscape(v) }
 
 // テストの中で起動した vanda サーバーが、テストの終わりに止まることを確かめる（stop が確かめる）。
-// あわせて、Host が 127.0.0.1:<待ち受けているポート>・localhost:<待ち受けているポート> でない要求を断ることも確かめる
+// あわせて、Host が 127.0.0.1:<待ち受けているポート>・localhost:<待ち受けているポート> でないリクエストを断ることも確かめる
 // （CM-01: 自分のマシンの中でだけ開く）。
 // @vanda:evidence serve-rejects-foreign-host
 // @vanda:evidence serve-listens-localhost
 // @vanda:evidence serve-prints-url
-func Test起動したvanda_serveは止めると止まりほかのHostの要求を断る(t *testing.T) {
+func Test起動したvanda_serveは止めると止まりほかのHostのリクエストを断る(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
@@ -294,7 +294,7 @@ func Test起動したvanda_serveは止めると止まりほかのHostの要求�
 		}
 		resp.Body.Close()
 		if resp.StatusCode != c.want {
-			t.Errorf("%s で待ち受けているとき、Host が %q の要求に %d を返した（%d を返す）", port, c.host, resp.StatusCode, c.want)
+			t.Errorf("%s で待ち受けているとき、Host が %q のリクエストに %d を返した（%d を返す）", port, c.host, resp.StatusCode, c.want)
 		}
 	}
 
@@ -304,9 +304,9 @@ func Test起動したvanda_serveは止めると止まりほかのHostの要求�
 	}
 }
 
-// GET 以外の要求で、Origin があって http://<Host> でなければ 403 で断る（ブラウザーのほかのサイトからの書き込みを防ぐ）
+// GET 以外のリクエストで、Origin があって http://<Host> でなければ 403 で断る（ブラウザーのほかのサイトからの書き込みを防ぐ）
 // @vanda:evidence serve-rejects-foreign-origin
-func Testほかのサイトから来たGETでない要求は403で断りOriginがないか同じなら断らない(t *testing.T) {
+func Testほかのサイトから来たGETでないリクエストは403で断りOriginがないか同じなら断らない(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
@@ -347,7 +347,7 @@ func Testほかのサイトから来たGETでない要求は403で断りOrigin�
 			t.Errorf("Origin %s の POST に %d を返した（403 で断る）", origin, code)
 		}
 	}
-	// 同じ Origin か、Origin のない POST は断らない（指紋が違うので 409 になる）
+	// 同じ Origin か、Origin のない POST は断らない（フィンガープリントが違うので 409 になる）
 	for _, origin := range []string{"", "http://" + s.host} {
 		if code := send(http.MethodPost, origin); code == http.StatusForbidden {
 			t.Errorf("Origin %q の POST を 403 で断った", origin)
@@ -358,7 +358,7 @@ func Testほかのサイトから来たGETでない要求は403で断りOrigin�
 		t.Errorf("ほかのサイトの Origin の GET に %d を返した（断らない）", code)
 	}
 	if r.git("rev-parse", "HEAD") != head {
-		t.Errorf("断った要求で、コミットができた")
+		t.Errorf("断ったリクエストで、コミットができた")
 	}
 }
 
@@ -408,7 +408,7 @@ func Test設定に誤りがあればvanda_serveは待ち受けを始めずに誤
 		{"決まっていない項目がある", func(r *reviewRepo) {
 			writeFile(t, r.Root, ".vanda/config.toml", fmt.Sprintf(reviewConfig, version)+"\nno_such_entry = 1\n")
 		}},
-		{"版が合わない", func(r *reviewRepo) {
+		{"バージョンが合わない", func(r *reviewRepo) {
 			writeFile(t, r.Root, ".vanda/config.toml", fmt.Sprintf(reviewConfig, newer))
 		}},
 		{"設定のファイルがない", func(r *reviewRepo) {
@@ -506,7 +506,7 @@ func Testほかのものが待ち受けているポートを渡すとvanda_serve
 	select {
 	case <-accepted:
 	case <-time.After(5 * time.Second):
-		t.Errorf("前から待ち受けていたものが、繋いだ要求を受け付けない")
+		t.Errorf("前から待ち受けていたものが、繋いだリクエストを受け付けない")
 	}
 }
 
@@ -583,7 +583,7 @@ func Testブラウザを開けなければvanda_serveは開いたURLとそれを
 }
 
 // @vanda:evidence serve-reloads-config
-func Test起動したvanda_serveはAPIの要求ごとに設定を読み直し読めなければ誤りの数と最初の1件を書いた500を返す(t *testing.T) {
+func Test起動したvanda_serveはAPIのリクエストごとに設定を読み直し読めなければ誤りの数と最初の1件を書いた500を返す(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
@@ -608,7 +608,7 @@ func Test起動したvanda_serveはAPIの要求ごとに設定を読み直し読
 		t.Fatalf("起動したときのレイヤー: %s", got)
 	}
 
-	// 起動した後に設定を書き換えると、起動し直さなくても次の要求から効く
+	// 起動した後に設定を書き換えると、起動し直さなくても次のリクエストから効く
 	writeFile(t, r.Root, ".vanda/config.toml", strings.Replace(fmt.Sprintf(reviewConfig, version), `name = "モデル"`, `name = "判定のモデル"`, 1))
 	r.g.commitTracked("レイヤーの名前を変える", reviewStory)
 	if got := strings.Join(layerNames(), "・"); got != "model 判定のモデル・db DB" {

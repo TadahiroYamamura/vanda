@@ -1,18 +1,18 @@
-# CMD-01、CM-09: 設定の version と、動いている vanda の版を比べる。
+# CMD-01、CM-09: 設定の version と、動いている vanda のバージョンを比べる。
 # @vanda:evidence config-version-mismatch
 # version が動いている vanda と同じなら通り、新しい・古い・ないときはエラーで止まる。
-# 審査（vanda check）も、版が合わなければ止まる。
+# チェック（vanda check）も、バージョンが合わなければ止まる。
 #
-# エラーは version の行（1 行目）を指し、書いた版が出る。設定の版が新しければ vanda を上げるよう、古ければ .vanda/ を
+# エラーは version の行（1 行目）を指し、書いたバージョンが出る。設定のバージョンが新しければ vanda を上げるよう、古ければ .vanda/ を
 # 書き換えるよう知らせる（約束 config-version-mismatch）。移行のコマンドはまだないので、コマンドは案内しない。
 
 exec git init -q -b main
 
-# 同じ版なら通る（この後の失敗が、版の比べ方によるものだと言えるようにするため）
+# 同じバージョンなら通る（この後の失敗が、バージョンの比べ方によるものだと言えるようにするため）
 cp cases/config-current.toml .vanda/config.toml
 expand .vanda/config.toml
 exec vanda doctor
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/all.toml
 
 # version が動いている vanda より新しい
@@ -23,7 +23,7 @@ stderr 'config\.toml:1: .*'$VANDA_VERSION_NEWER
 stderr '上げ'
 ! stderr 'コマンド'
 ! stderr '(?m)^panic: '
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
 stderr 'config\.toml'
 ! stderr '(?m)^panic: '
@@ -36,7 +36,7 @@ stderr 'config\.toml:1: .*'$VANDA_VERSION_OLDER
 stderr '\.vanda/.*書き換え'
 ! stderr 'コマンド'
 ! stderr '(?m)^panic: '
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
 stderr 'config\.toml'
 ! stderr '(?m)^panic: '
@@ -46,7 +46,7 @@ cp cases/config-no-version.toml .vanda/config.toml
 ! exec vanda doctor
 stderr 'config\.toml.*\bversion\b'
 ! stderr '(?m)^panic: '
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
 stderr 'config\.toml'
 ! stderr '(?m)^panic: '

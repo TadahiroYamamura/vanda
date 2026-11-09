@@ -14,7 +14,7 @@ import (
 
 // RV-01 の一覧の期待値を、vanda に頼らずテストの中で数える仕組み。
 // 約束リストの項目とファイルの中身を、テストの中の状態（rvState）として持ち、それを git のリポジトリに書き出す。
-// 期待する一覧は、書き出す前の状態どうしを、docs/formats.md の GET /api/review の決まり（鍵ごとに比べる。ファイルは場所で
+// 期待する一覧は、書き出す前の状態どうしを、docs/formats.md の GET /api/review の決まり（キーごとに比べる。ファイルは場所で
 // 見分けるので、名前を変えたファイルは古い場所の削除と新しい場所の追加になる）で比べて作る。リポジトリに書いた TOML やファイルを読み直して作らないのは、
 // 読み込みや差分の取り方を実装と同じ作りにすると、実装と同じ誤りに気づけないため。
 
@@ -62,12 +62,12 @@ func (it rvItem) clone() rvItem {
 	return rvItem{kind: it.kind, fields: f, file: it.file}
 }
 
-// ファイルの種類。どれが合意の対象のファイルかは、rvConfig のパターンで決まる。
+// ファイルの種類。どれが承認の対象のファイルかは、rvConfig のパターンで決まる。
 const (
 	rvScenario  = "scenario"  // e2e/**/*.txtar（txtar のアダプタ）
 	rvTLA       = "tla"       // spec/*.tla（tla のアダプタ）
 	rvGuardrail = "guardrail" // db/*.sql（[[guardrail]] の paths）
-	rvNoise     = "noise"     // notes/*.md。どのパターンにも当たらないので、一覧に出ない
+	rvNoise     = "noise"     // notes/*.md。どのパターンにもマッチしないので、一覧に出ない
 )
 
 type rvFile struct {
@@ -77,8 +77,8 @@ type rvFile struct {
 }
 
 type rvState struct {
-	items map[string]rvItem // 鍵は ID
-	files map[int]rvFile    // 鍵は、テストの中でファイルを見分ける番号。名前を変えても同じ番号のまま
+	items map[string]rvItem // キーは ID
+	files map[int]rvFile    // キーは、テストの中でファイルを見分ける番号。名前を変えても同じ番号のまま
 }
 
 func newRVState() rvState {
@@ -126,13 +126,13 @@ paths = ["db/*.sql"]
 
 func rvFileKind(class string) bool { return class != rvNoise }
 
-// rvVal は、一覧の鍵の 1 つの中身。kind は claim・term・feature・file、body は比べる中身。
+// rvVal は、一覧のキーの 1 つの中身。kind は claim・term・feature・file、body は比べる中身。
 type rvVal struct {
 	kind string
 	body string
 }
 
-// rvKeyed は、状態を一覧の鍵ごとの中身にする。約束・用語・機能の鍵は "item:<ID>"、ファイルの鍵は "file:<場所>"。
+// rvKeyed は、状態を一覧のキーごとの中身にする。約束・用語・機能のキーは "item:<ID>"、ファイルのキーは "file:<場所>"。
 // 約束・用語・機能の中身は、書き方によらない形（項目の名前の順に並べたもの）にする。
 func rvKeyed(s rvState) map[string]rvVal {
 	m := map[string]rvVal{}
@@ -156,8 +156,8 @@ func rvKeyed(s rvState) map[string]rvVal {
 	return m
 }
 
-// rvDiff は、鍵ごとの比べる元（before）と今（after）から一覧を作る。keys に含む鍵だけを見る。
-// others は鍵ごとのほかのコミット（rvEntry.Others の元。コミットを見分ける文字列 → 書く文字列）。
+// rvDiff は、キーごとの比べる元（before）と今（after）から一覧を作る。keys に含むキーだけを見る。
+// others はキーごとのほかのコミット（rvEntry.Others の元。コミットを見分ける文字列 → 書く文字列）。
 func rvDiff(keys map[string]bool, before, after map[string]rvVal, others map[string]map[string]string) map[rvEntry]bool {
 	want := map[rvEntry]bool{}
 	for k := range keys {
@@ -186,7 +186,7 @@ func rvEntryOf(key, kind, change string, others map[string]string) rvEntry {
 	return rvEntry{Kind: kind, Key: k, Change: change, Others: strings.Join(labels, ",")}
 }
 
-// rvBranchView は、レビュー単位がブランチのときの期待値。分岐点の中身（base）と、作業ツリーの今の中身（cur）を比べる。
+// rvBranchView は、レビュー単位がブランチのときの期待値。マージベースの中身（base）と、作業ツリーの今の中身（cur）を比べる。
 func rvBranchView(base, cur rvState) map[rvEntry]bool {
 	b, a := rvKeyed(base), rvKeyed(cur)
 	return rvDiff(unionKeys(b, a), b, a, nil)
@@ -199,9 +199,9 @@ type rvCommit struct {
 	hash   string
 }
 
-// rvStoryView は、レビュー単位がストーリーのときの期待値。chain は、根のコミットから今のコミットまで（一本道の履歴）。
-// 鍵ごとに、そのストーリーの ID を持つコミットのうち、その鍵の中身を変えた最初のコミットの親の中身を比べる元にし、
-// 作業ツリーの今の中身（cur）と比べる。最初に変えたコミットより後に、そのストーリーの ID のないコミットが同じ鍵を変えていたら、
+// rvStoryView は、レビュー単位がストーリーのときの期待値。chain は、ルートのコミットから今のコミットまで（一本道の履歴）。
+// キーごとに、そのストーリーの ID を持つコミットのうち、そのキーの中身を変えた最初のコミットの親の中身を比べる元にし、
+// 作業ツリーの今の中身（cur）と比べる。最初に変えたコミットより後に、そのストーリーの ID のないコミットが同じキーを変えていたら、
 // Others に書く。
 func rvStoryView(chain []rvCommit, cur rvState, story string) map[rvEntry]bool {
 	before := map[string]rvVal{}

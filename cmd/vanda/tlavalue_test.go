@@ -21,7 +21,7 @@ type (
 	tlaTuple []any
 )
 
-// tlaRecord と tlaFunc は、表と関数。関数の鍵は、モデルの値か文字列か整数を、文字列にしたもの。
+// tlaRecord と tlaFunc は、表と関数。関数のキーは、モデルの値か文字列か整数を、文字列にしたもの。
 type (
 	tlaRecord map[string]any
 	tlaFunc   map[string]any
@@ -108,7 +108,7 @@ func keyString(v any) (string, error) {
 	case int:
 		return strconv.Itoa(k), nil
 	}
-	return "", fmt.Errorf("関数の鍵にできない値 %v", v)
+	return "", fmt.Errorf("関数のキーにできない値 %v", v)
 }
 
 func (r *tlaReader) value() (any, error) {

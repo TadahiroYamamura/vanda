@@ -1,19 +1,19 @@
-# アノテーションの読み取り: 1 つのファイルが 2 つ以上の [[annotation]] のパターンに当たると止まる。
+# アノテーションの読み取り: 1 つのファイルが 2 つ以上の [[annotation]] のパターンにマッチすると止まる。
 # @vanda:evidence annotation-one-rule-per-file
 
 exec git init -q -b main
 
-# 当たるのが 1 つなら通る
+# マッチするのが 1 つなら通る
 cp cases/config-one.toml .vanda/config.toml
 expand .vanda/config.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/links.toml
 
-# go と、カスタムアダプタの両方に当たる
+# go と、カスタムアダプタの両方にマッチする
 chmod 755 .vanda/adapters/names
 cp cases/config-two.toml .vanda/config.toml
 expand .vanda/config.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task_test\.go'
 ! stderr '(?m)^panic: '

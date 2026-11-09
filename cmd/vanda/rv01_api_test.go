@@ -120,7 +120,7 @@ func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]b
 		if (e.Change == "deleted") != (e.Fingerprint == nil) {
 			fmt.Fprintf(&b, "  fingerprint は削除のときだけ null: %s\n", r)
 		}
-		// 削除したものにも、消したことへの合意があるかで状態を付ける
+		// 削除したものにも、消したことへの承認があるかで状態を付ける
 		if s := str(e.State); s != "proposed" && s != "agreed" {
 			fmt.Fprintf(&b, "  state が proposed・agreed のどちらでもない（%q）: %s\n", s, r)
 		}
@@ -161,7 +161,7 @@ func TestRV01の一覧はAPIで手で作った例と合う(t *testing.T) {
 					t.Fatalf("ベースブランチ %s の一覧を読めない（%d）: %s", base, code, msg)
 				}
 				if got.View != "branch" || str(got.Base) != base || str(got.MergeBase) != r.mergeBase(base).hash {
-					t.Errorf("view %q、base %q、mergeBase %q（分岐点は %s）", got.View, str(got.Base), str(got.MergeBase), r.mergeBase(base).hash)
+					t.Errorf("view %q、base %q、mergeBase %q（マージベースは %s）", got.View, str(got.Base), str(got.MergeBase), r.mergeBase(base).hash)
 				}
 				checkReview(t, "ベースブランチ "+base+" の、レビュー単位がブランチのとき", got, rvSet(want))
 			}

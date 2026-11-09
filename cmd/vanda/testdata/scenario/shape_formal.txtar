@@ -9,108 +9,108 @@ expand .vanda/config.toml
 
 # core を省く、formal を省く、formal_waiver なし なら通る
 cp cases/core-omit-formal-omit-waiver-no.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # core を省く、formal を省く、formal_waiver あり なら止まる
 cp cases/core-omit-formal-omit-waiver-yes.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml.*(formal_waiver|task-add)'
 ! stderr '(?m)^panic: '
 
 # core を省く、formal = false、formal_waiver なし なら通る
 cp cases/core-omit-formal-false-waiver-no.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # core を省く、formal = false、formal_waiver あり なら止まる
 cp cases/core-omit-formal-false-waiver-yes.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml.*(formal_waiver|task-add)'
 ! stderr '(?m)^panic: '
 
 # core を省く、formal = true、formal_waiver なし なら通る
 cp cases/core-omit-formal-true-waiver-no.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # core を省く、formal = true、formal_waiver あり なら止まる
 cp cases/core-omit-formal-true-waiver-yes.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml.*(formal_waiver|task-add)'
 ! stderr '(?m)^panic: '
 
 # core = false、formal を省く、formal_waiver なし なら通る
 cp cases/core-false-formal-omit-waiver-no.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # core = false、formal を省く、formal_waiver あり なら止まる
 cp cases/core-false-formal-omit-waiver-yes.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml.*(formal_waiver|task-add)'
 ! stderr '(?m)^panic: '
 
 # core = false、formal = false、formal_waiver なし なら通る
 cp cases/core-false-formal-false-waiver-no.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # core = false、formal = false、formal_waiver あり なら止まる
 cp cases/core-false-formal-false-waiver-yes.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml.*(formal_waiver|task-add)'
 ! stderr '(?m)^panic: '
 
 # core = false、formal = true、formal_waiver なし なら通る
 cp cases/core-false-formal-true-waiver-no.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # core = false、formal = true、formal_waiver あり なら止まる
 cp cases/core-false-formal-true-waiver-yes.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml.*(formal_waiver|task-add)'
 ! stderr '(?m)^panic: '
 
 # core = true、formal を省く、formal_waiver なし なら通る
 cp cases/core-true-formal-omit-waiver-no.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # core = true、formal を省く、formal_waiver あり なら止まる
 cp cases/core-true-formal-omit-waiver-yes.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml.*(formal_waiver|task-add)'
 ! stderr '(?m)^panic: '
 
 # core = true、formal = false、formal_waiver なし なら止まる
 cp cases/core-true-formal-false-waiver-no.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml.*(formal_waiver|task-add)'
 ! stderr '(?m)^panic: '
 
 # core = true、formal = false、formal_waiver あり なら通る
 cp cases/core-true-formal-false-waiver-yes.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # core = true、formal = true、formal_waiver なし なら通る
 cp cases/core-true-formal-true-waiver-no.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # core = true、formal = true、formal_waiver あり なら止まる
 cp cases/core-true-formal-true-waiver-yes.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml.*(formal_waiver|task-add)'
 ! stderr '(?m)^panic: '

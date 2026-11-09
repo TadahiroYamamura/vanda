@@ -20,7 +20,7 @@ import (
 // CM-08 のテストで使う、ストーリーストア（GitHub Issues）の偽の HTTP サーバーと、偽の gh。
 // 本物の GitHub には繋がない。サーバーは httptest で 127.0.0.1 の空いているポートに立て、テストの終わりに止める。
 // 偽のサーバーは、GitHub の REST API のうち、段 2 で読む Issue の取得（GET /repos/{owner}/{repo}/issues/{number}）だけを真似る。
-// 段 2 は読むだけなので、GET のほかの要求は 405 を返して記録し、テストで「書き込んでいない」ことを確かめられるようにする。
+// 段 2 は読むだけなので、GET のほかのリクエストは 405 を返して記録し、テストで「書き込んでいない」ことを確かめられるようにする。
 
 type fakeIssue struct {
 	Title string
@@ -39,9 +39,9 @@ type fakeIssues struct {
 	Token string
 
 	mu       sync.Mutex
-	issues   map[string]fakeIssue // 鍵は "owner/repo#24"
+	issues   map[string]fakeIssue // キーは "owner/repo#24"
 	requests []fakeRequest
-	cutOff   bool // 要求を受けたら、応えずに接続を切る
+	cutOff   bool // リクエストを受けたら、応えずに接続を切る
 }
 
 var fakeIssuePath = regexp.MustCompile(`^/repos/([^/]+)/([^/]+)/issues/([0-9]+)$`)
@@ -61,7 +61,7 @@ func (f *fakeIssues) setIssue(repo string, number int, title, body string) {
 	f.issues[fmt.Sprintf("%s#%d", repo, number)] = fakeIssue{Title: title, Body: body}
 }
 
-// cutNetwork は、これからの要求に、応えずに接続を切るようにする（ネットワークの誤り）。
+// cutNetwork は、これからのリクエストに、応えずに接続を切るようにする（ネットワークの誤り）。
 func (f *fakeIssues) cutNetwork() {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -137,9 +137,9 @@ const fakeIssueBodyWithAttachments = "タスクの ID を重ならないよう�
 	"仕様の資料: [spec.pdf](https://github.com/user-attachments/files/17000001/spec.pdf)\n"
 
 // fakeGH は、PATH の先頭に置く偽の gh を作り、そのディレクトリを返す。
-// tokens は、ホスト → そのホストにログインした認証キー。本物の gh と同じく、`gh auth token --hostname <ホスト>` に
-// そのホストの認証キーを出し（--hostname がなければ github.com のもの）、ログインしていないホストなら終了コード 1 で終わる。
-// 認証キーが空のホストには、何も出さずに終了コード 0 で終わる。
+// tokens は、ホスト → そのホストにログインしたトークン。本物の gh と同じく、`gh auth token --hostname <ホスト>` に
+// そのホストのトークンを出し（--hostname がなければ github.com のもの）、ログインしていないホストなら終了コード 1 で終わる。
+// トークンが空のホストには、何も出さずに終了コード 0 で終わる。
 // ほかの引数で呼ばれたら、終了コード 2 で終わる。呼ばれた引数は、ディレクトリの calls.log に 1 行ずつ書く。
 func fakeGH(t *testing.T, tokens map[string]string) string {
 	t.Helper()
@@ -170,8 +170,8 @@ exit 2
 	return dir
 }
 
-// ghEnv は、base から GitHub の認証キーとプロキシと PATH の環境変数を除き、偽の gh のディレクトリ ghDir を PATH の先頭に置いて、kv を足した環境を返す。
-// テストを動かす人の環境変数の認証キーや本物の gh を、vanda に読ませないため
+// ghEnv は、base から GitHub のトークンとプロキシと PATH の環境変数を除き、偽の gh のディレクトリ ghDir を PATH の先頭に置いて、kv を足した環境を返す。
+// テストを動かす人の環境変数のトークンや本物の gh を、vanda に読ませないため
 func ghEnv(base []string, ghDir string, kv ...string) []string {
 	drop := []string{"GH_TOKEN=", "GITHUB_TOKEN=", "GH_ENTERPRISE_TOKEN=", "GITHUB_ENTERPRISE_TOKEN=", "GH_HOST=", "PATH=",
 		"HTTP_PROXY=", "http_proxy=", "HTTPS_PROXY=", "https_proxy=", "NO_PROXY=", "no_proxy="}
@@ -228,7 +228,7 @@ func fakeGet(t *testing.T, url, auth string) (int, map[string]any, error) {
 	return resp.StatusCode, v, nil
 }
 
-func Test偽のストーリーストアは正しい鍵でだけIssueを返し誤りをGitHubと同じ形で返す(t *testing.T) {
+func Test偽のストーリーストアは正しいトークンでだけIssueを返し誤りをGitHubと同じ形で返す(t *testing.T) {
 	t.Parallel()
 	f := newFakeIssues(t)
 	f.setIssue("owner/app", 24, "タスクの ID", fakeIssueBodyWithAttachments)
@@ -242,7 +242,7 @@ func Test偽のストーリーストアは正しい鍵でだけIssueを返し誤
 	}
 	for _, auth := range []string{"", "Bearer wrong", "Bearer " + f.Token + "x"} {
 		if code, v, err := fakeGet(t, url, auth); err != nil || code != 401 || v["message"] != "Bad credentials" {
-			t.Errorf("鍵 %q: code %d, %v, %v", auth, code, v, err)
+			t.Errorf("トークン %q: code %d, %v, %v", auth, code, v, err)
 		}
 	}
 	for _, u := range []string{f.URL + "/repos/owner/app/issues/25", f.URL + "/repos/owner/other/issues/24"} {
@@ -269,7 +269,7 @@ func Test偽のストーリーストアは正しい鍵でだけIssueを返し誤
 	}
 }
 
-func Test偽のghはauth_tokenにhostnameのホストの鍵を出しログインしていないホストなら失敗する(t *testing.T) {
+func Test偽のghはauth_tokenにhostnameのホストのトークンを出しログインしていないホストなら失敗する(t *testing.T) {
 	t.Parallel()
 	dir := fakeGH(t, map[string]string{"github.com": "gho_abc", "ghe.example.com": "ghe_xyz", "empty.example.com": ""})
 	gh := filepath.Join(dir, "gh")

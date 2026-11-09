@@ -1,19 +1,19 @@
-# CMD-10 読まれていないファイル: .vanda/ にあるのに、設定のどのパターンにも当たらないファイルがあると止まる。
+# CMD-10 読まれていないファイル: .vanda/ にあるのに、設定のどのパターンにもマッチしないファイルがあると止まる。
 # @vanda:evidence unread-files-excludes-adapters
 # @vanda:evidence check-unread-files
 # .vanda/config.toml と .vanda/checks/*.toml と、アダプタの置き場所 .vanda/adapters/ の下は除く。
-# パターンの ** は下のディレクトリにも当たる。
+# パターンの ** は下のディレクトリにもマッチする。
 
 exec git init -q -b main
 expand .vanda/config.toml
 
-# 設定・審査の設定・既定の約束リストと合意の記録だけなら通る
-commit '(test) 審査の前にコミットする'
+# 設定・チェックの設定・既定の約束リストと承認の記録だけなら通る
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/unread.toml
 
-# どのパターンにも当たらない TOML のファイル
+# どのパターンにもマッチしない TOML のファイル
 cp cases/stray.toml .vanda/stray.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/unread.toml
 stderr '\.vanda/stray\.toml'
 ! stderr '(?m)^panic: '
@@ -21,7 +21,7 @@ rm .vanda/stray.toml
 
 # TOML でないファイルも止める
 cp cases/notes.md .vanda/notes.md
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/unread.toml
 stderr '\.vanda/notes\.md'
 ! stderr '(?m)^panic: '
@@ -30,7 +30,7 @@ rm .vanda/notes.md
 # 下のディレクトリのファイル
 mkdir .vanda/sub
 cp cases/stray.toml .vanda/sub/stray.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/unread.toml
 stderr '\.vanda/sub/stray\.toml'
 ! stderr '(?m)^panic: '
@@ -41,50 +41,50 @@ mkdir .vanda/adapters/nested/deep
 cp cases/adapter.sh .vanda/adapters/story-adapter
 cp cases/stray.toml .vanda/adapters/settings.toml
 cp cases/adapter.sh .vanda/adapters/nested/deep/md-annotation
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/unread.toml
 ! stderr 'adapters'
 
 # 名前が似ているだけの場所は除かない
 cp cases/stray.toml .vanda/adapters.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/unread.toml
 stderr '\.vanda/adapters\.toml'
 ! stderr '(?m)^panic: '
 rm .vanda/adapters.toml
 mkdir .vanda/my-adapters
 cp cases/adapter.sh .vanda/my-adapters/x
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/unread.toml
 stderr '\.vanda/my-adapters/x'
 rm .vanda/my-adapters
 mkdir .vanda/adapters2
 cp cases/adapter.sh .vanda/adapters2/x
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/unread.toml
 stderr '\.vanda/adapters2/x'
 rm .vanda/adapters2
 # .vanda の直下でない adapters は、置き場所ではない
 mkdir .vanda/sub/adapters
 cp cases/adapter.sh .vanda/sub/adapters/x
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/unread.toml
 stderr '\.vanda/sub/adapters/x'
 rm .vanda/sub
 rm .vanda/adapters
 
-# パターンを ** で書くと、下のディレクトリのファイルにも当たる
+# パターンを ** で書くと、下のディレクトリのファイルにもマッチする
 cp cases/config-deep.toml .vanda/config.toml
 expand .vanda/config.toml
 rm .vanda/promises.toml
 mkdir .vanda/promises/a/b
 cp cases/promises.toml .vanda/promises/a/b/deep.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/unread.toml
 
-# 既定のファイル名でも、パターンを書いた後は当たらないので止まる
+# 既定のファイル名でも、パターンを書いた後はマッチしないので止まる
 cp cases/promises.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/unread.toml
 stderr '\.vanda/promises\.toml'
 ! stderr '(?m)^panic: '
@@ -119,7 +119,7 @@ definition = "利用者がやること"
 [[term]]
 id = "stray"
 name = "どこからも読まれない"
-definition = "どのパターンにも当たらない"
+definition = "どのパターンにもマッチしない"
 -- cases/notes.md --
 メモ
 -- cases/adapter.sh --

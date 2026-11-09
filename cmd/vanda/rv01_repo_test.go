@@ -276,7 +276,7 @@ func (r *rvRepo) ancestors(c int) []int {
 	return xs
 }
 
-// mergeBase は、ベースブランチ base と今のブランチの分岐点を、テストの中の履歴から決め、git の答えと合うかも確かめる。
+// mergeBase は、ベースブランチ base と今のブランチのマージベースを、テストの中の履歴から決め、git の答えと合うかも確かめる。
 func (r *rvRepo) mergeBase(base string) rvCommit {
 	inBase := map[int]bool{}
 	for _, c := range r.ancestors(r.heads[base]) {
@@ -285,19 +285,19 @@ func (r *rvRepo) mergeBase(base string) rvCommit {
 	for _, c := range r.ancestors(r.heads[r.branch]) {
 		if inBase[c] {
 			if got := r.g.run("merge-base", base, "HEAD"); got != r.commits[c].hash {
-				r.t.Fatalf("分岐点が合わない: git は %s、テストの中の履歴は %s", got, r.commits[c].hash)
+				r.t.Fatalf("マージベースが合わない: git は %s、テストの中の履歴は %s", got, r.commits[c].hash)
 			}
 			return r.commits[c]
 		}
 	}
-	r.t.Fatalf("%s と %s の分岐点がない", base, r.branch)
+	r.t.Fatalf("%s と %s のマージベースがない", base, r.branch)
 	return rvCommit{}
 }
 
 // head は、今のブランチの HEAD のコミット。
 func (r *rvRepo) head() rvCommit { return r.commits[r.heads[r.branch]] }
 
-// branchView は、ベースブランチ base での、レビュー単位がブランチのときの期待値。分岐点の中身と HEAD のコミットの中身を比べ、
+// branchView は、ベースブランチ base での、レビュー単位がブランチのときの期待値。マージベースの中身と HEAD のコミットの中身を比べ、
 // 作業ツリーの書きかけの変更（コミットしていないもの）は含めない（約束 review-view-branch）。
 func (r *rvRepo) branchView(base string) map[rvEntry]bool {
 	mb := r.mergeBase(base)

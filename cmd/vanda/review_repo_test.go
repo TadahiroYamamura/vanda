@@ -11,12 +11,12 @@ import (
 )
 
 // 段 2 の API と E2E のテストで使う、一時的な git のリポジトリ。
-// main ブランチに、合意済の約束・用語・機能と、シナリオ・TLA+・ガードレールの定義・Go のテストを置き、
+// main ブランチに、承認済の約束・用語・機能と、シナリオ・TLA+・ガードレールの定義・Go のテストを置き、
 // story-24 ブランチで、ストーリー #24 が約束を変え・足し、シナリオを変える。HEAD は story-24 にある。
-// 指紋は、docs/formats.md の決まった形の JSON を手で書いて作る（約束リストを読んで作らない）。
+// フィンガープリントは、docs/formats.md の決まった形の JSON を手で書いて作る（約束リストを読んで作らない）。
 
 const (
-	reviewUserName  = "合意する人"
+	reviewUserName  = "承認する人"
 	reviewUserEmail = "po@example.com"
 	reviewStory     = "#24"
 	reviewBranch    = "story-24"
@@ -55,7 +55,7 @@ adapter = "file"
 paths = ["db/schema.sql"]
 `
 
-// 約束リストのコメント・空行・項目の順は、合意でフラグを外したときに変わらないことを確かめるのに使う。
+// 約束リストのコメント・空行・項目の順は、承認でフラグを外したときに変わらないことを確かめるのに使う。
 const reviewPromisesBase = `# 約束リスト（テストの例）
 
 [[term]]
@@ -205,7 +205,7 @@ import "testing"
 func TestUnique(t *testing.T) {}
 `
 
-// 手で書いた、指紋の元の JSON。
+// 手で書いた、フィンガープリントの元の JSON。
 var reviewItemJSON = map[string]string{
 	"term task":        `{"definition":"やること","id":"task","name":"タスク"}`,
 	"term task-id":     `{"definition":"タスクを見分ける名前","id":"task-id","name":"タスクの ID","part_of":"task"}`,
@@ -217,7 +217,7 @@ var reviewItemJSON = map[string]string{
 		`"id":"task-id-unique","layers":["model","db"],"statement":"タスクの ID は重ならない","subjects":["task-id"]}`,
 }
 
-// ストーリー #24 の後の中身の、指紋の元の JSON。flags と guesses は含めない。
+// ストーリー #24 の後の中身の、フィンガープリントの元の JSON。flags と guesses は含めない。
 var reviewStoryItemJSON = map[string]string{
 	"claim task-id-unique": `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"},` +
 		`{"layers":["model"],"stage":"plan","type":"model-check"},` +
@@ -238,12 +238,12 @@ var reviewStoryEntries = []rvEntry{
 type reviewRepo struct {
 	t    *testing.T
 	Root string
-	// Env は、vanda を動かすときの環境。合意する人は、リポジトリの git の設定（user.name・user.email）からだけ決まる。
+	// Env は、vanda を動かすときの環境。承認する人は、リポジトリの git の設定（user.name・user.email）からだけ決まる。
 	Env []string
 	g   *rvGit
 }
 
-// reviewBaseEnv は、動かしているマシンの git の設定と、作者を決める環境の変数を除いた環境を返す。
+// reviewBaseEnv は、動かしているマシンの git の設定と、作者を決める環境変数を除いた環境を返す。
 // EMAIL を除くのは、user.email がないときに git がこれを使うため。
 func reviewBaseEnv(root string) []string {
 	var env []string
@@ -260,7 +260,7 @@ func newReviewRepo(t *testing.T, version string) *reviewRepo {
 	t.Helper()
 	root := t.TempDir()
 	r := &reviewRepo{t: t, Root: root, Env: reviewBaseEnv(root)}
-	// 用意のためのコミットは、合意する人と別の作者で作る
+	// 用意のためのコミットは、承認する人と別の作者で作る
 	r.g = &rvGit{t: t, root: root, env: append(reviewBaseEnv(root),
 		"GIT_AUTHOR_NAME=テスト担当", "GIT_AUTHOR_EMAIL=tester@example.com",
 		"GIT_COMMITTER_NAME=テスト担当", "GIT_COMMITTER_EMAIL=tester@example.com")}
@@ -303,7 +303,7 @@ func (r *reviewRepo) unsetUser(key string) {
 
 func (r *reviewRepo) git(args ...string) string { return r.g.run(args...) }
 
-// vanda は、リポジトリの根で vanda を動かし、終了コードと標準出力・標準エラーを返す。
+// vanda は、リポジトリのルートで vanda を動かし、終了コードと標準出力・標準エラーを返す。
 func (r *reviewRepo) vanda(bin string, args ...string) (int, string, string) {
 	r.t.Helper()
 	cmd := exec.Command(bin, args...)
@@ -324,9 +324,9 @@ func (r *reviewRepo) vanda(bin string, args ...string) (int, string, string) {
 	}
 }
 
-// 用意したリポジトリが、段 1 の審査から見て思ったとおりの中身であることを確かめる。
-// main では審査が通り、story-24 では #24 の変えたものだけが合意の審査で止まり、それらに手で合意すれば通る。
-func Test段2のテストで使うリポジトリはmainで審査が通りストーリーの変えたものだけが止まる(t *testing.T) {
+// 用意したリポジトリが、段 1 のチェックから見て思ったとおりの中身であることを確かめる。
+// main ではチェックが通り、story-24 では #24 の変えたものだけが承認のチェックで止まり、それらに手で承認すれば通る。
+func Test段2のテストで使うリポジトリはmainでチェックが通りストーリーの変えたものだけが止まる(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
@@ -337,29 +337,29 @@ func Test段2のテストで使うリポジトリはmainで審査が通りスト
 
 	r.git("switch", "-q", "main")
 	if code, out, errs := r.vanda(bin, "check", ".vanda/checks/all.toml"); code != 0 {
-		t.Fatalf("main で審査が通らない（%d）\n%s%s", code, out, errs)
+		t.Fatalf("main でチェックが通らない（%d）\n%s%s", code, out, errs)
 	}
 	r.git("switch", "-q", reviewBranch)
 
 	code, out, errs := r.vanda(bin, "check", ".vanda/checks/merge.toml", "--base", "main")
 	if code != 1 {
-		t.Fatalf("story-24 で合意の審査が止まらない（%d）\n%s%s", code, out, errs)
+		t.Fatalf("story-24 で承認のチェックが止まらない（%d）\n%s%s", code, out, errs)
 	}
-	if !strings.Contains(out, "審査 story-origin（story）: 通った") || !strings.Contains(out, "審査 agreement（story #24）: 失敗") {
-		t.Errorf("審査の結果の行が思ったものでない\n%s", out)
+	if !strings.Contains(out, "チェック story-origin（story）: 通った") || !strings.Contains(out, "チェック agreement（story #24）: 失敗") {
+		t.Errorf("チェックの結果の行が思ったものでない\n%s", out)
 	}
 	for _, e := range reviewStoryEntries {
 		if !strings.Contains(errs, e.Key) {
-			t.Errorf("合意の審査の誤りに %s が出ていない\n%s", e.Key, errs)
+			t.Errorf("承認のチェックの誤りに %s が出ていない\n%s", e.Key, errs)
 		}
 	}
 	for _, unchanged := range []string{"spec/Task.tla", "db/schema.sql", `"task"`, "add-task\""} {
 		if strings.Contains(errs, unchanged) {
-			t.Errorf("変えていない %s が、合意の審査の誤りに出た\n%s", unchanged, errs)
+			t.Errorf("変えていない %s が、承認のチェックの誤りに出た\n%s", unchanged, errs)
 		}
 	}
 
-	// 手で合意する（フラグを外し、合意の記録を書き足す）と通る
+	// 手で承認する（フラグを外し、承認の記録を書き足す）と通る
 	writeFile(t, r.Root, ".vanda/promises.toml", strings.NewReplacer(
 		"flags = [\"ai-proposal\"]\n", "",
 		"guesses = [\"タスクは消しても ID を使い回さない\"]\n", "",
@@ -383,12 +383,12 @@ func Test段2のテストで使うリポジトリはmainで審査が通りスト
 	if err := f.Close(); err != nil {
 		t.Fatal(err)
 	}
-	// 審査は HEAD のコミットの中身だけを読むので、合意をストーリーのコミットにする
-	r.g.commitAll("(chore) 合意する", reviewStory)
+	// チェックは HEAD のコミットの中身だけを読むので、承認をストーリーのコミットにする
+	r.g.commitAll("(chore) 承認する", reviewStory)
 	if code, out, errs := r.vanda(bin, "check", ".vanda/checks/merge.toml", "--base", "main"); code != 0 {
-		t.Fatalf("手で合意しても審査が通らない（%d）\n%s%s", code, out, errs)
+		t.Fatalf("手で承認してもチェックが通らない（%d）\n%s%s", code, out, errs)
 	}
 	if code, out, errs := r.vanda(bin, "check", ".vanda/checks/all.toml"); code != 0 {
-		t.Fatalf("手で合意しても、全部の範囲の審査が通らない（%d）\n%s%s", code, out, errs)
+		t.Fatalf("手で承認しても、スコープ all のチェックが通らない（%d）\n%s%s", code, out, errs)
 	}
 }

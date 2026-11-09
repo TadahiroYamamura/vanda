@@ -1,7 +1,7 @@
-# CMD-10 合意: 範囲を 1 つのストーリーにすると、ベースブランチとの分岐点より後に変わったものだけが対象になる。
+# CMD-10 承認: スコープを story にすると、ベースブランチとのマージベースより後に変わったものだけが対象になる。
 # @vanda:evidence check-agreement-story-scope
 # @vanda:evidence deleted-item-needs-agreement
-# main には合意していない約束（task-id-unique）が残っているが、ストーリー 2 で変えていないので、ストーリー 2 の範囲の審査では止めない。
+# main には承認していない約束（task-id-unique）が残っているが、ストーリー 2 で変えていないので、スコープ story（ストーリー 2）のチェックでは止めない。
 
 exec git init -q -b main
 expand .vanda/config.toml
@@ -9,7 +9,7 @@ commit '約束を足す' '#9'
 
 exec git checkout -q -b story-2
 
-# ストーリー 2 で足した約束に合意していなければ、ストーリー 2 の範囲でも止まる
+# ストーリー 2 で足した約束を承認していなければ、スコープ story（ストーリー 2）でも止まる
 cp cases/b.toml .vanda/promises/b.toml
 commit '約束を足す' '#2'
 ! exec vanda check .vanda/checks/story.toml --base main
@@ -17,25 +17,25 @@ stderr 'b\.toml.*task-title-required'
 ! stderr 'task-id-unique'
 ! stderr '(?m)^panic: '
 
-# 合意すれば、ストーリー 2 の範囲では通る
+# 承認すれば、スコープ story（ストーリー 2）では通る
 agree .vanda/agreements/story-2.toml '#2' claim task-title-required fp/claim-b.json
-commit '約束に合意する' '#2'
+commit '約束を承認する' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 
-# 全部の範囲では、main の合意していない約束で止まる
+# スコープ all では、main の承認していない約束で止まる
 ! exec vanda check .vanda/checks/all.toml
 stderr 'a\.toml.*task-id-unique'
 ! stderr 'task-title-required'
 ! stderr '(?m)^panic: '
 
-# ストーリー 2 で、分岐点にあった約束を消すと、一度も合意していなくても、ストーリー 2 の範囲では消したことへの合意を求める
+# ストーリー 2 で、マージベースにあった約束を消すと、一度も承認していなくても、スコープ story（ストーリー 2）では消したことへの承認を求める
 cp cases/a-without-claim.toml .vanda/promises/a.toml
 commit '約束を消す' '#2'
 ! exec vanda check .vanda/checks/story.toml --base main
-stderr '約束 task-id-unique を消したことに、まだ合意していません'
+stderr '約束 task-id-unique を消したことに、まだ承認していません'
 ! stderr '(?m)^panic: '
 agree -deleted .vanda/agreements/story-2.toml '#2' claim task-id-unique
-commit '約束を消したことに合意する' '#2'
+commit '約束を消したことを承認する' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 
 -- .vanda/config.toml --

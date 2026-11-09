@@ -13,7 +13,7 @@
         default = pkgs.mkShell {
           packages = [ pkgs.go pkgs.tlaplus18 pkgs.git pkgs.gnumake pkgs.nodejs pkgs.pnpm pkgs.expect ];
           # Playwright が自分でブラウザを落とす代わりに、nix のブラウザを使う。
-          # web/package.json の @playwright/test は、この playwright-driver と同じ版にする（版が違うとブラウザが合わない）
+          # web/package.json の @playwright/test は、この playwright-driver と同じバージョンにする（バージョンが違うとブラウザが合わない）
           PLAYWRIGHT_BROWSERS_PATH = "${pkgs.playwright-driver.browsers}";
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
           PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";

@@ -204,7 +204,7 @@ func TestReadはその言語のコメントの外にあるアノテーション�
 	}
 }
 
-// 作業ツリーのファイルには書きかけを置き、読む中身（read が返すもの。審査では HEAD のコミットの中身）と食い違わせる。
+// 作業ツリーのファイルには書きかけを置き、読む中身（read が返すもの。チェックでは HEAD のコミットの中身）と食い違わせる。
 // アダプタは受け取った標準入力を in.json に書き写すだけにし、JSON の形と中身はテストの側で確かめる
 //
 // @vanda:evidence project-adapter-reads-committed-content
@@ -339,7 +339,7 @@ func lineWith(got, prefix string, frags ...string) bool {
 // ---- 約束の文から作ったテスト（docs/plans/self-hosting.md・evidence.md の見直しで足した） ----
 
 // @vanda:evidence annotation-backquoted-ignored
-func TestReadはコメントの中の逆引用符で囲んだ書き方を数えず1行に2つあるかを見るときも数えない(t *testing.T) {
+func TestReadはコメントの中のバッククォートで囲んだ書き方を数えず1行に2つあるかを見るときも数えない(t *testing.T) {
 	root, files := setup(t, map[string]string{
 		"x/a_test.go": "package x\n\n// 書き方は `@vanda:foo a b` のとおり\ntype T struct{}\n\n// @vanda:evidence c1\n// `@vanda:evidence c2` とは書かない\nfunc TestA(t *testing.T) {}\n",
 		"e2e/a.txtar": "# @vanda:evidence c1\n# 説明: `@vanda:foo a b`\nexec echo\n-- a --\n",
@@ -356,15 +356,15 @@ func TestReadはコメントの中の逆引用符で囲んだ書き方を数え�
 	}
 	as, errs := Read(root, files, rules)
 	if errs != nil {
-		t.Fatalf("逆引用符で囲んだものを数えた: %v", errs)
+		t.Fatalf("バッククォートで囲んだものを数えた: %v", errs)
 	}
 	if len(as) != 5 {
-		t.Errorf("読んだアノテーション（逆引用符の外のものだけ、5 つ）: %s", show(as))
+		t.Errorf("読んだアノテーション（バッククォートの外のものだけ、5 つ）: %s", show(as))
 	}
-	// 逆引用符を外すと、同じ所で数える（上が読み飛ばしでないことの確かめ）
+	// バッククォートを外すと、同じ所で数える（上が読み飛ばしでないことの確かめ）
 	root, files = setup(t, map[string]string{"x/a_test.go": "package x\n\n// 書き方は @vanda:foo a b のとおり\ntype T struct{}\n"})
 	if _, errs := Read(root, files, rules[:1]); errs == nil {
-		t.Error("逆引用符で囲まない @vanda: を数えていない")
+		t.Error("バッククォートで囲まない @vanda: を数えていない")
 	}
 }
 
@@ -380,7 +380,7 @@ func TestReadはtxtarの最初の区切りより前でもシャープで始ま�
 	}
 }
 
-// tsCases は、組込みの ts のアダプタの書ける所と、付いているものの名前（計画 annotation-types.md の 2）。
+// tsCases は、組み込みの ts のアダプタの書ける所と、付いているものの名前（計画 annotation-types.md の 2）。
 //
 // @vanda:evidence annotation-ts-test-call
 // @vanda:evidence annotation-ts-fixed-name
@@ -438,11 +438,11 @@ func TestReadはtsのフックとstepと変数の名前とテストでない呼�
 }
 
 // @vanda:evidence project-adapter-args-and-cwd
-func TestReadはvanda_adaptersのアダプタをリポジトリの根でargsをそのまま渡して動かす(t *testing.T) {
+func TestReadはvanda_adaptersのアダプタをリポジトリのルートでargsをそのまま渡して動かす(t *testing.T) {
 	root, files := setup(t, map[string]string{
 		"docs/a.md": "<!-- @vanda:evidence a -->\n",
-		// 作業のディレクトリにある印のファイルと、引数をそのまま名前に入れて返す
-		"mark.txt": "根",
+		// 作業ディレクトリにあるマークのファイルと、引数をそのまま名前に入れて返す
+		"mark.txt": "ルート",
 		"ad.sh":    "#!/bin/sh\ncat >/dev/null\nm=$(cat mark.txt)\nprintf '{\"names\":[{\"line\":1,\"name\":\"%s|%s|%s\"}]}' \"$m\" \"$1\" \"$2\"\n",
 	})
 	sub := filepath.Join(root, "sub")
@@ -454,8 +454,8 @@ func TestReadはvanda_adaptersのアダプタをリポジトリの根でargsを�
 	if errs != nil {
 		t.Fatal(errs)
 	}
-	if len(as) != 1 || as[0].Name != "根|--a b|c" {
-		t.Errorf("作業のディレクトリか引数が違う: %s", show(as))
+	if len(as) != 1 || as[0].Name != "ルート|--a b|c" {
+		t.Errorf("作業ディレクトリか引数が違う: %s", show(as))
 	}
 }
 

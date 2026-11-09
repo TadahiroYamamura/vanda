@@ -108,7 +108,7 @@ func rvRandomOp(rt *rapid.T, r *rvRepo) string {
 	}
 	ops = append(ops, "addFile", "reformat")
 	if len(files) > 0 {
-		// 名前の変更は、分岐点より前からあるファイルに、変更なしで当たらないと一覧に出ないので、ほかより多く選ぶ
+		// 名前の変更は、マージベースより前からある、変更のないファイルで起きないと一覧に出ないので、ほかより多く選ぶ
 		ops = append(ops, "changeFile", "deleteFile", "renameFile", "renameFile", "renameFile")
 	}
 	op := rapid.SampledFrom(ops).Draw(rt, "操作")
@@ -250,7 +250,7 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 			}
 		}()
 
-		// 変更・削除・名前の変更が一覧に出るには、分岐点より前からあるものが要るので、はじめにいくつか置く
+		// 変更・削除・名前の変更が一覧に出るには、マージベースより前からあるものが要るので、はじめにいくつか置く
 		for _, kind := range []string{"claim", "term", "feature"} {
 			for _, id := range rvIDs(kind) {
 				if rapid.Bool().Draw(rt, "はじめに置く項目か") {
@@ -268,7 +268,7 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 		r.newBranch("story")
 		rvRandomOps(rt, r, "story", 6, false, &log)
 		r.switchTo("main")
-		rvRandomOps(rt, r, "分岐点より後の main", 4, false, &log)
+		rvRandomOps(rt, r, "マージベースより後の main", 4, false, &log)
 		r.switchTo("story")
 		rvRandomOps(rt, r, "story", 8, true, &log)
 
@@ -332,7 +332,7 @@ func atLeast(t *testing.T, seen map[string]int, key string, min int) {
 	}
 }
 
-// shape は、書き出した約束リストが、段 1 の約束リストの形の審査を通ることを確かめる。
+// shape は、書き出した約束リストが、段 1 の約束リストの形のチェックを通ることを確かめる。
 // 通らない約束リストでは、一覧が出なくても vanda の誤りとは言えないため。
 func shape(t fataler, bin, root string) {
 	writeFile(t, root, ".vanda/checks/shape.toml", "[[check]]\nname = \"promise-list-shape\"\nscope = \"all\"\n")
@@ -344,6 +344,6 @@ func shape(t fataler, bin, root string) {
 	cmd := exec.Command(bin, "check", ".vanda/checks/shape.toml")
 	cmd.Dir = root
 	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("書き出した約束リストが、約束リストの形の審査を通らない: %v\n%s", err, out)
+		t.Fatalf("書き出した約束リストが、約束リストの形のチェックを通らない: %v\n%s", err, out)
 	}
 }

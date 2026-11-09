@@ -8,24 +8,24 @@ expand .vanda/config.toml
 
 # 約束の 2 つのレイヤーを、別々のエビデンスが確かめれば通る
 cp cases/split-ok.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # 約束の 2 つのレイヤーを、1 つのエビデンスがまとめて確かめても通る
 cp cases/both-ok.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # エビデンスの layers に、約束にないレイヤーを書く
 cp cases/outside.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:23: .*cli'
 ! stderr '(?m)^panic: '
 
 # 約束のレイヤーのうち cli を確かめるエビデンスがない
 cp cases/uncovered.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:18: .*\bcli\b'
 ! stderr '(?m)^panic: '

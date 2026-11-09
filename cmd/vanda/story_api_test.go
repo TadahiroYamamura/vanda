@@ -22,13 +22,13 @@ type storyResponse struct {
 	} `json:"attachments"`
 }
 
-// 添付ファイルの決まり（docs/formats.md）の、当たるものと当たらないものを全部の書き方で並べた本文。
-const fakeIssueBodyAllAttachments = "当たるもの:\n" +
+// 添付ファイルの決まり（docs/formats.md）の、マッチするものとマッチしないものを全部の書き方で並べた本文。
+const fakeIssueBodyAllAttachments = "マッチするもの:\n" +
 	"[資料.pdf](https://github.com/user-attachments/files/1/a.pdf)\n" +
 	"![画面](https://github.com/user-attachments/assets/b-1)\n" +
 	"![](https://github.com/owner/app/assets/1/c.png)\n" +
 	"<img width=\"300\" src=\"https://user-images.githubusercontent.com/1/d.png\">\n" +
-	"当たらないもの:\n" +
+	"マッチしないもの:\n" +
 	"[よそ](https://example.com/files/e.pdf)\n" +
 	"![ほかのリポジトリ](https://github.com/other/repo/assets/1/f.png)\n" +
 	"https://github.com/user-attachments/files/2/bare.pdf\n"
@@ -61,7 +61,7 @@ func newStorySetup(t *testing.T) *storySetup {
 	return &storySetup{bin: bin, r: r, fake: fake, gh: fakeGH(t, nil)}
 }
 
-// host は、偽のサーバーのホスト（api_url のホスト）。api.github.com でないので、認証キーは GH_ENTERPRISE_TOKEN か gh auth token --hostname <host> から読まれる
+// host は、偽のサーバーのホスト（api_url のホスト）。api.github.com でないので、トークンは GH_ENTERPRISE_TOKEN か gh auth token --hostname <host> から読まれる
 func (st *storySetup) host() string {
 	return strings.TrimPrefix(st.fake.URL, "http://")
 }
@@ -99,10 +99,10 @@ func Testストーリーストアから題と本文と添付ファイルへの�
 	t.Parallel()
 	cases := []struct {
 		name  string
-		viaGH bool // GH_ENTERPRISE_TOKEN を置かず、偽の gh だけが鍵を持つ
+		viaGH bool // GH_ENTERPRISE_TOKEN を置かず、偽の gh だけがトークンを持つ
 	}{
-		{"GH_ENTERPRISE_TOKENの鍵を使う", false},
-		{"GH_ENTERPRISE_TOKENがなければghのそのホストの鍵を使う", true},
+		{"GH_ENTERPRISE_TOKENのトークンを使う", false},
+		{"GH_ENTERPRISE_TOKENがなければghのそのホストのトークンを使う", true},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -134,7 +134,7 @@ func Testストーリーストアから題と本文と添付ファイルへの�
 			}
 			reqs := st.fake.Requests()
 			if len(reqs) == 0 || reqs[len(reqs)-1].Path != "/repos/owner/app/issues/24" || !strings.HasSuffix(reqs[len(reqs)-1].Auth, " "+st.fake.Token) {
-				t.Errorf("偽のサーバーへの要求: %+v", reqs)
+				t.Errorf("偽のサーバーへのリクエスト: %+v", reqs)
 			}
 			calls := fakeGHCalls(t, st.gh)
 			if c.viaGH && (len(calls) == 0 || calls[0] != "auth token --hostname "+st.host()) {
@@ -148,7 +148,7 @@ func Testストーリーストアから題と本文と添付ファイルへの�
 	}
 }
 
-// CM-08: 添付ファイルの決まりの、当たるものと当たらないもの
+// CM-08: 添付ファイルの決まりの、マッチするものとマッチしないもの
 // @vanda:evidence story-github-attachments
 func Testストーリーの添付ファイルは決まったURLで始まるリンクと画像だけで名前はリンクの文字かURLの最後の部分(t *testing.T) {
 	t.Parallel()
@@ -181,7 +181,7 @@ func Testストーリーストアの誤りは理由を画面に出す(t *testing
 		wantCode int
 		wantMsg  string // message に含むもの（ストーリーストアが返した理由）。空なら、空でないことだけを求める
 	}{
-		{"認証の鍵が誤っている", func(*fakeIssues) string { return "gho_wrong" }, false, "#24", 502, "Bad credentials"},
+		{"トークンが誤っている", func(*fakeIssues) string { return "gho_wrong" }, false, "#24", 502, "Bad credentials"},
 		{"ghにログインしていない", func(*fakeIssues) string { return "" }, false, "#24", 502, ""},
 		{"ネットワークが切れている", func(f *fakeIssues) string { return f.Token }, true, "#24", 502, ""},
 		{"ないストーリー", func(f *fakeIssues) string { return f.Token }, false, "#25", 404, ""},
@@ -206,7 +206,7 @@ func Testストーリーストアの誤りは理由を画面に出す(t *testing
 
 // id_pattern を、数字の並びが 0 個・2 個以上の ID も書けるものにする（既定の #[0-9]+ では、数字の並びがいつもちょうど 1 つになる）
 // @vanda:evidence story-github-issue-number
-func Test組込みのgithubのアダプタはストーリーのIDの最後の数字の並びをIssueの番号にし数字がなければ400にする(t *testing.T) {
+func Test組み込みのgithubのアダプタはストーリーのIDの最後の数字の並びをIssueの番号にし数字がなければ400にする(t *testing.T) {
 	t.Parallel()
 	st := newStorySetup(t)
 	cfg, err := os.ReadFile(filepath.Join(st.r.Root, ".vanda", "config.toml"))
@@ -237,7 +237,7 @@ func Test組込みのgithubのアダプタはストーリーのIDの最後の数
 				t.Errorf("数字のない ID %s に %d（%q）を返した。400 で理由を出す", c.id, code, msg)
 			}
 			if len(reqs) != 0 {
-				t.Errorf("数字のない ID %s で、ストーリーストアに要求を送った: %+v", c.id, reqs)
+				t.Errorf("数字のない ID %s で、ストーリーストアにリクエストを送った: %+v", c.id, reqs)
 			}
 			continue
 		}
@@ -247,7 +247,7 @@ func Test組込みのgithubのアダプタはストーリーのIDの最後の数
 		}
 		wantPath := fmt.Sprintf("/repos/owner/app/issues/%d", c.issue)
 		if len(reqs) != 1 || reqs[0].Path != wantPath {
-			t.Errorf("ID %s で送った要求: %+v（%s を 1 つのはず）", c.id, reqs, wantPath)
+			t.Errorf("ID %s で送ったリクエスト: %+v（%s を 1 つのはず）", c.id, reqs, wantPath)
 		}
 		if got.ID != c.id {
 			t.Errorf("ID %s を読んだ結果の id: %q", c.id, got.ID)
@@ -271,9 +271,9 @@ printf '{"title":"args: %s","body":"%s","url":""}' "$*" "$in"
 `
 
 // CM-08: ストーリーストアのカスタムアダプタは、ファイルの形でもディレクトリの形（直下の run）でも動き、args が渡る。
-// 組込みのアダプタ（github）と同じ名前なら、.vanda/adapters/ のものを使う
+// 組み込みのアダプタ（github）と同じ名前なら、.vanda/adapters/ のものを使う
 // @vanda:evidence story-project-adapter
-func Testストーリーストアのカスタムアダプタはファイルとディレクトリの形で動きargsが渡り組込みのものより先に使われる(t *testing.T) {
+func Testストーリーストアのカスタムアダプタはファイルとディレクトリの形で動きargsが渡り組み込みのものより先に使われる(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name, adapter, path, args, wantTitle string
@@ -281,8 +281,8 @@ func Testストーリーストアのカスタムアダプタはファイルと�
 		{"ファイルの形", "jira-story", ".vanda/adapters/jira-story", `args = ["--project", "APP"]`, "args: --project APP"},
 		{"ディレクトリの形", "jira-dir", ".vanda/adapters/jira-dir/run", `args = ["--dir"]`, "args: --dir"},
 		{"argsなし", "jira-story", ".vanda/adapters/jira-story", "", "args: "},
-		// 組込みの github を使うなら、repository がないので誤りになるか、GitHub に繋ぎに行く
-		{"組込みのgithubと同じ名前", "github", ".vanda/adapters/github", `args = ["--mine"]`, "args: --mine"},
+		// 組み込みの github を使うなら、repository がないので誤りになるか、GitHub に繋ぎに行く
+		{"組み込みのgithubと同じ名前", "github", ".vanda/adapters/github", `args = ["--mine"]`, "args: --mine"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

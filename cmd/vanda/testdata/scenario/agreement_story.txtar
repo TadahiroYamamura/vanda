@@ -1,10 +1,10 @@
-# CMD-10 合意（範囲を 1 つのストーリーにする）、RV-14:
+# CMD-10 承認（スコープを story にする）、RV-14:
 # @vanda:evidence check-agreement-story-scope
-# ストーリー 1 が約束を変えて合意し、ストーリー 2 が変える前の中身に合意していたとき、
-# ストーリー 1 の範囲の審査は通り、ストーリー 2 の範囲の審査は止まる。ストーリー 2 が今の中身に合意し直すと通る。
+# ストーリー 1 が約束を変えて承認し、ストーリー 2 が変える前の中身を承認していたとき、
+# スコープ story（ストーリー 1）のチェックは通り、スコープ story（ストーリー 2）のチェックは止まる。ストーリー 2 が今の中身を承認し直すと通る。
 #
-# 合流でぶつからないよう、約束リストと合意の記録をストーリーごとのファイルに分けた。
-# どのストーリーの範囲かは、ブランチのコミットのメッセージのストーリーの ID（#1、#2）で分かるようにしてある。
+# マージでぶつからないよう、約束リストと承認の記録をストーリーごとのファイルに分けた。
+# スコープ story のストーリーがどれかは、ブランチのコミットのメッセージのストーリーの ID（#1、#2）で分かるようにしてある。
 
 exec git init -q -b main
 expand .vanda/config.toml
@@ -13,14 +13,14 @@ agree .vanda/agreements/base.toml '#9' claim task-id-unique fp/claim-v1.json
 commit '約束を足す' '#9'
 exec vanda check .vanda/checks/all.toml
 
-# ストーリー 1: 約束の文を変えて、今の中身に合意する
+# ストーリー 1: 約束の文を変えて、今の中身を承認する
 exec git checkout -q -b story-1
 cp cases/a-v2.toml .vanda/promises/a.toml
 agree .vanda/agreements/story-1.toml '#1' claim task-id-unique fp/claim-v2.json
 commit '約束の文を変える' '#1'
 exec vanda check .vanda/checks/story.toml --base main
 
-# ストーリー 2: 変える前の中身に合意し、別の約束を足して合意する
+# ストーリー 2: 変える前の中身を承認し、別の約束を足して承認する
 exec git checkout -q main
 exec git checkout -q -b story-2
 cp cases/b.toml .vanda/promises/b.toml
@@ -29,35 +29,35 @@ agree .vanda/agreements/story-2.toml '#2' claim task-title-required fp/claim-b.j
 commit '約束を足す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 
-# ストーリー 1 が先に合流し、ストーリー 2 が main を取り込む
+# ストーリー 1 が先にマージし、ストーリー 2 が main を取り込む
 exec git checkout -q main
 exec git merge -q --ff-only story-1
 exec git checkout -q story-2
 exec git merge -q --no-edit -m '#2 main を取り込む' main
 
-# 全部の範囲では、今の中身にストーリー 1 が合意しているので通る
+# スコープ all では、今の中身にストーリー 1 が承認しているので通る
 exec vanda check .vanda/checks/all.toml
 
-# ストーリー 2 の範囲では、ストーリー 2 の合意が今の中身に合わなくなったので止まる
+# スコープ story（ストーリー 2）では、ストーリー 2 の承認が今の中身に合わなくなったので止まる
 ! exec vanda check .vanda/checks/story.toml --base main
 stderr 'task-id-unique'
 ! stderr 'task-title-required'
 ! stderr '(?m)^panic: '
 
-# ストーリー 2 が今の中身に合意し直すと通る
+# ストーリー 2 が今の中身を承認し直すと通る
 agree .vanda/agreements/story-2.toml '#2' claim task-id-unique fp/claim-v2.json
-commit '変わった約束に合意し直す' '#2'
+commit '変わった約束を承認し直す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
-stdout '^審査 agreement（story #2）: 通った$'
+stdout '^チェック agreement（story #2）: 通った$'
 
-# ストーリー 2 が、前に合意した約束を自分で変えても、合意し直すまで止まる（誰が変えたかを問わない）
+# ストーリー 2 が、前に承認した約束を自分で変えても、承認し直すまで止まる（誰が変えたかを問わない）
 cp cases/b-v2.toml .vanda/promises/b.toml
 commit '題の約束の文を変える' '#2'
 ! exec vanda check .vanda/checks/story.toml --base main
 stderr 'task-title-required'
 ! stderr '(?m)^panic: '
 agree .vanda/agreements/story-2.toml '#2' claim task-title-required fp/claim-b2.json
-commit '変えた約束に合意し直す' '#2'
+commit '変えた約束を承認し直す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 
 -- .vanda/config.toml --

@@ -42,7 +42,7 @@ func TestScenario(t *testing.T) {
 			env.Setenv("VANDA_VERSION_OLDER", older)
 			// 動かしているマシンの git の設定に結果が左右されないよう、system と global の設定を読ませない。
 			env.Setenv("GIT_CONFIG_NOSYSTEM", "1")
-			// 作業のディレクトリの上にたまたま git のリポジトリがあっても、リポジトリの外として扱わせる。
+			// 作業ディレクトリの上にたまたま git のリポジトリがあっても、リポジトリの外として扱わせる。
 			env.Setenv("GIT_CEILING_DIRECTORIES", filepath.Dir(env.WorkDir))
 			env.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
 			env.Setenv("GIT_AUTHOR_NAME", "テスト担当")
@@ -72,7 +72,7 @@ func buildVanda(t *testing.T) string {
 
 var semverPattern = regexp.MustCompile(`v?(\d+)\.(\d+)\.(\d+)`)
 
-// `vanda version` の出力の形は計画に書かれていないので、出力の中の最初の版の形の文字列を、動いている vanda の版とみなす。
+// `vanda version` の出力の形は計画に書かれていないので、出力の中の最初のバージョンの形の文字列を、動いている vanda のバージョンとみなす。
 func runningVersion(bin string) (string, error) {
 	out, err := exec.Command(bin, "version").Output()
 	if err != nil {
@@ -80,16 +80,16 @@ func runningVersion(bin string) (string, error) {
 	}
 	v := semverPattern.FindString(string(out))
 	if v == "" {
-		return "", fmt.Errorf("vanda version の出力に版が見つからない: %q", out)
+		return "", fmt.Errorf("vanda version の出力にバージョンが見つからない: %q", out)
 	}
 	return v, nil
 }
 
-// 動いている版より新しい版と古い版を作る。v を付けるかどうかは、動いている版の書き方に合わせる。
+// 動いているバージョンより新しいバージョンと古いバージョンを作る。v を付けるかどうかは、動いているバージョンの書き方に合わせる。
 func neighborVersions(current string) (newer, older string, err error) {
 	m := semverPattern.FindStringSubmatch(current)
 	if m == nil {
-		return "", "", fmt.Errorf("版の形ではない: %q", current)
+		return "", "", fmt.Errorf("バージョンの形ではない: %q", current)
 	}
 	prefix := ""
 	if strings.HasPrefix(current, "v") {
@@ -99,7 +99,7 @@ func neighborVersions(current string) (newer, older string, err error) {
 	for i := range n {
 		n[i], err = strconv.Atoi(m[i+1])
 		if err != nil {
-			return "", "", fmt.Errorf("版の数を読めない: %q: %w", current, err)
+			return "", "", fmt.Errorf("バージョンの数を読めない: %q: %w", current, err)
 		}
 	}
 	newer = fmt.Sprintf("%s%d.0.0", prefix, n[0]+1)
@@ -111,14 +111,14 @@ func neighborVersions(current string) (newer, older string, err error) {
 	case n[0] > 0:
 		older = fmt.Sprintf("%s%d.0.0", prefix, n[0]-1)
 	default:
-		return "", "", fmt.Errorf("動いている版 %q より古い版を作れない", current)
+		return "", "", fmt.Errorf("動いているバージョン %q より古いバージョンを作れない", current)
 	}
 	return newer, older, nil
 }
 
 // expand <ファイル>...
-// ファイルの中の ${VANDA_VERSION} などを、環境の変数の値に置き換える。
-// txtar のファイルの中では変数が展開されないため、動いている vanda の版を設定のファイルに書くのに使う。
+// ファイルの中の ${VANDA_VERSION} などを、環境変数の値に置き換える。
+// txtar のファイルの中では変数が展開されないため、動いている vanda のバージョンを設定のファイルに書くのに使う。
 func cmdExpand(ts *testscript.TestScript, neg bool, args []string) {
 	if neg {
 		ts.Fatalf("expand は ! を付けて使えない")
@@ -135,7 +135,7 @@ func cmdExpand(ts *testscript.TestScript, neg bool, args []string) {
 }
 
 // order <stdout|stderr> <前に出る正規表現> <後に出る正規表現>
-// 直前のコマンドの標準出力か標準エラーで、前の正規表現に当たる所が、後の正規表現に当たる所より先に出ることを確かめる。
+// 直前のコマンドの標準出力か標準エラーで、前の正規表現にマッチする所が、後の正規表現にマッチする所より先に出ることを確かめる。
 // エラーは最初の 1 件で止めずに全部を集めて出す決まりなので、両方が出ていることも求める。
 func cmdOrder(ts *testscript.TestScript, neg bool, args []string) {
 	if neg {
@@ -162,12 +162,12 @@ func cmdOrder(ts *testscript.TestScript, neg bool, args []string) {
 	}
 }
 
-// agree <合意の記録のファイル> <ストーリーの ID> <claim|term|feature> <ID> <指紋の元の JSON のファイル>
-// agree <合意の記録のファイル> <ストーリーの ID> file <ファイルの場所>
+// agree <承認の記録のファイル> <ストーリーの ID> <claim|term|feature> <ID> <フィンガープリントの元の JSON のファイル>
+// agree <承認の記録のファイル> <ストーリーの ID> file <ファイルの場所>
 // commit <subject> [<ストーリーの ID>] は、作業ツリーのすべてを 1 つのコミットにする。ストーリーの ID を渡せば、メッセージの末尾に
 // Story: のトレーラーを書く（vanda はストーリーの ID をトレーラーからだけ読む）。
 // 同じ大きさのファイルを同じ時刻のうちに書き換えると、git add -A が stat の一致から変わっていないとみなし、書き換えを
-// コミットに入れないことがあるので、索引から一度外して、毎回すべてを読み直させる
+// コミットに入れないことがあるので、インデックスから一度外して、毎回すべてを読み直させる
 func cmdCommit(ts *testscript.TestScript, neg bool, args []string) {
 	if neg {
 		ts.Fatalf("commit は ! を付けて使えない")
@@ -188,8 +188,8 @@ func cmdCommit(ts *testscript.TestScript, neg bool, args []string) {
 	}
 }
 
-// 合意の記録に 1 件を書き足す。
-// 約束・用語・機能の指紋は、テストの中で手で書いた JSON（キーを名前の順に並べ、空白なし）の SHA-256 から作る。
+// 承認の記録に 1 件を書き足す。
+// 約束・用語・機能のフィンガープリントは、テストの中で手で書いた JSON（キーを名前の順に並べ、空白なし）の SHA-256 から作る。
 // 約束リストの TOML を読んで JSON を作らないのは、読み込みを実装と同じ作りにすると、実装と同じ誤りに気づけないため。
 func cmdAgree(ts *testscript.TestScript, neg bool, args []string) {
 	if neg {
@@ -200,13 +200,13 @@ func cmdAgree(ts *testscript.TestScript, neg bool, args []string) {
 		args = args[1:]
 	}
 	if len(args) < 4 {
-		ts.Fatalf("使い方: agree [-deleted] <合意の記録のファイル> <ストーリーの ID> <claim|term|feature|file> <ID かファイルの場所> [<JSON のファイル>]")
+		ts.Fatalf("使い方: agree [-deleted] <承認の記録のファイル> <ストーリーの ID> <claim|term|feature|file> <ID かファイルの場所> [<JSON のファイル>]")
 	}
 	record, story, kind, key := args[0], args[1], args[2], args[3]
 	if deleted {
-		// 消したことへの合意。消したものには中身がないので、指紋の代わりに deleted = true を書き、ファイルは場所で指す
+		// 消したことへの承認。消したものには中身がないので、フィンガープリントの代わりに deleted = true を書き、ファイルは場所で指す
 		if len(args) != 4 {
-			ts.Fatalf("消したことへの合意には、ID かファイルの場所だけを渡す")
+			ts.Fatalf("消したことへの承認には、ID かファイルの場所だけを渡す")
 		}
 		path := ""
 		if kind == "file" {
@@ -219,7 +219,7 @@ func cmdAgree(ts *testscript.TestScript, neg bool, args []string) {
 	switch kind {
 	case "claim", "term", "feature":
 		if len(args) != 5 {
-			ts.Fatalf("%s の合意には、指紋の元の JSON のファイルが要る", kind)
+			ts.Fatalf("%s の承認には、フィンガープリントの元の JSON のファイルが要る", kind)
 		}
 		data, err := os.ReadFile(ts.MkAbs(args[4]))
 		ts.Check(err)
@@ -229,12 +229,12 @@ func cmdAgree(ts *testscript.TestScript, neg bool, args []string) {
 			ts.Fatalf("%s は JSON として読めない: %v", args[4], err)
 		}
 		if !bytes.Equal(compact.Bytes(), data) {
-			ts.Fatalf("%s に空白がある。指紋の元は空白なしの JSON で書く", args[4])
+			ts.Fatalf("%s に空白がある。フィンガープリントの元は空白なしの JSON で書く", args[4])
 		}
 		fingerprint = sha256Hex(data)
 	case "file":
 		if len(args) != 4 {
-			ts.Fatalf("file の合意には、ファイルの場所だけを渡す")
+			ts.Fatalf("file の承認には、ファイルの場所だけを渡す")
 		}
 		data, err := os.ReadFile(ts.MkAbs(key))
 		ts.Check(err)
@@ -260,7 +260,7 @@ func appendRecord(ts *testscript.TestScript, record, text string) {
 	ts.Check(err)
 }
 
-// deletionAgreementTOML は、消したことへの合意の記録の 1 件を、docs/formats.md の [[agreement]] の形で返す。
+// deletionAgreementTOML は、消したことへの承認の記録の 1 件を、docs/formats.md の [[agreement]] の形で返す。
 // key は、約束・用語・機能なら ID、ファイルなら場所（path と同じ）。
 func deletionAgreementTOML(kind, key, path, story, name, email string) string {
 	var b strings.Builder
@@ -273,7 +273,7 @@ func deletionAgreementTOML(kind, key, path, story, name, email string) string {
 	return b.String()
 }
 
-// agreementTOML は、合意の記録の 1 件を、docs/formats.md の [[agreement]] の形で返す。
+// agreementTOML は、承認の記録の 1 件を、docs/formats.md の [[agreement]] の形で返す。
 func agreementTOML(kind, key, fingerprint, path, story, name, email string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "\n[[agreement]]\nkind = %q\nkey = %q\nfingerprint = %q\n", kind, key, fingerprint)

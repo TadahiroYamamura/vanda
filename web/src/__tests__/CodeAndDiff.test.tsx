@@ -1,4 +1,4 @@
-// コードの色付けと、ファイルの行の差分の見せ方。
+// コードのシンタックスハイライトと、ファイルの行の差分の見せ方。
 // 要素とクラスの名前は、開発者が監督に報告した画面の作り（table.diff-lines、tr.diff-line、td.diff-no-before など）に従う。
 // 期待値（行の種類・番号・文）は、テストの中で手で書いた diff.lines から作る。
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -35,7 +35,7 @@ describe("ファイルの行の差分", () => {
       expect(tr.querySelector("td.diff-no-before")?.textContent?.trim(), `${i + 1} 行目の変更前の番号`).toBe(l.before === null ? "" : String(l.before));
       expect(tr.querySelector("td.diff-no-after")?.textContent?.trim(), `${i + 1} 行目の変更後の番号`).toBe(l.after === null ? "" : String(l.after));
       const text = tr.querySelector("td.diff-text");
-      // 改行のない印は、行の文に含めない
+      // 改行のないマークは、行の文に含めない
       const shown = Array.from(text?.childNodes ?? []).filter((n) => !(n instanceof HTMLElement && n.classList.contains("diff-no-newline"))).map((n) => n.textContent).join("");
       expect(shown, `${i + 1} 行目の文`).toBe(l.text);
     });
@@ -58,7 +58,7 @@ describe("ファイルの行の差分", () => {
   });
 
   // @vanda:evidence diff-whitespace-marked
-  it("空白だけを足した所と消した所にも足した消した印を付ける", () => {
+  it("空白だけを足した所と消した所にも足した消したマークを付ける", () => {
     // 足した空白・消した空白は、半角の続いた空白・全角の空白・タブを全部回す
     const spaces = ["  ", "　", "\t"];
     const ws: DiffLine[] = spaces.flatMap((sp, i) => [
@@ -79,7 +79,7 @@ describe("ファイルの行の差分", () => {
   });
 
   // @vanda:evidence review-file-diff-lines
-  it("改行のない最後の行にだけ印を付ける", () => {
+  it("改行のない最後の行にだけマークを付ける", () => {
     const { container } = render(<LineDiff lines={lines} lang={null} />);
     const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>("tr.diff-line"));
     rows.forEach((tr, i) => {
@@ -107,15 +107,15 @@ function copyContents(el: HTMLElement): string {
 
 const tla = "---- MODULE M ----\n\\* 置き換えないコメント a == b\nS == \\A x \\in T : x' # x /\\ <<a, b>> # <<>>\n====\n";
 
-describe("色付け", () => {
+describe("シンタックスハイライト", () => {
   // @vanda:evidence tla-math-symbols
   // @vanda:evidence tla-copy-ascii
-  it("色付けを読み込んだ後もTLAは記号で見えコピーするとリポジトリの文字に戻る", async () => {
+  it("シンタックスハイライトを読み込んだ後もTLAは記号で見えコピーするとリポジトリの文字に戻る", async () => {
     const { container } = render(<CodeBlock source={tla} lang="tlaplus" />);
     const pre = container.querySelector<HTMLElement>("pre.code[data-lang=tlaplus]");
     expect(pre, "pre.code[data-lang=tlaplus] がない").toBeTruthy();
-    // 色付けを読み込むと、かけらに色の style が付く
-    await waitFor(() => expect(container.querySelector(".tok[style]"), "色付けが読み込まれない").toBeTruthy(), { timeout: 15000 });
+    // シンタックスハイライトを読み込むと、セグメントに色の style が付く
+    await waitFor(() => expect(container.querySelector(".tok[style]"), "シンタックスハイライトが読み込まれない").toBeTruthy(), { timeout: 15000 });
     expect(pre!.textContent).toContain("S ≜ ∀ x ∈ T : x′ ≠ x ∧ ⟨a, b⟩ ≠ ⟨⟩");
     expect(pre!.textContent).toContain("\\* 置き換えないコメント a == b");
     for (const sym of Array.from(container.querySelectorAll<HTMLElement>(".tok.sym"))) {
@@ -125,8 +125,8 @@ describe("色付け", () => {
   }, 20000);
 
   // @vanda:evidence highlight-fallback
-  it("色付けを読み込めないときも文字は全部見える", async () => {
-    // 時間で待たず、色付けが断られたことを画面の部品が受け取るまで待つ。断りを見るこちらの then を先に付けるので、
+  it("シンタックスハイライトを読み込めないときも文字は全部見える", async () => {
+    // 時間で待たず、シンタックスハイライトが断られたことを画面の部品が受け取るまで待つ。断りを見るこちらの then を先に付けるので、
     // それが済んだ後に act の中でもう一度待てば、画面の部品の側の後始末も済んでいる
     let refused: Promise<void> | undefined;
     vi.doMock("../highlight", async (importOriginal) => {
@@ -134,7 +134,7 @@ describe("色付け", () => {
       return {
         ...real,
         tokenize: () => {
-          const p = Promise.reject(new Error("色付けを読み込めない"));
+          const p = Promise.reject(new Error("シンタックスハイライトを読み込めない"));
           refused = p.then(
             () => undefined,
             () => undefined,
@@ -146,7 +146,7 @@ describe("色付け", () => {
     const { CodeBlock: Block } = await import("../components/Code");
     const sql = "-- @vanda:evidence task-id-unique\nCREATE UNIQUE INDEX t ON task (id);\n";
     const { container } = render(<Block source={sql} lang="sql" />);
-    await waitFor(() => expect(refused, "色付けを求めていない").toBeDefined());
+    await waitFor(() => expect(refused, "シンタックスハイライトを求めていない").toBeDefined());
     await act(async () => {
       await refused;
     });

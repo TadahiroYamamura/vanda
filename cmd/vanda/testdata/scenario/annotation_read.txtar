@@ -1,7 +1,7 @@
 # アノテーションの読み取り: 6 つの種類 × Go・シナリオ（txtar）・TLA+・SQL を全部回す。
 # @vanda:evidence annotation-kinds-per-builtin-adapter
 # 書ける組み合わせ（Go: evidence・sensor、txtar: evidence、TLA+: term・feature・claim・internal、SQL: evidence）は、
-# 約束リストにない ID（no-such-id）を指すと、アノテーションのつながりの審査がその行で止まることで、読んだことを確かめる。
+# 約束リストにない ID（no-such-id）を指すと、アノテーションのつながりのチェックがその行で止まることで、読んだことを確かめる。
 # 書けない組み合わせは、種類に合う ID を書いても、その行で止まる。
 #
 # TLA+ の internal を読めたことと、付いているものの名前は、単体テスト（internal/annotation）で確かめる。
@@ -11,12 +11,12 @@ expand .vanda/config.toml
 unquote scenarios/add.txtar
 
 # 元のファイルでは通る
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/links.toml
 
 # go では `@vanda:term` を書けないので、その行で止まる
 cp cases/go-term.case task.go
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
@@ -24,7 +24,7 @@ cp orig/task.go.orig task.go
 
 # go では `@vanda:feature` を書けないので、その行で止まる
 cp cases/go-feature.case task.go
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
@@ -32,7 +32,7 @@ cp orig/task.go.orig task.go
 
 # go では `@vanda:claim` を書けないので、その行で止まる
 cp cases/go-claim.case task.go
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
@@ -40,7 +40,7 @@ cp orig/task.go.orig task.go
 
 # go では `@vanda:internal` を書けないので、その行で止まる
 cp cases/go-internal.case task.go
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
@@ -48,7 +48,7 @@ cp orig/task.go.orig task.go
 
 # go の `@vanda:evidence` を読む（約束リストにない ID を指すと、その行で止まる）
 cp cases/go-evidence.case task.go
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
@@ -56,7 +56,7 @@ cp orig/task.go.orig task.go
 
 # go の `@vanda:sensor` を読む（約束リストにない ID を指すと、その行で止まる）
 cp cases/go-sensor.case task.go
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
@@ -65,7 +65,7 @@ cp orig/task.go.orig task.go
 # txtar では `@vanda:term` を書けないので、その行で止まる
 cp cases/txtar-term.case scenarios/add.txtar
 unquote scenarios/add.txtar
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
@@ -75,7 +75,7 @@ unquote scenarios/add.txtar
 # txtar では `@vanda:feature` を書けないので、その行で止まる
 cp cases/txtar-feature.case scenarios/add.txtar
 unquote scenarios/add.txtar
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
@@ -85,7 +85,7 @@ unquote scenarios/add.txtar
 # txtar では `@vanda:claim` を書けないので、その行で止まる
 cp cases/txtar-claim.case scenarios/add.txtar
 unquote scenarios/add.txtar
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
@@ -95,7 +95,7 @@ unquote scenarios/add.txtar
 # txtar では `@vanda:internal` を書けないので、その行で止まる
 cp cases/txtar-internal.case scenarios/add.txtar
 unquote scenarios/add.txtar
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
@@ -105,7 +105,7 @@ unquote scenarios/add.txtar
 # txtar の `@vanda:evidence` を読む（約束リストにない ID を指すと、その行で止まる）
 cp cases/txtar-evidence.case scenarios/add.txtar
 unquote scenarios/add.txtar
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
@@ -115,7 +115,7 @@ unquote scenarios/add.txtar
 # txtar では `@vanda:sensor` を書けないので、その行で止まる
 cp cases/txtar-sensor.case scenarios/add.txtar
 unquote scenarios/add.txtar
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'scenarios/add\.txtar:1: '
 ! stderr '(?m)^panic: '
@@ -124,7 +124,7 @@ unquote scenarios/add.txtar
 
 # tla の `@vanda:term` を読む（約束リストにない ID を指すと、その行で止まる）
 cp cases/tla-term.case spec/Task.tla
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
@@ -132,7 +132,7 @@ cp orig/Task.tla.orig spec/Task.tla
 
 # tla の `@vanda:feature` を読む（約束リストにない ID を指すと、その行で止まる）
 cp cases/tla-feature.case spec/Task.tla
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
@@ -140,7 +140,7 @@ cp orig/Task.tla.orig spec/Task.tla
 
 # tla の `@vanda:claim` を読む（約束リストにない ID を指すと、その行で止まる）
 cp cases/tla-claim.case spec/Task.tla
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
@@ -148,7 +148,7 @@ cp orig/Task.tla.orig spec/Task.tla
 
 # tla では `@vanda:evidence` を書けないので、その行で止まる
 cp cases/tla-evidence.case spec/Task.tla
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
@@ -156,7 +156,7 @@ cp orig/Task.tla.orig spec/Task.tla
 
 # tla では `@vanda:sensor` を書けないので、その行で止まる
 cp cases/tla-sensor.case spec/Task.tla
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
@@ -164,7 +164,7 @@ cp orig/Task.tla.orig spec/Task.tla
 
 # sql では `@vanda:term` を書けないので、その行で止まる
 cp cases/sql-term.case db/schema.sql
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
@@ -172,7 +172,7 @@ cp orig/schema.sql.orig db/schema.sql
 
 # sql では `@vanda:feature` を書けないので、その行で止まる
 cp cases/sql-feature.case db/schema.sql
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
@@ -180,7 +180,7 @@ cp orig/schema.sql.orig db/schema.sql
 
 # sql では `@vanda:claim` を書けないので、その行で止まる
 cp cases/sql-claim.case db/schema.sql
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
@@ -188,7 +188,7 @@ cp orig/schema.sql.orig db/schema.sql
 
 # sql では `@vanda:internal` を書けないので、その行で止まる
 cp cases/sql-internal.case db/schema.sql
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
@@ -196,7 +196,7 @@ cp orig/schema.sql.orig db/schema.sql
 
 # sql の `@vanda:evidence` を読む（約束リストにない ID を指すと、その行で止まる）
 cp cases/sql-evidence.case db/schema.sql
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
@@ -204,7 +204,7 @@ cp orig/schema.sql.orig db/schema.sql
 
 # sql では `@vanda:sensor` を書けないので、その行で止まる
 cp cases/sql-sensor.case db/schema.sql
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
@@ -212,7 +212,7 @@ cp orig/schema.sql.orig db/schema.sql
 
 # tla の (* *) の中のアノテーションも読む
 cp cases/tla-block.case spec/Task.tla
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '

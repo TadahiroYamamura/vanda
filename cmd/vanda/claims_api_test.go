@@ -22,7 +22,7 @@ type claimFound struct {
 	State   *string `json:"state"`
 }
 
-// foundStates は、エビデンスの found の場所ごとの合意の状態（null は ""）を返す。
+// foundStates は、エビデンスの found の場所ごとの承認の状態（null は ""）を返す。
 func foundStates(d claimDetail) map[string]string {
 	out := map[string]string{}
 	for _, e := range d.Evidence {
@@ -60,7 +60,7 @@ type claimDetail struct {
 	} `json:"evidence"`
 }
 
-// claimHistory は、約束の由来と合意の履歴（GET /api/claims/<約束の ID>/history）
+// claimHistory は、約束の変更履歴と承認の履歴（GET /api/claims/<約束の ID>/history）
 type claimHistory struct {
 	Origin []struct {
 		Commit  string   `json:"commit"`
@@ -80,12 +80,12 @@ type claimHistory struct {
 	} `json:"agreements"`
 }
 
-// getHistory は、約束 id の由来と合意の履歴を読む。
+// getHistory は、約束 id の変更履歴と承認の履歴を読む。
 func getHistory(t *testing.T, s *vandaServer, id string) claimHistory {
 	t.Helper()
 	var h claimHistory
 	if code, msg := s.get("/api/claims/"+id+"/history", &h); code != 200 {
-		t.Fatalf("約束 %s の由来と合意の履歴を読めない（%d）: %s", id, code, msg)
+		t.Fatalf("約束 %s の変更履歴と承認の履歴を読めない（%d）: %s", id, code, msg)
 	}
 	return h
 }
@@ -128,10 +128,10 @@ func checkFound(t *testing.T, typ string, got []claimFound, want []wantFound) {
 // @vanda:evidence claim-detail-origin
 // @vanda:evidence claim-detail-agreements
 // @vanda:evidence found-file-state-shown
-func Test約束の詳細は文とレイヤーと対象とエビデンスのタイプごとの中身と由来と合意の履歴を示す(t *testing.T) {
+func Test約束の詳細は文とレイヤーと対象とエビデンスのタイプごとの中身と変更履歴と承認の履歴を示す(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
-	// 推測だけを書き換えたコミット。指紋が変わらないので、由来には出ない
+	// 推測だけを書き換えたコミット。フィンガープリントが変わらないので、変更履歴には出ない
 	writeFile(t, r.Root, ".vanda/promises.toml", strings.Replace(reviewPromisesStory,
 		"guesses = [\"タスクは消しても ID を使い回さない\"]", "guesses = [\"消したタスクの ID は使い回さない\"]", 1))
 	r.g.commitTracked("推測を書き換える", "#25")
@@ -175,34 +175,34 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 		}
 		checkFound(t, w.typ, g.Found, w.found)
 	}
-	// 合意の対象のファイルは、今の中身の指紋に合う合意の記録があれば agreed、なければ proposed。Go のテストは null。
-	// シナリオは #24 で変えたので、#1 の合意は今の中身に合わない。TLA+ と SQL は #1 のまま
+	// 承認の対象のファイルは、今の中身のフィンガープリントに合う承認の記録があれば agreed、なければ proposed。Go のテストは null。
+	// シナリオは #24 で変えたので、#1 の承認は今の中身に合わない。TLA+ と SQL は #1 のまま
 	wantStates := map[string]string{"e2e/add-task.txtar": "proposed", "spec/Task.tla": "agreed", "db/schema.sql": "agreed", "internal/task/task_test.go": ""}
 	if got := foundStates(got); !reflect.DeepEqual(got, wantStates) {
-		t.Errorf("found の合意の状態: %v（思ったもの %v）", got, wantStates)
+		t.Errorf("found の承認の状態: %v（思ったもの %v）", got, wantStates)
 	}
 
 	first := r.git("rev-parse", "main")
 	changed := r.git("log", "-1", "--format=%H", "--fixed-strings", "--grep=タスクの ID の約束を変え", reviewBranch)
 	h := getHistory(t, s, "task-id-unique")
 	if len(h.Origin) != 2 {
-		t.Fatalf("由来が 2 件（作ったコミットと、文を変えたコミット）でない: %+v", h.Origin)
+		t.Fatalf("変更履歴が 2 件（作ったコミットと、文を変えたコミット）でない: %+v", h.Origin)
 	}
-	// 由来はコミットの日時の新しい順（同じ日時なら、履歴で後のコミットが先）。どちらでも、文を変えたコミットが先
+	// 変更履歴はコミットの日時の新しい順（同じ日時なら、履歴で後のコミットが先）。どちらでも、文を変えたコミットが先
 	o0, o1 := h.Origin[0], h.Origin[1]
 	if o0.Commit != changed || !reflect.DeepEqual(o0.Stories, []string{"#24"}) || o0.Change != "modified" {
-		t.Errorf("由来の 1 件目: %+v", o0)
+		t.Errorf("変更履歴の 1 件目: %+v", o0)
 	}
 	if o1.Commit != first || o1.Subject != "はじめの約束を置く" || !reflect.DeepEqual(o1.Stories, []string{"#1"}) || o1.Change != "added" {
-		t.Errorf("由来の 2 件目: %+v", o1)
+		t.Errorf("変更履歴の 2 件目: %+v", o1)
 	}
 
 	if len(h.Agreements) != 1 || h.Agreements[0].Story != "#1" || h.Agreements[0].Current ||
 		h.Agreements[0].Fingerprint != sha256Hex([]byte(reviewItemJSON["claim task-id-unique"])) || h.Agreements[0].User.Name != "テスト担当" {
-		t.Errorf("合意の履歴: %+v", h.Agreements)
+		t.Errorf("承認の履歴: %+v", h.Agreements)
 	}
 
-	// 今の中身に合意すると、合意の履歴に足され、今の中身に合うと分かる。前の合意は消えず、合わないまま
+	// 今の中身を承認すると、承認の履歴に足され、今の中身に合うと分かる。前の承認は消えず、合わないまま
 	f, err := os.OpenFile(filepath.Join(r.Root, ".vanda", "agreements.toml"), os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		t.Fatal(err)
@@ -214,20 +214,20 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 	if err != nil {
 		t.Fatal(err)
 	}
-	r.g.commitTracked("合意する", "#24")
+	r.g.commitTracked("承認する", "#24")
 	var again claimDetail
 	if code, msg := s.get("/api/claims/task-id-unique", &again); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
 	}
 	if again.ID != "task-id-unique" || again.State != "agreed" {
-		t.Errorf("今の中身に合意した後の id と state: %q %q（task-id-unique と agreed のはず）", again.ID, again.State)
+		t.Errorf("今の中身を承認した後の id と state: %q %q（task-id-unique と agreed のはず）", again.ID, again.State)
 	}
-	// 合意の履歴は合意した日時の新しい順。agreementTOML はどれも同じ日時なので、ファイルで後に書いた #24 の合意が先
+	// 承認の履歴は承認した日時の新しい順。agreementTOML はどれも同じ日時なので、ファイルで後に書いた #24 の承認が先
 	if ah := getHistory(t, s, "task-id-unique"); len(ah.Agreements) != 2 || !ah.Agreements[0].Current || ah.Agreements[0].Story != reviewStory || ah.Agreements[1].Current {
-		t.Errorf("合意した後の合意の履歴: %+v", ah.Agreements)
+		t.Errorf("承認した後の承認の履歴: %+v", ah.Agreements)
 	}
 
-	// シナリオの今の中身に、#24 でないストーリー（#30）で合意しても、合意の状態は agreed になる（ストーリーによらない）
+	// シナリオの今の中身に、#24 でないストーリー（#30）で承認しても、承認の状態は agreed になる（ストーリーによらない）
 	f, err = os.OpenFile(filepath.Join(r.Root, ".vanda", "agreements.toml"), os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		t.Fatal(err)
@@ -239,18 +239,18 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 	if err != nil {
 		t.Fatal(err)
 	}
-	r.g.commitTracked("シナリオに合意する", "#30")
+	r.g.commitTracked("シナリオを承認する", "#30")
 	var agreedFile claimDetail
 	if code, msg := s.get("/api/claims/task-id-unique", &agreedFile); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
 	}
 	wantStates["e2e/add-task.txtar"] = "agreed"
 	if got := foundStates(agreedFile); !reflect.DeepEqual(got, wantStates) {
-		t.Errorf("シナリオに合意した後の found の合意の状態: %v（思ったもの %v）", got, wantStates)
+		t.Errorf("シナリオを承認した後の found の承認の状態: %v（思ったもの %v）", got, wantStates)
 	}
 }
 
-// CL-01: 約束リストにない ID は、約束リストの形の審査の誤りになるが、約束の詳細は出す
+// CL-01: 約束リストにない ID は、約束リストの形のチェックの誤りになるが、約束の詳細は出す
 // @vanda:evidence claim-detail-subjects
 func Test約束の詳細の対象は用語か機能の名前とIDを約束のsubjectsの順に示し約束リストにないIDは種類と名前をnullにする(t *testing.T) {
 	t.Parallel()
@@ -307,13 +307,13 @@ func Test約束の詳細は指すアノテーションのないエビデンス�
 		t.Errorf("エビデンス: %+v", got.Evidence)
 	}
 	if h := getHistory(t, s, "task-title-required"); len(h.Origin) != 1 || h.Origin[0].Change != "added" || !reflect.DeepEqual(h.Origin[0].Stories, []string{"#24"}) || len(h.Agreements) != 0 {
-		t.Errorf("由来 %+v、合意の履歴 %+v", h.Origin, h.Agreements)
+		t.Errorf("変更履歴 %+v、承認の履歴 %+v", h.Origin, h.Agreements)
 	}
 }
 
-// claim-detail-shown-before-history: 約束の詳細は由来と合意の履歴を返さず、それらは /history で返す（docs/formats.md）
+// claim-detail-shown-before-history: 約束の詳細は変更履歴と承認の履歴を返さず、それらは /history で返す（docs/formats.md）
 // @vanda:evidence claim-detail-shown-before-history
-func Test約束の詳細は由来と合意の履歴を含めず由来と合意の履歴はhistoryで返しない約束は404にする(t *testing.T) {
+func Test約束の詳細は変更履歴と承認の履歴を含めず変更履歴と承認の履歴はhistoryで返しない約束は404にする(t *testing.T) {
 	t.Parallel()
 	_, _, s := setupAgree(t)
 	var detail map[string]json.RawMessage
@@ -332,7 +332,7 @@ func Test約束の詳細は由来と合意の履歴を含めず由来と合意�
 	}
 	var history map[string]json.RawMessage
 	if code, msg := s.get("/api/claims/task-id-unique/history", &history); code != 200 {
-		t.Fatalf("由来と合意の履歴を読めない（%d）: %s", code, msg)
+		t.Fatalf("変更履歴と承認の履歴を読めない（%d）: %s", code, msg)
 	}
 	var keys []string
 	for k := range history {
@@ -340,25 +340,25 @@ func Test約束の詳細は由来と合意の履歴を含めず由来と合意�
 	}
 	sort.Strings(keys)
 	if !reflect.DeepEqual(keys, []string{"agreements", "origin"}) {
-		t.Errorf("由来と合意の履歴の項目: %v（agreements と origin だけのはず）", keys)
+		t.Errorf("変更履歴と承認の履歴の項目: %v（agreements と origin だけのはず）", keys)
 	}
 	h := getHistory(t, s, "task-id-unique")
 	if len(h.Origin) == 0 || len(h.Agreements) == 0 {
-		t.Errorf("由来か合意の履歴が空: %+v", h)
+		t.Errorf("変更履歴か承認の履歴が空: %+v", h)
 	}
 	code, msg := s.get("/api/claims/no-such-claim/history", nil)
 	if code != 404 || msg != "約束 no-such-claim は約束リストにありません。" {
-		t.Errorf("ない約束の由来と合意の履歴: %d %q", code, msg)
+		t.Errorf("ない約束の変更履歴と承認の履歴: %d %q", code, msg)
 	}
 }
 
-// 合意の履歴は合意した日時の新しい順、同じ日時なら合意の記録のファイルで後に書いたものが先（docs/formats.md）。
+// 承認の履歴は承認した日時の新しい順、同じ日時なら承認の記録のファイルで後に書いたものが先（docs/formats.md）。
 // ファイルの順と日時の順をずらして書き、並べ替えを 2 回かけるような誤りでも並びが崩れれば分かるようにする
 // @vanda:evidence claim-detail-agreements
-func Test合意の履歴は合意した日時の新しい順に並び同じ日時ならファイルで後に書いたものが先になる(t *testing.T) {
+func Test承認の履歴は承認した日時の新しい順に並び同じ日時ならファイルで後に書いたものが先になる(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
-	// ファイルに書く順の合意（ストーリーで見分ける）と、合意した日時
+	// ファイルに書く順の承認（ストーリーで見分ける）と、承認した日時
 	recs := []struct{ story, at string }{
 		{"#41", "2026-10-02T12:00:00+09:00"},
 		{"#42", "2026-10-05T12:00:00+09:00"},
@@ -373,7 +373,7 @@ func Test合意の履歴は合意した日時の新しい順に並び同じ日�
 			"agreed_at = 2026-10-31T12:00:00+09:00", "agreed_at = "+rec.at, 1))
 	}
 	writeFile(t, r.Root, ".vanda/agreements.toml", readFileString(t, r.Root, ".vanda/agreements.toml")+b.String())
-	r.g.commitTracked("日時の違う合意を足す", "#41")
+	r.g.commitTracked("日時の違う承認を足す", "#41")
 	var got []string
 	for _, a := range getHistory(t, s, "task-id-unique").Agreements {
 		if strings.HasPrefix(a.Story, "#4") {
@@ -381,7 +381,7 @@ func Test合意の履歴は合意した日時の新しい順に並び同じ日�
 		}
 	}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("合意の履歴の並び: %v（思ったもの %v）", got, want)
+		t.Errorf("承認の履歴の並び: %v（思ったもの %v）", got, want)
 	}
 }
 
@@ -402,7 +402,7 @@ func Test約束の詳細とファイルの中身はないものを404にする(t
 	}
 }
 
-func Testファイルの中身は合意の対象のファイルとアノテーションを読むファイルを返す(t *testing.T) {
+func Testファイルの中身は承認の対象のファイルとアノテーションを読むファイルを返す(t *testing.T) {
 	t.Parallel()
 	_, _, s := setupAgree(t)
 	for path, want := range map[string]string{
@@ -424,7 +424,7 @@ func Testファイルの中身は合意の対象のファイルとアノテー�
 // CL-08: GET /api/claims/<ID>/at/<コミット> は、そのコミットの時点の約束の中身を返す（docs/formats.md）。
 // 期待する文は、newReviewRepo が main と story-24 に書いた約束リストから手で書いた。
 // @vanda:evidence claim-at-commit
-func Testその時点の約束の中身は由来のコミットと合意の記録のコミットの時点の文を返す(t *testing.T) {
+func Testその時点の約束の中身は変更履歴のコミットと承認の記録のコミットの時点の文を返す(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
 	cases := []struct{ rev, want string }{
@@ -456,13 +456,13 @@ func Testその時点の約束の中身は由来のコミットと合意の記�
 			t.Errorf("短いハッシュで %s の時点を読めない（%d %q）: %+v", c.rev, code, msg, short)
 		}
 	}
-	// 合意の記録の commit（記録を書き足したコミット）を渡すと、その時点の中身を返す。#1 の合意は main のコミットで書いた
+	// 承認の記録の commit（記録を書き足したコミット）を渡すと、その時点の中身を返す。#1 の承認は main のコミットで書いた
 	detail := getHistory(t, s, "task-id-unique")
 	if len(detail.Agreements) == 0 || detail.Agreements[0].Commit == nil {
-		t.Fatalf("合意の履歴の commit を読めない: %+v", detail)
+		t.Fatalf("承認の履歴の commit を読めない: %+v", detail)
 	}
 	if *detail.Agreements[0].Commit != r.git("rev-parse", "main") {
-		t.Errorf("#1 の合意の commit が main のコミットでない: %s", *detail.Agreements[0].Commit)
+		t.Errorf("#1 の承認の commit が main のコミットでない: %s", *detail.Agreements[0].Commit)
 	}
 }
 
@@ -539,12 +539,12 @@ func Testその時点の約束の中身は今の設定にないレイヤーの�
 	}
 }
 
-// GET /api/file は、合意の対象のファイルとアノテーションを読むファイルの中身を返し、ほかのファイルは 404 にする
+// GET /api/file は、承認の対象のファイルとアノテーションを読むファイルの中身を返し、ほかのファイルは 404 にする
 // @vanda:evidence file-api
-func Testファイルの中身のAPIは合意の対象とアノテーションを読むファイルだけを返しほかを404にする(t *testing.T) {
+func Testファイルの中身のAPIは承認の対象とアノテーションを読むファイルだけを返しほかを404にする(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
-	// 設定の txtar・tla・sql・go のパターンと、ガードレールの paths に当たるもの（中身は newReviewRepo が書いたもの）
+	// 設定の txtar・tla・sql・go のパターンと、ガードレールの paths にマッチするもの（中身は newReviewRepo が書いたもの）
 	for path, want := range map[string]string{
 		"e2e/add-task.txtar":         reviewScenarioStory,
 		"spec/Task.tla":              reviewTLA,
@@ -559,7 +559,7 @@ func Testファイルの中身のAPIは合意の対象とアノテーション�
 			t.Errorf("%s: %d（%q）、%+v", path, code, msg, got)
 		}
 	}
-	writeFile(t, r.Root, "README.md", "どのパターンにも当たらない\n")
+	writeFile(t, r.Root, "README.md", "どのパターンにもマッチしない\n")
 	for _, path := range []string{".vanda/config.toml", ".vanda/promises.toml", "README.md", "e2e/none.txtar", "../e2e/add-task.txtar", "/etc/passwd"} {
 		if code, msg := s.get("/api/file?path="+q(path), nil); code != 404 || msg == "" {
 			t.Errorf("%s: %d（%q）を返した。404 で理由を出す", path, code, msg)
@@ -568,7 +568,7 @@ func Testファイルの中身のAPIは合意の対象とアノテーション�
 }
 
 // @vanda:evidence origin-commit-stories
-func Test約束の由来はコミットごとにそのコミットのStoryのトレーラーのストーリーを結ぶ(t *testing.T) {
+func Test約束の変更履歴はコミットごとにそのコミットのStoryのトレーラーのストーリーを結ぶ(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
 	statement := "タスクの ID は、すべてのタスクを通して重ならない"
@@ -577,7 +577,7 @@ func Test約束の由来はコミットごとにそのコミットのStoryのト
 		text := readFileString(t, r.Root, ".vanda/promises.toml")
 		writeFile(t, r.Root, ".vanda/promises.toml", strings.Replace(text, statement, to, 1))
 		statement = to
-		// 同じ大きさの書き換えを git が見落とさないよう、索引から外して読み直させる（commitAll と同じ）
+		// 同じ大きさの書き換えを git が見落とさないよう、インデックスから外して読み直させる（commitAll と同じ）
 		r.g.run("rm", "-r", "-q", "--cached", "--ignore-unmatch", ".")
 		r.g.run("add", "-A")
 		r.g.run("commit", "-q", "-m", msg)
@@ -594,12 +594,12 @@ func Test約束の由来はコミットごとにそのコミットのStoryのト
 	}
 	got := getHistory(t, s, "task-id-unique")
 	if len(got.Origin) != len(want) {
-		t.Fatalf("由来が %d 件（%d 件のはず）: %+v", len(got.Origin), len(want), got.Origin)
+		t.Fatalf("変更履歴が %d 件（%d 件のはず）: %+v", len(got.Origin), len(want), got.Origin)
 	}
 	for _, o := range got.Origin {
 		w, ok := want[o.Commit]
 		if !ok {
-			t.Errorf("思っていないコミットが由来にある: %+v", o)
+			t.Errorf("思っていないコミットが変更履歴にある: %+v", o)
 			continue
 		}
 		if len(o.Stories) != len(w) || (len(w) > 0 && !reflect.DeepEqual(o.Stories, w)) {

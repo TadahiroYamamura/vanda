@@ -1,52 +1,52 @@
-# CMD-03: 審査は、審査の設定のファイルに並べた順に行う。どれかの審査が失敗すると、終了コードが失敗になる。
+# CMD-03: チェックは、チェックの設定のファイルに並べた順に行う。どれかのチェックが失敗すると、終了コードが失敗になる。
 # @vanda:evidence check-runs-in-order-and-fails
 # @vanda:evidence check-output-lines
 # @vanda:evidence check-error-order
 #
-# 2 つの審査が、それぞれ別のファイルを指すエラーを出すようにしておき、並べる順を入れ替えると、エラーの出る順も入れ替わることを確かめる。
+# 2 つのチェックが、それぞれ別のファイルを指すエラーを出すようにしておき、並べる順を入れ替えると、エラーの出る順も入れ替わることを確かめる。
 # - 約束リストの形: .vanda/promises/aaa.toml の 2 行目（ID の形）、.vanda/promises/qqq-broken.toml の 3 行目（subjects の先がない）と 9 行目（決まった値にないステージ）
-# - 読まれていないファイル: どのパターンにも当たらない .vanda/zzz-stray.toml
-# 1 つの審査の中では、ファイルの場所の順、同じファイルなら行の順に出る。出力の順は、毎回同じ。
-# 審査ごとの「審査 <名前>（<範囲>）: 通った」か「失敗（<件数> 件）」の行は標準出力に、誤りの中身は標準エラーに出る。
+# - 読まれていないファイル: どのパターンにもマッチしない .vanda/zzz-stray.toml
+# 1 つのチェックの中では、ファイルの場所の順、同じファイルなら行の順に出る。出力の順は、毎回同じ。
+# チェックごとの「チェック <名前>（<スコープ>）: 通った」か「失敗（<件数> 件）」の行は標準出力に、誤りの中身は標準エラーに出る。
 
 exec git init -q -b main
 expand .vanda/config.toml
 
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape-then-unread.toml
-stdout '^審査 promise-list-shape（all）: 失敗（3 件）$'
-stdout '^審査 unread-files（all）: 失敗（1 件）$'
-order stdout '審査 promise-list-shape' '審査 unread-files'
+stdout '^チェック promise-list-shape（all）: 失敗（3 件）$'
+stdout '^チェック unread-files（all）: 失敗（1 件）$'
+order stdout 'チェック promise-list-shape' 'チェック unread-files'
 order stderr 'qqq-broken\.toml:9: ' 'zzz-stray\.toml'
 order stderr 'aaa\.toml:2: ' 'qqq-broken\.toml:3: '
 order stderr 'qqq-broken\.toml:3: ' 'qqq-broken\.toml:9: '
 ! stderr '(?m)^panic: '
 cp stdout first-stdout.txt
 cp stderr first-stderr.txt
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape-then-unread.toml
 cmp stdout first-stdout.txt
 cmp stderr first-stderr.txt
 
 ! exec vanda check .vanda/checks/unread-then-shape.toml
-order stdout '審査 unread-files' '審査 promise-list-shape'
+order stdout 'チェック unread-files' 'チェック promise-list-shape'
 order stderr 'zzz-stray\.toml' 'qqq-broken\.toml:9: '
 ! stderr '(?m)^panic: '
 
-# 通る審査の後に失敗する審査を並べても、終了コードは失敗になる
+# 通るチェックの後に失敗するチェックを並べても、終了コードは失敗になる
 rm .vanda/zzz-stray.toml
 cp cases/aaa-fixed.toml .vanda/promises/aaa.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/unread-then-shape.toml
 stderr 'qqq-broken\.toml:9: '
 ! stderr 'zzz-stray'
 
 # どちらも通れば、終了コードは成功になる
 cp cases/fixed.toml .vanda/promises/qqq-broken.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/unread-then-shape.toml
-stdout '^審査 unread-files（all）: 通った$'
-stdout '^審査 promise-list-shape（all）: 通った$'
+stdout '^チェック unread-files（all）: 通った$'
+stdout '^チェック promise-list-shape（all）: 通った$'
 
 -- .vanda/config.toml --
 version = "${VANDA_VERSION}"
@@ -77,7 +77,7 @@ scope = "all"
 [[term]]
 id = "stray"
 name = "どこからも読まれない"
-definition = "どのパターンにも当たらない"
+definition = "どのパターンにもマッチしない"
 -- .vanda/promises/aaa.toml --
 [[term]]
 id = "Bad"

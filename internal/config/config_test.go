@@ -76,7 +76,7 @@ paths = ["db/schema.sql"]
 	for s, want := range map[string]bool{"#24": true, "#": false, "PROJ-1": false, "#24a": false} {
 		m := cfg.IDPattern.FindString(s)
 		if (m == s) != want {
-			t.Errorf("既定の id_pattern が %q に当たるか: got %q", s, m)
+			t.Errorf("既定の id_pattern が %q にマッチするか: got %q", s, m)
 		}
 	}
 }
@@ -103,11 +103,11 @@ id_pattern = "("
 `)
 	_, errs := Load(root)
 	want := [][]string{
-		{".vanda/config.toml:1: ", "動いている vanda（0.1.0）", "設定の版（0.2.0）より古い", "vanda を 0.2.0 に上げ"},
+		{".vanda/config.toml:1: ", "動いている vanda（0.1.0）", "設定のバージョン（0.2.0）より古い", "vanda を 0.2.0 に上げ"},
 		{".vanda/config.toml:2: ", "promises", "パターン"},
 		{".vanda/config.toml:6: ", `レイヤーの ID "Model"`, "決まった形"},
 		{".vanda/config.toml:5: ", `layer "Model" の description`, `description = "…"`},
-		{".vanda/config.toml:11: ", `アダプタ "rust"`, "組込み", ".vanda/adapters/rust"},
+		{".vanda/config.toml:11: ", `アダプタ "rust"`, "組み込み", ".vanda/adapters/rust"},
 		{".vanda/config.toml:15: ", "id_pattern", "正規表現"},
 		{".vanda/config.toml:3: ", "extra", "決まった項目"},
 	}
@@ -123,7 +123,7 @@ id_pattern = "("
 }
 
 // @vanda:evidence config-version-mismatch
-func TestLoadは設定の版が動いているvandaより古いとvandaの形に書き換えるよう知らせてないコマンドは案内しない(t *testing.T) {
+func TestLoadは設定のバージョンが動いているvandaより古いとvandaの形に書き換えるよう知らせてないコマンドは案内しない(t *testing.T) {
 	root := writeConfig(t, `version = "0.0.9"`)
 	_, errs := Load(root)
 	if errs == nil || !lineWith(errs.Error(), ".vanda/config.toml:1: ", "0.0.9", ".vanda/", "書き換え") {
@@ -145,7 +145,7 @@ func TestIsID(t *testing.T) {
 }
 
 // @vanda:evidence config-id-pattern-not-empty-match
-func TestLoadは空の文字列に当たるid_patternを受け付けない(t *testing.T) {
+func TestLoadは空の文字列にマッチするid_patternを受け付けない(t *testing.T) {
 	root := writeConfig(t, "version = \"0.1.0\"\n[story]\nid_pattern = \"[0-9]*\"\n")
 	_, errs := Load(root)
 	if !lineWith(errs.Error(), ".vanda/config.toml:3: ", "id_pattern", "空の文字列") {
@@ -201,7 +201,7 @@ func TestLoadはtypesがないか書けないタイプを書いた設定を誤�
 			}
 		})
 	}
-	// 空の配列と、組込みのアダプタが書けない種類でしか満たせないタイプ（tla に unit-test、go に model-check）は誤りにしない
+	// 空の配列と、組み込みのアダプタが書けない種類でしか満たせないタイプ（tla に unit-test、go に model-check）は誤りにしない
 	for _, body := range []string{"adapter = \"go\"\ntypes = []\n", "adapter = \"tla\"\ntypes = [\"unit-test\"]\n", "adapter = \"go\"\ntypes = [\"model-check\"]\n"} {
 		cfg, errs := Load(writeConfig(t, annConfig(body)))
 		if errs != nil {
@@ -215,7 +215,7 @@ func TestLoadはtypesがないか書けないタイプを書いた設定を誤�
 }
 
 // @vanda:evidence config-github-only-fields
-func TestLoadはstoryのrepositoryとapi_urlを組込みのgithubのときだけ受け付ける(t *testing.T) {
+func TestLoadはstoryのrepositoryとapi_urlを組み込みのgithubのときだけ受け付ける(t *testing.T) {
 	ok := "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"o/r\"\napi_url = \"https://example.com\"\n"
 	if _, errs := Load(writeConfig(t, ok)); errs != nil {
 		t.Fatalf("github で誤りになった: %v", errs)
@@ -248,13 +248,13 @@ func writeAdapter(t *testing.T, root, path, body string) {
 }
 
 // @vanda:evidence project-adapter-args-only-for-project
-func TestLoadはargsを組込みのアダプタとadapterのない表に書けば誤りにする(t *testing.T) {
+func TestLoadはargsを組み込みのアダプタとadapterのない表に書けば誤りにする(t *testing.T) {
 	for name, body := range map[string]string{
-		"組込みのgo":      "adapter = \"go\"\ntypes = [\"unit-test\"]\nargs = [\"x\"]\n",
-		"組込みのtxtar":   "adapter = \"txtar\"\ntypes = [\"scenario-test\"]\nargs = [\"x\"]\n",
-		"組込みのtla":     "adapter = \"tla\"\ntypes = [\"model-check\"]\nargs = [\"x\"]\n",
-		"組込みのsql":     "adapter = \"sql\"\ntypes = [\"guardrail\"]\nargs = [\"x\"]\n",
-		"組込みのts":      "adapter = \"ts\"\ntypes = [\"unit-test\"]\nargs = [\"x\"]\n",
+		"組み込みのgo":      "adapter = \"go\"\ntypes = [\"unit-test\"]\nargs = [\"x\"]\n",
+		"組み込みのtxtar":   "adapter = \"txtar\"\ntypes = [\"scenario-test\"]\nargs = [\"x\"]\n",
+		"組み込みのtla":     "adapter = \"tla\"\ntypes = [\"model-check\"]\nargs = [\"x\"]\n",
+		"組み込みのsql":     "adapter = \"sql\"\ntypes = [\"guardrail\"]\nargs = [\"x\"]\n",
+		"組み込みのts":      "adapter = \"ts\"\ntypes = [\"unit-test\"]\nargs = [\"x\"]\n",
 		"adapterのない表": "types = [\"unit-test\"]\nargs = [\"x\"]\n",
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -265,7 +265,7 @@ func TestLoadはargsを組込みのアダプタとadapterのない表に書け�
 	}
 	root := writeConfig(t, "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"o/r\"\nargs = [\"x\"]\n")
 	if _, errs := Load(root); errs == nil || !strings.Contains(errs.Error(), "args") {
-		t.Errorf("組込みの github の args が誤りにならない: %v", errs)
+		t.Errorf("組み込みの github の args が誤りにならない: %v", errs)
 	}
 }
 
@@ -276,11 +276,11 @@ func TestLoadはtimeoutを1以上の整数の秒でカスタムアダプタの�
 		"負の数":         "adapter = \"md\"\ntypes = [\"unit-test\"]\ntimeout = -1\n",
 		"小数":          "adapter = \"md\"\ntypes = [\"unit-test\"]\ntimeout = 1.5\n",
 		"文字列":         "adapter = \"md\"\ntypes = [\"unit-test\"]\ntimeout = \"20\"\n",
-		"組込みのgo":      "adapter = \"go\"\ntypes = [\"unit-test\"]\ntimeout = 5\n",
-		"組込みのtxtar":   "adapter = \"txtar\"\ntypes = [\"scenario-test\"]\ntimeout = 5\n",
-		"組込みのtla":     "adapter = \"tla\"\ntypes = [\"model-check\"]\ntimeout = 5\n",
-		"組込みのsql":     "adapter = \"sql\"\ntypes = [\"guardrail\"]\ntimeout = 5\n",
-		"組込みのts":      "adapter = \"ts\"\ntypes = [\"unit-test\"]\ntimeout = 5\n",
+		"組み込みのgo":      "adapter = \"go\"\ntypes = [\"unit-test\"]\ntimeout = 5\n",
+		"組み込みのtxtar":   "adapter = \"txtar\"\ntypes = [\"scenario-test\"]\ntimeout = 5\n",
+		"組み込みのtla":     "adapter = \"tla\"\ntypes = [\"model-check\"]\ntimeout = 5\n",
+		"組み込みのsql":     "adapter = \"sql\"\ntypes = [\"guardrail\"]\ntimeout = 5\n",
+		"組み込みのts":      "adapter = \"ts\"\ntypes = [\"unit-test\"]\ntimeout = 5\n",
 		"adapterのない表": "types = [\"unit-test\"]\ntimeout = 5\n",
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -311,7 +311,7 @@ func TestLoadはtimeoutを1以上の整数の秒でカスタムアダプタの�
 
 // @vanda:evidence project-adapter-name
 // @vanda:evidence project-adapter-overrides-builtin
-func TestLoadはvanda_adaptersの直下のファイルとディレクトリのrunを名前で指し組込みと同じ名前ならそちらを使う(t *testing.T) {
+func TestLoadはvanda_adaptersの直下のファイルとディレクトリのrunを名前で指し組み込みと同じ名前ならそちらを使う(t *testing.T) {
 	root := writeConfig(t, "version = \"0.1.0\"\n\n[[annotation]]\npaths = [\"a/*\"]\nadapter = \"md\"\ntypes = [\"unit-test\"]\n\n[[annotation]]\npaths = [\"b/*\"]\nadapter = \"rs\"\ntypes = [\"unit-test\"]\n\n[[annotation]]\npaths = [\"c/*\"]\nadapter = \"go\"\ntypes = [\"unit-test\"]\n\n[[annotation]]\npaths = [\"d/*\"]\nadapter = \"txtar\"\ntypes = [\"scenario-test\"]\n")
 	writeAdapter(t, root, "md", "#!/bin/sh\n")
 	writeAdapter(t, root, "rs/run", "#!/bin/sh\n")
@@ -328,10 +328,10 @@ func TestLoadはvanda_adaptersの直下のファイルとディレクトリのru
 		t.Errorf("ディレクトリの形: %+v", a[1].User)
 	}
 	if a[2].Adapter != "" || a[2].User == nil || a[2].User.Path != ".vanda/adapters/go" {
-		t.Errorf("組込みと同じ名前の go が .vanda/adapters/ のものにならない: %+v %+v", a[2], a[2].User)
+		t.Errorf("組み込みと同じ名前の go が .vanda/adapters/ のものにならない: %+v %+v", a[2], a[2].User)
 	}
 	if a[3].Adapter != "txtar" || a[3].User != nil {
-		t.Errorf("同じ名前がなければ組込みのまま: %+v", a[3])
+		t.Errorf("同じ名前がなければ組み込みのまま: %+v", a[3])
 	}
 }
 
@@ -377,8 +377,8 @@ func TestLoadはannotationのtypesに同じタイプを2つ以上書けば誤り
 	for name, types := range map[string]string{
 		"同じタイプが2つ":    `["unit-test", "unit-test"]`,
 		"同じタイプが3つ":    `["sensor", "sensor", "sensor"]`,
-		"間をはさんで重なる":   `["unit-test", "random-check", "unit-test"]`,
-		"2組が重なる":      `["unit-test", "sensor", "sensor", "unit-test"]`,
+		"間をはさんで重複する":   `["unit-test", "random-check", "unit-test"]`,
+		"2組が重複する":      `["unit-test", "sensor", "sensor", "unit-test"]`,
 		"カスタムアダプタの表で": `["scenario-test", "scenario-test"]`,
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -393,12 +393,12 @@ func TestLoadはannotationのtypesに同じタイプを2つ以上書けば誤り
 		})
 	}
 	if got := loadErrs(t, annConfig("adapter = \"go\"\ntypes = [\"unit-test\", \"random-check\", \"sensor\"]\n")); got != "" {
-		t.Errorf("重ならない types が誤りになった:\n%s", got)
+		t.Errorf("重複しない types が誤りになった:\n%s", got)
 	}
 }
 
 // @vanda:evidence config-api-url-default
-func TestLoadは組込みのgithubでapi_urlを省けばhttps_api_github_comを使う(t *testing.T) {
+func TestLoadは組み込みのgithubでapi_urlを省けばhttps_api_github_comを使う(t *testing.T) {
 	root := writeConfig(t, "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"o/r\"\n")
 	cfg, errs := Load(root)
 	if errs != nil {
@@ -435,7 +435,7 @@ func TestLoadはapi_urlがhttpかhttpsで始まらなければ誤りにする(t 
 }
 
 // @vanda:evidence config-github-repository
-func TestLoadは組込みのgithubでrepositoryがないかowner_repoの形でなければ誤りにする(t *testing.T) {
+func TestLoadは組み込みのgithubでrepositoryがないかowner_repoの形でなければ誤りにする(t *testing.T) {
 	if got := loadErrs(t, "version = \"0.1.0\"\n[story]\nadapter = \"github\"\n"); !lineWith(got, ".vanda/config.toml:2: ", "repository") {
 		t.Errorf("repository がないのに、[story] の行を指す誤りにならない:\n%s", got)
 	}
@@ -482,7 +482,7 @@ func TestLoadはid_patternを省けばストーリーのIDの書き方をシャ�
 			}
 			for s, want := range map[string]bool{"#1": true, "#24": true, "#0123456789": true, "#": false, "24": false, "#24a": false, "a#24": false, "# 24": false, "#２４": false, "PROJ-1": false, "": false} {
 				if got := cfg.IDFull.MatchString(s); got != want {
-					t.Errorf("%q がストーリーの ID の書き方に当たるか: %v（思ったもの %v）", s, got, want)
+					t.Errorf("%q がストーリーの ID の書き方にマッチするか: %v（思ったもの %v）", s, got, want)
 				}
 			}
 		})
@@ -508,7 +508,7 @@ func TestLoadはid_patternが正規表現として読めなければ誤りにす
 }
 
 // @vanda:evidence config-layer-id
-func TestLoadはlayerのidが決まった形でないかほかのレイヤーと重なれば誤りにする(t *testing.T) {
+func TestLoadはlayerのidが決まった形でないかほかのレイヤーと重複すれば誤りにする(t *testing.T) {
 	layer := func(id string) string {
 		return "\n[[layer]]\nid = \"" + id + "\"\nname = \"n\"\ndescription = \"d\"\n"
 	}
@@ -518,12 +518,12 @@ func TestLoadはlayerのidが決まった形でないかほかのレイヤーと
 		}
 	}
 	if got := loadErrs(t, "version = \"0.1.0\"\n"+layer("model")+layer("db-2")+layer("a1-b2-c3")); got != "" {
-		t.Errorf("決まった形の重ならない id が誤りになった:\n%s", got)
+		t.Errorf("決まった形の重複しない id が誤りになった:\n%s", got)
 	}
-	// 重なれば、後のほうの id の行を指す
+	// 重複すれば、後のほうの id の行を指す
 	got := loadErrs(t, "version = \"0.1.0\"\n"+layer("model")+layer("db")+layer("model"))
-	if !lineWith(got, ".vanda/config.toml:14: ", `"model"`, "重な") || strings.Count(got, "\n") != 0 {
-		t.Errorf("重なった id が、後のほうの id の行（14 行目）を指す 1 件の誤りにならない:\n%s", got)
+	if !lineWith(got, ".vanda/config.toml:14: ", `"model"`, "重複") || strings.Count(got, "\n") != 0 {
+		t.Errorf("重複した id が、後のほうの id の行（14 行目）を指す 1 件の誤りにならない:\n%s", got)
 	}
 }
 

@@ -2,8 +2,8 @@
 (* クロスチェック（cmd/vanda/crosscheck_test.go）で、TLC -simulate にトレースを書き出させるための包み。    *)
 (* Agreement のトレースには操作の引数も判定の値も出ないので、step に操作と引数を、obs にモデルの判定を、     *)
 (* 1 歩ごとに書かせる。Agreement の操作と性質は変えない。                                                *)
-(* step は <<操作, ストーリー, 項目>> で、Change・Add は 4 つ目に中身の指紋を、Rename は 4 つ目に新しい場所を持つ。 *)
-(* 今ない項目では、合意済（agreed）と審査で止まらないこと（passes）が別になるので、両方を出す                  *)
+(* step は <<操作, ストーリー, 項目>> で、Change・Add は 4 つ目に中身のフィンガープリントを、Rename は 4 つ目に新しい場所を持つ。 *)
+(* 今ない項目では、承認済（agreed）とチェックで止まらないこと（passes）が別になるので、両方を出す                  *)
 EXTENDS Agreement
 
 VARIABLES step, obs

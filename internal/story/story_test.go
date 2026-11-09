@@ -15,9 +15,9 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/config"
 )
 
-// 組込みの github のアダプタが、api_url のホストに合う認証キーを選ぶこと。
-// 本物の GitHub に繋がないよう、http.DefaultClient の Transport を、要求を記録して決まった答えを返すものに替える。
-// 本物の gh の認証キーを読まないよう、偽の gh を PATH の先頭に置く。どちらもプロセス全体に効くので、並べて動かさない。
+// 組み込みの github のアダプタが、api_url のホストに合うトークンを選ぶこと。
+// 本物の GitHub に繋がないよう、http.DefaultClient の Transport を、リクエストを記録して決まった答えを返すものに替える。
+// 本物の gh のトークンを読まないよう、偽の gh を PATH の先頭に置く。どちらもプロセス全体に効くので、並べて動かさない。
 
 type fakeTransport struct {
 	mu   sync.Mutex
@@ -53,8 +53,8 @@ func useFakeGitHub(t *testing.T) *fakeTransport {
 }
 
 // useFakeGH は、偽の gh を PATH の先頭に置き、呼ばれた引数を書くファイルの場所を返す。
-// tokens は、ホスト → そのホストにログインした認証キー。本物の gh と同じく、--hostname がなければ github.com のものを出し、
-// ログインしていないホストなら終了コード 1 で終わる。認証キーが空のホストには、何も出さずに終了コード 0 で終わる。
+// tokens は、ホスト → そのホストにログインしたトークン。本物の gh と同じく、--hostname がなければ github.com のものを出し、
+// ログインしていないホストなら終了コード 1 で終わる。トークンが空のホストには、何も出さずに終了コード 0 で終わる。
 func useFakeGH(t *testing.T, tokens map[string]string) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -112,7 +112,7 @@ func githubConfig(apiURL string) *config.Config {
 	}
 }
 
-// 認証キーを使う 2 つの所。画面でストーリーを読むときと、vanda doctor が繋がるかを確かめるとき
+// トークンを使う 2 つの所。画面でストーリーを読むときと、vanda doctor が繋がるかを確かめるとき
 var githubOps = []struct {
 	name string
 	run  func(cfg *config.Config) error
@@ -129,7 +129,7 @@ var githubOps = []struct {
 	}},
 }
 
-// 偽の gh がログインしているホストと認証キー。どのホストにも、違う認証キーを持たせる
+// 偽の gh がログインしているホストとトークン。どのホストにも、違うトークンを持たせる
 var ghLogins = map[string]string{
 	"github.com":                 "gho_gh_dotcom",
 	"ghe.example.com":            "ghe_gh_example",
@@ -138,7 +138,7 @@ var ghLogins = map[string]string{
 
 // @vanda:evidence story-github-token
 // @vanda:evidence doctor-github-token
-func Test認証キーはapi_urlのホストがapi_github_comならGH_TOKENかgithub_comのghのものでほかのホストならGH_ENTERPRISE_TOKENかそのホストのghのもの(t *testing.T) {
+func Testトークンはapi_urlのホストがapi_github_comならGH_TOKENかgithub_comのghのものでほかのホストならGH_ENTERPRISE_TOKENかそのホストのghのもの(t *testing.T) {
 	both := map[string]string{"GH_TOKEN": "env_dotcom", "GH_ENTERPRISE_TOKEN": "env_enterprise"}
 	cases := []struct {
 		name    string
@@ -167,11 +167,11 @@ func Test認証キーはapi_urlのホストがapi_github_comならGH_TOKENかgit
 				host := strings.TrimPrefix(strings.TrimPrefix(c.apiURL, "https://"), "http://")
 				host = strings.SplitN(host, "/", 2)[0]
 				if got := f.auths(); len(got) != 1 || got[0] != host+" Bearer "+c.wantKey {
-					t.Errorf("送った要求: %q（%s に Bearer %s を 1 回のはず）", got, host, c.wantKey)
+					t.Errorf("送ったリクエスト: %q（%s に Bearer %s を 1 回のはず）", got, host, c.wantKey)
 				}
 				calls := ghCalls(t, log)
 				if c.wantGH == "" && len(calls) != 0 {
-					t.Errorf("環境変数に認証キーがあるのに gh を呼んだ: %q", calls)
+					t.Errorf("環境変数にトークンがあるのに gh を呼んだ: %q", calls)
 				}
 				if c.wantGH != "" && (len(calls) != 1 || calls[0] != c.wantGH) {
 					t.Errorf("gh の呼ばれ方: %q（%q のはず）", calls, c.wantGH)
@@ -183,7 +183,7 @@ func Test認証キーはapi_urlのホストがapi_github_comならGH_TOKENかgit
 
 // @vanda:evidence story-github-token-missing
 // @vanda:evidence doctor-github-token
-func Test_api_urlのホストに合う認証キーが見つからなければ要求を送らずにストーリーストアのエラーにする(t *testing.T) {
+func Test_api_urlのホストに合うトークンが見つからなければリクエストを送らずにストーリーストアのエラーにする(t *testing.T) {
 	cases := []struct {
 		name   string
 		apiURL string
@@ -192,11 +192,11 @@ func Test_api_urlのホストに合う認証キーが見つからなければ要
 	}{
 		{"api.github.comでGH_TOKENがなくghもgithub_comにログインしていない", "https://api.github.com",
 			map[string]string{"GH_ENTERPRISE_TOKEN": "env_enterprise"}, map[string]string{"ghe.example.com": "ghe_gh_example"}},
-		{"api.github.comでGH_TOKENがなくghのgithub_comの認証キーが空", "https://api.github.com",
+		{"api.github.comでGH_TOKENがなくghのgithub_comのトークンが空", "https://api.github.com",
 			map[string]string{"GH_ENTERPRISE_TOKEN": "env_enterprise"}, map[string]string{"github.com": "", "ghe.example.com": "ghe_gh_example"}},
 		{"GHEでGH_ENTERPRISE_TOKENがなくghもそのホストにログインしていない", "https://ghe.example.com/api/v3",
 			map[string]string{"GH_TOKEN": "env_dotcom"}, map[string]string{"github.com": "gho_gh_dotcom"}},
-		{"GHEでGH_ENTERPRISE_TOKENがなくghのそのホストの認証キーが空", "https://ghe.example.com/api/v3",
+		{"GHEでGH_ENTERPRISE_TOKENがなくghのそのホストのトークンが空", "https://ghe.example.com/api/v3",
 			map[string]string{"GH_TOKEN": "env_dotcom"}, map[string]string{"github.com": "gho_gh_dotcom", "ghe.example.com": ""}},
 	}
 	for _, op := range githubOps {
@@ -211,7 +211,7 @@ func Test_api_urlのホストに合う認証キーが見つからなければ要
 					t.Errorf("ストーリーストアのエラー（502 と直し方）にならない: %#v", err)
 				}
 				if got := f.auths(); len(got) != 0 {
-					t.Errorf("認証キーがないのに要求を送った: %q", got)
+					t.Errorf("トークンがないのにリクエストを送った: %q", got)
 				}
 			})
 		}
@@ -240,17 +240,17 @@ func captureStderr(t *testing.T, fn func()) string {
 }
 
 // @vanda:evidence story-github-http-warning
-func Test_api_urlがhttpなら認証キーを送るたびに暗号化されずに流れることを標準エラーに出す(t *testing.T) {
+func Test_api_urlがhttpならトークンを送るたびに暗号化されずに流れることを標準エラーに出す(t *testing.T) {
 	cases := []struct {
 		name      string
 		apiURL    string
 		env       map[string]string
 		wantWarns int // 2 回読んだときに出る知らせの数
 	}{
-		{"httpで認証キーがある", "http://ghe.example.com/api/v3", map[string]string{"GH_ENTERPRISE_TOKEN": "env_enterprise"}, 2},
-		{"httpsで認証キーがある", "https://ghe.example.com/api/v3", map[string]string{"GH_ENTERPRISE_TOKEN": "env_enterprise"}, 0},
+		{"httpでトークンがある", "http://ghe.example.com/api/v3", map[string]string{"GH_ENTERPRISE_TOKEN": "env_enterprise"}, 2},
+		{"httpsでトークンがある", "https://ghe.example.com/api/v3", map[string]string{"GH_ENTERPRISE_TOKEN": "env_enterprise"}, 0},
 		// 送らなければ、流れない
-		{"httpで認証キーがない", "http://ghe.example.com/api/v3", nil, 0},
+		{"httpでトークンがない", "http://ghe.example.com/api/v3", nil, 0},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -273,7 +273,7 @@ func Test_api_urlがhttpなら認証キーを送るたびに暗号化されず�
 				t.Errorf("知らせが %d 回（%d 回のはず）。標準エラー: %q", warns, c.wantWarns, errs)
 			}
 			if c.wantWarns > 0 && len(f.auths()) != c.wantWarns {
-				t.Errorf("送った要求: %q（知らせと同じ %d 回のはず）", f.auths(), c.wantWarns)
+				t.Errorf("送ったリクエスト: %q（知らせと同じ %d 回のはず）", f.auths(), c.wantWarns)
 			}
 		})
 	}

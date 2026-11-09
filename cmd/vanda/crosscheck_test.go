@@ -16,22 +16,22 @@ import (
 	"testing"
 )
 
-// CMD-10 合意のクロスチェック。オラクルは spec/Agreement.tla（spec/AgreementTrace.tla で包んだもの）。
+// CMD-10 承認のクロスチェック。オラクルは spec/Agreement.tla（spec/AgreementTrace.tla で包んだもの）。
 // TLC -simulate が無作為にたどった操作の列を、本物の vanda（一時的な git のリポジトリと .vanda/）に 1 歩ずつ送り、
 // 1 歩ごとに、モデルの判定と vanda check の結果が一致するかを比べる。
 //
 // 比べるもの:
-//   - Passes(i): 全部の範囲の agreement の誤りに、その項目が出ないこと（今ある項目では Agreed(i) と同じ）
-//   - AllPass: 全部の範囲の agreement が通ること
-//   - StoryPass(s): ストーリーの範囲の agreement を、比べる元をはじめのコミットにして行ったときに通ること。
-//     誤りに出る項目は、比べる元と今で違い（Diff）合意済でない項目と、s の外れた合意（Broken(s)）を合わせたもの
+//   - Passes(i): スコープ all の agreement の誤りに、その項目が出ないこと（今ある項目では Agreed(i) と同じ）
+//   - AllPass: スコープ all の agreement が通ること
+//   - StoryPass(s): スコープ story の agreement を、比べる元をはじめのコミットにして行ったときに通ること。
+//     誤りに出る項目は、比べる元と今で違い（Diff）承認済でない項目と、s の失効した承認（Broken(s)）を合わせたもの
 // モデルの changedBy（一度でも変えたストーリー）は判定に使わないので比べない。
 //
 // 写し方: Items の i1 は約束 item-1、i2・i3（Files）はシナリオのファイル e2e/item-2.txtar・e2e/item-3.txtar。
-// 中身の指紋 n（1..MaxFp）は、約束の文やファイルの中身の v<n>。0 は、その項目がない（約束リストにない、ファイルがない）こと。
-// ファイルは、指紋が同じなら中身が同じ（写し）。Rename(s, i, j) は、i のファイルを j の場所に動かす 1 つのコミット。
-// Stories の A・B はストーリーの ID #1・#2。どの操作も 1 つのコミットにする。Agree(s, i) は合意の記録の書き足し
-// （i が今なければ、消したことへの合意）、Revoke(s, i) は、Agree(s, i) で書き足した記録をストーリーの合意の記録のファイルから消す。
+// 中身のフィンガープリント n（1..MaxFp）は、約束の文やファイルの中身の v<n>。0 は、その項目がない（約束リストにない、ファイルがない）こと。
+// ファイルは、フィンガープリントが同じなら中身が同じ（写し）。Rename(s, i, j) は、i のファイルを j の場所に動かす 1 つのコミット。
+// Stories の A・B はストーリーの ID #1・#2。どの操作も 1 つのコミットにする。Agree(s, i) は承認の記録の書き足し
+// （i が今なければ、消したことへの承認）、Revoke(s, i) は、Agree(s, i) で書き足した記録をストーリーの承認の記録のファイルから消す。
 // Revoke は、POST /api/revoke でなくファイルを直接書き換えて送る。トレースはすべて main の上で進むので、取り消せる範囲
 // （今のブランチで書いた記録だけ）に入る記録がない。また Agree もファイルを直接書いて送っており、比べるのは判定だけ。
 // 人はテスト担当 1 人に固定する（モデルは人を区別しない）。人が複数のときの取り消しは、API のテストが受け持つ。
@@ -40,12 +40,12 @@ import (
 // ファイルの場所が変わらない操作だけでは、場所で見分けても中身で見分けても結果が同じになり、場所の食い違いを見逃す。
 
 const (
-	// 項目を 3 つにし、足す・消す・名前を変える操作を足した後、150 本・深さ 12 では、名前を変えた先が合意済になる場面が
+	// 項目を 3 つにし、足す・消す・名前を変える操作を足した後、150 本・深さ 12 では、名前を変えた先が承認済になる場面が
 	// 5 回ほどしか出なかったので、本数と深さを増やした
 	xcheckDefaultTraces = 300
 	xcheckDefaultDepth  = 16
 	// 場面ごとに、全部のトレースで少なくともこれだけ出ることを求める。300 本・深さ 16 を 3 通りの種で数えると、いちばん少ない
-	// 場面（名前を変えた先の場所に、同じ中身への記録があり合意済）でも 32〜40 回だった。種によってたまたま下回らないよう、
+	// 場面（名前を変えた先の場所に、同じ中身への記録があり承認済）でも 32〜40 回だった。種によってたまたま下回らないよう、
 	// その半分ほどにした
 	xcheckMinScenes = 15
 )
@@ -213,7 +213,7 @@ func decodeState(raw map[string]any) (xcheckState, error) {
 	for _, a := range set {
 		rec, ok := a.(tlaRecord)
 		if !ok {
-			return st, fmt.Errorf("合意が表でない: %v", a)
+			return st, fmt.Errorf("承認が表でない: %v", a)
 		}
 		st.agreements = append(st.agreements, rec)
 	}
@@ -244,8 +244,8 @@ func decodeState(raw map[string]any) (xcheckState, error) {
 	return st, nil
 }
 
-// storyErrItems は、モデルの判定から、s の範囲の審査の誤りに出るはずの項目を返す。比べる元と今で違い合意済でない項目と、
-// s の外れた合意を合わせたもの（StoryPass の 2 つの条件のそれぞれを破る項目）。
+// storyErrItems は、モデルの判定から、スコープ story（s）のチェックの誤りに出るはずの項目を返す。比べる元と今で違い承認済でない項目と、
+// s の失効した承認を合わせたもの（StoryPass の 2 つの条件のそれぞれを破る項目）。
 func (st xcheckState) storyErrItems(s string) []string {
 	set := map[string]bool{}
 	for _, i := range xcheckItems {
@@ -287,21 +287,21 @@ func countScenes(states []xcheckState) map[string]int {
 	for k, st := range states {
 		for _, s := range []string{"A", "B"} {
 			if len(st.broken[s]) > 0 {
-				c["外れた合意がある"]++
+				c["失効した承認がある"]++
 			}
 			for _, i := range st.broken[s] {
 				if st.agreed[i] {
-					c["ほかのストーリーの合意で合意済なのに、s の合意は外れている（RV-14）"]++
+					c["ほかのストーリーの承認で承認済なのに、s の承認は失効している（RV-14）"]++
 				}
 			}
 			if !st.storyPass[s] && len(st.broken[s]) == 0 {
-				c["外れた合意はないが、比べる元と違う項目が合意済でなく、ストーリーの範囲で止まる"]++
+				c["失効した承認はないが、比べる元と違う項目が承認済でなく、スコープ story で止まる"]++
 			}
 		}
 		for x, a := range st.agreements {
 			for _, b := range st.agreements[x+1:] {
 				if a["item"] == b["item"] && a["fp"] == b["fp"] && a["story"] != b["story"] {
-					c["同じ中身に 2 つのストーリーが合意している"]++
+					c["同じ中身に 2 つのストーリーが承認している"]++
 				}
 			}
 		}
@@ -310,23 +310,23 @@ func countScenes(states []xcheckState) map[string]int {
 			diff = diff || st.content[i] != st.base[i]
 		}
 		if diff && st.allPass {
-			c["比べる元と違う項目があり、全部の範囲が通る"]++
+			c["比べる元と違う項目があり、スコープ all が通る"]++
 		}
 		if st.content["i2"] != 0 && st.content["i2"] == st.content["i3"] {
 			c["2 つのファイルが同じ中身（写し）"]++
 			if st.agreed["i2"] != st.agreed["i3"] {
-				c["写しの片方だけが合意済"]++
+				c["写しの片方だけが承認済"]++
 			}
 		}
 		for _, a := range st.agreements {
 			if a["fp"] == 0 {
-				c["消したことへの合意の記録がある"]++
+				c["消したことへの承認の記録がある"]++
 				break
 			}
 		}
 		for _, i := range xcheckItems {
 			if st.content[i] == 0 && !st.passes[i] {
-				c["合意したことのある項目が今なく、全部の範囲で止まる"]++
+				c["承認したことのある項目が今なく、スコープ all で止まる"]++
 			}
 		}
 		if k == 0 {
@@ -337,38 +337,38 @@ func countScenes(states []xcheckState) map[string]int {
 		switch op {
 		case "Revoke":
 			if st.agreed[i] {
-				c["取り消した後も、ほかのストーリーの合意で合意済のまま"]++
+				c["取り消した後も、ほかのストーリーの承認で承認済のまま"]++
 			} else {
 				c["取り消して、提案中に戻る"]++
 			}
 			if st.content[i] == 0 {
-				c["消したことへの合意を取り消す"]++
+				c["消したことへの承認を取り消す"]++
 			}
 		case "Change":
 			s := string(st.step[1].(tlaModel))
 			for _, a := range states[k-1].agreements {
 				if a["item"] == tlaModel(i) && a["story"] == tlaModel(s) {
-					c["前に合意したストーリーが、自分で変えて外れる"]++
+					c["前に承認したストーリーが、自分で変えて失効する"]++
 					break
 				}
 			}
 		case "Add":
 			c["足す"]++
 			if st.agreed[i] {
-				c["足し直した中身に、前の合意の記録があり合意済"]++
+				c["足し直した中身に、前の承認の記録があり承認済"]++
 			}
 		case "Delete":
 			c["消す"]++
 		case "Rename":
 			c["名前を変える"]++
 			if j := string(st.step[3].(tlaModel)); st.agreed[j] {
-				c["名前を変えた先の場所に、同じ中身への記録があり合意済（名前を元に戻すなど）"]++
+				c["名前を変えた先の場所に、同じ中身への記録があり承認済（名前を元に戻すなど）"]++
 			} else {
 				c["名前を変えた先が提案中"]++
 			}
 		case "Agree":
 			if st.content[i] == 0 {
-				c["消したことに合意する"]++
+				c["消したことを承認する"]++
 			}
 		}
 	}
@@ -376,26 +376,26 @@ func countScenes(states []xcheckState) map[string]int {
 }
 
 var xcheckSceneNames = []string{
-	"外れた合意がある",
-	"ほかのストーリーの合意で合意済なのに、s の合意は外れている（RV-14）",
-	"外れた合意はないが、比べる元と違う項目が合意済でなく、ストーリーの範囲で止まる",
-	"同じ中身に 2 つのストーリーが合意している",
-	"比べる元と違う項目があり、全部の範囲が通る",
-	"前に合意したストーリーが、自分で変えて外れる",
+	"失効した承認がある",
+	"ほかのストーリーの承認で承認済なのに、s の承認は失効している（RV-14）",
+	"失効した承認はないが、比べる元と違う項目が承認済でなく、スコープ story で止まる",
+	"同じ中身に 2 つのストーリーが承認している",
+	"比べる元と違う項目があり、スコープ all が通る",
+	"前に承認したストーリーが、自分で変えて失効する",
 	"取り消して、提案中に戻る",
-	"取り消した後も、ほかのストーリーの合意で合意済のまま",
+	"取り消した後も、ほかのストーリーの承認で承認済のまま",
 	"足す",
-	"足し直した中身に、前の合意の記録があり合意済",
+	"足し直した中身に、前の承認の記録があり承認済",
 	"消す",
 	"名前を変える",
 	"名前を変えた先が提案中",
-	"名前を変えた先の場所に、同じ中身への記録があり合意済（名前を元に戻すなど）",
+	"名前を変えた先の場所に、同じ中身への記録があり承認済（名前を元に戻すなど）",
 	"2 つのファイルが同じ中身（写し）",
-	"写しの片方だけが合意済",
-	"消したことに合意する",
-	"消したことへの合意の記録がある",
-	"消したことへの合意を取り消す",
-	"合意したことのある項目が今なく、全部の範囲で止まる",
+	"写しの片方だけが承認済",
+	"消したことを承認する",
+	"消したことへの承認の記録がある",
+	"消したことへの承認を取り消す",
+	"承認したことのある項目が今なく、スコープ all で止まる",
 }
 
 // ---- vanda の側 ----
@@ -405,7 +405,7 @@ type xcheckRepo struct {
 	bin  string
 	root string
 	env  []string
-	base string // はじめのコミット。ストーリーの範囲の審査の比べる元（モデルの base）
+	base string // はじめのコミット。スコープ story のチェックの比べる元（モデルの base）
 }
 
 var xcheckPaths = map[string]string{"i2": "e2e/item-2.txtar", "i3": "e2e/item-3.txtar"}
@@ -446,16 +446,16 @@ types = ["scenario-test"]
 	writeFile(t, root, ".vanda/checks/all.toml", "[[check]]\nname = \"agreement\"\nscope = \"all\"\n")
 	writeFile(t, root, ".vanda/checks/story.toml", "[[check]]\nname = \"agreement\"\nscope = \"story\"\n")
 	r.sync(init)
-	// 用語 t はモデルの項目でないので、はじめから、どのストーリーでもない #9 で合意しておく
+	// 用語 t はモデルの項目でないので、はじめから、どのストーリーでもない #9 で承認しておく
 	writeFile(t, root, ".vanda/agreements/story-9.toml", agreementTOML("term", "t",
 		sha256Hex([]byte(`{"definition":"d","id":"t","name":"n"}`)), "", "#9", "テスト担当", "tester@example.com"))
 	r.git("init", "-q", "-b", "main")
 	r.commit("はじめの中身", "#9")
 	r.base = r.git("rev-parse", "HEAD")
-	// 分岐点より後のトレーラーのストーリーが 1 つだけだと、ほかのストーリーの --story は審査の前の誤りになる
-	// （約束 check-story-from-commits）。モデルは、どちらのストーリーの範囲の審査も毎歩で比べるので、はじめに
+	// マージベースより後のトレーラーのストーリーが 1 つだけだと、ほかのストーリーの --story はチェックの前の誤りになる
+	// （約束 check-story-from-commits）。モデルは、どちらのスコープ story のチェックも毎歩で比べるので、はじめに
 	// 2 つのストーリーの空のコミットを置き、トレーラーのストーリーをいつも 2 つにして、--story で選べるようにする。
-	// 空のコミットは中身を変えないので、範囲の審査が見るもの（分岐点の中身と今の中身の違い、外れた合意）は変わらない
+	// 空のコミットは中身を変えないので、スコープ story のチェックが見るもの（マージベースの中身と今の中身の違い、失効した承認）は変わらない
 	r.commit("ストーリー A を始める", xcheckStory["A"])
 	r.commit("ストーリー B を始める", xcheckStory["B"])
 	return r
@@ -522,7 +522,7 @@ func (r *xcheckRepo) apply(k int, next xcheckState) {
 		path := r.agreementsPath(story)
 		src, err := os.ReadFile(path)
 		if err != nil {
-			r.t.Fatalf("%d 歩目: %s の合意の記録のファイルを読めない: %v", k, story, err)
+			r.t.Fatalf("%d 歩目: %s の承認の記録のファイルを読めない: %v", k, story, err)
 		}
 		rec := xcheckRecord(i, ver, story)
 		if strings.Count(string(src), rec) != 1 {
@@ -541,7 +541,7 @@ func (r *xcheckRepo) agreementsPath(story string) string {
 	return filepath.Join(r.root, ".vanda", "agreements", "story-"+strings.TrimPrefix(story, "#")+".toml")
 }
 
-// xcheckRecord は、項目 i の中身 ver への、ストーリー story の合意の記録を返す。ver が 0 なら、i を消したことへの合意の記録。
+// xcheckRecord は、項目 i の中身 ver への、ストーリー story の承認の記録を返す。ver が 0 なら、i を消したことへの承認の記録。
 func xcheckRecord(i string, ver int, story string) string {
 	const name, email = "テスト担当", "tester@example.com"
 	if i == "i1" {
@@ -561,7 +561,7 @@ func xcheckRecord(i string, ver int, story string) string {
 var xcheckRecordLine = regexp.MustCompile(`^(\.vanda/agreements/[^:]+\.toml):(\d+):`)
 
 // itemOf は、vanda check の誤りの 1 行が、どの項目（i1・i2・i3）のものかを返す。消したファイルには行がないので、
-// 合意の記録の行を指す誤りは、その行を含む [[agreement]] の表が指すもので決める。
+// 承認の記録の行を指す誤りは、その行を含む [[agreement]] の表が指すもので決める。
 func (r *xcheckRepo) itemOf(line string) (string, bool) {
 	var found []string
 	for i, p := range xcheckPaths {
@@ -586,7 +586,7 @@ func (r *xcheckRepo) itemOf(line string) (string, bool) {
 	return found[0], true
 }
 
-// recordItem は、合意の記録のファイル file の n 行目を含む [[agreement]] の表が指す項目を返す。
+// recordItem は、承認の記録のファイル file の n 行目を含む [[agreement]] の表が指す項目を返す。
 func (r *xcheckRepo) recordItem(file string, n int) (string, bool) {
 	src, err := os.ReadFile(filepath.Join(r.root, filepath.FromSlash(file)))
 	if err != nil {
@@ -659,7 +659,7 @@ func (r *xcheckRepo) check(args ...string) (bool, []string, string) {
 // @vanda:evidence detached-until-story-reagrees
 // @vanda:evidence revoke-returns-to-proposed
 // @vanda:evidence check-agreement-story-scope
-func Test合意の判定をTLAのモデルと本物のvandaで1歩ずつ比べると一致する(t *testing.T) {
+func Test承認の判定をTLAのモデルと本物のvandaで1歩ずつ比べると一致する(t *testing.T) {
 	t.Parallel()
 	tlc := lookTLC(t)
 	seed := xcheckSeed(t)
@@ -710,11 +710,11 @@ func Test合意の判定をTLAのモデルと本物のvandaで1歩ずつ比べ�
 					for _, i := range xcheckItems {
 						got := !contains(errItems, i)
 						if got != st.passes[i] {
-							t.Fatalf("%s: %s が全部の範囲の審査で止まらないかが、モデルは %v、vanda は %v\n%s", where, i, st.passes[i], got, out)
+							t.Fatalf("%s: %s がスコープ all のチェックで止まらないかが、モデルは %v、vanda は %v\n%s", where, i, st.passes[i], got, out)
 						}
 					}
 					if pass != st.allPass {
-						t.Fatalf("%s: 全部の範囲の審査が、モデルは %v、vanda は %v\n%s", where, st.allPass, pass, out)
+						t.Fatalf("%s: スコープ all のチェックが、モデルは %v、vanda は %v\n%s", where, st.allPass, pass, out)
 					}
 					for _, s := range []string{"A", "B"} {
 						want := st.storyErrItems(s)
@@ -723,10 +723,10 @@ func Test合意の判定をTLAのモデルと本物のvandaで1歩ずつ比べ�
 						}
 						pass, got, out := r.check(".vanda/checks/story.toml", "--base", r.base, "--story", xcheckStory[s])
 						if strings.Join(got, ",") != strings.Join(want, ",") {
-							t.Fatalf("%s: %s の範囲の審査の誤りに出る項目が、モデルは %v（外れた合意 %v）、vanda は %v\n%s", where, xcheckStory[s], want, st.broken[s], got, out)
+							t.Fatalf("%s: スコープ story（%s）のチェックの誤りに出る項目が、モデルは %v（失効した承認 %v）、vanda は %v\n%s", where, xcheckStory[s], want, st.broken[s], got, out)
 						}
 						if pass != st.storyPass[s] {
-							t.Fatalf("%s: %s の範囲の審査が、モデルは %v、vanda は %v\n%s", where, xcheckStory[s], st.storyPass[s], pass, out)
+							t.Fatalf("%s: スコープ story（%s）のチェックが、モデルは %v、vanda は %v\n%s", where, xcheckStory[s], st.storyPass[s], pass, out)
 						}
 					}
 				}

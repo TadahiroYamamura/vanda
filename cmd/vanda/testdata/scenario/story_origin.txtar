@@ -1,15 +1,15 @@
-# CMD-10 由来: ベースブランチとの分岐点より後の、約束リストを変えたコミットには、ストーリーの ID の Story: のトレーラーがある。
+# CMD-10 コミットのストーリーのチェック: ベースブランチとのマージベースより後の、約束リストを変えたコミットには、ストーリーの ID の Story: のトレーラーがある。
 # @vanda:evidence check-story-origin
-# 分岐点より前のコミットは見ない（履歴を書き換えないと直せないため）。約束リストを変えていないコミットには、ID がなくてよい。
+# マージベースより前のコミットは見ない（履歴を書き換えないと直せないため）。約束リストを変えていないコミットには、ID がなくてよい。
 # ID の書き方は、設定に書かなければ #<数>。
 #
-# 由来の審査は、範囲を 1 つのストーリーにしても、どのストーリーかを決めない（分岐点より後のコミットを見るだけ）ので、--story は要らない。
+# コミットのストーリーのチェックは、スコープを story にしても、どのストーリーかを決めない（マージベースより後のコミットを見るだけ）ので、--story は要らない。
 
 exec git init -q -b main
 expand .vanda/config.toml
 commit '約束リストを足す'
 
-# 分岐点より前の、ID のないコミットは見ない
+# マージベースより前の、ID のないコミットは見ない
 exec git checkout -q -b story-2
 exec vanda check .vanda/checks/origin.toml --base main
 
@@ -18,13 +18,13 @@ cp cases/promises-2.toml .vanda/promises.toml
 commit '約束の文を変える' '#2'
 exec vanda check .vanda/checks/origin.toml --base main
 
-# 約束リスト以外（合意の記録、ほかのファイル）を変えたコミットには、ID がなくてよい
+# 約束リスト以外（承認の記録、ほかのファイル）を変えたコミットには、ID がなくてよい
 cp cases/note.txt note.txt
 cp cases/agreements.toml .vanda/agreements.toml
-commit 'メモと合意の記録を変える'
+commit 'メモと承認の記録を変える'
 exec vanda check .vanda/checks/origin.toml --base main
 
-# 分岐点より後のコミットに、別のストーリーの ID が混じっても、--story なしで行う
+# マージベースより後のコミットに、別のストーリーの ID が混じっても、--story なしで行う
 cp cases/note-3.txt note.txt
 commit 'メモを直す' '#3'
 exec vanda check .vanda/checks/origin.toml --base main
@@ -78,7 +78,7 @@ definition = "利用者がこれからすること"
 -- cases/note.txt --
 メモ
 -- cases/agreements.toml --
-# 中身は審査に関わらない
+# 中身はチェックに関わらない
 -- cases/config-proj.toml --
 version = "${VANDA_VERSION}"
 

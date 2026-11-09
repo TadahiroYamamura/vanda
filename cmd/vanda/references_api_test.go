@@ -202,9 +202,9 @@ func setupRefAPI(t *testing.T) *refAPIRepo {
 	g.run("switch", "-q", "-c", "story-24")
 	writeFile(t, root, ".vanda/promises.toml", refAPIStory)
 	g.commitAll("参照先の名前を変え、消す", "#24")
-	// 書いた約束リストが形の審査を通ること（通らなければ、API の誤りと言えない）
+	// 書いた約束リストが形のチェックを通ること（通らなければ、API の誤りと言えない）
 	if code, out := runCheck(t, bin, root, ".vanda/checks/shape.toml"); code != 0 {
-		t.Fatalf("テストの約束リストが形の審査を通らない（%d）\n%s", code, out)
+		t.Fatalf("テストの約束リストが形のチェックを通らない（%d）\n%s", code, out)
 	}
 	s := startServe(t, bin, root, g.env)
 	r := &refAPIRepo{root: root, g: g, s: s}
@@ -235,14 +235,14 @@ func decodeInto(t *testing.T, where string, raw json.RawMessage, out any) {
 func wantFrags(t *testing.T, where string, got, want frags) {
 	t.Helper()
 	if got.norm() != want.norm() {
-		t.Errorf("%s の片:\n%s\n--- 思ったもの\n%s", where, got.norm(), want.norm())
+		t.Errorf("%s のセグメント:\n%s\n--- 思ったもの\n%s", where, got.norm(), want.norm())
 	}
 }
 
 func strp(s string) *string { return &s }
 
-// wantRefs は、refs の鍵がちょうど want の鍵で、それぞれの中身が want と同じことを確かめる。
-// 指す先の pieces の中の参照の指す先は refs に足さないので、余分な鍵があっても誤りにする
+// wantRefs は、refs のキーがちょうど want のキーで、それぞれの中身が want と同じことを確かめる。
+// 指す先の pieces の中の参照の指す先は refs に足さないので、余分なキーがあっても誤りにする
 func wantRefs(t *testing.T, where string, got map[string]refInfo, want map[string]refInfo) {
 	t.Helper()
 	for id, w := range want {
@@ -259,7 +259,7 @@ func wantRefs(t *testing.T, where string, got map[string]refInfo, want map[strin
 	}
 	for id := range got {
 		if _, ok := want[id]; !ok {
-			t.Errorf("%s の refs に、応答の片が指していない %s がある", where, id)
+			t.Errorf("%s の refs に、応答のセグメントが指していない %s がある", where, id)
 		}
 	}
 }
@@ -273,7 +273,7 @@ func boolStr(b *bool) string {
 	return fmt.Sprint(*b)
 }
 
-// 今の約束リスト（story-24）の、参照先の中身。用語と機能は名前と定義、約束は文（中の参照は見せる文字に置き換えた文字列と、片の配列）。
+// 今の約束リスト（story-24）の、参照先の中身。用語と機能は名前と定義、約束は文（中の参照は見せる文字に置き換えた文字列と、セグメントの配列）。
 // 機能は core・formal を持ち、どちらも書いていないので偽
 var refNow = map[string]refInfo{
 	"t-keep":   {Kind: "term", Name: strp("タスク"), Text: "やること", Current: true, Pieces: textOf("やること")},
@@ -294,7 +294,7 @@ func refsOf(ids ...string) map[string]refInfo {
 }
 
 // @vanda:evidence reference-shown
-func Test一覧の変更前と変更後は自然言語で書く項目を片に分け参照は用語と機能なら今の名前で約束ならIDで見せrefsに指す先を返す(t *testing.T) {
+func Test一覧の変更前と変更後は自然言語で書く項目をセグメントに分け参照は用語と機能なら今の名前で約束ならIDで見せrefsに指す先を返す(t *testing.T) {
 	t.Parallel()
 	r := setupRefAPI(t)
 
@@ -302,7 +302,7 @@ func Test一覧の変更前と変更後は自然言語で書く項目を片に�
 	decodeInto(t, "c-ref の after", r.entry(t, "c-ref").After, &after)
 	wantFrags(t, "c-ref の after の statement", after.Statement,
 		fragsOf("新しい用語>t-rename", "と", "新しい機能>f-rename", "は", "c-other>c-other", "を必ず使う"))
-	// {@@ は文字の {@ にした、参照でない片
+	// {@@ は文字の {@ にした、参照でないセグメント
 	wantFrags(t, "c-ref の after の rationale", after.Rationale, textOf("{@id:x}は文字"))
 	wantFrags(t, "c-ref の after の condition", after.Condition, fragsOf("タスク>t-keep", "がある"))
 	if len(after.Guesses) != 1 {
@@ -317,7 +317,7 @@ func Test一覧の変更前と変更後は自然言語で書く項目を片に�
 		wantFrags(t, "c-ref の after の evidence[0].detail", after.Evidence[0].Detail, fragsOf("新しい機能>f-rename", "で確かめる"))
 	}
 
-	// 用語と機能の定義も片に分ける。名前は片に分けない（文字列のまま）
+	// 用語と機能の定義もセグメントに分ける。名前はセグメントに分けない（文字列のまま）
 	var fr refItemContent
 	decodeInto(t, "f-rename の after", r.entry(t, "f-rename").After, &fr)
 	if fr.Name != "新しい機能" {
@@ -329,7 +329,7 @@ func Test一覧の変更前と変更後は自然言語で書く項目を片に�
 }
 
 // @vanda:evidence reference-shown
-func Test約束の詳細とその時点の中身は自然言語で書く項目を片に分けrefsに指す先を返す(t *testing.T) {
+func Test約束の詳細とその時点の中身は自然言語で書く項目をセグメントに分けrefsに指す先を返す(t *testing.T) {
 	t.Parallel()
 	r := setupRefAPI(t)
 
@@ -375,7 +375,7 @@ func Test約束の詳細とその時点の中身は自然言語で書く項目�
 	wantRefs(t, "main の時点の中身", at.Refs, refsOf("t-rename", "f-rename", "c-other", "t-gone", "f-gone"))
 }
 
-// runeRefs は、片の並びの見せる文字の 1 文字ずつに、指す ID（参照でなければ空）を並べる。
+// runeRefs は、セグメントの並びの見せる文字の 1 文字ずつに、指す ID（参照でなければ空）を並べる。
 func runeRefs(fs frags) []string {
 	var out []string
 	for _, f := range fs {
@@ -509,12 +509,12 @@ func Test差分は両方の参照を今の名前に置き換えて比べ名前�
 	decodeInto(t, "c-same の diff", se.Diff, &sd)
 	checkRefDiff(t, "c-same の statement", sd.Fields["statement"], sameBefore, sameAfter)
 
-	// 用語と機能の定義の差分も、片の見せる文字どうしで比べる
+	// 用語と機能の定義の差分も、セグメントの見せる文字どうしで比べる
 	fe := r.entry(t, "f-rename")
 	var fd refDiff
 	decodeInto(t, "f-rename の diff", fe.Diff, &fd)
 	checkRefDiff(t, "f-rename の definition", fd.Fields["definition"], textOf("前の機能の定義"), fragsOf("タスク>t-keep", "を足す"))
-	// 名前は片に分けないので、差分は書いたとおりの名前どうし
+	// 名前はセグメントに分けないので、差分は書いたとおりの名前どうし
 	if joinRefParts(fd.Fields["name"], "equal", "delete") != "古い機能" || joinRefParts(fd.Fields["name"], "equal", "insert") != "新しい機能" {
 		t.Errorf("f-rename の name の差分: %+v", fd.Fields["name"])
 	}
@@ -537,7 +537,7 @@ func Test参照先の名前を変えただけの約束は一覧に出ない(t *t
 }
 
 // @vanda:evidence reference-fingerprint-raw
-func Test参照先の名前と定義を変えても約束の詳細の指紋は書いたままの文から作り合意済のままになる(t *testing.T) {
+func Test参照先の名前と定義を変えても約束の詳細のフィンガープリントは書いたままの文から作り承認済のままになる(t *testing.T) {
 	t.Parallel()
 	bin, version := refSetup(t)
 	root := t.TempDir()
@@ -550,7 +550,7 @@ func Test参照先の名前と定義を変えても約束の詳細の指紋は�
 	agreed := who("claim", "c", fpClaimJSON, "#1") + who("term", "t", fpTermV1, "#1") + who("feature", "f", fpFeatureV1, "#1")
 	writeFile(t, root, ".vanda/promises.toml", fpPromises("タスク", "やること", "タスクの登録", "タスクを足す"))
 	writeFile(t, root, ".vanda/agreements.toml", agreed)
-	g.commitAll("約束を置いて合意する", "#1")
+	g.commitAll("約束を置いて承認する", "#1")
 	g.run("switch", "-q", "-c", "story-24")
 	writeFile(t, root, ".vanda/promises.toml", fpPromises("仕事", "やるべきこと", "仕事の登録", "仕事を足す"))
 	writeFile(t, root, ".vanda/agreements.toml", agreed+who("term", "t", fpTermV2, "#24")+who("feature", "f", fpFeatureV2, "#24"))
@@ -567,12 +567,12 @@ func Test参照先の名前と定義を変えても約束の詳細の指紋は�
 	}
 	h := getHistory(t, s, "c")
 	if want := sha256Hex([]byte(fpClaimJSON)); detail.Fingerprint != want {
-		t.Errorf("約束 c の指紋 %s が、書いたままの文の指紋 %s でない", detail.Fingerprint, want)
+		t.Errorf("約束 c のフィンガープリント %s が、書いたままの文のフィンガープリント %s でない", detail.Fingerprint, want)
 	}
 	if detail.State != "agreed" || len(h.Agreements) != 1 || !h.Agreements[0].Current {
-		t.Errorf("参照先を変えた後の約束 c: state %q、合意 %+v", detail.State, h.Agreements)
+		t.Errorf("参照先を変えた後の約束 c: state %q、承認 %+v", detail.State, h.Agreements)
 	}
-	// 見せる文は今の名前に置き換わっている（指紋は置き換える前の文から作る）
+	// 見せる文は今の名前に置き換わっている（フィンガープリントは置き換える前の文から作る）
 	wantFrags(t, "約束 c の statement", detail.Statement, fragsOf("仕事>t", "は", "仕事の登録>f", "で足し、{@id:x}は文字"))
 
 	var rv refReview

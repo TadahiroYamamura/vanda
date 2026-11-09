@@ -18,7 +18,7 @@ SPECIFICATION Spec
 CHECK_DEADLOCK FALSE
 `
 
-func TestAgreementの性質の前提と合意の場面はどれも一度は起きる(t *testing.T) {
+func TestAgreementの性質の前提と承認の場面はどれも一度は起きる(t *testing.T) {
 	tlc, err := exec.LookPath("tlc")
 	if err != nil {
 		// make check（と CI）は VANDA_REQUIRE_TLC=1 を立てる。黙って飛ばされて、CI で何も確かめていないことに気づかないのを防ぐため

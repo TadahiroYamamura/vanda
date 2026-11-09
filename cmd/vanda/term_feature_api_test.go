@@ -168,9 +168,9 @@ func setupTFAPI(t *testing.T) *vandaServer {
 	g.run("switch", "-q", "-c", "story-24")
 	writeFile(t, root, ".vanda/promises.toml", tfAPIStory)
 	g.commitAll("用語と機能を足す", "#24")
-	// 書いた約束リストが形の審査を通ること（通らなければ、API の誤りと言えない）
+	// 書いた約束リストが形のチェックを通ること（通らなければ、API の誤りと言えない）
 	if code, out := runCheck(t, bin, root, ".vanda/checks/shape.toml"); code != 0 {
-		t.Fatalf("テストの約束リストが形の審査を通らない（%d）\n%s", code, out)
+		t.Fatalf("テストの約束リストが形のチェックを通らない（%d）\n%s", code, out)
 	}
 	return startServe(t, bin, root, g.env)
 }
@@ -236,7 +236,7 @@ func tfRefsOf(ids ...string) map[string]refInfo {
 // @vanda:evidence term-page-content
 // @vanda:evidence term-feature-page-claims
 // @vanda:evidence reference-shown
-func Test用語の詳細は名前とIDと片に分けた定義と親の用語と書いた順の子の用語とそれを対象に持つ約束を書いた順に返す(t *testing.T) {
+func Test用語の詳細は名前とIDとセグメントに分けた定義と親の用語と書いた順の子の用語とそれを対象に持つ約束を書いた順に返す(t *testing.T) {
 	t.Parallel()
 	s := setupTFAPI(t)
 
@@ -287,7 +287,7 @@ func Test用語の詳細は名前とIDと片に分けた定義と親の用語と
 // @vanda:evidence feature-page-content
 // @vanda:evidence term-feature-page-claims
 // @vanda:evidence reference-shown
-func Test機能の詳細は名前とIDと片に分けた定義とコア機能か形式手法を使う機能かとそれを対象に持つ約束を書いた順に返す(t *testing.T) {
+func Test機能の詳細は名前とIDとセグメントに分けた定義とコア機能か形式手法を使う機能かとそれを対象に持つ約束を書いた順に返す(t *testing.T) {
 	t.Parallel()
 	s := setupTFAPI(t)
 

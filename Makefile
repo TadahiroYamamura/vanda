@@ -11,10 +11,10 @@ vet:
 	go vet ./...
 
 # -count=1 で、結果を使い回さない（ランダムチェックのシード値を、毎回変えるため）
-# VANDA_REQUIRE_TLC=1 で、tlc がないときに TLA+ を使うテストを飛ばさず落とす
+# VANDA_REQUIRE_TLC=1 で、tlc がないときに TLA+ を使うテストをスキップせず落とす
 # クロスチェックは -v で流し、通ったときも、使った種と場面の回数を CI の記録に残す（落ちた場面を種から再現するため）。
 # 300 本のトレースを本物の vanda で 1 歩ずつ流すので、Linux の CI でも 4 分半かかり、macOS の CI では go test の既定の 10 分を過ぎる。そのため時間の上限を 30 分にする
-XCHECK = ^Test合意の判定をTLAのモデルと本物のvandaで1歩ずつ比べると一致する$$
+XCHECK = ^Test承認の判定をTLAのモデルと本物のvandaで1歩ずつ比べると一致する$$
 test: web-test
 	VANDA_REQUIRE_TLC=1 go test -count=1 -skip '$(XCHECK)' ./...
 	VANDA_REQUIRE_TLC=1 go test -count=1 -timeout 30m -v -run '$(XCHECK)' ./cmd/vanda
@@ -31,7 +31,7 @@ else
 	cd web && pnpm e2e
 endif
 
-# Expect のシナリオ（vanda init のように、端末で問いを待って答える流れ）を、1 つずつ新しい一時のディレクトリで動かす。
+# Expect のシナリオ（vanda init のように、端末で質問を待って答える流れ）を、1 つずつ新しい一時のディレクトリで動かす。
 # 作った vanda を PATH の先頭に置く。シナリオの中で git のリポジトリを作るので、vanda のリポジトリの中では動かさない
 EXPECT_SCENARIOS = $(wildcard cmd/vanda/testdata/expect/*.exp)
 expect: build

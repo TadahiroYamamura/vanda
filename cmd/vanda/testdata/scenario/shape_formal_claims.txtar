@@ -8,7 +8,7 @@ expand .vanda/config.toml
 
 # formal = true の機能を subjects に持ち、どちらもないなら止まる
 cp cases/formal-true-none.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stdout '失敗（1 件）'
 stderr 'promises\.toml:[0-9]+: .*task-id-unique.*model_check_waiver'
@@ -16,17 +16,17 @@ stderr 'promises\.toml:[0-9]+: .*task-id-unique.*model_check_waiver'
 
 # formal = true の機能を subjects に持ち、model-check の予定だけなら通る
 cp cases/formal-true-mc.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # formal = true の機能を subjects に持ち、model_check_waiver だけなら通る
 cp cases/formal-true-waiver.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # formal = true の機能を subjects に持ち、両方なら止まる
 cp cases/formal-true-both.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stdout '失敗（1 件）'
 stderr 'promises\.toml:[0-9]+: .*task-id-unique.*model_check_waiver'
@@ -34,7 +34,7 @@ stderr 'promises\.toml:[0-9]+: .*task-id-unique.*model_check_waiver'
 
 # core = true で formal を省いた（formal = true とみなす）機能を subjects に持ち、どちらもないなら止まる
 cp cases/core-true-none.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stdout '失敗（1 件）'
 stderr 'promises\.toml:[0-9]+: .*task-id-unique.*model_check_waiver'
@@ -42,17 +42,17 @@ stderr 'promises\.toml:[0-9]+: .*task-id-unique.*model_check_waiver'
 
 # core = true で formal を省いた機能を subjects に持ち、model-check の予定だけなら通る
 cp cases/core-true-mc.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # core = true で formal を省いた機能を subjects に持ち、model_check_waiver だけなら通る
 cp cases/core-true-waiver.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # core = true で formal を省いた機能を subjects に持ち、両方なら止まる
 cp cases/core-true-both.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stdout '失敗（1 件）'
 stderr 'promises\.toml:[0-9]+: .*task-id-unique.*model_check_waiver'
@@ -60,12 +60,12 @@ stderr 'promises\.toml:[0-9]+: .*task-id-unique.*model_check_waiver'
 
 # core も formal も省いた（formal = false とみなす）機能だけを subjects に持ち、どちらもないなら通る
 cp cases/plain-none.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
 # core = true・formal = false の機能だけを subjects に持ち、どちらもないなら通る
 cp cases/core-true-formal-false-none.toml .vanda/promises.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 -- .vanda/config.toml --
 version = "${VANDA_VERSION}"

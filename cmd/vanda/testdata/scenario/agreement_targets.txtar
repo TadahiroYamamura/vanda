@@ -1,10 +1,10 @@
-# CMD-10 合意の記録の指す先: 合意の記録が、約束リストにない約束・用語・機能を指していない。
+# CMD-10 承認の記録の指す先: 承認の記録が、約束リストにない約束・用語・機能を指していない。
 # @vanda:evidence agreements-point-to-existing-items
-# 約束・用語・機能のそれぞれで、合意した後に約束リストから消すと止まる。消したことに合意すれば止めない。
+# 約束・用語・機能のそれぞれで、承認した後に約束リストから消すと止まる。消したことを承認すれば止めない。
 # 指す ID が別の種類の項目でも止まる。
-# ファイルの合意は、この審査では、そのファイルがなくなっても止めない（消したことは合意の審査が見る）。
+# ファイルの承認は、このチェックでは、そのファイルがなくなっても止めない（消したことは承認のチェックが見る）。
 #
-# この審査は指紋が今の中身に合うかを見ないので、指紋の元の JSON は中身と合っていなくてよい。
+# このチェックはフィンガープリントが今の中身に合うかを見ないので、フィンガープリントの元の JSON は中身と合っていなくてよい。
 
 exec git init -q -b main
 expand .vanda/config.toml
@@ -12,45 +12,45 @@ agree .vanda/agreements.toml '#1' term note fp/any.json
 agree .vanda/agreements.toml '#1' feature task-add fp/any.json
 agree .vanda/agreements.toml '#1' claim task-id-unique fp/any.json
 agree .vanda/agreements.toml '#1' file note.txt
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/targets.toml
 
-# ファイルの合意は、ファイルがなくなっても止めない
+# ファイルの承認は、ファイルがなくなっても止めない
 rm note.txt
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/targets.toml
 
 # 約束を消す
 cp cases/without-claim.toml .vanda/promises.toml
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'agreements\.toml.*task-id-unique'
 ! stderr '(?m)^panic: '
 
-# 約束を消したことに合意すると、消した約束を指す合意の記録は誤りにしない（履歴として残る）
+# 約束を消したことを承認すると、消した約束を指す承認の記録は誤りにしない（履歴として残る）
 agree -deleted .vanda/agreements.toml '#1' claim task-id-unique
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/targets.toml
 
 # 機能を消す
 cp cases/without-feature.toml .vanda/promises.toml
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'agreements\.toml.*task-add'
 ! stderr '(?m)^panic: '
 
 # 用語を消す
 cp cases/without-term.toml .vanda/promises.toml
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'agreements\.toml.*\bnote\b'
 ! stderr '(?m)^panic: '
 
-# 用語の合意が、約束の ID を指す
+# 用語の承認が、約束の ID を指す
 cp cases/all.toml .vanda/promises.toml
 cp cases/empty.toml .vanda/agreements.toml
 agree .vanda/agreements.toml '#1' term task-id-unique fp/any.json
-commit '審査する前にコミットする'
+commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'agreements\.toml.*task-id-unique'
 ! stderr '(?m)^panic: '
@@ -68,7 +68,7 @@ name = "agreement-targets"
 scope = "all"
 -- .vanda/agreements.toml --
 -- note.txt --
-合意したファイル
+承認したファイル
 -- fp/any.json --
 {"id":"any"}
 -- .vanda/promises.toml --

@@ -11,8 +11,8 @@ import (
 )
 
 // @vanda:evidence serve-rejects-foreign-host
-func TestHostが待ち受けているポートの127_0_0_1かlocalhostでない要求は403で断る(t *testing.T) {
-	// 45123 で待ち受けている接続に来た要求として送る。ない API（/api/nope）は、Host を通れば 404 になる
+func TestHostが待ち受けているポートの127_0_0_1かlocalhostでないリクエストは403で断る(t *testing.T) {
+	// 45123 で待ち受けている接続に来たリクエストとして送る。ない API（/api/nope）は、Host を通れば 404 になる
 	listening := &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 45123}
 	cases := []struct {
 		host string
@@ -45,7 +45,7 @@ func TestHostが待ち受けているポートの127_0_0_1かlocalhostでない�
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, req)
 		if rec.Code != c.want {
-			t.Errorf("45123 で待ち受けているとき、Host が %q の要求に %d を返した（%d を返す）", c.host, rec.Code, c.want)
+			t.Errorf("45123 で待ち受けているとき、Host が %q のリクエストに %d を返した（%d を返す）", c.host, rec.Code, c.want)
 		}
 	}
 }

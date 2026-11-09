@@ -14,7 +14,7 @@ import (
 )
 
 // センサー（agree_sensor.go・review_sensor.go の事後条件の確かめ）のテスト。
-// 事後条件は、合意・取り消しが正しく動く限り外からは破れないので、Hooks の口から破る状態を作り、センサーが 500 で知らせることを見る。
+// 事後条件は、承認・取り消しが正しく動く限り外からは破れないので、Hooks の口から破る状態を作り、センサーが 500 で知らせることを見る。
 // 口を nil にしたとき（破らないとき）に通ることも、同じリポジトリの作り方で確かめる。
 // Hooks はパッケージの変数なので、このファイルのテストは並べて動かさない。
 
@@ -54,7 +54,7 @@ type = "scenario-test"
 layers = ["model"]
 `
 
-// 変えた後の約束には flags・guesses を付け、合意でそれが消えることを事後条件にする
+// 変えた後の約束には flags・guesses を付け、承認でそれが消えることを事後条件にする
 var sensorPromisesStory = strings.Replace(sensorPromisesBase, `statement = "前の文"`, "statement = \"後の文\"\nflags = [\"ai-proposal\"]\nguesses = [\"推測\"]", 1)
 
 const (
@@ -81,7 +81,7 @@ func (r *sensorRepo) git(args ...string) string {
 }
 
 // commit は、作業ツリーのすべてを、ストーリー story のコミット（末尾に Story: のトレーラー）にする。同じ大きさの書き換えも
-// コミットに入るよう、索引から一度外して読み直させる（git add -A は stat の一致から変わっていないとみなすことがある）
+// コミットに入るよう、インデックスから一度外して読み直させる（git add -A は stat の一致から変わっていないとみなすことがある）
 func (r *sensorRepo) commit(subject, story string) {
 	r.t.Helper()
 	r.git("rm", "-r", "-q", "--cached", "--ignore-unmatch", ".")
@@ -150,7 +150,7 @@ func (r *sensorRepo) fileReq() AgreeRequest {
 	return AgreeRequest{Kind: "file", Path: &path, Fingerprint: agreements.FileFingerprint([]byte(sensorScenarioStory)), Story: sensorStory}
 }
 
-// state は、HEAD と、合意で書くファイルの中身。センサーが書いたファイルを元に戻したかを見るのに使う。
+// state は、HEAD と、承認で書くファイルの中身。センサーが書いたファイルを元に戻したかを見るのに使う。
 func (r *sensorRepo) state() [3]string {
 	return [3]string{r.git("rev-parse", "HEAD"), r.read(".vanda/promises.toml"), r.read(".vanda/agreements.toml")}
 }
@@ -180,15 +180,15 @@ func wantSensor500(t *testing.T, what string, called *bool, err *Error) {
 // @vanda:evidence agree-removes-flags
 // @vanda:evidence agree-rejects-uncommitted
 // @vanda:evidence revoke-commits-and-keeps-flags
-func Test口がnilで事後条件を破らなければ合意も取り消しもセンサーに止められない(t *testing.T) {
+func Test口がnilで事後条件を破らなければ承認も取り消しもセンサーに止められない(t *testing.T) {
 	r := newSensorRepo(t)
 	for _, req := range []AgreeRequest{r.claimReq(), r.fileReq()} {
 		if _, err := Agree(r.o, req, time.Now()); err != nil {
-			t.Fatalf("%s に合意できない: %+v", req.Kind, err)
+			t.Fatalf("%s を承認できない: %+v", req.Kind, err)
 		}
 	}
 	if strings.Contains(r.read(".vanda/promises.toml"), "flags") {
-		t.Errorf("合意したのに flags が残っている")
+		t.Errorf("承認したのに flags が残っている")
 	}
 	req := r.claimReq()
 	if _, err := Revoke(r.o, RevokeRequest{Kind: req.Kind, ID: req.ID, Fingerprint: req.Fingerprint, Story: sensorStory}); err != nil {
@@ -197,7 +197,7 @@ func Test口がnilで事後条件を破らなければ合意も取り消しも�
 }
 
 // @vanda:evidence agree-removes-flags
-func Test合意の記録を書いた後に約束リストへflagsを書き戻すと合意を500にしてファイルを元に戻す(t *testing.T) {
+func Test承認の記録を書いた後に約束リストへflagsを書き戻すと承認を500にしてファイルを元に戻す(t *testing.T) {
 	r := newSensorRepo(t)
 	before := r.state()
 	called := setHook(t, &Hooks.AfterAgreeWrite, func(root string) {
@@ -213,14 +213,14 @@ func Test合意の記録を書いた後に約束リストへflagsを書き戻す
 }
 
 // @vanda:evidence agree-writes-and-commits
-func Test合意の記録を書いた後に記録を書き換えると合意を500にしてファイルを元に戻す(t *testing.T) {
+func Test承認の記録を書いた後に記録を書き換えると承認を500にしてファイルを元に戻す(t *testing.T) {
 	cases := []struct {
 		name string
 		edit func(string) string
 	}{
 		{"書き足した記録を消す", func(string) string { return "" }},
 		{"書き足した記録のストーリーを変える", func(s string) string { return strings.Replace(s, `"`+sensorStory+`"`, `"#9"`, 1) }},
-		{"書き足した記録の指紋を変える", func(s string) string {
+		{"書き足した記録のフィンガープリントを変える", func(s string) string {
 			return strings.Replace(s, "sha256:", "sha256:0", 1)
 		}},
 	}
@@ -255,7 +255,7 @@ func Test合意の記録を書いた後に記録を書き換えると合意を50
 }
 
 // @vanda:evidence agree-writes-and-commits
-func Test合意のコミットにほかのファイルを入れると合意を500にしてそのコミットを伝える(t *testing.T) {
+func Test承認のコミットにほかのファイルを入れると承認を500にしてそのコミットを伝える(t *testing.T) {
 	r := newSensorRepo(t)
 	called := setHook(t, &Hooks.AfterAgreeCommit, func(root string) {
 		r.write("notes.md", "メモ\n")
@@ -264,15 +264,15 @@ func Test合意のコミットにほかのファイルを入れると合意を50
 	})
 	_, err := Agree(r.o, r.claimReq(), time.Now())
 	wantSensor500(t, "ほかのファイルを入れる", called, err)
-	// センサーが見つけたのは、合意で作ったコミット（amend する前の HEAD）
+	// センサーが見つけたのは、承認で作ったコミット（amend する前の HEAD）
 	made := r.git("rev-parse", "HEAD@{1}")
 	if !strings.Contains(err.Message, made) {
-		t.Errorf("合意で作ったコミット %s を伝えていない: %s", made, err.Message)
+		t.Errorf("承認で作ったコミット %s を伝えていない: %s", made, err.Message)
 	}
 }
 
 // @vanda:evidence agree-rejects-uncommitted
-func Test合意のコミットの後に合意の対象のファイルが書き換わっていると合意を500にする(t *testing.T) {
+func Test承認のコミットの後に承認の対象のファイルが書き換わっていると承認を500にする(t *testing.T) {
 	r := newSensorRepo(t)
 	cases := []struct {
 		req  AgreeRequest
@@ -298,7 +298,7 @@ func Test取り消しのコミットに約束リストの変更を入れると�
 	r := newSensorRepo(t)
 	req := r.claimReq()
 	if _, err := Agree(r.o, req, time.Now()); err != nil {
-		t.Fatalf("合意できない: %+v", err)
+		t.Fatalf("承認できない: %+v", err)
 	}
 	called := setHook(t, &Hooks.AfterRevokeCommit, func(root string) {
 		// フラグを戻した約束リストを、取り消しのコミットに入れる
@@ -310,7 +310,7 @@ func Test取り消しのコミットに約束リストの変更を入れると�
 	wantSensor500(t, "約束リストの変更を入れる", called, err)
 }
 
-// sensorRecord は、合意の記録の 1 件。path はファイルの記録のときだけ書く
+// sensorRecord は、承認の記録の 1 件。path はファイルの記録のときだけ書く
 func sensorRecord(kind, key, fp, path, name, story string) string {
 	s := "[[agreement]]\nkind = \"" + kind + "\"\nkey = \"" + key + "\"\nfingerprint = \"" + fp + "\"\n"
 	if path != "" {
@@ -323,7 +323,7 @@ func sensorRecord(kind, key, fp, path, name, story string) string {
 	return s + "user = { name = \"" + name + "\", email = \"" + email + "\" }\nagreed_at = 2026-10-31T12:00:00+09:00\nstory = \"" + story + "\"\n\n"
 }
 
-// dropRecord は、合意の記録のファイルから、frags をすべて含む記録を消す口を返す。消せなければテストを落とす
+// dropRecord は、承認の記録のファイルから、frags をすべて含む記録を消す口を返す。消せなければテストを落とす
 func dropRecord(t *testing.T, frags ...string) func(string) {
 	return func(root string) {
 		p := filepath.Join(root, ".vanda/agreements.toml")
@@ -354,15 +354,15 @@ func dropRecord(t *testing.T, frags ...string) func(string) {
 
 const oldFingerprint = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
 
-// 指紋の合わない古い記録（今の人が story-2 で書いたもの）を見分ける印
+// フィンガープリントの合わない古い記録（今の人が story-2 で書いたもの）を見分けるマーク
 var oldRecord = []string{oldFingerprint, `name = "テスト担当"`, `story = "` + sensorStory + `"`}
 
 // @vanda:evidence old-agreements-kept-as-history
-func Test合意の記録を書いた後に指紋の合わない古い記録を消すと合意を500にしてファイルを元に戻す(t *testing.T) {
+func Test承認の記録を書いた後にフィンガープリントの合わない古い記録を消すと承認を500にしてファイルを元に戻す(t *testing.T) {
 	r := newSensorRepo(t)
 	r.write(".vanda/agreements.toml", sensorRecord("claim", "c", oldFingerprint, "", "テスト担当", sensorStory)+
 		sensorRecord("file", oldFingerprint, oldFingerprint, "e2e/s.txtar", "テスト担当", sensorStory))
-	r.commit("前の合意", sensorStory)
+	r.commit("前の承認", sensorStory)
 	for _, req := range []AgreeRequest{r.claimReq(), r.fileReq()} {
 		before := r.state()
 		called := setHook(t, &Hooks.AfterAgreeWrite, dropRecord(t, append([]string{`kind = "` + req.Kind + `"`}, oldRecord...)...))
@@ -372,15 +372,15 @@ func Test合意の記録を書いた後に指紋の合わない古い記録を�
 			t.Errorf("%s: センサーが止めたのに、ファイルが元に戻っていないかコミットができた", req.Kind)
 		}
 	}
-	// 口で何も消さなければ、古い記録を残したまま合意できる（上の 500 が、古い記録を消したことによるものだと言うため）
+	// 口で何も消さなければ、古い記録を残したまま承認できる（上の 500 が、古い記録を消したことによるものだと言うため）
 	Hooks.AfterAgreeWrite = nil
 	for _, req := range []AgreeRequest{r.claimReq(), r.fileReq()} {
 		if _, err := Agree(r.o, req, time.Now()); err != nil {
-			t.Fatalf("%s: 古い記録があると合意できない: %+v", req.Kind, err)
+			t.Fatalf("%s: 古い記録があると承認できない: %+v", req.Kind, err)
 		}
 	}
 	if n := strings.Count(r.read(".vanda/agreements.toml"), oldFingerprint); n != 3 {
-		t.Errorf("合意で古い記録が消えた（指紋の合わない記録の指紋が %d 個。claim の 1 個と file の key・fingerprint の 2 個のはず）", n)
+		t.Errorf("承認で古い記録が消えた（フィンガープリントの合わない記録のフィンガープリントが %d 個。claim の 1 個と file の key・fingerprint の 2 個のはず）", n)
 	}
 }
 
@@ -388,14 +388,14 @@ func Test合意の記録を書いた後に指紋の合わない古い記録を�
 // @vanda:evidence old-agreements-kept-as-history
 func Test取り消しで書き換えた後に取り消してはいけない記録を消すと取り消しを500にしてファイルを元に戻す(t *testing.T) {
 	// 取り消してはいけない記録は、取り消す記録（今の人が story-2 で書いた、今の中身へのストーリー #2 の記録）と、
-	// 次のどれか 1 つだけが違う。ほかの人が書いた・ベースブランチにすでにある・指紋が合わない
+	// 次のどれか 1 つだけが違う。ほかの人が書いた・ベースブランチにすでにある・フィンガープリントが合わない
 	for _, c := range []struct {
 		name  string
 		frags []string
 	}{
 		{"ほかの人がこのブランチで書いた今の中身への記録", []string{`name = "ほかの人"`}},
 		{"ベースブランチにすでにある今の人の今の中身への記録", []string{"agreed_at = 2026-10-30T12:00:00+09:00"}},
-		{"今の人がこのブランチで書いた指紋の合わない古い記録", oldRecord},
+		{"今の人がこのブランチで書いたフィンガープリントの合わない古い記録", oldRecord},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			r := newSensorRepo(t)
@@ -404,14 +404,14 @@ func Test取り消しで書き換えた後に取り消してはいけない記�
 			r.git("switch", "-q", "main")
 			r.write(".vanda/agreements.toml", strings.Replace(sensorRecord("claim", "c", req.Fingerprint, "", "テスト担当", sensorStory),
 				"agreed_at = 2026-10-31T12:00:00+09:00", "agreed_at = 2026-10-30T12:00:00+09:00", 1))
-			r.commit("main で合意する", "#1")
+			r.commit("main で承認する", "#1")
 			r.git("switch", "-q", "story-2")
 			r.git("merge", "-q", "--no-edit", "-m", "main を取り込む\n\nStory: "+sensorStory, "main")
 			r.write(".vanda/agreements.toml", r.read(".vanda/agreements.toml")+
 				sensorRecord("claim", "c", oldFingerprint, "", "テスト担当", sensorStory)+
 				sensorRecord("claim", "c", req.Fingerprint, "", "ほかの人", sensorStory)+
 				sensorRecord("claim", "c", req.Fingerprint, "", "テスト担当", sensorStory))
-			r.commit("合意する", sensorStory)
+			r.commit("承認する", sensorStory)
 			before := r.state()
 			called := setHook(t, &Hooks.AfterRevokeWrite, dropRecord(t, c.frags...))
 			_, err := Revoke(r.o, RevokeRequest{Kind: req.Kind, ID: req.ID, Fingerprint: req.Fingerprint, Story: sensorStory})

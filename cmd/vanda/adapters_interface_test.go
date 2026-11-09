@@ -84,7 +84,7 @@ func Test_vanda_adaptersのアダプタは直下のファイルとディレク�
 	t.Run("ファイル", func(t *testing.T) {
 		t.Parallel()
 		root := ifaceRepo(t, version, annotationRule("file-adapter", ""), files, map[string]string{"file-adapter": answerLine1})
-		newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
+		newRVGit(t, root).commitAll("(test) チェックの前にコミットする", "")
 		code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml")
 		if code != 1 || !strings.Contains(errs, "ext/a.ext:1: ") || !strings.Contains(errs, "no-such-claim") {
 			t.Errorf("ファイルのアダプタが動いていない（%d）\n%s", code, errs)
@@ -93,7 +93,7 @@ func Test_vanda_adaptersのアダプタは直下のファイルとディレク�
 	t.Run("ディレクトリの直下のrun", func(t *testing.T) {
 		t.Parallel()
 		root := ifaceRepo(t, version, annotationRule("dir-adapter", ""), files, map[string]string{"dir-adapter/run": answerLine1, "dir-adapter/other": "exit 9\n"})
-		newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
+		newRVGit(t, root).commitAll("(test) チェックの前にコミットする", "")
 		code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml")
 		if code != 1 || !strings.Contains(errs, "ext/a.ext:1: ") || !strings.Contains(errs, "no-such-claim") {
 			t.Errorf("ディレクトリの run が動いていない（%d）\n%s", code, errs)
@@ -101,17 +101,17 @@ func Test_vanda_adaptersのアダプタは直下のファイルとディレク�
 	})
 }
 
-// CMD-10: アダプタは、リポジトリの根を作業のディレクトリにし、設定の args をそのまま引数として渡して動かす。
-// vanda をリポジトリの下のディレクトリで動かしても、作業のディレクトリは根
+// CMD-10: アダプタは、リポジトリのルートを作業ディレクトリにし、設定の args をそのまま引数として渡して動かす。
+// vanda をリポジトリの下のディレクトリで動かしても、作業ディレクトリはルート
 // @vanda:evidence project-adapter-args-and-cwd
-func Test_vanda_adaptersのアダプタはリポジトリの根でargsをそのまま渡されて動く(t *testing.T) {
+func Test_vanda_adaptersのアダプタはリポジトリのルートでargsをそのまま渡されて動く(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// 作業のディレクトリと引数を、失敗の理由として標準エラーに書く
+	// 作業ディレクトリと引数を、失敗の理由として標準エラーに書く
 	report := "cat >/dev/null\necho \"cwd=$(pwd -P) argc=$# args=$*\" >&2\nexit 3\n"
 	root := ifaceRepo(t, version, annotationRule("report", `args = ["--mode", "two words", "x"]`),
 		map[string]string{"ext/a.ext": "@vanda:evidence a\n", "sub/dir/.keep": ""}, map[string]string{"report": report})
@@ -119,10 +119,10 @@ func Test_vanda_adaptersのアダプタはリポジトリの根でargsをその�
 	if err != nil {
 		t.Fatal(err)
 	}
-	newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
+	newRVGit(t, root).commitAll("(test) チェックの前にコミットする", "")
 	_, _, errs := runVandaIn(t, bin, filepath.Join(root, "sub", "dir"), newRVGit(t, root).env, "check", "../../.vanda/checks/links.toml")
 	if !strings.Contains(errs, "cwd="+real+" ") {
-		t.Errorf("アダプタの作業のディレクトリがリポジトリの根（%s）でない\n%s", real, errs)
+		t.Errorf("アダプタの作業ディレクトリがリポジトリのルート（%s）でない\n%s", real, errs)
 	}
 	// 空白を含む引数も 1 つのまま渡る（3 つ）
 	if !strings.Contains(errs, "argc=3 args=--mode two words x") {
@@ -141,7 +141,7 @@ func Test_vanda_adaptersのアダプタが失敗すると標準エラーの理�
 	}
 	root := ifaceRepo(t, version, annotationRule("fails", ""), map[string]string{"ext/a.ext": "@vanda:evidence a\n"},
 		map[string]string{"fails": "cat >/dev/null\necho '置き場所が誤っています（3 行目）' >&2\nexit 4\n"})
-	newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
+	newRVGit(t, root).commitAll("(test) チェックの前にコミットする", "")
 	code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml")
 	if code != 1 || !strings.Contains(errs, "ext/a.ext") || !strings.Contains(errs, "置き場所が誤っています（3 行目）") {
 		t.Errorf("アダプタの理由が誤りに入っていない（%d）\n%s", code, errs)
@@ -160,7 +160,7 @@ func Test_vanda_adaptersのアダプタがannotationにfalseを返した行は�
 	// 1 行目は書き方が誤り（ID が 2 つ・決まっていない種類）、2 行目は約束リストにない ID。どちらも false を返す
 	root := ifaceRepo(t, version, annotationRule("not-ann", ""), map[string]string{"ext/a.ext": "@vanda:foo a b\n@vanda:evidence no-such-claim\n"},
 		map[string]string{"not-ann": "cat >/dev/null\nprintf '%s' '{\"names\":[{\"line\":1,\"annotation\":false},{\"line\":2,\"annotation\":false}]}'\n"})
-	newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
+	newRVGit(t, root).commitAll("(test) チェックの前にコミットする", "")
 	if code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml"); code != 0 {
 		t.Errorf("annotation: false の行で止まった（%d）\n%s", code, errs)
 	}
@@ -198,7 +198,7 @@ func Test_vanda_adaptersのアダプタを動かせないときは場所と直�
 			t.Parallel()
 			root := ifaceRepo(t, version, annotationRule(c.adapter, ""), map[string]string{"ext/a.ext": "@vanda:evidence a\n"}, nil)
 			c.prepare(root)
-			newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
+			newRVGit(t, root).commitAll("(test) チェックの前にコミットする", "")
 			code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml")
 			if code != 1 || !strings.Contains(errs, c.where) || !strings.Contains(errs, "ください。") {
 				t.Errorf("誤りに、場所 %s と直し方が出ていない（%d）\n%s", c.where, code, errs)
@@ -231,7 +231,7 @@ func Test_vanda_adaptersのアダプタの答えの誤りはそのファイル�
 			t.Parallel()
 			root := ifaceRepo(t, version, annotationRule("bad", ""), map[string]string{"ext/a.ext": "@vanda:term task\n"},
 				map[string]string{"bad": "cat >/dev/null\nprintf '%s' '" + answer + "'\n"})
-			newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
+			newRVGit(t, root).commitAll("(test) チェックの前にコミットする", "")
 			code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml")
 			if code != 1 || !strings.Contains(errs, "ext/a.ext") {
 				t.Errorf("答え %s で、ext/a.ext の誤りにならない（%d）\n%s", answer, code, errs)
@@ -241,7 +241,7 @@ func Test_vanda_adaptersのアダプタの答えの誤りはそのファイル�
 }
 
 // CM-09: 設定にはっきり書いた、ワイルドカードのない場所のファイルがなければ誤り。ワイルドカードのあるパターンが
-// 何にも当たらないのは誤りにしない
+// 何にもマッチしないのは誤りにしない
 // @vanda:evidence promise-list-explicit-file-must-exist
 func Test設定にはっきり書いた約束リストのファイルがなければ誤りでワイルドカードなら誤りにしない(t *testing.T) {
 	t.Parallel()
@@ -256,22 +256,22 @@ func Test設定にはっきり書いた約束リストのファイルがなけ�
 	if err := os.Remove(filepath.Join(root, ".vanda/promises.toml")); err != nil {
 		t.Fatal(err)
 	}
-	newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
+	newRVGit(t, root).commitAll("(test) チェックの前にコミットする", "")
 	code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/shape.toml")
 	if code != 1 || !strings.Contains(errs, ".vanda/specs.toml") {
 		t.Errorf("はっきり書いたファイルがないのに、その場所の誤りにならない（%d）\n%s", code, errs)
 	}
 	writeFile(t, root, ".vanda/config.toml", strings.Replace(cfg, "\n[[layer]]", "promises = [\".vanda/specs/*.toml\"]\n\n[[layer]]", 1))
-	newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
+	newRVGit(t, root).commitAll("(test) チェックの前にコミットする", "")
 	if code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/shape.toml"); code != 0 {
-		t.Errorf("ワイルドカードのパターンが何にも当たらないのを誤りにした（%d）\n%s", code, errs)
+		t.Errorf("ワイルドカードのパターンが何にもマッチしないのを誤りにした（%d）\n%s", code, errs)
 	}
 }
 
-// CM-09: 設定の promises のパターンに当たるファイルを、すべて約束リストとして読む。
+// CM-09: 設定の promises のパターンにマッチするファイルを、すべて約束リストとして読む。
 // a.toml の約束は b.toml の用語を対象にするので、b.toml を読まなければ subjects の先がない誤りになる
 // @vanda:evidence promise-list-reads-all-patterns
-func Test設定のpromisesのパターンに当たるファイルをすべて約束リストとして読む(t *testing.T) {
+func Test設定のpromisesのパターンにマッチするファイルをすべて約束リストとして読む(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
@@ -282,22 +282,22 @@ func Test設定のpromisesのパターンに当たるファイルをすべて約
 		".vanda/promises/a.toml":     "[[claim]]\nid = \"task-unique\"\nsubjects = [\"task\"]\nstatement = \"タスクは重ならない\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n",
 		".vanda/promises/sub/b.toml": "[[term]]\nid = \"task\"\nname = \"タスク\"\ndefinition = \"やること\"\n",
 		".vanda/promises/c.toml":     "[[term]]\nid = \"Bad_ID\"\nname = \"誤った ID\"\ndefinition = \"読まれていれば誤りになる\"\n",
-		".vanda/not-promises/d.toml": "[[term]]\nid = \"Other_Bad\"\nname = \"当たらない\"\ndefinition = \"読まれない\"\n",
-		".vanda/promises/readme.md":  "パターンに当たらない\n",
+		".vanda/not-promises/d.toml": "[[term]]\nid = \"Other_Bad\"\nname = \"マッチしない\"\ndefinition = \"読まれない\"\n",
+		".vanda/promises/readme.md":  "パターンにマッチしない\n",
 	}
 	extra := "promises = [\".vanda/promises/**/*.toml\"]\n"
 	root := ifaceRepo(t, version, "", files, nil)
 	cfg := readFileString(t, root, ".vanda/config.toml")
 	writeFile(t, root, ".vanda/config.toml", strings.Replace(cfg, "\n[[layer]]", extra+"\n[[layer]]", 1))
-	newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
+	newRVGit(t, root).commitAll("(test) チェックの前にコミットする", "")
 	code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/shape.toml")
-	// c.toml の誤りは出て、b.toml を読んだので a.toml の subjects の誤りは出ない。パターンに当たらない d.toml は読まない
+	// c.toml の誤りは出て、b.toml を読んだので a.toml の subjects の誤りは出ない。パターンにマッチしない d.toml は読まない
 	if code != 1 || !strings.Contains(errs, ".vanda/promises/c.toml") || strings.Contains(errs, "a.toml") || strings.Contains(errs, "Other_Bad") {
-		t.Errorf("パターンに当たるファイルだけを全部読んでいない（%d）\n%s", code, errs)
+		t.Errorf("パターンにマッチするファイルだけを全部読んでいない（%d）\n%s", code, errs)
 	}
 }
 
-// CMD-01: vanda doctor は、ストーリーストアが組込みの github なら、GET <api_url>/repos/<repository> を呼んで、Issues が使えるかを確かめる
+// CMD-01: vanda doctor は、ストーリーストアが組み込みの github なら、GET <api_url>/repos/<repository> を呼んで、Issues が使えるかを確かめる
 // @vanda:evidence doctor-github-issues
 func Test_vanda_doctorはGitHubのリポジトリを読んでIssuesが使えるかを確かめる(t *testing.T) {
 	t.Parallel()
@@ -315,7 +315,7 @@ func Test_vanda_doctorはGitHubのリポジトリを読んでIssuesが使える�
 		{"Issuesが使える", 200, `{"full_name":"owner/app","has_issues":true}`, true},
 		{"Issuesが使えない", 200, `{"full_name":"owner/app","has_issues":false}`, false},
 		{"リポジトリがない", 404, `{"message":"Not Found"}`, false},
-		{"鍵が誤っている", 401, `{"message":"Bad credentials"}`, false},
+		{"トークンが誤っている", 401, `{"message":"Bad credentials"}`, false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -333,7 +333,7 @@ func Test_vanda_doctorはGitHubのリポジトリを読んでIssuesが使える�
 			}))
 			t.Cleanup(srv.Close)
 			root := ifaceRepo(t, version, "\n[story]\nadapter = \"github\"\nrepository = \"owner/app\"\napi_url = \""+srv.URL+"\"\n", nil, nil)
-			// 偽のサーバー（127.0.0.1）は api.github.com でないので、認証キーは GH_ENTERPRISE_TOKEN から読まれる
+			// 偽のサーバー（127.0.0.1）は api.github.com でないので、トークンは GH_ENTERPRISE_TOKEN から読まれる
 			env := ghEnv(newRVGit(t, root).env, fakeGH(t, nil), "GH_ENTERPRISE_TOKEN=gho_doctortoken")
 			code, out, errs := runVandaIn(t, bin, root, env, "doctor")
 			if (code == 0) != c.ok {
@@ -348,17 +348,17 @@ func Test_vanda_doctorはGitHubのリポジトリを読んでIssuesが使える�
 				t.Errorf("呼んだもの: %v（GET /repos/owner/app のはず）", paths)
 			}
 			if len(auths) == 0 || !strings.Contains(auths[0], "gho_doctortoken") {
-				t.Errorf("認証の鍵を渡していない: %v", auths)
+				t.Errorf("トークンを渡していない: %v", auths)
 			}
 		})
 	}
 }
 
-// CMD-01: vanda doctor は、api_url のホストに合う認証キーで GitHub に繋ぎ、見つからなければ要求を送らずに失敗する。
+// CMD-01: vanda doctor は、api_url のホストに合うトークンで GitHub に繋ぎ、見つからなければリクエストを送らずに失敗する。
 // api.github.com の場合は、本物の GitHub に繋がないよう、api_url を http://api.github.com にして、HTTP_PROXY で偽のサーバーに向ける
 // @vanda:evidence doctor-github-token
 // @vanda:evidence story-github-token
-func Test_vanda_doctorはapi_urlのホストに合う認証キーで繋ぎ見つからなければGitHubに要求を送らずに失敗する(t *testing.T) {
+func Test_vanda_doctorはapi_urlのホストに合うトークンで繋ぎ見つからなければGitHubにリクエストを送らずに失敗する(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
@@ -373,7 +373,7 @@ func Test_vanda_doctorはapi_urlのホストに合う認証キーで繋ぎ見つ
 			// other は、合わない読み先
 			mineEnv, otherEnv bool
 			mineGH, otherGH   bool
-			wantKey           string // 送るはずの認証キー。空なら送らずに失敗する
+			wantKey           string // 送るはずのトークン。空なら送らずに失敗する
 		}{
 			{"合う環境変数と合わない環境変数がある", true, true, true, true, "env_mine"},
 			{"合う環境変数がなくghが合うホストにログインしている", false, true, true, true, "gh_mine"},
@@ -423,7 +423,7 @@ func Test_vanda_doctorはapi_urlのホストに合う認証キーで繋ぎ見つ
 						t.Errorf("終了コード %d（1 で、直し方を出すはず）\n%s%s", code, out, errs)
 					}
 					if len(got) != 0 {
-						t.Errorf("認証キーがないのに要求を送った: %v", got)
+						t.Errorf("トークンがないのにリクエストを送った: %v", got)
 					}
 					return
 				}
@@ -431,7 +431,7 @@ func Test_vanda_doctorはapi_urlのホストに合う認証キーで繋ぎ見つ
 					t.Errorf("終了コード %d（0 のはず）\n%s%s", code, out, errs)
 				}
 				if want := []sent{{host, "Bearer " + c.wantKey}}; !reflect.DeepEqual(got, want) {
-					t.Errorf("送った要求: %v（%v のはず）", got, want)
+					t.Errorf("送ったリクエスト: %v（%v のはず）", got, want)
 				}
 			})
 		}
@@ -490,7 +490,7 @@ func Test_vanda_doctorはストーリーストアのカスタムアダプタが�
 			if c.ok && !strings.Contains(out, "ストーリーストアのカスタムアダプタ jira（") {
 				t.Errorf("確かめたカスタムアダプタが出力に出ていない\n%s", out)
 			}
-			// ないときは、設定を読む所で、組込みにも .vanda/adapters/ にもないという誤りになる
+			// ないときは、設定を読む所で、組み込みにも .vanda/adapters/ にもないという誤りになる
 			if !c.ok && c.adapters != nil && !strings.Contains(errs, "ストーリーストアのカスタムアダプタ jira（") {
 				t.Errorf("誤りに、どのカスタムアダプタかが出ていない\n%s", errs)
 			}
@@ -606,9 +606,9 @@ func Test_vanda_adaptersのアダプタが渡した行のどれかに答えな�
 	// 1・3・4 行目を渡し、3 行目だけに答えない
 	root := ifaceRepo(t, version, annotationRule("partial", ""), map[string]string{"ext/a.ext": "@vanda:term task\n本文\n@vanda:term task\n@vanda:term task\n"},
 		map[string]string{"partial": "cat >/dev/null\nprintf '%s' '{\"names\":[{\"line\":1,\"name\":\"x\"},{\"line\":4,\"annotation\":false}]}'\n"})
-	newRVGit(t, root).commitAll("(test) 審査の前にコミットする", "")
+	newRVGit(t, root).commitAll("(test) チェックの前にコミットする", "")
 	code, out, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml")
-	if code != 1 || !strings.Contains(out, "審査 annotation-links（all）: 失敗（1 件）") || !strings.HasPrefix(errs, "ext/a.ext:3: ") || strings.Count(errs, "\n") != 1 {
+	if code != 1 || !strings.Contains(out, "チェック annotation-links（all）: 失敗（1 件）") || !strings.HasPrefix(errs, "ext/a.ext:3: ") || strings.Count(errs, "\n") != 1 {
 		t.Errorf("答えのない 3 行目だけを指す 1 件の誤りにならない（%d）\n%s%s", code, out, errs)
 	}
 }

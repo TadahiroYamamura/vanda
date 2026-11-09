@@ -33,7 +33,7 @@ func gitRepo(t *testing.T, config string) string {
 	return dir
 }
 
-// commitIn は、dir のリポジトリの作業ツリーのすべてを 1 つのコミットにする（審査は HEAD のコミットの中身だけを読むため）
+// commitIn は、dir のリポジトリの作業ツリーのすべてを 1 つのコミットにする（チェックは HEAD のコミットの中身だけを読むため）
 func commitIn(t *testing.T, dir, subject string) {
 	t.Helper()
 	for _, args := range [][]string{
@@ -58,7 +58,7 @@ func runIn(t *testing.T, dir string, args ...string) (int, string, string) {
 }
 
 // @vanda:evidence version-always-runs
-func TestVersionは版が合わなくても版を出す(t *testing.T) {
+func TestVersionはバージョンが合わなくてもバージョンを出す(t *testing.T) {
 	dir := gitRepo(t, `version = "9.9.9"`)
 	code, out, _ := runIn(t, dir, "version")
 	if code != 0 || out != "0.1.0\n" {
@@ -67,17 +67,17 @@ func TestVersionは版が合わなくても版を出す(t *testing.T) {
 }
 
 // @vanda:evidence config-version-mismatch
-func TestDoctorは版が合わなければ止まる(t *testing.T) {
+func TestDoctorはバージョンが合わなければ止まる(t *testing.T) {
 	dir := gitRepo(t, `version = "9.9.9"`)
 	code, out, errs := runIn(t, dir, "doctor")
 	// 誤りの終わりの「。」（直し方の後にも付ける）を、CLI の出力で確かめる 1 か所。ほかは文体に頼らず意味の要で照合する
-	if code != 1 || out != "" || !strings.Contains(errs, ".vanda/config.toml:1: 動いている vanda（0.1.0）が、設定の版（9.9.9）より古いです。vanda を 9.9.9 に上げてください。\n") {
+	if code != 1 || out != "" || !strings.Contains(errs, ".vanda/config.toml:1: 動いている vanda（0.1.0）が、設定のバージョン（9.9.9）より古いです。vanda を 9.9.9 に上げてください。\n") {
 		t.Errorf("code %d, stderr %q", code, errs)
 	}
 }
 
 // @vanda:evidence doctor-ok-line
-func TestDoctorはリポジトリの根の設定を読む(t *testing.T) {
+func TestDoctorはリポジトリのルートの設定を読む(t *testing.T) {
 	dir := gitRepo(t, `version = "0.1.0"`)
 	sub := filepath.Join(dir, "a", "b")
 	if err := os.MkdirAll(sub, 0o755); err != nil {
@@ -98,17 +98,17 @@ func TestDoctorはgitのリポジトリの外では誤りにする(t *testing.T)
 }
 
 // @vanda:evidence check-config-required
-func TestCheckは審査の設定のファイルを渡さなければ誤りにする(t *testing.T) {
+func TestCheckはチェックの設定のファイルを渡さなければ誤りにする(t *testing.T) {
 	dir := gitRepo(t, `version = "0.1.0"`)
 	code, _, errs := runIn(t, dir, "check")
-	if code != 1 || !strings.Contains(errs, "審査の設定のファイル") || !strings.Contains(errs, "既定の審査") {
+	if code != 1 || !strings.Contains(errs, "チェックの設定のファイル") || !strings.Contains(errs, "既定のチェック") {
 		t.Errorf("code %d, stderr %q", code, errs)
 	}
 }
 
 // @vanda:evidence check-runs-in-order-and-fails
 // @vanda:evidence check-output-lines
-func TestCheckは審査の設定のファイルをカレントディレクトリから読み失敗なら終了コード1にする(t *testing.T) {
+func TestCheckはチェックの設定のファイルをカレントディレクトリから読み失敗なら終了コード1にする(t *testing.T) {
 	dir := gitRepo(t, `version = "0.1.0"`)
 	sub := filepath.Join(dir, "sub")
 	if err := os.MkdirAll(filepath.Join(sub, "checks"), 0o755); err != nil {
@@ -122,7 +122,7 @@ func TestCheckは審査の設定のファイルをカレントディレクトリ
 	}
 	commitIn(t, dir, "memo を足す")
 	code, out, errs := runIn(t, sub, "check", "checks/push.toml")
-	if code != 1 || out != "審査 unread-files（all）: 失敗（1 件）\n" || !strings.HasPrefix(errs, ".vanda/memo.txt: ") || !strings.Contains(errs, "読まれて") || !strings.Contains(errs, "promises か agreements") || strings.Count(errs, "\n") != 1 {
+	if code != 1 || out != "チェック unread-files（all）: 失敗（1 件）\n" || !strings.HasPrefix(errs, ".vanda/memo.txt: ") || !strings.Contains(errs, "読まれて") || !strings.Contains(errs, "promises か agreements") || strings.Count(errs, "\n") != 1 {
 		t.Errorf("code %d, out %q, stderr %q", code, out, errs)
 	}
 	if err := os.Remove(filepath.Join(dir, ".vanda", "memo.txt")); err != nil {
@@ -130,13 +130,13 @@ func TestCheckは審査の設定のファイルをカレントディレクトリ
 	}
 	commitIn(t, dir, "memo を消す")
 	code, out, _ = runIn(t, sub, "check", "checks/push.toml")
-	if code != 0 || out != "審査 unread-files（all）: 通った\n" {
+	if code != 0 || out != "チェック unread-files（all）: 通った\n" {
 		t.Errorf("code %d, out %q", code, out)
 	}
 }
 
 // @vanda:evidence version-always-runs
-func TestVersionはvandaのディレクトリがなくてもgitのリポジトリの外でも版を1行で出す(t *testing.T) {
+func TestVersionはvandaのディレクトリがなくてもgitのリポジトリの外でもバージョンを1行で出す(t *testing.T) {
 	for name, dir := range map[string]string{"vandaのディレクトリがない": gitRepo(t, ""), "gitのリポジトリの外": t.TempDir()} {
 		code, out, errs := runIn(t, dir, "version")
 		if code != 0 || out != "0.1.0\n" || errs != "" {
@@ -145,7 +145,7 @@ func TestVersionはvandaのディレクトリがなくてもgitのリポジト�
 	}
 }
 
-// withoutGH は、どのホストにもログインしていない偽の gh を PATH の先頭に置く。本物の gh の認証キーを読ませないため
+// withoutGH は、どのホストにもログインしていない偽の gh を PATH の先頭に置く。本物の gh のトークンを読ませないため
 func withoutGH(t *testing.T) {
 	t.Helper()
 	dir := t.TempDir()
@@ -156,7 +156,7 @@ func withoutGH(t *testing.T) {
 }
 
 // @vanda:evidence doctor-github-issues
-func TestDoctorはストーリーストアが組込みのgithubならリポジトリを読みIssuesが使えるかを確かめる(t *testing.T) {
+func TestDoctorはストーリーストアが組み込みのgithubならリポジトリを読みIssuesが使えるかを確かめる(t *testing.T) {
 	for _, c := range []struct {
 		name      string
 		hasIssues bool
@@ -168,7 +168,7 @@ func TestDoctorはストーリーストアが組込みのgithubならリポジ�
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprintf(w, `{"full_name":"o/r","has_issues":%v}`, c.hasIssues)
 		}))
-		// 偽のサーバー（127.0.0.1）は api.github.com でないので、認証キーは GH_ENTERPRISE_TOKEN から読まれる
+		// 偽のサーバー（127.0.0.1）は api.github.com でないので、トークンは GH_ENTERPRISE_TOKEN から読まれる
 		t.Setenv("GH_ENTERPRISE_TOKEN", "tok123")
 		t.Setenv("GH_TOKEN", "")
 		withoutGH(t)
@@ -176,7 +176,7 @@ func TestDoctorはストーリーストアが組込みのgithubならリポジ�
 		code, out, errs := runIn(t, dir, "doctor")
 		srv.Close()
 		if !strings.HasPrefix(hit, "GET /repos/o/r ") || !strings.Contains(hit, "tok123") {
-			t.Errorf("%s: GET <api_url>/repos/<repository> を鍵を付けて呼んでいない: %q", c.name, hit)
+			t.Errorf("%s: GET <api_url>/repos/<repository> をトークンを付けて呼んでいない: %q", c.name, hit)
 		}
 		if code != c.wantCode {
 			t.Errorf("%s: code %d（%d のはず）, out %q, stderr %q", c.name, code, c.wantCode, out, errs)
@@ -268,7 +268,7 @@ func Test端末かどうかは端末の属性で決まり_dev_nullもパイプ�
 }
 
 // @vanda:evidence check-errors-before-run
-func TestCheckは審査を始める前の誤りを標準エラーに出し結果の行を出さずに終了コード1で終わる(t *testing.T) {
+func TestCheckはチェックを始める前の誤りを標準エラーに出し結果の行を出さずに終了コード1で終わる(t *testing.T) {
 	const okConfig = "version = \"0.1.0\"\n"
 	const storyChecks = "[[check]]\nname = \"agreement\"\nscope = \"story\"\n"
 	const allChecks = "[[check]]\nname = \"unread-files\"\nscope = \"all\"\n"
@@ -278,8 +278,8 @@ func TestCheckは審査を始める前の誤りを標準エラーに出し結果
 		want                 string // 標準エラーに出るはずのもの
 	}{
 		{"設定の誤り", okConfig + "extra = 1\n", allChecks, nil, ".vanda/config.toml:2: "},
-		{"版の違い", "version = \"9.9.9\"\n", allChecks, nil, "9.9.9"},
-		{"審査の設定の誤り", okConfig, "[[check]]\nname = \"nope\"\nscope = \"all\"\n", nil, "c.toml:2: "},
+		{"バージョンの違い", "version = \"9.9.9\"\n", allChecks, nil, "9.9.9"},
+		{"チェックの設定の誤り", okConfig, "[[check]]\nname = \"nope\"\nscope = \"all\"\n", nil, "c.toml:2: "},
 		{"--baseがない", okConfig, storyChecks, nil, "--base"},
 		{"--baseのブランチがない", okConfig, storyChecks, []string{"--base", "no-such-branch"}, "no-such-branch"},
 		{"--storyの形の誤り", okConfig, allChecks, []string{"--story", "24"}, "--story 24"},
@@ -303,8 +303,8 @@ func TestCheckは審査を始める前の誤りを標準エラーに出し結果
 			if code != 1 || out != "" || !strings.Contains(errs, c.want) {
 				t.Errorf("code %d（1 のはず）, 標準出力 %q（空のはず）, 標準エラー %q（%q を含むはず）", code, out, errs, c.want)
 			}
-			if strings.HasPrefix(errs, "審査 ") || strings.Contains(errs, "\n審査 ") {
-				t.Errorf("標準エラーに審査の結果の行が出た: %q", errs)
+			if strings.HasPrefix(errs, "チェック ") || strings.Contains(errs, "\nチェック ") {
+				t.Errorf("標準エラーにチェックの結果の行が出た: %q", errs)
 			}
 		})
 	}

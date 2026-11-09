@@ -156,7 +156,7 @@ it("TLA+ の一部だけを選んでコピーしても選んだ所がリポジ�
 });
 
 // @vanda:evidence tla-copy-ascii
-it("TLA+ のコピーのボタンを押すとリポジトリの文字のままクリップボードに入る", async () => {
+it("TLA+ のコピーのボタンをクリックするとリポジトリの文字のままクリップボードに入る", async () => {
   const user = userEvent.setup();
   const src = "S == \\A x \\in T : x' # x";
   const { getByRole } = render(<TlaCode source={src} />);

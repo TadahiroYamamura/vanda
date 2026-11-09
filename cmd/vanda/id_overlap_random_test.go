@@ -13,8 +13,8 @@ import (
 	"pgregory.net/rapid"
 )
 
-// CMD-10 約束リストの形: ID は用語・機能・約束を通し、分けたファイルをまたいでも重ならない。
-// 重なった ID の誤りは、後に出てきたほう（ファイルの場所の順、同じファイルなら行の順）の行を指す（docs/formats.md）。
+// CMD-10 約束リストの形: ID は用語・機能・約束を通し、分けたファイルをまたいでも重複しない。
+// 重複した ID の誤りは、後に出てきたほう（ファイルの場所の順、同じファイルなら行の順）の行を指す（docs/formats.md）。
 // 無作為に作った約束リストで、vanda check が出す誤りの場所が、テストの中で数えた「後に出てきたもの」と一致することを確かめる。
 
 type overlapItem struct {
@@ -28,7 +28,7 @@ type overlapLoc struct {
 	line int
 }
 
-// 重なりが起きやすいよう、ID は小さな集まりから選ぶ。base は重ならない用語で、約束の対象に使う。
+// 重複が起きやすいよう、ID は小さな集まりから選ぶ。base は重複しない用語で、約束の対象に使う。
 var overlapIDs = []string{"a", "b", "c-1", "d2"}
 
 func renderOverlap(items []overlapItem, files int) (map[string]string, map[int]overlapLoc) {
@@ -87,7 +87,7 @@ func expectedOverlaps(items []overlapItem, locs map[int]overlapLoc) map[overlapL
 }
 
 // @vanda:evidence promise-list-id-unique
-func Test分けたファイルをまたいでも重なったIDは後に出てきたものの場所だけを誤りにする(t *testing.T) {
+func Test分けたファイルをまたいでも重複したIDは後に出てきたものの場所だけを誤りにする(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
@@ -130,8 +130,8 @@ func Test分けたファイルをまたいでも重なったIDは後に出てき
 		}
 		want := expectedOverlaps(items, locs)
 
-		// 審査は HEAD のコミットの中身だけを読む
-		newRVGit(rt, root).commitAll("(test) 審査の前にコミットする", "")
+		// チェックは HEAD のコミットの中身だけを読む
+		newRVGit(rt, root).commitAll("(test) チェックの前にコミットする", "")
 		cmd := exec.Command(bin, "check", ".vanda/checks/shape.toml")
 		cmd.Dir = root
 		var stdout, stderr strings.Builder
@@ -143,10 +143,10 @@ func Test分けたファイルをまたいでも重なったIDは後に出てき
 			rt.Fatalf("vanda を動かせない: %v", err)
 		}
 		if (len(want) == 0) != (err == nil) {
-			rt.Fatalf("重なりが %d 件なのに、終了は %v\n%s%s", len(want), err, stdout.String(), stderr.String())
+			rt.Fatalf("重複が %d 件なのに、終了は %v\n%s%s", len(want), err, stdout.String(), stderr.String())
 		}
 		got := map[overlapLoc]string{}
-		// 審査ごとの結果の行は標準出力に、誤りの中身は標準エラーに出る
+		// チェックごとの結果の行は標準出力に、誤りの中身は標準エラーに出る
 		for _, line := range strings.Split(strings.TrimSpace(stderr.String()), "\n") {
 			if line == "" {
 				continue
@@ -156,18 +156,18 @@ func Test分けたファイルをまたいでも重なったIDは後に出てき
 			for l, id := range want {
 				if strings.HasPrefix(line, fmt.Sprintf("%s:%d: ", l.path, l.line)) {
 					if !strings.Contains(line, id) {
-						rt.Fatalf("重なった ID %s がエラーに出ていない: %s", id, line)
+						rt.Fatalf("重複した ID %s がエラーに出ていない: %s", id, line)
 					}
 					loc, found = l, true
 				}
 			}
 			if !found {
-				rt.Fatalf("重なりのほかのエラーが出た: %s\n%s", line, dump(srcs))
+				rt.Fatalf("重複のほかのエラーが出た: %s\n%s", line, dump(srcs))
 			}
 			got[loc] = want[loc]
 		}
 		if len(got) != len(want) {
-			rt.Fatalf("重なりのエラーが足りない: want %v, got %v\n%s\n%s", want, got, stderr.String(), dump(srcs))
+			rt.Fatalf("重複のエラーが足りない: want %v, got %v\n%s\n%s", want, got, stderr.String(), dump(srcs))
 		}
 	})
 }

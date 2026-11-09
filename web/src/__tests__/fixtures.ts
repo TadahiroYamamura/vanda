@@ -12,7 +12,7 @@ export const ctx: Context = {
   head: "0123456789abcdef0123456789abcdef01234567",
   defaultBase: "main",
   bases: ["main", "release"],
-  user: { name: "合意する人", email: "po@example.com" },
+  user: { name: "承認する人", email: "po@example.com" },
   stories: [
     { id: "#24", inBranch: true },
     { id: "#1", inBranch: false },
@@ -25,11 +25,11 @@ export const ctx: Context = {
   trailerErrors: [],
 };
 
-// plain は、参照のない文を片の配列にする（自然言語で書く項目は、API で片の配列になる。docs/plans/stage4-references.md）。
+// plain は、参照のない文をセグメントの配列にする（自然言語で書く項目は、API でセグメントの配列になる。docs/plans/stage4-references.md）。
 export const plain = (text: string) => [{ text }];
 
-// termRef・featureRef・claimRef は、応答の最上位の refs の 1 つ（docs/formats.md の「自然言語で書く項目（片の配列）」）。
-// pieces を省けば、text を参照のない 1 つの片にする
+// termRef・featureRef・claimRef は、応答の最上位の refs の 1 つ（docs/formats.md の「自然言語で書く項目（セグメントの配列）」）。
+// pieces を省けば、text を参照のない 1 つのセグメントにする
 export const termRef = (name: string, text: string, current = true, pieces: Piece[] = plain(text)): RefTarget => ({ kind: "term", name, text, current, pieces });
 export const featureRef = (name: string, text: string, o: { current?: boolean; core: boolean; formal: boolean; pieces?: Piece[] }): RefTarget => ({
   kind: "feature", name, text, current: o.current ?? true, pieces: o.pieces ?? plain(text), core: o.core, formal: o.formal,
@@ -140,7 +140,7 @@ export function claimDetail(over: Partial<ClaimDetail> = {}): ClaimDetail {
   };
 }
 
-// claimHistory は、約束の由来と合意の履歴（GET /api/claims/<ID>/history）
+// claimHistory は、約束の変更履歴と承認の履歴（GET /api/claims/<ID>/history）
 export function claimHistory(over: Partial<ClaimHistory> = {}): ClaimHistory {
   return { origin: [], agreements: [], ...over };
 }
@@ -149,7 +149,7 @@ export function apiError(status: number, message: string) {
   return HttpResponse.json({ error: { message } }, { status });
 }
 
-// requests は、テストの中で受けた要求（方法と URL と中身）を記録する。
+// requests は、テストの中で受けたリクエスト（方法と URL と中身）を記録する。
 export const requests: { method: string; url: URL; body: unknown }[] = [];
 
 export const server = setupServer();
@@ -183,14 +183,14 @@ export function gate() {
   return { open, wait };
 }
 
-// expectLoading は、el（「読み込んでいます…」の文字を持つ要素。getByText で探したもの）が読み込み中の印（loading-indicator）か確かめる。
-// 文字は読み上げられ、回る印（文字のない要素。el の中か、el と並ぶもの）は飾りとして読み上げから外れている
+// expectLoading は、el（「読み込んでいます…」の文字を持つ要素。getByText で探したもの）が読み込み中のマーク（loading-indicator）か確かめる。
+// 文字はスクリーンリーダーに読み上げられ、スピナー（文字のない要素。el の中か、el と並ぶもの）は飾りとしてスクリーンリーダーの読み上げから外れている
 export function expectLoading(el: HTMLElement, where: string) {
   expect(el.textContent ?? "", `${where}: 「読み込んでいます…」の文字がない`).toContain("読み込んでいます…");
-  expect(isInaccessible(el), `${where}: 「読み込んでいます…」が読み上げから外れている`).toBe(false);
+  expect(isInaccessible(el), `${where}: 「読み込んでいます…」がスクリーンリーダーの読み上げから外れている`).toBe(false);
   const empty = (x: Element) => (x.textContent ?? "").trim() === "";
   let marks = Array.from(el.querySelectorAll<HTMLElement>("*")).filter(empty);
   if (marks.length === 0 && el.parentElement) marks = Array.from(el.parentElement.children).filter((x): x is HTMLElement => x !== el && empty(x));
-  expect(marks.length, `${where}: 回る印がない`).toBeGreaterThan(0);
-  for (const m of marks) expect(isInaccessible(m), `${where}: 回る印が飾りになっていない（読み上げられる）`).toBe(true);
+  expect(marks.length, `${where}: スピナーがない`).toBeGreaterThan(0);
+  for (const m of marks) expect(isInaccessible(m), `${where}: スピナーが飾りになっていない（スクリーンリーダーに読み上げられる）`).toBe(true);
 }

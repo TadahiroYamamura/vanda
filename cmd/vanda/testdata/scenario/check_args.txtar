@@ -1,62 +1,62 @@
-# CMD-03: vanda check は、審査の設定のファイルを必須の引数で受け取る。既定の審査は持たない。
+# CMD-03: vanda check は、チェックの設定のファイルを必須の引数で受け取る。既定のチェックは持たない。
 # @vanda:evidence check-config-required
 # @vanda:evidence check-base-required-for-story
 # @vanda:evidence check-story-from-commits
 # @vanda:evidence story-id-from-trailer
 # @vanda:evidence check-base-unused-without-story
 # @vanda:evidence check-output-story-id
-# 範囲を「1 つのストーリー」にする審査を含む設定では、--base も必須。範囲が全部の審査だけなら、渡さなくてよい。
+# スコープを story にするチェックを含む設定では、--base も必須。スコープが all のチェックだけなら、渡さなくてよい。
 
 exec git init -q -b main
 expand .vanda/config.toml
 commit '約束リストを足す' '#1'
 
-# 審査の設定のファイルを渡さない
+# チェックの設定のファイルを渡さない
 ! exec vanda check
 ! stderr '(?m)^panic: '
 
-# 渡した審査の設定のファイルがない
+# 渡したチェックの設定のファイルがない
 ! exec vanda check .vanda/checks/no-such.toml
 stderr 'no-such\.toml'
 ! stderr '(?m)^panic: '
 
-# 範囲が全部の審査だけなら、--base なしで通る
+# スコープが all のチェックだけなら、--base なしで通る
 exec vanda check .vanda/checks/all.toml
 ! stdout '（story'
 
-# 範囲が全部の審査だけなら、--base を使わないので、ないブランチを渡しても通る
+# スコープが all のチェックだけなら、--base を使わないので、ないブランチを渡しても通る
 exec vanda check .vanda/checks/all.toml --base no-such-branch
-stdout '^審査 promise-list-shape（all）: 通った$'
+stdout '^チェック promise-list-shape（all）: 通った$'
 
-# 範囲を 1 つのストーリーにする審査を含むのに --base がない
+# スコープを story にするチェックを含むのに --base がない
 ! exec vanda check .vanda/checks/story.toml
 stderr '--base'
 ! stderr '(?m)^panic: '
 
-# 範囲が全部の審査と 1 つのストーリーの審査を混ぜても、--base がなければ止まる
+# スコープが all のチェックと 1 つのストーリーのチェックを混ぜても、--base がなければ止まる
 ! exec vanda check .vanda/checks/mixed.toml
 stderr '--base'
 ! stderr '(?m)^panic: '
 
-# ストーリーは、分岐点より後のコミットの Story: のトレーラーの ID から決める（subject・本文の ID は数えない）。
-# 分岐点より後にコミットがない（ID が 0 個）と、--story を求めて止まる
+# ストーリーは、マージベースより後のコミットの Story: のトレーラーの ID から決める（subject・本文の ID は数えない）。
+# マージベースより後にコミットがない（ID が 0 個）と、--story を求めて止まる
 exec git checkout -q -b story-2
 ! exec vanda check .vanda/checks/story.toml --base main
 stderr '--story'
 ! stderr '(?m)^panic: '
 exec vanda check .vanda/checks/story.toml --base main --story '#2'
 
-# ID が 1 つなら、それを使って通る。範囲 story の agreement・evidence-present の結果の行には、範囲の後に審査に使ったストーリーの ID を書く
+# ID が 1 つなら、それを使って通る。スコープ story の agreement・evidence-present の結果の行には、スコープの後にチェックに使ったストーリーの ID を書く
 cp cases/note-1.txt note.txt
 commit 'メモを足す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
-stdout '^審査 agreement（story #2）: 通った$'
+stdout '^チェック agreement（story #2）: 通った$'
 exec vanda check .vanda/checks/mixed.toml --base main
-stdout '^審査 promise-list-shape（all）: 通った$'
-stdout '^審査 agreement（story #2）: 通った$'
-stdout '^審査 evidence-present（story #2）: 通った$'
+stdout '^チェック promise-list-shape（all）: 通った$'
+stdout '^チェック agreement（story #2）: 通った$'
+stdout '^チェック evidence-present（story #2）: 通った$'
 
-# 分岐点より後のコミットに、トレーラーのないものが混じっても、ID が 1 つなら通る。subject に書いた #9 は数えない
+# マージベースより後のコミットに、トレーラーのないものが混じっても、ID が 1 つなら通る。subject に書いた #9 は数えない
 cp cases/note-2.txt note.txt
 commit '#9 メモを直す'
 exec vanda check .vanda/checks/story.toml --base main
@@ -68,9 +68,9 @@ commit 'メモを足す' '#3'
 stderr '--story'
 ! stderr '(?m)^panic: '
 exec vanda check .vanda/checks/story.toml --base main --story '#2'
-stdout '^審査 agreement（story #2）: 通った$'
+stdout '^チェック agreement（story #2）: 通った$'
 exec vanda check .vanda/checks/story.toml --base main --story '#3'
-stdout '^審査 agreement（story #3）: 通った$'
+stdout '^チェック agreement（story #3）: 通った$'
 
 -- .vanda/config.toml --
 version = "${VANDA_VERSION}"

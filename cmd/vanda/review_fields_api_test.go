@@ -11,8 +11,8 @@ import (
 // GET /api/review の項目のうち、RV-04（フラグ）・RV-10（まとまりと並び）・RV-05（変更前と変更後の中身）と、GET /api/context。
 // リポジトリは、この 3 つを一度に見られるように組み立てる（newFieldsRepo）。
 
-// 約束 flag-0〜flag-7 は、番号の 3 つのビットで、AI 案（1）・推測（2）・前の合意（4）の有無を表す（8 通りを全部回す）。
-// 前の合意のあるものは、main で今と違う中身に合意してある。
+// 約束 flag-0〜flag-7 は、番号の 3 つのビットで、AI 案（1）・推測（2）・前の承認（4）の有無を表す（8 通りを全部回す）。
+// 前の承認のあるものは、main で今と違う中身を承認してある。
 const (
 	bitAI      = 1
 	bitGuess   = 2
@@ -264,7 +264,7 @@ func newFieldsRepo(t *testing.T, version string) *fieldsRepo {
 			agreements.WriteString(agreementTOML("claim", fmt.Sprintf("flag-%d", i), fieldsFlagFP(i, "v0"), "", "#1", "テスト担当", "tester@example.com"))
 		}
 	}
-	// flag-agreed は、前の中身と今の中身の両方に合意してある（今の中身に合う合意があれば、差分ありにしない）
+	// flag-agreed は、前の中身と今の中身の両方を承認してある（今の中身に合う承認があれば、差分ありにしない）
 	agreedFP := func(v string) string {
 		return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"flag-agreed","layers":["model"],"statement":%q,"subjects":["t-keep"]}`, v)))
 	}
@@ -299,7 +299,7 @@ func setupFields(t *testing.T) (string, *fieldsRepo, *vandaServer, reviewRespons
 		t.Fatal(err)
 	}
 	r := newFieldsRepo(t, version)
-	// 書いた約束リストが、段 1 の約束リストの形の審査を通ること（通らない約束リストでは、一覧の誤りと言えない）
+	// 書いた約束リストが、段 1 の約束リストの形のチェックを通ること（通らない約束リストでは、一覧の誤りと言えない）
 	shape(t, bin, r.Root)
 	s := startServe(t, bin, r.Root, r.Env)
 	var got reviewResponse
@@ -311,7 +311,7 @@ func setupFields(t *testing.T) (string, *fieldsRepo, *vandaServer, reviewRespons
 
 // RV-04
 // @vanda:evidence review-flags
-func Testフラグは約束のflagsとguessesと前の合意から決まった順に立つ(t *testing.T) {
+func Testフラグは約束のflagsとguessesと前の承認から決まった順に立つ(t *testing.T) {
 	t.Parallel()
 	_, _, _, got := setupFields(t)
 	for i := 0; i < flagClaims; i++ {
@@ -332,14 +332,14 @@ func Testフラグは約束のflagsとguessesと前の合意から決まった�
 			continue
 		}
 		if e.Flags == nil || !reflect.DeepEqual(e.Flags, want) {
-			t.Errorf("%s（AI 案 %v、推測 %v、前の合意 %v）のフラグ: %v（思ったもの %v）", id, i&bitAI != 0, i&bitGuess != 0, i&bitAgreed != 0, e.Flags, want)
+			t.Errorf("%s（AI 案 %v、推測 %v、前の承認 %v）のフラグ: %v（思ったもの %v）", id, i&bitAI != 0, i&bitGuess != 0, i&bitAgreed != 0, e.Flags, want)
 		}
 		if str(e.State) != "proposed" {
 			t.Errorf("%s の state: %q", id, str(e.State))
 		}
 	}
 	if e := findEntry(got.Entries, "flag-agreed"); e == nil || len(e.Flags) != 0 || str(e.State) != "agreed" {
-		t.Errorf("前の中身と今の中身の両方に合意した flag-agreed が、合意済・フラグなしでない: %+v", e)
+		t.Errorf("前の中身と今の中身の両方を承認した flag-agreed が、承認済・フラグなしでない: %+v", e)
 	}
 	for path, want := range map[string][]string{"db/a.sql": {"changed-since-agreement"}, "e2e/b.txtar": {}, "e2e/a.txtar": {}} {
 		var e *reviewEntry
@@ -552,7 +552,7 @@ func Test画面で選べるもののストーリーストアは設定のアダ�
 	}
 }
 
-// RV-13: レビュー単位がブランチで story を省いたときは、分岐点より後のコミットのメッセージにある ID が 1 つなら
+// RV-13: レビュー単位がブランチで story を省いたときは、マージベースより後のコミットのメッセージにある ID が 1 つなら
 // それを使い、0 か 2 つ以上なら null にする。story を名指ししたときは、それを使う
 // @vanda:evidence review-story-choice
 func Testレビュー単位がブランチのときストーリーはブランチのコミットから1つに決まるときだけ決まり名指ししたものはそのまま使う(t *testing.T) {

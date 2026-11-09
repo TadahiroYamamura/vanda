@@ -1,4 +1,4 @@
-# CM-09: 設定に読むファイルのパターンを書くと、当たったファイルを全部読む。
+# CM-09: 設定に読むファイルのパターンを書くと、マッチしたファイルを全部読む。
 # @vanda:evidence promise-list-reads-all-patterns
 # パターンを書いたときは、既定のファイル（.vanda/promises.toml）は読まない。
 
@@ -7,26 +7,26 @@ expand .vanda/config.toml
 
 # a.toml の約束は b.toml の機能を、b.toml の約束は a.toml の用語を対象にする。
 # どちらかのファイルを読まなければ、対象が見つからずに止まる。
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
-# パターンに当たったファイルの誤りで止まる
+# パターンにマッチしたファイルの誤りで止まる
 cp cases/b-bad-stage.toml .vanda/promises/b.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'b\.toml'
 ! stderr '(?m)^panic: '
 
-# 合意の記録も、パターンに当たったファイルを全部読む。
-# 合意した約束を約束リストから消すと、どちらのファイルの記録でも、約束リストにない約束を指すようになる。
-# この審査は指紋が今の中身に合うかを見ないので、指紋の元の JSON の書き方（日本語の文字の扱い）は結果に関わらない。
+# 承認の記録も、パターンにマッチしたファイルを全部読む。
+# 承認した約束を約束リストから消すと、どちらのファイルの記録でも、約束リストにない約束を指すようになる。
+# このチェックはフィンガープリントが今の中身に合うかを見ないので、フィンガープリントの元の JSON の書き方（日本語の文字の扱い）は結果に関わらない。
 cp cases/b.toml .vanda/promises/b.toml
 agree .vanda/agreements/x.toml '#1' claim a-claim fp/a-claim.json
 agree .vanda/agreements/y.toml '#2' claim b-claim fp/b-claim.json
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/targets.toml
 cp cases/b-without-claim.toml .vanda/promises/b.toml
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'y\.toml'
 ! stderr '(?m)^panic: '

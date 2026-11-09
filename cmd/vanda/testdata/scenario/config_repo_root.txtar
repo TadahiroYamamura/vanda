@@ -1,4 +1,4 @@
-# CMD-01: .vanda/ は git のリポジトリの根で探す。リポジトリの中のどこで動かしても同じ .vanda/ を使い、リポジトリの外では誤りになる。
+# CMD-01: .vanda/ は git のリポジトリのルートで探す。リポジトリの中のどこで動かしても同じ .vanda/ を使い、リポジトリの外では誤りになる。
 # @vanda:evidence outside-git-repository
 # @vanda:evidence doctor-ok-line
 
@@ -11,13 +11,13 @@
 exec git init -q -b main
 expand .vanda/config.toml
 
-# 根で動かすと通る
+# ルートで動かすと通る
 exec vanda doctor
-commit '(test) 審査の前にコミットする'
+commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/all.toml
 
-# 下のディレクトリで動かしても、根の .vanda/ を使う。審査の設定のファイルの引数は、カレントディレクトリから読む。
-# 下のディレクトリにある別の .vanda/ は、版が合わないので、読めば止まる
+# 下のディレクトリで動かしても、ルートの .vanda/ を使う。チェックの設定のファイルの引数は、カレントディレクトリから読む。
+# 下のディレクトリにある別の .vanda/ は、バージョンが合わないので、読めば止まる
 cd sub
 exec vanda doctor
 exec vanda check ../.vanda/checks/all.toml
