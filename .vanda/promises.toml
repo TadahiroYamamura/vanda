@@ -659,7 +659,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-unknown-entries-rejected"
 subjects = ["read-promise-list", "list-check-kinds", "promise-list"]
-statement = "{@id:promise-list}に決まっていない表か項目があれば、promise-list-shape の{@id:mistake}にする"
+statement = "{@id:promise-list}に決まっていない表か項目があれば、{@id:promise-list-shape-check} の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -671,7 +671,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-required-fields"
 subjects = ["read-promise-list", "list-check-kinds", "promise-list"]
-statement = "{@id:promise-list}の表に必須の項目がなければ、promise-list-shape の{@id:mistake}にする"
+statement = "{@id:promise-list}の表に必須の項目がなければ、{@id:promise-list-shape-check} の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -700,7 +700,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-non-empty"
 subjects = ["read-promise-list", "list-check-kinds", "promise-list"]
-statement = "{@id:promise}の subjects・layers・evidence と、{@id:evidence}の layers が空なら、promise-list-shape の{@id:mistake}にする"
+statement = "{@id:promise}の subjects・layers・evidence と、{@id:evidence}の layers が空なら、{@id:promise-list-shape-check} の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -712,7 +712,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-field-types"
 subjects = ["read-promise-list", "list-check-kinds", "promise-list"]
-statement = "{@id:promise-list}の項目の型が、決まった型（core・formal は真偽、{@id:promise}の subjects・layers・flags・guesses と{@id:evidence}の layers は文字列の配列、evidence は表の配列、ほかの項目は文字列）でなければ、promise-list-shape の{@id:mistake}にする"
+statement = "{@id:promise-list}の項目の型が、決まった型（core・formal は真偽、{@id:promise}の subjects・layers・flags・guesses と{@id:evidence}の layers は文字列の配列、evidence は表の配列、ほかの項目は文字列）でなければ、{@id:promise-list-shape-check} の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -724,7 +724,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-id-shape"
 subjects = ["read-promise-list", "list-check-kinds", "promise-list"]
-statement = "{@id:term}・{@id:feature}・{@id:promise}の ID が、英小文字で始め、英小文字・数字をハイフンでつないだ形でなければ、promise-list-shape の{@id:mistake}にする"
+statement = "{@id:term}・{@id:feature}・{@id:promise}の ID が、英小文字で始め、英小文字・数字をハイフンでつないだ形でなければ、{@id:promise-list-shape-check} の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -762,7 +762,7 @@ layers = ["cli"]
 [[claim]]
 id = "reference-broken"
 subjects = ["read-promise-list", "list-check-kinds", "reference"]
-statement = "{@@@@ でない {@@ が次のどれかに当たれば、promise-list-shape の{@id:mistake}にする。{@@<種類>:<値>} の形でない。種類が id でない。指す ID の{@id:term}・{@id:feature}・{@id:promise}がない"
+statement = "{@@@@ でない {@@ が次のどれかに当たれば、{@id:promise-list-shape-check} の{@id:mistake}にする。{@@<種類>:<値>} の形でない。種類が id でない。指す ID の{@id:term}・{@id:feature}・{@id:promise}がない"
 rationale = "ID を変えたり消したりした時に、古い ID を指したままの{@id:reference}を見落とさないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -872,7 +872,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-part-of"
 subjects = ["read-promise-list", "list-check-kinds", "term"]
-statement = "{@id:term}の part_of の先が{@id:term}になければ、または part_of が循環すれば、promise-list-shape の{@id:mistake}にする"
+statement = "{@id:term}の part_of の先が{@id:term}になければ、または part_of が循環すれば、{@id:promise-list-shape-check} の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -884,7 +884,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-subjects-exist"
 subjects = ["read-promise-list", "list-check-kinds", "promise"]
-statement = "{@id:promise}の subjects の先が{@id:term}か{@id:feature}になければ、promise-list-shape の{@id:mistake}にする"
+statement = "{@id:promise}の subjects の先が{@id:term}か{@id:feature}になければ、{@id:promise-list-shape-check} の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -896,7 +896,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-layers-known"
 subjects = ["read-promise-list", "list-check-kinds", "layer"]
-statement = "{@id:promise}と{@id:evidence}の layers に、設定の{@id:layer}にない値があれば、promise-list-shape の{@id:mistake}にする"
+statement = "{@id:promise}と{@id:evidence}の layers に、設定の{@id:layer}にない値があれば、{@id:promise-list-shape-check} の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -908,7 +908,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-evidence-layers-within-claim"
 subjects = ["read-promise-list", "list-check-kinds", "evidence"]
-statement = "{@id:evidence}の layers に、その{@id:promise}の layers にない{@id:layer}があれば、promise-list-shape の{@id:mistake}にする"
+statement = "{@id:evidence}の layers に、その{@id:promise}の layers にない{@id:layer}があれば、{@id:promise-list-shape-check} の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -920,7 +920,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-every-layer-has-evidence"
 subjects = ["read-promise-list", "list-check-kinds", "layer", "evidence"]
-statement = "{@id:promise}に書いた{@id:layer}のうち、それを確かめる{@id:evidence}が 1 つもないものがあれば、promise-list-shape の{@id:mistake}にする"
+statement = "{@id:promise}に書いた{@id:layer}のうち、それを確かめる{@id:evidence}が 1 つもないものがあれば、{@id:promise-list-shape-check} の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -932,7 +932,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-fixed-values"
 subjects = ["read-promise-list", "list-check-kinds", "stage", "evidence-type", "flag"]
-statement = "{@id:evidence}の stage・type と、{@id:promise}の flags が決まった値でなければ、promise-list-shape の{@id:mistake}にする"
+statement = "{@id:evidence}の stage・type と、{@id:promise}の flags が決まった値でなければ、{@id:promise-list-shape-check} の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -956,7 +956,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-formal-waiver"
 subjects = ["read-promise-list", "list-check-kinds", "core-feature", "formal-feature"]
-statement = "{@id:feature}が core = true かつ formal = false なのに formal_waiver がなければ、またそれ以外で formal_waiver を書けば、promise-list-shape の{@id:mistake}にする"
+statement = "{@id:feature}が core = true かつ formal = false なのに formal_waiver がなければ、またそれ以外で formal_waiver を書けば、{@id:promise-list-shape-check} の{@id:mistake}にする"
 rationale = "{@id:core-feature}は、理由を書いて{@id:agreement}しない限り形式手法を使うため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -969,7 +969,7 @@ layers = ["cli"]
 [[claim]]
 id = "promise-list-formal-claims"
 subjects = ["read-promise-list", "list-check-kinds", "formal-feature", "model-check"]
-statement = "{@id:formal-feature}（formal が真。省けば core と同じ）を subjects に持つ{@id:promise}には、model-check の予定と model_check_waiver（TLA+ で確かめない理由）のどちらか一方だけを書く。どちらもないか、両方あれば、promise-list-shape の{@id:mistake}にする"
+statement = "{@id:formal-feature}（formal が真。省けば core と同じ）を subjects に持つ{@id:promise}には、model-check の予定と model_check_waiver（TLA+ で確かめない理由）のどちらか一方だけを書く。どちらもないか、両方あれば、{@id:promise-list-shape-check} の{@id:mistake}にする"
 rationale = "{@id:core-feature}で、仕様の書き忘れや、新しい{@id:promise}が形式手法を通らないことを、人が見落としても止めるため。確かめない理由は{@id:promise}の項目なので、{@id:agreement}の対象になる"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -1105,7 +1105,7 @@ layers = ["api"]
 [[claim]]
 id = "pass-only-when-all-seen"
 subjects = ["agree-on-review", "list-check-kinds", "agreement"]
-statement = "{@id:check-scope} all の agreement が通るなら、次のどちらにも、一度は誰かが{@id:agreement}している。(1) 今ある{@id:promise}・{@id:term}・{@id:feature}・{@id:agreement}の対象のファイルの今の中身（ファイルなら場所も）。(2) {@id:agreement}したことのある項目を消して、今はないこと"
+statement = "{@id:check-scope} all の {@id:agreement-check} が通るなら、次のどちらにも、一度は誰かが{@id:agreement}している。(1) 今ある{@id:promise}・{@id:term}・{@id:feature}・{@id:agreement}の対象のファイルの今の中身（ファイルなら場所も）。(2) {@id:agreement}したことのある項目を消して、今はないこと"
 rationale = "PO が一度も見ていない状態で、{@id:check}が通らないようにするため。細かい場面（名前を元に戻す、消して足し直す など）の振る舞いは、この性質に反しないように決める"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
@@ -1123,7 +1123,7 @@ layers = ["cli"]
 [[claim]]
 id = "story-pass-only-when-seen"
 subjects = ["agree-on-review", "list-check-kinds", "agreement", "story"]
-statement = "{@id:story} s の{@id:check-scope}の agreement が通るなら、比べる元と今で違う{@id:promise}・{@id:term}・{@id:feature}・{@id:agreement}の対象のファイルは、どれも今の状態（今ある中身か、ないこと）に一度は誰かが{@id:agreement}したものである"
+statement = "{@id:story} s の{@id:check-scope}の {@id:agreement-check} が通るなら、比べる元と今で違う{@id:promise}・{@id:term}・{@id:feature}・{@id:agreement}の対象のファイルは、どれも今の状態（今ある中身か、ないこと）に一度は誰かが{@id:agreement}したものである"
 rationale = "{@id:story}で変えたものを、PO が見ないままマージさせないため"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
@@ -1276,7 +1276,7 @@ layers = ["cli"]
 [[claim]]
 id = "agreements-unknown-entries-rejected"
 subjects = ["store-agreements", "list-check-kinds", "agreement-record"]
-statement = "{@id:agreement-record}に決まっていない表か項目があれば、agreement-targets の{@id:mistake}にする"
+statement = "{@id:agreement-record}に決まっていない表か項目があれば、{@id:agreement-targets-check} の{@id:mistake}にする"
 layers = ["cli"]
 
 [[claim.evidence]]
@@ -1317,7 +1317,7 @@ layers = ["api"]
 [[claim]]
 id = "agreements-required-fields"
 subjects = ["store-agreements", "list-check-kinds", "agreement-record"]
-statement = "{@id:agreement-record}に kind・key・fingerprint・user の name と email・agreed_at・story のどれかがなければ、または kind が claim・term・feature・file のどれでもなければ、agreement-targets の{@id:mistake}にする"
+statement = "{@id:agreement-record}に kind・key・fingerprint・user の name と email・agreed_at・story のどれかがなければ、または kind が claim・term・feature・file のどれでもなければ、{@id:agreement-targets-check} の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1329,7 +1329,7 @@ layers = ["cli"]
 [[claim]]
 id = "agreements-fingerprint-shape"
 subjects = ["store-agreements", "list-check-kinds", "agreement-record", "fingerprint"]
-statement = "{@id:agreement-record}の fingerprint が、sha256: に続けて 16 進の小文字 64 文字を書いた形でなければ、agreement-targets の{@id:mistake}にする"
+statement = "{@id:agreement-record}の fingerprint が、sha256: に続けて 16 進の小文字 64 文字を書いた形でなければ、{@id:agreement-targets-check} の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1341,7 +1341,7 @@ layers = ["cli"]
 [[claim]]
 id = "agreements-file-record-path"
 subjects = ["store-agreements", "list-check-kinds", "agreement-record"]
-statement = "kind が file の{@id:agreement-record}に path がなければ、agreement-targets の{@id:mistake}にする。key が fingerprint と違えば、{@id:mistake}にする。ただし、消したことへの{@id:agreement-record}では、key が path と違えば{@id:mistake}にする。kind が file でない{@id:agreement-record}に path があれば、{@id:mistake}にする"
+statement = "kind が file の{@id:agreement-record}に path がなければ、{@id:agreement-targets-check} の{@id:mistake}にする。key が fingerprint と違えば、{@id:mistake}にする。ただし、消したことへの{@id:agreement-record}では、key が path と違えば{@id:mistake}にする。kind が file でない{@id:agreement-record}に path があれば、{@id:mistake}にする"
 rationale = "消したファイルには中身がなく{@id:fingerprint}もないので、消したことへの{@id:agreement-record}は場所で指す"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -1354,7 +1354,7 @@ layers = ["cli"]
 [[claim]]
 id = "agreements-point-to-existing-items"
 subjects = ["store-agreements", "list-check-kinds", "agreement-record"]
-statement = "kind が claim・term・feature の{@id:agreement-record}が、{@id:promise-list}にない項目を指していて、その項目を消したことへの{@id:agreement-record}がなければ、agreement-targets の{@id:mistake}にする"
+statement = "kind が claim・term・feature の{@id:agreement-record}が、{@id:promise-list}にない項目を指していて、その項目を消したことへの{@id:agreement-record}がなければ、{@id:agreement-targets-check} の{@id:mistake}にする"
 rationale = "{@id:agreement-record}は消さずに履歴として残すため、消した項目を指す記録は、消したことへの{@id:agreement}があれば{@id:mistake}にしない"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -1372,7 +1372,7 @@ layers = ["cli"]
 [[claim]]
 id = "deleted-item-needs-agreement"
 subjects = ["agree-on-review", "list-check-kinds", "agreement"]
-statement = "agreement は、{@id:agreement}したことのある{@id:promise}・{@id:term}・{@id:feature}・{@id:agreement}の対象のファイルが今はなく、それを消したことへの{@id:agreement-record}がなければ{@id:mistake}にする。{@id:check-scope} story では、比べる元にあって今にないものを、{@id:agreement}したことがあるかどうかによらず見る"
+statement = "{@id:agreement-check} は、{@id:agreement}したことのある{@id:promise}・{@id:term}・{@id:feature}・{@id:agreement}の対象のファイルが今はなく、それを消したことへの{@id:agreement-record}がなければ{@id:mistake}にする。{@id:check-scope} story では、比べる元にあって今にないものを、{@id:agreement}したことがあるかどうかによらず見る"
 rationale = "AI が{@id:promise}とテストを一緒に消しても、PO が気づけるようにするため。{@id:check-scope} story では、{@id:agreement}したことのないものを消しても、その{@id:story}で変えたものなので、PO が見ないままマージさせない（story-pass-only-when-seen）"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
@@ -1490,7 +1490,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-adapter-required"
 subjects = ["read-annotations", "annotation", "adapter"]
-statement = "[[annotation]] のパターンにマッチしたのに、その [[annotation]] に adapter がないファイルがあれば、annotation-links の{@id:mistake}にする。その時{@id:annotation}を読めないので、evidence-present も行えない{@id:mistake}にする"
+statement = "[[annotation]] のパターンにマッチしたのに、その [[annotation]] に adapter がないファイルがあれば、{@id:annotation-links-check} の{@id:mistake}にする。その時{@id:annotation}を読めないので、{@id:evidence-present-check} も行えない{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -1637,7 +1637,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-ts-only-rejected"
 subjects = ["read-annotations", "builtin-adapter"]
-statement = "ts の{@id:adapter}は、test・it・describe に .only を付けた呼び出しがあれば、その行を指して annotation-links の{@id:mistake}にする"
+statement = "ts の{@id:adapter}は、test・it・describe に .only を付けた呼び出しがあれば、その行を指して {@id:annotation-links-check} の{@id:mistake}にする"
 rationale = ".only は、同じファイルのほかのテストを黙って実行しなくするため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -1655,7 +1655,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-links-kinds"
 subjects = ["list-check-kinds", "annotation"]
-statement = "annotation-links は、term が{@id:term}を、feature が{@id:feature}を、claim・evidence・sensor が{@id:promise}を指していなければ{@id:mistake}にする"
+statement = "{@id:annotation-links-check} は、term が{@id:term}を、feature が{@id:feature}を、claim・evidence・sensor が{@id:promise}を指していなければ{@id:mistake}にする"
 layers = ["cli"]
 
 [[claim.evidence]]
@@ -1671,7 +1671,7 @@ layers = ["cli"]
 [[claim]]
 id = "annotation-links-tla-types"
 subjects = ["list-check-kinds", "annotation", "oracle"]
-statement = "annotation-links は、TLA+ の仕様の型（TypeOK で使う、同じモジュールの最上位の定義）に term か internal がなければ、または feature を付けていれば{@id:mistake}にする"
+statement = "{@id:annotation-links-check} は、TLA+ の仕様の型（TypeOK で使う、同じモジュールの最上位の定義）に term か internal がなければ、または feature を付けていれば{@id:mistake}にする"
 layers = ["cli"]
 
 [[claim.evidence]]
@@ -2049,7 +2049,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-scope-table"
 subjects = ["run-checks", "check-config", "check-scope"]
-statement = "{@id:check}ごとに書ける{@id:check-scope}は、promise-list-shape・annotation-links・agreement-targets・unread-files は all だけ、story-origin は story だけ、agreement・evidence-present は all と story にする"
+statement = "{@id:check}ごとに書ける{@id:check-scope}は、{@id:promise-list-shape-check}・{@id:annotation-links-check}・{@id:agreement-targets-check}・{@id:unread-files-check} は all だけ、{@id:story-origin-check} は story だけ、{@id:agreement-check}・{@id:evidence-present-check} は all と story にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2102,7 +2102,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-output-story-id"
 subjects = ["run-checks", "check", "story"]
-statement = "{@id:check-scope} story の agreement・evidence-present の結果の行には、{@id:check-scope}の後に、{@id:check}に使った{@id:story}の ID を書く（例: {@id:check} agreement（story #24）: 通った）"
+statement = "{@id:check-scope} story の {@id:agreement-check}・{@id:evidence-present-check} の結果の行には、{@id:check-scope}の後に、{@id:check}に使った{@id:story}の ID を書く（例: {@id:check} agreement（story #24）: 通った）"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2149,9 +2149,9 @@ layers = ["cli"]
 [[claim]]
 id = "check-story-from-commits"
 subjects = ["run-checks", "check", "story"]
-statement = "{@id:check-scope} story の agreement・evidence-present を含む{@id:check-config}では、{@id:check}を始める前に{@id:story}を 1 つに決める。{@id:branch-point}より後のコミットの {@id:story-trailer}にある{@id:story}の ID が 1 つなら、それを使う。--story を渡していて、それと違えば、{@id:check}を始める前の{@id:mistake}にする。ID が 0 個か 2 つ以上なら、--story を使う。--story を渡していなければ、--story を求める{@id:mistake}を、{@id:check}を始める前に出す"
+statement = "{@id:check-scope} story の {@id:agreement-check}・{@id:evidence-present-check} を含む{@id:check-config}では、{@id:check}を始める前に{@id:story}を 1 つに決める。{@id:branch-point}より後のコミットの {@id:story-trailer}にある{@id:story}の ID が 1 つなら、それを使う。--story を渡していて、それと違えば、{@id:check}を始める前の{@id:mistake}にする。ID が 0 個か 2 つ以上なら、--story を使う。--story を渡していなければ、--story を求める{@id:mistake}を、{@id:check}を始める前に出す"
 rationale = "--story は、トレーラーのあるコミットがまだないブランチのためのもの。トレーラーと違う{@id:story}を使うと、本当の{@id:story}の{@id:detached}を見ないまま{@id:check}が通るため"
-condition = "決めた{@id:story}を使うのは、agreement がその{@id:story}の{@id:detached}を探す時だけで、{@id:check-scope} story の evidence-present は、{@id:branch-point}の中身と今の中身の違いだけを見る"
+condition = "決めた{@id:story}を使うのは、{@id:agreement-check} がその{@id:story}の{@id:detached}を探す時だけで、{@id:check-scope} story の {@id:evidence-present-check} は、{@id:branch-point}の中身と今の中身の違いだけを見る"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2187,7 +2187,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-load-errors-owner"
 subjects = ["run-checks", "list-check-kinds", "check"]
-statement = "{@id:promise-list}の読み込みの{@id:mistake}と{@id:error}は promise-list-shape が、{@id:annotation}の読み込みの{@id:mistake}と{@id:error}は annotation-links が、{@id:agreement-record}の読み込みの{@id:mistake}と{@id:error}は agreement-targets が出す"
+statement = "{@id:promise-list}の読み込みの{@id:mistake}と{@id:error}は {@id:promise-list-shape-check} が、{@id:annotation}の読み込みの{@id:mistake}と{@id:error}は {@id:annotation-links-check} が、{@id:agreement-record}の読み込みの{@id:mistake}と{@id:error}は {@id:agreement-targets-check} が出す"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2199,7 +2199,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-story-origin"
 subjects = ["list-check-kinds", "origin", "story"]
-statement = "story-origin は、{@id:branch-point}より後の、マージコミット以外のコミットのうち、{@id:promise-list}のファイルを変えたものに {@id:story-trailer}がなければ{@id:mistake}にする"
+statement = "{@id:story-origin-check} は、{@id:branch-point}より後の、マージコミット以外のコミットのうち、{@id:promise-list}のファイルを変えたものに {@id:story-trailer}がなければ{@id:mistake}にする"
 rationale = "履歴を書き換えないと直せない古いコミットは見ない"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -2217,7 +2217,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-agreement-targets"
 subjects = ["list-check-kinds", "agreement", "proposed"]
-statement = "agreement は、{@id:agreement}の対象の今の中身が{@id:agreed}でなければ{@id:mistake}にする。{@id:agreement}の対象は、{@id:promise}・{@id:term}・{@id:feature}、types に scenario-test か model-check を含む [[annotation]] のパターンにマッチするファイル、[[guardrail]] の paths にマッチするファイルとする"
+statement = "{@id:agreement-check} は、{@id:agreement}の対象の今の中身が{@id:agreed}でなければ{@id:mistake}にする。{@id:agreement}の対象は、{@id:promise}・{@id:term}・{@id:feature}、types に scenario-test か model-check を含む [[annotation]] のパターンにマッチするファイル、[[guardrail]] の paths にマッチするファイルとする"
 rationale = "{@id:scenario}と{@id:oracle}と{@id:guardrail-definition}は、PO が読んで正とするもので、どの{@id:adapter}で読むかによらないため。E2E・Expect の{@id:scenario}も、{@id:agreement}しないまま{@id:check}を通さない"
 condition = "types が scenario-test・model-check のどちらも含まないパターン（Go のテストなど）だけにマッチするファイルは、{@id:agreement}の対象にしない"
 layers = ["cli"]
@@ -2236,7 +2236,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-guardrail-file-missing"
 subjects = ["list-check-kinds", "guardrail"]
-statement = "[[guardrail]] の paths に書いた、ワイルドカードのない場所のファイルがなければ、agreement の{@id:mistake}にする"
+statement = "[[guardrail]] の paths に書いた、ワイルドカードのない場所のファイルがなければ、{@id:agreement-check} の{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2248,7 +2248,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-agreement-flags-left"
 subjects = ["list-check-kinds", "flag"]
-statement = "agreement は、{@id:promise}に flags か guesses が残っていれば{@id:mistake}にする"
+statement = "{@id:agreement-check} は、{@id:promise}に flags か guesses が残っていれば{@id:mistake}にする"
 rationale = "{@id:agreement}すると{@id:flag}は外れるので、残っているのは{@id:agreement}の後に{@id:flag}だけが立てられたか、{@id:agreement}を通さずに書き換えられたもののため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -2261,7 +2261,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-agreement-story-scope"
 subjects = ["list-check-kinds", "agreement", "story"]
-statement = "{@id:check-scope}を story にした agreement は、{@id:branch-point}の中身と今の中身で{@id:fingerprint}の違う{@id:promise}・{@id:term}・{@id:feature}と{@id:agreement}の対象のファイルだけを見て、さらにその{@id:story}の{@id:detached}も{@id:mistake}にする"
+statement = "{@id:check-scope}を story にした {@id:agreement-check} は、{@id:branch-point}の中身と今の中身で{@id:fingerprint}の違う{@id:promise}・{@id:term}・{@id:feature}と{@id:agreement}の対象のファイルだけを見て、さらにその{@id:story}の{@id:detached}も{@id:mistake}にする"
 condition = "{@id:story}のコミットで変えて、元の中身に戻したものは、{@id:branch-point}と{@id:fingerprint}が同じなので見ない"
 layers = ["model", "cli"]
 flags = ["ai-proposal"]
@@ -2284,7 +2284,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-evidence-present"
 subjects = ["list-check-kinds", "evidence", "evidence-type"]
-statement = "evidence-present は、予定した{@id:evidence}の 1 件ごとに、その{@id:evidence-type}を types に含む [[annotation]] で読んだ、{@id:evidence-type}に合う種類の{@id:annotation}がその{@id:promise}を指していなければ{@id:mistake}にする"
+statement = "{@id:evidence-present-check} は、予定した{@id:evidence}の 1 件ごとに、その{@id:evidence-type}を types に含む [[annotation]] で読んだ、{@id:evidence-type}に合う種類の{@id:annotation}がその{@id:promise}を指していなければ{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -2301,7 +2301,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-evidence-guardrail-needs-definition"
 subjects = ["list-check-kinds", "evidence", "guardrail"]
-statement = "evidence-present は、{@id:evidence-type}が guardrail の予定を、次の 2 つがどちらもその{@id:promise}を指している時だけ揃ったとみなす。1 つは、{@id:guardrail-definition}（[[guardrail]] の paths にマッチするファイル）の{@id:annotation}。もう 1 つは、types に guardrail を含む [[annotation]] で読んだ{@id:annotation}（Go のテストなど、{@id:guardrail}が拒むことを確かめるもの）"
+statement = "{@id:evidence-present-check} は、{@id:evidence-type}が guardrail の予定を、次の 2 つがどちらもその{@id:promise}を指している時だけ揃ったとみなす。1 つは、{@id:guardrail-definition}（[[guardrail]] の paths にマッチするファイル）の{@id:annotation}。もう 1 つは、types に guardrail を含む [[annotation]] で読んだ{@id:annotation}（Go のテストなど、{@id:guardrail}が拒むことを確かめるもの）"
 rationale = "{@id:guardrail}が設定されていることと、本当に働くことの両方を確かめるため。定義がないのにテストだけで揃ったとみなさず、定義があっても拒むことを確かめていなければ揃ったとみなさない"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -2319,7 +2319,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-evidence-sensor-needs-check"
 subjects = ["list-check-kinds", "evidence", "sensor"]
-statement = "evidence-present は、{@id:evidence-type}が sensor の予定を、次の 2 つがどちらもその{@id:promise}を指している時だけ揃ったとみなす。1 つは、実装のコードの中の{@id:sensor-location}に書いた sensor の{@id:annotation}。もう 1 つは、types に sensor を含む [[annotation]] で読んだ evidence の{@id:annotation}（{@id:sensor}が、{@id:promise}が破れた時に見つけることを確かめるテスト）"
+statement = "{@id:evidence-present-check} は、{@id:evidence-type}が sensor の予定を、次の 2 つがどちらもその{@id:promise}を指している時だけ揃ったとみなす。1 つは、実装のコードの中の{@id:sensor-location}に書いた sensor の{@id:annotation}。もう 1 つは、types に sensor を含む [[annotation]] で読んだ evidence の{@id:annotation}（{@id:sensor}が、{@id:promise}が破れた時に見つけることを確かめるテスト）"
 rationale = "{@id:sensor}が実装のコードの中にあることと、本当に働くことの両方を確かめるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -2332,7 +2332,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-evidence-proof-and-unchecked"
 subjects = ["list-check-kinds", "evidence", "proof"]
-statement = "evidence-present は、proof を予定に書いた{@id:promise}を{@id:mistake}にし、human-review の予定は確かめない"
+statement = "{@id:evidence-present-check} は、proof を予定に書いた{@id:promise}を{@id:mistake}にし、human-review の予定は確かめない"
 rationale = "proof を扱う{@id:adapter}はまだなく、human-review は{@id:annotation}で確かめないため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -2345,7 +2345,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-unread-files"
 subjects = ["list-check-kinds", "check"]
-statement = "unread-files は、{@id:vanda-dir} のファイル（{@id:config-file}と{@id:check-config}を除く）が promises か agreements のパターンにマッチしなければ{@id:mistake}にする"
+statement = "{@id:unread-files-check} は、{@id:vanda-dir} のファイル（{@id:config-file}と{@id:check-config}を除く）が promises か agreements のパターンにマッチしなければ{@id:mistake}にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -3616,7 +3616,7 @@ layers = ["api"]
 [[claim]]
 id = "evidence-presence-shown"
 subjects = ["show-evidence-status", "show-claim-evidence", "evidence"]
-statement = "{@id:evidence-plan}ごとに、evidence-present の{@id:check}と同じ判定で、揃っているかを示す"
+statement = "{@id:evidence-plan}ごとに、{@id:evidence-present-check} の{@id:check}と同じ判定で、揃っているかを示す"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -5007,7 +5007,7 @@ layers = ["api"]
 [[claim]]
 id = "story-trailer-at-most-one"
 subjects = ["run-checks", "list-check-kinds", "story"]
-statement = "{@id:branch-point}より後のコミットに {@id:story-trailer}が 2 つ以上あるものがあれば、{@id:check-scope} story の agreement・evidence-present を含む{@id:check-config}では、--story を渡した時も{@id:check}を始める前の{@id:mistake}にし、story-origin では、{@id:promise-list}を変えたそのコミットを{@id:check}の失敗にする"
+statement = "{@id:branch-point}より後のコミットに {@id:story-trailer}が 2 つ以上あるものがあれば、{@id:check-scope} story の {@id:agreement-check}・{@id:evidence-present-check} を含む{@id:check-config}では、--story を渡した時も{@id:check}を始める前の{@id:mistake}にし、{@id:story-origin-check} では、{@id:promise-list}を変えたそのコミットを{@id:check}の失敗にする"
 rationale = "1 つのブランチは 1 つの{@id:story}に当たり、コミットは 1 つのブランチで作るため。--story は{@id:story}を選ぶためのもので、トレーラーを確かめずに済ませるためのものではないため。また、手元と CI で結果を揃えるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -5020,7 +5020,7 @@ layers = ["cli"]
 [[claim]]
 id = "story-trailer-matches-pattern"
 subjects = ["run-checks", "list-check-kinds", "story"]
-statement = "{@id:branch-point}より後のコミットに、{@id:story-trailer}の値が id_pattern に全体でマッチしないものがあれば、{@id:check-scope} story の agreement・evidence-present を含む{@id:check-config}では、--story を渡した時も{@id:check}を始める前の{@id:mistake}にし、story-origin では、{@id:promise-list}を変えたそのコミットを{@id:check}の失敗にする"
+statement = "{@id:branch-point}より後のコミットに、{@id:story-trailer}の値が id_pattern に全体でマッチしないものがあれば、{@id:check-scope} story の {@id:agreement-check}・{@id:evidence-present-check} を含む{@id:check-config}では、--story を渡した時も{@id:check}を始める前の{@id:mistake}にし、{@id:story-origin-check} では、{@id:promise-list}を変えたそのコミットを{@id:check}の失敗にする"
 rationale = "--story を渡した時も{@id:mistake}にするのは、--story は{@id:story}を選ぶためのもので、トレーラーを確かめずに済ませるためのものではないため。また、手元と CI で結果を揃えるため"
 layers = ["cli"]
 flags = ["ai-proposal"]
@@ -5052,7 +5052,7 @@ layers = ["gui"]
 id = "agree-commit-has-story-trailer"
 subjects = ["agree-on-review", "revoke-agreement", "story"]
 statement = "{@id:agreement}と取り消しのコミットのメッセージの末尾に、Story: <{@id:story}の ID> のトレーラーを書く"
-rationale = "{@id:agreement}のコミットは（{@id:flag}を外すので）{@id:promise-list}を変えることがあり、そのコミットが story-origin で止まらないようにするため。取り消しのコミットにも書くのは、どの{@id:story}で取り消したかを、コミットの履歴から追えるようにするため"
+rationale = "{@id:agreement}のコミットは（{@id:flag}を外すので）{@id:promise-list}を変えることがあり、そのコミットが {@id:story-origin-check} で止まらないようにするため。取り消しのコミットにも書くのは、どの{@id:story}で取り消したかを、コミットの履歴から追えるようにするため"
 model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
