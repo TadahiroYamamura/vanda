@@ -2175,7 +2175,7 @@ layers = ["cli"]
 [[claim]]
 id = "check-blocked-by-unreadable-input"
 subjects = ["run-checks", "check"]
-statement = "{@id:promise-list}・{@id:annotation}・{@id:agreement-record}が読めない時は、それを前提にするほかの{@id:check}を「<何>が読めないため行えない」の 1 行で失敗にする"
+statement = "{@id:promise-list}・{@id:annotation}・{@id:agreement-record}が読めない時は、それを前提にするほかの{@id:check}を「<何>を読めないため、このチェックはできません」の 1 行で失敗にする"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -4855,7 +4855,7 @@ layers = ["gui"]
 [[claim]]
 id = "evidence-presence-three-states"
 subjects = ["show-evidence-status", "evidence"]
-statement = "{@id:evidence-plan}と実際の表で、「揃っている」「ない」「アノテーションでは確かめない」を見分けて示す"
+statement = "{@id:evidence-plan}と実際の表で、「揃っている」「ない」「アノテーションでは確かめません」を見分けて示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 guesses = ["テストを読んで書いた（docs/spec.md・docs/formats.md・計画には書いていない）"]
