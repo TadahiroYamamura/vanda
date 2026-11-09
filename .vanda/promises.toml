@@ -3117,7 +3117,6 @@ id = "review-group-first-layer"
 subjects = ["fold-groups", "layer"]
 statement = "2 つ以上の{@id:layer}を持つ{@id:promise}は、layers の最初の{@id:layer}のまとまりに入れる"
 layers = ["api"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "implementation"
