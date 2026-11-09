@@ -561,7 +561,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `entries[].state` | 今の中身が合意済なら `agreed`、まだなら `proposed`。`deleted` は、消したことへの合意があれば `agreed`、なければ `proposed` |
 | `entries[].fingerprint` | 今の中身の指紋。`deleted` は `null` |
 | `entries[].flags` | `ai-proposal`（AI 案。約束の `flags`）・`guess`（推測。約束の `guesses` が空でない）・`changed-since-agreement`（差分あり。同じ鍵（ファイルなら同じ場所）に合意の記録があり、今の中身の指紋に合う合意がない）。この順 |
-| `entries[].group` | たたむまとまり（RV-10）。約束は `layer:<約束の layers の最初のレイヤー>`、用語と機能は `terms-features`、ファイルは `files`。並びは、設定のレイヤーの順の約束、`terms-features`、`files` |
+| `entries[].group` | たたむまとまり（RV-10）。約束は `layer:<約束の layers の最初のレイヤー>`、用語は `terms`、機能は `features`、ファイルは `files`。並びは、`terms`、`features`、設定のレイヤーの順の約束、`files` |
 | `entries[].before`・`after` | 変更前（`added` は `null`）と変更後（`deleted` は `null`）の中身。下の表 |
 | `entries[].detachedAgreement` | このストーリーの合意が外れたもの（RV-14）なら `{"by": ["#30"]}`（`by` は、そのストーリーの合意の後に中身を変えたコミットのストーリーの ID。ID のないコミットは数えない）。ほかは `null`。`by` は見せるための手がかりで、外れたかどうかの判定には使わない。「合意の後」は、日時でなく HEAD の履歴の順で決める。HEAD の履歴を古い順にたどり、そのストーリーのその鍵への合意の記録（中身への合意）が初めて現れたコミットを、記録ごとに探し、そのうち最も後のコミットより後のコミットを見る（rebase や amend でコミットの日時が変わっても変わらない。手で書いた合意の記録も、コミットした後は同じに扱う）。どの記録もまだコミットしていなければ、`by` は空 |
 | `entries[].otherCommits` | `view=story` で、ストーリーで最初に変えた後に、このストーリーの ID のないコミット（ほかのストーリーのコミットと、ID のないコミット）が同じものを変えていたら、`[{"commit": "…", "subject": "…", "stories": ["#30"]}]`（履歴の古い順）。`view=branch` では空 |

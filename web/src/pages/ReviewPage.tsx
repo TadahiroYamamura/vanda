@@ -269,7 +269,8 @@ function StoryPanel(props: { id: string; configured: boolean }) {
 }
 
 function groupLabel(group: string, ctx: Context) {
-  if (group === "terms-features") return "用語と機能";
+  if (group === "terms") return "用語";
+  if (group === "features") return "機能";
   if (group === "files") return "エビデンスの本体";
   const id = group.replace(/^layer:/, "");
   const layer = ctx.layers.find((l) => l.id === id);

@@ -543,10 +543,13 @@ func (s *state) group(e snapshot.Entry) string {
 	if e.Claim != nil {
 		return "layer:"
 	}
-	return "terms-features"
+	if e.Kind == "feature" {
+		return "features"
+	}
+	return "terms"
 }
 
-// order は、まとまりの順（設定のレイヤーの順の約束、用語と機能、ファイル）、同じまとまりの中は ID か場所の順に並べる。
+// order は、まとまりの順（用語、機能、設定のレイヤーの順の約束、ファイル）、同じまとまりの中は ID か場所の順に並べる。
 func (s *state) order(es []Entry) {
 	rank := map[string]int{}
 	for i, l := range s.o.Cfg.Layers {
@@ -554,16 +557,18 @@ func (s *state) order(es []Entry) {
 	}
 	groupRank := func(g string) (int, string) {
 		switch {
-		case g == "terms-features":
-			return 2, ""
+		case g == "terms":
+			return 0, ""
+		case g == "features":
+			return 1, ""
 		case g == "files":
-			return 3, ""
+			return 4, ""
 		}
 		if r, ok := rank[g]; ok {
-			return 0, fmt.Sprintf("%08d", r)
+			return 2, fmt.Sprintf("%08d", r)
 		}
 		// 設定にないレイヤーの約束は、約束リストの形の審査で誤りになる。設定のレイヤーの後に、名前の順で置く
-		return 1, g
+		return 3, g
 	}
 	name := func(e Entry) string {
 		if e.ID != nil {
