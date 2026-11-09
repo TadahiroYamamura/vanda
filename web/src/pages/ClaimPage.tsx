@@ -1,6 +1,6 @@
 import { api, type Context, type Found } from "../api";
 import { ReviewAgree } from "../components/ReviewAgree";
-import { AgreementIcon, ErrorBox, PresentIcon, StateBadge, useLoad } from "../components/common";
+import { AgreementIcon, ErrorBox, Loading, PresentIcon, StateBadge, useLoad } from "../components/common";
 import { LayerChips } from "../components/Chips";
 import { EvidenceGroups } from "../components/EvidenceGroups";
 import { ClaimHistory } from "../components/ClaimHistory";
@@ -12,8 +12,10 @@ import { Link, reviewQuery, reviewURL } from "../route";
 // ClaimPage は、約束の詳細（CL-01・02・04・05・07）。
 export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: Context | null }) {
   const d = useLoad(() => api.claim(props.id), props.id);
+  // 由来と合意の履歴は時間がかかるので、詳細と別に読み、詳細を先に出す（claim-detail-shown-before-history）
+  const h = useLoad(() => api.claimHistory(props.id), props.id);
   if (d.error != null) return <ErrorBox error={d.error} title="約束の詳細を読めません" />;
-  if (!d.data) return <p className="note">読み込んでいます…</p>;
+  if (!d.data) return <Loading />;
   const c = d.data;
   return (
     <RefsProvider refs={c.refs} query={reviewQuery(props.params)}>
@@ -24,7 +26,12 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: C
       <h1>
         {c.id} <StateBadge state={c.state} />
       </h1>
-      <ReviewAgree params={props.params} ctx={props.ctx ?? null} target={{ kind: "claim", id: c.id }} onDone={d.reload} />
+      <ReviewAgree params={props.params} ctx={props.ctx ?? null} target={{ kind: "claim", id: c.id }}
+        onDone={() => {
+          d.reload();
+          h.reload();
+        }}
+      />
       <p className="statement user-text">
         <Prose pieces={c.statement} />
       </p>
@@ -81,7 +88,7 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: C
         />
       )}
 
-      <ClaimHistory claim={c} level="h2" />
+      <ClaimHistory id={c.id} history={h} level="h2" />
     </div>
     </RefsProvider>
   );

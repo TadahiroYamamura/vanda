@@ -205,9 +205,12 @@ export interface ClaimDetail {
   flags: string[];
   guesses: Prose[];
   evidence: EvidenceDetail[];
+  refs: Refs;
+}
+
+export interface ClaimHistory {
   origin: { commit: string; date: string; subject: string; stories: string[]; change: "added" | "modified" }[];
   agreements: { user: User; agreedAt: string; story: string; fingerprint: string; current: boolean; commit?: string | null }[];
-  refs: Refs;
 }
 
 export interface ClaimAt {
@@ -298,6 +301,7 @@ export const api = {
     call<Review>(`/api/review?${q({ view, base, story })}`),
   story: (id: string) => call<Story>(`/api/story?${q({ id })}`),
   claim: (id: string) => call<ClaimDetail>(`/api/claims/${encodeURIComponent(id)}`),
+  claimHistory: (id: string) => call<ClaimHistory>(`/api/claims/${encodeURIComponent(id)}/history`),
   claimAt: (id: string, commit: string) => call<ClaimAt>(`/api/claims/${encodeURIComponent(id)}/at/${encodeURIComponent(commit)}`),
   term: (id: string) => call<TermDetail>(`/api/terms/${encodeURIComponent(id)}`),
   feature: (id: string) => call<FeatureDetail>(`/api/features/${encodeURIComponent(id)}`),

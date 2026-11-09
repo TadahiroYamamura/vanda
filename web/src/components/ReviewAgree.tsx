@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api, type Context, type Entry } from "../api";
 import { AgreeControls, entryKey } from "../pages/ReviewPage";
-import { ErrorBox, StateBadge, useLoad } from "./common";
+import { ErrorBox, Loading, StateBadge, useLoad } from "./common";
 
 // ReviewAgree は、約束の詳細とファイルの画面で、レビューの画面から移ったときだけ、合意の状態と合意・取り消しを出す（RV-18）。
 // レビューの画面のクエリ（view・base・story）で /api/review を引き、その一覧にそのものがあれば、レビューの画面と同じ部品を出す。
@@ -15,7 +15,7 @@ export function ReviewAgree(props: { params?: URLSearchParams; ctx: Context | nu
   const review = useLoad(view ? () => api.review(view, base, story) : null, `${view}|${base}|${story}|${n}`);
   if (!view) return <p className="note review-agree">ストーリーのレビューから開くと、合意できます。</p>;
   if (review.error != null) return <ErrorBox error={review.error} title="合意の状態を読めません" />;
-  if (!review.data) return <p className="note review-agree">読み込んでいます…</p>;
+  if (!review.data) return <Loading className="review-agree" />;
   const key = props.target.kind === "claim" ? `claim:${props.target.id}` : `path:${props.target.path}`;
   const entry: Entry | undefined = [...review.data.entries, ...review.data.detached].find((e) => entryKey(e) === key);
   if (!entry) {

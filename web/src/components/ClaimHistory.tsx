@@ -1,13 +1,16 @@
 import { Fragment, type ReactNode, useState } from "react";
-import { api, type ClaimDetail } from "../api";
-import { ErrorBox, shortCommit, useLoad } from "./common";
+import { api, type ClaimHistory as History } from "../api";
+import { ErrorBox, Loading, shortCommit, useLoad } from "./common";
 import { LayerChips } from "./Chips";
 import { EvidenceGroups } from "./EvidenceGroups";
 import { Prose, ProseLines, RefsProvider } from "./Prose";
 
 // ClaimHistory は、約束の由来（CL-04）と合意の履歴（CL-05）。約束の詳細の画面と、レビューの画面の 1 件の詳細（RV-16）で使う。
-export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) {
-  const c = props.claim;
+// 由来と合意の履歴は、約束の詳細と同時に読み始めるため、読み込みは使う側が持つ（ここで読むと、詳細を読み終えるまで読み始められない）
+export function ClaimHistory(props: { id: string; history: { data: History | null; error: unknown }; level: "h2" | "h3" }) {
+  const id = props.id;
+  const c = props.history.data;
+  const error = props.history.error;
   const H = props.level;
   // その時点の中身のステージの見出しは、由来・合意の履歴の見出しの 1 つ下の段にする
   const sub = props.level === "h2" ? "h3" : "h4";
@@ -32,7 +35,11 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
   return (
     <>
       <H>由来</H>
-      {c.origin.length === 0 ? (
+      {error != null ? (
+        <ErrorBox error={error} title="由来を読めません" />
+      ) : !c ? (
+        <Loading />
+      ) : c.origin.length === 0 ? (
         <p className="note">まだコミットしていません。</p>
       ) : (
         <table className="history">
@@ -59,7 +66,7 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
                   <ExpandButton open={isOpen(`origin:${o.commit}`)} onClick={() => toggle(`origin:${o.commit}`)} />
                 </td>
               </tr>
-              {isOpen(`origin:${o.commit}`) && <ClaimAtRow cols={6} claim={c} commit={o.commit} level={sub} />}
+              {isOpen(`origin:${o.commit}`) && <ClaimAtRow cols={6} id={id} commit={o.commit} level={sub} />}
               </Fragment>
             ))}
           </tbody>
@@ -67,7 +74,11 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
       )}
 
       <H>合意の履歴</H>
-      {c.agreements.length === 0 ? (
+      {error != null ? (
+        <ErrorBox error={error} title="合意の履歴を読めません" />
+      ) : !c ? (
+        <Loading />
+      ) : c.agreements.length === 0 ? (
         <p className="note">まだ合意していません。</p>
       ) : (
         <table className="history">
@@ -98,7 +109,7 @@ export function ClaimHistory(props: { claim: ClaimDetail; level: "h2" | "h3" }) 
                   )}
                 </td>
               </tr>
-              {a.commit && isOpen(`agreement:${i}`) && <ClaimAtRow cols={5} claim={c} commit={a.commit} level={sub} />}
+              {a.commit && isOpen(`agreement:${i}`) && <ClaimAtRow cols={5} id={id} commit={a.commit} level={sub} />}
               </Fragment>
             ))}
           </tbody>
@@ -133,9 +144,8 @@ function ExpandButton(props: { open: boolean; onClick: () => void }) {
 }
 
 // ClaimAtRow は、ある時点の約束の中身（変更前と変更後の表（RV-05）と同じ項目と並び）を、押した行のすぐ下の行に出す。中身は API が、その時点の約束リストから読んだもの。
-function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string; level: "h3" | "h4" }) {
-  const c = props.claim;
-  const d = useLoad(() => api.claimAt(c.id, props.commit), `${c.id}@${props.commit}`);
+function ClaimAtRow(props: { cols: number; id: string; commit: string; level: "h3" | "h4" }) {
+  const d = useLoad(() => api.claimAt(props.id, props.commit), `${props.id}@${props.commit}`);
   const none = "（なし）";
   const rows: [string, ReactNode][] = d.data
     ? [
@@ -180,7 +190,7 @@ function ClaimAtRow(props: { cols: number; claim: ClaimDetail; commit: string; l
               </span>
             )}
           </div>
-          {d.loading && <p className="note">読み込んでいます…</p>}
+          {d.loading && <Loading />}
           {d.error != null && <ErrorBox error={d.error} title="その時点の中身を読めません" />}
           {d.data && (
             <RefsProvider refs={d.data.refs}>

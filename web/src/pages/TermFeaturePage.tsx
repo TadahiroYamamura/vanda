@@ -1,5 +1,5 @@
 import { api, type ClaimSummary, type NamedRef } from "../api";
-import { ErrorBox, useLoad } from "../components/common";
+import { ErrorBox, Loading, useLoad } from "../components/common";
 import { detailURL, FeatureMarks, Prose, RefsProvider } from "../components/Prose";
 import { Link, reviewQuery, reviewURL } from "../route";
 
@@ -13,7 +13,7 @@ export function TermPage(props: { id: string; params?: URLSearchParams }) {
         <Link to={reviewURL(props.params)}>ストーリーのレビューへ戻る</Link>
       </p>
       {d.error != null && <ErrorBox error={d.error} title="用語の詳細を読めません" />}
-      {!d.data && d.error == null && <p className="note">読み込んでいます…</p>}
+      {!d.data && d.error == null && <Loading />}
       {d.data && (
         <RefsProvider refs={d.data.refs} query={query}>
           <h1 className="user-text">{d.data.name}</h1>
@@ -60,7 +60,7 @@ export function FeaturePage(props: { id: string; params?: URLSearchParams }) {
         <Link to={reviewURL(props.params)}>ストーリーのレビューへ戻る</Link>
       </p>
       {d.error != null && <ErrorBox error={d.error} title="機能の詳細を読めません" />}
-      {!d.data && d.error == null && <p className="note">読み込んでいます…</p>}
+      {!d.data && d.error == null && <Loading />}
       {d.data && (
         <RefsProvider refs={d.data.refs} query={query}>
           <h1>

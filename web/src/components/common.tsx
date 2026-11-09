@@ -158,6 +158,16 @@ export function StateBadge(props: { state: State | null }) {
   return <span className={`badge state state-${props.state}`}>{stateLabel[props.state]}</span>;
 }
 
+// Loading は、読み込みの終わっていない欄の印（loading-indicator）。回る印は飾りなので読み上げず、文字だけを読ませる
+export function Loading(props: { className?: string }) {
+  return (
+    <p className={props.className ? `note loading ${props.className}` : "note loading"}>
+      <span className="spinner" aria-hidden="true" />
+      読み込んでいます…
+    </p>
+  );
+}
+
 // useLoad は、非同期の読み込みの結果と誤りを持つ。key が変わるたびに読み直す。
 export function useLoad<T>(load: (() => Promise<T>) | null, key: string): { data: T | null; error: unknown; loading: boolean; reload: () => void } {
   const [data, setData] = useState<T | null>(null);

@@ -2,8 +2,8 @@ import { useState } from "react";
 // 本文の中の生の HTML は描かない（react-markdown の既定。rehype-raw などを足さない）。Issue の本文に悪意のある HTML があっても、画面で動かないようにするため
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { api, type ClaimContent, type Piece, type User, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FileContent, type Review, type TermContent } from "../api";
-import { AgreementIcon, ErrorBox, FlagBadge, ListIcon, PresentIcon, StateBadge, shortCommit, useLoad } from "../components/common";
+import { api, type ClaimContent, type Content, type Piece, type Refs, type User, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FileContent, type Kind, type Review, type TermContent } from "../api";
+import { AgreementIcon, ErrorBox, FlagBadge, ListIcon, Loading, PresentIcon, StateBadge, shortCommit, useLoad } from "../components/common";
 import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
 import { LineDiff, Parts } from "../components/DiffView";
@@ -135,7 +135,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
         <aside className="story-panel">{story ? <StoryPanel id={story} configured={ctx.storyStore !== ""} /> : <p className="note">ストーリーが決まっていません。ストーリーを選んでください。</p>}</aside>
 
         <section className="list" aria-label="変わったものの一覧">
-          {review.loading && <p className="note">読み込んでいます…</p>}
+          {review.loading && <Loading />}
           {review.error != null && <ErrorBox error={review.error} title="一覧を作れません" />}
           {review.data && (
             <EntryList
@@ -168,6 +168,8 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
               }}
             />
             </RefsProvider>
+          ) : sel && canLoad && !review.data && review.error == null ? (
+            <SelectedPreview key={sel} sel={sel} query={carried} />
           ) : (
             <p className="note">一覧から 1 件を選んでください。</p>
           )}
@@ -219,7 +221,7 @@ function StoryPanel(props: { id: string; configured: boolean }) {
           題と本文なし（ストーリーストアが未設定）
         </p>
       )}
-      {s.loading && <p className="note">読み込んでいます…</p>}
+      {s.loading && <Loading />}
       {s.error != null && <ErrorBox error={s.error} title="ストーリーストアから読めません" />}
       {s.data && (
         <>
@@ -385,6 +387,102 @@ function EntryRow(props: { e: Entry; selected: boolean; onSelect: (key: string) 
         ))}
       </div>
     </li>
+  );
+}
+
+// previewOmit は、一覧を待つ間の 1 件の中身で出さない項目。詳細の API が返さないか、一覧と違う形で返す
+// （機能のコア機能・形式手法を使うは、書いていないときも真偽にして返す）ので、一覧を読み終えてから出す
+const previewOmit: Partial<Record<Kind, string[]>> = {
+  claim: ["TLA+ で確かめない理由"],
+  feature: ["コア機能", "形式手法を使う", "形式手法を使わない理由"],
+};
+
+// currentOf は、選んだ 1 件の鍵（entryKey の形）から、その今の中身を詳細の API で読む。鍵の形に合わなければ null
+function currentOf(sel: string): { kind: Kind; name: string; load: () => Promise<{ content: Content; refs: Refs }> } | null {
+  const at = sel.indexOf(":");
+  if (at < 0) return null;
+  const head = sel.slice(0, at);
+  const name = sel.slice(at + 1);
+  switch (head) {
+    case "claim":
+      return {
+        kind: "claim",
+        name,
+        load: async () => {
+          const c = await api.claim(name);
+          const content: ClaimContent = {
+            statement: c.statement,
+            rationale: c.rationale,
+            condition: c.condition,
+            subjects: c.subjects.map((x) => x.id),
+            layers: c.layers.map((l) => l.id),
+            evidence: c.evidence,
+            flags: c.flags,
+            guesses: c.guesses,
+            modelCheckWaiver: null,
+          };
+          return { content, refs: c.refs };
+        },
+      };
+    case "term":
+      return {
+        kind: "term",
+        name,
+        load: async () => {
+          const t = await api.term(name);
+          const content: TermContent = { name: t.name, definition: t.definition, partOf: t.partOf?.id ?? null };
+          return { content, refs: t.refs };
+        },
+      };
+    case "feature":
+      return {
+        kind: "feature",
+        name,
+        load: async () => {
+          const f = await api.feature(name);
+          const content: FeatureContent = { name: f.name, definition: f.definition, core: null, formal: null, formalWaiver: null };
+          return { content, refs: f.refs };
+        },
+      };
+    case "path":
+      return {
+        kind: "file",
+        name,
+        load: async () => {
+          const content: FileContent = { text: (await api.file(name)).text };
+          return { content, refs: {} };
+        },
+      };
+  }
+  return null;
+}
+
+// SelectedPreview は、一覧を読み込む間に、URL で選ばれている 1 件の今の中身を先に出す（review-detail-shown-before-list）。
+// 読めなかったとき（今はない 1 件など）は誤りを出さずに一覧を待つ。一覧の側が、読めない理由か、その 1 件の中身を出すため
+function SelectedPreview(props: { sel: string; query: string }) {
+  const target = currentOf(props.sel);
+  const d = useLoad(target ? target.load : null, props.sel);
+  if (!target) return <Loading />;
+  const omit = previewOmit[target.kind] ?? [];
+  return (
+    <div>
+      <p className="note">{kindLabel[target.kind]}</p>
+      <h2 className="entry-title">{target.name}</h2>
+      {d.data && (
+        <RefsProvider refs={d.data.refs} query={props.query}>
+          {target.kind === "file" ? (
+            <CodeBlock source={(d.data.content as FileContent).text} lang={langOf(target.name)} />
+          ) : (
+            <ItemCompare
+              entry={{ kind: target.kind, diff: null, before: null, after: d.data.content }}
+              before={null}
+              after={(rows(target.kind, d.data.content) ?? []).filter((r) => !omit.includes(r[0]))}
+            />
+          )}
+        </RefsProvider>
+      )}
+      <Loading />
+    </div>
   );
 }
 
@@ -609,7 +707,7 @@ function Compare(props: { entry: Entry }) {
 // 変わっていない項目は 1 回だけ、変わった文の項目は API の文字の単位の差分（diff.fields）で、消した文字を del、足した文字を ins で出す。
 // 文字の差分のない項目（対象・レイヤー・推測・真偽）が変わったときは、変更前の値を del、変更後の値を ins で並べる。
 // 追加・削除した件は、ある側の中身だけを印なしで出す（追加・削除は件の見出しに出している）
-function ItemCompare(props: { entry: Entry; before: Row[] | null; after: Row[] | null }) {
+function ItemCompare(props: { entry: Pick<Entry, "kind" | "diff" | "before" | "after">; before: Row[] | null; after: Row[] | null }) {
   const { entry: e, before, after } = props;
   const fields = e.diff && "fields" in e.diff ? e.diff.fields : null;
   const evidenceMarks = e.diff && "fields" in e.diff ? e.diff.evidence : undefined;
@@ -670,9 +768,11 @@ function UnifiedEvidence(props: { before: EvidenceContent[]; after: EvidenceCont
 // ClaimSections は、約束のエビデンスの予定と実際の表（RV-08。合格したかは段 3 で足す）と、由来と合意の履歴（RV-16）。
 export function ClaimSections(props: { id: string; query?: string }) {
   const d = useLoad(() => api.claim(props.id), props.id);
+  const h = useLoad(() => api.claimHistory(props.id), props.id);
   return (
     <div>
       <h3>エビデンスの予定と実際</h3>
+      {d.loading && <Loading />}
       {d.error != null && <ErrorBox error={d.error} title="エビデンスを探せません" />}
       {d.data && (
         <RefsProvider refs={d.data.refs}>
@@ -706,9 +806,9 @@ export function ClaimSections(props: { id: string; query?: string }) {
             </>
           )}
         />
-        <ClaimHistory claim={d.data} level="h3" />
         </RefsProvider>
       )}
+      <ClaimHistory id={props.id} history={h} level="h3" />
     </div>
   );
 }
