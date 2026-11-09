@@ -5138,3 +5138,47 @@ layers = ["api"]
 stage = "implementation"
 type = "unit-test"
 layers = ["gui"]
+
+[[claim]]
+id = "claim-detail-shown-before-history"
+subjects = ["show-claim-fields", "show-claim-evidence", "show-claim-origin", "show-claim-agreements"]
+statement = "{@id:promise}の詳細の画面は、{@id:origin}と{@id:agreement}の履歴を読み込み終える前に、ID・状態・文・理由・条件・レイヤー・対象・{@id:guess}・{@id:evidence-plan}と実際のエビデンスを出す。{@id:origin}と{@id:agreement}の履歴は、読み込み終えてから出す"
+rationale = "{@id:origin}と{@id:agreement}の履歴は、履歴のコミットをたどるので時間がかかる。{@id:promise-list}から読めるほかの中身を、その間も見られるようにするため"
+layers = ["api", "gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["api"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "review-detail-shown-before-list"
+subjects = ["list-changes", "compare-contents"]
+statement = "{@id:story}のレビューで、変わったものの一覧を読み込み終える前でも、選んだ 1 件の今の中身（{@id:promise}なら文・理由・条件など、{@id:term}と{@id:feature}なら定義、ファイルなら中身）を出す。変更前の中身・差分・状態・{@id:flag}・{@id:agreement}のボタンと取り消しのボタンは、一覧を読み込み終えてから出す"
+rationale = "一覧は履歴をたどるので時間がかかる。詳細から戻った時に、選んでいた 1 件の今の中身を、その間も見られるようにするため。変更前の中身や、{@id:agreement}できるかどうかは一覧の結果で決まるので、それらは一覧を待つ"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
+id = "loading-indicator"
+subjects = ["list-changes", "show-claim-fields"]
+statement = "読み込みの終わっていない欄には、回る印と「読み込んでいます…」を出す"
+rationale = "読み込みが続いていて、止まっていないことが分かるようにするため"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["gui"]
