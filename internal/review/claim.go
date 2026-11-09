@@ -242,7 +242,6 @@ func ClaimHistoryOf(o Options, id string) (*ClaimHistory, *Error) {
 		d.Agreements = append(d.Agreements, ref)
 	}
 	newestFirst(d, commits, mine)
-	newestFirst(d, commits, mine)
 	return d, nil
 }
 
