@@ -1213,7 +1213,7 @@ func Test形に合わない答えは理由が出て同じ問いにとどまる(t
 }
 
 // CMD-11: 読むファイルのパターンの書き方の誤り（config-pattern-syntax）は、理由が出て同じ問いにとどまり、設定に書かれない。
-// 聞き直すことは PO の決定で、約束にはしないため、エビデンスにしない
+// @vanda:evidence init-validates-answers
 func Test読むファイルのパターンの書き方が誤っていると理由が出て聞き直し入れ直したパターンだけが書かれる(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
