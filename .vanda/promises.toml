@@ -469,8 +469,8 @@ definition = "変更・削除したものの、変更前と変更後の中身と
 
 [[feature]]
 id = "agree-on-review"
-name = "合意する"
-definition = "1 件に合意する"
+name = "レビューで合意する"
+definition = "{@id:story}のレビューで、1 件に{@id:agreement}する"
 core = true
 formal = true
 
@@ -509,7 +509,7 @@ formal = true
 [[feature]]
 id = "agree-on-detail-pages"
 name = "約束の詳細とファイルの画面で合意する"
-definition = "{@id:promise}の詳細の画面と、ファイルの画面でも、{@id:agree-on-review}・{@id:revoke-agreement}"
+definition = "レビューの画面のほか、{@id:promise}の詳細の画面とファイルの画面でも、1 件に{@id:agreement}し、{@id:agreement}を取り消す"
 
 [[feature]]
 id = "show-claim-fields"
@@ -982,7 +982,7 @@ layers = ["cli"]
 id = "fingerprint-excludes-flags"
 subjects = ["store-agreements", "flag", "agreement"]
 statement = "{@id:promise}の{@id:fingerprint}は、{@id:promise-list}の項目から flags と guesses を除いたものから作る"
-rationale = "{@id:flag}は注意して読む手がかりで、{@id:agree-on-review}と外すので、{@id:flag}だけを変えても、{@id:agreement}し直さなくてよいようにするため"
+rationale = "{@id:flag}は注意して読む手がかりで、{@id:agreement}すると外すので、{@id:flag}だけを変えても、{@id:agreement}し直さなくてよいようにするため"
 layers = ["cli"]
 flags = ["ai-proposal"]
 
@@ -3466,7 +3466,7 @@ layers = ["gui"]
 [[claim]]
 id = "agree-writes-and-commits"
 subjects = ["agree-on-review", "agreement"]
-statement = "{@id:agree-on-review}と、{@id:agreement-record}を書き足し、{@id:agreement-record}のファイルと{@id:promise-list}のファイルだけを 1 つのコミットにする"
+statement = "{@id:agreement}すると、{@id:agreement-record}を書き足し、{@id:agreement-record}のファイルと{@id:promise-list}のファイルだけを 1 つのコミットにする"
 rationale = "1 件の{@id:agreement}ごとに 1 つのコミットにする（まとめる形にすると、画面の中に書きかけの{@id:agreement}を持つことになり、閉じた時に消えるおそれがあるため）"
 model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
@@ -3550,8 +3550,8 @@ layers = ["api"]
 [[claim]]
 id = "agree-removes-flags"
 subjects = ["agree-on-review", "flag"]
-statement = "{@id:promise}に{@id:agree-on-review}と、同じコミットで、その{@id:promise}の flags と guesses を外す"
-rationale = "責任を持つのは{@id:agreement}した人（{@id:agreement-record}の「誰が」）で、{@id:flag}があってもなくても変わったものはすべて読んで{@id:agree-on-review}ため"
+statement = "{@id:promise}に{@id:agreement}すると、同じコミットで、その{@id:promise}の flags と guesses を外す"
+rationale = "責任を持つのは{@id:agreement}した人（{@id:agreement-record}の「誰が」）で、{@id:flag}があってもなくても変わったものはすべて読んで{@id:agreement}するため"
 model_check_waiver = "{@id:agreement-record}とコミットの書き方の決まりで、操作の順番によって結果が変わらないため"
 layers = ["api"]
 flags = ["ai-proposal"]
@@ -3696,7 +3696,7 @@ layers = ["api"]
 id = "detail-origin-and-history"
 subjects = ["show-entry-history", "origin"]
 statement = "レビューの 1 件の詳細に、{@id:promise}の{@id:origin}と{@id:agreement}の履歴を示す"
-rationale = "{@id:agree-on-review}かどうかを決める時に、{@id:promise}の詳細へ移らずに見られるようにするため"
+rationale = "{@id:agreement}するかどうかを決める時に、{@id:promise}の詳細へ移らずに見られるようにするため"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -4467,7 +4467,7 @@ layers = ["gui"]
 [[claim]]
 id = "agree-on-screen"
 subjects = ["agree-on-review", "agreement"]
-statement = "レビューの画面で 1 件に{@id:agree-on-review}と、画面に見せていた中身の{@id:fingerprint}と、合意する{@id:story}の ID を添えて、API に{@id:agreement}を求める"
+statement = "レビューの画面で 1 件に{@id:agreement}すると、画面に見せていた中身の{@id:fingerprint}と、合意する{@id:story}の ID を添えて、API に{@id:agreement}を求める"
 model_check_waiver = "画面の見せ方の決まりで、{@id:agreement}の判定そのものではないため"
 layers = ["gui"]
 flags = ["ai-proposal"]
