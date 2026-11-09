@@ -88,6 +88,8 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
   const storyHelp = story ? `ストーリー（HEAD の履歴にある、${story} のコミットすべての変更。合流したほかのブランチのものも含む）` : "ストーリー（HEAD の履歴にある、そのストーリーのコミットすべての変更。合流したほかのブランチのものも含む）";
   const viewHelp = view === "branch" ? branchHelp : storyHelp;
 
+  // 一覧を初めて読み込んでいる間。ブランチのコミットから決まるストーリーも、まだ分からない
+  const pending = canLoad && review.data === null && review.error == null;
   const all = review.data ? [...review.data.detached, ...review.data.entries] : [];
   const selected = all.find((e) => entryKey(e) === sel) ?? null;
 
@@ -119,7 +121,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
             </select>
           </label>
         )}
-        <StoryChoice view={view} storyParam={storyParam} review={review.data} ctx={ctx} onChange={(v) => set({ story: v, sel: null })} />
+        <StoryChoice view={view} storyParam={storyParam} review={review.data} pending={pending} ctx={ctx} onChange={(v) => set({ story: v, sel: null })} />
         <p className="comparing" aria-live="polite">
           {view === "branch"
             ? base
@@ -132,12 +134,19 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
       </section>
 
       <div className="columns">
-        <aside className="story-panel">{story ? <StoryPanel id={story} configured={ctx.storyStore !== ""} /> : <p className="note">ストーリーが決まっていません。ストーリーを選んでください。</p>}</aside>
+        <aside className="story-panel">
+          {story ? (
+            <StoryPanel id={story} configured={ctx.storyStore !== ""} />
+          ) : pending ? (
+            <StoryPlaceholder id={null} configured={ctx.storyStore !== ""} />
+          ) : (
+            <p className="note">ストーリーが決まっていません。ストーリーを選んでください。</p>
+          )}
+        </aside>
 
         <section className="list" aria-label="変わったものの一覧">
-          {review.loading && <Loading />}
           {review.error != null && <ErrorBox error={review.error} title="一覧を作れません" />}
-          {review.data && (
+          {review.data ? (
             <EntryList
               review={review.data}
               ctx={ctx}
@@ -147,7 +156,16 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
               // 打つたびに履歴を積むと、ブラウザーの「戻る」が 1 文字ずつ戻るため、置き換える
               onFilterText={(v) => set({ filter: v }, true)}
               onFilterNotAgreed={(v) => set({ unagreed: v ? "1" : null }, true)}
+              reloading={review.loading}
             />
+          ) : (
+            pending && (
+              <ListPlaceholder
+                filter={filter}
+                onFilterText={(v) => set({ filter: v }, true)}
+                onFilterNotAgreed={(v) => set({ unagreed: v ? "1" : null }, true)}
+              />
+            )
           )}
         </section>
 
@@ -168,7 +186,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
               }}
             />
             </RefsProvider>
-          ) : sel && canLoad && !review.data && review.error == null ? (
+          ) : sel && pending ? (
             <SelectedPreview key={sel} sel={sel} query={carried} />
           ) : (
             <p className="note">一覧から 1 件を選んでください。</p>
@@ -181,8 +199,16 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
 
 // StoryChoice は、合意の記録に書くストーリーを示す・選ぶ所（RV-13）。1 つに決まったか・選ばせるものは、API（branchStories・storyFrom）の判定をそのまま使う。
 // レビュー単位がブランチで、ブランチのコミットから 1 つに決まったときは、選ばせずに示すだけにする
-function StoryChoice(props: { view: string; storyParam: string | null; review: Review | null; ctx: Context; onChange: (v: string) => void }) {
+function StoryChoice(props: { view: string; storyParam: string | null; review: Review | null; pending: boolean; ctx: Context; onChange: (v: string) => void }) {
   const { storyParam, review, ctx } = props;
+  // ブランチのコミットから決まるかは一覧の答えで分かるので、それまでは選ばせない（決まっているのに「選んでください」と出さないため）
+  if (props.pending && !storyParam) {
+    return (
+      <p className="story-fixed">
+        ストーリー: <span className="skeleton skeleton-inline" aria-hidden="true" />
+      </p>
+    );
+  }
   if (review?.storyChoice === "fixed" && review.story) {
     return (
       <p className="story-fixed">
@@ -213,6 +239,7 @@ function StoryChoice(props: { view: string; storyParam: string | null; review: R
 
 function StoryPanel(props: { id: string; configured: boolean }) {
   const s = useLoad(props.configured ? () => api.story(props.id) : null, props.id);
+  if (props.configured && s.data === null && s.error == null) return <StoryPlaceholder id={props.id} configured />;
   return (
     <div>
       <h2>ストーリー {props.id}</h2>
@@ -221,7 +248,6 @@ function StoryPanel(props: { id: string; configured: boolean }) {
           題と本文なし（ストーリーストアが未設定）
         </p>
       )}
-      {s.loading && <Loading />}
       {s.error != null && <ErrorBox error={s.error} title="ストーリーストアから読めません" />}
       {s.data && (
         <>
@@ -268,6 +294,39 @@ function StoryPanel(props: { id: string; configured: boolean }) {
   );
 }
 
+// StoryPlaceholder は、ストーリーの題と本文を読み終えるまでの入れ物。本文の欄を、高さの上限まで先に取っておく。
+// 本文は数十行あることが多く、読み終えてから欄を伸ばすと、下の一覧と 1 件の中身が一度に押し下げられるため
+function StoryPlaceholder(props: { id: string | null; configured: boolean }) {
+  if (!props.configured) {
+    return (
+      <div>
+        <h2>ストーリー</h2>
+        <Loading />
+      </div>
+    );
+  }
+  return (
+    <div>
+      <h2>ストーリー{props.id ? ` ${props.id}` : ""}</h2>
+      <p className="story-title" aria-hidden="true">
+        <span className="skeleton skeleton-title" />
+      </p>
+      <p aria-hidden="true">
+        <span className="skeleton skeleton-link" />
+      </p>
+      <div className="story-placeholder-section">
+        <span className="skeleton skeleton-summary" aria-hidden="true" />
+        <div className="story-body story-body-placeholder">
+          <Loading />
+        </div>
+      </div>
+      <div className="story-placeholder-section" aria-hidden="true">
+        <span className="skeleton skeleton-summary" />
+      </div>
+    </div>
+  );
+}
+
 function groupLabel(group: string, ctx: Context) {
   if (group === "terms") return "用語";
   if (group === "features") return "機能";
@@ -285,6 +344,7 @@ function EntryList(props: {
   filter: Filter;
   onFilterText: (v: string) => void;
   onFilterNotAgreed: (v: boolean) => void;
+  reloading: boolean;
 }) {
   const { review, filter } = props;
   const filtering = filter.text !== "" || filter.notAgreed;
@@ -298,23 +358,14 @@ function EntryList(props: {
   }
   const count = (c: string) => review.entries.filter((e) => e.change === c).length;
   return (
-    <div>
-      <h2>
-        変わったもの{" "}
-        <span className="total">
-          全 {review.total} 件{filtering && `・絞り込んだ後 ${entries.length} 件`}
-        </span>
-      </h2>
-      <div className="filter" role="search" aria-label="一覧の絞り込み">
-        <label>
-          絞り込み
-          <input type="search" value={filter.text} onChange={(e) => props.onFilterText(e.target.value)} placeholder="ID・名前・文・定義・パス" />
-        </label>
-        <label>
-          <input type="checkbox" checked={filter.notAgreed} onChange={(e) => props.onFilterNotAgreed(e.target.checked)} />
-          合意済でないものだけ
-        </label>
-      </div>
+    <div className={props.reloading ? "entry-list reloading" : "entry-list"}>
+      <ListHead
+        total={`全 ${review.total} 件${filtering ? `・絞り込んだ後 ${entries.length} 件` : ""}`}
+        loading={props.reloading}
+        filter={filter}
+        onFilterText={props.onFilterText}
+        onFilterNotAgreed={props.onFilterNotAgreed}
+      />
       <p className="note">
         追加 {count("added")}・変更 {count("modified")}・削除 {count("deleted")}
       </p>
@@ -335,6 +386,55 @@ function EntryList(props: {
       {groups.map((g) => (
         <Group key={g.name} label={groupLabel(g.name, props.ctx)} entries={g.entries} selected={props.selected} onSelect={props.onSelect} />
       ))}
+    </div>
+  );
+}
+
+// ListHead は、一覧の見出しと絞り込みの欄。読み込み中の印は、見出しの行に重ねて出す。
+// 合意の後の読み直しで、行を差し込んで一覧を 1 行ぶん動かさないため
+function ListHead(props: { total: string; loading: boolean; filter: Filter; onFilterText: (v: string) => void; onFilterNotAgreed: (v: boolean) => void }) {
+  return (
+    <>
+      <h2>
+        変わったもの <span className="total">{props.total}</span>
+      </h2>
+      {props.loading && <Loading className="loading-over" />}
+      <div className="filter" role="search" aria-label="一覧の絞り込み">
+        <label>
+          絞り込み
+          <input type="search" value={props.filter.text} onChange={(e) => props.onFilterText(e.target.value)} placeholder="ID・名前・文・定義・パス" />
+        </label>
+        <label>
+          <input type="checkbox" checked={props.filter.notAgreed} onChange={(e) => props.onFilterNotAgreed(e.target.checked)} />
+          合意済でないものだけ
+        </label>
+      </div>
+    </>
+  );
+}
+
+// 読み込み中に並べる灰色の帯の数。読み込んだ後の一覧（多くは欄の高さの上限まで伸びる）と、欄の大きさをそろえるため
+const PLACEHOLDER_ROWS = 16;
+
+// ListPlaceholder は、一覧を初めて読み込む間の枠。読み込んだ後と同じ見出し・絞り込みの欄と、件の行の大きさの帯を先に置く
+function ListPlaceholder(props: { filter: Filter; onFilterText: (v: string) => void; onFilterNotAgreed: (v: boolean) => void }) {
+  return (
+    <div className="entry-list">
+      <ListHead total="" loading filter={props.filter} onFilterText={props.onFilterText} onFilterNotAgreed={props.onFilterNotAgreed} />
+      <p className="note" aria-hidden="true">
+        <span className="skeleton skeleton-count" />
+      </p>
+      <div aria-hidden="true">
+        <div className="skeleton-group">
+          <span className="skeleton skeleton-fold" />
+        </div>
+        {Array.from({ length: PLACEHOLDER_ROWS }, (_, i) => (
+          <div key={i} className="skeleton-entry">
+            <span className="skeleton skeleton-name" />
+            <span className="skeleton skeleton-kind" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -469,7 +569,11 @@ function SelectedPreview(props: { sel: string; query: string }) {
     <div>
       <p className="note">{kindLabel[target.kind]}</p>
       <h2 className="entry-title">{target.name}</h2>
-      {d.data && (
+      {/* 合意のボタンの欄は一覧を待つ。読み込み中の印をその場所に置き、一覧が届いてボタンが出ても中身の表を動かさない */}
+      <div className="agree">
+        <Loading />
+      </div>
+      {d.data ? (
         <RefsProvider refs={d.data.refs} query={props.query}>
           {target.kind === "file" ? (
             <CodeBlock source={(d.data.content as FileContent).text} lang={langOf(target.name)} />
@@ -481,8 +585,13 @@ function SelectedPreview(props: { sel: string; query: string }) {
             />
           )}
         </RefsProvider>
+      ) : (
+        <div aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <span key={i} className="skeleton skeleton-line" />
+          ))}
+        </div>
       )}
-      <Loading />
     </div>
   );
 }

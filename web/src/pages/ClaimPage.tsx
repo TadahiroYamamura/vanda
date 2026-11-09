@@ -15,7 +15,16 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: C
   // 由来と合意の履歴は時間がかかるので、詳細と別に読み、詳細を先に出す（claim-detail-shown-before-history）
   const h = useLoad(() => api.claimHistory(props.id), props.id);
   if (d.error != null) return <ErrorBox error={d.error} title="約束の詳細を読めません" />;
-  if (!d.data) return <Loading />;
+  if (!d.data) {
+    return (
+      <div className="claim">
+        <p className="note">
+          <Link to={reviewURL(props.params)}>ストーリーのレビューへ戻る</Link>
+        </p>
+        <Loading />
+      </div>
+    );
+  }
   const c = d.data;
   return (
     <RefsProvider refs={c.refs} query={reviewQuery(props.params)}>

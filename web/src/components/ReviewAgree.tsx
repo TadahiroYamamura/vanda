@@ -15,7 +15,19 @@ export function ReviewAgree(props: { params?: URLSearchParams; ctx: Context | nu
   const review = useLoad(view ? () => api.review(view, base, story) : null, `${view}|${base}|${story}|${n}`);
   if (!view) return <p className="note review-agree">ストーリーのレビューから開くと、合意できます。</p>;
   if (review.error != null) return <ErrorBox error={review.error} title="合意の状態を読めません" />;
-  if (!review.data) return <Loading className="review-agree" />;
+  if (!review.data) {
+    // 読み込んだ後と同じ形の枠を先に置き、合意のボタンが出ても下の中身を押し下げない
+    return (
+      <div className="review-agree">
+        <p className="note" aria-hidden="true">
+          <span className="skeleton skeleton-agree-state" />
+        </p>
+        <div className="agree">
+          <Loading />
+        </div>
+      </div>
+    );
+  }
   const key = props.target.kind === "claim" ? `claim:${props.target.id}` : `path:${props.target.path}`;
   const entry: Entry | undefined = [...review.data.entries, ...review.data.detached].find((e) => entryKey(e) === key);
   if (!entry) {

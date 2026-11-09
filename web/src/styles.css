@@ -131,6 +131,32 @@ main { padding: 20px 28px 40px; }
 .story-body pre { background: #fff; border: 1px solid var(--line2); border-radius: 8px; padding: 8px 10px; overflow: auto; font-family: var(--mono); font-size: 12px; }
 .story-body code { font-family: var(--mono); font-size: 12px; }
 .story-body img { max-width: 100%; }
+/* 読み込み中に先に置く枠（灰色の帯）。帯は行の中に置き、行の高さを読み込んだ後の文字の行とそろえる */
+.skeleton { display: inline-block; vertical-align: middle; background: var(--line2); border-radius: 6px; }
+.skeleton-inline { width: 3em; height: 1em; }
+.story-panel .skeleton-title { width: 40%; height: 0.9em; }
+.story-panel .skeleton-link { width: 9em; height: 1em; }
+.story-placeholder-section { margin-top: 8px; font-size: 13px; }
+/* 添付ファイルの並び（ul）の下の余白のぶん */
+.story-placeholder-section:last-child { margin-bottom: 1em; }
+.story-placeholder-section .skeleton-summary { width: 4em; height: 1em; }
+.story-body-placeholder { height: 360px; }
+.entry-list { position: relative; }
+.list > .entry-list > .loading-over { position: absolute; top: 0; right: 0; margin: 0; padding: 0 6px 0 10px; height: 24px; font-size: 12px; background: var(--card); }
+/* 読み直す間の件数は古いので、読み込み中の印の下に隠す（印より長く、端がはみ出るため） */
+.entry-list.reloading .total { visibility: hidden; }
+.skeleton-count { width: 10em; height: 1em; }
+.skeleton-group { margin: 8px 0 2px; padding: 4px 6px; font-size: 12px; }
+.skeleton-fold { width: 6em; height: 1em; }
+.skeleton-entry { height: 57px; padding: 10px 8px 0 36px; }
+.skeleton-entry .skeleton { display: block; }
+.skeleton-name { width: 60%; height: 12px; }
+.skeleton-kind { width: 3em; height: 11px; margin-top: 14px; }
+.agree > .loading { margin: 0; min-height: 40px; }
+.skeleton-agree-state { width: 14em; height: 1em; }
+.detail .skeleton-line { display: block; height: 1em; margin: 0.8em 0; }
+.detail .skeleton-line:nth-child(2) { width: 70%; }
+.detail .skeleton-line:nth-child(3) { width: 40%; }
 .list { grid-area: list; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 10px; min-width: 0; position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; }
 .list h2 { padding: 0 6px; display: flex; justify-content: space-between; align-items: baseline; }
 .list > div > .note { padding: 0 6px; font-size: 11px; }
