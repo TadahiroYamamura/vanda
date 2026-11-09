@@ -56,7 +56,9 @@ description: 約束リスト（.vanda/promises.toml）の約束・用語・機�
   1. `python3 refs.py candidates .vanda/promises.toml` で、名前を長い順に当てた候補を出す
   2. 候補ごとに、その語がその用語・機能を指しているかを haiku に判定させる（1 回に 20 件ほど。1 回ごとに新しいエージェントにする。入力は、文・語・その用語の定義だけにする）
   3. 「いいえ」「迷った」と、まぎれやすい名前の「はい」を、親が見直して採るものを決める
-  4. `python3 refs.py apply .vanda/promises.toml <採る候補>` で書き換え、`python3 refs.py verify <前> <後>` で、参照を名前に置き換えた文が書き換えの前と同じかを確かめる
+  4. 外した候補があれば、`python3 refs.py candidates .vanda/promises.toml <外した候補>` で当て直し、新しく出た候補も 2・3 で決める（端が重なる名前は、長いほうに隠れて最初は候補に出ない）
+  5. 書き換えの後の差分を、haiku とは別のモデル（sonnet と opus）にも見直させ、間違った参照を挙げさせる
+  6. `python3 refs.py apply .vanda/promises.toml <採る候補>` で書き換え、`python3 refs.py verify <前> <後>` で、参照を名前に置き換えた文が書き換えの前と同じかを確かめる
 
 ## フラグ
 

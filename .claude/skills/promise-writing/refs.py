@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """約束リストの、文字のまま書いた用語・機能の名前を、参照（{@id:<ID>}）に書き換えるための道具。
 
-  python3 refs.py candidates <約束リスト>               候補を 1 行に 1 つの JSON で出す
+  python3 refs.py candidates <約束リスト> [<外す候補の JSONL>]
+                                                     候補を 1 行に 1 つの JSON で出す。外す候補を渡すと、その字を空けて当て直す
   python3 refs.py apply <約束リスト> <採る候補の JSONL>  採る候補を書き換える（ファイルを上書きする）
   python3 refs.py verify <前の約束リスト> <後の約束リスト> 参照を見せる文字に置き換えた文が、前と同じかを確かめる
 
 名前は長い順に当て、当たった所は短い名前に当て直さない（「合意の記録」の中の「合意」を候補にしない）。
+長い名前の候補を判定で外したら、その候補を渡して当て直す。端が重なる名前（「審査の設定のファイル」の「設定のファイル」と「審査の設定」）は、
+長いほうに隠れて候補に出ないため。
 当たったものが本当にその用語・機能を指しているかは、このスクリプトでは決めない（haiku と親が 1 組ずつ決める）。
 約束リストの文字列はすべて 1 行の基本文字列（"…"）で書いてある前提で、行の中の位置で書き換える。
 """
@@ -72,7 +75,7 @@ def ref_spans(raw):
         i = k
 
 
-def candidates(path):
+def candidates(path, skip=()):
     names, _ = load_names(path)
     by_len = sorted(names.items(), key=lambda kv: -len(kv[1][1]))
     out = []
@@ -86,7 +89,9 @@ def candidates(path):
                 if p < 0:
                     break
                 q = p + len(name)
-                if all(q <= a or p >= b for a, b in taken):
+                if (no, si, p, name) in skip:
+                    pass
+                elif all(q <= a or p >= b for a, b in taken):
                     taken.append((p, q))
                     if tid != owner:
                         found.append((p, q, tid, kind, name))
@@ -177,8 +182,12 @@ def verify(before, after):
 
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
-    if cmd == "candidates" and len(sys.argv) == 3:
-        for c in candidates(sys.argv[2]):
+    if cmd == "candidates" and len(sys.argv) in (3, 4):
+        skip = set()
+        if len(sys.argv) == 4:
+            with open(sys.argv[3], encoding="utf-8") as f:
+                skip = {(c["line"], c["string"], c["start"], c["name"]) for c in map(json.loads, f) if c}
+        for c in candidates(sys.argv[2], skip):
             print(json.dumps(c, ensure_ascii=False))
     elif cmd == "apply" and len(sys.argv) == 4:
         with open(sys.argv[3], encoding="utf-8") as f:
