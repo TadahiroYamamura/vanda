@@ -721,7 +721,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 
 ### `GET /api/claims/<約束の ID>`
 
-約束の詳細（CL-01・02・04・05）。
+約束の詳細。由来と合意の履歴は、履歴のコミットをたどるので時間がかかるため、ここでは返さず、`GET /api/claims/<約束の ID>/history` で返す。
 
 ```json
 {
@@ -739,8 +739,6 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
       "present": true
     }
   ],
-  "origin": [{"commit": "0123abcd…", "date": "2026-10-31T12:00:00+09:00", "subject": "(feat) …", "stories": ["#24"], "change": "added"}],
-  "agreements": [{"user": {"name": "…", "email": "…"}, "agreedAt": "…", "story": "#24", "fingerprint": "sha256:…", "current": true}],
   "refs": {}
 }
 ```
@@ -752,10 +750,26 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `evidence[].found` | その約束を指す、タイプに合うアノテーション（「エビデンスが揃っている審査」の表と同じ組み合わせ）。`text` は、`txtar` と `sql` ならファイルの中身全体、`tla` なら付いている定義（定義の行から、次の最上位の定義か `====` の前まで。終わりの空行とコメントだけの行は含めない）、`go` と `ts` なら `null`。`line` は、アノテーションが付いているものの行（`go` は `func` の宣言、`ts` は `test`・`it`・`describe` の呼び出し、`tla` は定義、`sql` は文の行。`txtar` はファイル全体に付くので 1） |
 | `subjects` | 約束の `subjects` の順。約束リストにない ID は、`kind`・`name` を `null` にする |
 | `evidence[].present` | 揃っているか（RV-08。エビデンスが揃っている審査と同じ判定）。`found` があれば `true`（`guardrail`・`sensor` は、表の 2 つがどちらも `found` にあれば `true`。片方だけなら、`found` があっても `false`）。`proof` は `false`。`human-review` は `null`（アノテーションで確かめない） |
+
+- アノテーションに読み込みの誤りがあれば、`500` を返し、誤りの数と最初の 1 件を出す
+
+### `GET /api/claims/<約束の ID>/history`
+
+約束の由来と合意の履歴。
+
+```json
+{
+  "origin": [{"commit": "0123abcd…", "date": "2026-10-31T12:00:00+09:00", "subject": "(feat) …", "stories": ["#24"], "change": "added"}],
+  "agreements": [{"user": {"name": "…", "email": "…"}, "agreedAt": "…", "story": "#24", "fingerprint": "sha256:…", "current": true, "commit": "4567cdef…"}]
+}
+```
+
+| 項目 | 中身 |
+|---|---|
 | `origin` | HEAD の履歴の、合流でないコミットのうち、約束の指紋が変わったもの（作ったものを含む）。コミットの日時の新しい順（同じ日時なら、履歴で後のコミットを先に）。`change` は `added`・`modified`。`stories` は `Story:` のトレーラーにあるストーリーの ID。消した後に同じ ID で作り直した約束は新しいものとみなし、消すまでのコミットを入れない |
 | `agreements` | 合意の記録のうち、`kind = "claim"` でこの ID を指すもの（消したことへの合意は除く）。合意した日時（`agreed_at`）の新しい順（同じ日時なら、合意の記録のファイルの順（設定の `agreements` のファイルの順、同じファイルなら行の順）で後のものを先に）。`current` は、今の中身の指紋に合うか。`commit` は、その合意の記録を書き足したコミット（HEAD の履歴を古い順にたどり、合意の記録のファイルを変えたコミットの時点の記録に、同じ記録（`kind`・`key`・`fingerprint`・`story`・`agreed_at`・`user`）が初めて現れたコミット）。まだコミットしていなければ `null` |
 
-- アノテーションに読み込みの誤りがあれば、`500` を返し、誤りの数と最初の 1 件を出す
+- 今の約束リストにない ID なら `404`（`message` は `約束 <ID> は約束リストにありません。`）
 
 ### `GET /api/claims/<約束の ID>/at/<コミット>`
 

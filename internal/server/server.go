@@ -37,6 +37,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/agree", s.agree)
 	mux.HandleFunc("POST /api/revoke", s.revoke)
 	mux.HandleFunc("GET /api/claims/{id}", s.read(s.claim))
+	mux.HandleFunc("GET /api/claims/{id}/history", s.read(s.claimHistory))
 	mux.HandleFunc("GET /api/claims/{id}/at/{commit}", s.read(s.claimAt))
 	mux.HandleFunc("GET /api/terms/{id}", s.read(s.term))
 	mux.HandleFunc("GET /api/features/{id}", s.read(s.feature))
@@ -107,6 +108,19 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	d, err := review.Claim(review.Options{Root: s.Root, Cfg: cfg}, r.PathValue("id"))
+	if err != nil {
+		writeReviewError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, d)
+}
+
+func (s *Server) claimHistory(w http.ResponseWriter, r *http.Request) {
+	cfg, ok := s.config(w)
+	if !ok {
+		return
+	}
+	d, err := review.ClaimHistoryOf(review.Options{Root: s.Root, Cfg: cfg}, r.PathValue("id"))
 	if err != nil {
 		writeReviewError(w, err)
 		return

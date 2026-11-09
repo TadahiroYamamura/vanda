@@ -27,8 +27,6 @@ type ClaimDetail struct {
 	Flags       []string         `json:"flags"`
 	Guesses     [][]Piece        `json:"guesses"`
 	Evidence    []EvidenceDetail `json:"evidence"`
-	Origin      []OriginRef      `json:"origin"`
-	Agreements  []AgreementRef   `json:"agreements"`
 	// Refs は、この応答の中の片が指すすべての ID の、指す先
 	Refs map[string]RefTarget `json:"refs"`
 }
@@ -62,6 +60,12 @@ type Found struct {
 	State *string `json:"state"`
 }
 
+// ClaimHistory は、約束の由来と合意の履歴
+type ClaimHistory struct {
+	Origin     []OriginRef    `json:"origin"`
+	Agreements []AgreementRef `json:"agreements"`
+}
+
 type OriginRef struct {
 	Commit  string   `json:"commit"`
 	Date    string   `json:"date"`
@@ -80,21 +84,18 @@ type AgreementRef struct {
 	Commit *string `json:"commit"`
 }
 
-// Claim は、約束の詳細（CL-01・02・04・05）を返す。
+// Claim は、約束の詳細を返す。由来と合意の履歴は、履歴のコミットをたどって時間がかかるので、ClaimHistoryOf で別に返す。
 func Claim(o Options, id string) (*ClaimDetail, *Error) {
 	s := &state{o: o, h: newHistory(o.Root, o.Cfg)}
-	if e := s.loadCurrent(); e != nil {
+	cur, e := s.currentClaim(id)
+	if e != nil {
 		return nil, e
 	}
 	key := "claim:" + id
-	cur, ok := s.cur.items[key]
-	if !ok {
-		return nil, &Error{Status: http.StatusNotFound, Message: "約束 " + id + " は約束リストにありません。", Fix: "約束の ID を確かめてください。"}
-	}
 	c := cur.Claim
 	content := claimContent(cur, s.refs, nil)
 	d := &ClaimDetail{ID: c.ID, Statement: content.Statement, Rationale: content.Rationale, Condition: content.Condition, Flags: content.Flags, Guesses: content.Guesses,
-		Layers: []LayerRef{}, Subjects: []SubjectRef{}, Evidence: []EvidenceDetail{}, Origin: []OriginRef{}, Agreements: []AgreementRef{}}
+		Layers: []LayerRef{}, Subjects: []SubjectRef{}, Evidence: []EvidenceDetail{}}
 	fp := s.cur.itemFP[key]
 	if fp != "" {
 		d.Fingerprint = ptr(fp)
@@ -163,6 +164,33 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 		d.Evidence = append(d.Evidence, ed)
 	}
 
+	d.Refs = s.refs.targets()
+	return d, nil
+}
+
+func (s *state) currentClaim(id string) (snapshot.Entry, *Error) {
+	if e := s.loadCurrent(); e != nil {
+		return snapshot.Entry{}, e
+	}
+	cur, ok := s.cur.items["claim:"+id]
+	if !ok {
+		return snapshot.Entry{}, &Error{Status: http.StatusNotFound, Message: "約束 " + id + " は約束リストにありません。", Fix: "約束の ID を確かめてください。"}
+	}
+	return cur, nil
+}
+
+// ClaimHistoryOf は、約束の由来と合意の履歴を返す。
+func ClaimHistoryOf(o Options, id string) (*ClaimHistory, *Error) {
+	s := &state{o: o, h: newHistory(o.Root, o.Cfg)}
+	cur, e := s.currentClaim(id)
+	if e != nil {
+		return nil, e
+	}
+	key := "claim:" + id
+	c := cur.Claim
+	fp := s.cur.itemFP[key]
+	d := &ClaimHistory{Origin: []OriginRef{}, Agreements: []AgreementRef{}}
+
 	commits, err := s.h.loadCommits()
 	if err != nil {
 		return nil, internalErr(err)
@@ -214,7 +242,7 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 		d.Agreements = append(d.Agreements, ref)
 	}
 	newestFirst(d, commits, mine)
-	d.Refs = s.refs.targets()
+	newestFirst(d, commits, mine)
 	return d, nil
 }
 
@@ -283,7 +311,7 @@ func File(o Options, path string) (string, *Error) {
 // newestFirst は、由来と合意の履歴を、新しいものが上の順に並べる。
 // 由来はコミットの日時の新しい順、同じ日時なら履歴で後のコミットを先に。合意の履歴は合意した日時（agreed_at）の新しい順、
 // 同じ日時なら合意の記録のファイルで後に書いた記録を先に（同じ日時のときも、後から足したものが上に来るように）
-func newestFirst(d *ClaimDetail, commits []commit, recs []*agreements.Agreement) {
+func newestFirst(d *ClaimHistory, commits []commit, recs []*agreements.Agreement) {
 	order := map[string]int{}
 	date := map[string]time.Time{}
 	for i, c := range commits {
