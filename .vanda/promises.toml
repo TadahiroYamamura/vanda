@@ -3640,7 +3640,6 @@ statement = "取り消せるのは、今の git の user.name と user.email の
 rationale = "ほかの人の{@id:agreement}や、{@id:base-branch}にすでにある{@id:agreement}は取り消せない"
 model_check_waiver = "誰がどのブランチで書いた記録を取り消せるかは、モデルの粒度（{@id:story}・項目・中身）では表さないため"
 layers = ["api"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "implementation"
