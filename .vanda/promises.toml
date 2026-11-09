@@ -3154,7 +3154,6 @@ subjects = ["switch-review-unit", "base-branch"]
 statement = "レビュー単位がブランチなら、{@id:base-branch}との{@id:branch-point}の中身と、HEAD のコミットの中身を比べ、コミットしていない変更は比べない"
 rationale = "コミットしていないものは、提出される保証がなく、ないのと同じため（reads-committed-files-only と同じ考え方）"
 layers = ["api"]
-flags = ["ai-proposal"]
 
 [[claim.evidence]]
 stage = "implementation"
