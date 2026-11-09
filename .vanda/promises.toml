@@ -3098,7 +3098,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-order"
 subjects = ["list-changes", "number-changes", "layer"]
-statement = "一覧は、{@id:promise}のまとまり（設定の{@id:layer}の順）、{@id:term}、{@id:feature}、{@id:evidence}の本体（ファイル）の順に並べ、同じまとまりの中は ID か場所の順に並べて、その順に通し番号を付ける"
+statement = "一覧は、{@id:term}、{@id:feature}、{@id:promise}のまとまり（設定の{@id:layer}の順）、{@id:evidence}の本体（ファイル）の順に並べ、同じまとまりの中は ID か場所の順に並べて、その順に通し番号を付ける"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
@@ -3376,7 +3376,7 @@ layers = ["api"]
 [[claim]]
 id = "review-groups-fold"
 subjects = ["fold-groups", "layer"]
-statement = "一覧を、{@id:promise}は{@id:layer}ごと、{@id:term}、{@id:feature}、{@id:evidence}の本体（ファイル）のまとまりに分け、まとまりごとにたためるようにする。たたんだまとまりも一覧から外さず、見出しにたたんだ件数を示し、総数と通し番号はたたまない時と同じにする"
+statement = "一覧を、{@id:term}、{@id:feature}、{@id:promise}（{@id:layer}ごと）、{@id:evidence}の本体（ファイル）のまとまりに分け、まとまりごとにたためるようにする。たたんだまとまりも一覧から外さず、見出しにたたんだ件数を示し、総数と通し番号はたたまない時と同じにする"
 rationale = "変わったものが多くても、全体の件数を見失わずに把握できるようにするため"
 layers = ["gui"]
 flags = ["ai-proposal"]
