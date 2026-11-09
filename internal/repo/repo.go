@@ -1,4 +1,4 @@
-// Package repo は、git のリポジトリの根を探し、git のコマンドを呼ぶ。
+// Package repo は、git のリポジトリのルートを探し、git のコマンドを呼ぶ。
 package repo
 
 import (
@@ -10,7 +10,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/diag"
 )
 
-// Root は、dir を含む git のリポジトリの根を返す。
+// Root は、dir を含む git のリポジトリのルートを返す。
 func Root(dir string) (string, *diag.Error) {
 	out, err := Git(dir, "rev-parse", "--show-toplevel")
 	if err != nil {

@@ -7,7 +7,7 @@ import (
 )
 
 // dist/ には .keep だけをコミットし、画面は make build が dist/app/ に作る。
-// go:embed は当たるファイルがないとビルドできないため、画面を作る前でも Go のビルドとテストが通るように、こう分けた。
+// go:embed はマッチするファイルがないとビルドできないため、画面を作る前でも Go のビルドとテストが通るように、こう分けた。
 //
 //go:embed all:dist
 var dist embed.FS

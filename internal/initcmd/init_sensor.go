@@ -13,7 +13,7 @@ import (
 
 // Hooks は、テストから、事後条件を破る状態を作るための口。本番では nil のまま使わない。
 var Hooks struct {
-	// AfterWrite は、Write がファイルを書き終えた後、checkCreated の前に呼ぶ。root はリポジトリの根
+	// AfterWrite は、Write がファイルを書き終えた後、checkCreated の前に呼ぶ。root はリポジトリのルート
 	AfterWrite func(root string)
 }
 

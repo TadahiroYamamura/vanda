@@ -22,7 +22,7 @@ func (e *env) promiseListShape() []diag.Error {
 	if e.list == nil {
 		return errs
 	}
-	// 重なりは、出てきた順（ファイルの場所の順、同じファイルなら行の順）で見て、後に出てきたほうを誤りにする
+	// 重複は、出てきた順（ファイルの場所の順、同じファイルなら行の順）で見て、後に出てきたほうを誤りにする
 	all := items(e.list)
 	sort.SliceStable(all, func(i, j int) bool {
 		a, b := all[i].table, all[j].table
@@ -42,7 +42,7 @@ func (e *env) promiseListShape() []diag.Error {
 			continue
 		}
 		if prev, dup := where[it.id]; dup {
-			errs = append(errs, it.table.Err("id", fmt.Sprintf("ID %s が、%s の%s（%s）と重なっています", quote(it.id), place(prev), kindName[prev.kind], prev.id), "用語・機能・約束のどれとも重ならない ID にしてください"))
+			errs = append(errs, it.table.Err("id", fmt.Sprintf("ID %s が、%s の%s（%s）と重複しています", quote(it.id), place(prev), kindName[prev.kind], prev.id), "用語・機能・約束のどれとも重複しない ID にしてください"))
 			continue
 		}
 		where[it.id] = it

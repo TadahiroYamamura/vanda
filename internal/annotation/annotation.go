@@ -13,10 +13,10 @@ import (
 )
 
 // AdapterInfo は、組み込みのアノテーションの読み取りのアダプタの、言語の見つけ方と既定のパターン。
-// vanda init が、見つかった言語ごとに、読むファイルのパターンを問いかけるときに使う
+// vanda init が、見つかった言語ごとに、読むファイルのパターンを質問するときに使う
 type AdapterInfo struct {
 	Name            string   // 設定の [[annotation]] の adapter に書く名前
-	Title           string   // 問いかけに出す、言語の名前
+	Title           string   // 質問に出す、言語の名前
 	Suffixes        []string // 見つけ方（git が追っているファイルの名前の終わり。どれかで終われば見つかったとする）
 	DefaultPatterns []string // 読むファイルのパターンの既定
 	// DefaultTypes は、満たすエビデンスのタイプの既定。vanda init が [[annotation]] の types にそのまま書く
@@ -59,7 +59,7 @@ type adapter interface {
 	names(file string, src []byte, lines []int) (map[int]string, []diag.Error)
 }
 
-// Read は、files（リポジトリの直下からの場所の一覧）のうち、設定の [[annotation]] のパターンに当たるものを読む。
+// Read は、files（リポジトリの直下からの場所の一覧）のうち、設定の [[annotation]] のパターンにマッチするものを読む。
 func Read(root string, files []string, rules []config.AnnotationRule) ([]Annotation, diag.Errors) {
 	return ReadWith(root, tomlread.OSReader(root), files, rules)
 }
@@ -86,12 +86,12 @@ func ReadWith(root string, read tomlread.Reader, files []string, rules []config.
 			for i, r := range hit {
 				lines[i] = fmt.Sprintf("%d 行目", r.Line)
 			}
-			errs = append(errs, diag.Error{File: f, What: config.File + " の [[annotation]]（" + strings.Join(lines, "・") + "）の 2 つ以上のパターンに当たります", Fix: "どれか 1 つの [[annotation]] にだけ当たるように、パターンを直してください"})
+			errs = append(errs, diag.Error{File: f, What: config.File + " の [[annotation]]（" + strings.Join(lines, "・") + "）の 2 つ以上のパターンにマッチします", Fix: "どれか 1 つの [[annotation]] にだけマッチするように、パターンを直してください"})
 			continue
 		}
 		a := adapterFor(root, hit[0])
 		if a == nil {
-			errs = append(errs, diag.Error{File: f, What: fmt.Sprintf("%s の %d 行目の [[annotation]] のパターンに当たりますが、使うアダプタが決まっていません", config.File, hit[0].Line), Fix: "その [[annotation]] に、adapter（組み込みのアダプタか、.vanda/adapters/ に置いたカスタムアダプタの名前）を書いてください"})
+			errs = append(errs, diag.Error{File: f, What: fmt.Sprintf("%s の %d 行目の [[annotation]] のパターンにマッチしますが、使うアダプタが決まっていません", config.File, hit[0].Line), Fix: "その [[annotation]] に、adapter（組み込みのアダプタか、.vanda/adapters/ に置いたカスタムアダプタの名前）を書いてください"})
 			continue
 		}
 		src, err := read(f)
@@ -253,8 +253,8 @@ func scan(file string, texts []string) ([]Annotation, []diag.Error) {
 	return out, errs
 }
 
-// dropCodeSpans は、逆引用符で囲んだ所（Markdown のコードと同じく、同じ数の逆引用符で開いて閉じる）を空白 1 つに置き換える。
-// 説明の文で書き方に触れた `@vanda:term` を、アノテーションとして読まないため。閉じていない逆引用符は、そのまま残す。
+// dropCodeSpans は、バッククォートで囲んだ所（Markdown のコードと同じく、同じ数のバッククォートで開いて閉じる）を空白 1 つに置き換える。
+// 説明の文で書き方に触れた `@vanda:term` を、アノテーションとして読まないため。閉じていないバッククォートは、そのまま残す。
 func dropCodeSpans(line string) string {
 	if !strings.Contains(line, "`") {
 		return line

@@ -9,7 +9,7 @@ import (
 
 const Current = "0.1.0"
 
-// Semver は、major.minor.patch の 3 つの数だけを扱う。段 1 では、バージョンの後ろの印（-rc.1 など）を使う場面がないため。
+// Semver は、major.minor.patch の 3 つの数だけを扱う。段 1 では、バージョンの後ろのマーク（-rc.1 など）を使う場面がないため。
 type Semver [3]int
 
 func Parse(s string) (Semver, error) {

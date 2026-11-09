@@ -3,7 +3,7 @@ import type { DiffPart } from "../api";
 import { tokenize, type Lang, type Token } from "../highlight";
 import { toSegments } from "../tla";
 
-// 1 行を作るかけら。色付け・TLA+ の記号・文字の単位の差分の 3 つの切れ目で分ける。
+// 1 行を作るセグメント。シンタックスハイライト・TLA+ の記号・文字の単位の差分の 3 つの切れ目で分ける。
 interface Piece {
   text: string; // 見せる文字
   ascii: string; // リポジトリの文字
@@ -73,7 +73,7 @@ function pieces(line: string, tokens: Token[] | null, symbols: SymbolRange[], pa
     if (a >= b) continue;
     const sym = symAt.get(a);
     if (sym) {
-      // 記号は 1 つのかけらにする（色付けや差分の切れ目が中にあっても、最初の文字の色と印を使う）
+      // 記号は 1 つのセグメントにする（シンタックスハイライトや差分の切れ目が中にあっても、最初の文字の色とマークを使う）
       out.push({ text: sym.text, ascii: line.slice(sym.start, sym.end), style: styleAt[a], diff: diffAt[a] });
       continue;
     }
@@ -115,7 +115,7 @@ export function CodeLine(props: { line: string; tokens: Token[] | null; symbols?
   );
 }
 
-// useTokens は、text の色付けを読み込む。読み込むまでと、読み込めなかったときは null（色を付けずに見せる）。
+// useTokens は、text のシンタックスハイライトを読み込む。読み込むまでと、読み込めなかったときは null（色を付けずに見せる）。
 export function useTokens(text: string, lang: Lang | null): Token[][] | null {
   const [tokens, setTokens] = useState<Token[][] | null>(null);
   useEffect(() => {
@@ -126,7 +126,7 @@ export function useTokens(text: string, lang: Lang | null): Token[][] | null {
       (t) => {
         if (live) setTokens(t);
       },
-      (e) => console.error(`${lang} の色付けができませんでした`, e),
+      (e) => console.error(`${lang} のシンタックスハイライトができませんでした`, e),
     );
     return () => {
       live = false;
@@ -135,7 +135,7 @@ export function useTokens(text: string, lang: Lang | null): Token[][] | null {
   return tokens;
 }
 
-// CodeBlock は、色付けしたコードを見せる。TLA+ は数学の記号で見せ、コピーしたときはリポジトリの文字のまま（CL-07）。
+// CodeBlock は、シンタックスハイライトしたコードを見せる。TLA+ は数学の記号で見せ、コピーしたときはリポジトリの文字のまま（CL-07）。
 export function CodeBlock(props: { source: string; lang: Lang | null }) {
   const tokens = useTokens(props.source, props.lang);
   const lines = props.source.split("\n");

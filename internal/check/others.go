@@ -14,7 +14,7 @@ import (
 
 func matchPath(p, f string) bool { return glob.Match(p, f) }
 
-// storyOrigin は、コミットのストーリーのチェック。マージベースより後の、合流でないコミットのうち、約束リストを変えたものに、ストーリーの ID があるかを確かめる。
+// storyOrigin は、コミットのストーリーのチェック。マージベースより後の、マージコミットでないコミットのうち、約束リストを変えたものに、ストーリーの ID があるかを確かめる。
 func (e *env) storyOrigin() []diag.Error {
 	out, err := repo.Git(e.root, "rev-list", "--no-merges", "--reverse", e.mergeBase+"..HEAD")
 	if err != nil {
@@ -136,7 +136,7 @@ func (e *env) agreement(scope string) []diag.Error {
 	return append(errs, e.deletions(scope)...)
 }
 
-// targetKey は、承認の対象の鍵。約束・用語・機能は "<種類>:<ID>"、ファイルは "path:<場所>"。
+// targetKey は、承認の対象のキー。約束・用語・機能は "<種類>:<ID>"、ファイルは "path:<場所>"。
 func targetKey(kind, target string) string {
 	if kind == "file" {
 		return "path:" + target
@@ -146,7 +146,7 @@ func targetKey(kind, target string) string {
 
 // deletions は、今ないものに、消したことへの承認があるかを確かめる。スコープ all では、中身を承認したことがあって今ないもの。
 // スコープ story では、マージベースにあって今ないものを、承認したことがあるかによらず見る（一度も承認していないものを消しても、
-// そのストーリーで変えたものなので、PO が見ないまま合流させない）。
+// そのストーリーで変えたものなので、PO が見ないままマージさせない）。
 func (e *env) deletions(scope string) []diag.Error {
 	var errs []diag.Error
 	need := func(kind, target, why string, at diag.Error) {
@@ -259,7 +259,7 @@ func (e *env) evidencePresent(scope string) []diag.Error {
 			parts := annotation.Evidence(e.anns, e.guards, c.ID, ev.Type)
 			if len(parts) == 1 {
 				if len(parts[0].Found) == 0 {
-					errs = append(errs, ev.Table.Err("type", fmt.Sprintf("約束 %s の %s のエビデンスがありません（types に %s を含む [[annotation]] で読んだファイルに、@vanda:%s %s がありません）", c.ID, ev.Type, ev.Type, kind, c.ID), fmt.Sprintf("エビデンスを作り、@vanda:%s %s を付けてください。そのファイルが、types に %s を含む [[annotation]] のパターンに当たるようにしてください", kind, c.ID, ev.Type)))
+					errs = append(errs, ev.Table.Err("type", fmt.Sprintf("約束 %s の %s のエビデンスがありません（types に %s を含む [[annotation]] で読んだファイルに、@vanda:%s %s がありません）", c.ID, ev.Type, ev.Type, kind, c.ID), fmt.Sprintf("エビデンスを作り、@vanda:%s %s を付けてください。そのファイルが、types に %s を含む [[annotation]] のパターンにマッチするようにしてください", kind, c.ID, ev.Type)))
 				}
 				continue
 			}
@@ -277,7 +277,7 @@ func (e *env) evidencePresent(scope string) []diag.Error {
 	return errs
 }
 
-// unreadFiles は、.vanda/ にあるのに、設定のどのパターンにも当たらないファイルを見つける。
+// unreadFiles は、.vanda/ にあるのに、設定のどのパターンにもマッチしないファイルを見つける。
 func (e *env) unreadFiles() []diag.Error {
 	var errs []diag.Error
 	for _, f := range e.files {
@@ -293,7 +293,7 @@ func (e *env) unreadFiles() []diag.Error {
 			}
 		}
 		if !read {
-			errs = append(errs, diag.Error{File: f, What: ".vanda/ にありますが、設定のどのパターンにも当たらないため、読まれていません", Fix: ".vanda/config.toml の promises か agreements のパターンに当たるようにするか、ファイルを消してください"})
+			errs = append(errs, diag.Error{File: f, What: ".vanda/ にありますが、設定のどのパターンにもマッチしないため、読まれていません", Fix: ".vanda/config.toml の promises か agreements のパターンにマッチするようにするか、ファイルを消してください"})
 		}
 	}
 	return errs

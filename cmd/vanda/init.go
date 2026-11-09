@@ -19,12 +19,12 @@ import (
 func newInitCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "init",
-		Short: "問いかけに答えて .vanda/ を作ります",
+		Short: "質問に答えて .vanda/ を作ります",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			// 問いかけを飛ばすオプションは持たない（CMD-11）。端末でなければ止める
+			// 質問を飛ばすオプションは持たない（CMD-11）。端末でなければ止める
 			if !isTerminal(os.Stdin) || !isTerminal(os.Stdout) {
-				return errors.New("端末で動かしていないため、問いかけができません。vanda init は端末で動かしてください。")
+				return errors.New("端末で動かしていないため、質問できません。vanda init は端末で動かしてください。")
 			}
 			wd, err := os.Getwd()
 			if err != nil {
@@ -54,12 +54,12 @@ func isTerminal(f *os.File) bool {
 	return term.IsTerminal(f.Fd())
 }
 
-// runInit は、問いかけて確かめ、.vanda/ を作る。
+// runInit は、質問して確かめ、.vanda/ を作る。
 func runInit(cmd *cobra.Command, root string, d initcmd.Defaults) error {
 	out := cmd.OutOrStdout()
-	// 端末かを確かめたのは os.Stdin なので、問いかけも os.Stdin から読む
+	// 端末かを確かめたのは os.Stdin なので、質問の答えも os.Stdin から読む
 	t := initcmd.NewTerminal(os.Stdin, out)
-	fmt.Fprintf(out, "%s に .vanda/ を作ります。問いに答えてください（既定の答えが入った状態から始まります）。\n\n", root)
+	fmt.Fprintf(out, "%s に .vanda/ を作ります。質問に答えてください（既定の答えが入った状態から始まります）。\n\n", root)
 	a, err := initcmd.Ask(root, d, t)
 	if err != nil {
 		return err

@@ -21,7 +21,7 @@ type ClaimAt struct {
 	Content ClaimContent `json:"content"`
 	// Layers は、content の layers の順に、今の設定のレイヤーの名前を付けたもの。今の設定にないレイヤーは、名前を空にする
 	Layers []LayerRef `json:"layers"`
-	// Refs は、content の中の片が指すすべての ID の、指す先
+	// Refs は、content の中のセグメントが指すすべての ID の、指す先
 	Refs map[string]RefTarget `json:"refs"`
 }
 
@@ -74,7 +74,7 @@ func ClaimAtCommit(o Options, id, rev string) (*ClaimAt, *Error) {
 }
 
 // agreementCommits は、承認の記録ごとに、その記録を書き足したコミットを探す。
-// HEAD の履歴を古い順にたどり、承認の記録のファイルを変えたコミットの時点の記録に、同じ記録（種類・鍵・フィンガープリント・ストーリー・日時・誰が）が初めて現れたコミットとする。
+// HEAD の履歴を古い順にたどり、承認の記録のファイルを変えたコミットの時点の記録に、同じ記録（種類・キー・フィンガープリント・ストーリー・日時・誰が）が初めて現れたコミットとする。
 // まだコミットしていない記録は、見つからない（空の文字列）。
 func (s *state) agreementCommits(list []*agreements.Agreement) (map[*agreements.Agreement]string, error) {
 	out := map[*agreements.Agreement]string{}

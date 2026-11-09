@@ -14,9 +14,9 @@ export function ClaimHistory(props: { id: string; history: { data: History | nul
   const H = props.level;
   // その時点の中身のステージの見出しは、変更履歴・承認の履歴の見出しの 1 つ下の段にする
   const sub = props.level === "h2" ? "h3" : "h4";
-  // 選んだ時点（変更履歴のコミットか、承認の記録を書いたコミット）。押した行のすぐ下に、表の行を開く形で中身を出す（CL-08）。
-  // 表の下にまとめて出すと、押した行から離れて画面の外に出ることがあり、押しても何も起きないように見えたため
-  // 開いている行の鍵（"origin:<コミット>" か "agreement:<番号>"）。見比べられるよう、いくつでも同時に開ける
+  // 選んだ時点（変更履歴のコミットか、承認の記録を書いたコミット）。クリックした行のすぐ下に、表の行を開く形で中身を出す（CL-08）。
+  // 表の下にまとめて出すと、クリックした行から離れて画面の外に出ることがあり、クリックしても何も起きないように見えたため
+  // 開いている行のキー（"origin:<コミット>" か "agreement:<番号>"）。見比べられるよう、いくつでも同時に開ける
   const [open, setOpen] = useState<Set<string>>(new Set());
   const isOpen = (key: string) => open.has(key);
   const toggle = (key: string) =>
@@ -26,7 +26,7 @@ export function ClaimHistory(props: { id: string; history: { data: History | nul
       else next.add(key);
       return next;
     });
-  // 行のどこを押しても開く・たたむ。文字をドラッグで選んだ後に離したとき（コピーしようとしたとき）は、開け閉めしない
+  // 行のどこをクリックしても開く・たたむ。文字をドラッグで選んだ後に離したとき（コピーしようとしたとき）は、開け閉めしない
   const rowToggle = (key: string) => () => {
     const sel = window.getSelection();
     if (sel && !sel.isCollapsed && sel.toString() !== "") return;
@@ -143,7 +143,7 @@ function ExpandButton(props: { open: boolean; onClick: () => void }) {
   );
 }
 
-// ClaimAtRow は、ある時点の約束の中身（変更前と変更後の表（RV-05）と同じ項目と並び）を、押した行のすぐ下の行に出す。中身は API が、その時点の約束リストから読んだもの。
+// ClaimAtRow は、ある時点の約束の中身（変更前と変更後の表（RV-05）と同じ項目と並び）を、クリックした行のすぐ下の行に出す。中身は API が、その時点の約束リストから読んだもの。
 function ClaimAtRow(props: { cols: number; id: string; commit: string; level: "h3" | "h4" }) {
   const d = useLoad(() => api.claimAt(props.id, props.commit), `${props.id}@${props.commit}`);
   const none = "（なし）";

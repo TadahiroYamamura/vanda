@@ -21,7 +21,7 @@ import (
 
 type Server struct {
 	Root string
-	// Cfg は、起動したときに読んだ設定。要求ごとには、設定を読み直して使う（config を参照）
+	// Cfg は、起動したときに読んだ設定。リクエストごとには、設定を読み直して使う（config を参照）
 	Cfg *config.Config
 	// UI は、画面のファイル。index.html がなければ、画面を作っていないと知らせる
 	UI fs.FS
@@ -50,7 +50,7 @@ func (s *Server) Handler() http.Handler {
 	return localOnly(mux)
 }
 
-// config は、要求ごとに設定（.vanda/config.toml）を読み直す。起動した後にブランチを切り替えたり、設定を書き換えたりしても、
+// config は、リクエストごとに設定（.vanda/config.toml）を読み直す。起動した後にブランチを切り替えたり、設定を書き換えたりしても、
 // 画面を開き直すだけで今の設定が効くようにするため（起動したときの設定を使い続けると、たとえばレイヤーの名前が古いままになる）。
 // 読めなければ、誤りを返して false を返す
 func (s *Server) config(w http.ResponseWriter) (*config.Config, bool) {
@@ -218,19 +218,19 @@ func (s *Server) ui() http.Handler {
 	})
 }
 
-// localOnly は、Host が 127.0.0.1:<ポート>・localhost:<ポート> でない要求と、ほかのサイトから送られた書き込みの要求を断る。
-// 127.0.0.1 で待ち受けるだけでは、ブラウザで開いたほかのサイトの頁から、DNS の付け替えや、フォームの送信で、
+// localOnly は、Host が 127.0.0.1:<ポート>・localhost:<ポート> でないリクエストと、ほかのサイトから送られた書き込みのリクエストを断る。
+// 127.0.0.1 で待ち受けるだけでは、ブラウザで開いたほかのサイトのページから、DNS の付け替えや、フォームの送信で、
 // 承認（コミットを作る）を送らせることができてしまうため。
 func localOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !isLocalHost(r.Host, listeningPort(r)) {
-			writeError(w, http.StatusForbidden, "Host "+r.Host+" からの要求は受け付けません。", "http://127.0.0.1:<ポート>/ で開いてください。")
+			writeError(w, http.StatusForbidden, "Host "+r.Host+" からのリクエストは受け付けません。", "http://127.0.0.1:<ポート>/ で開いてください。")
 			return
 		}
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
 			origin := r.Header.Get("Origin")
 			if origin != "" && origin != "http://"+r.Host {
-				writeError(w, http.StatusForbidden, "ほかのサイト（"+origin+"）からの書き込みの要求は受け付けません。", "vanda の画面から操作してください。")
+				writeError(w, http.StatusForbidden, "ほかのサイト（"+origin+"）からの書き込みのリクエストは受け付けません。", "vanda の画面から操作してください。")
 				return
 			}
 		}
@@ -246,12 +246,12 @@ func isLocalHost(hostport, port string) bool {
 	return host == "127.0.0.1" || host == "localhost"
 }
 
-// listeningPort は、要求を受けた接続の、待ち受けているポートを返す。分からなければ空を返す（isLocalHost は断る）。
+// listeningPort は、リクエストを受けた接続の、待ち受けているポートを返す。分からなければ空を返す（isLocalHost は断る）。
 // Handler を作るときにポートを渡さず接続から読むのは、--port 0 では待ち受けを始めるまでポートが決まらないため。
 func listeningPort(r *http.Request) string {
 	addr, ok := r.Context().Value(http.LocalAddrContextKey).(net.Addr)
 	if !ok {
-		log.Printf("要求 %s %s を受けた接続の、待ち受けているポートが分かりません。断ります。", r.Method, r.URL.Path)
+		log.Printf("リクエスト %s %s を受けた接続の、待ち受けているポートが分かりません。断ります。", r.Method, r.URL.Path)
 		return ""
 	}
 	_, port, err := net.SplitHostPort(addr.String())
@@ -292,7 +292,7 @@ func (s *Server) agree(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "承認の要求の JSON を読めません（"+err.Error()+"）。", "docs/formats.md の POST /api/agree の形で送ってください。")
+		writeError(w, http.StatusBadRequest, "承認のリクエストの JSON を読めません（"+err.Error()+"）。", "docs/formats.md の POST /api/agree の形で送ってください。")
 		return
 	}
 	s.mu.Lock()
@@ -314,7 +314,7 @@ func (s *Server) revoke(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "取り消しの要求の JSON を読めません（"+err.Error()+"）。", "docs/formats.md の POST /api/revoke の形で送ってください。")
+		writeError(w, http.StatusBadRequest, "取り消しのリクエストの JSON を読めません（"+err.Error()+"）。", "docs/formats.md の POST /api/revoke の形で送ってください。")
 		return
 	}
 	s.mu.Lock()

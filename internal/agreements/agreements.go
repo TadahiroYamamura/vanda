@@ -32,7 +32,7 @@ type Records struct {
 	Agreements []*Agreement
 }
 
-// Load は、files（リポジトリの直下からの場所の一覧）のうち patterns に当たるものを、承認の記録として読む。
+// Load は、files（リポジトリの直下からの場所の一覧）のうち patterns にマッチするものを、承認の記録として読む。
 // ワイルドカードのないパターンのファイルがなくても誤りにしない。そのファイルは、はじめて承認したときに作るため。
 func Load(root string, files, patterns []string) (*Records, diag.Errors) {
 	return LoadWith(tomlread.OSReader(root), files, patterns)
@@ -121,7 +121,7 @@ func (a *Agreement) Target() string {
 }
 
 // Agreed は、対象の種類 kind・指す先 target（約束・用語・機能なら ID、ファイルなら場所）の今の中身のフィンガープリント fp に合う承認が 1 つでもあるかを返す。
-// ファイルは場所でも見分ける。フィンガープリントだけで当てると、承認済のファイルを写した先が、誰も読まないまま承認済になる
+// ファイルは場所でも見分ける。フィンガープリントだけでマッチさせると、承認済のファイルを写した先が、誰も読まないまま承認済になる
 func (r *Records) Agreed(kind, target, fp string) bool {
 	for _, a := range r.Agreements {
 		if a.Kind == kind && a.Target() == target && !a.Deleted && a.Fingerprint == fp {

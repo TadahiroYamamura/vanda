@@ -29,7 +29,7 @@ export interface Context {
   trailerErrors: { commit: string; subject: string; message: string }[];
 }
 
-// Piece は、自然言語で書く項目の文の片。ref があれば参照で、text は見せる文字（用語と機能は名前、約束は ID）
+// Piece は、自然言語で書く項目の文のセグメント。ref があれば参照で、text は見せる文字（用語と機能は名前、約束は ID）
 export interface Piece {
   text: string;
   ref?: string;
@@ -42,7 +42,7 @@ export interface RefTarget {
   name: string | null;
   text: string;
   current: boolean;
-  // pieces は、text を片に分けたもの。中の参照の指す先は refs にない
+  // pieces は、text をセグメントに分けたもの。中の参照の指す先は refs にない
   pieces: Piece[];
   // core・formal は、機能だけに付く
   core?: boolean;

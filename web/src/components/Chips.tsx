@@ -9,8 +9,8 @@ export function useLayerName(): (id: string) => string {
   return (id) => layers.find((l) => l.id === id)?.name || id;
 }
 
-// LayerChip は、レイヤーの札（レイヤーは利用者が決める値で、1 つのエビデンスや約束に複数付くので、札で並べる）。
-// 触れたときの説明と読み上げに「レイヤー: モデル」のように出す
+// LayerChip は、レイヤーのバッジ（レイヤーは利用者が決める値で、1 つのエビデンスや約束に複数付くので、バッジで並べる）。
+// マウスを乗せたときの説明とスクリーンリーダーの読み上げに「レイヤー: モデル」のように出す
 function LayerChip(props: { text: string; mark?: "delete" | "insert" }) {
   const label = `レイヤー: ${props.text}`;
   const chip = (
@@ -23,7 +23,7 @@ function LayerChip(props: { text: string; mark?: "delete" | "insert" }) {
   return chip;
 }
 
-// LayerChips は、レイヤーの札を並べる。名前は names（その時点の名前など）があればそれを、なければ今の設定から引き、ID しかなければ ID
+// LayerChips は、レイヤーのバッジを並べる。名前は names（その時点の名前など）があればそれを、なければ今の設定から引き、ID しかなければ ID
 export function LayerChips(props: { layers: string[]; names?: LayerRef[] }) {
   const name = useLayerName();
   return (
@@ -35,7 +35,7 @@ export function LayerChips(props: { layers: string[]; names?: LayerRef[] }) {
   );
 }
 
-// LayerChipsDiff は、レイヤーの文字の差分（API の「・」でつないだ文字の差分）から、消したレイヤーと足したレイヤーに印を付けた札を並べる
+// LayerChipsDiff は、レイヤーの文字の差分（API の「・」でつないだ文字の差分）から、消したレイヤーと足したレイヤーにマークを付けたバッジを並べる
 export function LayerChipsDiff(props: { before: string[]; after: string[]; side: "before" | "after" | "both" }) {
   const name = useLayerName();
   const removed = props.before.filter((l) => !props.after.includes(l));

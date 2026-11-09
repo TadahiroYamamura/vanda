@@ -124,7 +124,7 @@ func newDoctorCommand() *cobra.Command {
 	}
 }
 
-// loadConfig は、git のリポジトリの根を探し、作業ツリーの設定を読んでバージョンを確かめる。
+// loadConfig は、git のリポジトリのルートを探し、作業ツリーの設定を読んでバージョンを確かめる。
 func loadConfig() (string, *config.Config, error) {
 	root, err := findRoot()
 	if err != nil {
@@ -137,7 +137,7 @@ func loadConfig() (string, *config.Config, error) {
 	return root, cfg, nil
 }
 
-// loadCommittedConfig は、git のリポジトリの根を探し、HEAD のコミットの設定を読んでバージョンを確かめる（チェックと画面は、コミットした中身だけを読むため）。
+// loadCommittedConfig は、git のリポジトリのルートを探し、HEAD のコミットの設定を読んでバージョンを確かめる（チェックと画面は、コミットした中身だけを読むため）。
 func loadCommittedConfig() (string, *repo.Tree, *config.Config, error) {
 	root, err := findRoot()
 	if err != nil {

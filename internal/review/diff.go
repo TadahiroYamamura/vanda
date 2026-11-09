@@ -33,17 +33,17 @@ type ItemDiff struct {
 	Evidence *EvidenceDiff `json:"evidence,omitempty"`
 }
 
-// EvidenceDiff は、変更前と変更後のエビデンスの予定の、1 つずつの印。添字は before・after の evidence の添字にそろう。
+// EvidenceDiff は、変更前と変更後のエビデンスの予定の、1 つずつのマーク。添字は before・after の evidence の添字にそろう。
 type EvidenceDiff struct {
 	Before []EvidenceMark `json:"before"`
 	After  []EvidenceMark `json:"after"`
 }
 
-// EvidenceMark は、エビデンス 1 つの印。op は、変更前では equal・modified・removed、変更後では equal・modified・added。
+// EvidenceMark は、エビデンス 1 つのマーク。op は、変更前では equal・modified・removed、変更後では equal・modified・added。
 // modified のときだけ、layers（レイヤーを「・」でつないだ文字）と detail（詳細）の文字の単位の差分を持つ
 type EvidenceMark struct {
 	Op string `json:"op"`
-	// Pair は、対応したもう片方の側のエビデンスの添字（before の印なら after の添字）。対応がなければ nil
+	// Pair は、対応したもう片方の側のエビデンスの添字（before のマークなら after の添字）。対応がなければ nil
 	Pair   *int       `json:"pair"`
 	Layers []DiffPart `json:"layers"`
 	Detail []DiffPart `json:"detail"`
@@ -73,7 +73,7 @@ type rawLine struct {
 	noNewline bool
 }
 
-// splitLines は、行の終わりの改行で分ける。最後の行に改行がなければ、その行に印を付ける。
+// splitLines は、行の終わりの改行で分ける。最後の行に改行がなければ、その行にマークを付ける。
 func splitLines(s string) []rawLine {
 	var out []rawLine
 	for s != "" {
@@ -203,7 +203,7 @@ func itemDiff(before, after any) ItemDiff {
 	return out
 }
 
-// evidenceDiff は、変更前と変更後のエビデンスの予定を対応づけ、1 つずつに印を付ける。
+// evidenceDiff は、変更前と変更後のエビデンスの予定を対応づけ、1 つずつにマークを付ける。
 // ステージとタイプが同じものを同じエビデンスとみなす。同じステージとタイプが 2 つ以上あれば、それぞれ現れた順に、
 // 1 つ目どうし、2 つ目どうし、と対応させ、余ったものは消した（変更前）か足した（変更後）とする。
 // 対応したものは、レイヤーと詳細が同じなら equal、どちらかが違えば modified

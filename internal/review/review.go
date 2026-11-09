@@ -13,7 +13,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
 )
 
-// Error は、一覧を作れない理由と、API で返す HTTP の状態コード。
+// Error は、一覧を作れない理由と、API で返す HTTP のステータスコード。
 type Error struct {
 	Status  int
 	Message string
@@ -41,7 +41,7 @@ type Result struct {
 	StoryFrom string `json:"storyFrom"`
 	// StoryChoice は、画面でストーリーをどう示すか（RV-13）。fixed（1 つに決まったので選ばせずに示す）・branch（ブランチのストーリーから選ばせる）・all（すべてのストーリーから選ばせる）
 	StoryChoice string `json:"storyChoice"`
-	// Refs は、entries と detached の中の片が指すすべての ID の、指す先
+	// Refs は、entries と detached の中のセグメントが指すすべての ID の、指す先
 	Refs map[string]RefTarget `json:"refs"`
 }
 
@@ -256,7 +256,7 @@ func storyChoice(view, named string, branch []string) string {
 	return "all"
 }
 
-// rawChange は、比べる元と今で中身の違う鍵 1 つ。before はその鍵の比べる元の時点。
+// rawChange は、比べる元と今で中身の違うキー 1 つ。before はそのキーの比べる元の時点。
 type rawChange struct {
 	key    string
 	before *side
@@ -301,13 +301,13 @@ func (s *state) diffAll(before *side) ([]rawChange, error) {
 	return out, nil
 }
 
-// diffStory は、鍵ごとに、ストーリーの ID を持つコミットのうちその鍵を変えた最初のコミットの親の中身と、今の中身を比べる（レビュー単位がストーリー）。
+// diffStory は、キーごとに、ストーリーの ID を持つコミットのうちそのキーを変えた最初のコミットの親の中身と、今の中身を比べる（レビュー単位がストーリー）。
 func (s *state) diffStory() ([]rawChange, error) {
 	commits, err := s.h.loadCommits()
 	if err != nil {
 		return nil, err
 	}
-	first := map[string]int{} // 鍵から、最初に変えたコミットの番号へ
+	first := map[string]int{} // キーから、最初に変えたコミットの番号へ
 	var keys []string
 	var mine, others []commit
 	for _, c := range commits {
@@ -397,7 +397,7 @@ func sortedKeys(cs *changeSet) []string {
 
 var kindName = map[string]string{"term": "用語", "feature": "機能", "claim": "約束", "file": "ファイル"}
 
-// entries は、違う鍵を一覧の 1 件ずつにする。中身が同じで場所だけが変わったファイルも、まとめずに、古い場所の削除と新しい場所の追加の 2 件にする
+// entries は、違うキーを一覧の 1 件ずつにする。中身が同じで場所だけが変わったファイルも、まとめずに、古い場所の削除と新しい場所の追加の 2 件にする
 // （ファイルは場所で見分け、どちらの場所にも承認が要るため）。
 func (s *state) entries(changes []rawChange) ([]Entry, error) {
 	var out []Entry
@@ -603,14 +603,14 @@ func (s *state) order(es []Entry) {
 	})
 }
 
-// detached は、ストーリーの失効した承認（RV-14）を探す。一覧にあるものはその件に印を付け、ないものを返す。
+// detached は、ストーリーの失効した承認（RV-14）を探す。一覧にあるものはその件にマークを付け、ないものを返す。
 func (s *state) detached(es []Entry) ([]Entry, error) {
 	out := []Entry{}
 	story := s.o.Story
 	if story == "" {
 		return out, nil
 	}
-	// 鍵ごとの、そのストーリーの中身への承認の記録
+	// キーごとの、そのストーリーの中身への承認の記録
 	recs := map[string][]*agreements.Agreement{}
 	var keys []string
 	for _, a := range s.recs.Agreements {
@@ -685,7 +685,7 @@ func (s *state) detached(es []Entry) ([]Entry, error) {
 	return out, nil
 }
 
-// changedBy は、HEAD の履歴で、記録 recs（そのストーリーの、鍵 key への承認）を最後に書き足したコミットより後のコミットのうち、
+// changedBy は、HEAD の履歴で、記録 recs（そのストーリーの、キー key への承認）を最後に書き足したコミットより後のコミットのうち、
 // key の中身を変えたもののストーリーの ID を返す。written は、記録からそれを書き足したコミットへの表。
 // 承認の記録の agreed_at とコミットの日時を比べないのは、rebase や amend でコミットの日時が変わるため（約束 review-detached-shown）。
 // まだコミットしていない記録しかなければ、それより後のコミットはないので空にする。

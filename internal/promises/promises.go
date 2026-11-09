@@ -1,7 +1,7 @@
 // Package promises は、約束リスト（既定は .vanda/promises.toml）を読む。
 //
 // ここでは、読めること、決まった表と項目だけがあること、必須の項目があること、項目の型を確かめる。
-// 値が決まった語の中にあるか、ID の形と重なり、指す先があるかは、チェックで確かめる。
+// 値が決まった語の中にあるか、ID の形と重複、指す先があるかは、チェックで確かめる。
 package promises
 
 import (
@@ -63,7 +63,7 @@ type Evidence struct {
 	Detail string
 }
 
-// Load は、files（リポジトリの直下からの場所の一覧）のうち patterns に当たるものを、約束リストとして読む。allowMissing なら、ワイルドカードのないパターンのファイルがなくても誤りにしない（設定に書かなかった既定のファイルのため）。
+// Load は、files（リポジトリの直下からの場所の一覧）のうち patterns にマッチするものを、約束リストとして読む。allowMissing なら、ワイルドカードのないパターンのファイルがなくても誤りにしない（設定に書かなかった既定のファイルのため）。
 func Load(root string, files, patterns []string, allowMissing bool) (*List, diag.Errors) {
 	return LoadWith(tomlread.OSReader(root), files, patterns, allowMissing)
 }

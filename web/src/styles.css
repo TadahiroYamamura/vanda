@@ -72,7 +72,7 @@ h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; }
 .topbar .where { margin-left: auto; font-size: 12px; color: #b7bdc8; }
 main { padding: 20px 28px 40px; }
 
-/* 札 */
+/* バッジ */
 .badge { display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; border-radius: 999px; font-size: 12px; line-height: 22px; white-space: nowrap; position: relative; font-weight: 400; font-family: var(--sans); }
 .state-proposed { background: var(--pend-bg); color: var(--pend); }
 .state-agreed { background: var(--ok-bg); color: var(--ok); }
@@ -131,7 +131,7 @@ main { padding: 20px 28px 40px; }
 .story-body pre { background: #fff; border: 1px solid var(--line2); border-radius: 8px; padding: 8px 10px; overflow: auto; font-family: var(--mono); font-size: 12px; }
 .story-body code { font-family: var(--mono); font-size: 12px; }
 .story-body img { max-width: 100%; }
-/* 読み込み中に先に置く枠（灰色の帯）。帯は行の中に置き、行の高さを読み込んだ後の文字の行とそろえる */
+/* 読み込み中に先に置くスケルトン（灰色の帯）。スケルトンは行の中に置き、行の高さを読み込んだ後の文字の行とそろえる */
 .skeleton { display: inline-block; vertical-align: middle; background: var(--line2); border-radius: 6px; }
 .skeleton-inline { width: 3em; height: 1em; }
 .story-panel .skeleton-title { width: 40%; height: 0.9em; }
@@ -143,7 +143,7 @@ main { padding: 20px 28px 40px; }
 .story-body-placeholder { height: 360px; }
 .entry-list { position: relative; }
 .list > .entry-list > .loading-over { position: absolute; top: 0; right: 0; margin: 0; padding: 0 6px 0 10px; height: 24px; font-size: 12px; background: var(--card); }
-/* 読み直す間の件数は古いので、読み込み中の印の下に隠す（印より長く、端がはみ出るため） */
+/* 読み直す間の件数は古いので、読み込み中のマークの下に隠す（マークより長く、端がはみ出るため） */
 .entry-list.reloading .total { visibility: hidden; }
 .skeleton-count { width: 10em; height: 1em; }
 .skeleton-group { margin: 8px 0 2px; padding: 4px 6px; font-size: 12px; }
@@ -181,7 +181,7 @@ ul.entries { list-style: none; padding: 0; margin: 0; }
 .entry-line2 { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin: 2px 0 0 calc(22px + 6px); }
 .entry-line2 .kind { font-size: 11px; color: var(--muted); flex: none; margin-right: 4px; }
 .entry-sep { width: 1px; height: 16px; background: var(--line); margin: 0 3px; flex: none; }
-/* 一覧のアイコン: 16px の形を、触れられる 24px の枠に入れる */
+/* 一覧のアイコン: 16px の形を、マウスを乗せられる 24px の枠に入れる */
 .list-icon { position: relative; display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; flex: none; }
 .list-icon:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .list-icon svg { width: 16px; height: 16px; display: block; }
@@ -260,7 +260,7 @@ ins.diff-part { background: var(--ins-part); text-decoration: underline 2px var(
 .found p { margin: 0 0 6px; }
 .found strong { font-family: var(--mono); font-weight: 500; }
 
-/* 開く・たたむは山形のアイコンだけを見せる。枠と背景はなくし、押せる範囲（32×28px）は見た目を変えずに残す */
+/* 開く・たたむは山形のアイコンだけを見せる。枠と背景はなくし、クリックできる範囲（32×28px）は見た目を変えずに残す */
 .at-button { display: inline-flex; align-items: center; justify-content: center; min-height: 28px; width: 32px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; }
 .at-button:hover { background: transparent; color: var(--fg); }
 .at-button[aria-expanded="true"] { color: var(--accent-dark); }
@@ -298,7 +298,7 @@ ul.evidence-list { margin: 0; padding-left: 18px; }
 .evidence-item.evidence-added { background: var(--after-bg); border-radius: 4px; }
 .evidence-item.evidence-removed { background: var(--before-bg); border-radius: 4px; }
 
-/* レイヤーの札（紫の点線の枠） */
+/* レイヤーのバッジ（紫の点線の枠） */
 .chips { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; vertical-align: middle; }
 .chip { display: inline-flex; align-items: center; padding: 0 8px; font-size: 12px; line-height: 20px; white-space: nowrap; border-radius: 4px; border: 1px solid transparent; }
 .chip-layer { border: 1px dashed #9b7fd1; color: #5b3d99; background: #f6f2fd; }
@@ -324,7 +324,7 @@ ul.evidence-found { margin: 4px 0 0; padding-left: 18px; font-size: 13px; overfl
 
 /* 利用者が書いた文（約束の文・条件・理由・推測、用語・機能の中身、ストーリーの題、コミットのメッセージなど）は、続いた空白と改行をそのまま出し、長い語は折り返す */
 .user-text { white-space: pre-wrap; overflow-wrap: anywhere; }
-/* 空白だけの差分は、点線の枠で場所を示す。改行だけのものは、改行の印（↵）を添える（印は CSS の中だけで、コピーした文には入らない） */
+/* 空白だけの差分は、点線の枠で場所を示す。改行だけのものは、改行のマーク（↵）を添える（マークは CSS の中だけで、コピーした文には入らない） */
 .diff-part.ws { outline: 1px dashed currentColor; outline-offset: -1px; padding-right: 0.25em; }
 .diff-part.nl::before { content: "↵"; color: var(--muted); font-size: 11px; }
 
@@ -332,7 +332,7 @@ ul.evidence-found { margin: 4px 0 0; padding-left: 18px; font-size: 13px; overfl
 .agreement-agreed { color: var(--accent); }
 .agreement-proposed { color: #c26a00; }
 
-/* 文字ではない印（札・アイコン）は、触れても文字選択の形のカーソルにしない。押せる行・枠の中では、行と同じ指の形にする */
+/* 文字ではないマーク（バッジ・アイコン）は、マウスを乗せても文字選択の形のカーソルにしない。クリックできる行・枠の中では、行と同じ指の形にする */
 .chip, .badge, .present-icon, .agreement-icon, .list-icon { cursor: default; }
 .badge.flag { cursor: help; }
 li.entry .chip, li.entry .badge, li.entry .badge.flag, li.entry .list-icon,

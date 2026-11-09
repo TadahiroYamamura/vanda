@@ -1,4 +1,4 @@
-// 文法に沿った色付け（見せ方だけで、判定には使わない）。使う言語の文法だけを、要るときに読み込む。
+// 文法に沿ったシンタックスハイライト（見せ方だけで、判定には使わない）。使う言語の文法だけを、要るときに読み込む。
 //
 // TLA+ の文法（grammars/tlaplus/）は、VS Code の TLA+ の拡張 alygin/vscode-tlaplus 1.5.4（今は tlaplus/vscode-tlaplus）の
 // languages/ にあるもの。MIT（grammars/tlaplus/LICENSE.txt）。nixpkgs の vscode-extensions.alygin.vscode-tlaplus から取り出した。
@@ -29,9 +29,9 @@ let core: Promise<HighlighterCore> | null = null;
 const loaded = new Map<Lang, Promise<void>>();
 
 // 正規表現のエンジンは Oniguruma（WebAssembly、約 600KB）にしている。TextMate の文法は Oniguruma の正規表現で書かれていて、
-// VS Code と同じ色付けになるため。Oniguruma の本体（kkos/oniguruma）は 2025-04 にアーカイブされたが、Shiki が使う
+// VS Code と同じシンタックスハイライトになるため。Oniguruma の本体（kkos/oniguruma）は 2025-04 にアーカイブされたが、Shiki が使う
 // WebAssembly のバージョン（microsoft/vscode-oniguruma）は VS Code が使い続けていて、手入れされている。問題が出たら、まず Shiki の
-// JavaScript の正規表現のエンジン（shiki/engine/javascript）に替え、Go・SQL・TLA+・txtar の色付けが崩れないかを確かめる。
+// JavaScript の正規表現のエンジン（shiki/engine/javascript）に替え、Go・SQL・TLA+・txtar のシンタックスハイライトが崩れないかを確かめる。
 // 崩れるなら Prism を考える（TLA+ の文法は自分で書くことになる）。
 function highlighter(): Promise<HighlighterCore> {
   if (!core) {
@@ -58,7 +58,7 @@ async function ready(lang: Lang): Promise<HighlighterCore> {
   return h;
 }
 
-// tokenize は、text を行ごとの色付きのかけらにする。行は、text を "\n" で分けたものと同じ数・同じ中身。
+// tokenize は、text を行ごとのシンタックスハイライトしたセグメントにする。行は、text を "\n" で分けたものと同じ数・同じ中身。
 export async function tokenize(text: string, lang: Lang): Promise<Token[][]> {
   const h = await ready(lang);
   const res = h.codeToTokens(text, { lang, theme: "github-light" });

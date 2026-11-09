@@ -164,7 +164,7 @@ func lexTS(src string) tsLexed {
 	return lx
 }
 
-// skipTemplate は、テンプレート文字列の中（開きの逆引用符の次の i から）を読み、閉じの逆引用符の次の位置を返す。
+// skipTemplate は、テンプレート文字列の中（開きのバッククォートの次の i から）を読み、閉じのバッククォートの次の位置を返す。
 func skipTemplate(src string, i int) int {
 	for i < len(src) {
 		switch {

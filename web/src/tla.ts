@@ -55,7 +55,7 @@ const WORDS: Record<string, string> = {
 const isWordChar = (c: string | undefined) => c !== undefined && /[A-Za-z0-9_]/.test(c);
 
 // toSegments は、TLA+ の文を、置き換えた所と置き換えない所の並びにする。
-// 文字列・コメントの中と、4 つ以上の - か = の並びは置き換えない。長いものから先に当てる。
+// 文字列・コメントの中と、4 つ以上の - か = の並びは置き換えない。長いものから先にマッチさせる。
 export function toSegments(src: string): Segment[] {
   const out: Segment[] = [];
   let plain = "";

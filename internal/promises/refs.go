@@ -6,9 +6,9 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/tomlread"
 )
 
-// Part は、自然言語で書く項目の文を、参照とそれ以外に分けた片の 1 つ。
+// Part は、自然言語で書く項目の文を、参照とそれ以外に分けたセグメントの 1 つ。
 type Part struct {
-	// Text は、文字の片なら見せる文字（{@@ は {@ にしたもの）。参照と壊れた参照なら、書いたままの文字（{@id:x} など）
+	// Text は、文字のセグメントなら見せる文字（{@@ は {@ にしたもの）。参照と壊れた参照なら、書いたままの文字（{@id:x} など）
 	Text string
 	// Ref は、参照なら指す ID。指す先があるかは見ていない
 	Ref string
@@ -16,8 +16,8 @@ type Part struct {
 	Broken string
 }
 
-// SplitRefs は、文 s を左から読み、片に分ける。{@@ は文字の {@ とし、ほかの {@ は次の } までを参照として読む。
-// 隣り合う文字の片はつなぐ。
+// SplitRefs は、文 s を左から読み、セグメントに分ける。{@@ は文字の {@ とし、ほかの {@ は次の } までを参照として読む。
+// 隣り合う文字のセグメントはつなぐ。
 func SplitRefs(s string) []Part {
 	var out []Part
 	var text strings.Builder

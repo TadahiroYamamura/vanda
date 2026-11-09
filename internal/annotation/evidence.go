@@ -2,15 +2,15 @@ package annotation
 
 import "github.com/TadahiroYamamura/vanda/internal/config"
 
-// Part は、エビデンスの予定を揃えるのに要るものの 1 つと、それに当たったアノテーション。
+// Part は、エビデンスの予定を揃えるのに要るものの 1 つと、それにマッチしたアノテーション。
 type Part struct {
 	// Want は、要るもの（誤りの文に使う。例: 「types に unit-test を含む [[annotation]] で読んだファイルの @vanda:evidence a」）
 	Want  string
 	Found []Annotation
 }
 
-// Evidence は、約束 id のタイプ typ の予定を揃えるのに要るものを返す。どの Part にも当たったアノテーションがあれば揃っている。
-// エビデンスが揃っているチェックと画面で、同じ判定にするためにある。guards は、ガードレールの定義のファイル（[[guardrail]] の paths に当たるもの）。
+// Evidence は、約束 id のタイプ typ の予定を揃えるのに要るものを返す。どの Part にもマッチしたアノテーションがあれば揃っている。
+// エビデンスが揃っているチェックと画面で、同じ判定にするためにある。guards は、ガードレールの定義のファイル（[[guardrail]] の paths にマッチするもの）。
 //
 // guardrail と sensor は、2 つがどちらもあるときだけ揃う。ガードレールは定義があることと本当に拒むことを、センサーは
 // 実装のコードの中にあることと本当に見つけることを、どちらも確かめるため
@@ -33,7 +33,7 @@ func Evidence(anns []Annotation, guards []string, id, typ string) []Part {
 	case "guardrail":
 		return []Part{
 			{
-				Want:  "ガードレールの定義（[[guardrail]] の paths に当たるファイル）の @vanda:evidence " + id,
+				Want:  "ガードレールの定義（[[guardrail]] の paths にマッチするファイル）の @vanda:evidence " + id,
 				Found: pick(func(a Annotation) bool { return a.Kind == "evidence" && isGuard[a.File] }),
 			},
 			{

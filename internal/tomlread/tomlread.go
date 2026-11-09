@@ -194,7 +194,7 @@ func (t *Table) Int(key string, required bool) (int64, bool) {
 	return n, true
 }
 
-// Time は、時差の付いた日時の項目を返す。
+// Time は、タイムゾーン付きの日時の項目を返す。
 func (t *Table) Time(key string, required bool) (time.Time, bool) {
 	t.used[key] = true
 	v, ok := t.M[key]
@@ -206,13 +206,13 @@ func (t *Table) Time(key string, required bool) (time.Time, bool) {
 	}
 	tm, ok := v.(time.Time)
 	if !ok {
-		t.ErrAt(key, key+" が日時ではありません", key+" = 2026-10-31T12:00:00+09:00 のように、時差の付いた日時で書いてください")
+		t.ErrAt(key, key+" が日時ではありません", key+" = 2026-10-31T12:00:00+09:00 のように、タイムゾーン付きの日時で書いてください")
 		return time.Time{}, false
 	}
-	// BurntSushi/toml は、時差のない日時・日付・時刻を、この名前の時間帯で返す
+	// BurntSushi/toml は、タイムゾーンのない日時・日付・時刻を、この名前の時間帯で返す
 	switch tm.Location().String() {
 	case "datetime-local", "date-local", "time-local":
-		t.ErrAt(key, key+" に時差がありません", key+" = 2026-10-31T12:00:00+09:00 のように、時差（+09:00 や Z）を付けてください")
+		t.ErrAt(key, key+" にタイムゾーンがありません", key+" = 2026-10-31T12:00:00+09:00 のように、タイムゾーン（+09:00 や Z）を付けてください")
 		return time.Time{}, false
 	}
 	return tm, true

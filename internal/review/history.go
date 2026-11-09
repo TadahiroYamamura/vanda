@@ -31,7 +31,7 @@ func newSide(s *snapshot.Snapshot) *side {
 		return sd
 	}
 	for _, e := range snapshot.Entries(s.List) {
-		// 重なった ID は、約束リストの形のチェックで誤りになる。ここでは最初のものを使う
+		// 重複した ID は、約束リストの形のチェックで誤りになる。ここでは最初のものを使う
 		if _, dup := sd.items[e.Key()]; dup {
 			continue
 		}
@@ -109,7 +109,7 @@ func sameFile(a, b *side, path string) (bool, error) {
 	return fa == fb, nil
 }
 
-// commit は、HEAD の履歴の、合流でないコミット。
+// commit は、HEAD の履歴の、マージコミットでないコミット。
 type commit struct {
 	Hash    string
 	Parent  string // 最初のコミットなら空
@@ -251,7 +251,7 @@ func hasStory(c commit, story string) bool {
 	return false
 }
 
-// loadCommits は、HEAD の履歴の、合流でないコミットを古い順に読む。コミットのない新しいリポジトリでは空。
+// loadCommits は、HEAD の履歴の、マージコミットでないコミットを古い順に読む。コミットのない新しいリポジトリでは空。
 func (h *history) loadCommits() ([]commit, error) {
 	if h.commits != nil {
 		return h.commits, nil
@@ -290,7 +290,7 @@ func (h *history) loadCommits() ([]commit, error) {
 	return h.commits, nil
 }
 
-// changed は、コミット c が、1 つ目の親から変えた項目の鍵と、承認の対象のファイルの場所を返す。
+// changed は、コミット c が、1 つ目の親から変えた項目のキーと、承認の対象のファイルの場所を返す。
 func (h *history) changed(c commit) (*changeSet, error) {
 	h.mu.Lock()
 	r, ok := h.changes[c.Hash]

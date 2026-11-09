@@ -67,7 +67,7 @@ type Config struct {
 	Annotations       []AnnotationRule
 	Guardrails        []GuardrailRule
 	IDPattern         *regexp.Regexp
-	// IDFull は、ストーリーの ID 全体に当たるかを確かめる正規表現（id_pattern の前後を固定したもの）
+	// IDFull は、ストーリーの ID 全体にマッチするかを確かめる正規表現（id_pattern の前後を固定したもの）
 	IDFull *regexp.Regexp
 	Story  StoryStore
 	// GUIBase は、画面を開いたときのベースブランチ。書いていなければ空
@@ -216,7 +216,7 @@ func parse(l *loader, top *tomlread.Table) *Config {
 			if !IsID(l.ID) {
 				t.ErrAt("id", "レイヤーの ID "+quote(l.ID)+" が決まった形ではありません", "英小文字で始め、英小文字・数字をハイフンでつないだ形（例: model、db）にしてください")
 			} else if seen[l.ID] {
-				t.ErrAt("id", "レイヤーの ID "+quote(l.ID)+" がほかのレイヤーと重なっています", "別の ID にしてください")
+				t.ErrAt("id", "レイヤーの ID "+quote(l.ID)+" がほかのレイヤーと重複しています", "別の ID にしてください")
 			}
 			seen[l.ID] = true
 		}
@@ -274,7 +274,7 @@ func parse(l *loader, top *tomlread.Table) *Config {
 			if err != nil {
 				story.ErrAt("id_pattern", "id_pattern を正規表現として読めません（"+err.Error()+"）", "Go の正規表現（RE2）の書き方で直してください")
 			} else if re.MatchString("") {
-				story.ErrAt("id_pattern", "id_pattern が空の文字列に当たります", "ストーリーの ID 全体に当たる正規表現（例: #[0-9]+）にしてください")
+				story.ErrAt("id_pattern", "id_pattern が空の文字列にマッチします", "ストーリーの ID 全体にマッチする正規表現（例: #[0-9]+）にしてください")
 			} else {
 				cfg.IDPattern = re
 			}
@@ -289,7 +289,7 @@ func parse(l *loader, top *tomlread.Table) *Config {
 
 	if cfg.IDPattern != nil {
 		if re, err := regexp.Compile(`^(?:` + cfg.IDPattern.String() + `)$`); err != nil {
-			top.ErrAt("", "ストーリーの ID の書き方を、ID 全体に当たる形にできません（"+err.Error()+"）", "id_pattern を直してください")
+			top.ErrAt("", "ストーリーの ID の書き方を、ID 全体にマッチする形にできません（"+err.Error()+"）", "id_pattern を直してください")
 		} else {
 			cfg.IDFull = re
 		}
@@ -453,7 +453,7 @@ func (u *UserAdapter) Label() string {
 	return "カスタムアダプタ " + u.Name + "（" + u.Path + "）"
 }
 
-// Cmd は、カスタムアダプタを、リポジトリの根を作業のディレクトリにして動かすコマンドを作る。
+// Cmd は、カスタムアダプタを、リポジトリのルートを作業ディレクトリにして動かすコマンドを作る。
 func (u *UserAdapter) Cmd(ctx context.Context, root string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, filepath.Join(root, filepath.FromSlash(u.Path)), u.Args...)
 	cmd.Dir = root
@@ -535,7 +535,7 @@ func patterns(t *tomlread.Table, key, def string) []string {
 	}
 	for _, p := range ps {
 		if err := glob.Validate(p); err != nil {
-			t.ErrAt(key, "パターン "+quote(p)+" の書き方が誤っています", "リポジトリの直下からの / 区切りの場所で書いてください（* と ? と [] と、何段のディレクトリにも当たる ** が使えます）")
+			t.ErrAt(key, "パターン "+quote(p)+" の書き方が誤っています", "リポジトリの直下からの / 区切りの場所で書いてください（* と ? と [] と、何段のディレクトリにもマッチする ** が使えます）")
 		}
 	}
 	return ps

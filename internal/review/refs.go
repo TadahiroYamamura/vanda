@@ -7,26 +7,26 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
 )
 
-// Piece は、自然言語で書く項目の文の片。参照なら Ref に指す ID を持ち、Text は見せる文字（用語と機能は名前、約束は ID）。
+// Piece は、自然言語で書く項目の文のセグメント。参照なら Ref に指す ID を持ち、Text は見せる文字（用語と機能は名前、約束は ID）。
 type Piece struct {
 	Text string `json:"text"`
 	Ref  string `json:"ref,omitempty"`
 }
 
-// RefTarget は、片が指す先。Name は用語と機能なら名前、約束なら nil。Text は、用語と機能なら定義、約束なら文を、参照を見せる文字に置き換えたもの。
+// RefTarget は、セグメントが指す先。Name は用語と機能なら名前、約束なら nil。Text は、用語と機能なら定義、約束なら文を、参照を見せる文字に置き換えたもの。
 // Core・Formal は、機能のときだけ持つ（コア機能か・形式手法を使う機能か）。
 type RefTarget struct {
 	Kind    string  `json:"kind"`
 	Name    *string `json:"name"`
 	Text    string  `json:"text"`
 	Current bool    `json:"current"`
-	// Pieces は、Text を片に分けたもの。中の参照の指す先は、refs に足さない（枠の中の参照は見た目だけにし、次の枠もリンクも出さないため）
+	// Pieces は、Text をセグメントに分けたもの。中の参照の指す先は、refs に足さない（ポップアップの中の参照は見た目だけにし、次のポップアップもリンクも出さないため）
 	Pieces []Piece `json:"pieces"`
 	Core   *bool   `json:"core,omitempty"`
 	Formal *bool   `json:"formal,omitempty"`
 }
 
-// refs は、参照を見せる文字に置き換え、応答の中の片が指した先を集める。
+// refs は、参照を見せる文字に置き換え、応答の中のセグメントが指した先を集める。
 type refs struct {
 	cur  map[string]snapshot.Entry
 	used map[string]RefTarget
@@ -63,7 +63,7 @@ func shown(e snapshot.Entry) string {
 	return e.ID
 }
 
-// split は、文 s を片に分ける。指す先のない参照と壊れた参照は、書いたままの文字の片にする。record なら、指した先を集める。
+// split は、文 s をセグメントに分ける。指す先のない参照と壊れた参照は、書いたままの文字のセグメントにする。record なら、指した先を集める。
 func (r *refs) split(s string, base *side, record bool) []Piece {
 	out := []Piece{}
 	text := func(t string) {
@@ -130,7 +130,7 @@ func plain(ps []Piece) string {
 	return b.String()
 }
 
-// refDiff は、片どうしを見せる文字で比べ、差分の 1 つが参照にかかる所を参照の境で分けて、参照の ID を付ける。
+// refDiff は、セグメントどうしを見せる文字で比べ、差分の 1 つが参照にかかる所を参照の境で分けて、参照の ID を付ける。
 // delete は変更前の側、equal と insert は変更後の側の参照の位置で決める。
 func refDiff(before, after []Piece) []DiffPart {
 	parts := charDiff(plain(before), plain(after))

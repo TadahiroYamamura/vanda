@@ -1,4 +1,4 @@
-// Package initcmd は、vanda init（CMD-11）。端末で問いかけ、答えで .vanda/ を作る。
+// Package initcmd は、vanda init（CMD-11）。端末で質問し、答えで .vanda/ を作る。
 package initcmd
 
 import (
@@ -33,7 +33,7 @@ type Language struct {
 	Patterns []string
 }
 
-// Defaults は、リポジトリから読み取った、問いかけの既定の答え。
+// Defaults は、リポジトリから読み取った、質問の既定の答え。
 type Defaults struct {
 	// Base は、ベースブランチ。origin/HEAD が指すブランチ（例: origin/main）、なければ今のブランチの名前。
 	// コミットのないリポジトリでも、今のブランチの名前（例: main）が入る。どちらも読めなければ空
@@ -47,8 +47,8 @@ type Defaults struct {
 	Languages []Language
 }
 
-// Detect は、root（git のリポジトリの直下のディレクトリ）から、問いかけの既定の答えを読み取る。
-// 問いかけはしない。git が追っているファイルの一覧を読めないときだけ、エラーを返す。
+// Detect は、root（git のリポジトリの直下のディレクトリ）から、質問の既定の答えを読み取る。
+// 質問はしない。git が追っているファイルの一覧を読めないときだけ、エラーを返す。
 func Detect(root string) (Defaults, error) {
 	var d Defaults
 	if out, err := repo.Git(root, "symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD"); err == nil && strings.TrimSpace(out) != "" {
@@ -114,7 +114,7 @@ func GitHubRepository(url string) string {
 	return parts[0] + "/" + parts[1]
 }
 
-// Answers は、問いかけの答え。Files に渡すと、作るファイルの中身になる。
+// Answers は、質問の答え。Files に渡すと、作るファイルの中身になる。
 type Answers struct {
 	// Base は、ベースブランチ（config.toml の [gui] base）
 	Base string
@@ -133,7 +133,7 @@ type Answers struct {
 	Annotations []Language
 }
 
-// ErrInterrupted は、問いかけの途中で中断した（Ctrl+C・Ctrl+D）ため、何も作らなかったことを表す。
+// ErrInterrupted は、質問の途中で中断した（Ctrl+C・Ctrl+D）ため、何も作らなかったことを表す。
 var ErrInterrupted = errors.New("中断したため、何も作りませんでした。")
 
 type storeChoice struct {
@@ -149,7 +149,7 @@ func storeChoices() []storeChoice {
 	return append(out, storeChoice{key: "user", title: "カスタムアダプタ"}, storeChoice{key: "none", title: "使わない"})
 }
 
-// asker は、huh の問いを 1 つずつ出す。問いの答えで次の問いが変わるので、まとめた 1 つの形でなく、問いごとに出す
+// asker は、huh の質問を 1 つずつ出す。質問の答えで次の質問が変わるので、まとめた 1 つの形でなく、質問ごとに出す
 type asker struct {
 	t    *Terminal
 	keys *huh.KeyMap
@@ -170,7 +170,7 @@ func (a *asker) run(fields ...huh.Field) error {
 		return ErrInterrupted
 	}
 	if err != nil {
-		return fmt.Errorf("問いかけを出せませんでした（%v）。", err)
+		return fmt.Errorf("質問のプロンプトを出せませんでした（%v）。", err)
 	}
 	return nil
 }
@@ -182,7 +182,7 @@ func (a *asker) input(title, def string, check func(string) error) (string, erro
 	return strings.TrimSpace(v), err
 }
 
-// Ask は、d を既定の答えにして、t で問いかけ、答えを集める。
+// Ask は、d を既定の答えにして、t で質問し、答えを集める。
 func Ask(root string, d Defaults, t *Terminal) (Answers, error) {
 	q := newAsker(t)
 	var a Answers
@@ -260,7 +260,7 @@ func Ask(root string, d Defaults, t *Terminal) (Answers, error) {
 			return fmt.Errorf("正規表現として読めません（%v）。Go の正規表現（RE2）の書き方で入れてください。", err)
 		}
 		if re.MatchString("") {
-			return errors.New("空の文字列に当たります。ストーリーの ID 全体に当たる正規表現を入れてください。")
+			return errors.New("空の文字列にマッチします。ストーリーの ID 全体にマッチする正規表現を入れてください。")
 		}
 		return nil
 	})
@@ -400,7 +400,7 @@ const (
 	MainChecksFile = ".vanda/checks/main.toml"
 )
 
-// Files は、答え a から、作る 5 つのファイルを作る。問いかけも、ファイルの書き込みもしない。
+// Files は、答え a から、作る 5 つのファイルを作る。質問も、ファイルの書き込みもしない。
 // 戻り値の要素は {場所, 中身}。場所はリポジトリの直下からの / 区切り（例: .vanda/config.toml）。
 // 順は .vanda/config.toml・.vanda/promises.toml・.vanda/agreements.toml・.vanda/checks/ci.toml・.vanda/checks/main.toml で、
 // promises.toml と agreements.toml の中身は空。

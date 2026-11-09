@@ -3,7 +3,7 @@ import type { Piece, RefTarget, Refs } from "../api";
 import { Link } from "../route";
 import { useTooltip } from "./common";
 
-// 参照の指す先（API の refs）と、約束の詳細へのリンクに引き継ぐクエリ。片を出す所は、応答ごとに入れ子が深いので、props で渡さずに文脈で渡す
+// 参照の指す先（API の refs）と、約束の詳細へのリンクに引き継ぐクエリ。セグメントを出す所は、応答ごとに入れ子が深いので、props で渡さずに文脈で渡す
 const RefsContext = createContext<{ refs: Refs; query: string }>({ refs: {}, query: "" });
 
 // RefsProvider は、応答の refs を渡す。query を省けば、外の文脈のものを引き継ぐ
@@ -12,7 +12,7 @@ export function RefsProvider(props: { refs: Refs | undefined; query?: string; ch
   return <RefsContext.Provider value={{ refs: props.refs ?? {}, query: props.query ?? parent.query }}>{props.children}</RefsContext.Provider>;
 }
 
-// proseText は、片の見せる文字をつないだ文。絞り込みと、同じかどうかの比べに使う
+// proseText は、セグメントの見せる文字をつないだ文。絞り込みと、同じかどうかの比べに使う
 export function proseText(ps: Piece[] | null | undefined): string {
   return (ps ?? []).map((p) => p.text).join("");
 }
@@ -23,7 +23,7 @@ export function detailURL(kind: RefTarget["kind"], id: string, query: string): s
   return `/${path}/${encodeURIComponent(id)}${query ? `?${query}` : ""}`;
 }
 
-// FeatureMarks は、コア機能・形式手法を使う機能であることの印。当てはまるものだけを出す
+// FeatureMarks は、コア機能・形式手法を使う機能であることのマーク。当てはまるものだけを出す
 export function FeatureMarks(props: { core?: boolean; formal?: boolean }) {
   return (
     <>
@@ -33,7 +33,7 @@ export function FeatureMarks(props: { core?: boolean; formal?: boolean }) {
   );
 }
 
-// RefView は、参照 1 つ。触れたとき・フォーカスしたときに、指す先の中身を枠で出し、Esc で閉じる。
+// RefView は、参照 1 つ。マウスを乗せたとき・フォーカスしたときに、指す先の中身をポップアップで出し、Esc で閉じる。
 // 今の約束リストにある指す先は、その詳細のページへのリンクにする（リンクがフォーカスを受けるので、外の span はフォーカスさせない）
 export function RefView(props: { id: string; children: ReactNode }) {
   const { refs, query } = useContext(RefsContext);
@@ -44,7 +44,7 @@ export function RefView(props: { id: string; children: ReactNode }) {
   const { open, close } = t;
   useEffect(() => {
     if (!open) return;
-    // マウスを載せただけで開いた枠も閉じられるよう、フォーカスの場所によらず画面全体で Esc を受ける
+    // マウスを乗せただけで開いたポップアップも閉じられるよう、フォーカスの場所によらず画面全体で Esc を受ける
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
     };
@@ -75,7 +75,7 @@ export function RefView(props: { id: string; children: ReactNode }) {
   );
 }
 
-// PlainProse は、枠の中の文を出す。参照は参照の見た目にするだけで、リンクにも枠にもしない（枠から次の枠を開かないと PO が決めたため）
+// PlainProse は、ポップアップの中の文を出す。参照は参照の見た目にするだけで、リンクにもポップアップにもしない（ポップアップから次のポップアップを開かないと PO が決めたため）
 function PlainProse(props: { pieces: Piece[] }) {
   return (
     <>
@@ -92,7 +92,7 @@ function PlainProse(props: { pieces: Piece[] }) {
   );
 }
 
-// Prose は、自然言語で書く項目の文（片の配列）を出す。
+// Prose は、自然言語で書く項目の文（セグメントの配列）を出す。
 export function Prose(props: { pieces: Piece[] }) {
   return (
     <>

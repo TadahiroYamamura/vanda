@@ -12,7 +12,7 @@ const StoryTrailerKey = "Story"
 
 // StoryTrailer は、コミットのメッセージ msg の末尾のトレーラー Story: <ID> から、ストーリーの ID を読む。なければ空の文字列を返す。
 // subject と本文の中の ID は数えない。Story: が 2 つ以上あるとき（1 つのコミットは 1 つのストーリーに当たる）と、
-// 値が id_pattern に全体で当たらないときは、誤りを返す。
+// 値が id_pattern に全体でマッチしないときは、誤りを返す。
 func (c *Config) StoryTrailer(msg string) (string, error) {
 	var ids []string
 	for _, l := range trailerLines(msg) {

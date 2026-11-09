@@ -16,7 +16,7 @@ export function ReviewAgree(props: { params?: URLSearchParams; ctx: Context | nu
   if (!view) return <p className="note review-agree">ストーリーのレビューから開くと、承認できます。</p>;
   if (review.error != null) return <ErrorBox error={review.error} title="承認の状態を読めません" />;
   if (!review.data) {
-    // 読み込んだ後と同じ形の枠を先に置き、承認のボタンが出ても下の中身を押し下げない
+    // 読み込んだ後と同じ形のプレースホルダーを先に置き、承認のボタンが出ても下の中身を押し下げない
     return (
       <div className="review-agree">
         <p className="note" aria-hidden="true">

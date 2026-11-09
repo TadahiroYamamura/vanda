@@ -4,10 +4,10 @@ import { LayerChips, LayerChipsDiff } from "./Chips";
 import { Parts } from "./DiffView";
 import { Prose } from "./Prose";
 
-// EvidenceList は、エビデンスの予定を、エビデンス 1 つを 1 項目にしたリストで出す（「ステージ · タイプ」とレイヤーの札の行と、その下に詳細）。
+// EvidenceList は、エビデンスの予定を、エビデンス 1 つを 1 項目にしたリストで出す（「ステージ · タイプ」とレイヤーのバッジの行と、その下に詳細）。
 // 変更前と変更後の表、その時点の中身（CL-08）で、同じ出し方にそろえる。詳細は改行を保つ。
-// marks（API の diff.evidence）があれば、足した・消したエビデンスに印を付け、中身の変わったエビデンスは、レイヤーの札と詳細の文字に差分の印を付ける。
-// others は、marks の pair が指す、もう片方の側のエビデンス（レイヤーの札の差分に使う）
+// marks（API の diff.evidence）があれば、足した・消したエビデンスにマークを付け、中身の変わったエビデンスは、レイヤーのバッジと詳細の文字に差分のマークを付ける。
+// others は、marks の pair が指す、もう片方の側のエビデンス（レイヤーのバッジの差分に使う）
 export function EvidenceList(props: { items: EvidenceContent[]; marks?: EvidenceMark[]; side?: "before" | "after" | "both"; others?: EvidenceContent[] }) {
   if (props.items.length === 0) return <span>（なし）</span>;
   const side = props.side ?? "after";

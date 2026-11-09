@@ -196,7 +196,7 @@ func (e *env) findChanges() error {
 	}
 	for _, b := range snapshot.Entries(base.List) {
 		if !now[b.Key()] {
-			now[b.Key()] = true // 重なった ID を 2 度数えない
+			now[b.Key()] = true // 重複した ID を 2 度数えない
 			e.goneItems = append(e.goneItems, gone{kind: b.Kind, id: b.ID, file: b.Table.Doc.File})
 		}
 	}

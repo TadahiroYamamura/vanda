@@ -32,7 +32,7 @@ export interface Filter {
   notAgreed: boolean;
 }
 
-// 文字の絞り込みで見る所。消したものは今の中身がないので、前の中身で見る。文は、参照を見せる文字に置き換えた後の文に当てる（reference-filter）
+// 文字の絞り込みで見る所。消したものは今の中身がないので、前の中身で見る。文は、参照を見せる文字に置き換えた後の文にマッチさせる（reference-filter）
 function searchable(e: Entry): string[] {
   if (e.kind === "file") return [e.path ?? ""];
   const c = e.after ?? e.before;
@@ -43,7 +43,7 @@ function searchable(e: Entry): string[] {
 }
 
 // 承認済でないものは、提案中と、承認が失効したもの。承認が失効したものは、ほかのストーリーの承認で承認済のこともあるので、状態とは別に見る。
-// 消したものは承認できない（状態がない）ので、どちらにも当たらない
+// 消したものは承認できない（状態がない）ので、どちらにもマッチしない
 export function matchesFilter(e: Entry, f: Filter): boolean {
   if (f.notAgreed && e.state !== "proposed" && !e.detachedAgreement) return false;
   if (f.text === "") return true;
@@ -83,9 +83,9 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
     if (story) q.set("story", story);
     return reviewQuery(q);
   })();
-  // 選択肢の中は短い名前にし、何と何を比べているかの説明は、触れたときに出す（欄に収まらないため）
+  // 選択肢の中は短い名前にし、何と何を比べているかの説明は、マウスを乗せたときに出す（欄に収まらないため）
   const branchHelp = `ブランチ（${base ?? "ベースブランチ"} とのマージベースから HEAD のコミットまでの、このブランチの変更）`;
-  const storyHelp = story ? `ストーリー（HEAD の履歴にある、${story} のコミットすべての変更。合流したほかのブランチのものも含む）` : "ストーリー（HEAD の履歴にある、そのストーリーのコミットすべての変更。合流したほかのブランチのものも含む）";
+  const storyHelp = story ? `ストーリー（HEAD の履歴にある、${story} のコミットすべての変更。マージしたほかのブランチのものも含む）` : "ストーリー（HEAD の履歴にある、そのストーリーのコミットすべての変更。マージしたほかのブランチのものも含む）";
   const viewHelp = view === "branch" ? branchHelp : storyHelp;
 
   // 一覧を初めて読み込んでいる間。ブランチのコミットから決まるストーリーも、まだ分からない
@@ -128,7 +128,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
               ? `レビュー単位はブランチです（${base} とのマージベース${review.data?.mergeBase ? ` ${shortCommit(review.data.mergeBase)}` : ""} から HEAD のコミットまでの、このブランチの変更）`
               : "ベースブランチを選んでください"
             : storyParam
-              ? `レビュー単位はストーリーです（HEAD の履歴にある、${storyParam} のコミットすべての変更。合流したほかのブランチのものも含む）`
+              ? `レビュー単位はストーリーです（HEAD の履歴にある、${storyParam} のコミットすべての変更。マージしたほかのブランチのものも含む）`
               : "ストーリーを選んでください"}
         </p>
       </section>
@@ -294,7 +294,7 @@ function StoryPanel(props: { id: string; configured: boolean }) {
   );
 }
 
-// StoryPlaceholder は、ストーリーの題と本文を読み終えるまでの入れ物。本文の欄を、高さの上限まで先に取っておく。
+// StoryPlaceholder は、ストーリーの題と本文を読み終えるまでのプレースホルダー。本文の欄を、高さの上限まで先に取っておく。
 // 本文は数十行あることが多く、読み終えてから欄を伸ばすと、下の一覧と 1 件の中身が一度に押し下げられるため
 function StoryPlaceholder(props: { id: string | null; configured: boolean }) {
   if (!props.configured) {
@@ -381,7 +381,7 @@ function EntryList(props: {
       )}
       {review.total === 0 && <p className="note">比べる元と今のあいだで、変わったものはありません。</p>}
       {filtering && (review.total > 0 || review.detached.length > 0) && entries.length === 0 && detached.length === 0 && (
-        <p className="note">絞り込みの条件に当たるものはありません。</p>
+        <p className="note">絞り込みの条件にマッチするものはありません。</p>
       )}
       {groups.map((g) => (
         <Group key={g.name} label={groupLabel(g.name, props.ctx)} entries={g.entries} selected={props.selected} onSelect={props.onSelect} />
@@ -390,7 +390,7 @@ function EntryList(props: {
   );
 }
 
-// ListHead は、一覧の見出しと絞り込みの欄。読み込み中の印は、見出しの行に重ねて出す。
+// ListHead は、一覧の見出しと絞り込みの欄。読み込み中のマークは、見出しの行に重ねて出す。
 // 承認の後の読み直しで、行を差し込んで一覧を 1 行ぶん動かさないため
 function ListHead(props: { total: string; loading: boolean; filter: Filter; onFilterText: (v: string) => void; onFilterNotAgreed: (v: boolean) => void }) {
   return (
@@ -413,10 +413,10 @@ function ListHead(props: { total: string; loading: boolean; filter: Filter; onFi
   );
 }
 
-// 読み込み中に並べる灰色の帯の数。読み込んだ後の一覧（多くは欄の高さの上限まで伸びる）と、欄の大きさをそろえるため
+// 読み込み中に並べるスケルトン（灰色の帯）の数。読み込んだ後の一覧（多くは欄の高さの上限まで伸びる）と、欄の大きさをそろえるため
 const PLACEHOLDER_ROWS = 16;
 
-// ListPlaceholder は、一覧を初めて読み込む間の枠。読み込んだ後と同じ見出し・絞り込みの欄と、件の行の大きさの帯を先に置く
+// ListPlaceholder は、一覧を初めて読み込む間のプレースホルダー。読み込んだ後と同じ見出し・絞り込みの欄と、件の行の大きさのスケルトンを先に置く
 function ListPlaceholder(props: { filter: Filter; onFilterText: (v: string) => void; onFilterNotAgreed: (v: boolean) => void }) {
   return (
     <div className="entry-list">
@@ -463,7 +463,7 @@ function Group(props: { label: string; entries: Entry[]; selected: string | null
 function EntryRow(props: { e: Entry; selected: boolean; onSelect: (key: string) => void }) {
   const { e } = props;
   return (
-    // 1 件の枠（番号・名前・種類・アイコン）のどこを押しても選ぶ。キーボードと読み上げのために、名前の所は <button> のまま残す
+    // 1 件の枠（番号・名前・種類・アイコン）のどこをクリックしても選ぶ。キーボードとスクリーンリーダーのために、名前の所は <button> のまま残す
     <li className={props.selected ? "entry selected" : "entry"} onClick={() => props.onSelect(entryKey(e))}>
       <button
         type="button"
@@ -498,7 +498,7 @@ const previewOmit: Partial<Record<Kind, string[]>> = {
   feature: ["コア機能", "形式手法を使う", "形式手法を使わない理由"],
 };
 
-// currentOf は、選んだ 1 件の鍵（entryKey の形）から、その今の中身を詳細の API で読む。鍵の形に合わなければ null
+// currentOf は、選んだ 1 件のキー（entryKey の形）から、その今の中身を詳細の API で読む。キーの形に合わなければ null
 function currentOf(sel: string): { kind: Kind; name: string; load: () => Promise<{ content: Content; refs: Refs }> } | null {
   const at = sel.indexOf(":");
   if (at < 0) return null;
@@ -569,7 +569,7 @@ function SelectedPreview(props: { sel: string; query: string }) {
     <div>
       <p className="note">{kindLabel[target.kind]}</p>
       <h2 className="entry-title">{target.name}</h2>
-      {/* 承認のボタンの欄は一覧を待つ。読み込み中の印をその場所に置き、一覧が届いてボタンが出ても中身の表を動かさない */}
+      {/* 承認のボタンの欄は一覧を待つ。読み込み中のマークをその場所に置き、一覧が届いてボタンが出ても中身の表を動かさない */}
       <div className="agree">
         <Loading />
       </div>
@@ -725,10 +725,10 @@ export function AgreeControls(props: { entry: Entry; story: string | null; base:
   );
 }
 
-// Row は、表の 1 行。値は文字か、自然言語で書く項目の片の配列。field は、差分（diff.fields）の項目の名前
+// Row は、表の 1 行。値は文字か、自然言語で書く項目のセグメントの配列。field は、差分（diff.fields）の項目の名前
 type Row = [string, string | Piece[], string?];
 
-// guessLines は、推測の並びを、1 行に 1 つずつの片の配列にする（変更前と変更後の比べと、出し方を、ほかの項目とそろえるため）
+// guessLines は、推測の並びを、1 行に 1 つずつのセグメントの配列にする（変更前と変更後の比べと、出し方を、ほかの項目とそろえるため）
 function guessLines(gs: Piece[][]): Piece[] {
   return gs.flatMap((g, i) => (i > 0 ? [{ text: "\n" }, ...g] : g));
 }
@@ -816,7 +816,7 @@ function Compare(props: { entry: Entry }) {
 // ItemCompare は、約束・用語・機能の変更前と変更後を、項目ごとに 1 列で出す（左右に分けない）。
 // 変わっていない項目は 1 回だけ、変わった文の項目は API の文字の単位の差分（diff.fields）で、消した文字を del、足した文字を ins で出す。
 // 文字の差分のない項目（対象・レイヤー・推測・真偽）が変わったときは、変更前の値を del、変更後の値を ins で並べる。
-// 追加・削除した件は、ある側の中身だけを印なしで出す（追加・削除は件の見出しに出している）
+// 追加・削除した件は、ある側の中身だけをマークなしで出す（追加・削除は件の見出しに出している）
 function ItemCompare(props: { entry: Pick<Entry, "kind" | "diff" | "before" | "after">; before: Row[] | null; after: Row[] | null }) {
   const { entry: e, before, after } = props;
   const fields = e.diff && "fields" in e.diff ? e.diff.fields : null;

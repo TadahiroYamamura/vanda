@@ -28,7 +28,7 @@ type Entry struct {
 	Claim   *promises.Claim
 }
 
-// Key は、種類と ID をつないだ鍵。ID は種類をまたいで重ならない決まりだが、重なった誤りがあっても別のものとして数えるため、種類も入れる。
+// Key は、種類と ID をつないだキー。ID は種類をまたいで重複しない決まりだが、重複した誤りがあっても別のものとして数えるため、種類も入れる。
 func (e Entry) Key() string { return e.Kind + ":" + e.ID }
 
 // Entries は、用語・機能・約束の順に返す。
@@ -63,7 +63,7 @@ type Target struct {
 }
 
 // Targets は、files のうち承認の対象になるファイル（types に scenario-test か model-check を含む [[annotation]] のパターンと、
-// [[guardrail]] の paths に当たるもの）を、場所の順で返す。2 つに当たるファイルは、アノテーションのほうの種類にする。
+// [[guardrail]] の paths にマッチするもの）を、場所の順で返す。2 つにマッチするファイルは、アノテーションのほうの種類にする。
 func Targets(files []string, cfg *config.Config) []Target {
 	kind := map[string]string{}
 	for _, f := range files {
@@ -96,7 +96,7 @@ func Targets(files []string, cfg *config.Config) []Target {
 	return out
 }
 
-// targetType は、[[annotation]] の types から、そのパターンに当たるファイルの種類を決める。承認の対象でなければ空。
+// targetType は、[[annotation]] の types から、そのパターンにマッチするファイルの種類を決める。承認の対象でなければ空。
 // シナリオとオラクルの定義は PO が読んで正とするもので、どのアダプタで読むかによらないので、アダプタの名前では決めない。
 // 両方を含むときはシナリオにする（どちらでも承認の対象になることは変わらず、画面の見出しが変わるだけ）
 func targetType(types []string) string {
@@ -138,7 +138,7 @@ func Working(root string, cfg *config.Config) (*Snapshot, error) {
 	return s, nil
 }
 
-// At は、コミット rev の中身を読む。パターンは今の設定のものを当てる。
+// At は、コミット rev の中身を読む。パターンは今の設定のものでマッチさせる。
 // 約束リストの誤りは ListErrs に入れ、読めた項目だけを List に入れる。
 // 過去の時点では、今の設定にはっきり書いた約束リストのファイルがまだないことがあるので、ないファイルを誤りにしない。
 func At(root string, cfg *config.Config, rev string) (*Snapshot, error) {
@@ -177,7 +177,7 @@ func (s *Snapshot) Read(path string) ([]byte, error) {
 	return s.read(path)
 }
 
-// ItemFingerprints は、項目の鍵からフィンガープリントへの表を返す。フィンガープリントを作れない項目は入れない。
+// ItemFingerprints は、項目のキーからフィンガープリントへの表を返す。フィンガープリントを作れない項目は入れない。
 func (s *Snapshot) ItemFingerprints() map[string]string {
 	out := map[string]string{}
 	for _, e := range Entries(s.List) {

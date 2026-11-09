@@ -15,8 +15,8 @@ export function ErrorBox(props: { error: unknown; title?: string }) {
   );
 }
 
-// useTooltip は、触れたとき（マウスを載せる・フォーカスする）に出す説明の、開け閉めと位置を持つ。
-// 説明は、画面に対して位置を決める（position: fixed）。触れる所が一覧の欄（スクロールする欄）の中にあると、
+// useTooltip は、マウスを乗せたとき・フォーカスしたときに出す説明の、開け閉めと位置を持つ。
+// 説明は、画面に対して位置を決める（position: fixed）。マウスを乗せる所が一覧の欄（スクロールする欄）の中にあると、
 // 欄に対して置いた説明は欄の端で切れるため。画面の右端に近いときは左に寄せ、長いときは折り返す
 export function useTooltip() {
   const [open, setOpen] = useState(false);
@@ -33,14 +33,14 @@ export function useTooltip() {
     const w = tip.current.offsetWidth;
     const h = tip.current.offsetHeight;
     const left = Math.max(margin, Math.min(b.left, window.innerWidth - w - margin));
-    // 下に収まらなければ、触れた所の上に出す
+    // 下に収まらなければ、マウスを乗せた所の上に出す
     const below = b.bottom + 4;
     const top = below + h + margin > window.innerHeight ? Math.max(margin, b.top - 4 - h) : below;
     setPos({ left, top });
   }, [open]);
   useEffect(() => {
     if (!open) return;
-    // 欄や画面がスクロールすると触れた所と説明がずれるので、閉じる
+    // 欄や画面がスクロールするとマウスを乗せた所と説明がずれるので、閉じる
     const close = () => setOpen(false);
     window.addEventListener("scroll", close, true);
     window.addEventListener("resize", close);
@@ -64,7 +64,7 @@ export function useTooltip() {
   };
 }
 
-// FlagBadge は、札に短い言葉だけを出し、説明は札に触れたとき（マウスを載せる・フォーカスする）に出す（RV-04）
+// FlagBadge は、バッジに短い言葉だけを出し、説明はバッジにマウスを乗せたとき・フォーカスしたときに出す（RV-04）
 export function FlagBadge(props: { flag: Flag }) {
   const id = useId();
   const t = useTooltip();
@@ -122,8 +122,8 @@ const listIconShape: Record<ListIconName, ReactNode> = {
 
 const isFlag = (n: ListIconName): n is Flag => n in flagLabel;
 
-// ListIcon は、一覧の状態とフラグのアイコン。触れたとき・フォーカスしたときに言葉を出し、読み上げにも同じ言葉を渡す（RV-01・RV-04）。
-// フラグは、詳細の札と同じ説明を言葉に続けて出し、読み上げには説明として渡す
+// ListIcon は、一覧の状態とフラグのアイコン。マウスを乗せたとき・フォーカスしたときに言葉を出し、スクリーンリーダーにも同じ言葉を渡す（RV-01・RV-04）。
+// フラグは、詳細のバッジと同じ説明を言葉に続けて出し、スクリーンリーダーには説明として渡す
 export function ListIcon(props: { name: ListIconName }) {
   const id = useId();
   const t = useTooltip();
@@ -158,7 +158,7 @@ export function StateBadge(props: { state: State | null }) {
   return <span className={`badge state state-${props.state}`}>{stateLabel[props.state]}</span>;
 }
 
-// Loading は、読み込みの終わっていない欄の印（loading-indicator）。回る印は飾りなので読み上げず、文字だけを読ませる
+// Loading は、読み込みの終わっていない欄のマーク（loading-indicator）。スピナーは飾りなのでスクリーンリーダーに読み上げさせず、文字だけを読ませる
 export function Loading(props: { className?: string }) {
   return (
     <p className={props.className ? `note loading ${props.className}` : "note loading"}>

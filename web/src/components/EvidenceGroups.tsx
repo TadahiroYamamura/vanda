@@ -8,7 +8,7 @@ type Heading = "h3" | "h4" | "h5";
 const next: Record<Heading, "h4" | "h5" | "h6"> = { h3: "h4", h4: "h5", h5: "h6" };
 
 // EvidenceGroups は、エビデンスをステージの見出しで分け、その下をタイプの見出しで分けて示す（CL-02）。
-// ステージとタイプは vanda が決めた値で、1 つのエビデンスにそれぞれ 1 つなので、札で並べるより分けて示す。
+// ステージとタイプは vanda が決めた値で、1 つのエビデンスにそれぞれ 1 つなので、バッジで並べるより分けて示す。
 // エビデンスのないステージ・タイプの見出しは出さない。タイプの並びは、そのステージの中で出てきた順。各エビデンスの中身は render が作る
 export function EvidenceGroups<T extends { stage: string; type: string }>(props: { items: T[]; level: Heading; render: (ev: T, index: number) => ReactNode }) {
   const H = props.level;

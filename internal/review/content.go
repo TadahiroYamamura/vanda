@@ -5,7 +5,7 @@ import (
 )
 
 // ClaimContent・TermContent・FeatureContent・FileContent は、一覧と詳細に出す中身。省いた項目は nil（JSON の null）。
-// 自然言語で書く項目は、参照を置き換えた片の配列にする。
+// 自然言語で書く項目は、参照を置き換えたセグメントの配列にする。
 type ClaimContent struct {
 	Statement []Piece           `json:"statement"`
 	Rationale []Piece           `json:"rationale"`

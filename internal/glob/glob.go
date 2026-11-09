@@ -1,5 +1,5 @@
 // Package glob は、設定に書くファイルのパターンを扱う。
-// path.Match の書き方に加えて、何段のディレクトリにも当たる `**` を扱う（標準のライブラリにないが、依存を足さないため自分で持つ）。
+// path.Match の書き方に加えて、何段のディレクトリにもマッチする `**` を扱う（標準のライブラリにないが、依存を足さないため自分で持つ）。
 package glob
 
 import (
@@ -11,7 +11,7 @@ import (
 )
 
 // Validate は、パターンが書き方に合っているかを確かめる。
-// ファイルの場所は / で始まらず、空・.・.. の部分を含まないので、そうしたパターンはどのファイルにも当たらない。書き間違いに気づけるよう、誤りにする
+// ファイルの場所は / で始まらず、空・.・.. の部分を含まないので、そうしたパターンはどのファイルにもマッチしない。書き間違いに気づけるよう、誤りにする
 func Validate(pattern string) error {
 	if pattern == "" || strings.HasPrefix(pattern, "/") {
 		return path.ErrBadPattern
@@ -35,7 +35,7 @@ func HasMeta(pattern string) bool {
 	return strings.ContainsAny(pattern, `*?[\`)
 }
 
-// Match は、リポジトリの直下からの `/` 区切りの場所 name がパターンに当たるかを返す。
+// Match は、リポジトリの直下からの `/` 区切りの場所 name がパターンにマッチするかを返す。
 func Match(pattern, name string) bool {
 	return matchSegs(strings.Split(pattern, "/"), strings.Split(name, "/"))
 }
@@ -89,7 +89,7 @@ func Files(root string) ([]string, error) {
 	return files, err
 }
 
-// Select は、files のうちパターンのどれかに当たるものを、files の順で返す。
+// Select は、files のうちパターンのどれかにマッチするものを、files の順で返す。
 // ワイルドカードのないパターンで、files にないものは missing に返す。
 func Select(files, patterns []string) (matched, missing []string) {
 	have := map[string]bool{}

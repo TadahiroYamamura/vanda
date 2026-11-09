@@ -245,7 +245,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	if req.Deleted {
 		msg = fmt.Sprintf("(chore) %s で %s を消したことを承認する", req.Story, target)
 	}
-	// パスを渡すと、索引に足してあるほかのファイルの変更を入れず、渡したファイルだけをコミットする
+	// パスを渡すと、インデックスに足してあるほかのファイルの変更を入れず、渡したファイルだけをコミットする
 	if _, err := repo.Git(o.Root, append([]string{"commit", "-q", "-m", msg, "-m", config.StoryTrailerKey + ": " + req.Story, "--"}, files...)...); err != nil {
 		return nil, fail(err)
 	}
@@ -262,8 +262,8 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	return &AgreeResult{Commit: strings.TrimSpace(head), Agreement: rec}, nil
 }
 
-// agreementsFile は、承認の記録を書き足すファイルを返す。設定の agreements のパターンの順で、最初に当たったファイル。
-// どれにも当たらず、最初のパターンにワイルドカードがなければ、そのファイルを作る（create が真）。
+// agreementsFile は、承認の記録を書き足すファイルを返す。設定の agreements のパターンの順で、最初にマッチしたファイル。
+// どれにもマッチせず、最初のパターンにワイルドカードがなければ、そのファイルを作る（create が真）。
 func (s *state) agreementsFile() (string, bool, *Error) {
 	for _, p := range s.o.Cfg.Agreements {
 		for _, f := range s.cur.snap.Files {
@@ -394,7 +394,7 @@ func appendRecord(src []byte, rec AgreementRecord) []byte {
 	return []byte(b.String())
 }
 
-// dirtyMatching は、patterns に当たるファイルのうち、コミットしていない変更（消したもの・索引に足したものを含む）のあるものを返す。
+// dirtyMatching は、patterns にマッチするファイルのうち、コミットしていない変更（消したもの・インデックスに足したものを含む）のあるものを返す。
 func dirtyMatching(root string, patterns []string) ([]string, error) {
 	out, err := repo.Git(root, "status", "--porcelain", "-z", "--untracked-files=all")
 	if err != nil {
