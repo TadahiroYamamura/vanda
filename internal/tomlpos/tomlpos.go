@@ -11,7 +11,7 @@ import (
 )
 
 // Lines は、項目の場所から行（1 から数える）への対応を返す。
-// 場所は、表の配列の要素を 0 から数えた添字で表す（例: `claim[0]`、`claim[0].evidence[1].layers`、`story.id_pattern`）。
+// 場所は、表の配列の要素を 0 から数えたインデックスで表す（例: `claim[0]`、`claim[0].evidence[1].layers`、`story.id_pattern`）。
 func Lines(src []byte) map[string]int {
 	s := &scanner{lines: map[string]int{}, counts: map[string]int{}}
 	for i, line := range strings.Split(string(src), "\n") {

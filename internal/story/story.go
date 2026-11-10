@@ -146,7 +146,7 @@ func get(st config.StoryStore, path string, v any, notFound *Error) *Error {
 	defer resp.Body.Close()
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 10<<20))
 	if err != nil {
-		return storeErr("GitHub（"+url+"）の応答を読めません（"+err.Error()+"）。", "ネットワークを確かめてください。")
+		return storeErr("GitHub（"+url+"）のレスポンスを読めません（"+err.Error()+"）。", "ネットワークを確かめてください。")
 	}
 	switch {
 	case resp.StatusCode == http.StatusNotFound && notFound != nil:
@@ -166,7 +166,7 @@ func get(st config.StoryStore, path string, v any, notFound *Error) *Error {
 		return storeErr(fmt.Sprintf("GitHub（%s）が %d を返しました（%s）。", url, resp.StatusCode, reason), fix)
 	}
 	if err := json.Unmarshal(body, v); err != nil {
-		return storeErr("GitHub（"+url+"）の応答を JSON として読めません（"+err.Error()+"）。", "[story] の api_url が GitHub の REST API の URL かを確かめてください。")
+		return storeErr("GitHub（"+url+"）のレスポンスを JSON として読めません（"+err.Error()+"）。", "[story] の api_url が GitHub の REST API の URL かを確かめてください。")
 	}
 	return nil
 }

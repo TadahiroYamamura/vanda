@@ -260,7 +260,7 @@ ins.diff-part { background: var(--ins-part); text-decoration: underline 2px var(
 .found p { margin: 0 0 6px; }
 .found strong { font-family: var(--mono); font-weight: 500; }
 
-/* 開く・たたむは山形のアイコンだけを見せる。枠と背景はなくし、クリックできる範囲（32×28px）は見た目を変えずに残す */
+/* 開く・たたむは矢印のアイコンだけを見せる。枠と背景はなくし、クリックできる範囲（32×28px）は見た目を変えずに残す */
 .at-button { display: inline-flex; align-items: center; justify-content: center; min-height: 28px; width: 32px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; }
 .at-button:hover { background: transparent; color: var(--fg); }
 .at-button[aria-expanded="true"] { color: var(--accent-dark); }

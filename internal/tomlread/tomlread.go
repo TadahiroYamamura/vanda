@@ -311,7 +311,7 @@ func (t *Table) Unknown(allowed string) {
 	}
 }
 
-// header は、場所の書き方から要素の添字を除き、TOML の見出しの名前にする（例: claim[0].evidence → claim.evidence）。
+// header は、場所の書き方から要素のインデックスを除き、TOML の見出しの名前にする（例: claim[0].evidence → claim.evidence）。
 func header(path string) string {
 	var b strings.Builder
 	skip := false

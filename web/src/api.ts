@@ -280,7 +280,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     body = JSON.parse(text);
   } catch {
-    throw new ApiError(res.status, `vanda サーバーの応答が JSON ではありません（${res.status}）: ${text.slice(0, 200)}`, "vanda serve を起動し直してください。");
+    throw new ApiError(res.status, `vanda サーバーのレスポンスが JSON ではありません（${res.status}）: ${text.slice(0, 200)}`, "vanda serve を起動し直してください。");
   }
   if (!res.ok) {
     const err = (body as { error?: { message?: string; fix?: string } }).error;

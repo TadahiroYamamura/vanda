@@ -119,7 +119,7 @@ export function ClaimHistory(props: { id: string; history: { data: History | nul
   );
 }
 
-// ExpandButton は、その時点の中身の行を開く・たたむアイコンのボタン（閉じているときは右向き、開いているときは下向きの山形）。
+// ExpandButton は、その時点の中身の行を開く・たたむアイコンのボタン（閉じているときは右向き、開いているときは下向きの矢印）。
 // 依存を足さないよう、アイコンはインラインの SVG で書く
 function ExpandButton(props: { open: boolean; onClick: () => void }) {
   const label = props.open ? "その時点の中身をたたむ" : "その時点の中身を開く";

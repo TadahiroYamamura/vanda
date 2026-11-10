@@ -27,7 +27,7 @@ type ClaimDetail struct {
 	Flags       []string         `json:"flags"`
 	Guesses     [][]Piece        `json:"guesses"`
 	Evidence    []EvidenceDetail `json:"evidence"`
-	// Refs は、この応答の中のセグメントが指すすべての ID の、指す先
+	// Refs は、このレスポンスの中のセグメントが指すすべての ID の、指す先
 	Refs map[string]RefTarget `json:"refs"`
 }
 

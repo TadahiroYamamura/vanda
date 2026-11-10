@@ -33,7 +33,7 @@ type ItemDiff struct {
 	Evidence *EvidenceDiff `json:"evidence,omitempty"`
 }
 
-// EvidenceDiff は、変更前と変更後のエビデンスの予定の、1 つずつのマーク。添字は before・after の evidence の添字にそろう。
+// EvidenceDiff は、変更前と変更後のエビデンスの予定の、1 つずつのマーク。インデックスは before・after の evidence のインデックスにそろう。
 type EvidenceDiff struct {
 	Before []EvidenceMark `json:"before"`
 	After  []EvidenceMark `json:"after"`
@@ -43,7 +43,7 @@ type EvidenceDiff struct {
 // modified のときだけ、layers（レイヤーを「・」でつないだ文字）と detail（詳細）の文字の単位の差分を持つ
 type EvidenceMark struct {
 	Op string `json:"op"`
-	// Pair は、対応したもう片方の側のエビデンスの添字（before のマークなら after の添字）。対応がなければ nil
+	// Pair は、対応したもう片方の側のエビデンスのインデックス（before のマークなら after のインデックス）。対応がなければ nil
 	Pair   *int       `json:"pair"`
 	Layers []DiffPart `json:"layers"`
 	Detail []DiffPart `json:"detail"`

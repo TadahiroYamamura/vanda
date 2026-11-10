@@ -16,8 +16,8 @@ export function ErrorBox(props: { error: unknown; title?: string }) {
 }
 
 // useTooltip は、マウスを乗せたとき・フォーカスしたときに出す説明の、開け閉めと位置を持つ。
-// 説明は、画面に対して位置を決める（position: fixed）。マウスを乗せる所が一覧の欄（スクロールする欄）の中にあると、
-// 欄に対して置いた説明は欄の端で切れるため。画面の右端に近いときは左に寄せ、長いときは折り返す
+// 説明は、画面に対して位置を決める（position: fixed）。マウスを乗せる所が一覧のエリア（スクロールするエリア）の中にあると、
+// エリアに対して置いた説明はエリアの端で切れるため。画面の右端に近いときは左に寄せ、長いときは折り返す
 export function useTooltip() {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
@@ -40,7 +40,7 @@ export function useTooltip() {
   }, [open]);
   useEffect(() => {
     if (!open) return;
-    // 欄や画面がスクロールするとマウスを乗せた所と説明がずれるので、閉じる
+    // エリアや画面がスクロールするとマウスを乗せた所と説明がずれるので、閉じる
     const close = () => setOpen(false);
     window.addEventListener("scroll", close, true);
     window.addEventListener("resize", close);
@@ -158,7 +158,7 @@ export function StateBadge(props: { state: State | null }) {
   return <span className={`badge state state-${props.state}`}>{stateLabel[props.state]}</span>;
 }
 
-// Loading は、読み込みの終わっていない欄のマーク（loading-indicator）。スピナーは飾りなのでスクリーンリーダーに読み上げさせず、文字だけを読ませる
+// Loading は、読み込みの終わっていないエリアのマーク（loading-indicator）。スピナーは飾りなのでスクリーンリーダーに読み上げさせず、文字だけを読ませる
 export function Loading(props: { className?: string }) {
   return (
     <p className={props.className ? `note loading ${props.className}` : "note loading"}>

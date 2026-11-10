@@ -3,10 +3,10 @@ import type { Piece, RefTarget, Refs } from "../api";
 import { Link } from "../route";
 import { useTooltip } from "./common";
 
-// 参照の指す先（API の refs）と、約束の詳細へのリンクに引き継ぐクエリ。セグメントを出す所は、応答ごとに入れ子が深いので、props で渡さずに文脈で渡す
+// 参照の指す先（API の refs）と、約束の詳細へのリンクに引き継ぐクエリ。セグメントを出す所は、レスポンスごとに入れ子が深いので、props で渡さずに文脈で渡す
 const RefsContext = createContext<{ refs: Refs; query: string }>({ refs: {}, query: "" });
 
-// RefsProvider は、応答の refs を渡す。query を省けば、外の文脈のものを引き継ぐ
+// RefsProvider は、レスポンスの refs を渡す。query を省けば、外の文脈のものを引き継ぐ
 export function RefsProvider(props: { refs: Refs | undefined; query?: string; children: ReactNode }) {
   const parent = useContext(RefsContext);
   return <RefsContext.Provider value={{ refs: props.refs ?? {}, query: props.query ?? parent.query }}>{props.children}</RefsContext.Provider>;

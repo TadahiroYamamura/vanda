@@ -283,7 +283,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	if err := enc.Encode(v); err != nil {
-		log.Printf("API の応答を書けませんでした: %v", err)
+		log.Printf("API のレスポンスを書けませんでした: %v", err)
 	}
 }
 

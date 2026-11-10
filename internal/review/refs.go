@@ -26,7 +26,7 @@ type RefTarget struct {
 	Formal *bool   `json:"formal,omitempty"`
 }
 
-// refs は、参照を見せる文字に置き換え、応答の中のセグメントが指した先を集める。
+// refs は、参照を見せる文字に置き換え、レスポンスの中のセグメントが指した先を集める。
 type refs struct {
 	cur  map[string]snapshot.Entry
 	used map[string]RefTarget

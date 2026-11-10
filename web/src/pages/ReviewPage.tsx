@@ -83,7 +83,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
     if (story) q.set("story", story);
     return reviewQuery(q);
   })();
-  // 選択肢の中は短い名前にし、何と何を比べているかの説明は、マウスを乗せたときに出す（欄に収まらないため）
+  // 選択肢の中は短い名前にし、何と何を比べているかの説明は、マウスを乗せたときに出す（入力欄に収まらないため）
   const branchHelp = `ブランチ（${base ?? "ベースブランチ"} とのマージベースから HEAD のコミットまでの、このブランチの変更）`;
   const storyHelp = story ? `ストーリー（HEAD の履歴にある、${story} のコミットすべての変更。マージしたほかのブランチのものも含む）` : "ストーリー（HEAD の履歴にある、そのストーリーのコミットすべての変更。マージしたほかのブランチのものも含む）";
   const viewHelp = view === "branch" ? branchHelp : storyHelp;
@@ -294,8 +294,8 @@ function StoryPanel(props: { id: string; configured: boolean }) {
   );
 }
 
-// StoryPlaceholder は、ストーリーの題と本文を読み終えるまでのプレースホルダー。本文の欄を、高さの上限まで先に取っておく。
-// 本文は数十行あることが多く、読み終えてから欄を伸ばすと、下の一覧と 1 件の中身が一度に押し下げられるため
+// StoryPlaceholder は、ストーリーの題と本文を読み終えるまでのプレースホルダー。本文のエリアを、高さの上限まで先に取っておく。
+// 本文は数十行あることが多く、読み終えてからエリアを伸ばすと、下の一覧と 1 件の中身が一度に押し下げられるため
 function StoryPlaceholder(props: { id: string | null; configured: boolean }) {
   if (!props.configured) {
     return (
@@ -390,7 +390,7 @@ function EntryList(props: {
   );
 }
 
-// ListHead は、一覧の見出しと絞り込みの欄。読み込み中のマークは、見出しの行に重ねて出す。
+// ListHead は、一覧の見出しと絞り込み欄。読み込み中のマークは、見出しの行に重ねて出す。
 // 承認の後の読み直しで、行を差し込んで一覧を 1 行ぶん動かさないため
 function ListHead(props: { total: string; loading: boolean; filter: Filter; onFilterText: (v: string) => void; onFilterNotAgreed: (v: boolean) => void }) {
   return (
@@ -413,10 +413,10 @@ function ListHead(props: { total: string; loading: boolean; filter: Filter; onFi
   );
 }
 
-// 読み込み中に並べるスケルトン（灰色の帯）の数。読み込んだ後の一覧（多くは欄の高さの上限まで伸びる）と、欄の大きさをそろえるため
+// 読み込み中に並べるスケルトン（灰色の帯）の数。読み込んだ後の一覧（多くはエリアの高さの上限まで伸びる）と、エリアの大きさをそろえるため
 const PLACEHOLDER_ROWS = 16;
 
-// ListPlaceholder は、一覧を初めて読み込む間のプレースホルダー。読み込んだ後と同じ見出し・絞り込みの欄と、件の行の大きさのスケルトンを先に置く
+// ListPlaceholder は、一覧を初めて読み込む間のプレースホルダー。読み込んだ後と同じ見出し・絞り込み欄と、件の行の大きさのスケルトンを先に置く
 function ListPlaceholder(props: { filter: Filter; onFilterText: (v: string) => void; onFilterNotAgreed: (v: boolean) => void }) {
   return (
     <div className="entry-list">
@@ -569,7 +569,7 @@ function SelectedPreview(props: { sel: string; query: string }) {
     <div>
       <p className="note">{kindLabel[target.kind]}</p>
       <h2 className="entry-title">{target.name}</h2>
-      {/* 承認のボタンの欄は一覧を待つ。読み込み中のマークをその場所に置き、一覧が届いてボタンが出ても中身の表を動かさない */}
+      {/* 承認のボタンのエリアは一覧を待つ。読み込み中のマークをその場所に置き、一覧が届いてボタンが出ても中身の表を動かさない */}
       <div className="agree">
         <Loading />
       </div>
