@@ -1412,9 +1412,9 @@ describe("参照の絞り込み", () => {
   });
 });
 
-describe("画面の上の帯", () => {
+describe("ヘッダー", () => {
   // @vanda:evidence header-context
-  it("画面の上の帯に今のブランチとgitのuser.nameとuser.emailとvandaのバージョンを示しブランチにいないときとuser.nameとuser.emailがないときはそう示す", async () => {
+  it("ヘッダーに今のブランチとgitのuser.nameとuser.emailとvandaのバージョンを示しブランチにいないときとuser.nameとuser.emailがないときはそう示す", async () => {
     const cases = [
       { name: "ブランチにいて人が分かる", over: {}, want: ["story-24", "承認する人", "po@example.com", "0.1.0"], not: ["ブランチにいません", "設定されていません"] },
       { name: "ブランチにいない", over: { branch: "", version: "2.3.4" }, want: ["ブランチにいません", "承認する人", "po@example.com", "2.3.4"], not: ["story-24"] },

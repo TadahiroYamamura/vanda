@@ -2858,7 +2858,7 @@ layers = ["gui"]
 [[claim]]
 id = "header-context"
 subjects = ["start-server"]
-statement = "画面の上の帯に、今のブランチ（ブランチにいなければ「ブランチにいません」）と、git の user.name・user.email（なければ設定されていないこと）と、{@id:vanda} のバージョンを示す"
+statement = "ヘッダーに、今のブランチ（ブランチにいなければ「ブランチにいません」）と、git の user.name・user.email（なければ設定されていないこと）と、{@id:vanda} のバージョンを示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
