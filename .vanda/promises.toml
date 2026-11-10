@@ -4443,7 +4443,7 @@ layers = ["gui"]
 [[claim]]
 id = "story-undecided-note"
 subjects = ["connect-story-store", "story", "switch-review-unit"]
-statement = "{@id:story}が決まっていなければ、{@id:story}の欄に「ストーリーが決まっていません。ストーリーを選んでください。」と示す"
+statement = "{@id:story}が決まっていなければ、{@id:story}のエリアに「ストーリーが決まっていません。ストーリーを選んでください。」と示す"
 layers = ["gui"]
 flags = ["ai-proposal"]
 
@@ -5166,7 +5166,7 @@ layers = ["gui"]
 [[claim]]
 id = "loading-indicator"
 subjects = ["list-changes", "show-claim-fields"]
-statement = "読み込みの終わっていない欄には、スピナーと「読み込んでいます…」を出す"
+statement = "読み込みの終わっていないエリアには、スピナーと「読み込んでいます…」を出す"
 rationale = "読み込みが続いていて、止まっていないことが分かるようにするため"
 layers = ["gui"]
 flags = ["ai-proposal"]
