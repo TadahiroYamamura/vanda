@@ -3271,7 +3271,7 @@ layers = ["gui"]
 [[claim]]
 id = "review-flags"
 subjects = ["raise-flags", "flag", "ai-proposal", "guess", "changed-since-agreement"]
-statement = "{@id:promise}の flags にあれば {@id:ai-proposal}、guesses が空でなければ{@id:guess}、同じ ID（ファイルならファイルパス）の{@id:agreement-record}があり今の中身に合う{@id:agreement}がなければ{@id:changed-since-agreement}の{@id:raise-flags}"
+statement = "{@id:promise}の flags にあれば {@id:ai-proposal}、guesses が空でなければ{@id:guess}、同じ ID（ファイルならファイルパス）の{@id:agreement-record}があり今の中身に合う{@id:agreement}がなければ{@id:changed-since-agreement}の{@id:flag}を立てる"
 layers = ["api"]
 flags = ["ai-proposal"]
 
