@@ -569,7 +569,7 @@ func Test_vanda_adaptersのアダプタがtimeoutを過ぎたらどのアダプ�
 }
 
 // RV: 画面の API でも、アダプタが timeout を過ぎたら止めて、どのアダプタかを書いたタイムアウトの誤りを返す
-// （待ち続けて応答しないことがない）。約束の詳細はエビデンスを探すのでアノテーションを読む
+// （レスポンスを返さずに待ち続けることがない）。約束の詳細はエビデンスを探すのでアノテーションを読む
 // @vanda:evidence project-adapter-annotation-timeout
 func Test_vanda_adaptersのアダプタがtimeoutを過ぎたら約束の詳細のAPIがどのアダプタかを書いたタイムアウトの誤りを返す(t *testing.T) {
 	t.Parallel()

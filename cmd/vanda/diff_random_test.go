@@ -93,7 +93,7 @@ func Testファイルの差分は無作為な変更前と変更後でもすべ�
 		t.Fatal(err)
 	}
 	seed := rvRandomSeed(t)
-	t.Logf("種: VANDA_RV01_SEED=%d", seed)
+	t.Logf("シード: VANDA_RV01_SEED=%d", seed)
 	setFlag(t, "rapid.seed", strconv.FormatUint(seed, 10))
 	setFlag(t, "rapid.checks", strconv.Itoa(envInt(t, "VANDA_DIFF_CHECKS", 30)))
 	setFlag(t, "rapid.nofailfile", "true")

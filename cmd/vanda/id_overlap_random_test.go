@@ -107,7 +107,7 @@ func Test分けたファイルをまたいでも重複したIDは後に出てき
 		writeFile(t, root, path, src)
 	}
 
-	// 落ちたときに rapid が testdata/rapid にファイルを書かないようにする。再現は、rapid が記録に出す種で行う
+	// 落ちたときに rapid が testdata/rapid にファイルを書かないようにする。再現は、rapid が記録に出すシードで行う
 	setFlag(t, "rapid.nofailfile", "true")
 	rapid.Check(t, func(rt *rapid.T) {
 		files := rapid.IntRange(1, 3).Draw(rt, "ファイルの数")

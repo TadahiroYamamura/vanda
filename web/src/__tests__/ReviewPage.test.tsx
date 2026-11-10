@@ -20,7 +20,7 @@ afterEach(() => {
   server.resetHandlers();
 });
 
-// open は、既定の応答で画面を開く。extra は既定より先に当てる応答（server.use は後に足したものが先にマッチする）。
+// open は、既定のレスポンスで画面を開く。extra は既定より先に当てるレスポンス（server.use は後に足したものが先にマッチする）。
 function open(entries: Entry[], over = {}, ...extra: Parameters<typeof server.use>) {
   server.use(...defaultHandlers(review(entries, over)));
   if (extra.length > 0) server.use(...extra);
@@ -1027,7 +1027,7 @@ describe("RV-01 一覧の絞り込み", () => {
       expect(shown("pear-a"), "条件にマッチするものが出ない").toBe(true);
       expect(shown("pear-b"), "承認済のものが出ている").toBe(false);
       expect(shown("plum-c"), "文字にマッチしないものが出ている").toBe(false);
-      expect((searchBox() as HTMLInputElement).value, "絞り込みの欄の文字").toBe("PEAR");
+      expect((searchBox() as HTMLInputElement).value, "絞り込み欄の文字").toBe("PEAR");
       expect((notAgreedBox() as HTMLInputElement).checked, "承認済でないものだけのマーク").toBe(true);
     };
     filtered();
@@ -1050,7 +1050,7 @@ describe("RV-01 一覧の絞り込み", () => {
   });
 });
 
-// 参照（show-references）。自然言語で書く項目はセグメントの配列で、参照のセグメントは ref に指す ID を持ち、応答の最上位の refs に指す先がある
+// 参照（show-references）。自然言語で書く項目はセグメントの配列で、参照のセグメントは ref に指す ID を持ち、レスポンスの最上位の refs に指す先がある
 // （docs/plans/stage4-references.md の「API の形」と「画面」）。
 describe("参照", () => {
   const ref = (text: string, id: string) => ({ text, ref: id });
@@ -1611,7 +1611,7 @@ describe("RV-02 1 件の詳細", () => {
   });
 });
 
-describe("CM-08 ストーリーの欄", () => {
+describe("CM-08 ストーリーのエリア", () => {
   // @vanda:evidence story-open-link
   it("ストーリーにストーリーストアのURLがあればストーリーストアで開くのリンクを出しなければ出さない", async () => {
     for (const url of ["https://github.com/owner/app/issues/24", "https://issues.example.com/browse/24", ""]) {
@@ -1629,7 +1629,7 @@ describe("CM-08 ストーリーの欄", () => {
   });
 
   // @vanda:evidence story-undecided-note
-  it("ストーリーが決まっていなければストーリーの欄にストーリーが決まっていないので選ぶよう示し決まっていれば示さない", async () => {
+  it("ストーリーが決まっていなければストーリーのエリアにストーリーが決まっていないので選ぶよう示し決まっていれば示さない", async () => {
     const note = "ストーリーが決まっていません。ストーリーを選んでください。";
     open([claimEntry(1, "c-one")], { story: null, storyChoice: "all", branchStories: [] });
     await listRow("c-one");
@@ -1799,9 +1799,9 @@ describe("一覧を読み込む間に選んだ件を先に出す", () => {
       expect(bodyText(), `${c.kind}: 一覧の前に変更前の中身が出た`).not.toMatch(/の前の(文|定義|中身)/);
       for (const t of ["提案中", "AI 案"]) expect(bodyText(), `${c.kind}: 一覧の前に ${t} が出た`).not.toContain(t);
       expect(screen.queryByRole("button", { name: /承認する/ }), `${c.kind}: 一覧の前に承認のボタンが出た`).toBeNull();
-      // 一覧の欄は読み込み中
+      // 一覧のエリアは読み込み中
       expectLoading(await within(await screen.findByRole("region", { name: "変わったものの一覧" })).findByText("読み込んでいます…"), `${c.kind}: 一覧`);
-      for (const el of screen.getAllByText("読み込んでいます…")) expectLoading(el, `${c.kind}: 一覧の前の読み込み中の欄`);
+      for (const el of screen.getAllByText("読み込んでいます…")) expectLoading(el, `${c.kind}: 一覧の前の読み込み中のエリア`);
 
       g.open();
       expect(await screen.findByRole("button", { name: /承認する/ }), `${c.kind}: 一覧の後に承認のボタンが出ない`).toBeTruthy();

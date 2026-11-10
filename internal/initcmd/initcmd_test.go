@@ -122,10 +122,10 @@ const (
 	down  = "\x1b[B"
 )
 
-// ID の書き方の欄に書いたものが、そのまま答えになれば、欄は空から始まっている（既定の答えがあれば、その後ろに書き足される）
+// ID の書き方の入力欄に書いたものが、そのまま答えになれば、入力欄は空から始まっている（既定の答えがあれば、その後ろに書き足される）
 //
 // @vanda:evidence init-no-store-id-pattern
-func TestAskはストーリーストアにカスタムアダプタか使わないを選ぶとIDの書き方の質問を空の欄から始める(t *testing.T) {
+func TestAskはストーリーストアにカスタムアダプタか使わないを選ぶとIDの書き方の質問を空の入力欄から始める(t *testing.T) {
 	const typed = "ABC-[0-9]+"
 	cases := []struct {
 		choice string
@@ -159,7 +159,7 @@ func TestAskはストーリーストアにカスタムアダプタか使わな�
 				t.Fatalf("選んだストーリーストアが %q（%q のはず）", r.a.Store, c.store)
 			}
 			if got := r.a.IDPattern == typed; got != c.empty {
-				t.Errorf("ID の書き方の答え %q（欄が空から始まるのは %v のはず）", r.a.IDPattern, c.empty)
+				t.Errorf("ID の書き方の答え %q（入力欄が空から始まるのは %v のはず）", r.a.IDPattern, c.empty)
 			}
 		})
 	}

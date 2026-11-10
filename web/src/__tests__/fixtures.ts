@@ -28,7 +28,7 @@ export const ctx: Context = {
 // plain は、参照のない文をセグメントの配列にする（自然言語で書く項目は、API でセグメントの配列になる。docs/plans/stage4-references.md）。
 export const plain = (text: string) => [{ text }];
 
-// termRef・featureRef・claimRef は、応答の最上位の refs の 1 つ（docs/formats.md の「自然言語で書く項目（セグメントの配列）」）。
+// termRef・featureRef・claimRef は、レスポンスの最上位の refs の 1 つ（docs/formats.md の「自然言語で書く項目（セグメントの配列）」）。
 // pieces を省けば、text を参照のない 1 つのセグメントにする
 export const termRef = (name: string, text: string, current = true, pieces: Piece[] = plain(text)): RefTarget => ({ kind: "term", name, text, current, pieces });
 export const featureRef = (name: string, text: string, o: { current?: boolean; core: boolean; formal: boolean; pieces?: Piece[] }): RefTarget => ({
@@ -166,7 +166,7 @@ server.events.on("request:start", async ({ request }) => {
   requests.push({ method: request.method, url: new URL(request.url), body });
 });
 
-// handlers は、よく使う既定の応答。テストごとに server.use で上書きする。
+// handlers は、よく使う既定のレスポンス。テストごとに server.use で上書きする。
 export function defaultHandlers(r: Review) {
   return [
     http.get("/api/context", () => HttpResponse.json(ctx)),
@@ -176,7 +176,7 @@ export function defaultHandlers(r: Review) {
   ];
 }
 
-// gate は、テストが open を呼ぶまで応答を止めておくための門。API が遅い間の画面を確かめるのに使う
+// gate は、テストが open を呼ぶまでレスポンスを止めておくための門。API が遅い間の画面を確かめるのに使う
 export function gate() {
   let open!: () => void;
   const wait = new Promise<void>((resolve) => (open = resolve));

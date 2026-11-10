@@ -44,16 +44,16 @@ const (
 	// 5 回ほどしか出なかったので、本数と深さを増やした
 	xcheckDefaultTraces = 300
 	xcheckDefaultDepth  = 16
-	// 場面ごとに、全部のトレースで少なくともこれだけ出ることを求める。300 本・深さ 16 を 3 通りの種で数えると、いちばん少ない
-	// 場面（名前を変えた先の場所に、同じ中身への記録があり承認済）でも 32〜40 回だった。種によってたまたま下回らないよう、
+	// 場面ごとに、全部のトレースで少なくともこれだけ出ることを求める。300 本・深さ 16 を 3 通りのシードで数えると、いちばん少ない
+	// 場面（名前を変えた先の場所に、同じ中身への記録があり承認済）でも 32〜40 回だった。シードによってたまたま下回らないよう、
 	// その半分ほどにした
 	xcheckMinScenes = 15
 )
 
 var xcheckStory = map[string]string{"A": "#1", "B": "#2"}
 
-// xcheckSeed は、TLC に渡す種を返す。既定では実行のたびに変え、毎回同じトレースしか試さないことを防ぐ。
-// 落ちた場面を再現するときだけ、VANDA_XCHECK_SEED で種を決める。使った種は、通っても落ちても記録に出す。
+// xcheckSeed は、TLC に渡すシードを返す。既定では実行のたびに変え、毎回同じトレースしか試さないことを防ぐ。
+// 落ちた場面を再現するときだけ、VANDA_XCHECK_SEED でシードを決める。使ったシードは、通っても落ちても記録に出す。
 func xcheckSeed(t *testing.T) int {
 	t.Helper()
 	if os.Getenv("VANDA_XCHECK_SEED") != "" {
@@ -61,7 +61,7 @@ func xcheckSeed(t *testing.T) int {
 	}
 	n, err := rand.Int(rand.Reader, big.NewInt(math.MaxInt32))
 	if err != nil {
-		t.Fatalf("種を作れない: %v", err)
+		t.Fatalf("シードを作れない: %v", err)
 	}
 	return int(n.Int64())
 }
@@ -111,7 +111,7 @@ func generateTraces(t *testing.T, tlc string, seed, traces, depth int) [][]map[s
 	if err := os.WriteFile(filepath.Join(dir, "xcheck.cfg"), []byte(cfg), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	// 種と workers 1 を決めると、毎回同じトレースになる
+	// シードと workers 1 を決めると、毎回同じトレースになる
 	cmd := exec.Command(tlc, "-simulate", fmt.Sprintf("file=%s,num=%d", filepath.Join(dir, "tr"), traces),
 		"-depth", strconv.Itoa(depth), "-seed", strconv.Itoa(seed), "-workers", "1", "-noGenerateSpecTE",
 		"-metadir", filepath.Join(dir, "meta"), "-config", "xcheck.cfg", "AgreementTrace.tla")
@@ -688,7 +688,7 @@ func Test承認の判定をTLAのモデルと本物のvandaで1歩ずつ比べ�
 		}
 		steps += len(all[n])
 	}
-	t.Logf("種 %d（VANDA_XCHECK_SEED=%d で同じトレースを流せる）、トレース %d 本、状態 %d", seed, seed, len(all), steps)
+	t.Logf("シード %d（VANDA_XCHECK_SEED=%d で同じトレースを流せる）、トレース %d 本、状態 %d", seed, seed, len(all), steps)
 	for _, name := range xcheckSceneNames {
 		t.Logf("  %s: %d 回", name, scenes[name])
 		if scenes[name] < xcheckMinScenes {
@@ -705,7 +705,7 @@ func Test承認の判定をTLAのモデルと本物のvandaで1歩ずつ比べ�
 					if k > 0 {
 						r.apply(k, st)
 					}
-					where := fmt.Sprintf("種 %d のトレース %d の %d 歩目（%v）", seed, n, k+1, st.step)
+					where := fmt.Sprintf("シード %d のトレース %d の %d 歩目（%v）", seed, n, k+1, st.step)
 					pass, errItems, out := r.check(".vanda/checks/all.toml")
 					for _, i := range xcheckItems {
 						got := !contains(errItems, i)

@@ -259,7 +259,7 @@ func wantRefs(t *testing.T, where string, got map[string]refInfo, want map[strin
 	}
 	for id := range got {
 		if _, ok := want[id]; !ok {
-			t.Errorf("%s の refs に、応答のセグメントが指していない %s がある", where, id)
+			t.Errorf("%s の refs に、レスポンスのセグメントが指していない %s がある", where, id)
 		}
 	}
 }

@@ -36,8 +36,8 @@ func rvIDs(kind string) []string {
 	}
 }
 
-// rvRandomSeed は、rapid の種を決める。既定では実行のたびに変え、VANDA_RV01_SEED でだけ決める。
-// rapid の -rapid.seed を使わないのは、通ったときにも使った種を記録に出すため（rapid は落ちたときにしか出さない）。
+// rvRandomSeed は、rapid のシードを決める。既定では実行のたびに変え、VANDA_RV01_SEED でだけ決める。
+// rapid の -rapid.seed を使わないのは、通ったときにも使ったシードを記録に出すため（rapid は落ちたときにしか出さない）。
 func rvRandomSeed(t *testing.T) uint64 {
 	t.Helper()
 	if v := os.Getenv("VANDA_RV01_SEED"); v != "" {
@@ -49,9 +49,9 @@ func rvRandomSeed(t *testing.T) uint64 {
 	}
 	var b [8]byte
 	if _, err := rand.Read(b[:]); err != nil {
-		t.Fatalf("種を作れない: %v", err)
+		t.Fatalf("シードを作れない: %v", err)
 	}
-	// rapid は 0 を「種を自分で選ぶ」の意味に使うので、0 を避ける
+	// rapid は 0 を「シードを自分で選ぶ」の意味に使うので、0 を避ける
 	return binary.LittleEndian.Uint64(b[:]) | 1
 }
 
@@ -72,7 +72,7 @@ func setFlag(t *testing.T, name, value string) {
 func rvRandomOp(rt *rapid.T, r *rvRepo) string {
 	var ops []string
 	// 約束・用語・機能のどれを変えるかを先に選び、その中から項目を選ぶ。項目の全体から選ぶと、数の多い種類に偏り、
-	// レビュー単位がブランチのときに用語や機能の削除がほとんど出ない種が出たため
+	// レビュー単位がブランチのときに用語や機能の削除がほとんど出ないシードが出たため
 	var present, absent []string
 	presentKinds := map[string][]string{}
 	for _, kind := range []string{"claim", "term", "feature"} {
@@ -197,11 +197,11 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 		t.Fatal(err)
 	}
 	seed := rvRandomSeed(t)
-	t.Logf("種: VANDA_RV01_SEED=%d", seed)
+	t.Logf("シード: VANDA_RV01_SEED=%d", seed)
 	setFlag(t, "rapid.seed", strconv.FormatUint(seed, 10))
 	checks := envInt(t, "VANDA_RV01_CHECKS", 100)
 	setFlag(t, "rapid.checks", strconv.Itoa(checks))
-	// 落ちたときに rapid が testdata/rapid に書くファイルを作らせない。再現には、記録に出した種を使う
+	// 落ちたときに rapid が testdata/rapid に書くファイルを作らせない。再現には、記録に出したシードを使う
 	setFlag(t, "rapid.nofailfile", "true")
 	tmp := t.TempDir()
 	// 一覧の期待値に、どの変化が何回出たか。生成が偏って、確かめていない変化がないかを記録に出す
@@ -220,7 +220,7 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 		if t.Failed() || checks < 100 {
 			return
 		}
-		// 下限は、100 回の実行を 112 通りの種で数えた、組ごとの回数の最小のおよそ 3 分の 1。種によってたまたま下回らないようにする。
+		// 下限は、100 回の実行を 112 通りのシードで数えた、組ごとの回数の最小のおよそ 3 分の 1。シードによってたまたま下回らないようにする。
 		// 数えた最小（平均）: レビュー単位がブランチのときの種類と変化の組でいちばん少ないのは機能の削除の 6（16.9）、ブランチのときの名前の変更は 19（30.6）、
 		// ストーリーのときの組は 79（103.5。変更）以上。名前の変更は、古い場所の削除と新しい場所の追加の 2 件として出るようになった後も、
 		// 同じ中身の削除と追加の組として数える。

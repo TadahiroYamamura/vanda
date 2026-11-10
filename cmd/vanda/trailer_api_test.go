@@ -174,7 +174,7 @@ func TestStoryのトレーラーが誤ったコミットがあってもAPIは200
 		}
 	}
 	// #1 が main で承認した task-id-unique は、#24 と誤ったトレーラーの 2 つのコミットが変えた。失効した承認は 200 で出て、
-	// by に #24 は出る（誤ったコミットのストーリーが出ないことは、上で応答の全体から見た）
+	// by に #24 は出る（誤ったコミットのストーリーが出ないことは、上でレスポンスの全体から見た）
 	var one reviewResponse
 	s.get("/api/review?view=story&story=%231", &one)
 	var found bool

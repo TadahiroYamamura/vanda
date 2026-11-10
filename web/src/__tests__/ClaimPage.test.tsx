@@ -818,7 +818,7 @@ describe("読み込みの間に先に出すもの", () => {
 
   // @vanda:evidence claim-detail-shown-before-history
   // @vanda:evidence loading-indicator
-  it("変更履歴と承認の履歴が届く前に約束の詳細の中身を出し変更履歴と承認の履歴の欄には読み込み中のマークを出し届いたら履歴に替える", async () => {
+  it("変更履歴と承認の履歴が届く前に約束の詳細の中身を出し変更履歴と承認の履歴のエリアには読み込み中のマークを出し届いたら履歴に替える", async () => {
     const g = gate();
     server.use(
       http.get("/api/context", () => HttpResponse.json(ctx)),
@@ -839,13 +839,13 @@ describe("読み込みの間に先に出すもの", () => {
       "exec vanda add 買い物", "TestUnique", "internal/task/task_test.go", "spec/Task.tla", "db/schema.sql", "まだ書いていない"]) {
       expect(bodyText(), `変更履歴と承認の履歴の前に ${t} が出ない`).toContain(t);
     }
-    // 変更履歴と承認の履歴はまだ出さず、それぞれの欄に読み込み中のマークを出す
+    // 変更履歴と承認の履歴はまだ出さず、それぞれのエリアに読み込み中のマークを出す
     for (const t of ["#1 はじめの約束を置く", "#24 文を変える", "前に承認した人"]) expect(bodyText(), `届く前に ${t} が出た`).not.toContain(t);
     const origin = screen.getByRole("heading", { name: "変更履歴" });
     const agreements = screen.getByRole("heading", { name: "承認の履歴" });
     const loads = screen.getAllByText("読み込んでいます…");
     expect(loads.length, "読み込み中のマークが変更履歴と承認の履歴の 2 つでない").toBe(2);
-    expect(before(origin, loads[0]) && before(loads[0], agreements) && before(agreements, loads[1]), "読み込み中のマークが変更履歴と承認の履歴の欄にない").toBe(true);
+    expect(before(origin, loads[0]) && before(loads[0], agreements) && before(agreements, loads[1]), "読み込み中のマークが変更履歴と承認の履歴のエリアにない").toBe(true);
     loads.forEach((el, i) => expectLoading(el, ["変更履歴", "承認の履歴"][i]));
 
     g.open();

@@ -623,7 +623,7 @@ layers = ["model"]
     }
   });
 
-  test(`${pg.name}で変更履歴と承認の履歴の行をクリックするとその時点の中身が開きもう一度クリックするとたたまり山形のボタンをクリックしても1回だけ切り替わる`, async ({ page }) => {
+  test(`${pg.name}で変更履歴と承認の履歴の行をクリックするとその時点の中身が開きもう一度クリックするとたたまり矢印のボタンをクリックしても1回だけ切り替わる`, async ({ page }) => {
     commitV3(repo);
     repo.write(".vanda/promises.toml", promisesAt(v4));
     commit(repo, "文を直す", "#24");

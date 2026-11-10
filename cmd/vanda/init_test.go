@@ -361,7 +361,7 @@ const (
 	keyUp    = "\x1b[A"
 	keyDown  = "\x1b[B"
 	keySpace = " "
-	keyClear = "\x15" // Ctrl+U。入力の欄の、カーソルより前を消す
+	keyClear = "\x15" // Ctrl+U。入力欄の、カーソルより前を消す
 	keyEOF   = "\x04" // Ctrl+D
 )
 
@@ -583,18 +583,18 @@ type initSeen struct {
 	patterns     map[string]string
 }
 
-// typeAnswer は、入力の欄を a にする（入っている既定の答えを消してから書く）。
+// typeAnswer は、入力欄を a にする（入っている既定の答えを消してから書く）。
 func (s *initSession) typeAnswer(what, a string) {
 	s.t.Helper()
 	if cursorOf(s.screen()) != "" {
-		s.press(what+" の欄を消す", keyClear, func(sc string) bool { return cursorOf(sc) == "" })
+		s.press(what+" の入力欄を消す", keyClear, func(sc string) bool { return cursorOf(sc) == "" })
 	}
 	if a != "" {
 		s.press(what+" に書く", a, func(sc string) bool { return cursorOf(sc) == a })
 	}
 }
 
-// input は、入力の質問で、欄に入っている既定の答えを読み、形に合わない答えを順に書いて、そのたびに理由が出て
+// input は、入力の質問で、入力欄に入っている既定の答えを読み、形に合わない答えを順に書いて、そのたびに理由が出て
 // 同じ質問にとどまることを確かめ、最後に a を書く（空なら既定のまま）。
 func (s *initSession) input(what, keyword string, invalid []string, a string) string {
 	s.t.Helper()
