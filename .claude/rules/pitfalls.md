@@ -9,7 +9,7 @@ paths:
 
 ## 形
 
-1 行に 1 つの JSON。`id`・`category`・`trigger`（どんな変更のときに当たるか）・`question`（確かめる問い）・`background`（実際に起きたこと）。`category` は、見落とすと何が起きるかで決める。重い方から security・data・release・regression・spec・performance・maintainability で、複数に当たれば重い方にする。
+1 行に 1 つの JSON。`id`・`category`・`trigger`（どんな変更のときにマッチするか）・`question`（確かめる問い）・`background`（実際に起きたこと）。`category` は、見落とすと何が起きるかで決める。重い方から security・data・release・regression・spec・performance・maintainability で、複数に当たれば重い方にする。
 
 ## 足す
 
