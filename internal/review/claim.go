@@ -45,7 +45,7 @@ type SubjectRef struct {
 type EvidenceDetail struct {
 	EvidenceContent
 	Found []Found `json:"found"`
-	// Present は、エビデンスが揃っているチェックと同じ判定。アノテーションで確かめないタイプ（human-review）は nil
+	// Present は、エビデンス完備のチェックと同じ判定。アノテーションで確かめないタイプ（human-review）は nil
 	Present *bool `json:"present"`
 }
 

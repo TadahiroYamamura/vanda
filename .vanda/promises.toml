@@ -280,7 +280,7 @@ part_of = "check"
 
 [[term]]
 id = "evidence-present-check"
-name = "エビデンスが揃っているチェック"
+name = "エビデンス完備のチェック"
 definition = "{@id:promise}に予定した{@id:evidence}が揃っているかを確かめる{@id:check}。{@id:check-config}に書く名前は evidence-present"
 part_of = "check"
 

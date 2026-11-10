@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// CMD-10 エビデンスが揃っているチェックと、[[annotation]] の types（docs/plans/annotation-types.md の 1）。
+// CMD-10 エビデンス完備のチェックと、[[annotation]] の types（docs/plans/annotation-types.md の 1）。
 // 予定のタイプを types に含む [[annotation]] から読んだアノテーションのうち、タイプに合う種類のものがあれば揃う。
 // 種類とタイプの組み合わせは、計画の表から手で書いた。
 
