@@ -2,9 +2,10 @@ import { useState } from "react";
 // 本文の中の生の HTML は描かない（react-markdown の既定。rehype-raw などを足さない）。Issue の本文に悪意のある HTML があっても、画面で動かないようにするため
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { api, type ClaimContent, type Content, type Piece, type Refs, type User, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FileContent, type Kind, type Review, type TermContent } from "../api";
+import { api, type ClaimContent, type Content, type Piece, type Refs, type User, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FeatureDetail, type FileContent, type Kind, type Review, type TermContent, type TermDetail } from "../api";
 import { AgreementIcon, ErrorBox, FlagBadge, ListIcon, Loading, PresentIcon, StateBadge, shortCommit, useLoad } from "../components/common";
 import { ClaimHistory } from "../components/ClaimHistory";
+import { ClaimList } from "../components/ClaimList";
 import { CodeBlock } from "../components/Code";
 import { LineDiff, Parts } from "../components/DiffView";
 import { LayerChips, LayerChipsDiff } from "../components/Chips";
@@ -654,6 +655,26 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
 
       <Compare entry={e} />
       {e.kind === "claim" && e.id && e.change !== "deleted" && <ClaimSections key={written} id={e.id} query={props.query} />}
+      {(e.kind === "term" || e.kind === "feature") && e.id && (e.change === "added" || e.change === "modified") && (
+        <TermFeatureClaims kind={e.kind} id={e.id} query={props.query} />
+      )}
+    </div>
+  );
+}
+
+// TermFeatureClaims は、追加・変更した用語・機能を subjects に持つ約束の一覧（review-term-feature-claims）。
+// 一覧は用語・機能の詳細の API が返すものを使い、詳細のページと同じものを出す
+function TermFeatureClaims(props: { kind: "term" | "feature"; id: string; query: string }) {
+  const d = useLoad<TermDetail | FeatureDetail>(() => (props.kind === "term" ? api.term(props.id) : api.feature(props.id)), `${props.kind}:${props.id}`);
+  return (
+    <div>
+      {d.loading && <Loading />}
+      {d.error != null && <ErrorBox error={d.error} title={`${kindLabel[props.kind]}を対象に持つ約束を読めません`} />}
+      {d.data && (
+        <RefsProvider refs={d.data.refs} query={props.query}>
+          <ClaimList claims={d.data.claims} what={kindLabel[props.kind]} query={props.query} level="h3" />
+        </RefsProvider>
+      )}
     </div>
   );
 }

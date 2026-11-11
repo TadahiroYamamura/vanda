@@ -1,4 +1,5 @@
-import { api, type ClaimSummary, type NamedRef } from "../api";
+import { api, type NamedRef } from "../api";
+import { ClaimList } from "../components/ClaimList";
 import { ErrorBox, Loading, useLoad } from "../components/common";
 import { detailURL, FeatureMarks, Prose, RefsProvider } from "../components/Prose";
 import { Link, reviewQuery, reviewURL } from "../route";
@@ -43,7 +44,7 @@ export function TermPage(props: { id: string; params?: URLSearchParams }) {
               )}
             </dd>
           </dl>
-          <ClaimList claims={d.data.claims} what="用語" query={query} />
+          <ClaimList claims={d.data.claims} what="用語" query={query} level="h2" />
         </RefsProvider>
       )}
     </div>
@@ -79,7 +80,7 @@ export function FeaturePage(props: { id: string; params?: URLSearchParams }) {
               <Prose pieces={d.data.definition} />
             </dd>
           </dl>
-          <ClaimList claims={d.data.claims} what="機能" query={query} />
+          <ClaimList claims={d.data.claims} what="機能" query={query} level="h2" />
         </RefsProvider>
       )}
     </div>
@@ -93,29 +94,5 @@ function TermLink(props: { t: NamedRef; query: string }) {
     <Link to={detailURL("term", t.id, props.query)}>
       <span className="user-text">{t.name}</span>（<code>{t.id}</code>）
     </Link>
-  );
-}
-
-function ClaimList(props: { claims: ClaimSummary[]; what: string; query: string }) {
-  return (
-    <>
-      <h2>この{props.what}を対象に持つ約束</h2>
-      {props.claims.length === 0 ? (
-        <p className="note">この{props.what}を対象に持つ約束はありません。</p>
-      ) : (
-        <ul className="claim-list">
-          {props.claims.map((c) => (
-            <li key={c.id}>
-              <Link to={detailURL("claim", c.id, props.query)} className="claim-id">
-                {c.id}
-              </Link>
-              <span className="user-text">
-                <Prose pieces={c.statement} />
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
   );
 }
