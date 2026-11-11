@@ -1609,6 +1609,109 @@ describe("RV-02 1 件の詳細", () => {
       for (const re of c.also) expect(text, `${c.name} の詳細に ${re} がない`).toMatch(re);
     }
   });
+
+  // 用語・機能の 1 件の詳細に並べる約束（review-term-feature-claims）。詳細のページ（term-feature-page-claims）と同じ一覧
+  type Change = "added" | "modified" | "deleted";
+  const termTF = (no: number, id: string, change: Change) => {
+    const content = { name: id, definition: plain(`${id} の定義`), partOf: null };
+    return claimEntry(no, id, { kind: "term", group: "terms", change, before: change === "added" ? null : content, after: change === "deleted" ? null : content, ...(change === "deleted" ? { fingerprint: null } : {}) });
+  };
+  const featureTF = (no: number, id: string, change: Change) => {
+    const content = { name: id, definition: plain(`${id} の定義`), core: null, formal: null, formalWaiver: null };
+    return claimEntry(no, id, { kind: "feature", group: "features", change, before: change === "added" ? null : content, after: change === "deleted" ? null : content, ...(change === "deleted" ? { fingerprint: null } : {}) });
+  };
+  // tfClaims は、id を subjects に持つ約束。約束リストに書いた順（ID の順と違う）。文に id を入れ、どの用語・機能の一覧かを見分ける
+  const tfClaims = (id: string) => [
+    { id: "c-z", statement: plain(`${id} の最初に書いた約束の文`) },
+    { id: "c-a", statement: plain(`${id} の次に書いた約束の文`) },
+    { id: "c-m", statement: plain(`${id} の最後に書いた約束の文`) },
+  ];
+  // tfHandlers は、用語・機能の詳細の API（docs/formats.md の GET /api/terms/<ID>・GET /api/features/<ID>）。claimsOf(id) を、それを subjects に持つ約束として返す
+  const tfHandlers = (claimsOf: (id: string) => { id: string; statement: ReturnType<typeof plain> }[]) => [
+    http.get("/api/terms/:id", ({ params }) =>
+      HttpResponse.json({ id: String(params.id), name: String(params.id), definition: plain(`${String(params.id)} の定義`), partOf: null, children: [], claims: claimsOf(String(params.id)), refs: {} })),
+    http.get("/api/features/:id", ({ params }) =>
+      HttpResponse.json({ id: String(params.id), name: String(params.id), definition: plain(`${String(params.id)} の定義`), core: false, formal: false, claims: claimsOf(String(params.id)), refs: {} })),
+  ];
+  const claimLinkPaths = () =>
+    within(detailRegion()).queryAllByRole("link").map((a) => new URL((a as HTMLAnchorElement).href).pathname).filter((p) => p.startsWith("/claims/"));
+
+  // @vanda:evidence review-term-feature-claims
+  it("追加と変更した用語と機能の1件の詳細にそれを対象に持つ約束を渡した順にIDと文で並べIDを約束の詳細へのリンクにし移った先から同じ状態に戻れる", async () => {
+    // 既定の値（URL に書いていないレビュー単位・ベースブランチ）も引き継ぐかを見るため、何も付けない URL で開く（pitfall link-drops-default-state）
+    window.history.pushState({}, "", "/");
+    const cases = [
+      { e: termTF(1, "t-add", "added"), id: "t-add" },
+      { e: termTF(2, "t-mod", "modified"), id: "t-mod" },
+      { e: featureTF(3, "f-add", "added"), id: "f-add" },
+      { e: featureTF(4, "f-mod", "modified"), id: "f-mod" },
+    ];
+    open(cases.map((c) => c.e), {}, ...tfHandlers(tfClaims),
+      http.get("/api/claims/:id", ({ params }) => HttpResponse.json(claimDetail({ id: String(params.id), statement: plain(`${String(params.id)} の詳細の文`) }))));
+    const user = userEvent.setup();
+    for (const c of cases) {
+      await user.click(within(await listRow(c.id)).getByRole("button"));
+      await waitFor(() => expect(detailRegion().textContent, `${c.id}: 約束の一覧が出ない`).toContain(`${c.id} の最後に書いた約束の文`));
+      const text = detailRegion().textContent ?? "";
+      let at = -1;
+      for (const t of ["c-z", `${c.id} の最初に書いた約束の文`, "c-a", `${c.id} の次に書いた約束の文`, "c-m", `${c.id} の最後に書いた約束の文`]) {
+        const i = text.indexOf(t, at + 1);
+        expect(i, `${c.id}: ${t} が渡した順に出ていない`).toBeGreaterThan(at);
+        at = i;
+      }
+      expect(claimLinkPaths(), `${c.id}: 約束の詳細へのリンク`).toEqual(["/claims/c-z", "/claims/c-a", "/claims/c-m"]);
+      for (const id of ["c-z", "c-a", "c-m"]) {
+        expect(new URL((within(detailRegion()).getByRole("link", { name: id }) as HTMLAnchorElement).href).pathname, `${c.id}: ${id} のリンク`).toBe(`/claims/${id}`);
+      }
+      // リンクから約束の詳細へ移り、ストーリーのレビューへ戻ると、行く前と同じ URL（選んだ件を含む）に戻る
+      const beforeURL = window.location.pathname + window.location.search;
+      await user.click(within(detailRegion()).getByRole("link", { name: "c-a" }));
+      expect(await screen.findByText("c-a の詳細の文"), `${c.id}: 移った先に約束の詳細が出ない`).toBeTruthy();
+      expect(window.location.pathname).toBe("/claims/c-a");
+      await user.click(await screen.findByRole("link", { name: "ストーリーのレビューへ戻る" }));
+      await waitFor(() => expect(window.location.pathname).toBe("/"));
+      expect(window.location.pathname + window.location.search, `${c.id}: 約束の詳細から戻った URL`).toBe(beforeURL);
+    }
+  });
+
+  // @vanda:evidence review-term-feature-claims
+  it("追加と変更した用語と機能の1件の詳細はそれを対象に持つ約束がなければその旨を示し約束の詳細へのリンクを出さない", async () => {
+    const cases = [
+      { e: termTF(1, "t-add", "added"), id: "t-add", note: "この用語を対象に持つ約束はありません。" },
+      { e: termTF(2, "t-mod", "modified"), id: "t-mod", note: "この用語を対象に持つ約束はありません。" },
+      { e: featureTF(3, "f-add", "added"), id: "f-add", note: "この機能を対象に持つ約束はありません。" },
+      { e: featureTF(4, "f-mod", "modified"), id: "f-mod", note: "この機能を対象に持つ約束はありません。" },
+    ];
+    open(cases.map((c) => c.e), {}, ...tfHandlers(() => []));
+    const user = userEvent.setup();
+    for (const c of cases) {
+      await user.click(within(await listRow(c.id)).getByRole("button"));
+      await waitFor(() => expect(detailRegion().textContent, `${c.id}: 約束がないことを示さない`).toContain(c.note));
+      expect(claimLinkPaths(), `${c.id}: 約束がないのに約束の詳細へのリンクがある`).toEqual([]);
+    }
+  });
+
+  // @vanda:evidence review-term-feature-claims
+  it("削除した用語と機能の1件の詳細には約束の一覧を出さない", async () => {
+    const cases = [
+      { e: termTF(1, "t-del", "deleted"), id: "t-del" },
+      { e: featureTF(2, "f-del", "deleted"), id: "f-del" },
+    ];
+    // 詳細の API は約束を返す（読みに行けば一覧が出る）
+    open(cases.map((c) => c.e), {}, ...tfHandlers(tfClaims));
+    const user = userEvent.setup();
+    for (const c of cases) {
+      await user.click(within(await listRow(c.id)).getByRole("button"));
+      await waitFor(() => expect(detailRegion().textContent, `${c.id}: 消す前の中身が出ない`).toContain(`${c.id} の定義`));
+      // 出ないことを見るので、読みに行っていた場合にその答えが届くのを待つ
+      await new Promise((r) => setTimeout(r, 50));
+      const text = detailRegion().textContent ?? "";
+      expect(text, `${c.id}: 削除したのに約束の一覧を出した`).not.toContain("約束の文");
+      expect(text, `${c.id}: 削除したのに約束がないことを示した`).not.toContain("対象に持つ約束はありません");
+      expect(text, `${c.id}: 削除したのに読み込み中のマークを出した`).not.toContain("読み込んでいます");
+      expect(claimLinkPaths(), `${c.id}: 削除したのに約束の詳細へのリンクがある`).toEqual([]);
+    }
+  });
 });
 
 describe("CM-08 ストーリーのエリア", () => {
