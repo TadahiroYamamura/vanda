@@ -246,7 +246,7 @@ part_of = "flag"
 [[term]]
 id = "check"
 name = "チェック"
-definition = "CLI の vanda check が行う点検。{@id:promise-list}・{@id:annotation}・{@id:story-trailer}・{@id:agreement}・{@id:evidence-plan}などを読んで、間違いや矛盾がなく基準を満たすかを判断する"
+definition = "CLI の vanda check が、{@id:promise-list}・{@id:annotation}・{@id:story-trailer}・{@id:agreement}・{@id:evidence-plan}などを読んで、間違いや矛盾がなく基準を満たすかを判断すること"
 
 [[term]]
 id = "promise-list-shape-check"
