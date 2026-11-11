@@ -385,12 +385,12 @@ part_of = "vanda-dir"
 [[term]]
 id = "check-config"
 name = "チェックの設定"
-definition = "どの{@id:check}を、どの{@id:check-scope}で行うかを書いたファイル"
+definition = "vanda check で行う{@id:check}の種類と{@id:check-scope}を定義するファイル"
 
 [[term]]
 id = "check-scope"
 name = "スコープ"
-definition = "{@id:check}が見るもの"
+definition = "{@id:check}で確認する範囲"
 
 [[term]]
 id = "branch-point"
