@@ -5116,6 +5116,19 @@ type = "unit-test"
 layers = ["gui"]
 
 [[claim]]
+id = "review-term-feature-claims"
+subjects = ["show-term-feature-pages", "term", "feature"]
+statement = "{@id:story}のレビューで、追加・変更した{@id:term}・{@id:feature}の 1 件の詳細に、{@id:term-feature-page-claims}と同じ{@id:promise}の一覧を示す"
+rationale = "{@id:term}・{@id:feature}を承認する時に、それを決めている{@id:promise}を読めないと、承認してよいかを判断できないため"
+layers = ["gui"]
+flags = ["ai-proposal"]
+
+[[claim.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["gui"]
+
+[[claim]]
 id = "term-feature-page-missing"
 subjects = ["show-term-feature-pages"]
 statement = "今の{@id:promise-list}にない ID の{@id:term}・{@id:feature}の詳細のページを開いたら、その ID が{@id:promise-list}にないことを示す"
