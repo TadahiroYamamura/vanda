@@ -6,6 +6,17 @@ Toolkit for evidence-first development: keep a list of promises, review and agre
 
 The name comes from the Quenya word *vanda*, "oath, solemn promise".
 
+## Why
+
+vanda aims to make development three times faster than before, without letting serious bugs or security flaws in. People do not read the large amount of code that AI agents write. They audit the evidence that the code works, and they design the accountability that makes that evidence worth trusting.
+
+vanda is a tool for moving fast without failing, not a tool for proving that software is correct. It comes down to two things:
+
+- **Designing accountability**: a systematic way to design accountability, to see how far each of its parts is achieved, and to improve it.
+- **Controlled failure**: anticipating failures as completely as possible, detecting them early, and avoiding fatal situations.
+
+With these in place, AI agents can develop autonomously, people can judge the risk of each change and spend their attention where it is needed, and development becomes both safe and fast.
+
 ## Documents
 
 The documents are written in Japanese for now.
