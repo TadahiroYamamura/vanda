@@ -13,7 +13,7 @@ vanda aims to make development three times faster than before, without letting s
 vanda is a tool for moving fast without failing, not a tool for proving that software is correct. It comes down to two things:
 
 - **Designing accountability**: a systematic way to design accountability, to see how far each of its parts is achieved, and to improve it.
-- **Controlled failure**: anticipating failures as completely as possible, detecting them early, and avoiding fatal situations.
+- **Controlled deviation**: a deviation is when the software stops satisfying a property it should. vanda helps anticipate deviations as completely as possible, detect them early, and avoid fatal situations.
 
 With these in place, AI agents can develop autonomously, people can judge the risk of each change and spend their attention where it is needed, and development becomes both safe and fast.
 
