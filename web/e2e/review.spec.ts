@@ -17,8 +17,23 @@ const sha = (s: string) => "sha256:" + createHash("sha256").update(s, "utf8").di
 
 // フィンガープリントの元の JSON は、docs/formats.md の決まった形を手で書く（約束リストを読んで作らない）
 const termJSON = `{"definition":"タスクを見分ける名前","id":"task-id","name":"タスクの ID"}`;
-const claimJSON = (statement: string) =>
-  `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"}],"id":"task-id-unique","layers":["model"],"statement":"${statement}","subjects":["task-id"]}`;
+const specJSON = (statement: string) =>
+  `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"}],"id":"task-id-unique","layers":["model"],"refines":["add-task"],"statement":"${statement}"}`;
+const propertyJSON = `{"id":"no-lost-task","statement":"登録したタスクは失われない"}`;
+const featureJSON = `{"definition":"タスクを足す","id":"add-task","name":"タスクの登録","refines":["no-lost-task"]}`;
+
+// upper は、どの約束リストの例にも置く、仕様が refines する機能と、機能が refines する性質。どのテストも変えないので、一覧には出ない
+const upper = `[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
+
+[[feature]]
+id = "add-task"
+name = "タスクの登録"
+definition = "タスクを足す"
+refines = ["no-lost-task"]
+
+`;
 
 const config = (version: string) => `version = "${version}"
 
@@ -37,30 +52,30 @@ base = "main"
 
 const promises = (statement: string, flags: boolean, extra: boolean) => `# 約束リスト（E2E の例）
 
-[[term]]
+${upper}[[term]]
 id = "task-id"
 name = "タスクの ID"
 definition = "タスクを見分ける名前"
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task-id"]
+refines = ["add-task"]
 statement = "${statement}"
 layers = ["model"]
 ${flags ? 'flags = ["ai-proposal"]\nguesses = ["使い回さない"]\n' : ""}
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 ${extra ? `
-[[claim]]
+[[spec]]
 id = "task-title-required"
-subjects = ["task-id"]
+refines = ["add-task"]
 statement = "タスクの題は空にできない"
 layers = ["model"]
 flags = ["ai-proposal"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
@@ -112,10 +127,10 @@ function makeRepo(): Repo {
   return { root, env, git, write, vanda };
 }
 
-// buildRepo は、main（#1 で承認済）と、ストーリー #24 が約束を変え・足し、シナリオを変えた story-24 を作る。HEAD は story-24。
+// buildRepo は、main（#1 で承認済）と、ストーリー #24 が仕様を変え・足し、シナリオを変えた story-24 を作る。HEAD は story-24。
 function buildRepo(): Repo {
   const r = makeRepo();
-  const version = execFileSync(bin, ["version"], { encoding: "utf8" }).match(/\d+\.\d+\.\d+/)![0];
+  const version = readFileSync(resolve(here, "..", "..", "internal", "version", "version.go"), "utf8").match(/const Current = "(\d+\.\d+\.\d+)"/)![1];
   r.git("init", "-q", "-b", "main");
   r.git("config", "user.name", "承認する人");
   r.git("config", "user.email", "po@example.com");
@@ -126,13 +141,15 @@ function buildRepo(): Repo {
   r.write(
     ".vanda/agreements.toml",
     agreement("term", "task-id", sha(termJSON), null, "#1") +
-      agreement("claim", "task-id-unique", sha(claimJSON("タスクの ID は重ならない")), null, "#1") +
-      agreement("file", sha(scenarioBase), sha(scenarioBase), "e2e/add-task.txtar", "#1"),
+      agreement("spec", "task-id-unique", sha(specJSON("タスクの ID は重ならない")), null, "#1") +
+      agreement("file", sha(scenarioBase), sha(scenarioBase), "e2e/add-task.txtar", "#1") +
+      agreement("property", "no-lost-task", sha(propertyJSON), null, "#1") +
+      agreement("feature", "add-task", sha(featureJSON), null, "#1"),
   );
-  commit(r, "はじめの約束を置く", "#1");
+  commit(r, "はじめの仕様を置く", "#1");
   r.git("switch", "-q", "-c", "story-24");
   r.write(".vanda/promises.toml", promises("タスクの ID は、すべてのタスクを通して重ならない", true, true));
-  commit(r, "約束を変え、題の約束を足す", "#24");
+  commit(r, "仕様を変え、題の仕様を足す", "#24");
   r.write("e2e/add-task.txtar", scenarioStory);
   commit(r, "シナリオを変える", "#24");
   return r;
@@ -235,7 +252,7 @@ test("ブランチのコミットからストーリーが決まるブランチ�
   expect(repo.git("rev-list", "--count", "main..HEAD")).toBe(String(2 + items.length));
 });
 
-test("承認した約束を変えると一覧に差分ありとして戻る", async ({ page }) => {
+test("承認した仕様を変えると一覧に差分ありとして戻る", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await agreeAll(page, ["task-id-unique"]);
   const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
@@ -268,8 +285,8 @@ test("ベースブランチとレビュー単位を切り替えると一覧が�
   for (const item of items) await expect(page.getByText(item).first()).toBeVisible();
 });
 
-// 約束の詳細とファイルの画面から「ストーリーのレビューへ戻る」で戻ると、行く前のレビューの画面（レビュー単位・ベースブランチ・
-// ストーリー・選んでいた 1 件）に戻る。ブラウザーの「戻る」には頼らない（PO の報告では、こちらだけが選ぶ前に戻っていた）。
+// 仕様の詳細とファイルの画面から「ストーリーのレビューへ戻る」で戻ると、行く前のレビューの画面（レビュー単位・ベースブランチ・
+// ストーリー・選んでいた 1 件）に戻る。ブラウザーの「戻る」には頼らない（オーナーの報告では、こちらだけが選ぶ前に戻っていた）。
 // レビュー単位がストーリーのときはベースブランチを選ぶ所が出ないので、レビュー単位とベースブランチの組は 3 つ。それと戻る経路 3 つの
 // 組み合わせを全部回す。
 // url があるものは、画面で選ばずに、その URL を直に開く
@@ -280,16 +297,16 @@ const states: { name: string; story: boolean; base: string; url?: string }[] = [
   { name: "レビュー単位がストーリーのURLを直に開いて", story: true, base: "main", url: "/?view=story&story=%2324" },
 ];
 const routes = [
-  { name: "約束の詳細から直接", via: "claim" },
-  { name: "約束の詳細からエビデンスのファイルを経て", via: "claim-file" },
+  { name: "仕様の詳細から直接", via: "spec" },
+  { name: "仕様の詳細からエビデンスのファイルを経て", via: "spec-file" },
   { name: "エビデンスの予定と実際の表からファイルを経て", via: "review-file" },
 ] as const;
 
 for (const v of states) {
   for (const route of routes) {
       // @vanda:evidence back-restores-state
-      test(`${v.name}選んだ約束で${route.name}ストーリーのレビューへ戻ると行く前と同じ状態に戻る`, async ({ page }) => {
-        // シナリオに task-id-unique のエビデンスを付け、約束の文も変える。release は、このコミットの直前から分かれたことに
+      test(`${v.name}選んだ仕様で${route.name}ストーリーのレビューへ戻ると行く前と同じ状態に戻る`, async ({ page }) => {
+        // シナリオに task-id-unique のエビデンスを付け、仕様の文も変える。release は、このコミットの直前から分かれたことに
         // する（release と比べても task-id-unique が一覧に出て、main と比べたときとは一覧が変わる）
         repo.git("branch", "release", "story-24");
         repo.write("e2e/add-task.txtar", "# シナリオ\n# @vanda:evidence task-id-unique\n! exec vanda-task add a\n-- a.txt --\na\n");
@@ -314,8 +331,8 @@ for (const v of states) {
         if (!v.story && v.base === "release") await expect(page.getByText("task-title-required")).toHaveCount(0);
         else await expect(page.getByText("task-title-required").first()).toBeVisible();
         await select(page, "task-id-unique");
-        const claimLink = page.getByRole("link", { name: "約束の詳細を開く" });
-        await expect(claimLink).toHaveAttribute("href", /task-id-unique/);
+        const specLink = page.getByRole("link", { name: "仕様の詳細を開く" });
+        await expect(specLink).toHaveAttribute("href", /task-id-unique/);
         const before = {
           view: await view.inputValue(),
           base: v.story ? null : await baseSelect.inputValue(),
@@ -329,9 +346,9 @@ for (const v of states) {
           await page.getByRole("link", { name: /e2e\/add-task\.txtar:1/ }).first().click();
           await expect(page).toHaveURL(/\/files\?/);
         } else {
-          await claimLink.click();
+          await specLink.click();
           await expect(page.getByText("どのタスクとも重ならない").first()).toBeVisible();
-          if (route.via === "claim-file") {
+          if (route.via === "spec-file") {
             await page.getByRole("link", { name: /e2e\/add-task\.txtar/ }).first().click();
             await expect(page).toHaveURL(/\/files\?/);
           }
@@ -343,7 +360,7 @@ for (const v of states) {
         if (before.base !== null) await expect(page.getByRole("combobox", { name: "ベースブランチ" })).toHaveValue(before.base);
         if (before.story !== null) await expect(storyField(page)).toHaveValue(before.story);
         else await expect(page.getByText(/ストーリー\s*[:：]\s*#24/).first(), "戻った後に、決まったストーリーが示されない").toBeVisible();
-        await expect(page.getByRole("link", { name: "約束の詳細を開く" }), "選んでいた task-id-unique の 1 件の詳細に戻っていない").toHaveAttribute("href", /task-id-unique/);
+        await expect(page.getByRole("link", { name: "仕様の詳細を開く" }), "選んでいた task-id-unique の 1 件の詳細に戻っていない").toHaveAttribute("href", /task-id-unique/);
         await expect(page.getByRole("button", { name: /承認する/ })).toBeVisible();
       });
   }
@@ -351,7 +368,7 @@ for (const v of states) {
 
 // RV-16 と CL-08 の前提: task-id-unique を、main（v1）、#24 の最初のコミット（v2）の後に、さらに 2 回変える（v3・v4）。
 // バージョンごとに、文・理由・条件・レイヤー・エビデンスの予定に、ほかのバージョンに出てこない文字を入れる。
-interface ClaimVersion {
+interface SpecVersion {
   statement: string;
   rationale?: string;
   condition?: string;
@@ -360,14 +377,14 @@ interface ClaimVersion {
 }
 const v1Statement = "タスクの ID は重ならない";
 const v2Statement = "タスクの ID は、すべてのタスクを通して重ならない";
-const v3: ClaimVersion = {
+const v3: SpecVersion = {
   statement: "タスクの ID は、消したタスクとも重ならない",
   rationale: "消したタスクの ID を使い回すと、古い記録と取り違える",
   condition: "タスクを一度でも登録したことがある",
   layers: ["model", "db"],
   plan: "TLA+ で消したタスクも含めて確かめる予定",
 };
-const v4: ClaimVersion = {
+const v4: SpecVersion = {
   statement: "タスクの ID は、どのタスクとも重ならない",
   rationale: "ID でタスクを 1 つに決めるため",
   condition: "タスクが 1 つ以上ある",
@@ -375,23 +392,23 @@ const v4: ClaimVersion = {
   plan: "モデル検査で重ならないことを確かめる予定",
 };
 
-const promisesAt = (c: ClaimVersion) => `[[term]]
+const promisesAt = (c: SpecVersion) => `${upper}[[term]]
 id = "task-id"
 name = "タスクの ID"
 definition = "タスクを見分ける名前"
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task-id"]
+refines = ["add-task"]
 statement = "${c.statement}"
 ${c.rationale ? `rationale = "${c.rationale}"\n` : ""}${c.condition ? `condition = "${c.condition}"\n` : ""}layers = [${c.layers.map((l) => `"${l}"`).join(", ")}]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 ${c.plan ? `
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "plan"
 type = "model-check"
 layers = ["model"]
@@ -421,7 +438,7 @@ function commitV3(r: Repo, date?: string): string {
   return commit(r, "理由と条件を足す", "#24", date);
 }
 
-// 変更履歴の行と承認の記録の行は、CL の約束の詳細と同じく表の行として探す。その時点の中身は、行の中の開く・たたむを
+// 変更履歴の行と承認の記録の行は、CL の仕様の詳細と同じく表の行として探す。その時点の中身は、行の中の開く・たたむを
 // 切り替えるボタンで開く。クリックすると aria-expanded と名前が切り替わる
 type Row = ReturnType<Page["getByRole"]>;
 async function choose(row: Row) {
@@ -440,20 +457,20 @@ const rowOf = (page: Page, text: string) => page.getByRole("row").filter({ hasTe
 async function openReviewDetail(page: Page) {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await select(page, "task-id-unique");
-  await expect(page.getByRole("link", { name: "約束の詳細を開く" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "仕様の詳細を開く" })).toBeVisible();
 }
 
 // RV-16。中身は CL-04・CL-05 と同じ（変更履歴はコミットとストーリーの ID、承認の履歴は承認した人・ストーリー・今の中身に合うか）
-test("レビューの画面の1件の詳細に約束の変更履歴と承認の履歴が出て承認すると今の中身に合う承認が履歴に足される", async ({ page }) => {
+test("レビューの画面の1件の詳細に仕様の変更履歴と承認の履歴が出て承認すると今の中身に合う承認が履歴に足される", async ({ page }) => {
   const c1 = repo.git("rev-parse", "main");
   const c2 = repo.git("rev-parse", "story-24~1");
   const c3 = commitV3(repo);
   await openReviewDetail(page);
 
-  // 変更履歴: 約束を作り・変えたコミットだけ。シナリオだけを変えたコミットは出ない
+  // 変更履歴: 仕様を作り・変えたコミットだけ。シナリオだけを変えたコミットは出ない
   for (const [hash, subject, story] of [
-    [c1, "はじめの約束を置く", "#1"],
-    [c2, "約束を変え、題の約束を足す", "#24"],
+    [c1, "はじめの仕様を置く", "#1"],
+    [c2, "仕様を変え、題の仕様を足す", "#24"],
     [c3, "理由と条件を足す", "#24"],
   ]) {
     const row = rowOf(page, subject);
@@ -479,16 +496,16 @@ test("レビューの画面の1件の詳細に約束の変更履歴と承認の�
   await expect(rowOf(page, "テスト担当")).toContainText(/合いません/);
 });
 
-// CL-08。今の中身として画面に出ているバージョン（約束の詳細では v4、レビューの画面では変更前の v1 と変更後の v4）は、選んで出たか
+// CL-08。今の中身として画面に出ているバージョン（仕様の詳細では v4、レビューの画面では変更前の v1 と変更後の v4）は、選んで出たか
 // 見分けられないので、その画面で出ていないバージョンだけを選ぶ。選ぶ前に出ていないことも確かめる
 const pages = [
-  { name: "約束の詳細の画面", open: async (page: Page) => page.goto(serve.url + "/claims/task-id-unique"), showsV1: false },
+  { name: "仕様の詳細の画面", open: async (page: Page) => page.goto(serve.url + "/specs/task-id-unique"), showsV1: false },
   { name: "レビューの画面", open: openReviewDetail, showsV1: true },
 ];
 
 for (const pg of pages) {
   // @vanda:evidence claim-at-commit
-  test(`${pg.name}で変更履歴の各コミットを選ぶとそのコミットの時点の約束の中身が出る`, async ({ page }) => {
+  test(`${pg.name}で変更履歴の各コミットを選ぶとそのコミットの時点の仕様の中身が出る`, async ({ page }) => {
     commitV3(repo);
     repo.write(".vanda/promises.toml", promisesAt(v4));
     commit(repo, "文を直す", "#24");
@@ -499,9 +516,9 @@ for (const pg of pages) {
     const v3Marks: (string | RegExp)[] = [v3.statement, v3.rationale!, v3.condition!, v3.plan!, "データベース"];
     const choices: [string, (string | RegExp)[]][] = [
       ["理由と条件を足す", v3Marks],
-      ["約束を変え、題の約束を足す", [v2Statement]],
+      ["仕様を変え、題の仕様を足す", [v2Statement]],
     ];
-    if (!pg.showsV1) choices.push(["はじめの約束を置く", [v1Statement]]);
+    if (!pg.showsV1) choices.push(["はじめの仕様を置く", [v1Statement]]);
     for (const [, marks] of choices) {
       for (const m of marks) await expect(page.getByText(m), `選ぶ前から ${m} が出ている`).toHaveCount(0);
     }
@@ -512,7 +529,7 @@ for (const pg of pages) {
   });
 
   test(`${pg.name}で変更履歴のコミットを選ぶとその時点のレイヤーのうち今の設定にないものはIDのまま出る`, async ({ page }) => {
-    // レイヤーの名前は今の設定から引く。v3 で足した db を、v4 で設定からも約束からも消す
+    // レイヤーの名前は今の設定から引く。v3 で足した db を、v4 で設定からも仕様からも消す
     commitV3(repo);
     const cfg = readFileSync(join(repo.root, ".vanda/config.toml"), "utf8");
     repo.write(".vanda/config.toml", cfg.replace('[[layer]]\nid = "db"\nname = "データベース"\ndescription = "保存の制約"\n\n', ""));
@@ -530,7 +547,7 @@ for (const pg of pages) {
   });
 
   // @vanda:evidence claim-at-commit
-  test(`${pg.name}で約束を変える前の承認の記録を選ぶと今の中身でなく承認を書いたコミットの時点の中身が出る`, async ({ page }) => {
+  test(`${pg.name}で仕様を変える前の承認の記録を選ぶと今の中身でなく承認を書いたコミットの時点の中身が出る`, async ({ page }) => {
     commitV3(repo);
     // v3 のときに画面で承認し、その後に v4 へ変える
     await openReviewDetail(page);
@@ -555,39 +572,39 @@ for (const pg of pages) {
     }
   });
 
-  test(`${pg.name}で変更履歴のコミットを開くとその時点の推測と対象が出る`, async ({ page }) => {
-    // 前のバージョンは、対象が用語 task-old（後で消す）で、推測が 1 つ。後のバージョンで、対象を task-id に、推測を別のものに変える
-    const at = (statement: string, subject: string, guess: string, oldTerm: boolean) => `[[term]]
+  test(`${pg.name}で変更履歴のコミットを開くとその時点の推測と具体化する機能が出る`, async ({ page }) => {
+    // 前のバージョンは、refines の先が機能 add-old（後で消す）で、推測が 1 つ。後のバージョンで、refines の先を add-task に、推測を別のものに変える
+    const at = (statement: string, feature: string, guess: string, oldFeature: boolean) => `${upper}[[term]]
 id = "task-id"
 name = "タスクの ID"
 definition = "タスクを見分ける名前"
-${oldTerm ? '\n[[term]]\nid = "task-old"\nname = "古いタスクの名前"\ndefinition = "前に使っていた、タスクを見分ける名前"\n' : ""}
-[[claim]]
+${oldFeature ? '\n[[feature]]\nid = "add-old"\nname = "古いタスクの登録"\ndefinition = "前に使っていた、タスクの足し方"\nrefines = ["no-lost-task"]\n' : ""}
+[[spec]]
 id = "task-id-unique"
-subjects = ["${subject}"]
+refines = ["${feature}"]
 statement = "${statement}"
 layers = ["model"]
 guesses = ["${guess}"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 `;
     const oldGuess = "消したタスクの ID は 30 日たてば使い回せるかもしれない";
-    repo.write(".vanda/promises.toml", at("タスクの ID は、前の名前とも重ならない", "task-old", oldGuess, true));
+    repo.write(".vanda/promises.toml", at("タスクの ID は、前の名前とも重ならない", "add-old", oldGuess, true));
     commit(repo, "推測を書く", "#24");
-    repo.write(".vanda/promises.toml", at(v4.statement, "task-id", "ID は数字だけかもしれない", false));
-    commit(repo, "推測と対象を変える", "#24");
+    repo.write(".vanda/promises.toml", at(v4.statement, "add-task", "ID は数字だけかもしれない", false));
+    commit(repo, "推測と具体化する機能を変える", "#24");
 
     await pg.open(page);
     await expect(page.getByText(v4.statement).first()).toBeVisible();
     await expect(page.getByText(oldGuess), "開く前から前の推測が出ている").toHaveCount(0);
-    await expect(page.getByText(/task-old|古いタスクの名前/), "開く前から前の対象が出ている").toHaveCount(0);
+    await expect(page.getByText(/add-old|古いタスクの登録/), "開く前から前の具体化する機能が出ている").toHaveCount(0);
     await choose(rowOf(page, "推測を書く"));
     await expect(page.getByText("タスクの ID は、前の名前とも重ならない").first()).toBeVisible();
     await expect(page.getByText(oldGuess).first(), "その時点の推測が出ない").toBeVisible();
-    await expect(page.getByText(/task-old|古いタスクの名前/).first(), "その時点の対象が出ない").toBeVisible();
+    await expect(page.getByText(/add-old|古いタスクの登録/).first(), "その時点の具体化する機能が出ない").toBeVisible();
   });
 
   test(`${pg.name}で2つ以上の時点を開くとそれぞれの中身が同時に出たままになり1つをたたんでもほかは開いたまま`, async ({ page }) => {
@@ -604,8 +621,8 @@ layers = ["model"]
     // 開くもの: 変更履歴の #1（v1）と #24 の最初のコミット（v2）、v3 のときの承認（v3）。レビューの画面では v1 の文が
     // 変更前として出ているので、出ている数が 1 つ増えるかで見る
     const opened: [string, string][] = [
-      ["はじめの約束を置く", v1Statement],
-      ["約束を変え、題の約束を足す", v2Statement],
+      ["はじめの仕様を置く", v1Statement],
+      ["仕様を変え、題の仕様を足す", v2Statement],
       ["承認する人", v3.statement],
     ];
     const count = (text: string) => page.getByText(text, { exact: false }).count();
@@ -615,7 +632,7 @@ layers = ["model"]
     for (const [rowText, text] of opened) {
       await expect.poll(() => count(text), { message: `${rowText} の時点の中身が、ほかを開いた後に出ていない` }).toBe(before.get(text)! + 1);
     }
-    await collapse(rowOf(page, "約束を変え、題の約束を足す"));
+    await collapse(rowOf(page, "仕様を変え、題の仕様を足す"));
     await expect.poll(() => count(v2Statement), { message: "たたんだ時点の中身が消えない" }).toBe(before.get(v2Statement)!);
     for (const [rowText, text] of [opened[0], opened[2]]) {
       await expect.poll(() => count(text), { message: `1 つをたたむと、${rowText} の時点の中身も消えた` }).toBe(before.get(text)! + 1);
@@ -666,7 +683,7 @@ layers = ["model"]
     // 承認の記録は、ファイルの中では日時の順にしない（一月の #1 の記録の後に、三月、二月）
     const agreements = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
     const rec = (who: string, at: string) =>
-      agreement("claim", "task-id-unique", sha(claimJSON(v4.statement)), null, "#24")
+      agreement("spec", "task-id-unique", sha(specJSON(v4.statement)), null, "#24")
         .replace("テスト担当", who)
         .replace("agreed_at = 2026-01-01T10:00:00+09:00", `agreed_at = ${at}`);
     repo.write(".vanda/agreements.toml", agreements + rec("三月に承認した人", "2026-03-01T10:00:00+09:00") + rec("二月に承認した人", "2026-02-01T10:00:00+09:00"));
@@ -680,7 +697,7 @@ layers = ["model"]
       expect(i, `${text} の行がない`).toBeGreaterThanOrEqual(0);
       return i;
     };
-    const oldest = Math.min(at("はじめの約束を置く"), at("約束を変え、題の約束を足す"));
+    const oldest = Math.min(at("はじめの仕様を置く"), at("仕様を変え、題の仕様を足す"));
     expect(at("文を直す"), "変更履歴の 2 時間後のコミットが、1 時間後のコミットより下にある").toBeLessThan(at("理由と条件を足す"));
     expect(at("理由と条件を足す"), "変更履歴の 1 時間後のコミットが、はじめのコミットより下にある").toBeLessThan(oldest);
     expect(at("三月に承認した人"), "承認の履歴の三月の承認が、二月の承認より下にある").toBeLessThan(at("二月に承認した人"));
@@ -691,8 +708,8 @@ layers = ["model"]
     commitV3(repo);
     // 承認の記録を足したコミットで、約束リストの形を壊す。次のコミットで直す
     const agreements = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
-    repo.write(".vanda/agreements.toml", agreements + agreement("claim", "task-id-unique", sha(claimJSON(v3.statement)), null, "#24").replace("テスト担当", "壊れた時に承認した人"));
-    repo.write(".vanda/promises.toml", promisesAt(v3) + "\n[[claim]\n");
+    repo.write(".vanda/agreements.toml", agreements + agreement("spec", "task-id-unique", sha(specJSON(v3.statement)), null, "#24").replace("テスト担当", "壊れた時に承認した人"));
+    repo.write(".vanda/promises.toml", promisesAt(v3) + "\n[[spec]\n");
     commit(repo, "承認を書き約束リストを壊す", "#24");
     repo.write(".vanda/promises.toml", promisesAt(v4));
     commit(repo, "文を直す", "#24");
@@ -735,24 +752,24 @@ function withoutRecord(text: string, key: string, story: string): string[] {
 
 // CL-04。消した後に同じ ID で作り直し、推測だけを変え、横のブランチで変えてマージする。日時は、どのコミットも buildRepo のコミットより後にずらす
 // @vanda:evidence claim-detail-origin
-test("約束の詳細の変更履歴には作り直した後の約束のフィンガープリントが変わったマージでないコミットだけが新しい順に出て消すまでのコミットと推測だけを変えたコミットとマージのコミットは出ない", async ({ page }) => {
+test("仕様の詳細の変更履歴には作り直した後の仕様のフィンガープリントが変わったマージでないコミットだけが新しい順に出て消すまでのコミットと推測だけを変えたコミットとマージのコミットは出ない", async ({ page }) => {
   const later = (h: number) => new Date(Date.now() + h * 3600_000).toISOString();
   const first = repo.git("rev-parse", "main");
   const storyChange = repo.git("rev-parse", "story-24~1");
   const termOnly = `[[term]]\nid = "task-id"\nname = "タスクの ID"\ndefinition = "タスクを見分ける名前"\n`;
   const withGuess = (text: string) => text.replace(`layers = ["model"]\n`, `layers = ["model"]\nguesses = ["作り直した後の推測"]\n`);
   repo.write(".vanda/promises.toml", termOnly);
-  const deleted = commit(repo, "約束を消す", "#24", later(1));
+  const deleted = commit(repo, "仕様を消す", "#24", later(1));
   repo.write(".vanda/promises.toml", promisesAt(v4));
-  const recreated = commit(repo, "約束を作り直す", "#24", later(2));
+  const recreated = commit(repo, "仕様を作り直す", "#24", later(2));
   repo.write(".vanda/promises.toml", withGuess(promisesAt(v4)));
-  const guessed = commit(repo, "作り直した約束に推測を足す", "#30", later(3));
+  const guessed = commit(repo, "作り直した仕様に推測を足す", "#30", later(3));
   repo.git("switch", "-q", "-c", "side");
   repo.write(".vanda/promises.toml", withGuess(promisesAt({ ...v4, plan: "横のブランチで変えた予定" })));
   const side = commit(repo, "横のブランチでエビデンスの予定を変える", "#31", later(4));
   repo.git("switch", "-q", "story-24");
   repo.write(".vanda/promises.toml", withGuess(promisesAt({ ...v4, rationale: "作り直した後に変えた理由" })));
-  const changed = commit(repo, "作り直した約束の理由を変える", "#24", later(5));
+  const changed = commit(repo, "作り直した仕様の理由を変える", "#24", later(5));
   execFileSync("git", ["-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "merge", "-q", "--no-ff", "-m", "マージする\n\nStory: #24", "side"], {
     cwd: repo.root,
     env: { ...repo.env, GIT_AUTHOR_DATE: later(6), GIT_COMMITTER_DATE: later(6) },
@@ -764,15 +781,15 @@ test("約束の詳細の変更履歴には作り直した後の約束のフィ�
   expect(mergedPromises).toContain("横のブランチで変えた予定");
   expect(mergedPromises).toContain("作り直した後に変えた理由");
 
-  await page.goto(serve.url + "/claims/task-id-unique");
+  await page.goto(serve.url + "/specs/task-id-unique");
   await expect(page.getByRole("heading", { name: "変更履歴" })).toBeVisible();
   const origin = page.getByRole("table").first();
-  await expect(origin.getByText("約束を作り直す")).toBeVisible();
+  await expect(origin.getByText("仕様を作り直す")).toBeVisible();
   const rows = await origin.locator("tbody tr").allTextContents();
   const want = [
-    [changed, "作り直した約束の理由を変える"],
+    [changed, "作り直した仕様の理由を変える"],
     [side, "横のブランチでエビデンスの予定を変える"],
-    [recreated, "約束を作り直す"],
+    [recreated, "仕様を作り直す"],
   ];
   expect(rows.length, `変更履歴の行: ${rows.join(" / ")}`).toBe(want.length);
   want.forEach(([hash, subject], i) => {
@@ -782,10 +799,10 @@ test("約束の詳細の変更履歴には作り直した後の約束のフィ�
   const all = rows.join("\n");
   for (const [hash, subject] of [
     [merged, "マージする"],
-    [guessed, "作り直した約束に推測を足す"],
-    [deleted, "約束を消す"],
-    [storyChange, "約束を変え、題の約束を足す"],
-    [first, "はじめの約束を置く"],
+    [guessed, "作り直した仕様に推測を足す"],
+    [deleted, "仕様を消す"],
+    [storyChange, "仕様を変え、題の仕様を足す"],
+    [first, "はじめの仕様を置く"],
   ]) {
     expect(all, `変更履歴に ${subject} が出ている`).not.toContain(subject);
     expect(all, `変更履歴に ${subject} のコミットが出ている`).not.toContain(hash.slice(0, 7));
@@ -796,13 +813,13 @@ test("約束の詳細の変更履歴には作り直した後の約束のフィ�
 function decorateAgreements(r: Repo) {
   const text = readFileSync(join(r.root, ".vanda/agreements.toml"), "utf8");
   const parts = text.split("\n[[agreement]]");
-  r.write(".vanda/agreements.toml", "# 承認の記録（E2E の例）\n\n" + parts[0] + "\n[[agreement]]" + parts[1] + "\n# 用語の次は約束\n\n\n[[agreement]]" + parts.slice(2).join("\n[[agreement]]") + "\n# 終わりのコメント\n");
+  r.write(".vanda/agreements.toml", "# 承認の記録（E2E の例）\n\n" + parts[0] + "\n[[agreement]]" + parts[1] + "\n# 用語の次は仕様\n\n\n[[agreement]]" + parts.slice(2).join("\n[[agreement]]") + "\n# 終わりのコメント\n");
   r.write("README.md", "# 例\n");
   commit(r, "承認の記録にコメントを足す", "#24");
 }
 
 // @vanda:evidence revoke-on-screen
-test("承認済の約束で承認を取り消すとストーリーの今の中身への承認の記録だけが1つのコミットで消え提案中に戻りチェックで止まりもう一度承認すると通る", async ({ page }) => {
+test("承認済の仕様で承認を取り消すとストーリーの今の中身への承認の記録だけが1つのコミットで消え提案中に戻りチェックで止まりもう一度承認すると通る", async ({ page }) => {
   decorateAgreements(repo);
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await select(page, "task-id-unique");
@@ -829,7 +846,7 @@ test("承認済の約束で承認を取り消すとストーリーの今の中�
   // #24 の task-id-unique への記録だけが消え、#1 の記録とコメントは同じ順で残る
   expect(nonBlank(agreementsAfter)).toEqual(withoutRecord(agreementsBefore, "task-id-unique", "#24"));
   expect(nonBlank(agreementsAfter).length).toBeLessThan(nonBlank(agreementsBefore).length);
-  for (const c of ["# 承認の記録（E2E の例）", "# 用語の次は約束", "# 終わりのコメント"]) expect(agreementsAfter).toContain(c);
+  for (const c of ["# 承認の記録（E2E の例）", "# 用語の次は仕様", "# 終わりのコメント"]) expect(agreementsAfter).toContain(c);
   // フラグは戻らない
   const promisesAfter = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
   expect(promisesAfter).toBe(promisesBefore);
@@ -888,7 +905,7 @@ for (const w of writers) {
       // story-24 に取り込み、マージベースより前にする
       repo.write(".vanda/promises.toml", promises(v2Statement, false, true));
       commit(repo, "フラグを外す", "#24");
-      const record = agreement("claim", "task-id-unique", sha(claimJSON(v2Statement)), null, "#24")
+      const record = agreement("spec", "task-id-unique", sha(specJSON(v2Statement)), null, "#24")
         .replace('user = { name = "テスト担当", email = "tester@example.com" }', `user = { name = "${w.user.name}", email = "${w.user.email}" }`);
       if (pl.onBase) {
         repo.git("switch", "-q", "main");
@@ -1006,8 +1023,8 @@ test("エビデンスの予定と実際の揃っているかは揃っている�
   repo.write(
     ".vanda/promises.toml",
     text.replace(
-      '[[claim.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n',
-      '[[claim.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "plan"\ntype = "model-check"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "release"\ntype = "human-review"\nlayers = ["model"]\n',
+      '[[spec.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n',
+      '[[spec.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[spec.evidence]]\nstage = "plan"\ntype = "model-check"\nlayers = ["model"]\n\n[[spec.evidence]]\nstage = "release"\ntype = "human-review"\nlayers = ["model"]\n',
     ),
   );
   commit(repo, "エビデンスの予定を足す", "#24");
@@ -1021,11 +1038,11 @@ test("エビデンスの予定と実際の揃っているかは揃っている�
     await expect(group.getByRole("img", { name }), `${type} のエビデンスに「${name}」のアイコンがない`).toBeVisible();
     await expect(group.getByRole("img", { name }), `${type} のエビデンスのアイコンの title が名前と違う`).toHaveAttribute("title", name);
   }
-  // 約束の詳細の画面のエビデンスも、同じアイコンで示す（3 つのエビデンスに 1 つずつ）
-  await page.getByRole("link", { name: "約束の詳細を開く" }).click();
+  // 仕様の詳細の画面のエビデンスも、同じアイコンで示す（3 つのエビデンスに 1 つずつ）
+  await page.getByRole("link", { name: "仕様の詳細を開く" }).click();
   await expect(page.getByRole("heading", { name: "シナリオテスト", exact: true }).first()).toBeVisible();
   for (const name of ["揃っています", "ありません", "アノテーションでは確かめません"]) {
-    await expect(page.getByRole("img", { name, exact: true }), `約束の詳細の画面に「${name}」のアイコンが 1 つでない`).toHaveCount(1);
+    await expect(page.getByRole("img", { name, exact: true }), `仕様の詳細の画面に「${name}」のアイコンが 1 つでない`).toHaveCount(1);
     await expect(page.getByRole("img", { name, exact: true })).toHaveAttribute("title", name);
   }
   await expect(page.getByText("エビデンスがありません")).toHaveCount(0);
@@ -1045,8 +1062,8 @@ test("エビデンスの予定と実際の詳細は長い文も改行も省略�
   repo.write(
     ".vanda/promises.toml",
     text.replace(
-      '[[claim.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n',
-      `[[claim.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "plan"\ntype = "model-check"\nlayers = ["model"]\ndetail = ${JSON.stringify(detail)}\n`,
+      '[[spec.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n',
+      `[[spec.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[spec.evidence]]\nstage = "plan"\ntype = "model-check"\nlayers = ["model"]\ndetail = ${JSON.stringify(detail)}\n`,
     ),
   );
   commit(repo, "長い詳細を書く", "#24");
@@ -1069,14 +1086,14 @@ test("エビデンスの予定と実際の詳細は長い文も改行も省略�
 // 一覧の 1 件は、枠のどこをクリックしても選ばれる（番号・種類・状態のアイコン・フラグのアイコン・枠の端）
 test("変わったものの一覧の1件は名前のほかに番号や種類や状態のアイコンやフラグのアイコンや枠の端をクリックしても選ばれる", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
-  const detailOf = (id: string) => expect(page.getByRole("link", { name: "約束の詳細を開く" }), `${id} が選ばれていない`).toHaveAttribute("href", new RegExp(`/claims/${id}`));
+  const detailOf = (id: string) => expect(page.getByRole("link", { name: "仕様の詳細を開く" }), `${id} が選ばれていない`).toHaveAttribute("href", new RegExp(`/specs/${id}`));
   // task-title-required は 2 件目で、提案中のアイコンと AI 案のアイコンを持つ
   // 種類とアイコンは名前のボタンの外にあるので、1 件の枠（listitem）の中でクリックする
   const frame = page.getByRole("listitem").filter({ hasText: "task-title-required" }).first();
   await expect(frame).toBeVisible();
   const spots: [string, () => Promise<void>][] = [
     ["番号", () => frame.getByText("2", { exact: true }).first().click()],
-    ["種類", () => frame.getByText("約束", { exact: true }).click()],
+    ["種類", () => frame.getByText("仕様", { exact: true }).click()],
     ["状態のアイコン", () => frame.getByRole("img", { name: "提案中", exact: true }).click()],
     ["フラグのアイコン", () => frame.getByRole("img", { name: "AI 案", exact: true }).click()],
     ["枠の左上の端", () => frame.click({ position: { x: 2, y: 2 } })],
@@ -1089,7 +1106,7 @@ test("変わったものの一覧の1件は名前のほかに番号や種類や�
     await select(page, "task-id-unique");
     await detailOf("task-id-unique");
     await click();
-    await expect(page.getByRole("link", { name: "約束の詳細を開く" }), `${spot}をクリックしても task-title-required が選ばれない`).toHaveAttribute("href", /\/claims\/task-title-required/);
+    await expect(page.getByRole("link", { name: "仕様の詳細を開く" }), `${spot}をクリックしても task-title-required が選ばれない`).toHaveAttribute("href", /\/specs\/task-title-required/);
   }
 });
 
@@ -1109,8 +1126,8 @@ const allStagesEvidence: [string, string][] = [
 const twoStagesEvidence: [string, string][] = [["implementation", "scenario-test"], ["plan", "model-check"]];
 
 function promisesWithEvidence(statement: string, ev: [string, string][]) {
-  return `[[term]]\nid = "task-id"\nname = "タスクの ID"\ndefinition = "タスクを見分ける名前"\n\n[[claim]]\nid = "task-id-unique"\nsubjects = ["task-id"]\nstatement = "${statement}"\nlayers = ["model"]\n` +
-    ev.map(([stage, type]) => `\n[[claim.evidence]]\nstage = "${stage}"\ntype = "${type}"\nlayers = ["model"]\n`).join("");
+  return upper + `[[term]]\nid = "task-id"\nname = "タスクの ID"\ndefinition = "タスクを見分ける名前"\n\n[[spec]]\nid = "task-id-unique"\nrefines = ["add-task"]\nstatement = "${statement}"\nlayers = ["model"]\n` +
+    ev.map(([stage, type]) => `\n[[spec.evidence]]\nstage = "${stage}"\ntype = "${type}"\nlayers = ["model"]\n`).join("");
 }
 
 async function evidenceHeadings(page: Page): Promise<string[]> {
@@ -1149,12 +1166,12 @@ for (const pg of pages) {
   }
 }
 
-test("約束の詳細の画面で変更履歴のコミットを開くとその時点のエビデンスもステージとタイプの見出しで分けて出る", async ({ page }) => {
+test("仕様の詳細の画面で変更履歴のコミットを開くとその時点のエビデンスもステージとタイプの見出しで分けて出る", async ({ page }) => {
   repo.write(".vanda/promises.toml", promisesWithEvidence(v3.statement, allStagesEvidence));
   commit(repo, "エビデンスの予定を書く", "#24");
   repo.write(".vanda/promises.toml", promisesWithEvidence(v4.statement, twoStagesEvidence));
   commit(repo, "エビデンスの予定を減らす", "#24");
-  await page.goto(serve.url + "/claims/task-id-unique");
+  await page.goto(serve.url + "/specs/task-id-unique");
   await expect(page.getByText(v4.statement).first()).toBeVisible();
   await expect.poll(() => evidenceHeadings(page)).not.toEqual([]);
   const before = await evidenceHeadings(page);
@@ -1167,7 +1184,7 @@ test("約束の詳細の画面で変更履歴のコミットを開くとその�
   checkHeadings(after.slice(before.length), allStagesEvidence, "その時点の中身");
 });
 
-// RV-18: 約束の詳細の画面とファイルの画面でも、ストーリーのレビューから移ったときは承認・取り消しができる
+// RV-18: 仕様の詳細の画面とファイルの画面でも、ストーリーのレビューから移ったときは承認・取り消しができる
 const annotatedScenario = "# シナリオ\n# @vanda:evidence task-id-unique\n! exec vanda-task add a\n-- a.txt --\na\n";
 const recordsOf = (key: string, story: string) => {
   const text = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
@@ -1195,13 +1212,13 @@ async function revokeHere(page: Page, url: RegExp) {
 // ブランチのコミットから決まる（#24）
 // @vanda:evidence agree-from-detail-pages
 // @vanda:evidence agree-from-detail-pages-stay
-test("レビューの画面から約束の詳細へ移って承認すると1コミットで記録が増えその画面で承認済になり履歴に足され戻ると一覧でも承認済でその画面で取り消せる", async ({ page }) => {
+test("レビューの画面から仕様の詳細へ移って承認すると1コミットで記録が増えその画面で承認済になり履歴に足され戻ると一覧でも承認済でその画面で取り消せる", async ({ page }) => {
   await page.goto(serve.url + "/");
   await select(page, "task-id-unique");
-  await page.getByRole("link", { name: "約束の詳細を開く" }).click();
-  await expect(page).toHaveURL(/\/claims\/task-id-unique/);
+  await page.getByRole("link", { name: "仕様の詳細を開く" }).click();
+  await expect(page).toHaveURL(/\/specs\/task-id-unique/);
   expect(recordsOf("task-id-unique", "#24")).toBe(0);
-  await agreeHere(page, /\/claims\/task-id-unique/);
+  await agreeHere(page, /\/specs\/task-id-unique/);
   expect(recordsOf("task-id-unique", "#24"), "承認の記録が 1 件増えていない").toBe(1);
   expect(repo.git("diff", "--name-only", "HEAD~1", "HEAD").split("\n").sort()).toEqual([".vanda/agreements.toml", ".vanda/promises.toml"]);
   const row = rowOf(page, "承認する人");
@@ -1212,8 +1229,8 @@ test("レビューの画面から約束の詳細へ移って承認すると1コ�
   await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
   await expect(listIcon(page, "task-id-unique", "承認済"), "戻った一覧で承認済になっていない").toBeVisible();
 
-  await page.getByRole("link", { name: "約束の詳細を開く" }).click();
-  await revokeHere(page, /\/claims\/task-id-unique/);
+  await page.getByRole("link", { name: "仕様の詳細を開く" }).click();
+  await revokeHere(page, /\/specs\/task-id-unique/);
   expect(recordsOf("task-id-unique", "#24"), "取り消しても承認の記録が残っている").toBe(0);
   await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
   await expect(listIcon(page, "task-id-unique", "提案中")).toBeVisible();
@@ -1265,15 +1282,15 @@ test("レビューの画面の一覧のファイルからファイルの画面�
   expect(recordsOf(fp, "#24"), "取り消してもファイルへの承認の記録が残っている").toBe(0);
 });
 
-// 取り消せる範囲は RV-17 と同じ。約束の詳細の画面で、誰が × どこで書いたかを全部回す
+// 取り消せる範囲は RV-17 と同じ。仕様の詳細の画面で、誰が × どこで書いたかを全部回す
 for (const w of writers) {
   for (const pl of places) {
     const can = w.self && !pl.onBase;
     // @vanda:evidence agree-from-detail-pages
-    test(`約束の詳細の画面で${w.name}が${pl.name}で書いた承認の記録は${can ? "取り消せる" : "取り消せず取り消しのボタンが出ない"}`, async ({ page }) => {
+    test(`仕様の詳細の画面で${w.name}が${pl.name}で書いた承認の記録は${can ? "取り消せる" : "取り消せず取り消しのボタンが出ない"}`, async ({ page }) => {
       repo.write(".vanda/promises.toml", promises(v2Statement, false, true));
       commit(repo, "フラグを外す", "#24");
-      const record = agreement("claim", "task-id-unique", sha(claimJSON(v2Statement)), null, "#24")
+      const record = agreement("spec", "task-id-unique", sha(specJSON(v2Statement)), null, "#24")
         .replace('user = { name = "テスト担当", email = "tester@example.com" }', `user = { name = "${w.user.name}", email = "${w.user.email}" }`);
       if (pl.onBase) {
         repo.git("switch", "-q", "main");
@@ -1287,35 +1304,35 @@ for (const w of writers) {
       }
       await page.goto(serve.url + "/");
       await select(page, "task-id-unique");
-      await page.getByRole("link", { name: "約束の詳細を開く" }).click();
+      await page.getByRole("link", { name: "仕様の詳細を開く" }).click();
       await expect(page.getByText("承認済").first()).toBeVisible();
       if (!can) {
         await expect(unagreeButton(page)).toHaveCount(0);
         return;
       }
-      await revokeHere(page, /\/claims\/task-id-unique/);
+      await revokeHere(page, /\/specs\/task-id-unique/);
     });
   }
 }
 
 // @vanda:evidence agree-from-detail-pages-notes
-test("ストーリーのレビューから一覧にないファイルや約束を開くと承認のボタンがなくこのストーリーでは変わっていないと示す", async ({ page }) => {
-  // release は story-24 の今と同じ。release と比べると一覧は空なので、どのファイルも約束も一覧にない
+test("ストーリーのレビューから一覧にないファイルや仕様を開くと承認のボタンがなくこのストーリーでは変わっていないと示す", async ({ page }) => {
+  // release は story-24 の今と同じ。release と比べると一覧は空なので、どのファイルも仕様も一覧にない
   repo.git("branch", "release", "story-24");
   await page.goto(serve.url + "/?view=branch&base=main");
   await select(page, "task-id-unique");
-  const claimHref = await page.getByRole("link", { name: "約束の詳細を開く" }).getAttribute("href");
-  expect(claimHref).toBeTruthy();
+  const specHref = await page.getByRole("link", { name: "仕様の詳細を開く" }).getAttribute("href");
+  expect(specHref).toBeTruthy();
   // レビューから移るときの URL のまま、ベースブランチだけを release に、ストーリーを #24 に名指しする
   const fromReview = (path: string) => {
-    const u = new URL(claimHref!, serve.url);
+    const u = new URL(specHref!, serve.url);
     u.searchParams.set("base", "release");
     u.searchParams.set("story", "#24");
     u.searchParams.delete("sel");
     return path + "?" + u.searchParams.toString();
   };
-  await page.goto(serve.url + fromReview("/claims/task-id-unique"));
-  await expect(page.getByText("このストーリーでは変わっていない約束です。").first()).toBeVisible();
+  await page.goto(serve.url + fromReview("/specs/task-id-unique"));
+  await expect(page.getByText("このストーリーでは変わっていない仕様です。").first()).toBeVisible();
   await expect(page.getByRole("button", { name: /承認する/ })).toHaveCount(0);
   await page.goto(serve.url + fromReview("/files") + "&path=" + encodeURIComponent("e2e/add-task.txtar"));
   await expect(page.getByText("このストーリーでは変わっていないファイルです。").first()).toBeVisible();
@@ -1323,8 +1340,8 @@ test("ストーリーのレビューから一覧にないファイルや約束�
 });
 
 // @vanda:evidence agree-from-detail-pages-notes
-test("約束の詳細とファイルの画面をURLで直接開くと承認のボタンがなくストーリーのレビューから開くと承認できると示す", async ({ page }) => {
-  for (const path of ["/claims/task-id-unique", "/files?path=" + encodeURIComponent("e2e/add-task.txtar")]) {
+test("仕様の詳細とファイルの画面をURLで直接開くと承認のボタンがなくストーリーのレビューから開くと承認できると示す", async ({ page }) => {
+  for (const path of ["/specs/task-id-unique", "/files?path=" + encodeURIComponent("e2e/add-task.txtar")]) {
     await page.goto(serve.url + path);
     await expect(page.getByText("ストーリーのレビューから開くと、承認できます。").first(), `${path} に示されない`).toBeVisible();
     await expect(page.getByRole("button", { name: /承認する/ })).toHaveCount(0);
@@ -1349,21 +1366,21 @@ const wsAfter = {
   rationale: ws.rationale.replace("消す相手を   ", "消す相手を"),
 };
 const q2 = (s: string) => JSON.stringify(s);
-const wsPromises = (w: typeof ws) => `[[term]]
+const wsPromises = (w: typeof ws) => `${upper}[[term]]
 id = "task-id"
 name = "タスクの ID"
 definition = ${q2(w.definition)}
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task-id"]
+refines = ["add-task"]
 statement = ${q2(w.statement)}
 condition = ${q2(w.condition)}
 rationale = ${q2(w.rationale)}
 layers = ["model"]
 guesses = [${q2(w.guess)}]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
@@ -1381,9 +1398,9 @@ function wsRepo() {
 const shown = async (page: Page) => page.locator("body").innerText();
 const occurrences = (text: string, s: string) => text.split(s).length - 1;
 
-test("約束の詳細の画面は利用者が書いた文の続いた空白と全角の空白と改行を保って出す", async ({ page }) => {
+test("仕様の詳細の画面は利用者が書いた文の続いた空白と全角の空白と改行を保って出す", async ({ page }) => {
   wsRepo();
-  await page.goto(serve.url + "/claims/task-id-unique");
+  await page.goto(serve.url + "/specs/task-id-unique");
   await expect(page.getByText("（後）").first()).toBeVisible();
   const text = await shown(page);
   for (const [name, s] of Object.entries({ 文: wsAfter.statement, 条件: wsAfter.condition, 理由: wsAfter.rationale, 推測: wsAfter.guess, 詳細: wsAfter.detail })) {
@@ -1447,8 +1464,8 @@ function withGoEvidence(r: Repo) {
   r.write(
     ".vanda/promises.toml",
     text.replace(
-      '[[claim.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n',
-      '[[claim.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[claim.evidence]]\nstage = "implementation"\ntype = "unit-test"\nlayers = ["model"]\n',
+      '[[spec.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n',
+      '[[spec.evidence]]\nstage = "implementation"\ntype = "scenario-test"\nlayers = ["model"]\n\n[[spec.evidence]]\nstage = "implementation"\ntype = "unit-test"\nlayers = ["model"]\n',
     ),
   );
   r.write("e2e/add-task.txtar", annotatedScenario);
@@ -1497,20 +1514,20 @@ test("エビデンスのファイルの画面で承認して戻るとエビデ�
   await expectFileStates(page, "承認済", "ファイルの画面で承認して戻った後");
 });
 
-// CL-01: 約束の詳細に、文・理由・条件・レイヤーを示す（レイヤーは設定の名前で）
+// CL-01: 仕様の詳細に、文・理由・条件・レイヤーを示す（レイヤーは設定の名前で）
 // @vanda:evidence claim-detail-fields
-test("約束の詳細の画面に文と理由と条件とレイヤーの名前が出る", async ({ page }) => {
+test("仕様の詳細の画面に文と理由と条件とレイヤーの名前が出る", async ({ page }) => {
   repo.write(".vanda/promises.toml", promisesAt(v4));
   commit(repo, "理由と条件を書く", "#24");
-  await page.goto(serve.url + "/claims/task-id-unique");
+  await page.goto(serve.url + "/specs/task-id-unique");
   for (const t of [v4.statement, v4.rationale!, v4.condition!, "モデル"]) {
-    await expect(page.getByText(t, { exact: false }).first(), `約束の詳細に「${t}」が出ない`).toBeVisible();
+    await expect(page.getByText(t, { exact: false }).first(), `仕様の詳細に「${t}」が出ない`).toBeVisible();
   }
 });
 
-// RV-05: 変更したものは、変更前と変更後の中身を示す（約束は文の差分、ファイルは行）
+// RV-05: 変更したものは、変更前と変更後の中身を示す（仕様は文の差分、ファイルは行）
 // @vanda:evidence review-before-after
-test("レビューの画面で変えた約束とファイルの変更前と変更後の中身が出る", async ({ page }) => {
+test("レビューの画面で変えた仕様とファイルの変更前と変更後の中身が出る", async ({ page }) => {
   await page.goto(serve.url + "/");
   await select(page, "task-id-unique");
   // #24 で、文に「、すべてのタスクを通して」を足した。足した所は ins に出て、変わらない所も見える
@@ -1524,7 +1541,7 @@ test("レビューの画面で変えた約束とファイルの変更前と変�
 
 // RV-14: そのストーリーが承認した後に中身が変わったものを「承認が失効した」と示す
 // @vanda:evidence review-detached-shown
-test("ストーリーが承認した約束を変えると一覧に承認が失効したと出る", async ({ page }) => {
+test("ストーリーが承認した仕様を変えると一覧に承認が失効したと出る", async ({ page }) => {
   await page.goto(serve.url + "/");
   await agreeAll(page, ["task-id-unique"]);
   const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
@@ -1571,7 +1588,7 @@ test("一覧の1件の2行目に種類と状態のアイコンとフラグのア
   await expect(icons).toHaveCount(2);
   await expect(icons.nth(0)).toHaveAccessibleName("提案中");
   await expect(icons.nth(1)).toHaveAccessibleName("AI 案");
-  const kindBox = (await row.getByText("約束", { exact: true }).boundingBox())!;
+  const kindBox = (await row.getByText("仕様", { exact: true }).boundingBox())!;
   const nameBox = (await row.getByText("task-title-required", { exact: true }).boundingBox())!;
   expect(kindBox.y, "種類が名前の下の行にない").toBeGreaterThanOrEqual(nameBox.y + nameBox.height - 1);
   for (let i = 0; i < 2; i++) {
@@ -1591,13 +1608,13 @@ test("一覧の1件の2行目に種類と状態のアイコンとフラグのア
 
   const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
   repo.write(".vanda/promises.toml", text.replace("タスクの題は空にできない", "タスクの題は空にも空白だけにもできない"));
-  commit(repo, "題の約束を直す", "#24");
+  commit(repo, "題の仕様を直す", "#24");
   await page.reload();
   await expect(listIcon(page, "task-title-required", "承認が失効した"), "承認の後に変えても承認が失効したのアイコンにならない").toBeVisible();
   for (const name of ["提案中", "承認済"]) await expect(listIcon(page, "task-title-required", name), `承認が失効したものに${name}のアイコンもある`).toHaveCount(0);
 });
 
-// RV-10・RV-02: 一覧は約束のレイヤー・用語と機能・ファイルのまとまりに分け、たたむとたたんだ件数を示す。1 件ごとに通し番号と総数
+// RV-10・RV-02: 一覧は仕様のレイヤー・用語と機能・ファイルのまとまりに分け、たたむとたたんだ件数を示す。1 件ごとに通し番号と総数
 // @vanda:evidence review-groups-fold
 // @vanda:evidence review-numbering
 test("一覧はまとまりに分かれ通し番号と総数が出てまとまりをたたむと件数が出て中が隠れる", async ({ page }) => {
@@ -1606,10 +1623,10 @@ test("一覧はまとまりに分かれ通し番号と総数が出てまとま�
   for (const [no, name] of [["1", "task-id-unique"], ["2", "task-title-required"], ["3", "e2e/add-task.txtar"]]) {
     await expect(listItem(page, name), `${name} に通し番号 ${no} がない`).toContainText(no);
   }
-  const group = page.getByRole("button", { name: /約束.*2 件/ }).first();
-  await expect(group, "約束のまとまりの見出し（2 件）がない").toBeVisible();
+  const group = page.getByRole("button", { name: /仕様.*2 件/ }).first();
+  await expect(group, "仕様のまとまりの見出し（2 件）がない").toBeVisible();
   await group.click();
-  await expect(page.getByRole("listitem").filter({ hasText: "task-title-required" }), "たたんでも約束が見えている").toHaveCount(0);
+  await expect(page.getByRole("listitem").filter({ hasText: "task-title-required" }), "たたんでも仕様が見えている").toHaveCount(0);
   await expect(group, "たたんだまとまりに件数が出ていない").toContainText("2 件");
   await expect(listItem(page, "e2e/add-task.txtar"), "ほかのまとまりまで隠れた").toBeVisible();
   await group.click();
@@ -1635,15 +1652,15 @@ printf '%s' '{"title":"タスクの ID を重ならないようにする","body"
 
 // CL-07: TLA+ の定義は記号で見せ、コピーしたときはリポジトリの文字のまま（ASCII）にする
 // @vanda:evidence tla-copy-ascii
-test("約束の詳細の画面でTLAの定義をコピーするとリポジトリの文字のままになる", async ({ page, context }) => {
+test("仕様の詳細の画面でTLAの定義をコピーするとリポジトリの文字のままになる", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const def = "Unique == \\A a, b \\in Ids : a = b => a = b";
   const cfg = readFileSync(join(repo.root, ".vanda/config.toml"), "utf8");
   repo.write(".vanda/config.toml", cfg.replace("[gui]", '[[annotation]]\npaths = ["spec/*.tla"]\nadapter = "tla"\ntypes = ["model-check"]\n\n[gui]'));
-  repo.write("spec/Task.tla", "---- MODULE Task ----\nIds == {1, 2}\n\n\\* @vanda:claim task-id-unique\n" + def + "\n====\n");
+  repo.write("spec/Task.tla", "---- MODULE Task ----\nIds == {1, 2}\n\n\\* @vanda:spec task-id-unique\n" + def + "\n====\n");
   repo.write(".vanda/promises.toml", promisesAt(v4));
   commit(repo, "モデルを足す", "#24");
-  await page.goto(serve.url + "/claims/task-id-unique");
+  await page.goto(serve.url + "/specs/task-id-unique");
   await expect(page.getByText("∀", { exact: false }).first(), "TLA+ の定義が記号で出ていない").toBeVisible();
   await page.getByRole("button", { name: /コピー/ }).first().click();
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText()), { message: "コピーした文字がリポジトリの文字のままでない" }).toContain(def);
@@ -1662,10 +1679,10 @@ const alignedSymbols: [string, number][] = [
 async function openTlaModel(page: Page, def: string) {
   const cfg = readFileSync(join(repo.root, ".vanda/config.toml"), "utf8");
   repo.write(".vanda/config.toml", cfg.replace("[gui]", '[[annotation]]\npaths = ["spec/*.tla"]\nadapter = "tla"\ntypes = ["model-check"]\n\n[gui]'));
-  repo.write("spec/Task.tla", "---- MODULE Task ----\nIds == {1, 2}\n\n\\* @vanda:claim task-id-unique\n" + def + "\n====\n");
+  repo.write("spec/Task.tla", "---- MODULE Task ----\nIds == {1, 2}\n\n\\* @vanda:spec task-id-unique\n" + def + "\n====\n");
   repo.write(".vanda/promises.toml", promisesAt(v4));
   commit(repo, "モデルを足す", "#24");
-  await page.goto(serve.url + "/claims/task-id-unique");
+  await page.goto(serve.url + "/specs/task-id-unique");
   await expect(page.locator("pre.code", { hasText: "Unique ≜" }).first(), "TLA+ の定義が記号で出ていない").toBeVisible();
   // 書体（等幅と数学の記号）を読み終えてから測る。読む前は代わりの書体で描くので、幅が変わる
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
@@ -1813,7 +1830,7 @@ test("一覧を文字で絞り込み承認した後に承認済でないもの�
 });
 
 // @vanda:evidence review-filter-kept
-test("絞り込みの条件は約束の詳細から戻っても読み込み直しても残る", async ({ page }) => {
+test("絞り込みの条件は仕様の詳細から戻っても読み込み直しても残る", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await expectListed(page, items, "絞り込む前");
   const box = filterList(page).getByRole("searchbox", { name: "絞り込み" });
@@ -1827,10 +1844,10 @@ test("絞り込みの条件は約束の詳細から戻っても読み込み直�
     await expectListed(page, ["task-title-required"], where);
   };
   await select(page, "task-title-required");
-  await page.getByRole("link", { name: "約束の詳細を開く" }).click();
-  await expect(page).toHaveURL(/\/claims\/task-title-required/);
+  await page.getByRole("link", { name: "仕様の詳細を開く" }).click();
+  await expect(page).toHaveURL(/\/specs\/task-title-required/);
   await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
-  await kept("約束の詳細から戻ったとき");
+  await kept("仕様の詳細から戻ったとき");
   await page.reload();
   await kept("読み込み直したとき");
 });
