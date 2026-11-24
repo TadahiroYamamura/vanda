@@ -657,7 +657,7 @@ refines = ["judge-without-reading-code"]
 [[feature]]
 id = "require-formal-evidence-for-core"
 name = "コア機能に強いエビデンスを求める"
-definition = "{@id:core-feature}に印を付け、その{@id:spec}に{@id:model-check}か、行わない理由を求める"
+definition = "{@id:core-feature}に印を付け、その{@id:spec}に、{@id:model-check}の{@id:evidence-plan}か、行わない理由のどちらかを求める"
 refines = ["severe-loss-visible"]
 
 [[feature]]
@@ -703,7 +703,7 @@ detail = "人が画面を見て、反証の条件に当たらないことを確�
 id = "screen-matches-check"
 refines = ["agree-on-seen-content"]
 statement = "オーナーが画面で見る中身と判定は、{@id:check}が使うコミットした中身と判定に一致する"
-condition = "同じコミットで、画面では{@id:agreed}・{@id:evidence}が揃っているのに、{@id:check}が{@id:mistake}にする（またはその逆）。コミットしていない変更で、画面の判定が変わる"
+condition = "同じコミットで、画面では{@id:agreed}・{@id:evidence}が揃っているのに、{@id:check}では{@id:mistake}になる（またはその逆）。コミットしていない変更で、画面の判定が変わる"
 layers = ["cli", "api", "gui"]
 flags = ["ai-proposal"]
 model_check_waiver = "画面と git の操作の決まりで、{@id:agreement-record}の移り変わりではないため"
@@ -1113,7 +1113,7 @@ detail = "操作の後に、反証の条件に当たる状態を見つけて知�
 id = "owner-understands-each-change"
 refines = ["compare-contents"]
 statement = "オーナーは、1 件ごとに何がどう変わったかを、ソースコードや git を読まずに理解できる"
-condition = "変更の中身を判断するために、ファイルや git の差分を開く必要がある。TLA+ を読み違える"
+condition = "変更の中身を判断するために、ファイルや git の差分を開く必要がある。オーナーが、TLA+ の記号を読み違える"
 layers = ["api", "gui"]
 flags = ["ai-proposal"]
 
