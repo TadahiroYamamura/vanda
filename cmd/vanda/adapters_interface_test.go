@@ -50,6 +50,8 @@ func runVandaIn(t *testing.T, bin, dir string, env []string, args ...string) (in
 	var out, errb strings.Builder
 	cmd.Stdout, cmd.Stderr = &out, &errb
 	err := cmd.Run()
+	wantNoOldWords(t, "vanda "+strings.Join(args, " ")+" の標準出力", out.String())
+	wantNoOldWords(t, "vanda "+strings.Join(args, " ")+" の標準エラー", errb.String())
 	if e, ok := err.(*exec.ExitError); ok {
 		return e.ExitCode(), out.String(), errb.String()
 	}

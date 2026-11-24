@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -148,9 +149,18 @@ func (r *repoT) run(checks, base, story string) (bool, string, error) {
 	}
 	var out, errOut bytes.Buffer
 	pass, err := Run(Options{Root: r.root, Cfg: r.config(), Specs: specs, Base: base, Story: story, Out: &out, Err: &errOut})
+	// どのテストが出させた結果の行と誤りの文にも、使わなくなった言葉がないことを確かめる
+	for _, line := range strings.Split(out.String()+errOut.String(), "\n") {
+		if oldWord.MatchString(line) {
+			r.t.Errorf("チェックの出力に、使わなくなった言葉（仕様を指す「約束」・「PO」・「監督」）が残っている: %s", line)
+		}
+	}
 	// 多くのテストは結果の行と誤りの中身をまとめて確かめるので、両方をつないで返す。出し分けは別のテストで確かめる
 	return pass, out.String() + errOut.String(), err
 }
+
+// 使わなくなった言葉（docs/plans/promise-reorg-shape-impl.md の 2.7）。「約束リスト」は今も使う。PO は、英語の語の一部を除く
+var oldWord = regexp.MustCompile(`約束(?:[^リ]|$)|(?:^|[^A-Za-z])PO(?:[^A-Za-z]|$)|監督`)
 
 const baseConfig = `version = "0.1.0"
 
@@ -732,8 +742,9 @@ func TestAgreementTargetsは承認の記録の決まっていない表と項目�
 
 // @vanda:evidence annotation-links-kinds
 func TestAnnotationLinksは種類ごとに指す先の表が違えば全部の組み合わせで誤りにする(t *testing.T) {
-	// 種類 → 指してよい表。ID は baseFiles の用語 task・機能 add-task・仕様 task-unique
-	ids := map[string]string{"term": "task", "feature": "add-task", "spec": "task-unique"}
+	// 種類 → 指してよい表。ID は baseFiles の用語 task・機能 add-task・仕様 task-unique・性質 no-lost-task と、ここで足す前提 disk-works。
+	// 性質と前提は、どの種類のアノテーションからも指せない（docs/formats.md の「アノテーション」）
+	ids := map[string]string{"term": "task", "feature": "add-task", "spec": "task-unique", "property": "no-lost-task", "truth": "disk-works"}
 	okFor := map[string]string{"term": "term", "feature": "feature", "spec": "spec", "evidence": "spec", "sensor": "spec"}
 	for kind, okTable := range okFor {
 		for table, id := range ids {
@@ -741,9 +752,10 @@ func TestAnnotationLinksは種類ごとに指す先の表が違えば全部の�
 				r := goodRepo(t)
 				// どの種類も書けるカスタムアダプタで読む
 				r.write(map[string]string{
-					".vanda/config.toml":  baseConfig + "\n[[annotation]]\npaths = [\"ext/*.ext\"]\nadapter = \"any\"\ntypes = [\"unit-test\"]\n",
-					".vanda/adapters/any": "#!/bin/sh\ncat >/dev/null\necho '{\"names\":[{\"line\":1,\"name\":\"x\"}]}'\n",
-					"ext/a.ext":           "@vanda:" + kind + " " + id + "\n",
+					".vanda/config.toml":   baseConfig + "\n[[annotation]]\npaths = [\"ext/*.ext\"]\nadapter = \"any\"\ntypes = [\"unit-test\"]\n",
+					".vanda/adapters/any":  "#!/bin/sh\ncat >/dev/null\necho '{\"names\":[{\"line\":1,\"name\":\"x\"}]}'\n",
+					".vanda/promises.toml": basePromises + "\n[[truth]]\nid = \"disk-works\"\nstatement = \"ディスクに書いたものは、読み戻せる\"\n",
+					"ext/a.ext":            "@vanda:" + kind + " " + id + "\n",
 				})
 				if err := os.Chmod(filepath.Join(r.root, ".vanda/adapters/any"), 0o755); err != nil {
 					t.Fatal(err)

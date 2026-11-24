@@ -3,6 +3,7 @@
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { isInaccessible } from "@testing-library/dom";
+import { cleanup as unmount } from "@testing-library/react";
 import { expect } from "vitest";
 import type { SpecDetail, SpecHistory, Context, Entry, Piece, PropertyDetail, RefTarget, Review, Story, TruthDetail } from "../api";
 
@@ -246,4 +247,20 @@ export function expectLoading(el: HTMLElement, where: string) {
   if (marks.length === 0 && el.parentElement) marks = Array.from(el.parentElement.children).filter((x): x is HTMLElement => x !== el && empty(x));
   expect(marks.length, `${where}: スピナーがない`).toBeGreaterThan(0);
   for (const m of marks) expect(isInaccessible(m), `${where}: スピナーが飾りになっていない（スクリーンリーダーに読み上げられる）`).toBe(true);
+}
+
+// 使わなくなった言葉（docs/plans/promise-reorg-shape-impl.md の 2.7）。仕様を指す「約束」（「約束リスト」は今も使う）と、「PO」「監督」。PO は、POST のような英語の語の一部を除く
+const oldWord = /.{0,20}(?:約束(?!リスト)|(?<![A-Za-z])PO(?![A-Za-z])|監督).{0,20}/gs;
+
+// cleanup は、画面を片付ける前に、出ている文言（文字と、読み上げやポップアップに使う属性）に、使わなくなった言葉がないことを確かめる。
+// 画面のテストは、どれもこれで片付けるので、テストが出させたどの状態の画面も確かめる
+export function cleanup() {
+  const attrs = ["title", "aria-label", "placeholder", "alt"];
+  const shown = [
+    document.body.textContent ?? "",
+    ...Array.from(document.body.querySelectorAll(attrs.map((a) => `[${a}]`).join(","))).flatMap((el) => attrs.map((a) => el.getAttribute(a) ?? "")),
+  ];
+  const left = shown.flatMap((text) => text.match(oldWord) ?? []);
+  unmount();
+  expect(left, "画面に、使わなくなった言葉（仕様を指す「約束」・「PO」・「監督」）が残っている").toEqual([]);
 }

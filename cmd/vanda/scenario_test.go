@@ -22,10 +22,13 @@ import (
 // testscript.RunMain で main を直に呼ぶ形にしないのは、実装の内部の関数（main の入口の形）に頼らずに書くため。
 func TestScenario(t *testing.T) {
 	t.Parallel()
-	bin := buildVanda(t)
-	binDir := filepath.Dir(bin)
+	runScenarios(t, filepath.Dir(buildVanda(t)), nil)
+}
 
-	current, err := runningVersion(bin)
+// runScenarios は、binDir の vanda で、シナリオをすべて動かす。extra は、シナリオごとの環境の変数に足すもの。
+func runScenarios(t *testing.T, binDir string, extra map[string]string) {
+	t.Helper()
+	current, err := runningVersion("")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,6 +53,9 @@ func TestScenario(t *testing.T) {
 			env.Setenv("GIT_AUTHOR_EMAIL", "tester@example.com")
 			env.Setenv("GIT_COMMITTER_NAME", "テスト担当")
 			env.Setenv("GIT_COMMITTER_EMAIL", "tester@example.com")
+			for k, v := range extra {
+				env.Setenv(k, v)
+			}
 			return nil
 		},
 		Cmds: map[string]func(ts *testscript.TestScript, neg bool, args []string){

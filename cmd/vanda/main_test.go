@@ -83,6 +83,36 @@ func TestCheckはgitのリポジトリの外では誤りにする(t *testing.T) 
 	}
 }
 
+// doctor と version は消したコマンド（docs/plans/promise-reorg-shape-impl.md の 2.9）。設定が読めてもなくても、リポジトリの外でも、
+// 何もせずに、決まっていないコマンドとして誤りになる。check は今もあるコマンドなので、同じ所で、決まっていないコマンドの誤りにならない
+func Test消したコマンドのdoctorとversionはどこで動かしても決まっていないコマンドの誤りになる(t *testing.T) {
+	places := map[string]func() string{
+		"設定がある":         func() string { return gitRepo(t, `version = "0.1.0"`) },
+		"設定のバージョンが合わない": func() string { return gitRepo(t, `version = "9.9.9"`) },
+		"設定がない":         func() string { return gitRepo(t, "") },
+		"リポジトリの外":       func() string { return t.TempDir() },
+	}
+	for place, mk := range places {
+		dir := mk()
+		var unknown string
+		for _, name := range []string{"doctor", "version", "no-such-command"} {
+			code, out, errs := runIn(t, dir, name)
+			if code == 0 || out != "" || !strings.Contains(errs, name) || strings.Count(errs, "\n") != 1 {
+				t.Errorf("%s で vanda %s: code %d, out %q, stderr %q（終了コードが 0 でなく、標準出力は空で、標準エラーの 1 行にコマンドの名前が出るはず）", place, name, code, out, errs)
+			}
+			// コマンドの名前のほかは、どこにもないコマンド no-such-command と同じ文になる
+			if msg := strings.ReplaceAll(errs, name, "<名前>"); name == "doctor" {
+				unknown = msg
+			} else if msg != unknown {
+				t.Errorf("%s で vanda %s の誤りが、vanda doctor の誤りと違う: %q と %q", place, name, msg, unknown)
+			}
+		}
+		if _, _, errs := runIn(t, dir, "check"); strings.ReplaceAll(errs, "check", "<名前>") == unknown {
+			t.Errorf("%s で、今もある vanda check が、決まっていないコマンドの誤りになった: %q", place, errs)
+		}
+	}
+}
+
 // @vanda:evidence check-config-required
 func TestCheckはチェックの設定のファイルを渡さなければ誤りにする(t *testing.T) {
 	dir := gitRepo(t, `version = "0.1.0"`)

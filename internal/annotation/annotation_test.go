@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -432,6 +433,33 @@ func TestReadはtsのフックとstepと変数の名前とテストでない呼�
 			root, files := setup(t, map[string]string{"w/a.test.ts": src})
 			if _, errs := Read(root, files, []config.AnnotationRule{{Paths: []string{"w/*.test.ts"}, Adapter: "ts"}}); errs == nil || !strings.HasPrefix(errs.Error(), "w/a.test.ts:") {
 				t.Errorf("誤りにならない、または場所がない: %v", errs)
+			}
+		})
+	}
+}
+
+// 前の形の種類 claim は、spec に読み替えない。組み込みのアダプタのどれでも、書ける所に書いても、決まっていない種類の誤りになる（docs/formats.md の「書き方」）
+func TestReadは前の形の種類claimを組み込みのアダプタのどれでも決まっていない種類の誤りにする(t *testing.T) {
+	cases := []struct {
+		adapter, path, src string
+		line               int
+	}{
+		{"go", "x/a_test.go", "package x\n\n// @vanda:claim some-id\nfunc TestA(t *testing.T) {}\n", 3},
+		{"txtar", "e2e/a.txtar", "# @vanda:claim some-id\nexec true\n", 1},
+		{"tla", "spec/A.tla", "---- MODULE A ----\n\\* @vanda:claim some-id\nX == TRUE\n====\n", 2},
+		{"sql", "db/a.sql", "-- @vanda:claim some-id\nCREATE TABLE t (id int);\n", 1},
+		{"ts", "w/a.test.ts", "// @vanda:claim some-id\ntest(\"t\", () => {});\n", 1},
+	}
+	for _, c := range cases {
+		t.Run(c.adapter, func(t *testing.T) {
+			root, files := setup(t, map[string]string{c.path: c.src})
+			as, errs := Read(root, files, []config.AnnotationRule{{Paths: []string{c.path}, Adapter: c.adapter}})
+			prefix := c.path + ":" + strconv.Itoa(c.line) + ": "
+			if errs == nil || !lineWith(errs.Error(), prefix, "@vanda:claim", "決まった種類") {
+				t.Errorf("%s で始まり、@vanda:claim が決まった種類でないことを示す誤りにならない: %v", prefix, errs)
+			}
+			if len(as) != 0 {
+				t.Errorf("@vanda:claim をアノテーションとして読んだ: %v", as)
 			}
 		})
 	}

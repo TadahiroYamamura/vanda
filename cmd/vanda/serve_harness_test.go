@@ -220,6 +220,7 @@ func (s *vandaServer) do(method, path string, body any, out any) (int, string) {
 		if err := json.Unmarshal(data, &e); err != nil || e.Error.Message == "" {
 			s.t.Errorf("%s %s の誤り（%d）が、決まった形（{\"error\": {\"message\": …}}）でない: %q", method, path, resp.StatusCode, data)
 		}
+		wantNoOldWords(s.t, method+" "+path+" の誤りの文", e.Error.Message+"\n"+e.Error.Fix)
 		return resp.StatusCode, e.Error.Message
 	}
 	if out != nil {

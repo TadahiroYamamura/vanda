@@ -1,12 +1,12 @@
 // CL（仕様の詳細）の画面が、API の結果を正しく見せるか。API は MSW で差し替える。
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { App } from "../App";
 import type { SpecDetail, SpecHistory, Entry } from "../api";
 import { isInaccessible } from "@testing-library/dom";
-import { apiError, specDetail, specEntry, specHistory, expectLoading, gate, specRef, ctx, featureRef, fileEntry, plain, propertyDetail, propertyEntry, review, server, story, termRef, truthDetail, truthEntry } from "./fixtures";
+import { apiError, cleanup, specDetail, specEntry, specHistory, expectLoading, gate, specRef, ctx, featureRef, fileEntry, plain, propertyDetail, propertyEntry, review, server, story, termRef, truthDetail, truthEntry } from "./fixtures";
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterAll(() => server.close());
