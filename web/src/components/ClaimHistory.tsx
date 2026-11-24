@@ -7,8 +7,10 @@ import { Prose, ProseLines, RefsProvider } from "./Prose";
 
 // ClaimHistory は、約束の変更履歴（CL-04）と承認の履歴（CL-05）。約束の詳細の画面と、レビューの画面の 1 件の詳細（RV-16）で使う。
 // 変更履歴と承認の履歴は、約束の詳細と同時に読み始めるため、読み込みは使う側が持つ（ここで読むと、詳細を読み終えるまで読み始められない）
-export function ClaimHistory(props: { id: string; history: { data: History | null; error: unknown }; level: "h2" | "h3" }) {
+// 性質と前提の詳細でも使う。その時点の中身を返す API は仕様にしかないので、noAt で、その時点の中身の列を出さない
+export function ClaimHistory(props: { id: string; history: { data: History | null; error: unknown }; level: "h2" | "h3"; noAt?: boolean }) {
   const id = props.id;
+  const at = !props.noAt;
   const c = props.history.data;
   const error = props.history.error;
   const H = props.level;
@@ -50,23 +52,25 @@ export function ClaimHistory(props: { id: string; history: { data: History | nul
               <th>ストーリー</th>
               <th>何をしたか</th>
               <th>メッセージ</th>
-              <th>その時点の中身</th>
+              {at && <th>その時点の中身</th>}
             </tr>
           </thead>
           <tbody>
             {c.origin.map((o) => (
               <Fragment key={o.commit}>
-              <tr className="at-toggle-row" onClick={rowToggle(`origin:${o.commit}`)}>
+              <tr className={at ? "at-toggle-row" : undefined} onClick={at ? rowToggle(`origin:${o.commit}`) : undefined}>
                 <td>{shortCommit(o.commit)}</td>
                 <td>{o.date}</td>
                 <td>{o.stories.join("・") || "（なし）"}</td>
                 <td>{o.change === "added" ? "作成" : "変更"}</td>
                 <td className="user-text">{o.subject}</td>
-                <td>
-                  <ExpandButton open={isOpen(`origin:${o.commit}`)} onClick={() => toggle(`origin:${o.commit}`)} />
-                </td>
+                {at && (
+                  <td>
+                    <ExpandButton open={isOpen(`origin:${o.commit}`)} onClick={() => toggle(`origin:${o.commit}`)} />
+                  </td>
+                )}
               </tr>
-              {isOpen(`origin:${o.commit}`) && <ClaimAtRow cols={6} id={id} commit={o.commit} level={sub} />}
+              {at && isOpen(`origin:${o.commit}`) && <ClaimAtRow cols={6} id={id} commit={o.commit} level={sub} />}
               </Fragment>
             ))}
           </tbody>
@@ -88,28 +92,30 @@ export function ClaimHistory(props: { id: string; history: { data: History | nul
               <th>いつ</th>
               <th>ストーリー</th>
               <th>今の中身に</th>
-              <th>承認を書いた時点の中身</th>
+              {at && <th>承認を書いた時点の中身</th>}
             </tr>
           </thead>
           <tbody>
             {c.agreements.map((a, i) => (
               <Fragment key={i}>
-              <tr className={a.commit ? "at-toggle-row" : undefined} onClick={a.commit ? rowToggle(`agreement:${i}`) : undefined}>
+              <tr className={at && a.commit ? "at-toggle-row" : undefined} onClick={at && a.commit ? rowToggle(`agreement:${i}`) : undefined}>
                 <td>
                   <span className="user-text">{a.user.name}</span> &lt;{a.user.email}&gt;
                 </td>
                 <td>{a.agreedAt}</td>
                 <td>{a.story}</td>
                 <td>{a.current ? "合います" : "合いません（前の中身への承認です）"}</td>
-                <td>
-                  {a.commit ? (
-                    <ExpandButton open={isOpen(`agreement:${i}`)} onClick={() => toggle(`agreement:${i}`)} />
-                  ) : (
-                    <span className="note">まだコミットしていません</span>
-                  )}
-                </td>
+                {at && (
+                  <td>
+                    {a.commit ? (
+                      <ExpandButton open={isOpen(`agreement:${i}`)} onClick={() => toggle(`agreement:${i}`)} />
+                    ) : (
+                      <span className="note">まだコミットしていません</span>
+                    )}
+                  </td>
+                )}
               </tr>
-              {a.commit && isOpen(`agreement:${i}`) && <ClaimAtRow cols={5} id={id} commit={a.commit} level={sub} />}
+              {at && a.commit && isOpen(`agreement:${i}`) && <ClaimAtRow cols={5} id={id} commit={a.commit} level={sub} />}
               </Fragment>
             ))}
           </tbody>
@@ -152,7 +158,8 @@ function ClaimAtRow(props: { cols: number; id: string; commit: string; level: "h
         ["文", <Prose pieces={d.data.content.statement} />],
         ["条件", d.data.content.condition ? <Prose pieces={d.data.content.condition} /> : none],
         ["理由", d.data.content.rationale ? <Prose pieces={d.data.content.rationale} /> : none],
-        ["対象", d.data.content.subjects.join("・")],
+        ["refines", d.data.content.refines.join("・") || none],
+        ["assumes", d.data.content.assumes.join("・") || none],
         ["レイヤー", <LayerChips layers={d.data.content.layers} names={d.data.layers ?? undefined} />],
         [
           "エビデンスの予定",

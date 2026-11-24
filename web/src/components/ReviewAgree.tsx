@@ -2,11 +2,12 @@ import { useState } from "react";
 import { api, type Context, type Entry } from "../api";
 import { AgreeControls, entryKey } from "../pages/ReviewPage";
 import { ErrorBox, Loading, StateBadge, useLoad } from "./common";
+import { kindLabel } from "../labels";
 
-// ReviewAgree は、約束の詳細とファイルの画面で、レビューの画面から移ったときだけ、承認の状態と承認・取り消しを出す（RV-18）。
+// ReviewAgree は、仕様・性質・前提の詳細とファイルの画面で、レビューの画面から移ったときだけ、承認の状態と承認・取り消しを出す（RV-18）。
 // レビューの画面のクエリ（view・base・story）で /api/review を引き、その一覧にそのものがあれば、レビューの画面と同じ部品を出す。
 // 承認済か・承認できるかの判定は、一覧（Go の側）のものをそのまま使う
-export function ReviewAgree(props: { params?: URLSearchParams; ctx: Context | null; target: { kind: "claim"; id: string } | { kind: "file"; path: string }; onDone: () => void }) {
+export function ReviewAgree(props: { params?: URLSearchParams; ctx: Context | null; target: { kind: "spec" | "property" | "truth"; id: string } | { kind: "file"; path: string }; onDone: () => void }) {
   const p = props.params;
   const view = p?.get("view") ?? null;
   const base = p?.get("base") ?? (props.ctx?.defaultBase || null);
@@ -28,10 +29,10 @@ export function ReviewAgree(props: { params?: URLSearchParams; ctx: Context | nu
       </div>
     );
   }
-  const key = props.target.kind === "claim" ? `claim:${props.target.id}` : `path:${props.target.path}`;
+  const key = props.target.kind === "file" ? `path:${props.target.path}` : `${props.target.kind}:${props.target.id}`;
   const entry: Entry | undefined = [...review.data.entries, ...review.data.detached].find((e) => entryKey(e) === key);
   if (!entry) {
-    return <p className="note review-agree">{props.target.kind === "claim" ? "このストーリーでは変わっていない約束です。" : "このストーリーでは変わっていないファイルです。"}</p>;
+    return <p className="note review-agree">{`このストーリーでは変わっていない${kindLabel[props.target.kind]}です。`}</p>;
   }
   return (
     <div className="review-agree">

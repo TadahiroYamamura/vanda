@@ -36,9 +36,13 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/review", s.read(s.review))
 	mux.HandleFunc("POST /api/agree", s.agree)
 	mux.HandleFunc("POST /api/revoke", s.revoke)
-	mux.HandleFunc("GET /api/claims/{id}", s.read(s.claim))
-	mux.HandleFunc("GET /api/claims/{id}/history", s.read(s.claimHistory))
-	mux.HandleFunc("GET /api/claims/{id}/at/{commit}", s.read(s.claimAt))
+	mux.HandleFunc("GET /api/specs/{id}", s.read(s.claim))
+	mux.HandleFunc("GET /api/specs/{id}/history", s.read(s.claimHistory))
+	mux.HandleFunc("GET /api/specs/{id}/at/{commit}", s.read(s.claimAt))
+	mux.HandleFunc("GET /api/properties/{id}", s.read(s.property))
+	mux.HandleFunc("GET /api/properties/{id}/history", s.read(s.itemHistory("property")))
+	mux.HandleFunc("GET /api/truths/{id}", s.read(s.truth))
+	mux.HandleFunc("GET /api/truths/{id}/history", s.read(s.itemHistory("truth")))
 	mux.HandleFunc("GET /api/terms/{id}", s.read(s.term))
 	mux.HandleFunc("GET /api/features/{id}", s.read(s.feature))
 	mux.HandleFunc("GET /api/file", s.read(s.file))
@@ -139,6 +143,47 @@ func (s *Server) claimAt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, d)
+}
+
+func (s *Server) property(w http.ResponseWriter, r *http.Request) {
+	cfg, ok := s.config(w)
+	if !ok {
+		return
+	}
+	d, err := review.Property(review.Options{Root: s.Root, Cfg: cfg}, r.PathValue("id"))
+	if err != nil {
+		writeReviewError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, d)
+}
+
+func (s *Server) truth(w http.ResponseWriter, r *http.Request) {
+	cfg, ok := s.config(w)
+	if !ok {
+		return
+	}
+	d, err := review.Truth(review.Options{Root: s.Root, Cfg: cfg}, r.PathValue("id"))
+	if err != nil {
+		writeReviewError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, d)
+}
+
+func (s *Server) itemHistory(kind string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cfg, ok := s.config(w)
+		if !ok {
+			return
+		}
+		d, err := review.ItemHistoryOf(review.Options{Root: s.Root, Cfg: cfg}, kind, r.PathValue("id"))
+		if err != nil {
+			writeReviewError(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, d)
+	}
 }
 
 func (s *Server) term(w http.ResponseWriter, r *http.Request) {

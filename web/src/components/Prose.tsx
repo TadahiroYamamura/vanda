@@ -17,9 +17,11 @@ export function proseText(ps: Piece[] | null | undefined): string {
   return (ps ?? []).map((p) => p.text).join("");
 }
 
-// detailURL は、約束・用語・機能の詳細のページの URL。レビューの画面の状態（query）を引き継ぐ
+const detailPath: Record<RefTarget["kind"], string> = { spec: "claims", term: "terms", feature: "features", property: "properties", truth: "truths" };
+
+// detailURL は、約束リストの項目の詳細のページの URL。レビューの画面の状態（query）を引き継ぐ
 export function detailURL(kind: RefTarget["kind"], id: string, query: string): string {
-  const path = kind === "claim" ? "claims" : kind === "term" ? "terms" : "features";
+  const path = detailPath[kind];
   return `/${path}/${encodeURIComponent(id)}${query ? `?${query}` : ""}`;
 }
 

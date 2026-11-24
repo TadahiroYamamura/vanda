@@ -1,6 +1,8 @@
 // API の形は docs/formats.md の「GUI の API」。画面は API の結果を見せるだけで、判定を持たない。
 
-export type Kind = "claim" | "term" | "feature" | "file";
+export type Kind = "spec" | "term" | "feature" | "property" | "truth" | "file";
+// ItemKind は、約束リストの項目の種類
+export type ItemKind = Exclude<Kind, "file">;
 export type FileType = "scenario" | "oracle" | "guardrail";
 export type Change = "added" | "modified" | "deleted" | "unchanged";
 export type State = "proposed" | "agreed";
@@ -29,7 +31,7 @@ export interface Context {
   trailerErrors: { commit: string; subject: string; message: string }[];
 }
 
-// Piece は、自然言語で書く項目の文のセグメント。ref があれば参照で、text は見せる文字（用語と機能は名前、約束は ID）
+// Piece は、自然言語で書く項目の文のセグメント。ref があれば参照で、text は見せる文字（用語と機能は名前、仕様・性質・前提は ID）
 export interface Piece {
   text: string;
   ref?: string;
@@ -38,7 +40,7 @@ export interface Piece {
 export type Prose = Piece[];
 
 export interface RefTarget {
-  kind: "term" | "feature" | "claim";
+  kind: ItemKind;
   name: string | null;
   text: string;
   current: boolean;
@@ -62,7 +64,8 @@ export interface ClaimContent {
   statement: Prose;
   rationale: Prose | null;
   condition: Prose | null;
-  subjects: string[];
+  refines: string[];
+  assumes: string[];
   layers: string[];
   evidence: EvidenceContent[];
   flags: string[];
@@ -74,11 +77,13 @@ export interface TermContent {
   name: string;
   definition: Prose;
   partOf: string | null;
+  assumes: string[];
 }
 
 export interface FeatureContent {
   name: string;
   definition: Prose;
+  refines: string[];
   core: boolean | null;
   formal: boolean | null;
   formalWaiver: Prose | null;
@@ -88,7 +93,18 @@ export interface FileContent {
   text: string;
 }
 
-export type Content = ClaimContent | TermContent | FeatureContent | FileContent;
+export interface PropertyContent {
+  statement: Prose;
+  rationale: Prose | null;
+  refines: string[];
+  assumes: string[];
+}
+
+export interface TruthContent {
+  statement: Prose;
+}
+
+export type Content = ClaimContent | TermContent | FeatureContent | PropertyContent | TruthContent | FileContent;
 
 export interface CommitRef {
   commit: string;
@@ -193,13 +209,21 @@ export interface EvidenceDetail extends EvidenceContent {
   present: boolean | null;
 }
 
+// ItemRef は、refines・assumes の先の項目。今の約束リストにない ID なら kind が null。name は用語と機能だけが持つ
+export interface ItemRef {
+  kind: ItemKind | null;
+  id: string;
+  name: string | null;
+}
+
 export interface ClaimDetail {
   id: string;
   statement: Prose;
   rationale: Prose | null;
   condition: Prose | null;
   layers: LayerRef[];
-  subjects: { kind: "term" | "feature" | null; id: string; name: string | null }[];
+  refines: ItemRef[];
+  assumes: ItemRef[];
   state: State;
   fingerprint: string | null;
   flags: string[];
@@ -240,7 +264,7 @@ export interface TermDetail {
   definition: Prose;
   partOf: NamedRef | null;
   children: NamedRef[];
-  claims: ClaimSummary[];
+  assumes: ItemRef[];
   refs: Refs;
 }
 
@@ -250,7 +274,27 @@ export interface FeatureDetail {
   definition: Prose;
   core: boolean;
   formal: boolean;
-  claims: ClaimSummary[];
+  refines: ItemRef[];
+  specs: ClaimSummary[];
+  refs: Refs;
+}
+
+export interface PropertyDetail {
+  id: string;
+  statement: Prose;
+  rationale: Prose | null;
+  refines: ItemRef[];
+  assumes: ItemRef[];
+  state: State;
+  fingerprint: string | null;
+  refs: Refs;
+}
+
+export interface TruthDetail {
+  id: string;
+  statement: Prose;
+  state: State;
+  fingerprint: string | null;
   refs: Refs;
 }
 
@@ -300,9 +344,13 @@ export const api = {
   review: (view: string, base: string | null, story: string | null) =>
     call<Review>(`/api/review?${q({ view, base, story })}`),
   story: (id: string) => call<Story>(`/api/story?${q({ id })}`),
-  claim: (id: string) => call<ClaimDetail>(`/api/claims/${encodeURIComponent(id)}`),
-  claimHistory: (id: string) => call<ClaimHistory>(`/api/claims/${encodeURIComponent(id)}/history`),
-  claimAt: (id: string, commit: string) => call<ClaimAt>(`/api/claims/${encodeURIComponent(id)}/at/${encodeURIComponent(commit)}`),
+  claim: (id: string) => call<ClaimDetail>(`/api/specs/${encodeURIComponent(id)}`),
+  claimHistory: (id: string) => call<ClaimHistory>(`/api/specs/${encodeURIComponent(id)}/history`),
+  claimAt: (id: string, commit: string) => call<ClaimAt>(`/api/specs/${encodeURIComponent(id)}/at/${encodeURIComponent(commit)}`),
+  property: (id: string) => call<PropertyDetail>(`/api/properties/${encodeURIComponent(id)}`),
+  propertyHistory: (id: string) => call<ClaimHistory>(`/api/properties/${encodeURIComponent(id)}/history`),
+  truth: (id: string) => call<TruthDetail>(`/api/truths/${encodeURIComponent(id)}`),
+  truthHistory: (id: string) => call<ClaimHistory>(`/api/truths/${encodeURIComponent(id)}/history`),
   term: (id: string) => call<TermDetail>(`/api/terms/${encodeURIComponent(id)}`),
   feature: (id: string) => call<FeatureDetail>(`/api/features/${encodeURIComponent(id)}`),
   file: (path: string) => call<{ path: string; text: string }>(`/api/file?${q({ path })}`),

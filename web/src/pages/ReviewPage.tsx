@@ -2,7 +2,7 @@ import { useState } from "react";
 // 本文の中の生の HTML は描かない（react-markdown の既定。rehype-raw などを足さない）。Issue の本文に悪意のある HTML があっても、画面で動かないようにするため
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { api, type ClaimContent, type Content, type Piece, type Refs, type User, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FeatureDetail, type FileContent, type Kind, type Review, type TermContent, type TermDetail } from "../api";
+import { api, type ClaimContent, type Content, type Piece, type Refs, type User, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FileContent, type Kind, type PropertyContent, type Review, type TermContent, type TruthContent } from "../api";
 import { AgreementIcon, ErrorBox, FlagBadge, ListIcon, Loading, PresentIcon, StateBadge, shortCommit, useLoad } from "../components/common";
 import { ClaimHistory } from "../components/ClaimHistory";
 import { ClaimList } from "../components/ClaimList";
@@ -13,7 +13,7 @@ import { EvidenceGroups } from "../components/EvidenceGroups";
 import { EvidenceList } from "../components/EvidenceList";
 import { langOf } from "../highlight";
 import { TlaCode } from "../components/TlaCode";
-import { Prose, RefsProvider, proseText } from "../components/Prose";
+import { detailURL, Prose, RefsProvider, proseText } from "../components/Prose";
 import { changeLabel, fileTypeLabel, kindLabel, stageLabel, typeLabel } from "../labels";
 import { BACK, Link, navigate, reviewQuery } from "../route";
 
@@ -329,6 +329,8 @@ function StoryPlaceholder(props: { id: string | null; configured: boolean }) {
 }
 
 function groupLabel(group: string, ctx: Context) {
+  if (group === "properties") return "性質";
+  if (group === "truths") return "前提";
   if (group === "terms") return "用語";
   if (group === "features") return "機能";
   if (group === "files") return "エビデンスの本体";
@@ -495,7 +497,7 @@ function EntryRow(props: { e: Entry; selected: boolean; onSelect: (key: string) 
 // previewOmit は、一覧を待つ間の 1 件の中身で出さない項目。詳細の API が返さないか、一覧と違う形で返す
 // （機能のコア機能・形式手法を使うは、書いていないときも真偽にして返す）ので、一覧を読み終えてから出す
 const previewOmit: Partial<Record<Kind, string[]>> = {
-  claim: ["TLA+ で確かめない理由"],
+  spec: ["TLA+ で確かめない理由"],
   feature: ["コア機能", "形式手法を使う", "形式手法を使わない理由"],
 };
 
@@ -506,9 +508,9 @@ function currentOf(sel: string): { kind: Kind; name: string; load: () => Promise
   const head = sel.slice(0, at);
   const name = sel.slice(at + 1);
   switch (head) {
-    case "claim":
+    case "spec":
       return {
-        kind: "claim",
+        kind: "spec",
         name,
         load: async () => {
           const c = await api.claim(name);
@@ -516,7 +518,8 @@ function currentOf(sel: string): { kind: Kind; name: string; load: () => Promise
             statement: c.statement,
             rationale: c.rationale,
             condition: c.condition,
-            subjects: c.subjects.map((x) => x.id),
+            refines: c.refines.map((x) => x.id),
+            assumes: c.assumes.map((x) => x.id),
             layers: c.layers.map((l) => l.id),
             evidence: c.evidence,
             flags: c.flags,
@@ -532,7 +535,7 @@ function currentOf(sel: string): { kind: Kind; name: string; load: () => Promise
         name,
         load: async () => {
           const t = await api.term(name);
-          const content: TermContent = { name: t.name, definition: t.definition, partOf: t.partOf?.id ?? null };
+          const content: TermContent = { name: t.name, definition: t.definition, partOf: t.partOf?.id ?? null, assumes: t.assumes.map((x) => x.id) };
           return { content, refs: t.refs };
         },
       };
@@ -542,8 +545,28 @@ function currentOf(sel: string): { kind: Kind; name: string; load: () => Promise
         name,
         load: async () => {
           const f = await api.feature(name);
-          const content: FeatureContent = { name: f.name, definition: f.definition, core: null, formal: null, formalWaiver: null };
+          const content: FeatureContent = { name: f.name, definition: f.definition, refines: f.refines.map((x) => x.id), core: null, formal: null, formalWaiver: null };
           return { content, refs: f.refs };
+        },
+      };
+    case "property":
+      return {
+        kind: "property",
+        name,
+        load: async () => {
+          const p = await api.property(name);
+          const content: PropertyContent = { statement: p.statement, rationale: p.rationale, refines: p.refines.map((x) => x.id), assumes: p.assumes.map((x) => x.id) };
+          return { content, refs: p.refs };
+        },
+      };
+    case "truth":
+      return {
+        kind: "truth",
+        name,
+        load: async () => {
+          const t = await api.truth(name);
+          const content: TruthContent = { statement: t.statement };
+          return { content, refs: t.refs };
         },
       };
     case "path":
@@ -631,9 +654,14 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
           </ul>
         </div>
       )}
-      {e.kind === "claim" && e.id && e.change !== "deleted" && (
+      {e.kind === "spec" && e.id && e.change !== "deleted" && (
         <p>
           <Link to={`/claims/${encodeURIComponent(e.id)}${props.query ? `?${props.query}` : ""}`}>約束の詳細を開く</Link>
+        </p>
+      )}
+      {(e.kind === "property" || e.kind === "truth") && e.id && e.change !== "deleted" && (
+        <p>
+          <Link to={detailURL(e.kind, e.id, props.query)}>{kindLabel[e.kind]}の詳細を開く</Link>
         </p>
       )}
       {e.kind === "file" && e.path && e.change !== "deleted" && (
@@ -654,25 +682,23 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
       />
 
       <Compare entry={e} />
-      {e.kind === "claim" && e.id && e.change !== "deleted" && <ClaimSections key={written} id={e.id} query={props.query} />}
-      {(e.kind === "term" || e.kind === "feature") && e.id && (e.change === "added" || e.change === "modified") && (
-        <TermFeatureClaims kind={e.kind} id={e.id} query={props.query} />
-      )}
+      {e.kind === "spec" && e.id && e.change !== "deleted" && <ClaimSections key={written} id={e.id} query={props.query} />}
+      {e.kind === "feature" && e.id && (e.change === "added" || e.change === "modified") && <FeatureSpecs id={e.id} query={props.query} />}
     </div>
   );
 }
 
-// TermFeatureClaims は、追加・変更した用語・機能を subjects に持つ約束の一覧（review-term-feature-claims）。
-// 一覧は用語・機能の詳細の API が返すものを使い、詳細のページと同じものを出す
-function TermFeatureClaims(props: { kind: "term" | "feature"; id: string; query: string }) {
-  const d = useLoad<TermDetail | FeatureDetail>(() => (props.kind === "term" ? api.term(props.id) : api.feature(props.id)), `${props.kind}:${props.id}`);
+// FeatureSpecs は、追加・変更した機能を refines する仕様の一覧。
+// 一覧は機能の詳細の API が返すものを使い、詳細のページと同じものを出す
+function FeatureSpecs(props: { id: string; query: string }) {
+  const d = useLoad(() => api.feature(props.id), `feature:${props.id}`);
   return (
     <div>
       {d.loading && <Loading />}
-      {d.error != null && <ErrorBox error={d.error} title={`${kindLabel[props.kind]}を対象に持つ約束を読めません`} />}
+      {d.error != null && <ErrorBox error={d.error} title="機能を refines する仕様を読めません" />}
       {d.data && (
         <RefsProvider refs={d.data.refs} query={props.query}>
-          <ClaimList claims={d.data.claims} what={kindLabel[props.kind]} query={props.query} level="h3" />
+          <ClaimList claims={d.data.specs} query={props.query} level="h3" />
         </RefsProvider>
       )}
     </div>
@@ -760,14 +786,16 @@ const same = (a: string | Piece[], b: string | Piece[]) => JSON.stringify(a) ===
 function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
   if (!c) return null;
   const opt = (s: Piece[] | string | null) => s ?? "（なし）";
+  const ids = (xs: string[]) => xs.join("・") || "（なし）";
   switch (kind) {
-    case "claim": {
+    case "spec": {
       const x = c as ClaimContent;
       return [
         ["文", x.statement, "statement"],
         ["条件", opt(x.condition), "condition"],
         ["理由", opt(x.rationale), "rationale"],
-        ["対象", x.subjects.join("・")],
+        ["refines", ids(x.refines)],
+        ["assumes", ids(x.assumes)],
         ["レイヤー", x.layers.join("・")],
         ["エビデンスの予定", x.evidence.map((ev) => `${stageLabel[ev.stage] ?? ev.stage} / ${typeLabel[ev.type] ?? ev.type} / ${ev.layers.join("・")}${ev.detail ? ` — ${proseText(ev.detail)}` : ""}`).join("\n")],
         ["TLA+ で確かめない理由", opt(x.modelCheckWaiver), "modelCheckWaiver"],
@@ -780,14 +808,27 @@ function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
         ["名前", x.name, "name"],
         ["定義", x.definition, "definition"],
         ["〜の一部", opt(x.partOf)],
+        ["assumes", ids(x.assumes)],
       ];
     }
+    case "property": {
+      const x = c as PropertyContent;
+      return [
+        ["文", x.statement, "statement"],
+        ["理由", opt(x.rationale), "rationale"],
+        ["refines", ids(x.refines)],
+        ["assumes", ids(x.assumes)],
+      ];
+    }
+    case "truth":
+      return [["文", (c as TruthContent).statement, "statement"]];
     case "feature": {
       const x = c as FeatureContent;
       const b = (v: boolean | null) => (v === null ? "（書いていません）" : v ? "はい" : "いいえ");
       return [
         ["名前", x.name, "name"],
         ["定義", x.definition, "definition"],
+        ["refines", ids(x.refines)],
         ["コア機能", b(x.core)],
         ["形式手法を使う", b(x.formal)],
         ["形式手法を使わない理由", opt(x.formalWaiver), "formalWaiver"],
@@ -834,9 +875,9 @@ function Compare(props: { entry: Entry }) {
   return <ItemCompare entry={e} before={before} after={after} />;
 }
 
-// ItemCompare は、約束・用語・機能の変更前と変更後を、項目ごとに 1 列で出す（左右に分けない）。
+// ItemCompare は、約束リストの項目の変更前と変更後を、項目ごとに 1 列で出す（左右に分けない）。
 // 変わっていない項目は 1 回だけ、変わった文の項目は API の文字の単位の差分（diff.fields）で、消した文字を del、足した文字を ins で出す。
-// 文字の差分のない項目（対象・レイヤー・推測・真偽）が変わったときは、変更前の値を del、変更後の値を ins で並べる。
+// 文字の差分のない項目（refines・assumes・レイヤー・推測・真偽）が変わったときは、変更前の値を del、変更後の値を ins で並べる。
 // 追加・削除した件は、ある側の中身だけをマークなしで出す（追加・削除は件の見出しに出している）
 function ItemCompare(props: { entry: Pick<Entry, "kind" | "diff" | "before" | "after">; before: Row[] | null; after: Row[] | null }) {
   const { entry: e, before, after } = props;
@@ -847,11 +888,11 @@ function ItemCompare(props: { entry: Pick<Entry, "kind" | "diff" | "before" | "a
     const b = before?.[i];
     const a = after?.[i];
     const label = labels[i];
-    if (e.kind === "claim" && label === "エビデンスの予定") {
+    if (e.kind === "spec" && label === "エビデンスの予定") {
       if (before && after && evidenceMarks) return <UnifiedEvidence before={(e.before as ClaimContent).evidence} after={(e.after as ClaimContent).evidence} marks={evidenceMarks} />;
       return <EvidenceList items={((after ? e.after : e.before) as ClaimContent).evidence} />;
     }
-    if (e.kind === "claim" && label === "レイヤー") {
+    if (e.kind === "spec" && label === "レイヤー") {
       const bl = before ? (e.before as ClaimContent).layers : null;
       const al = after ? (e.after as ClaimContent).layers : null;
       if (bl && al) return <LayerChipsDiff before={bl} after={al} side="both" />;

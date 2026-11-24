@@ -485,12 +485,12 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | ステータスコード | いつ |
 |---|---|
 | `400` | 引数の誤り（ないベースブランチ、`id_pattern` に合わないストーリーの ID など） |
-| `404` | ないもの（ない約束・用語・機能、ないファイル、ないストーリー） |
+| `404` | ないもの（約束リストにない項目、ないファイル、ないストーリー） |
 | `409` | 承認を断ったとき（表示した後に中身が変わった、承認で変えるファイルに書きかけの変更がある） |
 | `500` | vanda の中の誤り（一覧の数と差分の数が合わない、git が失敗したなど）と、今の約束リストか承認の記録に読み込みの誤りがあって一覧を作れないとき（`message` に誤りの数と最初の 1 件を入れる） |
 | `502` | ストーリーストアの誤り（認証、ネットワーク）。`message` にストーリーストアが返した理由をそのまま入れる |
 
-- 対象の種類（`kind`）は、承認の記録と同じ `claim`・`term`・`feature`・`file`
+- 対象の種類（`kind`）は、承認の記録と同じ `spec`・`term`・`feature`・`property`・`truth`・`file`
 - ファイルの種類（`fileType`）は、`scenario`（`types` に `scenario-test` を含む `[[annotation]]` のパターンにマッチする）・`oracle`（`types` に `model-check` を含み、`scenario-test` を含まない）・`guardrail`（`[[guardrail]]` の `paths` にだけマッチする）
 
 ### `GET /api/context`
@@ -559,7 +559,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
   "entries": [
     {
       "no": 1,
-      "kind": "claim",
+      "kind": "spec",
       "id": "task-id-unique",
       "path": null,
       "fileType": null,
@@ -568,8 +568,8 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
       "fingerprint": "sha256:…",
       "flags": ["ai-proposal", "changed-since-agreement"],
       "group": "layer:model",
-      "before": {"statement": [{"text": "…"}], "rationale": [{"text": "…"}], "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [{"stage": "implementation", "type": "unit-test", "layers": ["model"], "detail": null}], "flags": [], "guesses": [], "modelCheckWaiver": null},
-      "after": {"statement": [{"text": "タスクの ID", "ref": "task-id"}, {"text": " は重ならない"}], "rationale": [{"text": "…"}], "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [], "flags": ["ai-proposal"], "guesses": [], "modelCheckWaiver": null},
+      "before": {"statement": [{"text": "…"}], "rationale": [{"text": "…"}], "condition": null, "refines": ["add-task"], "assumes": [], "layers": ["model"], "evidence": [{"stage": "implementation", "type": "unit-test", "layers": ["model"], "detail": null}], "flags": [], "guesses": [], "modelCheckWaiver": null},
+      "after": {"statement": [{"text": "タスクの ID", "ref": "task-id"}, {"text": " は重ならない"}], "rationale": [{"text": "…"}], "condition": null, "refines": ["add-task"], "assumes": ["disk-works"], "layers": ["model"], "evidence": [], "flags": ["ai-proposal"], "guesses": [], "modelCheckWaiver": null},
       "detachedAgreement": null,
       "otherCommits": []
     },
@@ -600,12 +600,12 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `mergeBase` | `view=branch` のときのマージベースのコミット。`view=story` では `null` |
 | `total` | `entries` の数（RV-02 の総数） |
 | `entries[].no` | 通し番号（1 から）。並びは `group` の順（下）、同じまとまりの中は ID か場所の順 |
-| `entries[].id`・`path` | 約束・用語・機能は `id`、ファイルは `path`（削除したものは前の場所） |
+| `entries[].id`・`path` | 約束リストの項目は `id`、ファイルは `path`（削除したものは前の場所） |
 | `entries[].change` | `added`・`modified`・`deleted` |
 | `entries[].state` | 今の中身が承認済なら `agreed`、まだなら `proposed`。`deleted` は、消したことへの承認があれば `agreed`、なければ `proposed` |
 | `entries[].fingerprint` | 今の中身のフィンガープリント。`deleted` は `null` |
 | `entries[].flags` | `ai-proposal`（AI 案。約束の `flags`）・`guess`（推測。約束の `guesses` が空でない）・`changed-since-agreement`（差分あり。同じキー（ファイルなら同じ場所）に承認の記録があり、今の中身のフィンガープリントに合う承認がない）。この順 |
-| `entries[].group` | たたむまとまり（RV-10）。約束は `layer:<約束の layers の最初のレイヤー>`、用語は `terms`、機能は `features`、ファイルは `files`。並びは、`terms`、`features`、設定のレイヤーの順の約束、`files` |
+| `entries[].group` | たたむまとまり（RV-10）。仕様は `layer:<仕様の layers の最初のレイヤー>`、性質は `properties`、前提は `truths`、用語は `terms`、機能は `features`、ファイルは `files`。並びは、`properties`、`truths`、`terms`、`features`、設定のレイヤーの順の仕様、`files` |
 | `entries[].before`・`after` | 変更前（`added` は `null`）と変更後（`deleted` は `null`）の中身。下の表 |
 | `entries[].detachedAgreement` | このストーリーの承認が失効したもの（RV-14）なら `{"by": ["#30"]}`（`by` は、そのストーリーの承認の後に中身を変えたコミットのストーリーの ID。ID のないコミットは数えない）。ほかは `null`。`by` は見せるための手がかりで、失効したかどうかの判定には使わない。「承認の後」は、日時でなく HEAD の履歴の順で決める。HEAD の履歴を古い順にたどり、そのストーリーのそのキーへの承認の記録（中身への承認）が初めて現れたコミットを、記録ごとに探し、そのうち最も後のコミットより後のコミットを見る（rebase や amend でコミットの日時が変わっても変わらない。手で書いた承認の記録も、コミットした後は同じに扱う）。どの記録もまだコミットしていなければ、`by` は空 |
 | `entries[].otherCommits` | `view=story` で、ストーリーで最初に変えた後に、このストーリーの ID のないコミット（ほかのストーリーのコミットと、ID のないコミット）が同じものを変えていたら、`[{"commit": "…", "subject": "…", "stories": ["#30"]}]`（履歴の古い順）。`view=branch` では空 |
@@ -621,34 +621,36 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 
 | `kind` | 中身 |
 |---|---|
-| `claim` | `statement`・`rationale`・`condition`・`subjects`・`layers`・`evidence`（`stage`・`type`・`layers`・`detail` の配列）・`flags`・`guesses`・`modelCheckWaiver`（書いていなければ `null`） |
-| `term` | `name`・`definition`・`partOf` |
-| `feature` | `name`・`definition`・`core`・`formal`・`formalWaiver` |
+| `spec` | `statement`・`rationale`・`condition`・`refines`・`assumes`・`layers`・`evidence`（`stage`・`type`・`layers`・`detail` の配列）・`flags`・`guesses`・`modelCheckWaiver`（書いていなければ `null`） |
+| `term` | `name`・`definition`・`partOf`・`assumes` |
+| `feature` | `name`・`definition`・`refines`・`core`・`formal`・`formalWaiver` |
+| `property` | `statement`・`rationale`・`refines`・`assumes` |
+| `truth` | `statement` |
 | `file` | `text`（ファイルの中身） |
 
 #### 自然言語で書く項目（セグメントの配列）
 
-約束リストの、参照を書ける項目（約束リストの「参照」）は、文字列ではなく、セグメントの配列で返す。対象は、`entries[].before`・`after`（と `detached[].after`）、`GET /api/claims/<ID>`、`GET /api/claims/<ID>/at/<コミット>` の、約束の `statement`・`rationale`・`condition`・`guesses`・`modelCheckWaiver`、エビデンスの `detail`、用語の `definition`、機能の `definition`・`formalWaiver`。`guesses` はセグメントの配列の配列。書いていない項目は `null`。
+約束リストの、参照を書ける項目（約束リストの「参照」）は、文字列ではなく、セグメントの配列で返す。対象は、`entries[].before`・`after`（と `detached[].after`）、`GET /api/specs/<ID>`、`GET /api/specs/<ID>/at/<コミット>`、`GET /api/properties/<ID>`、`GET /api/truths/<ID>` の、仕様の `statement`・`rationale`・`condition`・`guesses`・`modelCheckWaiver`、エビデンスの `detail`、用語の `definition`、機能の `definition`・`formalWaiver`、性質の `statement`・`rationale`、前提の `statement`。`guesses` はセグメントの配列の配列。書いていない項目は `null`。
 
 ```json
 "statement": [{"text": "タスクを足すと、"}, {"text": "タスクの ID", "ref": "task-id"}, {"text": " を付ける"}]
 ```
 
-- セグメントは `{"text": …}` か、参照なら `{"text": <見せる文字>, "ref": <指す ID>}`。見せる文字は、用語と機能なら名前、性質・前提・約束なら ID。隣り合う参照でないセグメントは、1 つにつなぐ
+- セグメントは `{"text": …}` か、参照なら `{"text": <見せる文字>, "ref": <指す ID>}`。見せる文字は、用語と機能なら名前、性質・前提・仕様なら ID。隣り合う参照でないセグメントは、1 つにつなぐ
 - `{@@` は `{@` にした文字のセグメントにする。壊れた参照（形でない、種類が `id` でない、指す先がない）は、書いたままの文字を参照でないセグメントにする
-- 名前は今の約束リストのものを使う。今の約束リストにない ID だけ、比べる元（`GET /api/review` ならその件の比べる元、`.../at/<コミット>` ならそのコミット）の約束リストのものを使う。どちらにもなければ、壊れた参照として扱う。`GET /api/claims/<ID>` は今の約束リストだけを見る
+- 名前は今の約束リストのものを使う。今の約束リストにない ID だけ、比べる元（`GET /api/review` ならその件の比べる元、`.../at/<コミット>` ならそのコミット）の約束リストのものを使う。どちらにもなければ、壊れた参照として扱う。`GET /api/specs/<ID>` などの詳細は、今の約束リストだけを見る
 - レスポンスの最上位の `refs` は、レスポンスの中のセグメントが指すすべての ID から、指す先への表。何も指していなければ `{}`
 
 | 項目 | 中身 |
 |---|---|
-| `kind` | `property`・`truth`・`term`・`feature`・`claim` |
-| `name` | 用語と機能は名前、性質・前提・約束は `null` |
-| `text` | 用語と機能は `definition`、性質・前提・約束は `statement`。中の参照を見せる文字に置き換えた、ただの文字列 |
+| `kind` | `property`・`truth`・`term`・`feature`・`spec` |
+| `name` | 用語と機能は名前、性質・前提・仕様は `null` |
+| `text` | 用語と機能は `definition`、性質・前提・仕様は `statement`。中の参照を見せる文字に置き換えた、ただの文字列 |
 | `current` | 今の約束リストにあれば `true`。比べる元にだけあれば `false` |
 | `pieces` | `text` をセグメントの配列にしたもの（参照の境が分かる形）。中の参照の指す先は `refs` に足さない |
 | `core`・`formal` | 機能だけに付く。コア機能か・形式手法を使う機能か（`formal` を書いていなければ `core` と同じ値）。用語と約束には付けない |
 
-- 一覧は、比べる元の中身と今の中身でフィンガープリントが違うキー（約束・用語・機能は種類と ID、ファイルは場所）を、1 度ずつ出す。ファイルは場所で見分けるので、名前を変えたファイルは、中身が同じでも、古い場所の `deleted` と新しい場所の `added` の 2 件にする（まとめない）。一度消して同じ場所に作り直したものは、同じ場所の 1 件として比べる（中身が同じなら出ない）
+- 一覧は、比べる元の中身と今の中身でフィンガープリントが違うキー（約束リストの項目は種類と ID、ファイルは場所）を、1 度ずつ出す。ファイルは場所で見分けるので、名前を変えたファイルは、中身が同じでも、古い場所の `deleted` と新しい場所の `added` の 2 件にする（まとめない）。一度消して同じ場所に作り直したものは、同じ場所の 1 件として比べる（中身が同じなら出ない）
 - vanda サーバーは、一覧を返す前に、`entries` の数が、比べる元と今でフィンガープリントの違うキーの数に合うか、同じキーが 2 度出ていないかを確かめ、合わなければ `500` にする
 - `view=branch` の比べる元は、`vanda check` と同じく `git merge-base <base> HEAD` の中身。今の中身は HEAD の中身（コミットしていない変更は比べない）
 - `view=story` の比べる元は、キーごとに、`Story:` のトレーラーがそのストーリーの ID のコミット（マージコミットでないもの）のうち、そのキーの中身を変えた最初のコミットの、1 つ目の親の中身。今の中身は HEAD の中身。HEAD の履歴にないコミットは見ない。比べる元と今の中身が同じもの（途中で足して後で消したものなど）は出ない
@@ -679,7 +681,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `lines[].parts` | 消した行が続く所のすぐ後に足した行が続くとき（書き換えた所）だけ、その消した行のまとまりと足した行のまとまりを文字の単位で比べ（`DiffMain` の後に `DiffCleanupSemantic` をかけ、細切れの一致をまとめる）、行ごとに分けたもの。消した行には `equal`・`delete` だけ、足した行には `equal`・`insert` だけが出る。つなげると `text` になる。書き換えでない行は `null` |
 | `lines[].noNewline` | ファイルの最後の行で、終わりに改行がないときだけ `true`（ほかは省く）。改行の有無だけが違う最後の行は、`delete` と `insert` の 2 行になる |
 
-約束・用語・機能（`kind` が `claim`・`term`・`feature`）:
+約束リストの項目（`kind` が `spec`・`term`・`feature`・`property`・`truth`）:
 
 ```json
 "diff": {
@@ -694,9 +696,9 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 |---|---|
 | `fields` | 文字の項目ごとの、文字の単位の差分（`DiffMain` の後に `DiffCleanupSemantic`）。`op` は `equal`・`delete`・`insert`。`equal` と `delete` をつなげると変更前、`equal` と `insert` をつなげると変更後になる。自然言語で書く項目は、両側をセグメントの見せる文字に置き換えた文どうしで比べる（参照先の名前を変えただけの所は差にならない） |
 | `fields` の `ref` | 差分の 1 つが参照にかかる所は、参照の境で分け、参照にかかる分に `"ref": <ID>` を付ける（参照でない分には付けない）。`delete` は変更前の側、`equal`・`insert` は変更後の側の参照の位置で決める |
-| 対象の項目 | 約束は `statement`・`rationale`・`condition`・`modelCheckWaiver`、用語は `name`・`definition`、機能は `name`・`definition`・`formalWaiver`。変更前と変更後の両方に書いてある項目だけを入れ、片方にしかない項目は入れない（画面は、`before`・`after` の値をそのまま見せる）。変わっていない項目も、`equal` の 1 つとして入れる |
+| 対象の項目 | 仕様は `statement`・`rationale`・`condition`・`modelCheckWaiver`、用語は `name`・`definition`、機能は `name`・`definition`・`formalWaiver`、性質は `statement`・`rationale`、前提は `statement`。変更前と変更後の両方に書いてある項目だけを入れ、片方にしかない項目は入れない（画面は、`before`・`after` の値をそのまま見せる）。変わっていない項目も、`equal` の 1 つとして入れる |
 
-- 配列の項目（`subjects`・`layers`・`guesses`）と真偽の項目は、差分を作らない。画面は `before`・`after` を並べて見せる
+- 配列の項目（`refines`・`assumes`・`layers`・`guesses`）と真偽の項目は、差分を作らない。画面は `before`・`after` を並べて見せる
 - 約束のエビデンスの予定（`evidence`）は、エビデンスの単位の差分を `diff.evidence` に入れる（約束でなければ省く）
 
 ```json
@@ -719,12 +721,12 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 1 件を承認する（RV-06）。
 
 ```json
-{"kind": "claim", "id": "task-id-unique", "path": null, "fingerprint": "sha256:…", "story": "#24", "deleted": false}
+{"kind": "spec", "id": "task-id-unique", "path": null, "fingerprint": "sha256:…", "story": "#24", "deleted": false}
 ```
 
 | 項目 | 中身 |
 |---|---|
-| `id`・`path` | 約束・用語・機能は `id`、ファイルは今の `path`（消したことへの承認なら、前の `path`） |
+| `id`・`path` | 約束リストの項目（仕様・用語・機能・性質・前提）は `id`、ファイルは今の `path`（消したことへの承認なら、前の `path`） |
 | `fingerprint` | 画面に見せていた中身のフィンガープリント（一覧の `fingerprint`）。今の中身のフィンガープリントと違えば `409` で断る。`deleted` が `true` なら見ない |
 | `deleted` | 消したことを承認するなら `true`（省けば `false`）。そのものが今ある（約束リストにある、承認の対象のファイルとしてある）なら `409` で断る。ファイルの場所が、承認の対象のファイルのパターンにマッチしなければ `404` |
 | `story` | 承認するストーリーの ID（`id_pattern` に全体がマッチする） |
@@ -732,14 +734,14 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 返すもの（`200`）:
 
 ```json
-{"commit": "0123abcd…", "agreement": {"kind": "claim", "key": "task-id-unique", "fingerprint": "sha256:…", "deleted": false, "path": null, "user": {"name": "…", "email": "…"}, "agreedAt": "2026-10-31T12:00:00+09:00", "story": "#24"}}
+{"commit": "0123abcd…", "agreement": {"kind": "spec", "key": "task-id-unique", "fingerprint": "sha256:…", "deleted": false, "path": null, "user": {"name": "…", "email": "…"}, "agreedAt": "2026-10-31T12:00:00+09:00", "story": "#24"}}
 ```
 
-- 消したことへの承認では、返す `agreement` の `fingerprint` は `null`、`deleted` は `true`（ほかの承認では `false`）。承認の記録には `fingerprint` の代わりに `deleted = true` を書く。消した約束・用語・機能では、約束リストのどのファイル（消したファイルを含む）にもコミットしていない変更がないことを求め、あれば `409` で断る。コミットのメッセージは `(chore) <ストーリーの ID> で <種類> <ID か場所> を消したことを承認する`
+- 消したことへの承認では、返す `agreement` の `fingerprint` は `null`、`deleted` は `true`（ほかの承認では `false`）。承認の記録には `fingerprint` の代わりに `deleted = true` を書く。消した約束リストの項目では、約束リストのどのファイル（消したファイルを含む）にもコミットしていない変更がないことを求め、あれば `409` で断る。コミットのメッセージは `(chore) <ストーリーの ID> で <種類> <ID か場所> を消したことを承認する`
 - 承認の記録は、設定の `agreements` のパターンの順で、最初にマッチしたファイルの終わりに書き足す。どれにもマッチせず、最初のパターンにワイルドカードがなければ、そのファイルを作る。ワイルドカードがあれば `409` で断る
 - 約束なら、約束リストのその約束の表から、`flags` と `guesses` の行（複数行の配列なら、その全部の行）を消す。ほかの行は変えない。インラインの表（`{ … }`）の中に書いた `flags`・`guesses` と、複数行の文字列（`"""`・`'''`）を含む `flags`・`guesses` は消せないので、`409` で断る
-- 承認の記録のファイルと約束リストのファイルだけを、1 つのコミットにする（`git commit -- <ファイル>`）。ほかのファイルの書きかけの変更（インデックスに足したものも）は入れない。メッセージは `(chore) <ストーリーの ID> で <種類> <ID か場所> を承認する`（種類は `約束`・`用語`・`機能`・`ファイル`）で、末尾に `Story: <ストーリーの ID>` のトレーラーを書く
-- 承認の対象が書いてあるファイル（約束・用語・機能なら、その項目のある約束リストのファイル。ファイルなら、そのファイル）に、コミットしていない変更があれば `409` で断る。理由には、先にコミットするよう書く（承認のコミットの時点のリポジトリが、承認した中身と合うようにするため）
+- 承認の記録のファイルと約束リストのファイルだけを、1 つのコミットにする（`git commit -- <ファイル>`）。ほかのファイルの書きかけの変更（インデックスに足したものも）は入れない。メッセージは `(chore) <ストーリーの ID> で <種類> <ID か場所> を承認する`（種類は `約束`（`kind` が `spec`）・`用語`・`機能`・`性質`・`前提`・`ファイル`）で、末尾に `Story: <ストーリーの ID>` のトレーラーを書く
+- 承認の対象が書いてあるファイル（約束リストの項目なら、その項目のある約束リストのファイル。ファイルなら、そのファイル）に、コミットしていない変更があれば `409` で断る。理由には、先にコミットするよう書く（承認のコミットの時点のリポジトリが、承認した中身と合うようにするため）
 - 承認で変えるファイルに、コミットしていない変更があれば `409` で断る
 - 同じストーリーで、今の中身にもう承認していれば `409` で断る
 - 承認の記録は、`user = { name = "…", email = "…" }` の形で書く。`agreed_at` は、承認した時の手元のタイムゾーン付きの日時（秒まで）
@@ -751,7 +753,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 1 件への承認を取り消す（RV-17）。
 
 ```json
-{"kind": "claim", "id": "task-id-unique", "path": null, "fingerprint": "sha256:…", "story": "#24", "base": "origin/develop", "deleted": false}
+{"kind": "spec", "id": "task-id-unique", "path": null, "fingerprint": "sha256:…", "story": "#24", "base": "origin/develop", "deleted": false}
 ```
 
 返すもの（`200`）: `{"commit": "0123abcd…", "stillAgreed": false, "removed": 1}`
@@ -763,16 +765,17 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 - 消したファイルだけを 1 つのコミットにする。メッセージは `(chore) <ストーリーの ID> で <種類> <ID か場所> の承認を取り消す` で、末尾に `Story: <ストーリーの ID>` のトレーラーを書く。消すファイルにコミットしていない変更があれば `409` で断る
 - 書いた後に読み直し、消したもののほかの記録が変わっていれば、ファイルを元に戻して `500` にする
 
-### `GET /api/claims/<約束の ID>`
+### `GET /api/specs/<仕様の ID>`
 
-約束の詳細。変更履歴と承認の履歴は、履歴のコミットをたどるので時間がかかるため、ここでは返さず、`GET /api/claims/<約束の ID>/history` で返す。
+仕様の詳細。変更履歴と承認の履歴は、履歴のコミットをたどるので時間がかかるため、ここでは返さず、`GET /api/specs/<仕様の ID>/history` で返す。
 
 ```json
 {
   "id": "task-id-unique",
   "statement": [{"text": "…"}], "rationale": [{"text": "…"}], "condition": null,
   "layers": [{"id": "model", "name": "モデル"}],
-  "subjects": [{"kind": "term", "id": "task-id", "name": "タスクの ID"}],
+  "refines": [{"kind": "feature", "id": "add-task", "name": "タスクの登録"}],
+  "assumes": [{"kind": "truth", "id": "disk-works", "name": null}],
   "state": "agreed",
   "fingerprint": "sha256:…",
   "flags": [], "guesses": [],
@@ -792,14 +795,14 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `statement`・`rationale`・`condition`・`guesses`・`evidence[].detail` | セグメントの配列（「自然言語で書く項目（セグメントの配列）」）。`refs` はその指す先 |
 | `evidence[].found[].state` | ファイルが承認の対象（シナリオ・オラクルの定義・ガードレールの定義）のときだけ、今の場所と中身のフィンガープリントに合う承認の記録があれば `agreed`、なければ `proposed`（ストーリーによらない）。承認の対象でないもの（Go のテストなど）は `null` |
 | `evidence[].found` | その約束を指す、タイプに合うアノテーション（「エビデンス完備のチェック」の表と同じ組み合わせ）。`text` は、`txtar` と `sql` ならファイルの中身全体、`tla` なら付いている定義（定義の行から、次の最上位の定義か `====` の前まで。終わりの空行とコメントだけの行は含めない）、`go` と `ts` なら `null`。`line` は、アノテーションが付いているものの行（`go` は `func` の宣言、`ts` は `test`・`it`・`describe` の呼び出し、`tla` は定義、`sql` は文の行。`txtar` はファイル全体に付くので 1） |
-| `subjects` | 約束の `subjects` の順。約束リストにない ID は、`kind`・`name` を `null` にする |
+| `refines`・`assumes` | 仕様の `refines`・`assumes` に書いた順の、指す先の項目。`kind` は指す先の種類、`name` は用語と機能なら名前、名前を持たない性質・前提・仕様なら `null`。今の約束リストにない ID は、`kind`・`name` を `null` にする。性質・前提・用語・機能の詳細の `refines`・`assumes` も同じ形 |
 | `evidence[].present` | 揃っているか（RV-08。エビデンス完備のチェックと同じ判定）。`found` があれば `true`（`guardrail`・`sensor` は、表の 2 つがどちらも `found` にあれば `true`。片方だけなら、`found` があっても `false`）。`proof` は `false`。`human-review` は `null`（アノテーションで確かめない） |
 
 - アノテーションに読み込みの誤りがあれば、`500` を返し、誤りの数と最初の 1 件を出す
 
-### `GET /api/claims/<約束の ID>/history`
+### `GET /api/specs/<仕様の ID>/history`
 
-約束の変更履歴と承認の履歴。
+仕様の変更履歴と承認の履歴。
 
 ```json
 {
@@ -811,19 +814,19 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | 項目 | 中身 |
 |---|---|
 | `origin` | HEAD の履歴の、マージコミットでないコミットのうち、約束のフィンガープリントが変わったもの（作ったものを含む）。コミットの日時の新しい順（同じ日時なら、履歴で後のコミットを先に）。`change` は `added`・`modified`。`stories` は `Story:` のトレーラーにあるストーリーの ID。消した後に同じ ID で作り直した約束は新しいものとみなし、消すまでのコミットを入れない |
-| `agreements` | 承認の記録のうち、`kind = "claim"` でこの ID を指すもの（消したことへの承認は除く）。承認した日時（`agreed_at`）の新しい順（同じ日時なら、承認の記録のファイルの順（設定の `agreements` のファイルの順、同じファイルなら行の順）で後のものを先に）。`current` は、今の中身のフィンガープリントに合うか。`commit` は、その承認の記録を書き足したコミット（HEAD の履歴を古い順にたどり、承認の記録のファイルを変えたコミットの時点の記録に、同じ記録（`kind`・`key`・`fingerprint`・`story`・`agreed_at`・`user`）が初めて現れたコミット）。まだコミットしていなければ `null` |
+| `agreements` | 承認の記録のうち、`kind = "spec"` でこの ID を指すもの（消したことへの承認は除く）。承認した日時（`agreed_at`）の新しい順（同じ日時なら、承認の記録のファイルの順（設定の `agreements` のファイルの順、同じファイルなら行の順）で後のものを先に）。`current` は、今の中身のフィンガープリントに合うか。`commit` は、その承認の記録を書き足したコミット（HEAD の履歴を古い順にたどり、承認の記録のファイルを変えたコミットの時点の記録に、同じ記録（`kind`・`key`・`fingerprint`・`story`・`agreed_at`・`user`）が初めて現れたコミット）。まだコミットしていなければ `null` |
 
 - 今の約束リストにない ID なら `404`（`message` は `約束 <ID> は約束リストにありません。`）
 
-### `GET /api/claims/<約束の ID>/at/<コミット>`
+### `GET /api/specs/<仕様の ID>/at/<コミット>`
 
 あるコミットの時点の約束の中身（CL-08）。変更履歴の `commit` か、承認の履歴の `commit` を渡す。
 
 ```json
-{"id": "task-id-unique", "commit": "0123abcd…", "date": "2026-10-31T12:00:00+09:00", "subject": "(feat) …", "stories": ["#24"], "content": {"statement": [{"text": "…"}], "rationale": null, "condition": null, "subjects": ["task-id"], "layers": ["model"], "evidence": [], "flags": [], "guesses": [], "modelCheckWaiver": null}, "layers": [{"id": "model", "name": "モデル"}], "refs": {}}
+{"id": "task-id-unique", "commit": "0123abcd…", "date": "2026-10-31T12:00:00+09:00", "subject": "(feat) …", "stories": ["#24"], "content": {"statement": [{"text": "…"}], "rationale": null, "condition": null, "refines": ["add-task"], "assumes": [], "layers": ["model"], "evidence": [], "flags": [], "guesses": [], "modelCheckWaiver": null}, "layers": [{"id": "model", "name": "モデル"}], "refs": {}}
 ```
 
-- `content` は、その時点の約束リストの項目（形は `/api/review` の `before`・`after` の `claim` と同じ）。参照の名前は今の約束リストのものを使い、今はない ID だけ、そのコミットの時点のものを使う。`refs` はその指す先
+- `content` は、その時点の約束リストの項目（形は `/api/review` の `before`・`after` の `spec` と同じ）。参照の名前は今の約束リストのものを使い、今はない ID だけ、そのコミットの時点のものを使う。`refs` はその指す先
 - 今の約束リスト（HEAD）が読めなければ `500`
 - `layers` は、`content.layers` の順に、今の設定のレイヤーの名前を付けた `[{"id": "model", "name": "モデル"}]`。今の設定にないレイヤーは、`name` を空の文字列にする（画面は ID のまま出す）
 - コミットはハッシュ（16 進の 4〜64 文字）で渡す。ほかの形は `400`、ないコミットは `404`
@@ -838,17 +841,17 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
   "id": "task-id", "name": "タスクの ID", "definition": [{"text": "…"}],
   "partOf": {"id": "task", "name": "タスク"},
   "children": [{"id": "task-id-prefix", "name": "タスクの ID の接頭辞"}],
-  "claims": [{"id": "task-id-unique", "statement": [{"text": "…"}]}],
+  "assumes": [{"kind": "truth", "id": "disk-works", "name": null}],
   "refs": {}
 }
 ```
 
 | 項目 | 中身 |
 |---|---|
-| `definition`・`claims[].statement` | セグメントの配列（「自然言語で書く項目（セグメントの配列）」）。`refs` はその指す先 |
+| `definition` | セグメントの配列（「自然言語で書く項目（セグメントの配列）」）。`refs` はその指す先 |
 | `partOf` | `part_of` に書いた親の用語。`part_of` を書いていなければ `null`。親が今の約束リストにない ID なら `name` を `null` にする |
 | `children` | `part_of` にこの用語を書いた用語。約束リストに書いた順。なければ `[]` |
-| `claims` | `subjects` にこの用語を持つ約束。約束リストに書いた順。なければ `[]` |
+| `assumes` | 用語の `assumes` の先（形は `GET /api/specs/<ID>` の `assumes` と同じ）。なければ `[]` |
 
 - 今の約束リストにない ID なら `404`（`message` は `用語 <ID> は約束リストにありません。`）
 
@@ -857,12 +860,50 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 機能の詳細。今の約束リストだけを見る。
 
 ```json
-{"id": "add-task", "name": "タスクを足す", "definition": [{"text": "…"}], "core": true, "formal": true, "claims": [{"id": "task-add-saves-todo", "statement": [{"text": "…"}]}], "refs": {}}
+{"id": "add-task", "name": "タスクを足す", "definition": [{"text": "…"}], "core": true, "formal": true, "refines": [{"kind": "property", "id": "no-lost-task", "name": null}], "specs": [{"id": "task-add-saves-todo", "statement": [{"text": "…"}]}], "refs": {}}
 ```
 
 - `core`・`formal` は、コア機能か・形式手法を使う機能か。書いていなければ `false`（`formal` は、書いていなければ `core` と同じ値）
-- `definition`・`claims` は、`GET /api/terms/<ID>` と同じ
+- `definition` は、`GET /api/terms/<ID>` と同じ
+- `refines` は、機能の `refines` の先（形は `GET /api/specs/<ID>` の `refines` と同じ）
+- `specs` は、この機能を `refines` する仕様。約束リストに書いた順。なければ `[]`。`specs[].statement` はセグメントの配列
 - 今の約束リストにない ID なら `404`（`message` は `機能 <ID> は約束リストにありません。`）
+
+### `GET /api/properties/<性質の ID>`
+
+性質の詳細。今の約束リストだけを見る。
+
+```json
+{
+  "id": "no-lost-task",
+  "statement": [{"text": "…"}], "rationale": [{"text": "…"}],
+  "refines": [{"kind": "property", "id": "reliable", "name": null}],
+  "assumes": [{"kind": "truth", "id": "disk-works", "name": null}],
+  "state": "agreed",
+  "fingerprint": "sha256:…",
+  "refs": {}
+}
+```
+
+- `statement`・`rationale` はセグメントの配列（`rationale` は、書いていなければ `null`）。`refs` はその指す先
+- `refines`・`assumes` は、形は `GET /api/specs/<ID>` のものと同じ
+- `state` は、今の中身のフィンガープリントに合う承認の記録があれば `agreed`、なければ `proposed`（ストーリーによらない）。`fingerprint` は、作れなければ `null`
+- 今の約束リストにない ID なら `404`（`message` は `性質 <ID> は約束リストにありません。`）
+
+### `GET /api/truths/<前提の ID>`
+
+前提の詳細。今の約束リストだけを見る。
+
+```json
+{"id": "disk-works", "statement": [{"text": "…"}], "state": "agreed", "fingerprint": "sha256:…", "refs": {}}
+```
+
+- 項目は、`GET /api/properties/<ID>` の同じ名前のものと同じ
+- 今の約束リストにない ID なら `404`（`message` は `前提 <ID> は約束リストにありません。`）
+
+### `GET /api/properties/<性質の ID>/history`・`GET /api/truths/<前提の ID>/history`
+
+性質・前提の変更履歴と承認の履歴。形と決まりは、`GET /api/specs/<仕様の ID>/history` と同じ（`agreements` は、`kind` が `property`・`truth` でその ID を指す記録）。ある時点の中身を返す API（`.../at/<コミット>`）は、仕様にだけある。
 
 ### `GET /api/file?path=<場所>`
 

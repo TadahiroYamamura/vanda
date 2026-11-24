@@ -1,10 +1,11 @@
 import { api, type NamedRef } from "../api";
 import { ClaimList } from "../components/ClaimList";
 import { ErrorBox, Loading, useLoad } from "../components/common";
+import { ItemRefs } from "../components/ItemRefs";
 import { detailURL, FeatureMarks, Prose, RefsProvider } from "../components/Prose";
 import { Link, reviewQuery, reviewURL } from "../route";
 
-// TermPage は、用語の詳細（term-page-content・term-feature-page-claims・term-feature-page-missing）。
+// TermPage は、用語の詳細（term-page-content・term-feature-page-missing）。
 export function TermPage(props: { id: string; params?: URLSearchParams }) {
   const d = useLoad(() => api.term(props.id), props.id);
   const query = reviewQuery(props.params);
@@ -43,8 +44,11 @@ export function TermPage(props: { id: string; params?: URLSearchParams }) {
                 </ul>
               )}
             </dd>
+            <dt>assumes</dt>
+            <dd>
+              <ItemRefs items={d.data.assumes} query={query} />
+            </dd>
           </dl>
-          <ClaimList claims={d.data.claims} what="用語" query={query} level="h2" />
         </RefsProvider>
       )}
     </div>
@@ -79,8 +83,12 @@ export function FeaturePage(props: { id: string; params?: URLSearchParams }) {
             <dd className="user-text">
               <Prose pieces={d.data.definition} />
             </dd>
+            <dt>refines</dt>
+            <dd>
+              <ItemRefs items={d.data.refines} query={query} />
+            </dd>
           </dl>
-          <ClaimList claims={d.data.claims} what="機能" query={query} level="h2" />
+          <ClaimList claims={d.data.specs} query={query} level="h2" />
         </RefsProvider>
       )}
     </div>

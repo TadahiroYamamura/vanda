@@ -6,6 +6,8 @@ export type Route =
   | { page: "claim"; id: string; params: URLSearchParams }
   | { page: "term"; id: string; params: URLSearchParams }
   | { page: "feature"; id: string; params: URLSearchParams }
+  | { page: "property"; id: string; params: URLSearchParams }
+  | { page: "truth"; id: string; params: URLSearchParams }
   | { page: "file"; path: string; params: URLSearchParams };
 
 export function parseRoute(loc: Location): Route {
@@ -16,6 +18,10 @@ export function parseRoute(loc: Location): Route {
   if (t) return { page: "term", id: decodeURIComponent(t[1]), params };
   const f = /^\/features\/(.+)$/.exec(loc.pathname);
   if (f) return { page: "feature", id: decodeURIComponent(f[1]), params };
+  const p = /^\/properties\/(.+)$/.exec(loc.pathname);
+  if (p) return { page: "property", id: decodeURIComponent(p[1]), params };
+  const tr = /^\/truths\/(.+)$/.exec(loc.pathname);
+  if (tr) return { page: "truth", id: decodeURIComponent(tr[1]), params };
   if (loc.pathname === "/files") return { page: "file", path: params.get("path") ?? "", params };
   return { page: "review", params };
 }

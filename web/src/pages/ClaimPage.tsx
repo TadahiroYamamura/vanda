@@ -5,6 +5,7 @@ import { LayerChips } from "../components/Chips";
 import { EvidenceGroups } from "../components/EvidenceGroups";
 import { ClaimHistory } from "../components/ClaimHistory";
 import { CodeBlock } from "../components/Code";
+import { ItemRefs } from "../components/ItemRefs";
 import { Prose, RefsProvider } from "../components/Prose";
 import { langOf } from "../highlight";
 import { Link, reviewQuery, reviewURL } from "../route";
@@ -35,7 +36,7 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: C
       <h1>
         {c.id} <StateBadge state={c.state} />
       </h1>
-      <ReviewAgree params={props.params} ctx={props.ctx ?? null} target={{ kind: "claim", id: c.id }}
+      <ReviewAgree params={props.params} ctx={props.ctx ?? null} target={{ kind: "spec", id: c.id }}
         onDone={() => {
           d.reload();
           h.reload();
@@ -53,8 +54,14 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: C
         <dd>
           <LayerChips layers={c.layers.map((l) => l.id)} names={c.layers} />
         </dd>
-        <dt>対象</dt>
-        <dd className="user-text">{c.subjects.map((s) => (s.name ? `${s.name}（${s.id}）` : `${s.id}（約束リストにありません）`)).join("・")}</dd>
+        <dt>refines</dt>
+        <dd>
+          <ItemRefs items={c.refines} query={reviewQuery(props.params)} />
+        </dd>
+        <dt>assumes</dt>
+        <dd>
+          <ItemRefs items={c.assumes} query={reviewQuery(props.params)} />
+        </dd>
         {c.guesses.length > 0 && (
           <>
             <dt>推測</dt>

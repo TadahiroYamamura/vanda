@@ -10,7 +10,8 @@ type ClaimContent struct {
 	Statement []Piece           `json:"statement"`
 	Rationale []Piece           `json:"rationale"`
 	Condition []Piece           `json:"condition"`
-	Subjects  []string          `json:"subjects"`
+	Refines   []string          `json:"refines"`
+	Assumes   []string          `json:"assumes"`
 	Layers    []string          `json:"layers"`
 	Evidence  []EvidenceContent `json:"evidence"`
 	Flags     []string          `json:"flags"`
@@ -27,17 +28,19 @@ type EvidenceContent struct {
 }
 
 type TermContent struct {
-	Name       string  `json:"name"`
-	Definition []Piece `json:"definition"`
-	PartOf     *string `json:"partOf"`
+	Name       string   `json:"name"`
+	Definition []Piece  `json:"definition"`
+	PartOf     *string  `json:"partOf"`
+	Assumes    []string `json:"assumes"`
 }
 
 type FeatureContent struct {
-	Name         string  `json:"name"`
-	Definition   []Piece `json:"definition"`
-	Core         *bool   `json:"core"`
-	Formal       *bool   `json:"formal"`
-	FormalWaiver []Piece `json:"formalWaiver"`
+	Name         string   `json:"name"`
+	Definition   []Piece  `json:"definition"`
+	Refines      []string `json:"refines"`
+	Core         *bool    `json:"core"`
+	Formal       *bool    `json:"formal"`
+	FormalWaiver []Piece  `json:"formalWaiver"`
 }
 
 type PropertyContent struct {
@@ -75,10 +78,10 @@ func Content(e snapshot.Entry, r *refs, base *side) any {
 	case e.Claim != nil:
 		return claimContent(e, r, base)
 	case e.Term != nil:
-		return TermContent{Name: e.Term.Name, Definition: r.pieces(e.Term.Definition, base), PartOf: optStr(e.Table.Has("part_of"), e.Term.PartOf)}
+		return TermContent{Name: e.Term.Name, Definition: r.pieces(e.Term.Definition, base), PartOf: optStr(e.Table.Has("part_of"), e.Term.PartOf), Assumes: strs(e.Term.Assumes)}
 	case e.Feature != nil:
 		f := e.Feature
-		out := FeatureContent{Name: f.Name, Definition: r.pieces(f.Definition, base), FormalWaiver: r.optPieces(e.Table.Has("formal_waiver"), f.FormalWaiver, base)}
+		out := FeatureContent{Name: f.Name, Definition: r.pieces(f.Definition, base), Refines: strs(f.Refines), FormalWaiver: r.optPieces(e.Table.Has("formal_waiver"), f.FormalWaiver, base)}
 		if e.Table.Has("core") {
 			v := f.Core
 			out.Core = &v
@@ -103,7 +106,8 @@ func claimContent(e snapshot.Entry, r *refs, base *side) ClaimContent {
 		Statement: r.pieces(c.Statement, base),
 		Rationale: r.optPieces(e.Table.Has("rationale"), c.Rationale, base),
 		Condition: r.optPieces(e.Table.Has("condition"), c.Condition, base),
-		Subjects:  []string{},
+		Refines:   strs(c.Refines),
+		Assumes:   strs(c.Assumes),
 		Layers:    strs(c.Layers),
 		Evidence:  []EvidenceContent{},
 		Flags:     strs(c.Flags),

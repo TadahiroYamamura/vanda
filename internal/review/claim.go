@@ -21,7 +21,8 @@ type ClaimDetail struct {
 	Rationale   []Piece          `json:"rationale"`
 	Condition   []Piece          `json:"condition"`
 	Layers      []LayerRef       `json:"layers"`
-	Subjects    []SubjectRef     `json:"subjects"`
+	Refines     []ItemRef        `json:"refines"`
+	Assumes     []ItemRef        `json:"assumes"`
 	State       string           `json:"state"`
 	Fingerprint *string          `json:"fingerprint"`
 	Flags       []string         `json:"flags"`
@@ -36,10 +37,30 @@ type LayerRef struct {
 	Name string `json:"name"`
 }
 
-type SubjectRef struct {
-	Kind *string `json:"kind"` // 約束リストにない ID なら null
+// ItemRef は、refines・assumes の先の項目。Kind は、今の約束リストにない ID なら nil。Name は、用語と機能だけが持つ（性質と前提は名前を持たない）。
+type ItemRef struct {
+	Kind *string `json:"kind"`
 	ID   string  `json:"id"`
 	Name *string `json:"name"`
+}
+
+// itemRefs は、refines・assumes に書いた ID を、書いた順に、今の約束リストの項目に引き当てる。
+func (s *state) itemRefs(ids []string) []ItemRef {
+	out := []ItemRef{}
+	for _, id := range ids {
+		r := ItemRef{ID: id}
+		if e, ok := s.cur.byID()[id]; ok {
+			r.Kind = ptr(e.Kind)
+			switch {
+			case e.Term != nil:
+				r.Name = ptr(e.Term.Name)
+			case e.Feature != nil:
+				r.Name = ptr(e.Feature.Name)
+			}
+		}
+		out = append(out, r)
+	}
+	return out
 }
 
 type EvidenceDetail struct {
@@ -95,7 +116,7 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 	c := cur.Claim
 	content := claimContent(cur, s.refs, nil)
 	d := &ClaimDetail{ID: c.ID, Statement: content.Statement, Rationale: content.Rationale, Condition: content.Condition, Flags: content.Flags, Guesses: content.Guesses,
-		Layers: []LayerRef{}, Subjects: []SubjectRef{}, Evidence: []EvidenceDetail{}}
+		Layers: []LayerRef{}, Refines: s.itemRefs(c.Refines), Assumes: s.itemRefs(c.Assumes), Evidence: []EvidenceDetail{}}
 	fp := s.cur.itemFP[key]
 	if fp != "" {
 		d.Fingerprint = ptr(fp)
