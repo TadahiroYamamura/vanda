@@ -105,7 +105,7 @@ func Targets(files []string, cfg *config.Config) []Target {
 }
 
 // targetType は、[[annotation]] の types から、そのパターンにマッチするファイルの種類を決める。承認の対象でなければ空。
-// シナリオとオラクルの定義は PO が読んで正とするもので、どのアダプタで読むかによらないので、アダプタの名前では決めない。
+// シナリオとオラクルの定義はオーナーが読んで正とするもので、どのアダプタで読むかによらないので、アダプタの名前では決めない。
 // 両方を含むときはシナリオにする（どちらでも承認の対象になることは変わらず、画面の見出しが変わるだけ）
 func targetType(types []string) string {
 	oracle := false

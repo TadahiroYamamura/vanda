@@ -11,7 +11,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
 )
 
-// SpecAt は、あるコミットの時点の約束の中身（CL-08）。
+// SpecAt は、あるコミットの時点の仕様の中身（CL-08）。
 type SpecAt struct {
 	ID      string      `json:"id"`
 	Commit  string      `json:"commit"`
@@ -25,7 +25,7 @@ type SpecAt struct {
 	Refs map[string]RefTarget `json:"refs"`
 }
 
-// SpecAtCommit は、コミット rev の時点の、約束 id の中身を返す。
+// SpecAtCommit は、コミット rev の時点の、仕様 id の中身を返す。
 func SpecAtCommit(o Options, id, rev string) (*SpecAt, *Error) {
 	// git の引数として読まれないよう、コミットのハッシュの形のものだけを受け付ける
 	if !isHash(rev) {
@@ -70,7 +70,7 @@ func SpecAtCommit(o Options, id, rev string) (*SpecAt, *Error) {
 			return &SpecAt{ID: id, Commit: full, Date: date, Subject: subject, Stories: strs(storyIDs(o.Cfg, msg)), Content: c, Layers: layers, Refs: s.refs.targets()}, nil
 		}
 	}
-	return nil, &Error{Status: http.StatusNotFound, Message: fmt.Sprintf("コミット %s の時点には、約束 %s はありません。", short(full), id), Fix: "変更履歴か承認の履歴から、ほかの時点を選んでください。"}
+	return nil, &Error{Status: http.StatusNotFound, Message: fmt.Sprintf("コミット %s の時点には、仕様 %s はありません。", short(full), id), Fix: "変更履歴か承認の履歴から、ほかの時点を選んでください。"}
 }
 
 // agreementCommits は、承認の記録ごとに、その記録を書き足したコミットを探す。

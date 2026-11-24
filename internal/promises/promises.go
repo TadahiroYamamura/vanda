@@ -19,7 +19,7 @@ type List struct {
 	Specs      []*Spec
 }
 
-// Item は、性質・前提・用語・機能・約束に共通するもの。Raw は読み込んだ表そのもの（フィンガープリントを作る元）。
+// Item は、性質・前提・用語・機能・仕様に共通するもの。Raw は読み込んだ表そのもの（フィンガープリントを作る元）。
 type Item struct {
 	ID    string
 	Table *tomlread.Table

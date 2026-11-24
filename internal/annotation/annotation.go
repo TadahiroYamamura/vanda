@@ -232,7 +232,7 @@ func scan(file string, texts []string) ([]Annotation, []diag.Error) {
 		arg = trimCloser(strings.TrimSpace(arg))
 		if kind == "internal" {
 			if arg == "" {
-				errs = append(errs, diag.Error{File: file, Line: n, What: "@vanda:internal に理由がありません", Fix: "@vanda:internal <仕様の中だけで使う理由> のように書いてください"})
+				errs = append(errs, diag.Error{File: file, Line: n, What: "@vanda:internal に理由がありません", Fix: "@vanda:internal <TLA+ の仕様の中だけで使う理由> のように書いてください"})
 				continue
 			}
 			out = append(out, Annotation{File: file, Line: n, Kind: kind, Value: arg})

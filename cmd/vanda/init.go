@@ -103,7 +103,7 @@ func report(out io.Writer, root string, files [][2]string, noAnnotations bool) e
 	}
 	fmt.Fprintf(out, "設定を確かめました: %s（バージョン %s）\n", config.File, cfg.Version)
 	fmt.Fprintln(out, "\n次にすること:")
-	fmt.Fprintln(out, "  1. "+config.File+" に、約束のレイヤーを [[layer]] で書いてください（id・name・description）。")
+	fmt.Fprintln(out, "  1. "+config.File+" に、仕様のレイヤーを [[layer]] で書いてください（id・name・description）。")
 	fmt.Fprintf(out, "  2. CI で vanda check を動かすよう、CI の設定に足してください。ブランチでは vanda check %s --base %s を、ベースブランチでは vanda check %s を動かします。\n", initcmd.CIChecksFile, cfg.GUIBase, initcmd.MainChecksFile)
 	n := 3
 	if noAnnotations {

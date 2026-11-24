@@ -81,7 +81,7 @@ type Found struct {
 	State *string `json:"state"`
 }
 
-// SpecHistory は、約束の変更履歴と承認の履歴
+// SpecHistory は、仕様の変更履歴と承認の履歴
 type SpecHistory struct {
 	Origin     []OriginRef    `json:"origin"`
 	Agreements []AgreementRef `json:"agreements"`
@@ -105,7 +105,7 @@ type AgreementRef struct {
 	Commit *string `json:"commit"`
 }
 
-// Spec は、約束の詳細を返す。変更履歴と承認の履歴は、履歴のコミットをたどって時間がかかるので、SpecHistoryOf で別に返す。
+// Spec は、仕様の詳細を返す。変更履歴と承認の履歴は、履歴のコミットをたどって時間がかかるので、SpecHistoryOf で別に返す。
 func Spec(o Options, id string) (*SpecDetail, *Error) {
 	s := &state{o: o, h: newHistory(o.Root, o.Cfg)}
 	cur, e := s.currentSpec(id)
@@ -179,12 +179,12 @@ func (s *state) currentSpec(id string) (snapshot.Entry, *Error) {
 	}
 	cur, ok := s.cur.items["spec:"+id]
 	if !ok {
-		return snapshot.Entry{}, &Error{Status: http.StatusNotFound, Message: "約束 " + id + " は約束リストにありません。", Fix: "約束の ID を確かめてください。"}
+		return snapshot.Entry{}, &Error{Status: http.StatusNotFound, Message: "仕様 " + id + " は約束リストにありません。", Fix: "仕様の ID を確かめてください。"}
 	}
 	return cur, nil
 }
 
-// SpecHistoryOf は、約束の変更履歴と承認の履歴を返す。
+// SpecHistoryOf は、仕様の変更履歴と承認の履歴を返す。
 func SpecHistoryOf(o Options, id string) (*SpecHistory, *Error) {
 	s := &state{o: o, h: newHistory(o.Root, o.Cfg)}
 	cur, e := s.currentSpec(id)

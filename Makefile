@@ -23,7 +23,7 @@ web-test: web
 	cd web && pnpm test
 
 # E2E は、作った vanda を動かすので build の後に流す。
-# macOS では、nix で入れたブラウザが動かないことがあるため、E2E を Linux だけで流す（段 2 の計画で PO が決めた）
+# macOS では、nix で入れたブラウザが動かないことがあるため、E2E を Linux だけで流す（段 2 の計画でオーナーが決めた）
 e2e: build
 ifeq ($(shell uname),Darwin)
 	@echo "macOS なので E2E のテストを飛ばす"

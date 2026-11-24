@@ -20,7 +20,7 @@ import (
 // Hooks は、テストから、事後条件を破る状態を作るための口。本番では nil のまま使わない。
 // 呼ばれるのは、それぞれの確かめ（センサー）の直前で、root はリポジトリのルート。
 var Hooks struct {
-	// AfterAgreeWrite は、承認の記録を書き足し（約束ならフラグを外し）た後、verify の前に呼ぶ
+	// AfterAgreeWrite は、承認の記録を書き足し（仕様ならフラグを外し）た後、verify の前に呼ぶ
 	AfterAgreeWrite func(root string)
 	// AfterAgreeCommit は、承認のコミットの後、checkAgreeCommit の前に呼ぶ
 	AfterAgreeCommit func(root string)
@@ -61,7 +61,7 @@ func (s *state) verify(rec AgreementRecord, spec *promises.Spec) error {
 	after := newSide(snap)
 	key := "spec:" + spec.ID
 	if rec.Fingerprint == nil || after.itemFP[key] != *rec.Fingerprint {
-		return errors.New("フラグを外したら、約束のフィンガープリントが変わりました")
+		return errors.New("フラグを外したら、仕様のフィンガープリントが変わりました")
 	}
 	want := map[string]any{}
 	for k, v := range spec.Raw {

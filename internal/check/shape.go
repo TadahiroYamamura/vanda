@@ -43,7 +43,7 @@ func (e *env) promiseListShape() []diag.Error {
 			continue
 		}
 		if prev, dup := where[it.id]; dup {
-			errs = append(errs, it.table.Err("id", fmt.Sprintf("ID %s が、%s の%s（%s）と重複しています", quote(it.id), place(prev), itemName(prev.kind), prev.id), "性質・前提・用語・機能・仕様のどれとも重複しない ID にしてください"))
+			errs = append(errs, it.table.Err("id", fmt.Sprintf("ID %s が、%s の%s（%s）と重複しています", quote(it.id), place(prev), kindName[prev.kind], prev.id), "性質・前提・用語・機能・仕様のどれとも重複しない ID にしてください"))
 			continue
 		}
 		where[it.id] = it
@@ -113,7 +113,7 @@ func (e *env) promiseListShape() []diag.Error {
 			}
 			for _, l := range ev.Layers {
 				if !contains(c.Layers, l) {
-					errs = append(errs, ev.Table.Err("layers", "エビデンスのレイヤー "+quote(l)+" が、約束の layers にありません", "エビデンスの layers を、約束の layers（"+strings.Join(c.Layers, "・")+"）から選んでください"))
+					errs = append(errs, ev.Table.Err("layers", "エビデンスのレイヤー "+quote(l)+" が、仕様の layers にありません", "エビデンスの layers を、仕様の layers（"+strings.Join(c.Layers, "・")+"）から選んでください"))
 					continue
 				}
 				covered[l] = true
@@ -201,7 +201,7 @@ func (e *env) relationErrs(kindOf func(string) string) []diag.Error {
 				errs = append(errs, t.Err(key, key+" に "+quote(id)+" が "+fmt.Sprint(n)+" 度あります", key+" の "+quote(id)+" を 1 つにしてください"))
 			}
 			if k := kindOf(id); k != want {
-				errs = append(errs, t.Err(key, key+" の "+quote(id)+" が"+kindName[want]+"にありません"+notItem(k), key+" に、約束リストにある"+kindName[want]+"の ID を書いてください"))
+				errs = append(errs, t.Err(key, key+" の "+quote(id)+" が"+kindName[want]+"にありません"+notKind(k), key+" に、約束リストにある"+kindName[want]+"の ID を書いてください"))
 				continue
 			}
 			ok = append(ok, id)
@@ -293,21 +293,6 @@ func notKind(k string) string {
 	return "（" + kindName[k] + "の ID）"
 }
 
-// TODO: 言葉の書き分け（docs/plans/promise-reorg-shape-impl.md の 2.7）で kindName の「約束」を「仕様」に直したら、itemName と notItem を消し、kindName と notKind を使う
-func itemName(kind string) string {
-	if kind == "spec" {
-		return "仕様"
-	}
-	return kindName[kind]
-}
-
-func notItem(k string) string {
-	if k == "" {
-		return ""
-	}
-	return "（" + itemName(k) + "の ID）"
-}
-
 func orNone(xs []string) string {
 	if len(xs) == 0 {
 		return "（設定にレイヤーがありません）"
@@ -336,9 +321,9 @@ func formalSpec(c *promises.Spec, formal map[string]bool) []diag.Error {
 	which := "形式手法を使う機能（" + strings.Join(features, "・") + "）"
 	switch {
 	case !planned && !waiver:
-		return []diag.Error{c.Table.Err("refines", "約束 "+c.ID+" は"+which+"を refines しますが、model-check の予定も、TLA+ で確かめない理由（model_check_waiver）もありません", "type = \"model-check\" の [[spec.evidence]] を足すか、model_check_waiver に理由を書いてください")}
+		return []diag.Error{c.Table.Err("refines", "仕様 "+c.ID+" は"+which+"を refines しますが、model-check の予定も、TLA+ で確かめない理由（model_check_waiver）もありません", "type = \"model-check\" の [[spec.evidence]] を足すか、model_check_waiver に理由を書いてください")}
 	case planned && waiver:
-		return []diag.Error{c.Table.Err("model_check_waiver", "約束 "+c.ID+" に、model-check の予定と、TLA+ で確かめない理由（model_check_waiver）の両方があります", "TLA+ で確かめるなら model_check_waiver を消し、確かめないなら model-check の予定を消してください")}
+		return []diag.Error{c.Table.Err("model_check_waiver", "仕様 "+c.ID+" に、model-check の予定と、TLA+ で確かめない理由（model_check_waiver）の両方があります", "TLA+ で確かめるなら model_check_waiver を消し、確かめないなら model-check の予定を消してください")}
 	}
 	return nil
 }

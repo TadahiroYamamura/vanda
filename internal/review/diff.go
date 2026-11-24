@@ -29,7 +29,7 @@ type FileDiff struct {
 
 type ItemDiff struct {
 	Fields map[string][]DiffPart `json:"fields"`
-	// Evidence は、約束のエビデンスの予定の、エビデンスの単位の差分。約束でなければ nil
+	// Evidence は、仕様のエビデンスの予定の、エビデンスの単位の差分。仕様でなければ nil
 	Evidence *EvidenceDiff `json:"evidence,omitempty"`
 }
 

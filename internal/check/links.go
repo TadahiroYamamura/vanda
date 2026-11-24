@@ -61,11 +61,11 @@ func (e *env) specTypes() []diag.Error {
 					term = true
 				case "feature":
 					// 直すのはアノテーションなので、定義ではなくアノテーションの行を指す
-					errs = append(errs, diag.Error{File: f, Line: a.Line, What: "仕様の型 " + ty.Name + "（TypeOK で使っています）に、@vanda:feature が付いています", Fix: "型には @vanda:term <用語の ID> か @vanda:internal <理由> を付け、@vanda:feature は操作の定義に付けてください"})
+					errs = append(errs, diag.Error{File: f, Line: a.Line, What: "TLA+ の仕様の型 " + ty.Name + "（TypeOK で使っています）に、@vanda:feature が付いています", Fix: "型には @vanda:term <用語の ID> か @vanda:internal <理由> を付け、@vanda:feature は操作の定義に付けてください"})
 				}
 			}
 			if !term {
-				errs = append(errs, diag.Error{File: f, Line: ty.Line, What: "仕様の型 " + ty.Name + "（TypeOK で使っています）に、@vanda:term も @vanda:internal もありません", Fix: "定義のすぐ上のコメントに、@vanda:term <用語の ID> か @vanda:internal <理由> を書いてください"})
+				errs = append(errs, diag.Error{File: f, Line: ty.Line, What: "TLA+ の仕様の型 " + ty.Name + "（TypeOK で使っています）に、@vanda:term も @vanda:internal もありません", Fix: "定義のすぐ上のコメントに、@vanda:term <用語の ID> か @vanda:internal <理由> を書いてください"})
 			}
 		}
 	}

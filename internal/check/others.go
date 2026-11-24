@@ -77,7 +77,7 @@ func (e *env) agreement(scope string) []diag.Error {
 		return scope == ScopeAll || changed[key]
 	}
 	// スコープ story では、そのストーリーが前に中身を承認したもの（失効した承認を探す先）も見る。
-	// 消したことにだけ承認したものは、足し直しても失効した承認にしない（約束 detached-agreement の「中身を承認した」）
+	// 消したことにだけ承認したものは、足し直しても失効した承認にしない（仕様 detached-agreement の「中身を承認した」）
 	storyAgreed := map[string]bool{}
 	if scope == ScopeStory {
 		for _, a := range e.recs.Agreements {
@@ -107,10 +107,10 @@ func (e *env) agreement(scope string) []diag.Error {
 		}
 		if it.spec != nil {
 			if len(it.spec.Flags) > 0 {
-				errs = append(errs, it.table.Err("flags", "約束 "+it.id+" にフラグ（"+strings.Join(it.spec.Flags, "・")+"）が残っています", "承認するときに、フラグを外してください（承認の後にフラグだけを立てたなら、中身を確かめ直してから外してください）"))
+				errs = append(errs, it.table.Err("flags", "仕様 "+it.id+" にフラグ（"+strings.Join(it.spec.Flags, "・")+"）が残っています", "承認するときに、フラグを外してください（承認の後にフラグだけを立てたなら、中身を確かめ直してから外してください）"))
 			}
 			if len(it.spec.Guesses) > 0 {
-				errs = append(errs, it.table.Err("guesses", "約束 "+it.id+" に推測（guesses）が残っています", "推測を確かめ、承認するときに guesses を外してください"))
+				errs = append(errs, it.table.Err("guesses", "仕様 "+it.id+" に推測（guesses）が残っています", "推測を確かめ、承認するときに guesses を外してください"))
 			}
 		}
 	}
@@ -146,7 +146,7 @@ func targetKey(kind, target string) string {
 
 // deletions は、今ないものに、消したことへの承認があるかを確かめる。スコープ all では、中身を承認したことがあって今ないもの。
 // スコープ story では、マージベースにあって今ないものを、承認したことがあるかによらず見る（一度も承認していないものを消しても、
-// そのストーリーで変えたものなので、PO が見ないままマージさせない）。
+// そのストーリーで変えたものなので、オーナーが見ないままマージさせない）。
 func (e *env) deletions(scope string) []diag.Error {
 	var errs []diag.Error
 	need := func(kind, target, why string, at diag.Error) {
@@ -259,7 +259,7 @@ func (e *env) evidencePresent(scope string) []diag.Error {
 			parts := annotation.Evidence(e.anns, e.guards, c.ID, ev.Type)
 			if len(parts) == 1 {
 				if len(parts[0].Found) == 0 {
-					errs = append(errs, ev.Table.Err("type", fmt.Sprintf("約束 %s の %s のエビデンスがありません（types に %s を含む [[annotation]] で読んだファイルに、@vanda:%s %s がありません）", c.ID, ev.Type, ev.Type, kind, c.ID), fmt.Sprintf("エビデンスを作り、@vanda:%s %s を付けてください。そのファイルが、types に %s を含む [[annotation]] のパターンにマッチするようにしてください", kind, c.ID, ev.Type)))
+					errs = append(errs, ev.Table.Err("type", fmt.Sprintf("仕様 %s の %s のエビデンスがありません（types に %s を含む [[annotation]] で読んだファイルに、@vanda:%s %s がありません）", c.ID, ev.Type, ev.Type, kind, c.ID), fmt.Sprintf("エビデンスを作り、@vanda:%s %s を付けてください。そのファイルが、types に %s を含む [[annotation]] のパターンにマッチするようにしてください", kind, c.ID, ev.Type)))
 				}
 				continue
 			}
@@ -270,7 +270,7 @@ func (e *env) evidencePresent(scope string) []diag.Error {
 				}
 			}
 			if len(missing) > 0 {
-				errs = append(errs, ev.Table.Err("type", fmt.Sprintf("約束 %s の %s のエビデンスが揃っていません（%s がありません）", c.ID, ev.Type, strings.Join(missing, "と、")), "足りないものを作り、アノテーションを付けてください"))
+				errs = append(errs, ev.Table.Err("type", fmt.Sprintf("仕様 %s の %s のエビデンスが揃っていません（%s がありません）", c.ID, ev.Type, strings.Join(missing, "と、")), "足りないものを作り、アノテーションを付けてください"))
 			}
 		}
 	}

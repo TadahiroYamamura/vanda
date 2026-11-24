@@ -59,7 +59,7 @@ func badRequest(msg, fix string) *Error {
 	return &Error{Status: http.StatusBadRequest, Message: msg, Fix: fix}
 }
 
-// Agree は、1 件を承認する（RV-06）。承認の記録を書き足し、約束ならフラグを外し、その 2 つのファイルだけを 1 つのコミットにする。
+// Agree は、1 件を承認する（RV-06）。承認の記録を書き足し、仕様ならフラグを外し、その 2 つのファイルだけを 1 つのコミットにする。
 func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	s := &state{o: o, h: newHistory(o.Root, o.Cfg)}
 	if e := s.checkStory(req.Story); e != nil {
@@ -279,7 +279,7 @@ func (s *state) agreementsFile() (string, bool, *Error) {
 	return first, true, nil
 }
 
-// removeFlags は、約束の表から flags と guesses の行（複数行の配列なら、その全部の行）を消す。ほかの行は変えない。
+// removeFlags は、仕様の表から flags と guesses の行（複数行の配列なら、その全部の行）を消す。ほかの行は変えない。
 func removeFlags(src []byte, spec *promises.Spec) ([]byte, error) {
 	lines := strings.SplitAfter(string(src), "\n")
 	drop := map[int]bool{}
@@ -289,11 +289,11 @@ func removeFlags(src []byte, spec *promises.Spec) ([]byte, error) {
 		}
 		start := spec.Table.Line(key)
 		if start == 0 || !startsWithKey(lines[start-1], key) {
-			return nil, fmt.Errorf("%s: 約束 %s の %s がインラインの表の中にあるため、消せません。", spec.Table.Doc.File, spec.ID, key)
+			return nil, fmt.Errorf("%s: 仕様 %s の %s がインラインの表の中にあるため、消せません。", spec.Table.Doc.File, spec.ID, key)
 		}
 		end, err := valueEnd(lines, start-1)
 		if err != nil {
-			return nil, fmt.Errorf("%s:%d: 約束 %s の %s の終わりが分かりません（%v）。", spec.Table.Doc.File, start, spec.ID, key, err)
+			return nil, fmt.Errorf("%s:%d: 仕様 %s の %s の終わりが分かりません（%v）。", spec.Table.Doc.File, start, spec.ID, key, err)
 		}
 		for i := start - 1; i <= end; i++ {
 			drop[i] = true

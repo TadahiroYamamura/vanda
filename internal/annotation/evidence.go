@@ -9,7 +9,7 @@ type Part struct {
 	Found []Annotation
 }
 
-// Evidence は、約束 id のタイプ typ の予定を揃えるのに要るものを返す。どの Part にもマッチしたアノテーションがあれば揃っている。
+// Evidence は、仕様 id のタイプ typ の予定を揃えるのに要るものを返す。どの Part にもマッチしたアノテーションがあれば揃っている。
 // エビデンス完備のチェックと画面で、同じ判定にするためにある。guards は、ガードレールの定義のファイル（[[guardrail]] の paths にマッチするもの）。
 //
 // guardrail と sensor は、2 つがどちらもあるときだけ揃う。ガードレールは定義があることと本当に拒むことを、センサーは
@@ -50,7 +50,7 @@ func Evidence(anns []Annotation, guards []string, id, typ string) []Part {
 				Found: pick(func(a Annotation) bool { return a.Kind == "sensor" && contains(a.Types, typ) }),
 			},
 			{
-				Want:  "types に sensor を含む [[annotation]] で読んだ @vanda:evidence " + id + "（センサーが、約束が破れた時に見つけることを確かめるもの）",
+				Want:  "types に sensor を含む [[annotation]] で読んだ @vanda:evidence " + id + "（センサーが、仕様が破れた時に見つけることを確かめるもの）",
 				Found: pick(func(a Annotation) bool { return a.Kind == "evidence" && contains(a.Types, typ) }),
 			},
 		}

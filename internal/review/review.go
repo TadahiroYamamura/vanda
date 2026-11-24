@@ -395,7 +395,7 @@ func sortedKeys(cs *changeSet) []string {
 	return out
 }
 
-var kindName = map[string]string{"term": "用語", "feature": "機能", "spec": "約束", "property": "性質", "truth": "前提", "file": "ファイル"}
+var kindName = map[string]string{"term": "用語", "feature": "機能", "spec": "仕様", "property": "性質", "truth": "前提", "file": "ファイル"}
 
 // itemKinds は、約束リストの項目の種類（承認の記録と API の kind の値）。API の誤りの文に、この順で出す
 var itemKinds = []string{"spec", "term", "feature", "property", "truth"}
@@ -607,7 +607,7 @@ func (s *state) order(es []Entry) {
 		if r, ok := rank[g]; ok {
 			return 4, fmt.Sprintf("%08d", r)
 		}
-		// 設定にないレイヤーの約束は、約束リストの形のチェックで誤りになる。設定のレイヤーの後に、名前の順で置く
+		// 設定にないレイヤーの仕様は、約束リストの形のチェックで誤りになる。設定のレイヤーの後に、名前の順で置く
 		return 5, g
 	}
 	name := func(e Entry) string {
@@ -713,7 +713,7 @@ func (s *state) detached(es []Entry) ([]Entry, error) {
 
 // changedBy は、HEAD の履歴で、記録 recs（そのストーリーの、キー key への承認）を最後に書き足したコミットより後のコミットのうち、
 // key の中身を変えたもののストーリーの ID を返す。written は、記録からそれを書き足したコミットへの表。
-// 承認の記録の agreed_at とコミットの日時を比べないのは、rebase や amend でコミットの日時が変わるため（約束 review-detached-shown）。
+// 承認の記録の agreed_at とコミットの日時を比べないのは、rebase や amend でコミットの日時が変わるため（仕様 review-detached-shown）。
 // まだコミットしていない記録しかなければ、それより後のコミットはないので空にする。
 func (s *state) changedBy(key string, recs []*agreements.Agreement, written map[*agreements.Agreement]string) ([]string, error) {
 	commits, err := s.h.loadCommits()
