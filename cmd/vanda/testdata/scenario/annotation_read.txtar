@@ -1,6 +1,6 @@
 # アノテーションの読み取り: 6 つの種類 × Go・シナリオ（txtar）・TLA+・SQL を全部回す。
 # @vanda:evidence annotation-kinds-per-builtin-adapter
-# 書ける組み合わせ（Go: evidence・sensor、txtar: evidence、TLA+: term・feature・claim・internal、SQL: evidence）は、
+# 書ける組み合わせ（Go: evidence・sensor、txtar: evidence、TLA+: term・feature・spec・internal、SQL: evidence）は、
 # 約束リストにない ID（no-such-id）を指すと、アノテーションのつながりのチェックがその行で止まることで、読んだことを確かめる。
 # 書けない組み合わせは、種類に合う ID を書いても、その行で止まる。
 #
@@ -30,8 +30,8 @@ stderr 'task\.go:6: '
 ! stderr '(?m)^panic: '
 cp orig/task.go.orig task.go
 
-# go では `@vanda:claim` を書けないので、その行で止まる
-cp cases/go-claim.case task.go
+# go では `@vanda:spec` を書けないので、その行で止まる
+cp cases/go-spec.case task.go
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'task\.go:6: '
@@ -82,8 +82,8 @@ stderr 'scenarios/add\.txtar:1: '
 cp orig/add.txtar.orig scenarios/add.txtar
 unquote scenarios/add.txtar
 
-# txtar では `@vanda:claim` を書けないので、その行で止まる
-cp cases/txtar-claim.case scenarios/add.txtar
+# txtar では `@vanda:spec` を書けないので、その行で止まる
+cp cases/txtar-spec.case scenarios/add.txtar
 unquote scenarios/add.txtar
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
@@ -138,8 +138,8 @@ stderr 'spec/Task\.tla:13: '
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
-# tla の `@vanda:claim` を読む（約束リストにない ID を指すと、その行で止まる）
-cp cases/tla-claim.case spec/Task.tla
+# tla の `@vanda:spec` を読む（約束リストにない ID を指すと、その行で止まる）
+cp cases/tla-spec.case spec/Task.tla
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: '
@@ -178,8 +178,8 @@ stderr 'db/schema\.sql:1: '
 ! stderr '(?m)^panic: '
 cp orig/schema.sql.orig db/schema.sql
 
-# sql では `@vanda:claim` を書けないので、その行で止まる
-cp cases/sql-claim.case db/schema.sql
+# sql では `@vanda:spec` を書けないので、その行で止まる
+cp cases/sql-spec.case db/schema.sql
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'db/schema\.sql:1: '
@@ -303,7 +303,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -342,7 +342,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -367,13 +367,13 @@ type Task struct{ ID string }
 
 // @vanda:feature task-add
 func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
--- cases/go-claim.case --
+-- cases/go-spec.case --
 package task
 
 // Task は利用者がやること。
 type Task struct{ ID string }
 
-// @vanda:claim task-id-unique
+// @vanda:spec task-id-unique
 func Add(ids []string, id string) ([]string, error) { return append(ids, id), nil }
 -- cases/go-internal.case --
 package task
@@ -409,8 +409,8 @@ func Add(ids []string, id string) ([]string, error) { return append(ids, id), ni
 >exec echo add
 >-- out.txt --
 >add
--- cases/txtar-claim.case --
-># @vanda:claim task-id-unique
+-- cases/txtar-spec.case --
+># @vanda:spec task-id-unique
 >exec echo add
 >-- out.txt --
 >add
@@ -439,7 +439,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:term no-such-id
@@ -455,13 +455,13 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature no-such-id
 Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
 ====
--- cases/tla-claim.case --
+-- cases/tla-spec.case --
 ---- MODULE Task ----
 \* @vanda:term task
 TaskIds == {"t1", "t2"}
@@ -471,10 +471,10 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
-\* @vanda:claim no-such-id
+\* @vanda:spec no-such-id
 Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
 ====
 -- cases/tla-evidence.case --
@@ -487,7 +487,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:evidence task-id-unique
@@ -503,7 +503,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:sensor task-id-unique
@@ -515,8 +515,8 @@ CREATE TABLE task (id TEXT PRIMARY KEY);
 -- cases/sql-feature.case --
 -- @vanda:feature task-add
 CREATE TABLE task (id TEXT PRIMARY KEY);
--- cases/sql-claim.case --
--- @vanda:claim task-id-unique
+-- cases/sql-spec.case --
+-- @vanda:spec task-id-unique
 CREATE TABLE task (id TEXT PRIMARY KEY);
 -- cases/sql-internal.case --
 -- @vanda:internal 仕様の中だけで使う
@@ -537,7 +537,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 (* @vanda:feature no-such-id *)

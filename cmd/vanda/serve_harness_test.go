@@ -21,7 +21,7 @@ import (
 	"time"
 )
 
-// API のテストは、ビルドした vanda で `vanda serve --port 0 --no-open` を外から動かして確かめる（監督の決定）。
+// API のテストは、ビルドした vanda で `vanda serve --port 0 --no-open` を外から動かして確かめる（オーナーの決定）。
 // 段 1 と同じく、実装の内部の関数に頼らずに書くため。vanda サーバーはテストの中で起動し、テストの終わりに必ず止め、
 // 止まったこと（プロセスが終わり、ポートがもう受け付けないこと）も確かめる。
 
@@ -637,9 +637,9 @@ func Test起動したvanda_serveはAPIのリクエストごとに設定を読み
 		var body any
 		switch req.path {
 		case "/api/agree":
-			body = agreeClaim("task-id-unique", reviewClaimFP)
+			body = agreeSpec("task-id-unique", reviewSpecFP)
 		case "/api/revoke":
-			body = revokeClaim("task-id-unique", reviewClaimFP)
+			body = revokeSpec("task-id-unique", reviewSpecFP)
 		}
 		code, msg := s.do(req.method, req.path, body, nil)
 		where := req.method + " " + req.path

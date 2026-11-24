@@ -14,11 +14,11 @@ import (
 // 種類とタイプの組み合わせは、計画の表から手で書いた。
 
 // typeKinds は、計画の表の「揃っているとするアノテーションの種類」。types に書けるタイプの全部。
-// guardrail と sensor は、2 つのアノテーションが揃ったときだけ揃う（約束 check-evidence-guardrail-needs-definition・
+// guardrail と sensor は、2 つのアノテーションが揃ったときだけ揃う（仕様 check-evidence-guardrail-needs-definition・
 // check-evidence-sensor-needs-check）ので、1 つのアノテーションだけを置く Testアノテーションの種類と… では、どの種類でも揃わない。
 // 2 つの揃い方は Test_guardrailの予定は… と Test_sensorの予定は… で確かめる
 var typeKinds = map[string]string{
-	"model-check":      "claim",
+	"model-check":      "spec",
 	"sensor":           "sensor",
 	"scenario-test":    "evidence",
 	"unit-test":        "evidence",
@@ -30,12 +30,12 @@ var typeKinds = map[string]string{
 }
 
 // アノテーションの種類の全部（docs/formats.md）
-var annotationKinds = []string{"term", "feature", "claim", "internal", "evidence", "sensor"}
+var annotationKinds = []string{"term", "feature", "spec", "internal", "evidence", "sensor"}
 
 // anyAdapter は、渡された 1 行目のアノテーションに名前を返すカスタムアダプタ（どの種類も書ける）。
 const anyAdapter = "#!/bin/sh\ncat >/dev/null\nprintf '%s' '{\"names\":[{\"line\":1,\"name\":\"x\"}]}'\n"
 
-// typesRepo は、約束 task-id-unique の予定のタイプを planned にし、ext/a.ext に kind のアノテーションを 1 つ置き、
+// typesRepo は、仕様 task-id-unique の予定のタイプを planned にし、ext/a.ext に kind のアノテーションを 1 つ置き、
 // それを types の [[annotation]] で読むリポジトリを作る。
 func typesRepo(t *testing.T, version, planned, kind, types string) string {
 	t.Helper()
@@ -216,7 +216,7 @@ func Test_typesが空の配列なら設定の誤りにならずどのタイプ�
 	}
 }
 
-// pairRepo は、約束 task-id-unique の予定のタイプを planned にし、files（場所 → 1 行目に書くアノテーションの種類）を置いたリポジトリを作る。
+// pairRepo は、仕様 task-id-unique の予定のタイプを planned にし、files（場所 → 1 行目に書くアノテーションの種類）を置いたリポジトリを作る。
 // ext/ の下は types が extTypes の [[annotation]] で、def/ の下は types = [] の [[annotation]] で読み、def/ の下はガードレールの定義にする。
 // 種類が空のファイルは、アノテーションのないファイル
 func pairRepo(t *testing.T, version, planned, extTypes string, files map[string]string) string {

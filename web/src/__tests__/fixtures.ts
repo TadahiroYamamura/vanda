@@ -4,7 +4,7 @@ import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { isInaccessible } from "@testing-library/dom";
 import { expect } from "vitest";
-import type { ClaimDetail, ClaimHistory, Context, Entry, Piece, PropertyDetail, RefTarget, Review, Story, TruthDetail } from "../api";
+import type { SpecDetail, SpecHistory, Context, Entry, Piece, PropertyDetail, RefTarget, Review, Story, TruthDetail } from "../api";
 
 export const ctx: Context = {
   version: "0.1.0",
@@ -28,18 +28,18 @@ export const ctx: Context = {
 // plain は、参照のない文をセグメントの配列にする（自然言語で書く項目は、API でセグメントの配列になる。docs/plans/stage4-references.md）。
 export const plain = (text: string) => [{ text }];
 
-// termRef・featureRef・claimRef は、レスポンスの最上位の refs の 1 つ（docs/formats.md の「自然言語で書く項目（セグメントの配列）」）。
+// termRef・featureRef・specRef は、レスポンスの最上位の refs の 1 つ（docs/formats.md の「自然言語で書く項目（セグメントの配列）」）。
 // pieces を省けば、text を参照のない 1 つのセグメントにする
 export const termRef = (name: string, text: string, current = true, pieces: Piece[] = plain(text)): RefTarget => ({ kind: "term", name, text, current, pieces });
 export const featureRef = (name: string, text: string, o: { current?: boolean; core: boolean; formal: boolean; pieces?: Piece[] }): RefTarget => ({
   kind: "feature", name, text, current: o.current ?? true, pieces: o.pieces ?? plain(text), core: o.core, formal: o.formal,
 });
-export const claimRef = (text: string, current = true, pieces: Piece[] = plain(text)): RefTarget => ({ kind: "spec", name: null, text, current, pieces });
+export const specRef = (text: string, current = true, pieces: Piece[] = plain(text)): RefTarget => ({ kind: "spec", name: null, text, current, pieces });
 // 性質と前提は、仕様と同じく名前を持たない
 export const propertyRef = (text: string, current = true, pieces: Piece[] = plain(text)): RefTarget => ({ kind: "property", name: null, text, current, pieces });
 export const truthRef = (text: string, current = true, pieces: Piece[] = plain(text)): RefTarget => ({ kind: "truth", name: null, text, current, pieces });
 
-export function claimEntry(no: number, id: string, over: Partial<Entry> = {}): Entry {
+export function specEntry(no: number, id: string, over: Partial<Entry> = {}): Entry {
   return {
     no,
     kind: "spec",
@@ -83,7 +83,7 @@ export function claimEntry(no: number, id: string, over: Partial<Entry> = {}): E
 
 // propertyEntry・truthEntry は、一覧の性質・前提の 1 件（docs/formats.md の before・after の表の property・truth）
 export function propertyEntry(no: number, id: string, over: Partial<Entry> = {}): Entry {
-  return claimEntry(no, id, {
+  return specEntry(no, id, {
     kind: "property",
     group: "properties",
     before: { statement: plain(`${id} の前の文`), rationale: null, refines: [], assumes: [] },
@@ -93,7 +93,7 @@ export function propertyEntry(no: number, id: string, over: Partial<Entry> = {})
 }
 
 export function truthEntry(no: number, id: string, over: Partial<Entry> = {}): Entry {
-  return claimEntry(no, id, {
+  return specEntry(no, id, {
     kind: "truth",
     group: "truths",
     before: { statement: plain(`${id} の前の文`) },
@@ -146,7 +146,7 @@ export const story: Story = {
   attachments: [{ name: "画面の案", url: "https://github.com/user-attachments/assets/1" }],
 };
 
-export function claimDetail(over: Partial<ClaimDetail> = {}): ClaimDetail {
+export function specDetail(over: Partial<SpecDetail> = {}): SpecDetail {
   return {
     id: "task-id-unique",
     statement: plain("タスクの ID は重ならない"),
@@ -191,8 +191,8 @@ export function truthDetail(over: Partial<TruthDetail> = {}): TruthDetail {
   };
 }
 
-// claimHistory は、約束・性質・前提の変更履歴と承認の履歴（GET /api/specs/<ID>/history など）
-export function claimHistory(over: Partial<ClaimHistory> = {}): ClaimHistory {
+// specHistory は、仕様・性質・前提の変更履歴と承認の履歴（GET /api/specs/<ID>/history など）
+export function specHistory(over: Partial<SpecHistory> = {}): SpecHistory {
   return { origin: [], agreements: [], ...over };
 }
 
@@ -223,9 +223,9 @@ export function defaultHandlers(r: Review) {
     http.get("/api/context", () => HttpResponse.json(ctx)),
     http.get("/api/review", () => HttpResponse.json(r)),
     http.get("/api/story", () => HttpResponse.json(story)),
-    http.get("/api/specs/:id/history", () => HttpResponse.json(claimHistory())),
-    http.get("/api/properties/:id/history", () => HttpResponse.json(claimHistory())),
-    http.get("/api/truths/:id/history", () => HttpResponse.json(claimHistory())),
+    http.get("/api/specs/:id/history", () => HttpResponse.json(specHistory())),
+    http.get("/api/properties/:id/history", () => HttpResponse.json(specHistory())),
+    http.get("/api/truths/:id/history", () => HttpResponse.json(specHistory())),
   ];
 }
 

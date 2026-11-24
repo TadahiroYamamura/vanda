@@ -13,14 +13,14 @@ import (
 // RV-14: ストーリーが前に承認したのに、今の中身にそのストーリーの承認がなくなったものを示す（GET /api/review）。
 // 一覧に出るもの（比べる元と今で変わったもの）は entries[].detachedAgreement に、変わっていないものは detached に出る。
 
-// 約束が refines する機能 f と、機能が refines する性質 p も、一緒に置く
+// 仕様が refines する機能 f と、機能が refines する性質 p も、一緒に置く
 const rv14Term = "[[term]]\nid = \"t\"\nname = \"n\"\ndefinition = \"d\"\n\n[[property]]\nid = \"p\"\nstatement = \"s\"\n\n[[feature]]\nid = \"f\"\nname = \"n\"\ndefinition = \"d\"\nrefines = [\"p\"]\n"
 
 func rv14Promises(a, b int) string {
-	claim := func(id string, v int) string {
+	spec := func(id string, v int) string {
 		return fmt.Sprintf("\n[[spec]]\nid = %q\nrefines = [\"f\"]\nstatement = \"v%d\"\nlayers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", id, v)
 	}
-	return rv14Term + claim("item-a", a) + claim("item-b", b)
+	return rv14Term + spec("item-a", a) + spec("item-b", b)
 }
 
 // rv14FP は、docs/formats.md の決まった形の JSON を手で書き、そのフィンガープリントを返す。

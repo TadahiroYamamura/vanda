@@ -7,12 +7,12 @@ import (
 	"testing"
 )
 
-// RV-08: 約束の詳細の evidence[].present（エビデンスが揃っているか）。エビデンスのタイプ 12 を全部回す。
-// 約束 all-types は、どのタイプにも、揃っているとするアノテーション（docs/formats.md の表）がある。
-// 約束 no-types は、同じ予定で、アノテーションがひとつもない。
+// RV-08: 仕様の詳細の evidence[].present（エビデンスが揃っているか）。エビデンスのタイプ 12 を全部回す。
+// 仕様 all-types は、どのタイプにも、揃っているとするアノテーション（docs/formats.md の表）がある。
+// 仕様 no-types は、同じ予定で、アノテーションがひとつもない。
 // guardrail は、ガードレールの定義（db/schema.sql）と、定義でないファイル（db/all.sql）の evidence の 2 つで揃う。
 // sensor は、センサーの場所（all.go の sensor）と、センサーの検証（all_test.go の evidence）の 2 つで揃う。
-// 約束 half-a・half-b は、guardrail と sensor の予定の、2 つのうち片方だけがある。
+// 仕様 half-a・half-b は、guardrail と sensor の予定の、2 つのうち片方だけがある。
 
 // 期待値は docs/formats.md の「エビデンス完備のチェック」の表と evidence[].present の説明から手で書く。
 // 値は、アノテーションがあるとき・ないときの present（nil は null）。
@@ -36,7 +36,7 @@ var presentTypes = []struct {
 
 func bp(b bool) *bool { return &b }
 
-func presentClaim(id string) string {
+func presentSpec(id string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "\n[[spec]]\nid = %q\nrefines = [\"f\"]\nstatement = \"エビデンスのタイプ\"\nlayers = [\"model\"]\n", id)
 	for _, p := range presentTypes {
@@ -46,7 +46,7 @@ func presentClaim(id string) string {
 }
 
 // @vanda:evidence evidence-presence-shown
-func Test約束の詳細はエビデンスのタイプごとに揃っているかを示す(t *testing.T) {
+func Test仕様の詳細はエビデンスのタイプごとに揃っているかを示す(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
@@ -84,10 +84,10 @@ types = ["unit-test", "cross-check", "random-check", "interface-test", "concurre
 adapter = "file"
 paths = ["db/schema.sql"]
 `, version))
-	halfClaim := func(id string) string {
+	halfSpec := func(id string) string {
 		return fmt.Sprintf("\n[[spec]]\nid = %q\nrefines = [\"f\"]\nstatement = \"片方\"\nlayers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"guardrail\"\nlayers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"sensor\"\nlayers = [\"model\"]\n", id)
 	}
-	writeFile(t, root, ".vanda/promises.toml", "[[term]]\nid = \"t\"\nname = \"n\"\ndefinition = \"d\"\n\n[[property]]\nid = \"p\"\nstatement = \"s\"\n\n[[feature]]\nid = \"f\"\nname = \"n\"\ndefinition = \"d\"\nrefines = [\"p\"]\n"+presentClaim("all-types")+presentClaim("no-types")+halfClaim("half-a")+halfClaim("half-b"))
+	writeFile(t, root, ".vanda/promises.toml", "[[term]]\nid = \"t\"\nname = \"n\"\ndefinition = \"d\"\n\n[[property]]\nid = \"p\"\nstatement = \"s\"\n\n[[feature]]\nid = \"f\"\nname = \"n\"\ndefinition = \"d\"\nrefines = [\"p\"]\n"+presentSpec("all-types")+presentSpec("no-types")+halfSpec("half-a")+halfSpec("half-b"))
 	// half-a は、ガードレールの定義とセンサーの場所だけ
 	writeFile(t, root, "db/schema.sql", "-- @vanda:evidence all-types\n-- @vanda:evidence half-a\nCREATE TABLE y (id INTEGER);\n")
 	writeFile(t, root, "internal/half/half.go", "package half\n\n// @vanda:sensor half-a\nfunc Check() error { return nil }\n")
@@ -95,7 +95,7 @@ paths = ["db/schema.sql"]
 	writeFile(t, root, "db/half.sql", "-- @vanda:evidence half-b\nINSERT INTO y VALUES (1), (1);\n")
 	writeFile(t, root, "internal/half/half_test.go", "package half\n\nimport \"testing\"\n\n// @vanda:evidence half-b\nfunc TestHalf(t *testing.T) {}\n")
 	writeFile(t, root, "e2e/all.txtar", "# @vanda:evidence all-types\n-- a --\n")
-	writeFile(t, root, "spec/All.tla", "---- MODULE All ----\n\\* @vanda:claim all-types\nP == TRUE\n====\n")
+	writeFile(t, root, "spec/All.tla", "---- MODULE All ----\n\\* @vanda:spec all-types\nP == TRUE\n====\n")
 	writeFile(t, root, "db/all.sql", "-- @vanda:evidence all-types\nCREATE TABLE x (id INTEGER);\n")
 	writeFile(t, root, "internal/all/all_test.go", "package all\n\nimport \"testing\"\n\n// @vanda:evidence all-types\nfunc TestAll(t *testing.T) {}\n")
 	writeFile(t, root, "internal/all/all.go", "package all\n\n// @vanda:sensor all-types\nfunc Check() error { return nil }\n")
@@ -106,7 +106,7 @@ paths = ["db/schema.sql"]
 		var got struct {
 			Evidence []struct {
 				Type    string          `json:"type"`
-				Found   []claimFound    `json:"found"`
+				Found   []specFound     `json:"found"`
 				Present json.RawMessage `json:"present"`
 			} `json:"evidence"`
 		}
@@ -142,7 +142,7 @@ paths = ["db/schema.sql"]
 		var got struct {
 			Evidence []struct {
 				Type    string          `json:"type"`
-				Found   []claimFound    `json:"found"`
+				Found   []specFound     `json:"found"`
 				Present json.RawMessage `json:"present"`
 			} `json:"evidence"`
 		}

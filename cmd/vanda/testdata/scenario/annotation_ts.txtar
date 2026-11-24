@@ -41,7 +41,7 @@ stderr 'unit-test'
 cp orig/a.test.ts.orig web/a.test.ts
 
 # evidence のほかの種類は書けない
-cp cases/kind-claim.ts web/a.test.ts
+cp cases/kind-spec.ts web/a.test.ts
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'web/a\.test\.ts:3: '
@@ -256,10 +256,10 @@ import { it, test } from "vitest";
 test("ID は重ならない", () => {});
 
 it.only("これだけ", () => {});
--- cases/kind-claim.ts --
+-- cases/kind-spec.ts --
 import { test } from "vitest";
 
-// @vanda:claim task-id-unique
+// @vanda:spec task-id-unique
 test("ID は重ならない", () => {});
 -- cases/place-const.ts --
 import { test } from "vitest";
@@ -292,7 +292,7 @@ import { test } from "vitest";
 
 const usage = "@vanda:foo two ids";
 const help = `書き方は @vanda:evidence no-such-id のとおり。${usage}`;
-const quoted = '@vanda:claim no-such-id';
+const quoted = '@vanda:spec no-such-id';
 
 // @vanda:evidence task-id-unique
 test("ID は重ならない", () => {});

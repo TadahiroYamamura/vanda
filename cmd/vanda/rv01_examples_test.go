@@ -86,7 +86,7 @@ var rvExamples = []rvExample{
 		}},
 	},
 	{
-		name: "約束の文が変わらずシナリオのファイルだけが変わったものも出る",
+		name: "仕様の文が変わらずシナリオのファイルだけが変わったものも出る",
 		build: func(r *rvRepo) {
 			r.addItem("spec", "c-a", 0)
 			s := r.addFileAt(rvScenario, "e2e/a.txtar")

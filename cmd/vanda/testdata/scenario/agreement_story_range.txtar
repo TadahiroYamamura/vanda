@@ -1,41 +1,41 @@
 # CMD-10 承認: スコープを story にすると、ベースブランチとのマージベースより後に変わったものだけが対象になる。
 # @vanda:evidence check-agreement-story-scope
 # @vanda:evidence deleted-item-needs-agreement
-# main には承認していない約束（task-id-unique）が残っているが、ストーリー 2 で変えていないので、スコープ story（ストーリー 2）のチェックでは止めない。
+# main には承認していない仕様（task-id-unique）が残っているが、ストーリー 2 で変えていないので、スコープ story（ストーリー 2）のチェックでは止めない。
 
 exec git init -q -b main
 expand .vanda/config.toml
-commit '約束を足す' '#9'
+commit '仕様を足す' '#9'
 
 exec git checkout -q -b story-2
 
-# ストーリー 2 で足した約束を承認していなければ、スコープ story（ストーリー 2）でも止まる
+# ストーリー 2 で足した仕様を承認していなければ、スコープ story（ストーリー 2）でも止まる
 cp cases/b.toml .vanda/promises/b.toml
-commit '約束を足す' '#2'
+commit '仕様を足す' '#2'
 ! exec vanda check .vanda/checks/story.toml --base main
 stderr 'b\.toml.*task-title-required'
 ! stderr 'task-id-unique'
 ! stderr '(?m)^panic: '
 
 # 承認すれば、スコープ story（ストーリー 2）では通る
-agree .vanda/agreements/story-2.toml '#2' spec task-title-required fp/claim-b.json
-commit '約束を承認する' '#2'
+agree .vanda/agreements/story-2.toml '#2' spec task-title-required fp/spec-b.json
+commit '仕様を承認する' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 
-# スコープ all では、main の承認していない約束で止まる
+# スコープ all では、main の承認していない仕様で止まる
 ! exec vanda check .vanda/checks/all.toml
 stderr 'a\.toml.*task-id-unique'
 ! stderr 'task-title-required'
 ! stderr '(?m)^panic: '
 
-# ストーリー 2 で、マージベースにあった約束を消すと、一度も承認していなくても、スコープ story（ストーリー 2）では消したことへの承認を求める
-cp cases/a-without-claim.toml .vanda/promises/a.toml
-commit '約束を消す' '#2'
+# ストーリー 2 で、マージベースにあった仕様を消すと、一度も承認していなくても、スコープ story（ストーリー 2）では消したことへの承認を求める
+cp cases/a-without-spec.toml .vanda/promises/a.toml
+commit '仕様を消す' '#2'
 ! exec vanda check .vanda/checks/story.toml --base main
-stderr '約束 task-id-unique を消したことに、まだ承認していません'
+stderr '仕様 task-id-unique を消したことに、まだ承認していません'
 ! stderr '(?m)^panic: '
 agree -deleted .vanda/agreements/story-2.toml '#2' spec task-id-unique
-commit '約束を消したことを承認する' '#2'
+commit '仕様を消したことを承認する' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 
 -- .vanda/config.toml --
@@ -85,7 +85,7 @@ refines = ["no-lost-task"]
 [[property]]
 id = "no-lost-task"
 statement = "Registered tasks are never lost"
--- cases/a-without-claim.toml --
+-- cases/a-without-spec.toml --
 [[term]]
 id = "task"
 name = "Task"
@@ -114,5 +114,5 @@ stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
--- fp/claim-b.json --
+-- fp/spec-b.json --
 {"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","refines":["task-add"],"statement":"Every task has a title"}

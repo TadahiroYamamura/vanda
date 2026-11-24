@@ -15,7 +15,7 @@ exec vanda check .vanda/checks/origin.toml --base main
 
 # 約束リストを変えたコミットに Story: のトレーラーがあれば通る
 cp cases/promises-2.toml .vanda/promises.toml
-commit '約束の文を変える' '#2'
+commit '仕様の文を変える' '#2'
 exec vanda check .vanda/checks/origin.toml --base main
 
 # 約束リスト以外（承認の記録、ほかのファイル）を変えたコミットには、ID がなくてよい
@@ -31,7 +31,7 @@ exec vanda check .vanda/checks/origin.toml --base main
 
 # 約束リストを変えたコミットに Story: のトレーラーがないと止まる
 cp cases/promises-3.toml .vanda/promises.toml
-commit '約束の文をまた変える'
+commit '仕様の文をまた変える'
 ! exec vanda check .vanda/checks/origin.toml --base main
 ! stderr '(?m)^panic: '
 
@@ -41,10 +41,10 @@ exec git checkout -q -b story-proj
 cp cases/config-proj.toml .vanda/config.toml
 expand .vanda/config.toml
 cp cases/promises-2.toml .vanda/promises.toml
-commit '約束の文を変える' 'PROJ-12'
+commit '仕様の文を変える' 'PROJ-12'
 exec vanda check .vanda/checks/origin.toml --base main
 cp cases/promises-3.toml .vanda/promises.toml
-commit '#3 約束の文をまた変える'
+commit '#3 仕様の文をまた変える'
 ! exec vanda check .vanda/checks/origin.toml --base main
 ! stderr '(?m)^panic: '
 

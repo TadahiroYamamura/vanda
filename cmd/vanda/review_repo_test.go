@@ -11,8 +11,8 @@ import (
 )
 
 // 段 2 の API と E2E のテストで使う、一時的な git のリポジトリ。
-// main ブランチに、承認済の約束・用語・機能と、シナリオ・TLA+・ガードレールの定義・Go のテストを置き、
-// story-24 ブランチで、ストーリー #24 が約束を変え・足し、シナリオを変える。HEAD は story-24 にある。
+// main ブランチに、承認済の仕様・用語・機能と、シナリオ・TLA+・ガードレールの定義・Go のテストを置き、
+// story-24 ブランチで、ストーリー #24 が仕様を変え・足し、シナリオを変える。HEAD は story-24 にある。
 // フィンガープリントは、docs/formats.md の決まった形の JSON を手で書いて作る（約束リストを読んで作らない）。
 
 const (
@@ -193,7 +193,7 @@ a
 const reviewTLA = `---- MODULE Task ----
 EXTENDS Naturals
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 Unique == \A a, b \in DOMAIN tasks : tasks[a] = tasks[b] => a = b
 
 Next == /\ tasks' = [tasks EXCEPT ![1] = "x"]
@@ -297,11 +297,11 @@ func newReviewRepo(t *testing.T, version string) *reviewRepo {
 		agreements.WriteString(agreementTOML("file", fp, fp, path, "#1", "テスト担当", "tester@example.com"))
 	}
 	writeFile(t, root, ".vanda/agreements.toml", agreements.String())
-	r.g.commitAll("はじめの約束を置く", "#1")
+	r.g.commitAll("はじめの仕様を置く", "#1")
 
 	r.g.run("switch", "-q", "-c", reviewBranch)
 	writeFile(t, root, ".vanda/promises.toml", reviewPromisesStory)
-	r.g.commitAll("タスクの ID の約束を変え、題の約束を足す", reviewStory)
+	r.g.commitAll("タスクの ID の仕様を変え、題の仕様を足す", reviewStory)
 	writeFile(t, root, "e2e/add-task.txtar", reviewScenarioStory)
 	r.g.commitAll("重なった ID を拒むシナリオにする", reviewStory)
 	return r

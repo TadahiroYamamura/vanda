@@ -149,10 +149,10 @@ Small == {0, 1, 2}
 (* 2 行目の説明 *)
 Add(t, u) == t
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 LOCAL Unique == TRUE
 
-(* @vanda:claim task-done *)
+(* @vanda:spec task-done *)
 Done == TRUE
 ====
 `
@@ -160,18 +160,18 @@ Done == TRUE
 		{2, "term", "task", "TaskIds"},
 		{5, "internal", "検査のための小さな数の集合", "Small"},
 		{8, "feature", "task-add", "Add"},
-		{14, "claim", "task-id-unique", "Unique"},
-		{17, "claim", "task-done", "Done"},
+		{14, "spec", "task-id-unique", "Unique"},
+		{17, "spec", "task-done", "Done"},
 	})
 }
 
 func TestTLAの関数の定義に付けたアノテーションは関数の名前に付く(t *testing.T) {
 	src := `---- MODULE Task ----
-\* @vanda:claim task-title-required
+\* @vanda:spec task-title-required
 Count[x \in Small] == x + 1
 ====
 `
-	checkRead(t, "spec/Task.tla", src, "tla", []want{{2, "claim", "task-title-required", "Count"}})
+	checkRead(t, "spec/Task.tla", src, "tla", []want{{2, "spec", "task-title-required", "Count"}})
 }
 
 // @vanda:evidence annotation-outside-comment-ignored
@@ -180,7 +180,7 @@ func Test文字列の中の書き方はアノテーションとして数えず�
 		checkRead(t, "task.go", "package task\n\nconst usage = \"@vanda:evidence no-such-id\"\n\nvar raw = `@vanda:foo x y`\n", "go", nil)
 	})
 	t.Run("tla", func(t *testing.T) {
-		checkRead(t, "spec/Task.tla", "---- MODULE Task ----\nMsg == \"@vanda:claim no-such-id\"\n====\n", "tla", nil)
+		checkRead(t, "spec/Task.tla", "---- MODULE Task ----\nMsg == \"@vanda:spec no-such-id\"\n====\n", "tla", nil)
 	})
 	t.Run("sql", func(t *testing.T) {
 		checkRead(t, "db/schema.sql", "INSERT INTO task VALUES ('@vanda:evidence no-such-id');\n", "sql", nil)
@@ -214,14 +214,14 @@ B == {2}
 	})
 }
 
-// 言語ごとに書ける種類（監督の決定）: Go は evidence・sensor、txtar は evidence、TLA+ は term・feature・claim・internal、SQL は evidence。
+// 言語ごとに書ける種類（オーナーの決定）: Go は evidence・sensor、txtar は evidence、TLA+ は term・feature・spec・internal、SQL は evidence。
 // 6 つの種類 × 4 つの言語を全部回し、書けない組み合わせは誤り、書ける組み合わせは読めることを確かめる。
 // @vanda:evidence annotation-kinds-per-builtin-adapter
 func Test言語ごとに書ける種類だけを読みほかの組み合わせはその行で誤りにする(t *testing.T) {
 	allowed := map[string][]string{
 		"go":    {"evidence", "sensor"},
 		"txtar": {"evidence"},
-		"tla":   {"term", "feature", "claim", "internal"},
+		"tla":   {"term", "feature", "spec", "internal"},
 		"sql":   {"evidence"},
 	}
 	srcOf := map[string]func(ann string) (path, src string, line int, name string){
@@ -257,4 +257,4 @@ func Test言語ごとに書ける種類だけを読みほかの組み合わせ�
 }
 
 // 種類の一覧は docs/formats.md から手で書いた（実装の annotation.Kinds から作らない）。
-var annotationKinds = []string{"term", "feature", "claim", "internal", "evidence", "sensor"}
+var annotationKinds = []string{"term", "feature", "spec", "internal", "evidence", "sensor"}

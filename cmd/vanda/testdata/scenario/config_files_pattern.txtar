@@ -5,7 +5,7 @@
 exec git init -q -b main
 expand .vanda/config.toml
 
-# a.toml の約束は b.toml の機能を、b.toml の機能は a.toml の性質を refines する。
+# a.toml の仕様は b.toml の機能を、b.toml の機能は a.toml の性質を refines する。
 # どちらかのファイルを読まなければ、refines の先が見つからずに止まる。
 commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
@@ -18,14 +18,14 @@ stderr 'b\.toml'
 ! stderr '(?m)^panic: '
 
 # 承認の記録も、パターンにマッチしたファイルを全部読む。
-# 承認した約束を約束リストから消すと、どちらのファイルの記録でも、約束リストにない約束を指すようになる。
+# 承認した仕様を約束リストから消すと、どちらのファイルの記録でも、約束リストにない仕様を指すようになる。
 # このチェックはフィンガープリントが今の中身に合うかを見ないので、フィンガープリントの元の JSON の書き方（日本語の文字の扱い）は結果に関わらない。
 cp cases/b.toml .vanda/promises/b.toml
-agree .vanda/agreements/x.toml '#1' spec a-claim fp/a-claim.json
-agree .vanda/agreements/y.toml '#2' spec b-claim fp/b-claim.json
+agree .vanda/agreements/x.toml '#1' spec a-spec fp/a-spec.json
+agree .vanda/agreements/y.toml '#2' spec b-spec fp/b-spec.json
 commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/targets.toml
-cp cases/b-without-claim.toml .vanda/promises/b.toml
+cp cases/b-without-spec.toml .vanda/promises/b.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'y\.toml'
@@ -59,7 +59,7 @@ name = "タスク"
 definition = "利用者がやること"
 
 [[spec]]
-id = "a-claim"
+id = "a-spec"
 refines = ["task-add"]
 statement = "登録したタスクは一覧に出る"
 rationale = "登録できたかを確かめるため"
@@ -84,7 +84,7 @@ core = false
 refines = ["no-lost-task"]
 
 [[spec]]
-id = "b-claim"
+id = "b-spec"
 refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
@@ -105,7 +105,7 @@ core = false
 refines = ["no-lost-task"]
 
 [[spec]]
-id = "b-claim"
+id = "b-spec"
 refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
@@ -126,7 +126,7 @@ core = false
 refines = ["no-lost-task"]
 
 [[spec]]
-id = "b-claim"
+id = "b-spec"
 refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
@@ -138,14 +138,14 @@ stage = "no-such-stage"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
--- cases/b-without-claim.toml --
+-- cases/b-without-spec.toml --
 [[feature]]
 id = "task-add"
 name = "タスクの登録"
 definition = "タスクを足す"
 core = false
 refines = ["no-lost-task"]
--- fp/a-claim.json --
-{"condition":"いつも","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"a-claim","layers":["model"],"rationale":"登録できたかを確かめるため","statement":"登録したタスクは一覧に出る","subjects":["task-add"]}
--- fp/b-claim.json --
-{"condition":"いつも","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"b-claim","layers":["model"],"rationale":"ID でタスクを指すため","statement":"タスクの ID は重ならない","subjects":["task"]}
+-- fp/a-spec.json --
+{"condition":"いつも","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"a-spec","layers":["model"],"rationale":"登録できたかを確かめるため","statement":"登録したタスクは一覧に出る","subjects":["task-add"]}
+-- fp/b-spec.json --
+{"condition":"いつも","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"b-spec","layers":["model"],"rationale":"ID でタスクを指すため","statement":"タスクの ID は重ならない","subjects":["task"]}

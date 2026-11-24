@@ -121,7 +121,7 @@ type evidenceM struct {
 	Detail      *string
 }
 
-type claimM struct {
+type specM struct {
 	ID                   string
 	Refines              []string
 	Assumes              []string // nil なら書かない
@@ -191,7 +191,7 @@ func (e evidenceM) fields() obj {
 }
 
 // fields は、フィンガープリントに入る項目だけを返す。flags と guesses は render で別に足す。
-func (c claimM) fields() obj {
+func (c specM) fields() obj {
 	o := obj{{"id", c.ID}, {"refines", c.Refines}, {"statement", c.Statement}, {"layers", c.Layers}}
 	if c.Assumes != nil {
 		o = append(o, field{"assumes", c.Assumes})
@@ -209,7 +209,7 @@ func (c claimM) fields() obj {
 	return append(o, field{"evidence", evs})
 }
 
-func (c claimM) extra() obj {
+func (c specM) extra() obj {
 	var o obj
 	if c.Flags != nil {
 		o = append(o, field{"flags", c.Flags})
@@ -430,7 +430,7 @@ type promiseList struct {
 	truths     []truthM
 	terms      []termM
 	features   []featureM
-	claims     []claimM
+	specs      []specM
 }
 
 func render(st style, l promiseList) string {
@@ -447,7 +447,7 @@ func render(st style, l promiseList) string {
 	for _, x := range l.features {
 		tables = append(tables, func(b *strings.Builder) { renderTable(b, st, "feature", x.fields()) })
 	}
-	for _, x := range l.claims {
+	for _, x := range l.specs {
 		tables = append(tables, func(b *strings.Builder) { renderTable(b, st, "spec", append(x.fields(), x.extra()...)) })
 	}
 	var b strings.Builder
@@ -494,7 +494,7 @@ func load(t interface {
 	for _, x := range list.Features {
 		add(x.ID, x.Raw)
 	}
-	for _, x := range list.Claims {
+	for _, x := range list.Specs {
 		add(x.ID, x.Raw)
 	}
 	return fps
@@ -514,7 +514,7 @@ func expected(l promiseList) map[string]string {
 	for _, x := range l.features {
 		m[x.ID] = expectedFingerprint(x.fields())
 	}
-	for _, x := range l.claims {
+	for _, x := range l.specs {
 		m[x.ID] = expectedFingerprint(x.fields())
 	}
 	return m
@@ -565,27 +565,27 @@ func listGen(t *rapid.T) promiseList {
 		w := text.Draw(t, "formal_waiver")
 		feature.Waiver = &w
 	}
-	claimLayers := layers.Draw(t, "約束のレイヤー")
+	specLayers := layers.Draw(t, "仕様のレイヤー")
 	evs := rapid.SliceOfN(rapid.Custom(func(t *rapid.T) evidenceM {
 		return evidenceM{
 			Stage:  rapid.SampledFrom(stages).Draw(t, "ステージ"),
 			Type:   rapid.SampledFrom(evidenceTypes).Draw(t, "タイプ"),
-			Layers: rapid.SliceOfNDistinct(rapid.SampledFrom(claimLayers), 1, len(claimLayers), rapid.ID[string]).Draw(t, "エビデンスのレイヤー"),
+			Layers: rapid.SliceOfNDistinct(rapid.SampledFrom(specLayers), 1, len(specLayers), rapid.ID[string]).Draw(t, "エビデンスのレイヤー"),
 			Detail: optional(t, text, "detail"),
 		}
 	}), 1, 3).Draw(t, "エビデンス")
-	claim := claimM{
+	spec := specM{
 		ID: ids[2], Refines: []string{ids[1], ids[0]}[:rapid.IntRange(1, 2).Draw(t, "refines の数")],
 		Statement: text.Draw(t, "文"), Rationale: optional(t, text, "理由"), Condition: optional(t, text, "条件"),
-		Layers: claimLayers, Evidence: evs, Assumes: idList("約束の assumes"),
+		Layers: specLayers, Evidence: evs, Assumes: idList("仕様の assumes"),
 	}
 	if rapid.Bool().Draw(t, "flags") {
-		claim.Flags = []string{"ai-proposal"}
+		spec.Flags = []string{"ai-proposal"}
 	}
 	if rapid.Bool().Draw(t, "guesses") {
-		claim.Guesses = rapid.SliceOfN(text, 0, 2).Draw(t, "推測")
+		spec.Guesses = rapid.SliceOfN(text, 0, 2).Draw(t, "推測")
 	}
-	return promiseList{properties: []propertyM{property}, truths: []truthM{truth}, terms: []termM{term}, features: []featureM{feature}, claims: []claimM{claim}}
+	return promiseList{properties: []propertyM{property}, truths: []truthM{truth}, terms: []termM{term}, features: []featureM{feature}, specs: []specM{spec}}
 }
 
 // @vanda:evidence fingerprint-ignores-formatting
@@ -628,7 +628,7 @@ func jsonOf(l promiseList, id string) string {
 			return canonical(x.fields())
 		}
 	}
-	for _, x := range l.claims {
+	for _, x := range l.specs {
 		if x.ID == id {
 			return canonical(x.fields())
 		}
@@ -647,7 +647,7 @@ func baseList() promiseList {
 		truths:     []truthM{{ID: "disk-works", Statement: "ディスクに書いたものは、読み戻せる"}},
 		terms:      []termM{{ID: "task", Name: "タスク", Definition: "やること"}},
 		features:   []featureM{{ID: "task-add", Name: "タスクの登録", Definition: "タスクを足す", Refines: []string{"no-lost-task"}}},
-		claims: []claimM{{
+		specs: []specM{{
 			ID: "task-id-unique", Refines: []string{"task-add"}, Statement: "タスクの ID は重ならない",
 			Rationale: strp("ID で指すため"), Condition: strp("いつも"), Layers: []string{"model", "cli"},
 			Evidence: []evidenceM{
@@ -691,31 +691,31 @@ func Testフィンガープリントに入る項目のどれを変えてもフ�
 		{"機能の formal_waiver を書く", "task-add", func(l *promiseList) {
 			l.features[0].Core, l.features[0].Formal, l.features[0].Waiver = boolp(true), boolp(false), strp("理由")
 		}, true},
-		{"約束の文", "task-id-unique", func(l *promiseList) { l.claims[0].Statement = "重ならない" }, true},
-		{"約束の理由", "task-id-unique", func(l *promiseList) { l.claims[0].Rationale = strp("別の理由") }, true},
-		{"約束の理由を省く", "task-id-unique", func(l *promiseList) { l.claims[0].Rationale = nil }, true},
-		{"約束の条件", "task-id-unique", func(l *promiseList) { l.claims[0].Condition = strp("登録のとき") }, true},
-		{"約束の refines", "task-id-unique", func(l *promiseList) { l.claims[0].Refines = []string{"task-add", "task-list"} }, true},
-		{"約束の refines を入れ替える", "task-id-unique", func(l *promiseList) { l.claims[0].Refines = []string{"task-list"} }, true},
-		{"約束の assumes を書く", "task-id-unique", func(l *promiseList) { l.claims[0].Assumes = []string{"disk-works"} }, true},
-		{"約束の assumes を空で書く", "task-id-unique", func(l *promiseList) { l.claims[0].Assumes = []string{} }, true},
-		{"約束のレイヤーの順", "task-id-unique", func(l *promiseList) { l.claims[0].Layers = []string{"cli", "model"} }, true},
-		{"約束のレイヤー", "task-id-unique", func(l *promiseList) { l.claims[0].Layers = []string{"model", "cli", "db"} }, true},
-		{"エビデンスのステージ", "task-id-unique", func(l *promiseList) { l.claims[0].Evidence[0].Stage = "release" }, true},
-		{"エビデンスのタイプ", "task-id-unique", func(l *promiseList) { l.claims[0].Evidence[0].Type = "random-check" }, true},
-		{"エビデンスのレイヤー", "task-id-unique", func(l *promiseList) { l.claims[0].Evidence[0].Layers = []string{"model", "cli"} }, true},
-		{"エビデンスの detail", "task-id-unique", func(l *promiseList) { l.claims[0].Evidence[0].Detail = strp("other_test.go") }, true},
-		{"エビデンスの detail を省く", "task-id-unique", func(l *promiseList) { l.claims[0].Evidence[0].Detail = nil }, true},
+		{"仕様の文", "task-id-unique", func(l *promiseList) { l.specs[0].Statement = "重ならない" }, true},
+		{"仕様の理由", "task-id-unique", func(l *promiseList) { l.specs[0].Rationale = strp("別の理由") }, true},
+		{"仕様の理由を省く", "task-id-unique", func(l *promiseList) { l.specs[0].Rationale = nil }, true},
+		{"仕様の条件", "task-id-unique", func(l *promiseList) { l.specs[0].Condition = strp("登録のとき") }, true},
+		{"仕様の refines", "task-id-unique", func(l *promiseList) { l.specs[0].Refines = []string{"task-add", "task-list"} }, true},
+		{"仕様の refines を入れ替える", "task-id-unique", func(l *promiseList) { l.specs[0].Refines = []string{"task-list"} }, true},
+		{"仕様の assumes を書く", "task-id-unique", func(l *promiseList) { l.specs[0].Assumes = []string{"disk-works"} }, true},
+		{"仕様の assumes を空で書く", "task-id-unique", func(l *promiseList) { l.specs[0].Assumes = []string{} }, true},
+		{"仕様のレイヤーの順", "task-id-unique", func(l *promiseList) { l.specs[0].Layers = []string{"cli", "model"} }, true},
+		{"仕様のレイヤー", "task-id-unique", func(l *promiseList) { l.specs[0].Layers = []string{"model", "cli", "db"} }, true},
+		{"エビデンスのステージ", "task-id-unique", func(l *promiseList) { l.specs[0].Evidence[0].Stage = "release" }, true},
+		{"エビデンスのタイプ", "task-id-unique", func(l *promiseList) { l.specs[0].Evidence[0].Type = "random-check" }, true},
+		{"エビデンスのレイヤー", "task-id-unique", func(l *promiseList) { l.specs[0].Evidence[0].Layers = []string{"model", "cli"} }, true},
+		{"エビデンスの detail", "task-id-unique", func(l *promiseList) { l.specs[0].Evidence[0].Detail = strp("other_test.go") }, true},
+		{"エビデンスの detail を省く", "task-id-unique", func(l *promiseList) { l.specs[0].Evidence[0].Detail = nil }, true},
 		{"エビデンスの順", "task-id-unique", func(l *promiseList) {
-			e := l.claims[0].Evidence
-			l.claims[0].Evidence = []evidenceM{e[1], e[0]}
+			e := l.specs[0].Evidence
+			l.specs[0].Evidence = []evidenceM{e[1], e[0]}
 		}, true},
 		{"エビデンスを足す", "task-id-unique", func(l *promiseList) {
-			l.claims[0].Evidence = append(l.claims[0].Evidence, evidenceM{Stage: "release", Type: "human-review", Layers: []string{"model"}})
+			l.specs[0].Evidence = append(l.specs[0].Evidence, evidenceM{Stage: "release", Type: "human-review", Layers: []string{"model"}})
 		}, true},
-		{"flags を立てる", "task-id-unique", func(l *promiseList) { l.claims[0].Flags = []string{"ai-proposal"} }, false},
-		{"guesses を書く", "task-id-unique", func(l *promiseList) { l.claims[0].Guesses = []string{"推測"} }, false},
-		{"guesses を空で書く", "task-id-unique", func(l *promiseList) { l.claims[0].Guesses = []string{} }, false},
+		{"flags を立てる", "task-id-unique", func(l *promiseList) { l.specs[0].Flags = []string{"ai-proposal"} }, false},
+		{"guesses を書く", "task-id-unique", func(l *promiseList) { l.specs[0].Guesses = []string{"推測"} }, false},
+		{"guesses を空で書く", "task-id-unique", func(l *promiseList) { l.specs[0].Guesses = []string{} }, false},
 	}
 	root := t.TempDir()
 	before := load(t, root, render(plainStyle{}, baseList()))
@@ -744,7 +744,7 @@ func Test約束リストのIDを変えるとフィンガープリントが変わ
 	root := t.TempDir()
 	before := load(t, root, render(plainStyle{}, baseList()))
 	l := baseList()
-	l.claims[0].ID = "task-ids-unique"
+	l.specs[0].ID = "task-ids-unique"
 	after := load(t, root, render(plainStyle{}, l))
 	if after["task-ids-unique"] == before["task-id-unique"] {
 		t.Fatal("ID を変えてもフィンガープリントが変わらない")
@@ -803,7 +803,7 @@ func Testフィンガープリントは元のバイト列のSHA256をsha256と16
 // 項目のフィンガープリントの期待値は、手で書いた決まった形の JSON のバイト列のフィンガープリント（ファイルのフィンガープリントと同じ作り方）にする
 //
 // @vanda:evidence fingerprint-item-json
-func Test性質と前提と約束と用語と機能のフィンガープリントはキーをバイトの順に並べ配列を書いた順にし空白と最後の改行のないJSONから作る(t *testing.T) {
+func Test性質と前提と仕様と用語と機能のフィンガープリントはキーをバイトの順に並べ配列を書いた順にし空白と最後の改行のないJSONから作る(t *testing.T) {
 	src := `[[term]]
 part_of = "whole"
 name = "タスク"

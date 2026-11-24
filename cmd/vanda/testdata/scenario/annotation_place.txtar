@@ -403,7 +403,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -442,7 +442,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -487,7 +487,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:foo task-id-unique
@@ -503,7 +503,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add task
@@ -576,11 +576,11 @@ TaskIds == {"t1", "t2"}
 (* @vanda:internal 検査のための小さな数の集合 *)
 Small == {0, 1, 2}
 
-Msg == "@vanda:claim no-such-id"
+Msg == "@vanda:spec no-such-id"
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -598,10 +598,10 @@ TaskIds == {"t1", "t2"}
 (* @vanda:internal 検査のための小さな数の集合 *)
 Small == {0, 1, 2}
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -617,7 +617,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -674,7 +674,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:evidence
@@ -690,7 +690,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:internal
@@ -706,7 +706,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:evidence task-id-unique @vanda:evidence task-id-unique
@@ -731,7 +731,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 (* @vanda:feature task-add *)
@@ -747,7 +747,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -763,7 +763,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -800,7 +800,7 @@ func Add(ids []string, id string) ([]string, error) { return append(ids, id), ni
 >add
 -- cases/tla-backquote.case --
 ---- MODULE Task ----
-\* 説明: `@vanda:foo two ids` と `@vanda:claim no-such-id` は数えない
+\* 説明: `@vanda:foo two ids` と `@vanda:spec no-such-id` は数えない
 \* @vanda:term task
 TaskIds == {"t1", "t2"}
 
@@ -809,7 +809,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -825,7 +825,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add

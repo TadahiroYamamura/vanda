@@ -19,13 +19,13 @@ stderr 'promises\.toml'
 ! stderr '(?m)^panic: '
 
 # 承認の記録: 既定のファイルの中身がチェックに使われる
-# 承認した約束を約束リストから消すと、承認の記録が約束リストにない約束を指すようになる
+# 承認した仕様を約束リストから消すと、承認の記録が約束リストにない仕様を指すようになる
 # このチェックはフィンガープリントが今の中身に合うかを見ないので、フィンガープリントの元の JSON の書き方（日本語の文字の扱い）は結果に関わらない
 cp cases/promises.toml .vanda/promises.toml
-agree .vanda/agreements.toml '#1' spec task-add-unique fp/claim.json
+agree .vanda/agreements.toml '#1' spec task-add-unique fp/spec.json
 commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/targets.toml
-cp cases/promises-without-claim.toml .vanda/promises.toml
+cp cases/promises-without-spec.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'agreements\.toml'
@@ -165,10 +165,10 @@ refines = ["no-lost-task"]
 [[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
--- cases/promises-without-claim.toml --
+-- cases/promises-without-spec.toml --
 [[term]]
 id = "task"
 name = "タスク"
 definition = "利用者がやること"
--- fp/claim.json --
+-- fp/spec.json --
 {"condition":"いつも","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-add-unique","layers":["model"],"rationale":"ID でタスクを指すため","statement":"タスクの ID は重ならない","subjects":["task"]}

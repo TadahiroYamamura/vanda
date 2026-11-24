@@ -1,16 +1,16 @@
-// CL（約束の詳細）の画面が、API の結果を正しく見せるか。API は MSW で差し替える。
+// CL（仕様の詳細）の画面が、API の結果を正しく見せるか。API は MSW で差し替える。
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { App } from "../App";
-import type { ClaimDetail, ClaimHistory, Entry } from "../api";
+import type { SpecDetail, SpecHistory, Entry } from "../api";
 import { isInaccessible } from "@testing-library/dom";
-import { apiError, claimDetail, claimEntry, claimHistory, expectLoading, gate, claimRef, ctx, featureRef, fileEntry, plain, propertyDetail, propertyEntry, review, server, story, termRef, truthDetail, truthEntry } from "./fixtures";
+import { apiError, specDetail, specEntry, specHistory, expectLoading, gate, specRef, ctx, featureRef, fileEntry, plain, propertyDetail, propertyEntry, review, server, story, termRef, truthDetail, truthEntry } from "./fixtures";
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterAll(() => server.close());
-beforeEach(() => window.history.pushState({}, "", "/claims/task-id-unique?view=branch&base=main"));
+beforeEach(() => window.history.pushState({}, "", "/specs/task-id-unique?view=branch&base=main"));
 afterEach(() => {
   cleanup();
   server.resetHandlers();
@@ -27,7 +27,7 @@ const shownText = (root: HTMLElement = document.body) => {
   return out;
 };
 
-function open(d: ClaimDetail, h: ClaimHistory = claimHistory()) {
+function open(d: SpecDetail, h: SpecHistory = specHistory()) {
   server.use(
     http.get("/api/context", () => HttpResponse.json(ctx)),
     http.get("/api/specs/:id", () => HttpResponse.json(d)),
@@ -38,7 +38,7 @@ function open(d: ClaimDetail, h: ClaimHistory = claimHistory()) {
 
 const tla = "Unique == \\A a, b \\in DOMAIN tasks : tasks[a] = tasks[b] => a = b";
 
-const detail = claimDetail({
+const detail = specDetail({
   evidence: [
     { stage: "implementation", type: "scenario-test", layers: ["model"], detail: null, present: true,
       found: [{ adapter: "txtar", file: "e2e/add-task.txtar", line: 1, name: "add-task", text: "exec vanda add 買い物\n" }] },
@@ -52,9 +52,9 @@ const detail = claimDetail({
   ],
 });
 
-const history = claimHistory({
+const history = specHistory({
   origin: [
-    { commit: "1".repeat(40), date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" },
+    { commit: "1".repeat(40), date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの仕様を置く", stories: ["#1"], change: "added" },
     { commit: "2".repeat(40), date: "2026-10-20T12:00:00+09:00", subject: "#24 文を変える", stories: ["#24"], change: "modified" },
   ],
   agreements: [
@@ -64,7 +64,7 @@ const history = claimHistory({
 
 // CL-01
 // @vanda:evidence claim-detail-fields
-it("約束の詳細は文と理由と条件とレイヤーとrefinesの先を見せる", async () => {
+it("仕様の詳細は文と理由と条件とレイヤーとrefinesの先を見せる", async () => {
   open(detail);
   expect(await screen.findByText(/タスクの ID は重ならない/)).toBeTruthy();
   for (const t of ["重なると消す相手を決められない", "タスクが 1 つ以上ある", "モデル", "タスクの登録"]) {
@@ -96,41 +96,41 @@ it("変更履歴にコミットとストーリーを承認の履歴に承認し�
   open(detail, history);
   await screen.findByText(/タスクの ID は重ならない/);
   await waitFor(() => expect(bodyText()).toContain("#24 文を変える"));
-  for (const t of ["#1 はじめの約束を置く", "#24", "前に承認した人"]) expect(bodyText()).toContain(t);
+  for (const t of ["#1 はじめの仕様を置く", "#24", "前に承認した人"]) expect(bodyText()).toContain(t);
   // 今の中身に合わない承認しかないので、承認済とは見せない
   expect(bodyText()).toContain("提案中");
 });
 
 // @vanda:evidence claim-detail-error-shown
-it("約束の詳細を読めないときは理由を出す", async () => {
+it("仕様の詳細を読めないときは理由を出す", async () => {
   server.use(
     http.get("/api/context", () => HttpResponse.json(ctx)),
-    http.get("/api/specs/:id", () => apiError(404, "約束 task-id-unique は約束リストにない")),
+    http.get("/api/specs/:id", () => apiError(404, "仕様 task-id-unique は約束リストにない")),
   );
   render(<App />);
-  expect(await screen.findByText(/約束 task-id-unique は約束リストにない/)).toBeTruthy();
+  expect(await screen.findByText(/仕様 task-id-unique は約束リストにない/)).toBeTruthy();
 });
 
-// RV-18: 約束の詳細の画面とファイルの画面でも、ストーリーのレビューから移ってきて、そのものがレビューの一覧にあれば、
+// RV-18: 仕様の詳細の画面とファイルの画面でも、ストーリーのレビューから移ってきて、そのものがレビューの一覧にあれば、
 // 承認・取り消しのボタンを出す。レビューから移ってきたかは、レビューの画面と同じ URL のクエリ（view・base・story）で分かる
 const fromReview = "?view=branch&base=main&story=%2324";
 
-function openFromReview(path: string, entries: Entry[], d: ClaimDetail = claimDetail()) {
+function openFromReview(path: string, entries: Entry[], d: SpecDetail = specDetail()) {
   window.history.pushState({}, "", path);
   server.use(
     http.get("/api/context", () => HttpResponse.json(ctx)),
     http.get("/api/review", () => HttpResponse.json(review(entries))),
     http.get("/api/story", () => HttpResponse.json(story)),
     http.get("/api/specs/:id", () => HttpResponse.json(d)),
-    http.get("/api/specs/:id/history", () => HttpResponse.json(claimHistory())),
+    http.get("/api/specs/:id/history", () => HttpResponse.json(specHistory())),
     http.get("/api/file", () => HttpResponse.json({ path: "e2e/add-task.txtar", text: "exec vanda add 買い物\n" })),
   );
   render(<App />);
 }
 
 // @vanda:evidence agree-from-detail-pages
-it("ストーリーのレビューから移ってきた約束の詳細の画面とファイルの画面で一覧にあるものには承認のボタンを出す", async () => {
-  openFromReview("/claims/task-id-unique" + fromReview, [claimEntry(1, "task-id-unique")]);
+it("ストーリーのレビューから移ってきた仕様の詳細の画面とファイルの画面で一覧にあるものには承認のボタンを出す", async () => {
+  openFromReview("/specs/task-id-unique" + fromReview, [specEntry(1, "task-id-unique")]);
   expect(await screen.findByRole("button", { name: /承認する/ })).toBeTruthy();
   cleanup();
   openFromReview("/files" + fromReview + "&path=" + encodeURIComponent("e2e/add-task.txtar"), [fileEntry(1, "e2e/add-task.txtar")]);
@@ -138,33 +138,33 @@ it("ストーリーのレビューから移ってきた約束の詳細の画面�
 });
 
 // @vanda:evidence agree-from-detail-pages
-it("ストーリーのレビューから移ってきた約束の詳細の画面で承認済の約束には取り消しのボタンを出す", async () => {
-  const e = claimEntry(1, "task-id-unique", { state: "agreed", revoke: { possible: true, reason: null, others: [] } });
-  openFromReview("/claims/task-id-unique" + fromReview, [e], claimDetail({ state: "agreed" }));
+it("ストーリーのレビューから移ってきた仕様の詳細の画面で承認済の仕様には取り消しのボタンを出す", async () => {
+  const e = specEntry(1, "task-id-unique", { state: "agreed", revoke: { possible: true, reason: null, others: [] } });
+  openFromReview("/specs/task-id-unique" + fromReview, [e], specDetail({ state: "agreed" }));
   expect(await screen.findByRole("button", { name: /取り消/ })).toBeTruthy();
 });
 
 // @vanda:evidence agree-from-detail-pages-notes
-it("一覧にない約束とファイルは変わっていないと示しストーリーが分からないときはレビューから開くと承認できると示す", async () => {
-  openFromReview("/claims/task-id-unique" + fromReview, [claimEntry(1, "other-claim")]);
-  expect(await screen.findByText("このストーリーでは変わっていない約束です。")).toBeTruthy();
+it("一覧にない仕様とファイルは変わっていないと示しストーリーが分からないときはレビューから開くと承認できると示す", async () => {
+  openFromReview("/specs/task-id-unique" + fromReview, [specEntry(1, "other-spec")]);
+  expect(await screen.findByText("このストーリーでは変わっていない仕様です。")).toBeTruthy();
   expect(screen.queryByRole("button", { name: /承認する/ })).toBeNull();
   cleanup();
-  openFromReview("/files" + fromReview + "&path=" + encodeURIComponent("e2e/add-task.txtar"), [claimEntry(1, "task-id-unique")]);
+  openFromReview("/files" + fromReview + "&path=" + encodeURIComponent("e2e/add-task.txtar"), [specEntry(1, "task-id-unique")]);
   expect(await screen.findByText("このストーリーでは変わっていないファイルです。")).toBeTruthy();
   expect(screen.queryByRole("button", { name: /承認する/ })).toBeNull();
   cleanup();
   // URL にレビューのクエリがない（直接開いた）
-  openFromReview("/claims/task-id-unique", [claimEntry(1, "task-id-unique")]);
+  openFromReview("/specs/task-id-unique", [specEntry(1, "task-id-unique")]);
   expect(await screen.findByText("ストーリーのレビューから開くと、承認できます。")).toBeTruthy();
   expect(screen.queryByRole("button", { name: /承認する/ })).toBeNull();
 });
 
 // @vanda:evidence agree-from-detail-pages-stay
-it("約束の詳細の画面で承認した後もその画面にとどまる", async () => {
-  const e = claimEntry(1, "task-id-unique");
+it("仕様の詳細の画面で承認した後もその画面にとどまる", async () => {
+  const e = specEntry(1, "task-id-unique");
   let posted: unknown = null;
-  openFromReview("/claims/task-id-unique" + fromReview, [e]);
+  openFromReview("/specs/task-id-unique" + fromReview, [e]);
   server.use(
     http.post("/api/agree", async ({ request }) => {
       posted = await request.json();
@@ -174,7 +174,7 @@ it("約束の詳細の画面で承認した後もその画面にとどまる", a
   const button = await screen.findByRole("button", { name: /承認する/ });
   await userEvent.setup().click(button);
   await waitFor(() => expect(posted).toMatchObject({ kind: "spec", id: "task-id-unique", story: "#24" }));
-  expect(window.location.pathname).toBe("/claims/task-id-unique");
+  expect(window.location.pathname).toBe("/specs/task-id-unique");
   expect(await screen.findByText(/タスクの ID は重ならない/)).toBeTruthy();
 });
 
@@ -182,7 +182,7 @@ it("約束の詳細の画面で承認した後もその画面にとどまる", a
 // @vanda:evidence claim-detail-evidence-grouping
 it("エビデンスをステージの順の見出しの下にタイプの見出しで分けて見せる", async () => {
   const ev = (stage: string, type: string) => ({ stage, type, layers: ["model"], detail: null, present: false, found: [] });
-  open(claimDetail({ evidence: [ev("operation", "sensor"), ev("implementation", "unit-test"), ev("plan", "model-check"), ev("release", "human-review"), ev("implementation", "guardrail"), ev("implementation", "scenario-test")] }));
+  open(specDetail({ evidence: [ev("operation", "sensor"), ev("implementation", "unit-test"), ev("plan", "model-check"), ev("release", "human-review"), ev("implementation", "guardrail"), ev("implementation", "scenario-test")] }));
   await screen.findByText(/タスクの ID は重ならない/);
   const stages = ["計画", "実装", "リリース", "運用"];
   const types: Record<string, string[]> = { 計画: ["モデル検査"], 実装: ["単体テスト", "ガードレール", "シナリオテスト"], リリース: ["人のレビュー"], 運用: ["センサー"] };
@@ -197,9 +197,9 @@ it("エビデンスをステージの順の見出しの下にタイプの見出�
   }
 });
 
-// CL-08: 変更履歴のコミットか承認の記録を選ぶと、その時点の約束の中身を示す
+// CL-08: 変更履歴のコミットか承認の記録を選ぶと、その時点の仕様の中身を示す
 // @vanda:evidence claim-at-commit
-it("変更履歴のコミットと承認の記録を開くとその時点の約束の中身を読んで見せる", async () => {
+it("変更履歴のコミットと承認の記録を開くとその時点の仕様の中身を読んで見せる", async () => {
   const commit = "1".repeat(40);
   const agreedAt = "2".repeat(40);
   const at = new Map<string, string>([[commit, "作った時点の文"], [agreedAt, "承認した時点の文"]]);
@@ -212,12 +212,12 @@ it("変更履歴のコミットと承認の記録を開くとその時点の約�
       }),
     ),
   );
-  open(claimDetail(), claimHistory({
-    origin: [{ commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" }],
+  open(specDetail(), specHistory({
+    origin: [{ commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの仕様を置く", stories: ["#1"], change: "added" }],
     agreements: [{ user: { name: "前に承認した人", email: "a@example.com" }, agreedAt: "2026-10-02T12:00:00+09:00", story: "#1", fingerprint: "sha256:" + "b".repeat(64), current: false, commit: agreedAt }],
   }));
   const user = userEvent.setup();
-  const originRow = (await screen.findByText(/#1 はじめの約束を置く/)).closest("tr")!;
+  const originRow = (await screen.findByText(/#1 はじめの仕様を置く/)).closest("tr")!;
   await user.click(within(originRow).getByRole("button", { name: "その時点の中身を開く" }));
   expect(await screen.findByText("作った時点の文")).toBeTruthy();
   const agreementRow = screen.getByText(/前に承認した人/).closest("tr")!;
@@ -240,7 +240,7 @@ const typeGroup = (type: string) => screen.getAllByRole("heading").find((h) => (
 // @vanda:evidence evidence-presence-three-states
 it("エビデンスの予定ごとに揃っているとないとアノテーションでは確かめないを見分けて示す", async () => {
   const types: Record<string, [string, string]> = { true: ["scenario-test", "シナリオテスト"], false: ["model-check", "モデル検査"], null: ["human-review", "人のレビュー"] };
-  open(claimDetail({
+  open(specDetail({
     evidence: presenceNames.map(([present]) => {
       const [type] = types[String(present)];
       const found = present ? [{ adapter: "txtar", file: "e2e/add-task.txtar", line: 1, name: "add-task", text: "exec vanda add 買い物\n", state: "proposed" as const }] : [];
@@ -267,7 +267,7 @@ it("実際のエビデンスのうち承認の対象のファイルには今の�
     proposed: ["tla", "spec/Proposed.tla", "Proposed"],
     null: ["go", "internal/task/task_test.go", "TestUnique"],
   };
-  open(claimDetail({
+  open(specDetail({
     evidence: [{
       stage: "implementation", type: "unit-test", layers: ["model"], detail: null, present: true,
       found: states.map(([st]) => {
@@ -305,7 +305,7 @@ it("エビデンスの予定の詳細は長い文も改行も省略せずに全�
     "定数の範囲は、タスクが 3 つまで、操作が 6 歩まで。",
     "置き場所の候補: spec/TaskLifecycleWithDeletionAndReAddition.tla",
   ].join("\n");
-  open(claimDetail({ evidence: [{ stage: "plan", type: "model-check", layers: ["model"], detail: plain(detail), present: false, found: [] }] }));
+  open(specDetail({ evidence: [{ stage: "plan", type: "model-check", layers: ["model"], detail: plain(detail), present: false, found: [] }] }));
   await screen.findByText(/タスクの ID は重ならない/);
   await waitFor(() => expect(bodyText()).toContain("置き場所の候補"));
   const holders = Array.from(document.querySelectorAll<HTMLElement>("*")).filter((el) => el.textContent === detail);
@@ -316,7 +316,7 @@ it("エビデンスの予定の詳細は長い文も改行も省略せずに全�
 const spaced = "タスクの  ID　は\n  重ならない";
 
 // @vanda:evidence keep-user-whitespace
-it("約束の詳細とその時点の中身は利用者が書いた文の続いた空白と全角の空白と改行をそのまま持つ", async () => {
+it("仕様の詳細とその時点の中身は利用者が書いた文の続いた空白と全角の空白と改行をそのまま持つ", async () => {
   const commit = "1".repeat(40);
   server.use(
     http.get("/api/specs/:id/at/:commit", () =>
@@ -329,13 +329,13 @@ it("約束の詳細とその時点の中身は利用者が書いた文の続い�
     ),
   );
   open(
-    claimDetail({ statement: plain(spaced), rationale: plain("今の理由の" + spaced), condition: plain("今の条件の" + spaced) }),
-    claimHistory({ origin: [{ commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" }] }),
+    specDetail({ statement: plain(spaced), rationale: plain("今の理由の" + spaced), condition: plain("今の条件の" + spaced) }),
+    specHistory({ origin: [{ commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの仕様を置く", stories: ["#1"], change: "added" }] }),
   );
   const has = (t: string) => Array.from(document.querySelectorAll<HTMLElement>("*")).some((el) => el.textContent === t);
-  await waitFor(() => expect(has(spaced), "約束の文").toBe(true));
+  await waitFor(() => expect(has(spaced), "仕様の文").toBe(true));
   for (const t of ["今の理由の" + spaced, "今の条件の" + spaced]) expect(has(t), t).toBe(true);
-  const row = (await screen.findByText(/#1 はじめの約束を置く/)).closest("tr")!;
+  const row = (await screen.findByText(/#1 はじめの仕様を置く/)).closest("tr")!;
   await userEvent.setup().click(within(row).getByRole("button", { name: "その時点の中身を開く" }));
   await waitFor(() => expect(has("その時点の" + spaced), "その時点の文").toBe(true));
   for (const t of ["理由の" + spaced, "条件の" + spaced]) expect(has(t), t).toBe(true);
@@ -353,10 +353,10 @@ function openHistory(at: Parameters<typeof http.get>[1] = ({ params }) =>
     refs: {},
   })) {
   server.use(http.get("/api/specs/:id/at/:commit", at));
-  open(claimDetail(), claimHistory({
+  open(specDetail(), specHistory({
     origin: [
       { commit: atCommits.second, date: "2026-10-20T12:00:00+09:00", subject: "#24 文を変える", stories: ["#24"], change: "modified" },
-      { commit: atCommits.first, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" },
+      { commit: atCommits.first, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの仕様を置く", stories: ["#1"], change: "added" },
     ],
     agreements: [{ user: { name: "前に承認した人", email: "a@example.com" }, agreedAt: "2026-10-02T12:00:00+09:00", story: "#1", fingerprint: "sha256:" + "b".repeat(64), current: false, commit: atCommits.agreed }],
   }));
@@ -392,7 +392,7 @@ it("変更履歴と承認の履歴の行をクリックするとその時点の�
 it("その時点の中身を2つ以上開くとそれぞれが同時に出たままになり1つをたたんでもほかは開いたままにする", async () => {
   openHistory();
   const user = userEvent.setup();
-  const rows: [RegExp, string][] = [[/#24 文を変える/, "次の時点の文"], [/#1 はじめの約束を置く/, "はじめの時点の文"], [/前に承認した人/, "承認した時点の文"]];
+  const rows: [RegExp, string][] = [[/#24 文を変える/, "次の時点の文"], [/#1 はじめの仕様を置く/, "はじめの時点の文"], [/前に承認した人/, "承認した時点の文"]];
   for (const [text] of rows) await user.click(toggleOf(await historyRow(text)));
   for (const [, statement] of rows) expect(await screen.findByText(statement), `${statement} が、ほかを開いた後に出ていない`).toBeTruthy();
   await user.click(toggleOf(await historyRow(rows[0][0])));
@@ -413,7 +413,7 @@ it("その時点の中身のレイヤーのうち今の設定にないものはI
       refs: {},
     }),
   );
-  const row = await historyRow(/#1 はじめの約束を置く/);
+  const row = await historyRow(/#1 はじめの仕様を置く/);
   expect(bodyText()).not.toContain("old-layer");
   await userEvent.setup().click(toggleOf(row));
   await screen.findByText("古いレイヤーの時点の文");
@@ -431,31 +431,31 @@ it("その時点の約束リストが読めない承認の記録を選ぶとAPI�
   expect(await screen.findByText(/コミット 3333333 の \.vanda\/promises\.toml を読めません/)).toBeTruthy();
 });
 
-// 参照（show-references）。約束の詳細とその時点の中身の、自然言語で書く項目のセグメントと refs（docs/plans/stage4-references.md の「API の形」と「画面」）
+// 参照（show-references）。仕様の詳細とその時点の中身の、自然言語で書く項目のセグメントと refs（docs/plans/stage4-references.md の「API の形」と「画面」）
 const ref = (text: string, id: string) => ({ text, ref: id });
-const claimRefs = {
+const specRefs = {
   "t-statement": termRef("文の用語", "文の用語の定義"),
   "t-rationale": termRef("理由の用語", "理由の用語の定義"),
   "t-condition": termRef("条件の用語", "条件の用語の定義"),
   "t-guess": termRef("推測の用語", "推測の用語の定義"),
   "t-detail": termRef("詳細の用語", "詳細の用語の定義"),
   "f-sort": featureRef("並べ替え", "タスクを順に並べる", { core: true, formal: false }),
-  "c-other": claimRef("ほかの約束の文"),
-  "c-gone": claimRef("消えた約束の文", false),
+  "c-other": specRef("ほかの仕様の文"),
+  "c-gone": specRef("消えた仕様の文", false),
   // 比べる元にだけある（今の約束リストにない）用語と機能
   "t-past": termRef("今ない用語", "今ない用語の定義", false),
   "f-past": featureRef("今ない機能", "今ない機能の定義", { current: false, core: false, formal: false }),
 };
-const detailWithRefs = (over: Partial<ClaimDetail> = {}) =>
-  claimDetail({
+const detailWithRefs = (over: Partial<SpecDetail> = {}) =>
+  specDetail({
     statement: [ref("文の用語", "t-statement"), { text: "と" }, ref("並べ替え", "f-sort"), { text: "と" }, ref("c-other", "c-other"), { text: "と" }, ref("c-gone", "c-gone"), { text: "と" }, ref("今ない用語", "t-past"), { text: "と" }, ref("今ない機能", "f-past"), { text: "の文" }],
     rationale: [ref("理由の用語", "t-rationale"), { text: "の理由" }],
     condition: [ref("条件の用語", "t-condition"), { text: "の条件" }],
     guesses: [[ref("推測の用語", "t-guess"), { text: "の推測" }]],
     evidence: [{ stage: "implementation", type: "unit-test", layers: ["model"], detail: [ref("詳細の用語", "t-detail"), { text: "で確かめる" }], present: false, found: [] }],
-    refs: claimRefs,
+    refs: specRefs,
     ...over,
-  } as Partial<ClaimDetail>);
+  } as Partial<SpecDetail>);
 
 // 参照の要素（キーボードでフォーカスできる要素のうち、name を含む最も短いもの）
 const refElementIn = (root: HTMLElement, name: string) => {
@@ -485,18 +485,18 @@ const expectRefLookIn = (el: HTMLElement | undefined, name: string, where: strin
 };
 
 // @vanda:evidence reference-shown
-it("約束の詳細では文と理由と条件と推測とエビデンスの詳細の参照を用語と機能は名前で約束はIDで参照だと分かる見た目で出し今の約束リストにあるものだけを詳細のページへのリンクにする", async () => {
+it("仕様の詳細では文と理由と条件と推測とエビデンスの詳細の参照を用語と機能は名前で仕様はIDで参照だと分かる見た目で出し今の約束リストにあるものだけを詳細のページへのリンクにする", async () => {
   open(detailWithRefs());
   await waitFor(() => expect(bodyText()).toContain("詳細の用語"));
   for (const name of ["文の用語", "理由の用語", "条件の用語", "推測の用語", "詳細の用語", "並べ替え", "c-other", "c-gone", "今ない用語", "今ない機能"]) {
-    expectRefLookIn(refElementIn(document.body, name), name, "約束の詳細");
+    expectRefLookIn(refElementIn(document.body, name), name, "仕様の詳細");
   }
   // ID は、マウスを乗せた時のポップアップにだけ出る
   expect(shownText(), "書いたままの参照が出た").not.toContain("{@id:");
   for (const id of ["t-statement", "t-rationale", "t-condition", "t-guess", "t-detail", "f-sort", "t-past", "f-past"]) expect(shownText(), `用語・機能の参照の指す ID ${id} が出た`).not.toContain(id);
   for (const name of ["c-gone", "今ない用語", "今ない機能"]) expect(screen.queryByRole("link", { name }), `${name} がリンクになっている`).toBeNull();
   const links: [string, string][] = [
-    ["c-other", "/claims/c-other"],
+    ["c-other", "/specs/c-other"],
     ["文の用語", "/terms/t-statement"],
     ["理由の用語", "/terms/t-rationale"],
     ["条件の用語", "/terms/t-condition"],
@@ -511,7 +511,7 @@ it("約束の詳細では文と理由と条件と推測とエビデンスの詳�
 });
 
 // @vanda:evidence reference-shown
-it("約束の履歴で開いたその時点の中身の参照もその時点のrefsの名前で参照だと分かる見た目で出す", async () => {
+it("仕様の履歴で開いたその時点の中身の参照もその時点のrefsの名前で参照だと分かる見た目で出す", async () => {
   const commit = "1".repeat(40);
   server.use(
     http.get("/api/specs/:id/at/:commit", () =>
@@ -523,8 +523,8 @@ it("約束の履歴で開いたその時点の中身の参照もその時点のr
       }),
     ),
   );
-  open(detailWithRefs(), claimHistory({ origin: [{ commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" }] }));
-  const row = (await screen.findByText(/#1 はじめの約束を置く/)).closest("tr")!;
+  open(detailWithRefs(), specHistory({ origin: [{ commit, date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの仕様を置く", stories: ["#1"], change: "added" }] }));
+  const row = (await screen.findByText(/#1 はじめの仕様を置く/)).closest("tr")!;
   await userEvent.setup().click(within(row).getByRole("button", { name: "その時点の中身を開く" }));
   await waitFor(() => expect(bodyText()).toContain("その時点だけの用語"));
   expectRefLookIn(refElementIn(document.body, "その時点だけの用語"), "その時点だけの用語", "その時点の中身");
@@ -533,7 +533,7 @@ it("約束の履歴で開いたその時点の中身の参照もその時点のr
 });
 
 // @vanda:evidence reference-popup
-it("約束の詳細の参照にマウスを乗せた時とフォーカスした時に指す先のIDと用語と機能はその定義を約束はその文をポップアップで出し離れると消す", async () => {
+it("仕様の詳細の参照にマウスを乗せた時とフォーカスした時に指す先のIDと用語と機能はその定義を仕様はその文をポップアップで出し離れると消す", async () => {
   open(detailWithRefs());
   await waitFor(() => expect(bodyText()).toContain("詳細の用語"));
   const tooltipWith = (text: string) => screen.queryAllByRole("tooltip").find((t) => (t.textContent ?? "").includes(text)) ?? null;
@@ -542,8 +542,8 @@ it("約束の詳細の参照にマウスを乗せた時とフォーカスした�
     ["理由の用語", "理由の用語の定義", "t-rationale"],
     ["今ない用語", "今ない用語の定義", "t-past"],
     ["並べ替え", "タスクを順に並べる", "f-sort"],
-    ["c-other", "ほかの約束の文", "c-other"],
-    ["c-gone", "消えた約束の文", "c-gone"],
+    ["c-other", "ほかの仕様の文", "c-other"],
+    ["c-gone", "消えた仕様の文", "c-gone"],
   ] as const;
   for (const [name, text, id] of cases) {
     const el = refElementIn(document.body, name)!;
@@ -569,10 +569,10 @@ it("約束の詳細の参照にマウスを乗せた時とフォーカスした�
 
 // CL-01
 // @vanda:evidence claim-detail-state
-it("約束の詳細の見出しに約束のIDと今の中身が承認済か提案中かを示す", async () => {
+it("仕様の詳細の見出しに仕様のIDと今の中身が承認済か提案中かを示す", async () => {
   for (const [state, label, other] of [["proposed", "提案中", "承認済"], ["agreed", "承認済", "提案中"]] as const) {
-    window.history.pushState({}, "", "/claims/task-other-id");
-    open(claimDetail({ id: "task-other-id", state }));
+    window.history.pushState({}, "", "/specs/task-other-id");
+    open(specDetail({ id: "task-other-id", state }));
     const h = await screen.findByRole("heading", { level: 1 });
     expect(h.textContent, `${state} の見出しに ID がない`).toContain("task-other-id");
     expect(h.textContent, `${state} の見出しに ${label} がない`).toContain(label);
@@ -584,8 +584,8 @@ it("約束の詳細の見出しに約束のIDと今の中身が承認済か提�
 
 // CL-01
 // @vanda:evidence claim-detail-subjects
-it("約束の詳細のrefinesとassumesの先には用語と機能なら名前とIDを名前を持たない性質と前提ならIDを詳細へのリンクで示し約束リストにないIDには約束リストにないと添える", async () => {
-  open(claimDetail({
+it("仕様の詳細のrefinesとassumesの先には用語と機能なら名前とIDを名前を持たない性質と前提ならIDを詳細へのリンクで示し約束リストにないIDには約束リストにないと添える", async () => {
+  open(specDetail({
     refines: [
       { kind: "feature", id: "add-task", name: "タスクの登録" },
       { kind: null, id: "no-such-feature", name: null },
@@ -597,14 +597,14 @@ it("約束の詳細のrefinesとassumesの先には用語と機能なら名前�
     ],
   }));
   await screen.findByText(/タスクの ID は重ならない/);
-  // dd は、項目の名前（docs/formats.md の関係の名前）が name の項目の中身
+  // dd は、項目の名前が name の項目の中身
   const dd = (name: string) => {
     const dt = screen.getAllByRole("term").find((el) => el.textContent === name);
     expect(dt, `${name} の項目がない`).toBeTruthy();
     return dt!.nextElementSibling as HTMLElement;
   };
   const paths = (el: HTMLElement) => within(el).queryAllByRole("link").map((a) => new URL((a as HTMLAnchorElement).href).pathname);
-  const refines = dd("refines");
+  const refines = dd("具体化する機能");
   const text = refines.textContent ?? "";
   for (const t of ["タスクの登録", "add-task", "タスクの一覧", "list-task", "no-such-feature（約束リストにありません）"]) expect(text, `refines に ${t} がない`).toContain(t);
   // 約束リストにある ID には添えない。書いた順に並べ、約束リストにない ID はリンクにしない
@@ -612,16 +612,16 @@ it("約束の詳細のrefinesとassumesの先には用語と機能なら名前�
   expect(text.indexOf("add-task"), "refines の先が書いた順でない").toBeLessThan(text.indexOf("no-such-feature"));
   expect(text.indexOf("no-such-feature"), "refines の先が書いた順でない").toBeLessThan(text.indexOf("list-task"));
   expect(paths(refines), "refines の先へのリンク").toEqual(["/features/add-task", "/features/list-task"]);
-  const assumes = dd("assumes");
+  const assumes = dd("前提");
   expect(paths(assumes), "assumes の先へのリンク").toEqual(["/truths/disk-works", "/truths/net-works"]);
   expect(assumes.textContent ?? "", "assumes の先に、約束リストにないと添えた").not.toContain("約束リストにありません");
 });
 
 // CL-01
 // @vanda:evidence claim-detail-guesses
-it("約束の詳細に推測があれば1つずつ示す", async () => {
+it("仕様の詳細に推測があれば1つずつ示す", async () => {
   const guesses = ["消したタスクの ID は使い回さない", "ID は 1 から数える", "ID は数字だけ"];
-  open(claimDetail({ guesses: guesses.map(plain) }));
+  open(specDetail({ guesses: guesses.map(plain) }));
   await screen.findByText(/タスクの ID は重ならない/);
   const dt = screen.getAllByRole("term").find((el) => el.textContent === "推測");
   expect(dt, "推測の項目がない").toBeTruthy();
@@ -632,7 +632,7 @@ it("約束の詳細に推測があれば1つずつ示す", async () => {
 // CL-02
 // @vanda:evidence claim-detail-found-location
 it("実際のエビデンスごとに付いているものの名前とファイルと行を書いたファイルの画面へのリンクを示しTLAならファイル全体へのリンクも示す", async () => {
-  window.history.pushState({}, "", "/claims/task-id-unique" + "?view=branch&base=main&story=%2324");
+  window.history.pushState({}, "", "/specs/task-id-unique" + "?view=branch&base=main&story=%2324");
   open(detail);
   await screen.findByText(/タスクの ID は重ならない/);
   await waitFor(() => expect(bodyText()).toContain("TestUnique"));
@@ -666,9 +666,9 @@ it("ファイルの画面でファイルを読めない時はAPIが返した理�
 });
 
 // @vanda:evidence api-error-fix-shown
-it("約束の詳細の画面とファイルの画面はAPIのエラーを出す時に何がどうなっているかとどうすればよいかの両方を出す", async () => {
+it("仕様の詳細の画面とファイルの画面はAPIのエラーを出す時に何がどうなっているかとどうすればよいかの両方を出す", async () => {
   const cases = [
-    { path: "/claims/task-id-unique", api: "/api/specs/:id", message: "約束 task-id-unique は約束リストにありません。", fix: "約束リストを確かめてください。" },
+    { path: "/specs/task-id-unique", api: "/api/specs/:id", message: "仕様 task-id-unique は約束リストにありません。", fix: "約束リストを確かめてください。" },
     { path: "/files?path=" + encodeURIComponent("e2e/a.txtar"), api: "/api/file", message: "e2e/a.txtar を読めません。", fix: "ファイルをコミットしてください。" },
   ];
   for (const c of cases) {
@@ -693,10 +693,10 @@ describe("用語と機能の詳細", () => {
     render(<App />);
   };
   // 約束リストに書いた順（ID の順と違う）
-  const claims = [
-    { id: "c-z", statement: [{ text: "最初に書いた約束は" }, ref("定義の中の用語", "t-in-def"), { text: "を数える" }] },
-    { id: "c-a", statement: plain("次に書いた約束の文") },
-    { id: "c-m", statement: plain("最後に書いた約束の文") },
+  const specs = [
+    { id: "c-z", statement: [{ text: "最初に書いた仕様は" }, ref("定義の中の用語", "t-in-def"), { text: "を数える" }] },
+    { id: "c-a", statement: plain("次に書いた仕様の文") },
+    { id: "c-m", statement: plain("最後に書いた仕様の文") },
   ];
   const tfRefs = { "t-parent": termRef("親にした用語", "親の定義"), "t-in-def": termRef("定義の中の用語", "定義の中の用語の定義") };
   const termDetail = (over = {}) => ({
@@ -709,9 +709,9 @@ describe("用語と機能の詳細", () => {
   const featureDetail = (over = {}) => ({
     id: "f-sort", name: "並べ替える機能",
     definition: [ref("定義の中の用語", "t-in-def"), { text: "を順に並べる" }],
-    core: false, formal: false, refines: [{ kind: "property", id: "no-lost-task", name: null }, { kind: "property", id: "fast", name: null }], specs: claims, refs: tfRefs, ...over,
+    core: false, formal: false, refines: [{ kind: "property", id: "no-lost-task", name: null }, { kind: "property", id: "fast", name: null }], specs: specs, refs: tfRefs, ...over,
   });
-  // linksIn は、項目の名前（docs/formats.md の関係の名前）が name の項目の中の、リンクの先
+  // linksIn は、項目の名前が name の項目の中の、リンクの先
   const linksIn = (name: string) => {
     const dt = screen.getAllByRole("term").find((el) => el.textContent === name);
     expect(dt, `${name} の項目がない`).toBeTruthy();
@@ -727,13 +727,13 @@ describe("用語と機能の詳細", () => {
       at = i;
     }
   };
-  // expectClaimList は、約束の一覧が、書いた順に、ID と文で並び、それぞれその約束の詳細へのリンクになっているか
-  const expectClaimList = (where: string) => {
-    expectInOrder(["c-z", "最初に書いた約束は定義の中の用語を数える", "c-a", "次に書いた約束の文", "c-m", "最後に書いた約束の文"], where);
-    const claimLinks = screen.getAllByRole("link").map((a) => new URL((a as HTMLAnchorElement).href).pathname).filter((p) => p.startsWith("/claims/"));
-    expect(claimLinks, `${where}: 約束の詳細へのリンク`).toEqual(["/claims/c-z", "/claims/c-a", "/claims/c-m"]);
+  // expectSpecList は、仕様の一覧が、書いた順に、ID と文で並び、それぞれその仕様の詳細へのリンクになっているか
+  const expectSpecList = (where: string) => {
+    expectInOrder(["c-z", "最初に書いた仕様は定義の中の用語を数える", "c-a", "次に書いた仕様の文", "c-m", "最後に書いた仕様の文"], where);
+    const specLinks = screen.getAllByRole("link").map((a) => new URL((a as HTMLAnchorElement).href).pathname).filter((p) => p.startsWith("/specs/"));
+    expect(specLinks, `${where}: 仕様の詳細へのリンク`).toEqual(["/specs/c-z", "/specs/c-a", "/specs/c-m"]);
     for (const id of ["c-z", "c-a", "c-m"]) {
-      expect(new URL((screen.getByRole("link", { name: id }) as HTMLAnchorElement).href).pathname, `${where}: ${id} のリンク`).toBe(`/claims/${id}`);
+      expect(new URL((screen.getByRole("link", { name: id }) as HTMLAnchorElement).href).pathname, `${where}: ${id} のリンク`).toBe(`/specs/${id}`);
     }
   };
 
@@ -746,14 +746,14 @@ describe("用語と機能の詳細", () => {
     expectRefLookIn(refElementIn(document.body, "定義の中の用語"), "定義の中の用語", "用語の詳細の定義");
     // 子は API が返した順（約束リストに書いた順）
     expectInOrder(["子にした用語 B", "子にした用語 A"], "子の用語");
-    expect(linksIn("assumes"), "assumes の先へのリンク").toEqual(["/truths/disk-works"]);
+    expect(linksIn("前提"), "assumes の先へのリンク").toEqual(["/truths/disk-works"]);
   });
 
   // @vanda:evidence term-page-content
   it("用語の詳細のページは親の用語がなければ親を示さず親が約束リストにないIDならそのIDを示す", async () => {
     openAt("/terms/t-mid", http.get("/api/terms/:id", () => HttpResponse.json(termDetail({ partOf: null, children: [] }))));
     await waitFor(() => expect(shownText()).toContain("まん中の用語"));
-    // 定義の参照（定義の中の用語）のほかに、用語の詳細へのリンクがない（約束の文の参照も除くため、約束も置かない）
+    // 定義の参照（定義の中の用語）のほかに、用語の詳細へのリンクがない（仕様の文の参照も除くため、仕様も置かない）
     const termLinks = screen.getAllByRole("link").map((a) => new URL((a as HTMLAnchorElement).href).pathname).filter((p) => p.startsWith("/terms/"));
     expect(termLinks, "親も子もないのに用語へのリンクがある").toEqual(["/terms/t-in-def"]);
     cleanup();
@@ -773,7 +773,7 @@ describe("用語と機能の詳細", () => {
         const shown = shownText();
         for (const t of ["並べ替える機能", "f-sort", "定義の中の用語を順に並べる"]) expect(shown, `${where}: ${t} がない`).toContain(t);
         // refines の先は、書いた順（ID の順と違う）
-        expect(linksIn("refines"), `${where}: refines の先へのリンク`).toEqual(["/properties/no-lost-task", "/properties/fast"]);
+        expect(linksIn("具体化する性質"), `${where}: refines の先へのリンク`).toEqual(["/properties/no-lost-task", "/properties/fast"]);
         expectRefLookIn(refElementIn(document.body, "定義の中の用語"), "定義の中の用語", `${where}: 機能の詳細の定義`);
         if (core) expect(shown, `${where}: コア機能のマークがない`).toContain("コア機能");
         else expect(shown, `${where}: コア機能のマークがある`).not.toContain("コア機能");
@@ -786,30 +786,30 @@ describe("用語と機能の詳細", () => {
   });
 
   // @vanda:evidence term-feature-page-claims
-  it("機能の詳細のページにそれをrefinesする約束を書いた順にIDと文で並べそれぞれ約束の詳細へのリンクにし用語の詳細のページには約束の一覧を出さない", async () => {
-    // 用語の詳細の API は約束を返さない（約束リストから subjects がなくなった）。用語のページに、約束の詳細へのリンクはない
+  it("機能の詳細のページにそれをrefinesする仕様を書いた順にIDと文で並べそれぞれ仕様の詳細へのリンクにし用語の詳細のページには仕様の一覧を出さない", async () => {
+    // 用語の詳細の API は仕様を返さない（約束リストから subjects がなくなった）。用語のページに、仕様の詳細へのリンクはない
     openAt("/terms/t-mid?view=branch&base=main", http.get("/api/terms/:id", () => HttpResponse.json(termDetail())));
     await waitFor(() => expect(shownText()).toContain("まん中の用語"));
-    const onTerm = screen.getAllByRole("link").map((a) => new URL((a as HTMLAnchorElement).href).pathname).filter((p) => p.startsWith("/claims/"));
-    expect(onTerm, "用語の詳細のページに約束の詳細へのリンクがある").toEqual([]);
+    const onTerm = screen.getAllByRole("link").map((a) => new URL((a as HTMLAnchorElement).href).pathname).filter((p) => p.startsWith("/specs/"));
+    expect(onTerm, "用語の詳細のページに仕様の詳細へのリンクがある").toEqual([]);
     cleanup();
     server.resetHandlers();
     openAt("/features/f-sort?view=branch&base=main", http.get("/api/features/:id", () => HttpResponse.json(featureDetail())));
-    await waitFor(() => expect(shownText()).toContain("最後に書いた約束の文"));
-    expectClaimList("機能の詳細");
-    // 一覧のリンクから、その約束の詳細へ移る
-    server.use(http.get("/api/specs/:id", ({ params }) => HttpResponse.json(claimDetail({ id: String(params.id), statement: plain(`${String(params.id)} の詳細の文`) }))));
+    await waitFor(() => expect(shownText()).toContain("最後に書いた仕様の文"));
+    expectSpecList("機能の詳細");
+    // 一覧のリンクから、その仕様の詳細へ移る
+    server.use(http.get("/api/specs/:id", ({ params }) => HttpResponse.json(specDetail({ id: String(params.id), statement: plain(`${String(params.id)} の詳細の文`) }))));
     await userEvent.setup().click(screen.getByRole("link", { name: "c-a" }));
     expect(await screen.findByText("c-a の詳細の文")).toBeTruthy();
-    expect(window.location.pathname).toBe("/claims/c-a");
+    expect(window.location.pathname).toBe("/specs/c-a");
   });
 
   // @vanda:evidence term-feature-page-claims
-  it("機能の詳細のページはそれをrefinesする約束がなければ約束の詳細へのリンクを出さない", async () => {
+  it("機能の詳細のページはそれをrefinesする仕様がなければ仕様の詳細へのリンクを出さない", async () => {
     openAt("/features/f-sort", http.get("/api/features/:id", () => HttpResponse.json(featureDetail({ specs: [] }))));
     await waitFor(() => expect(shownText()).toContain("定義の中の用語"));
-    const claimLinks = screen.getAllByRole("link").filter((a) => new URL((a as HTMLAnchorElement).href).pathname.startsWith("/claims/"));
-    expect(claimLinks, "約束がないのに約束の詳細へのリンクがある").toHaveLength(0);
+    const specLinks = screen.getAllByRole("link").filter((a) => new URL((a as HTMLAnchorElement).href).pathname.startsWith("/specs/"));
+    expect(specLinks, "仕様がないのに仕様の詳細へのリンクがある").toHaveLength(0);
   });
 
   // @vanda:evidence term-feature-page-missing
@@ -831,7 +831,7 @@ describe("用語と機能の詳細", () => {
 
 // 性質と前提の詳細のページ。API の形は docs/formats.md の GET /api/properties/<ID>・GET /api/truths/<ID> と、それぞれの /history
 describe("性質と前提の詳細", () => {
-  const ptHistory = claimHistory({
+  const ptHistory = specHistory({
     origin: [
       { commit: "1".repeat(40), date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの性質と前提を置く", stories: ["#1"], change: "added" },
       { commit: "2".repeat(40), date: "2026-10-20T12:00:00+09:00", subject: "#24 性質と前提の文を変える", stories: ["#24"], change: "modified" },
@@ -872,8 +872,8 @@ describe("性質と前提の詳細", () => {
       // 文の中の参照は、指す先の詳細へのリンクになる
       expect(new URL((screen.getByRole("link", { name: "タスク" }) as HTMLAnchorElement).href).pathname).toBe("/terms/task");
       // refines と assumes の先は、書いた順に、その詳細のページへのリンクで出す
-      expect(linksIn("refines"), `${state}: refines の先へのリンク`).toEqual(["/properties/reliable", "/properties/fast"]);
-      expect(linksIn("assumes"), `${state}: assumes の先へのリンク`).toEqual(["/truths/net-works", "/truths/disk-works"]);
+      expect(linksIn("具体化する性質"), `${state}: refines の先へのリンク`).toEqual(["/properties/reliable", "/properties/fast"]);
+      expect(linksIn("前提"), `${state}: assumes の先へのリンク`).toEqual(["/truths/net-works", "/truths/disk-works"]);
       await waitFor(() => expect(bodyText(), `${state}: 変更履歴がない`).toContain("#24 性質と前提の文を変える"));
       for (const t of ["#1 はじめの性質と前提を置く", "前に承認した人", "今の中身を承認した人"]) expect(bodyText(), `${state}: ${t} がない`).toContain(t);
       cleanup();
@@ -884,11 +884,11 @@ describe("性質と前提の詳細", () => {
   it("性質の詳細のページは理由とrefinesとassumesがなければないことを示す", async () => {
     openPT("/properties/reliable",
       http.get("/api/properties/:id", () => HttpResponse.json(propertyDetail({ id: "reliable", statement: plain("頼れる"), rationale: null, refines: [], assumes: [] }))),
-      http.get("/api/properties/:id/history", () => HttpResponse.json(claimHistory())));
+      http.get("/api/properties/:id/history", () => HttpResponse.json(specHistory())));
     await screen.findByRole("heading", { level: 1, name: /reliable/ });
     expect(shownText()).toContain("頼れる");
-    expect(linksIn("refines")).toEqual([]);
-    expect(linksIn("assumes")).toEqual([]);
+    expect(linksIn("具体化する性質")).toEqual([]);
+    expect(linksIn("前提")).toEqual([]);
     expect(screen.getAllByRole("link").map((a) => new URL((a as HTMLAnchorElement).href).pathname).filter((p) => /^\/(properties|truths)\//.test(p)), "先がないのに性質か前提へのリンクがある").toEqual([]);
   });
 
@@ -923,7 +923,7 @@ describe("性質と前提の詳細", () => {
     }
   });
 
-  // ストーリーのレビューから移ってきて、そのものが一覧にあれば、詳細のページからも承認できる（約束の詳細と同じ）
+  // ストーリーのレビューから移ってきて、そのものが一覧にあれば、詳細のページからも承認できる（仕様の詳細と同じ）
   it("ストーリーのレビューから移ってきた性質と前提の詳細のページで承認すると種類とIDを送りその画面にとどまる", async () => {
     const cases = [
       { kind: "property", path: "/properties/no-lost-task", id: "no-lost-task", entry: propertyEntry(1, "no-lost-task"), shown: "登録したタスクは失われない" },
@@ -935,9 +935,9 @@ describe("性質と前提の詳細", () => {
         http.get("/api/review", () => HttpResponse.json(review([c.entry]))),
         http.get("/api/story", () => HttpResponse.json(story)),
         http.get("/api/properties/:id", () => HttpResponse.json(propertyDetail())),
-        http.get("/api/properties/:id/history", () => HttpResponse.json(claimHistory())),
+        http.get("/api/properties/:id/history", () => HttpResponse.json(specHistory())),
         http.get("/api/truths/:id", () => HttpResponse.json(truthDetail())),
-        http.get("/api/truths/:id/history", () => HttpResponse.json(claimHistory())),
+        http.get("/api/truths/:id/history", () => HttpResponse.json(specHistory())),
         http.post("/api/agree", async ({ request }) => {
           posted = await request.json();
           return HttpResponse.json({ commit: "c".repeat(40), agreement: {} });
@@ -949,14 +949,14 @@ describe("性質と前提の詳細", () => {
       cleanup();
       server.resetHandlers();
       // 一覧にない（このストーリーで変わっていない）ものと、直接開いたものには、承認のボタンを出さない
-      for (const [query, entries] of [[fromReview, [claimEntry(1, "c-other")]], ["", [c.entry]]] as const) {
+      for (const [query, entries] of [[fromReview, [specEntry(1, "c-other")]], ["", [c.entry]]] as const) {
         openPT(c.path + query,
           http.get("/api/review", () => HttpResponse.json(review([...entries]))),
           http.get("/api/story", () => HttpResponse.json(story)),
           http.get("/api/properties/:id", () => HttpResponse.json(propertyDetail())),
-          http.get("/api/properties/:id/history", () => HttpResponse.json(claimHistory())),
+          http.get("/api/properties/:id/history", () => HttpResponse.json(specHistory())),
           http.get("/api/truths/:id", () => HttpResponse.json(truthDetail())),
-          http.get("/api/truths/:id/history", () => HttpResponse.json(claimHistory())));
+          http.get("/api/truths/:id/history", () => HttpResponse.json(specHistory())));
         await waitFor(() => expect(shownText()).toContain(c.shown));
         // 一覧を読みに行っていた場合に、その答えが届くのを待つ
         await new Promise((r) => setTimeout(r, 50));
@@ -972,15 +972,15 @@ describe("読み込みの間に先に出すもの", () => {
   // before は、a が b より文書の前にあるか
   const before = (a: Node, b: Node) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
   // ストーリーのレビューから移ってきた時の承認のボタンの読み込みと混ざらないよう、レビューのクエリを付けずに開く
-  beforeEach(() => window.history.pushState({}, "", "/claims/task-id-unique"));
+  beforeEach(() => window.history.pushState({}, "", "/specs/task-id-unique"));
 
   // @vanda:evidence claim-detail-shown-before-history
   // @vanda:evidence loading-indicator
-  it("変更履歴と承認の履歴が届く前に約束の詳細の中身を出し変更履歴と承認の履歴のエリアには読み込み中のマークを出し届いたら履歴に替える", async () => {
+  it("変更履歴と承認の履歴が届く前に仕様の詳細の中身を出し変更履歴と承認の履歴のエリアには読み込み中のマークを出し届いたら履歴に替える", async () => {
     const g = gate();
     server.use(
       http.get("/api/context", () => HttpResponse.json(ctx)),
-      http.get("/api/specs/:id", () => HttpResponse.json(claimDetail({
+      http.get("/api/specs/:id", () => HttpResponse.json(specDetail({
         ...detail,
         state: "agreed",
         guesses: [plain("先に出す推測")],
@@ -998,7 +998,7 @@ describe("読み込みの間に先に出すもの", () => {
       expect(bodyText(), `変更履歴と承認の履歴の前に ${t} が出ない`).toContain(t);
     }
     // 変更履歴と承認の履歴はまだ出さず、それぞれのエリアに読み込み中のマークを出す
-    for (const t of ["#1 はじめの約束を置く", "#24 文を変える", "前に承認した人"]) expect(bodyText(), `届く前に ${t} が出た`).not.toContain(t);
+    for (const t of ["#1 はじめの仕様を置く", "#24 文を変える", "前に承認した人"]) expect(bodyText(), `届く前に ${t} が出た`).not.toContain(t);
     const origin = screen.getByRole("heading", { name: "変更履歴" });
     const agreements = screen.getByRole("heading", { name: "承認の履歴" });
     const loads = screen.getAllByText("読み込んでいます…");
@@ -1008,12 +1008,12 @@ describe("読み込みの間に先に出すもの", () => {
 
     g.open();
     await waitFor(() => expect(bodyText()).toContain("#24 文を変える"));
-    for (const t of ["#1 はじめの約束を置く", "前に承認した人"]) expect(bodyText()).toContain(t);
+    for (const t of ["#1 はじめの仕様を置く", "前に承認した人"]) expect(bodyText()).toContain(t);
     expect(screen.queryByText("読み込んでいます…"), "届いた後も読み込み中のマークが残る").toBeNull();
   });
 
   // @vanda:evidence loading-indicator
-  it("約束の詳細が届く前は読み込み中のマークを出す", async () => {
+  it("仕様の詳細が届く前は読み込み中のマークを出す", async () => {
     const g = gate();
     server.use(
       http.get("/api/context", () => HttpResponse.json(ctx)),
@@ -1024,7 +1024,7 @@ describe("読み込みの間に先に出すもの", () => {
       http.get("/api/specs/:id/history", () => HttpResponse.json(history)),
     );
     render(<App />);
-    expectLoading(await screen.findByText("読み込んでいます…"), "約束の詳細");
+    expectLoading(await screen.findByText("読み込んでいます…"), "仕様の詳細");
     expect(bodyText()).not.toContain("タスクの ID は重ならない");
     g.open();
     expect(await screen.findByText(/タスクの ID は重ならない/)).toBeTruthy();

@@ -1,7 +1,7 @@
 # CMD-10 約束リストの形: core = true かつ formal = false なら formal_waiver がある。それ以外で formal_waiver を書くと誤り。
 # @vanda:evidence promise-list-formal-waiver
 # core = true で formal を省けば formal = true、core を省けば core = false、core = false で formal を省けば formal = false とみなす。
-# formal が真になる機能を refines する約束には、model-check の予定か model_check_waiver のどちらかが要る（shape_formal_claims.txtar）
+# formal が真になる機能を refines する仕様には、model-check の予定か model_check_waiver のどちらかが要る（shape_formal_specs.txtar）
 # ので、その場合の例には model_check_waiver を書き、formal_waiver の誤りだけが出るようにする。
 
 exec git init -q -b main

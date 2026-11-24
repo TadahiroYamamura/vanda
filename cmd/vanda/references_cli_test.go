@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-// 参照（{@id:<ID>}）を約束リストから読むこと（約束 reference-form・reference-literal・reference-broken・reference-fingerprint-raw）を、
-// 一時のリポジトリで vanda check を動かして確かめる。期待値は約束の文と計画（docs/plans/stage4-references.md）から手で書いた。
+// 参照（{@id:<ID>}）を約束リストから読むこと（仕様 reference-form・reference-literal・reference-broken・reference-fingerprint-raw）を、
+// 一時のリポジトリで vanda check を動かして確かめる。期待値は仕様の文と計画（docs/plans/stage4-references.md）から手で書いた。
 
 // refFields は、名前を除く、自然言語で書く項目の全部（計画の「書き方」）。
 var refFields = []string{
@@ -18,11 +18,11 @@ var refFields = []string{
 	"term.definition",
 	"feature.definition",
 	"feature.formal_waiver",
-	"claim.statement",
-	"claim.rationale",
-	"claim.condition",
-	"claim.guesses",
-	"claim.model_check_waiver",
+	"spec.statement",
+	"spec.rationale",
+	"spec.condition",
+	"spec.guesses",
+	"spec.model_check_waiver",
 	"evidence.detail",
 }
 
@@ -89,7 +89,7 @@ type = "unit-test"
 layers = ["model"]
 detail = %s
 `, v("property.statement"), v("property.rationale"), v("truth.statement"), termName, v("term.definition"), featureName, v("feature.definition"), v("feature.formal_waiver"),
-		v("claim.statement"), v("claim.rationale"), v("claim.condition"), v("claim.guesses"), v("claim.model_check_waiver"), v("evidence.detail"))
+		v("spec.statement"), v("spec.rationale"), v("spec.condition"), v("spec.guesses"), v("spec.model_check_waiver"), v("evidence.detail"))
 }
 
 // fieldLine は、約束リストの中で、項目 field を書いた行の番号（1 から）を返す。
@@ -171,13 +171,13 @@ func refBaseline(t *testing.T, bin, version string) {
 }
 
 // @vanda:evidence reference-form
-func Test自然言語で書く項目のどれでも参照を読み性質と前提と用語と機能と約束のどれのIDも指せる(t *testing.T) {
+func Test自然言語で書く項目のどれでも参照を読み性質と前提と用語と機能と仕様のどれのIDも指せる(t *testing.T) {
 	t.Parallel()
 	bin, version := refSetup(t)
 	refBaseline(t, bin, version)
 
-	// 性質・前提・用語・機能・約束のそれぞれを指す参照は、どの項目でも通る。型ごとに分けて、どの型を指した時に通らないかが分かるようにする
-	for kind, id := range map[string]string{"性質": "p", "前提": "tr", "用語": "t", "機能": "f-waived", "約束": "c"} {
+	// 性質・前提・用語・機能・仕様のそれぞれを指す参照は、どの項目でも通る。型ごとに分けて、どの型を指した時に通らないかが分かるようにする
+	for kind, id := range map[string]string{"性質": "p", "前提": "tr", "用語": "t", "機能": "f-waived", "仕様": "c"} {
 		ok := refPromises(allFields("{@id:"+id+"} を指す"), "", "")
 		if code, out := refCheck(t, bin, version, ok); code != 0 {
 			t.Errorf("今ある%sを指す参照で、形のチェックが通らない（%d）\n%s", kind, code, out)
@@ -185,7 +185,7 @@ func Test自然言語で書く項目のどれでも参照を読み性質と前�
 	}
 	all := refPromises(allFields("{@id:p} と {@id:tr} と {@id:t} と {@id:f-waived} と {@id:c} を指す"), "", "")
 	if code, out := refCheck(t, bin, version, all); code != 0 {
-		t.Errorf("今ある性質・前提・用語・機能・約束を指す参照で、形のチェックが通らない（%d）\n%s", code, out)
+		t.Errorf("今ある性質・前提・用語・機能・仕様を指す参照で、形のチェックが通らない（%d）\n%s", code, out)
 	}
 
 	// ない ID を指すと、どの項目でも誤りになる（参照として読んでいる）。項目ごとに別の ID にして、どの誤りかを見分ける
@@ -277,7 +277,7 @@ func Test壊れた参照は壊れ方のどれでも自然言語で書く項目�
 		{"種類が term", "前の文{@term:t}後の文", ""},
 		{"種類が大文字の ID", "前の文{@ID:t}後の文", ""},
 		{"種類が空", "前の文{@:t}後の文", ""},
-		// 指す ID の用語・機能・約束がない
+		// 指す ID の用語・機能・仕様がない
 		{"ない ID", "前の文{@id:missing-id}後の文", "missing-id"},
 		{"空の ID", "前の文{@id:}後の文", ""},
 	}
@@ -303,7 +303,7 @@ func Test壊れた参照は壊れ方のどれでも自然言語で書く項目�
 
 // フィンガープリントの元の JSON は、約束リストの書いたままの文（参照を置き換える前）から手で書いた（docs/formats.md の「フィンガープリント」）。
 const (
-	fpClaimJSON = `{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"c","layers":["model"],"refines":["f"],"statement":"{@id:t}は{@id:f}で足し、{@@id:x}は文字"}`
+	fpSpecJSON  = `{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"c","layers":["model"],"refines":["f"],"statement":"{@id:t}は{@id:f}で足し、{@@id:x}は文字"}`
 	fpTermV1    = `{"definition":"やること","id":"t","name":"タスク"}`
 	fpTermV2    = `{"definition":"やるべきこと","id":"t","name":"仕事"}`
 	fpFeatureV1 = `{"definition":"タスクを足す","id":"f","name":"タスクの登録","refines":["p"]}`
@@ -341,7 +341,7 @@ layers = ["model"]
 }
 
 // @vanda:evidence reference-fingerprint-raw
-func Test参照先の用語と機能の名前と定義を変えても参照元の約束の承認は失効しない(t *testing.T) {
+func Test参照先の用語と機能の名前と定義を変えても参照元の仕様の承認は失効しない(t *testing.T) {
 	t.Parallel()
 	bin, version := refSetup(t)
 	root := t.TempDir()
@@ -352,20 +352,20 @@ func Test参照先の用語と機能の名前と定義を変えても参照元�
 	who := func(kind, id, json string) string {
 		return agreementTOML(kind, id, sha256Hex([]byte(json)), "", "#1", "テスト担当", "tester@example.com")
 	}
-	// 約束 c には、書いたままの文のフィンガープリントで 1 度だけ承認する
+	// 仕様 c には、書いたままの文のフィンガープリントで 1 度だけ承認する
 	writeFile(t, root, ".vanda/promises.toml", fpPromises("タスク", "やること", "タスクの登録", "タスクを足す"))
-	writeFile(t, root, ".vanda/agreements.toml", who("spec", "c", fpClaimJSON)+who("term", "t", fpTermV1)+who("feature", "f", fpFeatureV1)+who("property", "p", fpProperty))
-	g.commitAll("約束を置いて承認する", "#1")
+	writeFile(t, root, ".vanda/agreements.toml", who("spec", "c", fpSpecJSON)+who("term", "t", fpTermV1)+who("feature", "f", fpFeatureV1)+who("property", "p", fpProperty))
+	g.commitAll("仕様を置いて承認する", "#1")
 	if code, out := runCheck(t, bin, root, ".vanda/checks/agreement.toml"); code != 0 {
-		t.Fatalf("書いたままの文のフィンガープリントを承認した約束が、承認済にならない（%d）\n%s", code, out)
+		t.Fatalf("書いたままの文のフィンガープリントを承認した仕様が、承認済にならない（%d）\n%s", code, out)
 	}
 
-	// 参照先の用語と機能の名前と定義を変え、その今の中身にだけ承認し直す。約束 c には承認し直さない
+	// 参照先の用語と機能の名前と定義を変え、その今の中身にだけ承認し直す。仕様 c には承認し直さない
 	writeFile(t, root, ".vanda/promises.toml", fpPromises("仕事", "やるべきこと", "仕事の登録", "仕事を足す"))
-	writeFile(t, root, ".vanda/agreements.toml", who("spec", "c", fpClaimJSON)+who("term", "t", fpTermV1)+who("feature", "f", fpFeatureV1)+who("property", "p", fpProperty)+
+	writeFile(t, root, ".vanda/agreements.toml", who("spec", "c", fpSpecJSON)+who("term", "t", fpTermV1)+who("feature", "f", fpFeatureV1)+who("property", "p", fpProperty)+
 		who("term", "t", fpTermV2)+who("feature", "f", fpFeatureV2))
 	g.commitAll("用語と機能の名前と定義を変える", "#1")
 	if code, out := runCheck(t, bin, root, ".vanda/checks/agreement.toml"); code != 0 {
-		t.Errorf("参照先の名前と定義を変えると、参照元の約束の承認が失効した（%d）\n%s", code, out)
+		t.Errorf("参照先の名前と定義を変えると、参照元の仕様の承認が失効した（%d）\n%s", code, out)
 	}
 }

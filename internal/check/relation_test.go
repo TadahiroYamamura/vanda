@@ -446,7 +446,7 @@ func TestPromiseListShapeは古い形のclaimとsubjectsと性質と前提の決
 			}
 		})
 	}
-	// 新しい形の約束リストの末尾に、古い形の約束を足す。minimalPromises は 29 行なので、空行をはさんで 31 行目が表の見出し
+	// 新しい形の約束リストの末尾に、古い形の仕様を足す。minimalPromises は 29 行なので、空行をはさんで 31 行目が表の見出し
 	t.Run("新しい形の後に足したclaimの表", func(t *testing.T) {
 		src := minimalPromises + "\n[[claim]]\nid = \"old\"\nsubjects = [\"task\"]\nstatement = \"s\"\nlayers = [\"model\"]\n"
 		if pass, out := shapeOf(t, r, src); pass || !lineWith(out, ".vanda/promises.toml:31: ", "claim") {

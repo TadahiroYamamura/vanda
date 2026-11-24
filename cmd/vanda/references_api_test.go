@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// 参照の API での見せ方（約束 reference-shown・reference-diff・reference-fingerprint-raw の api）を、vanda serve を外から動かして確かめる。
+// 参照の API での見せ方（仕様 reference-shown・reference-diff・reference-fingerprint-raw の api）を、vanda serve を外から動かして確かめる。
 // API の形は計画（docs/plans/stage4-references.md の「API の形」）。期待値は、下の約束リストから手で書いた。
 
 const refAPIConfig = `version = %q
@@ -23,7 +23,7 @@ description = "判定と状態の変化"
 base = "main"
 `
 
-// main の約束リスト。c-ref は、名前を変える用語・機能と、ストーリーで消す用語・機能と、約束を指す
+// main の約束リスト。c-ref は、名前を変える用語・機能と、ストーリーで消す用語・機能と、仕様を指す
 const refAPIBase = `[[term]]
 id = "t-keep"
 name = "タスク"
@@ -54,7 +54,7 @@ refines = ["p"]
 [[spec]]
 id = "c-other"
 refines = ["f-rename"]
-statement = "ほかの約束は{@id:t-keep}を数える"
+statement = "ほかの仕様は{@id:t-keep}を数える"
 layers = ["model"]
 
 [[spec.evidence]]
@@ -111,7 +111,7 @@ refines = ["p"]
 [[spec]]
 id = "c-other"
 refines = ["f-rename"]
-statement = "ほかの約束は{@id:t-keep}を数える"
+statement = "ほかの仕様は{@id:t-keep}を数える"
 layers = ["model"]
 
 [[spec.evidence]]
@@ -157,7 +157,7 @@ type refDiffPart struct {
 	Ref  *string `json:"ref"`
 }
 
-type refClaimContent struct {
+type refSpecContent struct {
 	Statement        frags   `json:"statement"`
 	Rationale        frags   `json:"rationale"`
 	Condition        frags   `json:"condition"`
@@ -209,7 +209,7 @@ func setupRefAPI(t *testing.T) *refAPIRepo {
 	writeFile(t, root, ".vanda/config.toml", fmt.Sprintf(refAPIConfig, version))
 	writeFile(t, root, ".vanda/checks/shape.toml", "[[check]]\nname = \"promise-list-shape\"\nscope = \"all\"\n")
 	writeFile(t, root, ".vanda/promises.toml", refAPIBase)
-	g.commitAll("はじめの約束を置く", "#1")
+	g.commitAll("はじめの仕様を置く", "#1")
 	g.run("switch", "-q", "-c", "story-24")
 	writeFile(t, root, ".vanda/promises.toml", refAPIStory)
 	g.commitAll("参照先の名前を変え、消す", "#24")
@@ -284,13 +284,13 @@ func boolStr(b *bool) string {
 	return fmt.Sprint(*b)
 }
 
-// 今の約束リスト（story-24）の、参照先の中身。用語と機能は名前と定義、約束は文（中の参照は見せる文字に置き換えた文字列と、セグメントの配列）。
+// 今の約束リスト（story-24）の、参照先の中身。用語と機能は名前と定義、仕様は文（中の参照は見せる文字に置き換えた文字列と、セグメントの配列）。
 // 機能は core・formal を持ち、どちらも書いていないので偽
 var refNow = map[string]refInfo{
 	"t-keep":   {Kind: "term", Name: strp("タスク"), Text: "やること", Current: true, Pieces: textOf("やること")},
 	"t-rename": {Kind: "term", Name: strp("新しい用語"), Text: "後の定義", Current: true, Pieces: textOf("後の定義")},
 	"f-rename": {Kind: "feature", Name: strp("新しい機能"), Text: "タスクを足す", Current: true, Pieces: fragsOf("タスク>t-keep", "を足す"), Core: boolp(false), Formal: boolp(false)},
-	"c-other":  {Kind: "spec", Name: nil, Text: "ほかの約束はタスクを数える", Current: true, Pieces: fragsOf("ほかの約束は", "タスク>t-keep", "を数える")},
+	"c-other":  {Kind: "spec", Name: nil, Text: "ほかの仕様はタスクを数える", Current: true, Pieces: fragsOf("ほかの仕様は", "タスク>t-keep", "を数える")},
 	// 今ない用語と機能は、比べる元（main）の名前と定義
 	"t-gone": {Kind: "term", Name: strp("消える用語"), Text: "消える定義", Current: false, Pieces: textOf("消える定義")},
 	"f-gone": {Kind: "feature", Name: strp("消える機能"), Text: "消える機能の定義", Current: false, Pieces: textOf("消える機能の定義"), Core: boolp(false), Formal: boolp(false)},
@@ -305,11 +305,11 @@ func refsOf(ids ...string) map[string]refInfo {
 }
 
 // @vanda:evidence reference-shown
-func Test一覧の変更前と変更後は自然言語で書く項目をセグメントに分け参照は用語と機能なら今の名前で約束ならIDで見せrefsに指す先を返す(t *testing.T) {
+func Test一覧の変更前と変更後は自然言語で書く項目をセグメントに分け参照は用語と機能なら今の名前で仕様ならIDで見せrefsに指す先を返す(t *testing.T) {
 	t.Parallel()
 	r := setupRefAPI(t)
 
-	var after refClaimContent
+	var after refSpecContent
 	decodeInto(t, "c-ref の after", r.entry(t, "c-ref").After, &after)
 	wantFrags(t, "c-ref の after の statement", after.Statement,
 		fragsOf("新しい用語>t-rename", "と", "新しい機能>f-rename", "は", "c-other>c-other", "を必ず使う"))
@@ -340,16 +340,16 @@ func Test一覧の変更前と変更後は自然言語で書く項目をセグ�
 }
 
 // @vanda:evidence reference-shown
-func Test約束の詳細とその時点の中身は自然言語で書く項目をセグメントに分けrefsに指す先を返す(t *testing.T) {
+func Test仕様の詳細とその時点の中身は自然言語で書く項目をセグメントに分けrefsに指す先を返す(t *testing.T) {
 	t.Parallel()
 	r := setupRefAPI(t)
 
 	var detail struct {
-		refClaimContent
+		refSpecContent
 		Refs map[string]refInfo `json:"refs"`
 	}
 	if code, msg := r.s.get("/api/specs/c-ref", &detail); code != 200 {
-		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
+		t.Fatalf("仕様の詳細を読めない（%d）: %s", code, msg)
 	}
 	wantFrags(t, "詳細の statement", detail.Statement,
 		fragsOf("新しい用語>t-rename", "と", "新しい機能>f-rename", "は", "c-other>c-other", "を必ず使う"))
@@ -365,12 +365,12 @@ func Test約束の詳細とその時点の中身は自然言語で書く項目�
 	} else {
 		wantFrags(t, "詳細の evidence[0].detail", detail.Evidence[0].Detail, fragsOf("新しい機能>f-rename", "で確かめる"))
 	}
-	wantRefs(t, "約束の詳細", detail.Refs, refsOf("t-keep", "t-rename", "f-rename", "c-other"))
+	wantRefs(t, "仕様の詳細", detail.Refs, refsOf("t-keep", "t-rename", "f-rename", "c-other"))
 
 	// main の時点の中身。今もある t-rename・f-rename は今の名前、今ない t-gone・f-gone はその時点の名前。
 	// t-keep は f-rename の定義と c-other の文の中にしかないので、refs に入らない
 	var at struct {
-		Content refClaimContent    `json:"content"`
+		Content refSpecContent     `json:"content"`
 		Refs    map[string]refInfo `json:"refs"`
 	}
 	commit := r.g.run("rev-parse", "main")
@@ -462,7 +462,7 @@ func Test差分は両方の参照を今の名前に置き換えて比べ名前�
 	t.Parallel()
 	r := setupRefAPI(t)
 	e := r.entry(t, "c-ref")
-	var before, after refClaimContent
+	var before, after refSpecContent
 	decodeInto(t, "c-ref の before", e.Before, &before)
 	decodeInto(t, "c-ref の after", e.After, &after)
 
@@ -509,7 +509,7 @@ func Test差分は両方の参照を今の名前に置き換えて比べ名前�
 	// 変わっていない所（equal）の参照は、変更後の側で決める。c-same は、変更前は「タスク」が参照で「新しい用語」が文字、
 	// 変更後はその逆なので、見せる文字は変わらないが、equal の参照は変更後の側の位置に付く
 	se := r.entry(t, "c-same")
-	var sb, sa refClaimContent
+	var sb, sa refSpecContent
 	decodeInto(t, "c-same の before", se.Before, &sb)
 	decodeInto(t, "c-same の after", se.After, &sa)
 	sameBefore := fragsOf("タスク>t-keep", "と新しい用語を数える")
@@ -532,7 +532,7 @@ func Test差分は両方の参照を今の名前に置き換えて比べ名前�
 }
 
 // @vanda:evidence reference-diff
-func Test参照先の名前を変えただけの約束は一覧に出ない(t *testing.T) {
+func Test参照先の名前を変えただけの仕様は一覧に出ない(t *testing.T) {
 	t.Parallel()
 	r := setupRefAPI(t)
 	// c-other は {@id:t-keep} を指したまま、書いた文は変えていない。t-rename の名前を変えた story-24 でも出ない
@@ -548,7 +548,7 @@ func Test参照先の名前を変えただけの約束は一覧に出ない(t *t
 }
 
 // @vanda:evidence reference-fingerprint-raw
-func Test参照先の名前と定義を変えても約束の詳細のフィンガープリントは書いたままの文から作り承認済のままになる(t *testing.T) {
+func Test参照先の名前と定義を変えても仕様の詳細のフィンガープリントは書いたままの文から作り承認済のままになる(t *testing.T) {
 	t.Parallel()
 	bin, version := refSetup(t)
 	root := t.TempDir()
@@ -558,10 +558,10 @@ func Test参照先の名前と定義を変えても約束の詳細のフィン�
 	who := func(kind, id, js, story string) string {
 		return agreementTOML(kind, id, sha256Hex([]byte(js)), "", story, "テスト担当", "tester@example.com")
 	}
-	agreed := who("spec", "c", fpClaimJSON, "#1") + who("term", "t", fpTermV1, "#1") + who("feature", "f", fpFeatureV1, "#1")
+	agreed := who("spec", "c", fpSpecJSON, "#1") + who("term", "t", fpTermV1, "#1") + who("feature", "f", fpFeatureV1, "#1")
 	writeFile(t, root, ".vanda/promises.toml", fpPromises("タスク", "やること", "タスクの登録", "タスクを足す"))
 	writeFile(t, root, ".vanda/agreements.toml", agreed)
-	g.commitAll("約束を置いて承認する", "#1")
+	g.commitAll("仕様を置いて承認する", "#1")
 	g.run("switch", "-q", "-c", "story-24")
 	writeFile(t, root, ".vanda/promises.toml", fpPromises("仕事", "やるべきこと", "仕事の登録", "仕事を足す"))
 	writeFile(t, root, ".vanda/agreements.toml", agreed+who("term", "t", fpTermV2, "#24")+who("feature", "f", fpFeatureV2, "#24"))
@@ -574,17 +574,17 @@ func Test参照先の名前と定義を変えても約束の詳細のフィン�
 		Statement   frags  `json:"statement"`
 	}
 	if code, msg := s.get("/api/specs/c", &detail); code != 200 {
-		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
+		t.Fatalf("仕様の詳細を読めない（%d）: %s", code, msg)
 	}
 	h := getHistory(t, s, "c")
-	if want := sha256Hex([]byte(fpClaimJSON)); detail.Fingerprint != want {
-		t.Errorf("約束 c のフィンガープリント %s が、書いたままの文のフィンガープリント %s でない", detail.Fingerprint, want)
+	if want := sha256Hex([]byte(fpSpecJSON)); detail.Fingerprint != want {
+		t.Errorf("仕様 c のフィンガープリント %s が、書いたままの文のフィンガープリント %s でない", detail.Fingerprint, want)
 	}
 	if detail.State != "agreed" || len(h.Agreements) != 1 || !h.Agreements[0].Current {
-		t.Errorf("参照先を変えた後の約束 c: state %q、承認 %+v", detail.State, h.Agreements)
+		t.Errorf("参照先を変えた後の仕様 c: state %q、承認 %+v", detail.State, h.Agreements)
 	}
 	// 見せる文は今の名前に置き換わっている（フィンガープリントは置き換える前の文から作る）
-	wantFrags(t, "約束 c の statement", detail.Statement, fragsOf("仕事>t", "は", "仕事の登録>f", "で足し、{@id:x}は文字"))
+	wantFrags(t, "仕様 c の statement", detail.Statement, fragsOf("仕事>t", "は", "仕事の登録>f", "で足し、{@id:x}は文字"))
 
 	var rv refReview
 	if code, msg := s.get("/api/review?view=branch&base=main", &rv); code != 200 {
@@ -592,7 +592,7 @@ func Test参照先の名前と定義を変えても約束の詳細のフィン�
 	}
 	for _, e := range rv.Entries {
 		if e.key() == "c" {
-			t.Errorf("参照先の名前と定義だけを変えたのに、約束 c が一覧に出た: %+v", e)
+			t.Errorf("参照先の名前と定義だけを変えたのに、仕様 c が一覧に出た: %+v", e)
 		}
 	}
 }

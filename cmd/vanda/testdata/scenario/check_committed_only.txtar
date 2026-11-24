@@ -56,7 +56,7 @@ exec vanda check .vanda/checks/all.toml
 commit '(test) アノテーションを誤らせる'
 ! exec vanda check .vanda/checks/all.toml
 stdout 'チェック annotation-links（all）: 失敗'
-stderr 'task_test\.go:3: .*no-such-claim'
+stderr 'task_test\.go:3: .*no-such-spec'
 cp cases/task_test.go.orig task_test.go
 commit '(test) アノテーションを戻す'
 
@@ -233,7 +233,7 @@ func TestUnique(t *testing.T) {}
 -- cases/task_test.go.bad --
 package task
 
-// @vanda:evidence no-such-claim
+// @vanda:evidence no-such-spec
 func TestUnique(t *testing.T) {}
 
 // @vanda:evidence task-id-unique

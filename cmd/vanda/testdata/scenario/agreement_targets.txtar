@@ -1,6 +1,6 @@
-# CMD-10 承認の記録の指す先: 承認の記録が、約束リストにない約束・用語・機能を指していない。
+# CMD-10 承認の記録の指す先: 承認の記録が、約束リストにない仕様・用語・機能を指していない。
 # @vanda:evidence agreements-point-to-existing-items
-# 約束・用語・機能のそれぞれで、承認した後に約束リストから消すと止まる。消したことを承認すれば止めない。
+# 仕様・用語・機能のそれぞれで、承認した後に約束リストから消すと止まる。消したことを承認すれば止めない。
 # 指す ID が別の種類の項目でも止まる。
 # ファイルの承認は、このチェックでは、そのファイルがなくなっても止めない（消したことは承認のチェックが見る）。
 #
@@ -20,19 +20,19 @@ rm note.txt
 commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/targets.toml
 
-# 約束を消す
-cp cases/without-claim.toml .vanda/promises.toml
+# 仕様を消す
+cp cases/without-spec.toml .vanda/promises.toml
 commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
 stderr 'agreements\.toml.*task-id-unique'
 ! stderr '(?m)^panic: '
 
-# 約束を消したことを承認すると、消した約束を指す承認の記録は誤りにしない（履歴として残る）
+# 仕様を消したことを承認すると、消した仕様を指す承認の記録は誤りにしない（履歴として残る）
 agree -deleted .vanda/agreements.toml '#1' spec task-id-unique
 commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/targets.toml
 
-# 機能を消す（機能を refines する約束は、消したことを承認済みなので、一緒に消しておく）
+# 機能を消す（機能を refines する仕様は、消したことを承認済みなので、一緒に消しておく）
 cp cases/without-feature.toml .vanda/promises.toml
 commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
@@ -46,7 +46,7 @@ commit 'チェックする前にコミットする'
 stderr 'agreements\.toml.*\bnote\b'
 ! stderr '(?m)^panic: '
 
-# 用語の承認が、約束の ID を指す
+# 用語の承認が、仕様の ID を指す
 cp cases/all.toml .vanda/promises.toml
 cp cases/empty.toml .vanda/agreements.toml
 agree .vanda/agreements.toml '#1' term task-id-unique fp/any.json
@@ -134,7 +134,7 @@ layers = ["model"]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
 -- cases/empty.toml --
--- cases/without-claim.toml --
+-- cases/without-spec.toml --
 [[term]]
 id = "task"
 name = "タスク"

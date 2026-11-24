@@ -26,7 +26,7 @@ func write(t *testing.T, files map[string]string) (string, []string) {
 }
 
 // @vanda:evidence promise-list-reads-all-patterns
-func TestLoadは複数のファイルから性質と前提と用語と機能と約束を決まった項目で読む(t *testing.T) {
+func TestLoadは複数のファイルから性質と前提と用語と機能と仕様を決まった項目で読む(t *testing.T) {
 	root, files := write(t, map[string]string{
 		".vanda/promises/a.toml": `[[property]]
 id = "reliable"
@@ -124,15 +124,15 @@ detail = "db/schema.sql"
 	if len(l.Features) != 2 || !l.Features[0].Formal || l.Features[1].Formal || l.Features[1].FormalWaiver != "表示だけのため" {
 		t.Errorf("feature: formal を省いた core の機能は真、書いた機能は書いたまま: %+v %+v", l.Features[0], l.Features[1])
 	}
-	if len(l.Claims) != 1 {
-		t.Fatalf("claim: %+v", l.Claims)
+	if len(l.Specs) != 1 {
+		t.Fatalf("spec: %+v", l.Specs)
 	}
-	c := l.Claims[0]
+	c := l.Specs[0]
 	if !reflect.DeepEqual(c.Refines, []string{"add-task", "list-task"}) || !reflect.DeepEqual(c.Assumes, []string{"disk-works"}) {
-		t.Errorf("claim の refines・assumes: %v %v", c.Refines, c.Assumes)
+		t.Errorf("spec の refines・assumes: %v %v", c.Refines, c.Assumes)
 	}
 	if c.ID != "task-id-unique" || len(c.Evidence) != 2 || c.Evidence[1].Detail != "db/schema.sql" || c.Flags[0] != "ai-proposal" || c.Guesses[0] != "DB に一意の制約を付けられる" {
-		t.Errorf("claim: %+v", c)
+		t.Errorf("spec: %+v", c)
 	}
 }
 
@@ -253,7 +253,7 @@ func TestLoadは仕様のrefinesとevidenceが空なら誤りにする(t *testin
 func TestLoadは既定のファイルがなければ空とみなす(t *testing.T) {
 	root, files := write(t, map[string]string{"README.md": "x"})
 	l, errs := Load(root, files, []string{".vanda/promises.toml"}, true)
-	if errs != nil || len(l.Claims) != 0 {
+	if errs != nil || len(l.Specs) != 0 {
 		t.Errorf("errs = %v", errs)
 	}
 }

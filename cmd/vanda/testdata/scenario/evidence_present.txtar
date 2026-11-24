@@ -5,13 +5,13 @@
 # @vanda:evidence check-evidence-guardrail-needs-definition
 # この台本の設定は、組み込みのアダプタの既定のタイプを types に書く（go は unit-test・cross-check・random-check・
 # interface-test・concurrency-test・sensor、txtar は scenario-test、tla は model-check、sql は guardrail）。
-# タイプに合う種類は、model-check が claim、ほかは evidence。guardrail と sensor は 2 つが揃って満たす。guardrail は、
+# タイプに合う種類は、model-check が spec、ほかは evidence。guardrail と sensor は 2 つが揃って満たす。guardrail は、
 # ガードレールの定義（[[guardrail]] の paths。ここでは db/schema.sql）の evidence と、定義でないファイル（db/reject_test.sql。
 # ガードレールが拒むことを確かめるもの）の evidence。sensor は、Go の sensor（センサーの場所）と Go の evidence（センサーの検証）。
 # 種類とタイプの全部の組み合わせと、types の書き方は evidence_types_test.go で確かめる。
-# 1 つのアノテーションが、同じ約束の複数の予定を満たしてよい。proof は今は扱えない誤りにする。
+# 1 つのアノテーションが、同じ仕様の複数の予定を満たしてよい。proof は今は扱えない誤りにする。
 # 実行しないタイプ（human-review）は確かめない（detail に書いたファイルがなくても止めない）。
-# スコープを story にすると、マージベースより後に変わった約束だけを見る。
+# スコープを story にすると、マージベースより後に変わった仕様だけを見る。
 #
 # txtar のファイルの中身は、この台本の区切りとぶつからないよう、行の頭に > を付けて書き、unquote で外す。
 
@@ -33,7 +33,7 @@ stderr 'promises\.toml.*scenario-test'
 cp cases/add.txtar e2e/add.txtar
 unquote e2e/add.txtar
 
-# TLA+ の claim がないと、model-check の予定で止まる
+# TLA+ の spec がないと、model-check の予定で止まる
 cp cases/Task-none.tla spec/Task.tla
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
@@ -84,7 +84,7 @@ stderr 'promises\.toml.*sensor'
 ! stderr '(?m)^panic: '
 cp cases/task.go.orig task.go
 
-# ほかの約束のアノテーションでは、満たされない
+# ほかの仕様のアノテーションでは、満たされない
 cp cases/promises-other.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
@@ -98,13 +98,13 @@ commit '(test) チェックの前にコミットする'
 stderr 'promises\.toml.*proof'
 ! stderr '(?m)^panic: '
 
-# スコープを story にすると、マージベースより後に変わった約束だけを見る
+# スコープを story にすると、マージベースより後に変わった仕様だけを見る
 cp cases/promises-main.toml .vanda/promises.toml
-commit '約束を足す' '#1'
+commit '仕様を足す' '#1'
 exec git checkout -q -b story-2
 cp cases/promises-story.toml .vanda/promises.toml
 cp cases/title_test.go.case title_test.go
-commit '約束を足す' '#2'
+commit '仕様を足す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 ! exec vanda check .vanda/checks/all.toml
 stderr 'task-reviewed-no-annotation'
@@ -235,12 +235,12 @@ statement = "登録したタスクは失われない"
 >add
 -- spec/Task.tla --
 ---- MODULE Task ----
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 Unique == TRUE
 ====
 -- cases/Task.tla --
 ---- MODULE Task ----
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 Unique == TRUE
 ====
 -- cases/Task-none.tla --

@@ -2,14 +2,14 @@
 # @vanda:evidence changed-id-is-new
 # @vanda:evidence check-agreement-flags-left
 # @vanda:evidence check-agreement-targets
-# CM-03: フィンガープリントは flags と guesses を除いた中身から作る。同じ中身に 2 つのストーリーが承認しても承認済。約束の ID を変えると提案中。
+# CM-03: フィンガープリントは flags と guesses を除いた中身から作る。同じ中身に 2 つのストーリーが承認しても承認済。仕様の ID を変えると提案中。
 #
 # フィンガープリントの元の JSON（fp/ の下）は、約束リストの項目から手で書いた（キーを名前の順に並べ、空白なし）。
 
 exec git init -q -b main
 expand .vanda/config.toml
 
-# 承認していない約束・用語があると止まる
+# 承認していない仕様・用語があると止まる
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
 stderr 'promises\.toml.*task-id-unique'
@@ -20,7 +20,7 @@ stderr '(?m)promises\.toml.*\btask\b($|[^-])'
 agree .vanda/agreements.toml '#1' term task fp/term-task.json
 agree .vanda/agreements.toml '#1' feature task-add fp/feature-task-add.json
 agree .vanda/agreements.toml '#1' property no-lost-task fp/property-no-lost-task.json
-agree .vanda/agreements.toml '#1' spec task-id-unique fp/claim-v1.json
+agree .vanda/agreements.toml '#1' spec task-id-unique fp/spec-v1.json
 commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
@@ -57,16 +57,16 @@ stderr 'promises\.toml.*(task-id-unique|guesses)'
 
 # 中身を変えて、別のストーリーが今の中身を承認すれば通る。前の承認は履歴として残っていてよい
 cp cases/promises-v2.toml .vanda/promises.toml
-agree .vanda/agreements.toml '#2' spec task-id-unique fp/claim-v2.json
+agree .vanda/agreements.toml '#2' spec task-id-unique fp/spec-v2.json
 commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
 # 同じ中身に、もう 1 つのストーリーが別に承認しても、承認済のまま
-agree .vanda/agreements.toml '#3' spec task-id-unique fp/claim-v2.json
+agree .vanda/agreements.toml '#3' spec task-id-unique fp/spec-v2.json
 commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
-# 約束の ID を変えると、中身が同じでも提案中になる
+# 仕様の ID を変えると、中身が同じでも提案中になる
 cp cases/promises-v2-renamed.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/agreement.toml
@@ -296,9 +296,9 @@ statement = "Registered tasks are never lost"
 {"definition":"A thing to do","id":"task","name":"Task"}
 -- fp/feature-task-add.json --
 {"definition":"Add a task","id":"task-add","name":"Adding a task","refines":["no-lost-task"]}
--- fp/claim-v1.json --
+-- fp/spec-v1.json --
 {"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","refines":["task-add"],"statement":"Task IDs are unique"}
--- fp/claim-v2.json --
+-- fp/spec-v2.json --
 {"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","refines":["task-add"],"statement":"No two tasks share an ID"}
 -- fp/property-no-lost-task.json --
 {"id":"no-lost-task","statement":"Registered tasks are never lost"}

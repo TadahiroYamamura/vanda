@@ -112,7 +112,7 @@ func ptMentioned(out string) []string {
 				continue
 			}
 			word := "?"
-			for _, w := range []string{"性質", "前提", "用語", "機能", "約束"} {
+			for _, w := range []string{"性質", "前提", "用語", "機能", "仕様"} {
 				if strings.Contains(line, w+" "+id) {
 					word = w
 				}

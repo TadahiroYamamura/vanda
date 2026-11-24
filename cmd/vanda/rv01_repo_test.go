@@ -23,7 +23,7 @@ type rvRepo struct {
 	used    map[string]bool
 }
 
-// newRVRepo は、root に git のリポジトリを作り、main ブランチに、約束の対象に使う用語だけの最初のコミット（ストーリー firstStory）を置く。
+// newRVRepo は、root に git のリポジトリを作り、main ブランチに、仕様の対象に使う用語だけの最初のコミット（ストーリー firstStory）を置く。
 func newRVRepo(t fataler, root, version, firstStory string, pick rvPick) *rvRepo {
 	r := &rvRepo{t: t, g: newRVGit(t, root), root: root, pick: pick, heads: map[string]int{}, branch: "main",
 		state: newRVState(), used: map[string]bool{}}
@@ -31,7 +31,7 @@ func newRVRepo(t fataler, root, version, firstStory string, pick rvPick) *rvRepo
 	writeFile(t, root, ".vanda/config.toml", rvConfig(version))
 	r.state.items[rvBaseTerm] = rvItem{kind: "term", fields: map[string]string{"name": "もと", "definition": "変えない用語"}}
 	r.state.items[rvBaseProperty] = rvItem{kind: "property", fields: map[string]string{"statement": "もとの性質"}}
-	r.state.items[rvBaseFeature] = rvItem{kind: "feature", fields: map[string]string{"name": "もとの機能", "definition": "約束が refines する機能"}}
+	r.state.items[rvBaseFeature] = rvItem{kind: "feature", fields: map[string]string{"name": "もとの機能", "definition": "仕様が refines する機能"}}
 	r.flush()
 	r.commit(firstStory)
 	return r
@@ -310,7 +310,7 @@ func (r *rvRepo) mergeBase(base string) rvCommit {
 func (r *rvRepo) head() rvCommit { return r.commits[r.heads[r.branch]] }
 
 // branchView は、ベースブランチ base での、レビュー単位がブランチのときの期待値。マージベースの中身と HEAD のコミットの中身を比べ、
-// 作業ツリーの書きかけの変更（コミットしていないもの）は含めない（約束 review-view-branch）。
+// 作業ツリーの書きかけの変更（コミットしていないもの）は含めない（仕様 review-view-branch）。
 func (r *rvRepo) branchView(base string) map[rvEntry]bool {
 	mb := r.mergeBase(base)
 	verifyCommit(r.g, mb.hash, mb.state)

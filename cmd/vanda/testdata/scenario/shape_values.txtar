@@ -2,7 +2,7 @@
 # @vanda:evidence promise-list-layers-known
 # @vanda:evidence promise-list-fixed-values
 # 決まった値は全部を使って通ることを、決まった値の外の値は止まることを確かめる。
-# 決まった値の一覧は約束 promise-list-fixed-value-list の文のとおり。
+# 決まった値の一覧は仕様 promise-list-fixed-value-list の文のとおり。
 
 exec git init -q -b main
 expand .vanda/config.toml
@@ -40,8 +40,8 @@ commit '(test) チェックの前にコミットする'
 stderr 'promises\.toml:23: .*e2e-test'
 ! stderr '(?m)^panic: '
 
-# 約束に、設定にないレイヤー
-cp cases/bad-claim-layer.toml .vanda/promises.toml
+# 仕様に、設定にないレイヤー
+cp cases/bad-spec-layer.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:19: .*ui'
@@ -265,7 +265,7 @@ detail = "task_test.go"
 [[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
--- cases/bad-claim-layer.toml --
+-- cases/bad-spec-layer.toml --
 [[term]]
 id = "task"
 name = "タスク"

@@ -1,7 +1,7 @@
 # アノテーションのつながり: アノテーションが指す ID が約束リストにあり、種類が合う
 # @vanda:evidence annotation-links-kinds
 # @vanda:evidence annotation-links-tla-types
-# （term には用語、feature には機能、claim・evidence・sensor には約束）。合わない組み合わせを全部回す。
+# （term には用語、feature には機能、spec・evidence・sensor には仕様）。合わない組み合わせを全部回す。
 # 仕様の型の宣言（TLA+ の TypeOK の中で \in・\subseteq の右に書いた定義）には term か internal があり、feature がない。
 # Go の型（task.go の Task）には term を求めないので、付けなくても通る。
 
@@ -21,8 +21,8 @@ stderr 'spec/Task\.tla:2: .*task-add'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
-# `@vanda:term` が約束の ID（task-id-unique）を指すと止まる
-cp cases/term-to-claim.case spec/Task.tla
+# `@vanda:term` が仕様の ID（task-id-unique）を指すと止まる
+cp cases/term-to-spec.case spec/Task.tla
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:2: .*task-id-unique'
@@ -37,24 +37,24 @@ stderr 'spec/Task\.tla:13: .*task'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
-# `@vanda:feature` が約束の ID（task-id-unique）を指すと止まる
-cp cases/feature-to-claim.case spec/Task.tla
+# `@vanda:feature` が仕様の ID（task-id-unique）を指すと止まる
+cp cases/feature-to-spec.case spec/Task.tla
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:13: .*task-id-unique'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
-# `@vanda:claim` が用語の ID（task）を指すと止まる
-cp cases/claim-to-term.case spec/Task.tla
+# `@vanda:spec` が用語の ID（task）を指すと止まる
+cp cases/spec-to-term.case spec/Task.tla
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:10: .*task'
 ! stderr '(?m)^panic: '
 cp orig/Task.tla.orig spec/Task.tla
 
-# `@vanda:claim` が機能の ID（task-add）を指すと止まる
-cp cases/claim-to-feature.case spec/Task.tla
+# `@vanda:spec` が機能の ID（task-add）を指すと止まる
+cp cases/spec-to-feature.case spec/Task.tla
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/links.toml
 stderr 'spec/Task\.tla:10: .*task-add'
@@ -208,7 +208,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -247,7 +247,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -266,13 +266,13 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
 Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
 ====
--- cases/term-to-claim.case --
+-- cases/term-to-spec.case --
 ---- MODULE Task ----
 \* @vanda:term task-id-unique
 TaskIds == {"t1", "t2"}
@@ -282,7 +282,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -298,13 +298,13 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task
 Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
 ====
--- cases/feature-to-claim.case --
+-- cases/feature-to-spec.case --
 ---- MODULE Task ----
 \* @vanda:term task
 TaskIds == {"t1", "t2"}
@@ -314,13 +314,13 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-id-unique
 Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
 ====
--- cases/claim-to-term.case --
+-- cases/spec-to-term.case --
 ---- MODULE Task ----
 \* @vanda:term task
 TaskIds == {"t1", "t2"}
@@ -330,13 +330,13 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task
+\* @vanda:spec task
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
 Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
 ====
--- cases/claim-to-feature.case --
+-- cases/spec-to-feature.case --
 ---- MODULE Task ----
 \* @vanda:term task
 TaskIds == {"t1", "t2"}
@@ -346,7 +346,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-add
+\* @vanda:spec task-add
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -391,7 +391,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -406,7 +406,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add
@@ -422,7 +422,7 @@ Small == {0, 1, 2}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 Add(t) == tasks' = tasks \cup {t} /\ n' = n + 1
@@ -439,7 +439,7 @@ Unused == {3}
 
 VARIABLES tasks, n
 
-\* @vanda:claim task-id-unique
+\* @vanda:spec task-id-unique
 TypeOK == tasks \subseteq TaskIds /\ n \in Small
 
 \* @vanda:feature task-add

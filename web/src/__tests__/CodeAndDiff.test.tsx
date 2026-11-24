@@ -1,5 +1,5 @@
 // コードのシンタックスハイライトと、ファイルの行の差分の見せ方。
-// 要素とクラスの名前は、開発者が監督に報告した画面の作り（table.diff-lines、tr.diff-line、td.diff-no-before など）に従う。
+// 要素とクラスの名前は、開発者がオーナーに報告した画面の作り（table.diff-lines、tr.diff-line、td.diff-no-before など）に従う。
 // 期待値（行の種類・番号・文）は、テストの中で手で書いた diff.lines から作る。
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, waitFor } from "@testing-library/react";

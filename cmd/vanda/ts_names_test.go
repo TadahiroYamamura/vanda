@@ -12,7 +12,7 @@ import (
 
 // 組み込みの ts のアダプタと、vanda のリポジトリの .vanda/adapters/playwright が付ける名前
 // （docs/plans/annotation-types.md の 2・3）。名前は、呼び出しの最初の引数の文字列で、describe の中なら外側の
-// describe の名前から順に " > " でつなぐ。約束の詳細（GET /api/specs/<ID>）の found の名前で確かめる。
+// describe の名前から順に " > " でつなぐ。仕様の詳細（GET /api/specs/<ID>）の found の名前で確かめる。
 
 // tsNamesFile は、入れ子の describe を含むテストのファイル。期待する名前は tsNamesWant。
 // 組み込みの ts は .skip・.todo を数えず .only を誤りにする（annotation_ts.txtar で確かめる）ので、ここには書かない
@@ -58,7 +58,7 @@ var tsNamesWant = []string{
 	"Playwright の形 > ${op} を承認する",
 }
 
-// foundNames は、annotation の設定と、ファイル path に中身 body を置いたリポジトリを作り、約束の詳細の found の名前を返す。
+// foundNames は、annotation の設定と、ファイル path に中身 body を置いたリポジトリを作り、仕様の詳細の found の名前を返す。
 func foundNames(t *testing.T, annotation string, files map[string]string, adapters map[string]string) ([]string, string) {
 	t.Helper()
 	bin := buildVanda(t)
@@ -87,9 +87,9 @@ func foundNames(t *testing.T, annotation string, files map[string]string, adapte
 	}
 	g.commitAll("はじめ", "#1")
 	s := startServe(t, bin, root, g.env)
-	var got claimDetail
+	var got specDetail
 	if code, msg := s.get("/api/specs/task-id-unique", &got); code != 200 {
-		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
+		t.Fatalf("仕様の詳細を読めない（%d）: %s", code, msg)
 	}
 	var names []string
 	for _, e := range got.Evidence {
@@ -167,11 +167,11 @@ func Test_vanda_adaptersのplaywrightはE2Eの文字列の中の書き方をア�
 		t.Errorf("名前: %v（思ったもの %v。文字列の中の @vanda: を数えている）", names, want)
 	}
 	writeFile(t, root, ".vanda/checks/links.toml", "[[check]]\nname = \"annotation-links\"\nscope = \"all\"\n")
-	// vanda の E2E のアノテーションは vanda の約束を指すので、この一時的なリポジトリでは「約束リストにない」で止まる。
+	// vanda の E2E のアノテーションは vanda の仕様を指すので、この一時的なリポジトリでは「約束リストにない」で止まる。
 	// それのほかの誤り（文字列の中の書き方を読んだことによる、種類や ID の数の誤り）が出ないことを見る
 	_, out := runCheck(t, buildVanda(t), root, ".vanda/checks/links.toml")
 	for _, l := range strings.Split(out, "\n") {
-		if strings.HasPrefix(l, "web/e2e/") && !strings.Contains(l, "約束リストの約束にありません") {
+		if strings.HasPrefix(l, "web/e2e/") && !strings.Contains(l, "約束リストの仕様にありません") {
 			t.Errorf("E2E の文字列の中の書き方を、アノテーションとして読んだ: %s", l)
 		}
 	}

@@ -1,4 +1,4 @@
-# CMD-10 約束リストの形: ID は英小文字・数字をハイフンでつないだ形で、用語・機能・約束を通して重複しない。
+# CMD-10 約束リストの形: ID は英小文字・数字をハイフンでつないだ形で、用語・機能・仕様を通して重複しない。
 # @vanda:evidence promise-list-id-shape
 # @vanda:evidence promise-list-id-unique
 # 重複は、表の組み合わせ（同じ表どうし、違う表どうし）を全部回す。分けたファイルをまたいでも重複しない。
@@ -12,64 +12,64 @@ cp cases/good-ids.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 
-# 約束の ID の形が誤り（upper）
-cp cases/bad-id-claim-upper.toml .vanda/promises.toml
+# 仕様の ID の形が誤り（upper）
+cp cases/bad-id-spec-upper.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:14: '
 ! stderr '(?m)^panic: '
 
-# 約束の ID の形が誤り（underscore）
-cp cases/bad-id-claim-underscore.toml .vanda/promises.toml
+# 仕様の ID の形が誤り（underscore）
+cp cases/bad-id-spec-underscore.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:14: '
 ! stderr '(?m)^panic: '
 
-# 約束の ID の形が誤り（leading-hyphen）
-cp cases/bad-id-claim-leading-hyphen.toml .vanda/promises.toml
+# 仕様の ID の形が誤り（leading-hyphen）
+cp cases/bad-id-spec-leading-hyphen.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:14: '
 ! stderr '(?m)^panic: '
 
-# 約束の ID の形が誤り（trailing-hyphen）
-cp cases/bad-id-claim-trailing-hyphen.toml .vanda/promises.toml
+# 仕様の ID の形が誤り（trailing-hyphen）
+cp cases/bad-id-spec-trailing-hyphen.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:14: '
 ! stderr '(?m)^panic: '
 
-# 約束の ID の形が誤り（double-hyphen）
-cp cases/bad-id-claim-double-hyphen.toml .vanda/promises.toml
+# 仕様の ID の形が誤り（double-hyphen）
+cp cases/bad-id-spec-double-hyphen.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:14: '
 ! stderr '(?m)^panic: '
 
-# 約束の ID の形が誤り（space）
-cp cases/bad-id-claim-space.toml .vanda/promises.toml
+# 仕様の ID の形が誤り（space）
+cp cases/bad-id-spec-space.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:14: '
 ! stderr '(?m)^panic: '
 
-# 約束の ID の形が誤り（non-ascii）
-cp cases/bad-id-claim-non-ascii.toml .vanda/promises.toml
+# 仕様の ID の形が誤り（non-ascii）
+cp cases/bad-id-spec-non-ascii.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:14: '
 ! stderr '(?m)^panic: '
 
-# 約束の ID の形が誤り（empty）
-cp cases/bad-id-claim-empty.toml .vanda/promises.toml
+# 仕様の ID の形が誤り（empty）
+cp cases/bad-id-spec-empty.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:14: '
 ! stderr '(?m)^panic: '
 
-# 約束の ID の形が誤り（leading-digit）
-cp cases/bad-id-claim-leading-digit.toml .vanda/promises.toml
+# 仕様の ID の形が誤り（leading-digit）
+cp cases/bad-id-spec-leading-digit.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:14: '
@@ -103,8 +103,8 @@ commit '(test) チェックの前にコミットする'
 stderr 'promises\.toml:28: .*task-add.*\b7\b'
 ! stderr '(?m)^panic: '
 
-# ID が重複する（claim-claim）
-cp cases/dup-claim-claim.toml .vanda/promises.toml
+# ID が重複する（spec-spec）
+cp cases/dup-spec-spec.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:28: .*task-id-unique.*\b14\b'
@@ -117,15 +117,15 @@ commit '(test) チェックの前にコミットする'
 stderr 'promises\.toml:28: .*task.*\b2\b'
 ! stderr '(?m)^panic: '
 
-# ID が重複する（term-claim）
-cp cases/dup-term-claim.toml .vanda/promises.toml
+# ID が重複する（term-spec）
+cp cases/dup-term-spec.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:28: .*task.*\b2\b'
 ! stderr '(?m)^panic: '
 
-# ID が重複する（feature-claim）
-cp cases/dup-feature-claim.toml .vanda/promises.toml
+# ID が重複する（feature-spec）
+cp cases/dup-feature-spec.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:28: .*task-add.*\b7\b'
@@ -237,7 +237,7 @@ detail = "task_test.go"
 [[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
--- cases/bad-id-claim-upper.toml --
+-- cases/bad-id-spec-upper.toml --
 [[term]]
 id = "task"
 name = "タスク"
@@ -267,7 +267,7 @@ detail = "task_test.go"
 [[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
--- cases/bad-id-claim-underscore.toml --
+-- cases/bad-id-spec-underscore.toml --
 [[term]]
 id = "task"
 name = "タスク"
@@ -297,7 +297,7 @@ detail = "task_test.go"
 [[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
--- cases/bad-id-claim-leading-hyphen.toml --
+-- cases/bad-id-spec-leading-hyphen.toml --
 [[term]]
 id = "task"
 name = "タスク"
@@ -327,7 +327,7 @@ detail = "task_test.go"
 [[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
--- cases/bad-id-claim-trailing-hyphen.toml --
+-- cases/bad-id-spec-trailing-hyphen.toml --
 [[term]]
 id = "task"
 name = "タスク"
@@ -357,7 +357,7 @@ detail = "task_test.go"
 [[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
--- cases/bad-id-claim-double-hyphen.toml --
+-- cases/bad-id-spec-double-hyphen.toml --
 [[term]]
 id = "task"
 name = "タスク"
@@ -387,7 +387,7 @@ detail = "task_test.go"
 [[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
--- cases/bad-id-claim-space.toml --
+-- cases/bad-id-spec-space.toml --
 [[term]]
 id = "task"
 name = "タスク"
@@ -417,7 +417,7 @@ detail = "task_test.go"
 [[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
--- cases/bad-id-claim-non-ascii.toml --
+-- cases/bad-id-spec-non-ascii.toml --
 [[term]]
 id = "task"
 name = "タスク"
@@ -447,7 +447,7 @@ detail = "task_test.go"
 [[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
--- cases/bad-id-claim-empty.toml --
+-- cases/bad-id-spec-empty.toml --
 [[term]]
 id = "task"
 name = "タスク"
@@ -477,7 +477,7 @@ detail = "task_test.go"
 [[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
--- cases/bad-id-claim-leading-digit.toml --
+-- cases/bad-id-spec-leading-digit.toml --
 [[term]]
 id = "task"
 name = "タスク"
@@ -639,7 +639,7 @@ refines = ["no-lost-task"]
 [[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
--- cases/dup-claim-claim.toml --
+-- cases/dup-spec-spec.toml --
 [[term]]
 id = "task"
 name = "タスク"
@@ -720,7 +720,7 @@ refines = ["no-lost-task"]
 [[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
--- cases/dup-term-claim.toml --
+-- cases/dup-term-spec.toml --
 [[term]]
 id = "task"
 name = "タスク"
@@ -764,7 +764,7 @@ detail = "other_test.go"
 [[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
--- cases/dup-feature-claim.toml --
+-- cases/dup-feature-spec.toml --
 [[term]]
 id = "task"
 name = "タスク"

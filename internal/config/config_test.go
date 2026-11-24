@@ -176,7 +176,7 @@ func lineWith(got, prefix string, frags ...string) bool {
 	return false
 }
 
-// ---- 約束の文から作ったテスト ----
+// ---- 仕様の文から作ったテスト ----
 
 // annConfig は、[[annotation]] を 1 つだけ書いた設定。
 func annConfig(body string) string {

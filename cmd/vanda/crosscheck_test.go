@@ -27,8 +27,8 @@ import (
 //     誤りに出る項目は、比べる元と今で違い（Diff）承認済でない項目と、s の失効した承認（Broken(s)）を合わせたもの
 // モデルの changedBy（一度でも変えたストーリー）は判定に使わないので比べない。
 //
-// 写し方: Items の i1 は約束 item-1、i2・i3（Files）はシナリオのファイル e2e/item-2.txtar・e2e/item-3.txtar。
-// 中身のフィンガープリント n（1..MaxFp）は、約束の文やファイルの中身の v<n>。0 は、その項目がない（約束リストにない、ファイルがない）こと。
+// 写し方: Items の i1 は仕様 item-1、i2・i3（Files）はシナリオのファイル e2e/item-2.txtar・e2e/item-3.txtar。
+// 中身のフィンガープリント n（1..MaxFp）は、仕様の文やファイルの中身の v<n>。0 は、その項目がない（約束リストにない、ファイルがない）こと。
 // ファイルは、フィンガープリントが同じなら中身が同じ（写し）。Rename(s, i, j) は、i のファイルを j の場所に動かす 1 つのコミット。
 // Stories の A・B はストーリーの ID #1・#2。どの操作も 1 つのコミットにする。Agree(s, i) は承認の記録の書き足し
 // （i が今なければ、消したことへの承認）、Revoke(s, i) は、Agree(s, i) で書き足した記録をストーリーの承認の記録のファイルから消す。
@@ -410,15 +410,15 @@ type xcheckRepo struct {
 
 var xcheckPaths = map[string]string{"i2": "e2e/item-2.txtar", "i3": "e2e/item-3.txtar"}
 
-// 約束が refines する機能 f と、機能が refines する性質 p も、一緒に置く
+// 仕様が refines する機能 f と、機能が refines する性質 p も、一緒に置く
 const xcheckTerm = "[[term]]\nid = \"t\"\nname = \"n\"\ndefinition = \"d\"\n\n[[property]]\nid = \"p\"\nstatement = \"s\"\n\n[[feature]]\nid = \"f\"\nname = \"n\"\ndefinition = \"d\"\nrefines = [\"p\"]\n"
 
-func claimTOML(ver int) string {
+func specTOML(ver int) string {
 	return fmt.Sprintf("\n[[spec]]\nid = \"item-1\"\nrefines = [\"f\"]\nstatement = \"v%d\"\nlayers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", ver)
 }
 
-// claimFingerprint は、docs/formats.md の決まった形の JSON を手で書き、その SHA-256 を返す。
-func claimFingerprint(ver int) string {
+// specFingerprint は、docs/formats.md の決まった形の JSON を手で書き、その SHA-256 を返す。
+func specFingerprint(ver int) string {
 	return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"item-1","layers":["model"],"refines":["f"],"statement":"v%d"}`, ver)))
 }
 
@@ -456,7 +456,7 @@ types = ["scenario-test"]
 	r.commit("はじめの中身", "#9")
 	r.base = r.git("rev-parse", "HEAD")
 	// マージベースより後のトレーラーのストーリーが 1 つだけだと、ほかのストーリーの --story はチェックの前の誤りになる
-	// （約束 check-story-from-commits）。モデルは、どちらのスコープ story のチェックも毎歩で比べるので、はじめに
+	// （仕様 check-story-from-commits）。モデルは、どちらのスコープ story のチェックも毎歩で比べるので、はじめに
 	// 2 つのストーリーの空のコミットを置き、トレーラーのストーリーをいつも 2 つにして、--story で選べるようにする。
 	// 空のコミットは中身を変えないので、スコープ story のチェックが見るもの（マージベースの中身と今の中身の違い、失効した承認）は変わらない
 	r.commit("ストーリー A を始める", xcheckStory["A"])
@@ -487,7 +487,7 @@ func (r *xcheckRepo) sync(st xcheckState) {
 	r.t.Helper()
 	promises := xcheckTerm
 	if n := st.content["i1"]; n > 0 {
-		promises += claimTOML(n)
+		promises += specTOML(n)
 	}
 	writeFile(r.t, r.root, ".vanda/promises.toml", promises)
 	for i, p := range xcheckPaths {
@@ -551,7 +551,7 @@ func xcheckRecord(i string, ver int, story string) string {
 		if ver == 0 {
 			return deletionAgreementTOML("spec", "item-1", "", story, name, email)
 		}
-		return agreementTOML("spec", "item-1", claimFingerprint(ver), "", story, name, email)
+		return agreementTOML("spec", "item-1", specFingerprint(ver), "", story, name, email)
 	}
 	path := xcheckPaths[i]
 	if ver == 0 {

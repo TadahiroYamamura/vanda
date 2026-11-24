@@ -83,7 +83,7 @@ func (st *storySetup) checkOnlyReads(t *testing.T) {
 	}
 }
 
-// attachmentList は、添付ファイルを、返した順に「名前 URL」で並べる（並びは本文に出てくる順。監督の決定）。
+// attachmentList は、添付ファイルを、返した順に「名前 URL」で並べる（並びは本文に出てくる順。オーナーの決定）。
 func attachmentList(got storyResponse) []string {
 	var s []string
 	for _, a := range got.Attachments {

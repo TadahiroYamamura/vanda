@@ -1,4 +1,4 @@
-# CMD-10 約束リストの形: part_of の先が用語としてあり、循環しない。約束の refines の先が、機能として約束リストにある。
+# CMD-10 約束リストの形: part_of の先が用語としてあり、循環しない。仕様の refines の先が、機能として約束リストにある。
 # @vanda:evidence promise-list-part-of
 # @vanda:evidence promise-list-subjects-exist
 # 循環していても、vanda は止まらずに回り続けることなく、エラーで止まる（回り続けると go test の時間切れで落ちる）。
@@ -56,14 +56,14 @@ commit '(test) チェックの前にコミットする'
 stderr 'promises\.toml:10: .*part_of'
 ! stderr '(?m)^panic: '
 
-# 約束の refines に約束の ID を書く
-cp cases/refines-claim.toml .vanda/promises.toml
+# 仕様の refines に仕様の ID を書く
+cp cases/refines-spec.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
 stderr 'promises\.toml:15: .*task-id-unique'
 ! stderr '(?m)^panic: '
 
-# 約束の refines の先がない
+# 仕様の refines の先がない
 cp cases/refines-missing.toml .vanda/promises.toml
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/shape.toml
@@ -392,7 +392,7 @@ detail = "task_test.go"
 [[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
--- cases/refines-claim.toml --
+-- cases/refines-spec.toml --
 [[term]]
 id = "task"
 name = "タスク"

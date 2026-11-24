@@ -341,7 +341,7 @@ func Test差分は変更前と変更後の両方があるものだけに付き�
 
 // RV-05
 // @vanda:evidence review-before-after
-func Test約束と用語と機能の差分は両方に書いた文字の項目だけを文字の単位で比べる(t *testing.T) {
+func Test仕様と用語と機能の差分は両方に書いた文字の項目だけを文字の単位で比べる(t *testing.T) {
 	t.Parallel()
 	got := setupDiff(t)
 	cases := []struct {
@@ -403,7 +403,7 @@ func Test約束と用語と機能の差分は両方に書いた文字の項目�
 	}
 }
 
-// RV-05: 約束のエビデンスの予定の、エビデンスの単位の差分（diff.evidence）。
+// RV-05: 仕様のエビデンスの予定の、エビデンスの単位の差分（diff.evidence）。
 // 手で作った例: ステージとタイプの組ごとに、変わらない・詳細が変わった・レイヤーが変わった・消した・足した、と、
 // 同じ組（test・random-check）が変更前に 2 つ、変更後に 3 つあるもの（現れた順に対応し、3 つ目は足した）。
 type evidenceMark struct {
@@ -430,7 +430,7 @@ func evidenceTOML(stage, typ string, layers []string, detail string) string {
 }
 
 // @vanda:evidence review-evidence-diff-pairing
-func Test約束のエビデンスの予定の差分はステージとタイプで対応づけ足した消した変わった変わらないを示し同じ組は現れた順に対応させる(t *testing.T) {
+func Test仕様のエビデンスの予定の差分はステージとタイプで対応づけ足した消した変わった変わらないを示し同じ組は現れた順に対応させる(t *testing.T) {
 	t.Parallel()
 	model, both := []string{"model"}, []string{"model", "db"}
 	before := evidenceDiffTerm +
@@ -480,7 +480,7 @@ func Test約束のエビデンスの予定の差分はステージとタイプ�
 	}
 	e := entryByKey(got, "ev")
 	if e == nil || isNull(e.Diff) {
-		t.Fatalf("約束 ev の diff がない: %+v", e)
+		t.Fatalf("仕様 ev の diff がない: %+v", e)
 	}
 	var d evidenceDiff
 	if err := json.Unmarshal(e.Diff, &d); err != nil {

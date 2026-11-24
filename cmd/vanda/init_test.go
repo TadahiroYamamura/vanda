@@ -1869,7 +1869,7 @@ func Test_vanda_adaptersのアダプタの名前に組み込みのアダプタ�
 	r := newInitRepo(t, "", false)
 	s := startInit(t, bin, r.root, r.g.env)
 	// 名前の質問で断らず（聞き直さず）次の質問へ進み、答えたとおりに書く。.vanda/adapters/github がないので組み込みの github が
-	// 使われ、作った後の確かめで、組み込みの github に要る repository がない誤りになり、終了コード 1 で終わる（PO の決定）
+	// 使われ、作った後の確かめで、組み込みの github に要る repository がない誤りになり、終了コード 1 で終わる（オーナーの決定）
 	s.run(initPlan{story: "カスタムアダプタ", detail: "github", adapterArgs: "--project APP", idPattern: "PROJ-[0-9]+"})
 	if code := s.wait(); code != 1 {
 		t.Errorf("終了コードが %d（組み込みの github の確かめで誤りになり 1 のはず）\n%s", code, s.stderr.String())

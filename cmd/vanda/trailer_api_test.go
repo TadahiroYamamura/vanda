@@ -30,8 +30,8 @@ func storyIDs(c trailerContext) []string {
 	return out
 }
 
-// changeClaim は、task-id-unique の文を変えたコミットを、メッセージ msg のままで作る。
-func changeClaim(t *testing.T, r *reviewRepo, statement, msg string) string {
+// changeSpec は、task-id-unique の文を変えたコミットを、メッセージ msg のままで作る。
+func changeSpec(t *testing.T, r *reviewRepo, statement, msg string) string {
 	t.Helper()
 	text := readFileString(t, r.Root, ".vanda/promises.toml")
 	const now = "タスクの ID は、すべてのタスクを通して重ならない"
@@ -102,8 +102,8 @@ func TestStoryのトレーラーが誤ったコミットがあってもAPIは200
 		t.Errorf("誤りがないときの trailerErrors が [] でない: %s", v)
 	}
 
-	two := changeClaim(t, r, "タスクの ID は、どのタスクとも重ならない", "トレーラーが 2 つ\n\nStory: #77\nStory: #78")
-	bad := changeClaim(t, r, "タスクの ID は、決して重ならない", "トレーラーが書き方に合わない\n\nStory: PROJ-1")
+	two := changeSpec(t, r, "タスクの ID は、どのタスクとも重ならない", "トレーラーが 2 つ\n\nStory: #77\nStory: #78")
+	bad := changeSpec(t, r, "タスクの ID は、決して重ならない", "トレーラーが書き方に合わない\n\nStory: PROJ-1")
 
 	var got trailerContext
 	if code, msg := s.get("/api/context", &got); code != 200 {

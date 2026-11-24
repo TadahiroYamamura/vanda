@@ -237,7 +237,7 @@ var baseFiles = map[string]string{
 	".vanda/promises.toml": basePromises,
 	"x/task_test.go":       "package x\n\n// @vanda:evidence task-unique\nfunc TestUnique(t *testing.T) {}\n",
 	"e2e/add.txtar":        "# @vanda:evidence task-unique\nexec vanda version\n-- a.txt --\n@vanda:evidence nothing\n",
-	"spec/Task.tla":        "---- MODULE Task ----\n\\* @vanda:term task\nTasks == {1, 2}\nVARIABLE tasks\nTypeOK == tasks \\subseteq Tasks\n\\* @vanda:claim task-unique\nUnique == TRUE\n====\n",
+	"spec/Task.tla":        "---- MODULE Task ----\n\\* @vanda:term task\nTasks == {1, 2}\nVARIABLE tasks\nTypeOK == tasks \\subseteq Tasks\n\\* @vanda:spec task-unique\nUnique == TRUE\n====\n",
 	"db/schema.sql":        "-- @vanda:evidence task-unique\nCREATE UNIQUE INDEX t ON task(id);\n",
 }
 
@@ -379,7 +379,7 @@ statement = "s"
 		{".vanda/promises.toml:39: ", `フラグ "maybe"`, "決まった値"},
 		{".vanda/promises.toml:42: ", `ステージ "someday"`, "決まった値"},
 		{".vanda/promises.toml:43: ", `タイプ "e2e"`, "決まった値"},
-		{".vanda/promises.toml:44: ", `エビデンスのレイヤー "db"`, "約束の layers"},
+		{".vanda/promises.toml:44: ", `エビデンスのレイヤー "db"`, "仕様の layers"},
 	})
 }
 
@@ -389,15 +389,15 @@ func TestAnnotationLinksは指す先のないIDと種類の違いと型の用語
 	r := goodRepo(t)
 	r.write(map[string]string{
 		"x/more_test.go": "package x\n\n// @vanda:evidence task\nfunc TestA(t *testing.T) {}\n\n// @vanda:sensor nothing\nfunc TestB(t *testing.T) {}\n",
-		"spec/Task.tla":  "---- MODULE Task ----\n\\* @vanda:feature add-task\nTasks == {1, 2}\nVARIABLE tasks\nTypeOK == tasks \\subseteq Tasks\n\\* @vanda:claim task-unique\nUnique == TRUE\n====\n",
+		"spec/Task.tla":  "---- MODULE Task ----\n\\* @vanda:feature add-task\nTasks == {1, 2}\nVARIABLE tasks\nTypeOK == tasks \\subseteq Tasks\n\\* @vanda:spec task-unique\nUnique == TRUE\n====\n",
 	})
 	r.commit("(test) アノテーションを誤らせる", "")
 	_, out, _ := r.run("[[check]]\nname = \"annotation-links\"\nscope = \"all\"\n", "", "")
 	expect(t, out, [][]string{
 		{"spec/Task.tla:2: ", "仕様の型 Tasks", "TypeOK", "@vanda:feature"},
 		{"spec/Task.tla:3: ", "仕様の型 Tasks", "TypeOK", "@vanda:term", "@vanda:internal"},
-		{"x/more_test.go:3: ", `@vanda:evidence の "task"`, "用語の ID", "約束の ID"},
-		{"x/more_test.go:6: ", `@vanda:sensor の "nothing"`, "約束リストの約束"},
+		{"x/more_test.go:3: ", `@vanda:evidence の "task"`, "用語の ID", "仕様の ID"},
+		{"x/more_test.go:6: ", `@vanda:sensor の "nothing"`, "約束リストの仕様"},
 	})
 }
 
@@ -409,12 +409,12 @@ func TestAgreementは提案中とフラグと承認していないファイル�
 		".vanda/promises.toml": strings.Replace(basePromises, `statement = "タスクは重ならない"`, "statement = \"タスクは決して重ならない\"\nguesses = [\"g\"]", 1),
 		"e2e/add.txtar":        "# @vanda:evidence task-unique\nexec vanda version\n",
 	})
-	r.commit("(test) 約束とシナリオを変える", "")
+	r.commit("(test) 仕様とシナリオを変える", "")
 	_, out, _ := r.run("[[check]]\nname = \"agreement\"\nscope = \"all\"\n", "", "")
 	expect(t, out, [][]string{
 		{"チェック agreement（all）: 失敗（3 件）"},
-		{".vanda/promises.toml:17: ", "約束 task-unique の今の中身", "承認", "提案中", "sha256:"},
-		{".vanda/promises.toml:20: ", "約束 task-unique", "推測（guesses）"},
+		{".vanda/promises.toml:17: ", "仕様 task-unique の今の中身", "承認", "提案中", "sha256:"},
+		{".vanda/promises.toml:20: ", "仕様 task-unique", "推測（guesses）"},
 		{"e2e/add.txtar: ", "ファイルの今の中身", "承認", "提案中", "sha256:"},
 	})
 }
@@ -435,12 +435,12 @@ func TestAgreementTargetsは約束リストにない項目か種類の違う項�
 	_, out, _ := r.run("[[check]]\nname = \"agreement-targets\"\nscope = \"all\"\n", "", "")
 	expect(t, out, [][]string{
 		{"チェック agreement-targets（all）: 失敗（8 件）"},
-		{".vanda/agreements.toml:3: ", "承認の記録", `約束 "gone"`, "指して"},
+		{".vanda/agreements.toml:3: ", "承認の記録", `仕様 "gone"`, "指して"},
 		{".vanda/agreements.toml:11: ", "承認の記録", `性質 "gone"`, "指して"},
 		{".vanda/agreements.toml:19: ", "承認の記録", `前提 "gone"`, "指して"},
 		{".vanda/agreements.toml:27: ", "承認の記録", `性質 "task"`, "指して"},
 		{".vanda/agreements.toml:35: ", "承認の記録", `前提 "no-lost-task"`, "指して"},
-		{".vanda/agreements.toml:43: ", "承認の記録", `約束 "no-lost-task"`, "指して"},
+		{".vanda/agreements.toml:43: ", "承認の記録", `仕様 "no-lost-task"`, "指して"},
 		{".vanda/agreements.toml:51: ", "承認の記録", `性質 "task-unique"`, "指して"},
 		{".vanda/agreements.toml:59: ", "承認の記録", `用語 "no-lost-task"`, "指して"},
 	})
@@ -460,9 +460,9 @@ func TestEvidencePresentはタイプに合うアノテーションのない予�
 	_, out, _ := r.run("[[check]]\nname = \"evidence-present\"\nscope = \"all\"\n", "", "")
 	expect(t, out, [][]string{
 		{"チェック evidence-present（all）: 失敗（3 件）"},
-		{".vanda/promises.toml:39: ", "約束 task-unique の guardrail のエビデンス", "ガードレールの定義", "@vanda:evidence task-unique"},
+		{".vanda/promises.toml:39: ", "仕様 task-unique の guardrail のエビデンス", "ガードレールの定義", "@vanda:evidence task-unique"},
 		{".vanda/promises.toml:49: ", "タイプ proof"},
-		{".vanda/promises.toml:54: ", "約束 task-unique の sensor のエビデンス", "types に sensor", "@vanda:sensor task-unique"},
+		{".vanda/promises.toml:54: ", "仕様 task-unique の sensor のエビデンス", "types に sensor", "@vanda:sensor task-unique"},
 	})
 }
 
@@ -710,7 +710,7 @@ func lineWith(got, prefix string, frags ...string) bool {
 	return false
 }
 
-// ---- 約束の文から作ったテスト ----
+// ---- 仕様の文から作ったテスト ----
 
 // @vanda:evidence agreements-unknown-entries-rejected
 func TestAgreementTargetsは承認の記録の決まっていない表と項目を誤りにする(t *testing.T) {
@@ -732,9 +732,9 @@ func TestAgreementTargetsは承認の記録の決まっていない表と項目�
 
 // @vanda:evidence annotation-links-kinds
 func TestAnnotationLinksは種類ごとに指す先の表が違えば全部の組み合わせで誤りにする(t *testing.T) {
-	// 種類 → 指してよい表。ID は baseFiles の用語 task・機能 add-task・約束 task-unique
-	ids := map[string]string{"term": "task", "feature": "add-task", "claim": "task-unique"}
-	okFor := map[string]string{"term": "term", "feature": "feature", "claim": "claim", "evidence": "claim", "sensor": "claim"}
+	// 種類 → 指してよい表。ID は baseFiles の用語 task・機能 add-task・仕様 task-unique
+	ids := map[string]string{"term": "task", "feature": "add-task", "spec": "task-unique"}
+	okFor := map[string]string{"term": "term", "feature": "feature", "spec": "spec", "evidence": "spec", "sensor": "spec"}
 	for kind, okTable := range okFor {
 		for table, id := range ids {
 			t.Run(kind+"が"+table, func(t *testing.T) {
@@ -762,7 +762,7 @@ func TestAnnotationLinksは種類ごとに指す先の表が違えば全部の�
 }
 
 // @vanda:evidence check-agreement-flags-left
-func TestAgreementは承認済でも約束にflagsかguessesが残っていれば誤りにする(t *testing.T) {
+func TestAgreementは承認済でも仕様にflagsかguessesが残っていれば誤りにする(t *testing.T) {
 	for name, add := range map[string]string{"flags": "flags = [\"ai-proposal\"]", "guesses": "guesses = [\"g\"]"} {
 		t.Run(name, func(t *testing.T) {
 			r := goodRepo(t)
@@ -771,7 +771,7 @@ func TestAgreementは承認済でも約束にflagsかguessesが残っていれ�
 			r.commit("(test) "+name+" を残す", "")
 			pass, out, _ := r.run("[[check]]\nname = \"agreement\"\nscope = \"all\"\n", "", "")
 			if pass || !lineWith(out, ".vanda/promises.toml:", "task-unique") {
-				t.Errorf("%s が残っているのに通った、または約束を指していない\n%s", name, out)
+				t.Errorf("%s が残っているのに通った、または仕様を指していない\n%s", name, out)
 			}
 			if strings.Contains(out, "今の中身") {
 				t.Errorf("%s だけで、今の中身が承認されていないとされた\n%s", name, out)
@@ -890,11 +890,11 @@ func TestEvidencePresentはtypesが空のannotationで読んだアノテーシ�
 	}
 }
 
-// 機能の書き方（formal が真になるかは、formal を省けば core と同じ）と、約束の model-check の予定・model_check_waiver の
-// 書き方の全部の組み合わせ。形式手法を使わない機能に model_check_waiver を書いたときは、約束で決まっていないので確かめない
+// 機能の書き方（formal が真になるかは、formal を省けば core と同じ）と、仕様の model-check の予定・model_check_waiver の
+// 書き方の全部の組み合わせ。形式手法を使わない機能に model_check_waiver を書いたときは、仕様で決まっていないので確かめない
 //
 // @vanda:evidence promise-list-formal-claims
-func TestPromiseListShapeは形式手法を使う機能を対象にする約束にmodel_checkの予定とmodel_check_waiverのどちらか一方だけを求める(t *testing.T) {
+func TestPromiseListShapeは形式手法を使う機能を対象にする仕様にmodel_checkの予定とmodel_check_waiverのどちらか一方だけを求める(t *testing.T) {
 	features := []struct {
 		name, fields string
 		formal       bool
@@ -909,8 +909,8 @@ func TestPromiseListShapeは形式手法を使う機能を対象にする約束�
 	const mc = "\n[[spec.evidence]]\nstage = \"plan\"\ntype = \"model-check\"\nlayers = [\"model\"]\n"
 	const waiver = "model_check_waiver = \"順で結果が変わらないため\"\n"
 	plans := []struct {
-		name, claim, evidence string
-		count                 int // model-check の予定と model_check_waiver の数
+		name, spec, evidence string
+		count                int // model-check の予定と model_check_waiver の数
 	}{
 		{"どちらもない", "", "", 0},
 		{"model-checkの予定だけ", "", mc, 1},
@@ -919,7 +919,7 @@ func TestPromiseListShapeは形式手法を使う機能を対象にする約束�
 	}
 	for _, f := range features {
 		for _, p := range plans {
-			if !f.formal && p.claim != "" {
+			if !f.formal && p.spec != "" {
 				continue
 			}
 			t.Run(f.name+"で"+p.name, func(t *testing.T) {
@@ -927,7 +927,7 @@ func TestPromiseListShapeは形式手法を使う機能を対象にする約束�
 				promises := "[[property]]\nid = \"no-lost-task\"\nstatement = \"登録したタスクは失われない\"\n\n" +
 					"[[term]]\nid = \"task\"\nname = \"タスク\"\ndefinition = \"やること\"\n\n" +
 					"[[feature]]\nid = \"add-task\"\nname = \"タスクの登録\"\ndefinition = \"タスクを足す\"\nrefines = [\"no-lost-task\"]\n" + f.fields + "\n" +
-					"[[spec]]\nid = \"task-unique\"\nrefines = [\"add-task\"]\nstatement = \"タスクは重ならない\"\nlayers = [\"model\"]\n" + p.claim +
+					"[[spec]]\nid = \"task-unique\"\nrefines = [\"add-task\"]\nstatement = \"タスクは重ならない\"\nlayers = [\"model\"]\n" + p.spec +
 					"\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n" + p.evidence
 				r.write(map[string]string{".vanda/promises.toml": promises})
 				r.commit("(test) 約束リストを置き換える", "")
@@ -937,7 +937,7 @@ func TestPromiseListShapeは形式手法を使う機能を対象にする約束�
 					t.Errorf("通るのは %v のはず\n%s", want, out)
 				}
 				if !want && !lineWith(out, ".vanda/promises.toml:", "task-unique", "model_check_waiver") {
-					t.Errorf("誤りが、約束 task-unique の行と model_check_waiver を示していない\n%s", out)
+					t.Errorf("誤りが、仕様 task-unique の行と model_check_waiver を示していない\n%s", out)
 				}
 			})
 		}
@@ -985,7 +985,7 @@ func TestAgreementは承認の対象のファイルをアダプタの名前で�
 	}
 }
 
-// checkNames は、約束 check-name-known と check-scope-table の文から写した、チェックの名前と書けるスコープ。
+// checkNames は、仕様 check-name-known と check-scope-table の文から写した、チェックの名前と書けるスコープ。
 var checkNames = map[string][]string{
 	"promise-list-shape": {"all"},
 	"annotation-links":   {"all"},
@@ -1195,7 +1195,7 @@ func TestAgreementTargetsは設定にagreementsを書かず既定のファイル
 		{"チェック agreement-targets（all）: 通った"},
 		{"チェック agreement（all）: 失敗（"},
 		{".vanda/promises.toml:6: ", "用語 task の今の中身", "まだ承認していません"},
-		{".vanda/promises.toml:17: ", "約束 task-unique の今の中身", "まだ承認していません"},
+		{".vanda/promises.toml:17: ", "仕様 task-unique の今の中身", "まだ承認していません"},
 	})
 	if strings.Contains(out, ".vanda/agreements.toml") {
 		t.Errorf("既定の承認の記録のファイルがないことが誤りになった\n%s", out)
@@ -1225,7 +1225,7 @@ func TestAgreementTargetsは設定のagreementsにはっきり書いたファイ
 				{"チェック agreement-targets（all）: 通った"},
 				{"チェック agreement（all）: 失敗（"},
 				{".vanda/promises.toml:6: ", "用語 task の今の中身", "まだ承認していません"},
-				{".vanda/promises.toml:17: ", "約束 task-unique の今の中身", "まだ承認していません"},
+				{".vanda/promises.toml:17: ", "仕様 task-unique の今の中身", "まだ承認していません"},
 			})
 			if strings.Contains(out, c.absent) {
 				t.Errorf("設定にはっきり書いた承認の記録のファイル %s がないことが誤りになった\n%s", c.absent, out)
@@ -1368,7 +1368,7 @@ func shapeOf(t *testing.T, r *repoT, promises string) (bool, string) {
 }
 
 // minimalPromises は、省いてよい項目をすべて省いた約束リスト。表の見出しの行は、性質が 1 行目、前提が 5 行目、用語が 9 行目、
-// 機能が 14 行目、約束が 20 行目、エビデンスが 26 行目
+// 機能が 14 行目、仕様が 20 行目、エビデンスが 26 行目
 const minimalPromises = `[[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
@@ -1401,7 +1401,7 @@ layers = ["model"]
 `
 
 // @vanda:evidence promise-list-required-field-names
-func TestPromiseListShapeは性質と前提と用語と機能と約束とエビデンスの必須の項目がなければ誤りにし省いてよい項目は省いても通す(t *testing.T) {
+func TestPromiseListShapeは性質と前提と用語と機能と仕様とエビデンスの必須の項目がなければ誤りにし省いてよい項目は省いても通す(t *testing.T) {
 	r := goodRepo(t)
 	if pass, out := shapeOf(t, r, minimalPromises); !pass {
 		t.Fatalf("省いてよい項目を省いた約束リストが通らない\n%s", out)
@@ -1422,10 +1422,10 @@ func TestPromiseListShapeは性質と前提と用語と機能と約束とエビ�
 		{"機能のname", `name = "タスクの登録"`, "name", 14},
 		{"機能のdefinition", `definition = "タスクを足す"`, "definition", 14},
 		{"機能のrefines", `refines = ["no-lost-task"]`, "refines", 14},
-		{"約束のid", `id = "c"`, "id", 20},
-		{"約束のrefines", `refines = ["add-task"]`, "refines", 20},
-		{"約束のstatement", `statement = "s"`, "statement", 20},
-		{"約束のlayers", "statement = \"s\"\nlayers = [\"model\"]", "layers", 20},
+		{"仕様のid", `id = "c"`, "id", 20},
+		{"仕様のrefines", `refines = ["add-task"]`, "refines", 20},
+		{"仕様のstatement", `statement = "s"`, "statement", 20},
+		{"仕様のlayers", "statement = \"s\"\nlayers = [\"model\"]", "layers", 20},
 		{"エビデンスのstage", `stage = "implementation"`, "stage", 26},
 		{"エビデンスのtype", `type = "unit-test"`, "type", 26},
 		{"エビデンスのlayers", "type = \"unit-test\"\nlayers = [\"model\"]", "layers", 26},
@@ -1443,14 +1443,14 @@ func TestPromiseListShapeは性質と前提と用語と機能と約束とエビ�
 		})
 	}
 	// evidence は項目の行でなく表なので、[[spec.evidence]] の表をまるごと消す
-	t.Run("約束のevidence", func(t *testing.T) {
+	t.Run("仕様のevidence", func(t *testing.T) {
 		const table = "\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n"
 		src := strings.Replace(minimalPromises, table, "", 1)
 		if src == minimalPromises {
 			t.Fatal("約束リストに [[spec.evidence]] の表がない")
 		}
 		if pass, out := shapeOf(t, r, src); pass || !lineWith(out, ".vanda/promises.toml:20: ", "evidence", "ありません") {
-			t.Errorf("evidence がない約束が、表の見出しの行（20 行目）を指して evidence がないことを示す誤りにならない\n%s", out)
+			t.Errorf("evidence がない仕様が、表の見出しの行（20 行目）を指して evidence がないことを示す誤りにならない\n%s", out)
 		}
 	})
 }
@@ -1465,15 +1465,15 @@ func keepFirstLine(s string) string {
 }
 
 // @vanda:evidence promise-list-non-empty
-func TestPromiseListShapeは機能と約束のrefinesと約束のlayersとevidenceとエビデンスのlayersが空なら誤りにする(t *testing.T) {
+func TestPromiseListShapeは機能と仕様のrefinesと仕様のlayersとevidenceとエビデンスのlayersが空なら誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	cases := []struct {
 		name, from, to, prefix, key string
 	}{
 		{"機能のrefines", `refines = ["no-lost-task"]`, `refines = []`, ".vanda/promises.toml:18: ", "refines"},
-		{"約束のrefines", `refines = ["add-task"]`, `refines = []`, ".vanda/promises.toml:22: ", "refines"},
-		{"約束のlayers", "statement = \"s\"\nlayers = [\"model\"]", "statement = \"s\"\nlayers = []", ".vanda/promises.toml:24: ", "layers"},
-		{"約束のevidence", "layers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", "layers = [\"model\"]\nevidence = []\n", ".vanda/promises.toml:25: ", "evidence"},
+		{"仕様のrefines", `refines = ["add-task"]`, `refines = []`, ".vanda/promises.toml:22: ", "refines"},
+		{"仕様のlayers", "statement = \"s\"\nlayers = [\"model\"]", "statement = \"s\"\nlayers = []", ".vanda/promises.toml:24: ", "layers"},
+		{"仕様のevidence", "layers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", "layers = [\"model\"]\nevidence = []\n", ".vanda/promises.toml:25: ", "evidence"},
 		{"エビデンスのlayers", "type = \"unit-test\"\nlayers = [\"model\"]", "type = \"unit-test\"\nlayers = []", ".vanda/promises.toml:29: ", "layers"},
 	}
 	for _, c := range cases {
@@ -1507,7 +1507,7 @@ func TestPromiseListShapeは約束リストの項目が決まった型でなけ�
 		{"用語のassumesが文字列", `definition = "やること"`, "definition = \"やること\"\nassumes = \"disk-works\"", 13},
 		{"機能のrefinesが文字列", `refines = ["no-lost-task"]`, `refines = "no-lost-task"`, 18},
 		{"機能のrefinesに整数", `refines = ["no-lost-task"]`, `refines = [1]`, 18},
-		{"約束のassumesが文字列", `statement = "s"`, "statement = \"s\"\nassumes = \"disk-works\"", 24},
+		{"仕様のassumesが文字列", `statement = "s"`, "statement = \"s\"\nassumes = \"disk-works\"", 24},
 		{"用語のidが整数", `id = "task"`, `id = 1`, 10},
 		{"用語のnameが真偽", `name = "タスク"`, `name = true`, 11},
 		{"用語のdefinitionが配列", `definition = "やること"`, `definition = ["やること"]`, 12},
@@ -1515,15 +1515,15 @@ func TestPromiseListShapeは約束リストの項目が決まった型でなけ�
 		{"機能のcoreが文字列", `definition = "タスクを足す"`, "definition = \"タスクを足す\"\ncore = \"yes\"", 18},
 		{"機能のformalが整数", `definition = "タスクを足す"`, "definition = \"タスクを足す\"\nformal = 1", 18},
 		{"機能のformal_waiverが真偽", `definition = "タスクを足す"`, "definition = \"タスクを足す\"\ncore = true\nformal = false\nformal_waiver = true", 20},
-		{"約束のrefinesが文字列", `refines = ["add-task"]`, `refines = "add-task"`, 22},
-		{"約束のrefinesに整数", `refines = ["add-task"]`, `refines = [1]`, 22},
-		{"約束のstatementが整数", `statement = "s"`, `statement = 1`, 23},
-		{"約束のlayersが文字列", "statement = \"s\"\nlayers = [\"model\"]", "statement = \"s\"\nlayers = \"model\"", 24},
-		{"約束のrationaleが整数", `statement = "s"`, "statement = \"s\"\nrationale = 1", 24},
-		{"約束のconditionが配列", `statement = "s"`, "statement = \"s\"\ncondition = [\"c\"]", 24},
-		{"約束のflagsが文字列", `statement = "s"`, "statement = \"s\"\nflags = \"ai-proposal\"", 24},
-		{"約束のguessesが表", `statement = "s"`, "statement = \"s\"\nguesses = { a = \"g\" }", 24},
-		{"約束のevidenceが文字列", "layers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", "layers = [\"model\"]\nevidence = \"unit-test\"\n", 25},
+		{"仕様のrefinesが文字列", `refines = ["add-task"]`, `refines = "add-task"`, 22},
+		{"仕様のrefinesに整数", `refines = ["add-task"]`, `refines = [1]`, 22},
+		{"仕様のstatementが整数", `statement = "s"`, `statement = 1`, 23},
+		{"仕様のlayersが文字列", "statement = \"s\"\nlayers = [\"model\"]", "statement = \"s\"\nlayers = \"model\"", 24},
+		{"仕様のrationaleが整数", `statement = "s"`, "statement = \"s\"\nrationale = 1", 24},
+		{"仕様のconditionが配列", `statement = "s"`, "statement = \"s\"\ncondition = [\"c\"]", 24},
+		{"仕様のflagsが文字列", `statement = "s"`, "statement = \"s\"\nflags = \"ai-proposal\"", 24},
+		{"仕様のguessesが表", `statement = "s"`, "statement = \"s\"\nguesses = { a = \"g\" }", 24},
+		{"仕様のevidenceが文字列", "layers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", "layers = [\"model\"]\nevidence = \"unit-test\"\n", 25},
 		{"エビデンスのstageが整数", `stage = "implementation"`, `stage = 1`, 27},
 		{"エビデンスのtypeが真偽", `type = "unit-test"`, `type = true`, 28},
 		{"エビデンスのlayersが文字列", "type = \"unit-test\"\nlayers = [\"model\"]", "type = \"unit-test\"\nlayers = \"model\"", 29},

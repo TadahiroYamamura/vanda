@@ -11,13 +11,13 @@ import (
 // GET /api/review の項目のうち、RV-04（フラグ）・RV-10（まとまりと並び）・RV-05（変更前と変更後の中身）と、GET /api/context。
 // リポジトリは、この 3 つを一度に見られるように組み立てる（newFieldsRepo）。
 
-// 約束 flag-0〜flag-7 は、番号の 3 つのビットで、AI 案（1）・推測（2）・前の承認（4）の有無を表す（8 通りを全部回す）。
+// 仕様 flag-0〜flag-7 は、番号の 3 つのビットで、AI 案（1）・推測（2）・前の承認（4）の有無を表す（8 通りを全部回す）。
 // 前の承認のあるものは、main で今と違う中身を承認してある。
 const (
-	bitAI      = 1
-	bitGuess   = 2
-	bitAgreed  = 4
-	flagClaims = 8
+	bitAI     = 1
+	bitGuess  = 2
+	bitAgreed = 4
+	flagSpecs = 8
 )
 
 const fieldsConfig = `version = %q
@@ -53,7 +53,7 @@ paths = ["db/*.sql"]
 base = "main"
 `
 
-func fieldsFlagClaim(i int, story bool) string {
+func fieldsFlagSpec(i int, story bool) string {
 	var b strings.Builder
 	statement := "v0"
 	if story {
@@ -88,13 +88,13 @@ statement = "性質の文"
 [[feature]]
 id = "f-keep"
 name = "変えない機能"
-definition = "約束が refines する機能"
+definition = "仕様が refines する機能"
 refines = ["p"]
 
 [[term]]
 id = "t-keep"
 name = "変えない用語"
-definition = "約束の対象"
+definition = "仕様の対象"
 
 [[term]]
 id = "t-mod"
@@ -124,7 +124,7 @@ refines = ["p"]
 [[spec]]
 id = "z-cli"
 refines = ["f-keep"]
-statement = "CLI の約束"
+statement = "CLI の仕様"
 layers = ["cli", "model"]
 
 [[spec.evidence]]
@@ -135,7 +135,7 @@ layers = ["cli", "model"]
 [[spec]]
 id = "a-db"
 refines = ["f-keep"]
-statement = "DB の約束"
+statement = "DB の仕様"
 layers = ["db"]
 
 [[spec.evidence]]
@@ -183,13 +183,13 @@ statement = "性質の文"
 [[feature]]
 id = "f-keep"
 name = "変えない機能"
-definition = "約束が refines する機能"
+definition = "仕様が refines する機能"
 refines = ["p"]
 
 [[term]]
 id = "t-keep"
 name = "変えない用語"
-definition = "約束の対象"
+definition = "仕様の対象"
 
 [[term]]
 id = "t-mod"
@@ -216,7 +216,7 @@ refines = ["p"]
 [[spec]]
 id = "z-cli"
 refines = ["f-keep"]
-statement = "CLI の約束（改）"
+statement = "CLI の仕様（改）"
 layers = ["cli", "model"]
 
 [[spec.evidence]]
@@ -227,7 +227,7 @@ layers = ["cli", "model"]
 [[spec]]
 id = "a-db"
 refines = ["f-keep"]
-statement = "DB の約束（改）"
+statement = "DB の仕様（改）"
 rationale = "理由"
 condition = "条件"
 assumes = ["u-mod", "u-new"]
@@ -254,7 +254,7 @@ layers = ["model"]
 [[spec]]
 id = "c-new"
 refines = ["f-keep"]
-statement = "足した約束"
+statement = "足した仕様"
 rationale = "足した理由"
 condition = "足した条件"
 layers = ["db", "cli"]
@@ -327,9 +327,9 @@ func newFieldsRepo(t *testing.T, version string) *fieldsRepo {
 	base.WriteString(fieldsBaseRest)
 	story.WriteString(fieldsStoryRest)
 	var agreements strings.Builder
-	for i := 0; i < flagClaims; i++ {
-		base.WriteString(fieldsFlagClaim(i, false))
-		story.WriteString(fieldsFlagClaim(i, true))
+	for i := 0; i < flagSpecs; i++ {
+		base.WriteString(fieldsFlagSpec(i, false))
+		story.WriteString(fieldsFlagSpec(i, true))
 		if i&bitAgreed != 0 {
 			agreements.WriteString(agreementTOML("spec", fmt.Sprintf("flag-%d", i), fieldsFlagFP(i, "v0"), "", "#1", "テスト担当", "tester@example.com"))
 		}
@@ -347,7 +347,7 @@ func newFieldsRepo(t *testing.T, version string) *fieldsRepo {
 	writeFile(t, root, "e2e/b.txtar", fieldsScenarioBase)
 	writeFile(t, root, "db/a.sql", fieldsSQLBase)
 	writeFile(t, root, "spec/M.tla", fieldsTLA)
-	r.g.commitAll("はじめの約束を置く", "#1")
+	r.g.commitAll("はじめの仕様を置く", "#1")
 
 	r.g.run("switch", "-q", "-c", reviewBranch)
 	writeFile(t, root, ".vanda/promises.toml", story.String())
@@ -357,7 +357,7 @@ func newFieldsRepo(t *testing.T, version string) *fieldsRepo {
 	writeFile(t, root, "e2e/a.txtar", fieldsNewScenario)
 	writeFile(t, root, "db/a.sql", fieldsSQLStory)
 	r.g.run("rm", "-q", "spec/M.tla")
-	r.g.commitAll("約束と用語と機能とファイルを変える", "#24")
+	r.g.commitAll("仕様と用語と機能とファイルを変える", "#24")
 	return &fieldsRepo{r}
 }
 
@@ -381,10 +381,10 @@ func setupFields(t *testing.T) (string, *fieldsRepo, *vandaServer, reviewRespons
 
 // RV-04
 // @vanda:evidence review-flags
-func Testフラグは約束のflagsとguessesと前の承認から決まった順に立つ(t *testing.T) {
+func Testフラグは仕様のflagsとguessesと前の承認から決まった順に立つ(t *testing.T) {
 	t.Parallel()
 	_, _, _, got := setupFields(t)
-	for i := 0; i < flagClaims; i++ {
+	for i := 0; i < flagSpecs; i++ {
 		id := fmt.Sprintf("flag-%d", i)
 		want := []string{}
 		if i&bitAI != 0 {
@@ -425,11 +425,11 @@ func Testフラグは約束のflagsとguessesと前の承認から決まった�
 }
 
 // RV-10・RV-02
-// z-cli（layers が cli・model）と c-new（layers が db・cli）で、2 つ以上のレイヤーを持つ約束が最初のレイヤーのまとまりに入ることを見る
+// z-cli（layers が cli・model）と c-new（layers が db・cli）で、2 つ以上のレイヤーを持つ仕様が最初のレイヤーのまとまりに入ることを見る
 // @vanda:evidence review-numbering
 // @vanda:evidence review-order
 // @vanda:evidence review-group-first-layer
-func Test一覧は性質と前提と用語と機能と設定のレイヤーの順の約束とファイルのまとまりに分かれその中はIDか場所の順に並びその順に通し番号が付く(t *testing.T) {
+func Test一覧は性質と前提と用語と機能と設定のレイヤーの順の仕様とファイルのまとまりに分かれその中はIDか場所の順に並びその順に通し番号が付く(t *testing.T) {
 	t.Parallel()
 	_, _, _, got := setupFields(t)
 	want := []string{"properties p-del", "properties p-mod", "properties p-new", "truths u-del", "truths u-mod", "truths u-new",
@@ -480,8 +480,8 @@ func Test変更前と変更後の中身は約束リストに書いたとおり�
 		key, before, after string
 	}{
 		{"a-db",
-			`{"statement":[{"text":"DB の約束"}],"rationale":null,"condition":null,"refines":["f-keep"],"assumes":[],"layers":["db"],"evidence":[{"stage":"implementation","type":"guardrail","layers":["db"],"detail":null}],"flags":[],"guesses":[],"modelCheckWaiver":null}`,
-			`{"statement":[{"text":"DB の約束（改）"}],"rationale":[{"text":"理由"}],"condition":[{"text":"条件"}],"refines":["f-keep"],"assumes":["u-mod","u-new"],"layers":["db"],"evidence":[{"stage":"implementation","type":"guardrail","layers":["db"],"detail":[{"text":"制約で拒む"}]}],"flags":[],"guesses":[],"modelCheckWaiver":null}`},
+			`{"statement":[{"text":"DB の仕様"}],"rationale":null,"condition":null,"refines":["f-keep"],"assumes":[],"layers":["db"],"evidence":[{"stage":"implementation","type":"guardrail","layers":["db"],"detail":null}],"flags":[],"guesses":[],"modelCheckWaiver":null}`,
+			`{"statement":[{"text":"DB の仕様（改）"}],"rationale":[{"text":"理由"}],"condition":[{"text":"条件"}],"refines":["f-keep"],"assumes":["u-mod","u-new"],"layers":["db"],"evidence":[{"stage":"implementation","type":"guardrail","layers":["db"],"detail":[{"text":"制約で拒む"}]}],"flags":[],"guesses":[],"modelCheckWaiver":null}`},
 		{"flag-3",
 			`{"statement":[{"text":"v0"}],"rationale":null,"condition":null,"refines":["f-keep"],"assumes":[],"layers":["model"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["model"],"detail":null}],"flags":[],"guesses":[],"modelCheckWaiver":null}`,
 			`{"statement":[{"text":"v1"}],"rationale":null,"condition":null,"refines":["f-keep"],"assumes":[],"layers":["model"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["model"],"detail":null}],"flags":["ai-proposal"],"guesses":[[{"text":"確かめていない"}]],"modelCheckWaiver":null}`},
@@ -494,7 +494,7 @@ func Test変更前と変更後の中身は約束リストに書いたとおり�
 		{"spec/M.tla", fmt.Sprintf(`{"text":%q}`, fieldsTLA), `null`},
 		{"e2e/a.txtar", `null`, fmt.Sprintf(`{"text":%q}`, fieldsNewScenario)},
 		{"c-new", `null`,
-			`{"statement":[{"text":"足した約束"}],"rationale":[{"text":"足した理由"}],"condition":[{"text":"足した条件"}],"refines":["f-keep"],"assumes":[],"layers":["db","cli"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["db","cli"],"detail":[{"text":"表の制約で確かめる"}]}],"flags":[],"guesses":[[{"text":"足した推測 1"}],[{"text":"足した推測 2"}]],"modelCheckWaiver":null}`},
+			`{"statement":[{"text":"足した仕様"}],"rationale":[{"text":"足した理由"}],"condition":[{"text":"足した条件"}],"refines":["f-keep"],"assumes":[],"layers":["db","cli"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["db","cli"],"detail":[{"text":"表の制約で確かめる"}]}],"flags":[],"guesses":[[{"text":"足した推測 1"}],[{"text":"足した推測 2"}]],"modelCheckWaiver":null}`},
 		{"t-new", `null`, `{"name":"足した用語","definition":[{"text":"足した定義"}],"partOf":"t-keep","assumes":[]}`},
 		// 性質と前提（docs/formats.md の before・after の表）
 		{"p-mod", `{"statement":[{"text":"前の性質"}],"rationale":null,"refines":[],"assumes":[]}`,

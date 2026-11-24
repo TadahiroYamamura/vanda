@@ -38,7 +38,7 @@ func (e rvEntry) String() string {
 
 type rvItem struct {
 	kind   string            // term・feature・spec・property・truth
-	fields map[string]string // id のほかの、変えられる項目。約束のエビデンスの detail は "evidence.detail"
+	fields map[string]string // id のほかの、変えられる項目。仕様のエビデンスの detail は "evidence.detail"
 	file   int               // どの約束リストのファイルに書くか（書き方だけの違いなので、一覧には効かない）
 }
 
@@ -99,7 +99,7 @@ func (s rvState) clone() rvState {
 // どの操作も変えない用語。一覧には出ない。
 const rvBaseTerm = "base"
 
-// 約束が refines する機能と、機能が refines する性質。どの操作も変えないので、最初のコミットの後は一覧に出ない。
+// 仕様が refines する機能と、機能が refines する性質。どの操作も変えないので、最初のコミットの後は一覧に出ない。
 const (
 	rvBaseFeature  = "base-feature"
 	rvBaseProperty = "base-property"
@@ -141,8 +141,8 @@ type rvVal struct {
 	body string
 }
 
-// rvKeyed は、状態を一覧のキーごとの中身にする。約束・用語・機能のキーは "item:<ID>"、ファイルのキーは "file:<場所>"。
-// 約束・用語・機能の中身は、書き方によらない形（項目の名前の順に並べたもの）にする。
+// rvKeyed は、状態を一覧のキーごとの中身にする。仕様・用語・機能のキーは "item:<ID>"、ファイルのキーは "file:<場所>"。
+// 仕様・用語・機能の中身は、書き方によらない形（項目の名前の順に並べたもの）にする。
 func rvKeyed(s rvState) map[string]rvVal {
 	m := map[string]rvVal{}
 	for id, it := range s.items {

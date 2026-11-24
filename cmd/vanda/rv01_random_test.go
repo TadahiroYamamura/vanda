@@ -19,7 +19,7 @@ import (
 // 一覧を API から読んで比べるのは、API の形が docs/formats.md に書かれてから足す。
 
 var (
-	rvClaimIDs    = []string{"c-a", "c-b", "c-c", "c-d"}
+	rvSpecIDs     = []string{"c-a", "c-b", "c-c", "c-d"}
 	rvTermIDs     = []string{"t-a", "t-b", "t-c", "t-d"}
 	rvFeatureIDs  = []string{"f-a", "f-b", "f-c", "f-d"}
 	rvPropertyIDs = []string{"p-a", "p-b", "p-c", "p-d"}
@@ -30,7 +30,7 @@ var (
 func rvIDs(kind string) []string {
 	switch kind {
 	case "spec":
-		return rvClaimIDs
+		return rvSpecIDs
 	case "term":
 		return rvTermIDs
 	case "property":

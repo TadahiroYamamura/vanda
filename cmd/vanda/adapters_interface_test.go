@@ -16,7 +16,7 @@ import (
 )
 
 // vanda と外のもの（カスタムアダプタ、設定に書いたファイル、GitHub の API）との境目の振る舞い。
-// ビルドした vanda を一時的な git のリポジトリで動かし、外から確かめる。期待値は約束の文と docs/formats.md から書いた。
+// ビルドした vanda を一時的な git のリポジトリで動かし、外から確かめる。期待値は仕様の文と docs/formats.md から書いた。
 
 // ifaceRepo は、設定（[[layer]] の後に extra を足したもの）と、files（場所 → 中身）と、
 // .vanda/adapters/ の実行できるアダプタ（名前 → シェルのスクリプトの本体）を置いた git のリポジトリを作る。
@@ -80,13 +80,13 @@ func Test_vanda_adaptersのアダプタは直下のファイルとディレク�
 	if err != nil {
 		t.Fatal(err)
 	}
-	files := map[string]string{"ext/a.ext": "@vanda:evidence no-such-claim\n"}
+	files := map[string]string{"ext/a.ext": "@vanda:evidence no-such-spec\n"}
 	t.Run("ファイル", func(t *testing.T) {
 		t.Parallel()
 		root := ifaceRepo(t, version, annotationRule("file-adapter", ""), files, map[string]string{"file-adapter": answerLine1})
 		newRVGit(t, root).commitAll("(test) チェックの前にコミットする", "")
 		code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml")
-		if code != 1 || !strings.Contains(errs, "ext/a.ext:1: ") || !strings.Contains(errs, "no-such-claim") {
+		if code != 1 || !strings.Contains(errs, "ext/a.ext:1: ") || !strings.Contains(errs, "no-such-spec") {
 			t.Errorf("ファイルのアダプタが動いていない（%d）\n%s", code, errs)
 		}
 	})
@@ -95,7 +95,7 @@ func Test_vanda_adaptersのアダプタは直下のファイルとディレク�
 		root := ifaceRepo(t, version, annotationRule("dir-adapter", ""), files, map[string]string{"dir-adapter/run": answerLine1, "dir-adapter/other": "exit 9\n"})
 		newRVGit(t, root).commitAll("(test) チェックの前にコミットする", "")
 		code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml")
-		if code != 1 || !strings.Contains(errs, "ext/a.ext:1: ") || !strings.Contains(errs, "no-such-claim") {
+		if code != 1 || !strings.Contains(errs, "ext/a.ext:1: ") || !strings.Contains(errs, "no-such-spec") {
 			t.Errorf("ディレクトリの run が動いていない（%d）\n%s", code, errs)
 		}
 	})
@@ -158,7 +158,7 @@ func Test_vanda_adaptersのアダプタがannotationにfalseを返した行は�
 		t.Fatal(err)
 	}
 	// 1 行目は書き方が誤り（ID が 2 つ・決まっていない種類）、2 行目は約束リストにない ID。どちらも false を返す
-	root := ifaceRepo(t, version, annotationRule("not-ann", ""), map[string]string{"ext/a.ext": "@vanda:foo a b\n@vanda:evidence no-such-claim\n"},
+	root := ifaceRepo(t, version, annotationRule("not-ann", ""), map[string]string{"ext/a.ext": "@vanda:foo a b\n@vanda:evidence no-such-spec\n"},
 		map[string]string{"not-ann": "cat >/dev/null\nprintf '%s' '{\"names\":[{\"line\":1,\"annotation\":false},{\"line\":2,\"annotation\":false}]}'\n"})
 	newRVGit(t, root).commitAll("(test) チェックの前にコミットする", "")
 	if code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/links.toml"); code != 0 {
@@ -269,7 +269,7 @@ func Test設定にはっきり書いた約束リストのファイルがなけ�
 }
 
 // CM-09: 設定の promises のパターンにマッチするファイルを、すべて約束リストとして読む。
-// a.toml の約束は b.toml の機能を refines するので、b.toml を読まなければ refines の先がない誤りになる
+// a.toml の仕様は b.toml の機能を refines するので、b.toml を読まなければ refines の先がない誤りになる
 // @vanda:evidence promise-list-reads-all-patterns
 func Test設定のpromisesのパターンにマッチするファイルをすべて約束リストとして読む(t *testing.T) {
 	t.Parallel()
@@ -569,9 +569,9 @@ func Test_vanda_adaptersのアダプタがtimeoutを過ぎたらどのアダプ�
 }
 
 // RV: 画面の API でも、アダプタが timeout を過ぎたら止めて、どのアダプタかを書いたタイムアウトの誤りを返す
-// （レスポンスを返さずに待ち続けることがない）。約束の詳細はエビデンスを探すのでアノテーションを読む
+// （レスポンスを返さずに待ち続けることがない）。仕様の詳細はエビデンスを探すのでアノテーションを読む
 // @vanda:evidence project-adapter-annotation-timeout
-func Test_vanda_adaptersのアダプタがtimeoutを過ぎたら約束の詳細のAPIがどのアダプタかを書いたタイムアウトの誤りを返す(t *testing.T) {
+func Test_vanda_adaptersのアダプタがtimeoutを過ぎたら仕様の詳細のAPIがどのアダプタかを書いたタイムアウトの誤りを返す(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)

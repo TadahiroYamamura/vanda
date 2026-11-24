@@ -52,7 +52,7 @@ func TestItemFingerprintは書き方の違いで変わらずflagsとguessesを�
 }
 
 // @vanda:evidence fingerprint-excludes-flags
-func TestItemFingerprintは約束のエビデンスを含めフラグを除く(t *testing.T) {
+func TestItemFingerprintは仕様のエビデンスを含めフラグを除く(t *testing.T) {
 	const want = "sha256:60a6817471d20202dec15842a21784e3431a7085ffe28a8eaec1faf3b9f0fcf9"
 	root, files := writeFiles(t, map[string]string{".vanda/promises.toml": `[[spec]]
 id = "c"
@@ -71,7 +71,7 @@ layers = ["model"]
 	if errs != nil {
 		t.Fatal(errs)
 	}
-	got, err := ItemFingerprint(l.Claims[0].Raw)
+	got, err := ItemFingerprint(l.Specs[0].Raw)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +218,7 @@ func TestLoadは消したことへの承認の記録をfingerprintの代わり�
 		t.Errorf("ファイルを消したことへの承認の記録: %+v", a)
 	}
 	if a := r.Agreements[1]; !a.Deleted || a.Fingerprint != "" || a.Kind != "spec" || a.Key != "gone" || a.Path != "" {
-		t.Errorf("約束を消したことへの承認の記録: %+v", a)
+		t.Errorf("仕様を消したことへの承認の記録: %+v", a)
 	}
 	cases := []struct {
 		name string
@@ -226,11 +226,11 @@ func TestLoadは消したことへの承認の記録をfingerprintの代わり�
 		want bool
 	}{
 		{"消したファイルの場所への、消したことへの承認", r.DeletionAgreed("file", "e2e/old.txtar"), true},
-		{"消した約束への、消したことへの承認", r.DeletionAgreed("spec", "gone"), true},
+		{"消した仕様への、消したことへの承認", r.DeletionAgreed("spec", "gone"), true},
 		{"ほかの場所には、消したことへの承認がない", r.DeletionAgreed("file", "e2e/other.txtar"), false},
 		{"種類が違えば、消したことへの承認がない", r.DeletionAgreed("term", "gone"), false},
 		{"消したことへの承認は、中身への承認に数えない（ファイル）", r.Agreed("file", "e2e/old.txtar", fpA), false},
-		{"消したことへの承認は、中身への承認に数えない（約束）", r.Agreed("spec", "gone", fpA), false},
+		{"消したことへの承認は、中身への承認に数えない（仕様）", r.Agreed("spec", "gone", fpA), false},
 		{"消したことへの承認は、承認したことに数えない", r.EverAgreed("spec", "gone"), false},
 	}
 	for _, c := range cases {
@@ -252,7 +252,7 @@ func TestLoadは消したことへの承認の記録の形の誤りを行の付�
 		{"ファイルの記録の key がフィンガープリント", "[[agreement]]\nkind = \"file\"\nkey = \"" + fpA + "\"\ndeleted = true\npath = \"e2e/a.txtar\"\n" + userLine, ":3: ", []string{"key"}},
 		{"fingerprint と deleted の両方がある", "[[agreement]]\nkind = \"spec\"\nkey = \"c\"\nfingerprint = \"" + fpA + "\"\ndeleted = true\n" + userLine, "", []string{"deleted"}},
 		{"deleted が false", "[[agreement]]\nkind = \"spec\"\nkey = \"c\"\ndeleted = false\n" + userLine, ":4: ", []string{"deleted"}},
-		{"約束の記録に path がある", "[[agreement]]\nkind = \"spec\"\nkey = \"c\"\ndeleted = true\npath = \"x\"\n" + userLine, ":5: ", []string{"path"}},
+		{"仕様の記録に path がある", "[[agreement]]\nkind = \"spec\"\nkey = \"c\"\ndeleted = true\npath = \"x\"\n" + userLine, ":5: ", []string{"path"}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

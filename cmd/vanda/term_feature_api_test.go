@@ -44,8 +44,8 @@ statement = "前の前提"
 `
 
 // story-24 の約束リスト（今の約束リスト）。
-// 子の用語（t-child-b・t-child-a）と約束（c-z・c-a・c-m）は、ID の順と書いた順が違うように並べる。
-// 約束の refines は、機能ごとに、refines する約束がない・1 つ・2 つになるように書く。
+// 子の用語（t-child-b・t-child-a）と仕様（c-z・c-a・c-m）は、ID の順と書いた順が違うように並べる。
+// 仕様の refines は、機能ごとに、refines する仕様がない・1 つ・2 つになるように書く。
 // 機能は core・formal の書き方の組み合わせ（両方省く、core だけ書く、formal だけ書く、両方書く）を全部置く
 const tfAPIStory = `[[term]]
 id = "t-root"
@@ -250,7 +250,7 @@ type tfSpecLinks struct {
 	Assumes []tfLink `json:"assumes"`
 }
 
-type tfClaim struct {
+type tfSpec struct {
 	ID        string `json:"id"`
 	Statement frags  `json:"statement"`
 }
@@ -277,7 +277,7 @@ type tfFeature struct {
 	Core       *bool              `json:"core"`
 	Formal     *bool              `json:"formal"`
 	Refines    []tfLink           `json:"refines"`
-	Specs      []tfClaim          `json:"specs"`
+	Specs      []tfSpec           `json:"specs"`
 	Refs       map[string]refInfo `json:"refs"`
 }
 
@@ -295,7 +295,7 @@ func setupTFAPI(t *testing.T) *vandaServer {
 	writeFile(t, root, ".vanda/agreements.toml",
 		agreementTOML("property", "p-top", sha256Hex([]byte(tfPTopOld)), "", "#1", "テスト担当", "tester@example.com")+
 			agreementTOML("truth", "tr-b", sha256Hex([]byte(tfTruthBOld)), "", "#1", "テスト担当", "tester@example.com"))
-	g.commitAll("はじめの約束を置く", "#1")
+	g.commitAll("はじめの仕様を置く", "#1")
 	g.run("switch", "-q", "-c", "story-24")
 	writeFile(t, root, ".vanda/promises.toml", tfAPIStory)
 	g.commitAll("用語と機能を足す", "#24")
@@ -322,7 +322,7 @@ func setupTFAPI(t *testing.T) *vandaServer {
 	return startServe(t, bin, root, g.env)
 }
 
-func wantSpecs(t *testing.T, where string, got []tfClaim, want []tfClaim) {
+func wantSpecs(t *testing.T, where string, got []tfSpec, want []tfSpec) {
 	t.Helper()
 	if got == nil {
 		t.Errorf("%s の specs が null（なければ [] のはず）", where)
@@ -428,7 +428,7 @@ func Test用語の詳細は名前とIDとセグメントに分けた定義と親
 	}
 }
 
-// 性質と前提は名前を持たないので、参照は ID に置き換えて見せる（約束と同じ）。refs の中身は docs/formats.md の「セグメントの配列」の表
+// 性質と前提は名前を持たないので、参照は ID に置き換えて見せる（仕様と同じ）。refs の中身は docs/formats.md の「セグメントの配列」の表
 func Test性質と前提への参照はIDに置き換えて見せrefsに種類と文を返す(t *testing.T) {
 	t.Parallel()
 	s := setupTFAPI(t)
@@ -447,7 +447,7 @@ func Test性質と前提への参照はIDに置き換えて見せrefsに種類�
 // @vanda:evidence feature-page-content
 // @vanda:evidence term-feature-page-claims
 // @vanda:evidence reference-shown
-func Test機能の詳細は名前とIDとセグメントに分けた定義とコア機能か形式手法を使う機能かとrefinesの先とそれをrefinesする約束を書いた順に返す(t *testing.T) {
+func Test機能の詳細は名前とIDとセグメントに分けた定義とコア機能か形式手法を使う機能かとrefinesの先とそれをrefinesする仕様を書いた順に返す(t *testing.T) {
 	t.Parallel()
 	s := setupTFAPI(t)
 
@@ -457,14 +457,14 @@ func Test機能の詳細は名前とIDとセグメントに分けた定義とコ
 		definition   frags
 		core, formal bool
 		refines      []tfLink
-		claims       []tfClaim
+		specs        []tfSpec
 		refs         []string
 	}{
 		{"f-plain", "ふつうの機能", fragsOf("タスク>t-root", "を見る"), false, false, []tfLink{link("property", "p", "")},
-			[]tfClaim{{ID: "c-m", Statement: fragsOf("コアの機能>f-core", "は", "c-a>c-a", "の後に", "形式手法を使う機能の例>f-formal", "を使う")}},
+			[]tfSpec{{ID: "c-m", Statement: fragsOf("コアの機能>f-core", "は", "c-a>c-a", "の後に", "形式手法を使う機能の例>f-formal", "を使う")}},
 			[]string{"t-root", "f-core", "c-a", "f-formal"}},
 		{"f-core", "コアの機能", fragsOf("ふつうの機能>f-plain", "より大事"), true, true, []tfLink{link("property", "p-leaf", ""), link("property", "p", "")},
-			[]tfClaim{
+			[]tfSpec{
 				{ID: "c-z", Statement: fragsOf("タスクの ID>t-mid", "は重ならない")},
 				{ID: "c-m", Statement: fragsOf("コアの機能>f-core", "は", "c-a>c-a", "の後に", "形式手法を使う機能の例>f-formal", "を使う")},
 			},
@@ -472,7 +472,7 @@ func Test機能の詳細は名前とIDとセグメントに分けた定義とコ
 		{"f-core-noformal", "形式手法を使わないコアの機能", textOf("大事だが形で確かめない"), true, false, []tfLink{link("property", "p", "")}, nil, nil},
 		{"f-formal", "形式手法を使う機能の例", textOf("形で確かめる"), false, true, []tfLink{link("property", "p", "")}, nil, nil},
 		{"f-both-false", "どちらでもない機能", textOf("書いて偽にした"), false, false, []tfLink{link("property", "p", "")},
-			[]tfClaim{{ID: "c-a", Statement: fragsOf("タスク>t-root", "を足せる")}},
+			[]tfSpec{{ID: "c-a", Statement: fragsOf("タスク>t-root", "を足せる")}},
 			[]string{"t-root"}},
 	}
 	for _, c := range cases {
@@ -489,7 +489,7 @@ func Test機能の詳細は名前とIDとセグメントに分けた定義とコ
 			t.Errorf("%s の core・formal: %s・%s（思ったもの %v・%v）", c.id, boolStr(f.Core), boolStr(f.Formal), c.core, c.formal)
 		}
 		wantLinks(t, c.id+" の refines", f.Refines, c.refines)
-		wantSpecs(t, c.id, f.Specs, c.claims)
+		wantSpecs(t, c.id, f.Specs, c.specs)
 		wantRefs(t, c.id+" の詳細", f.Refs, tfRefsOf(c.refs...))
 	}
 }
@@ -506,7 +506,7 @@ func Test今の約束リストにないIDの用語と機能と性質と前提の
 		// 比べる元（main）にだけある ID。今の約束リストだけを見る
 		{"/api/terms/t-old", "用語 t-old は約束リストにありません。"},
 		{"/api/features/f-old", "機能 f-old は約束リストにありません。"},
-		// 今の約束リストにあっても、種類の違うもの（用語の ID の機能、機能の ID の用語、約束の ID）は、その種類の約束リストの項目にない
+		// 今の約束リストにあっても、種類の違うもの（用語の ID の機能、機能の ID の用語、仕様の ID）は、その種類の約束リストの項目にない
 		{"/api/features/t-root", "機能 t-root は約束リストにありません。"},
 		{"/api/terms/f-core", "用語 f-core は約束リストにありません。"},
 		{"/api/terms/c-a", "用語 c-a は約束リストにありません。"},
@@ -600,7 +600,7 @@ func Test性質と前提の履歴は中身を変えたコミットとその種�
 		{"/api/truths/tr-b/history", tfTruthBOld, tfTruthBJSON},
 	}
 	for _, c := range cases {
-		var h claimHistory
+		var h specHistory
 		if code, msg := s.get(c.path, &h); code != 200 {
 			t.Errorf("%s を読めない（%d）: %s", c.path, code, msg)
 			continue
@@ -614,7 +614,7 @@ func Test性質と前提の履歴は中身を変えたコミットとその種�
 		for _, o := range h.Origin {
 			got = append(got, origin{o.Subject, o.Change, o.Stories})
 		}
-		want := []origin{{"用語と機能を足す", "modified", []string{"#24"}}, {"はじめの約束を置く", "added", []string{"#1"}}}
+		want := []origin{{"用語と機能を足す", "modified", []string{"#24"}}, {"はじめの仕様を置く", "added", []string{"#1"}}}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("%s の origin: %+v（思ったもの %+v）", c.path, got, want)
 		}

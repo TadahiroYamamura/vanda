@@ -1,6 +1,6 @@
 # CMD-10 承認（スコープを story にする）、RV-14:
 # @vanda:evidence check-agreement-story-scope
-# ストーリー 1 が約束を変えて承認し、ストーリー 2 が変える前の中身を承認していたとき、
+# ストーリー 1 が仕様を変えて承認し、ストーリー 2 が変える前の中身を承認していたとき、
 # スコープ story（ストーリー 1）のチェックは通り、スコープ story（ストーリー 2）のチェックは止まる。ストーリー 2 が今の中身を承認し直すと通る。
 #
 # マージでぶつからないよう、約束リストと承認の記録をストーリーごとのファイルに分けた。
@@ -11,24 +11,24 @@ expand .vanda/config.toml
 agree .vanda/agreements/base.toml '#9' term task fp/term-task.json
 agree .vanda/agreements/base.toml '#9' feature task-add fp/feature-task-add.json
 agree .vanda/agreements/base.toml '#9' property no-lost-task fp/property-no-lost-task.json
-agree .vanda/agreements/base.toml '#9' spec task-id-unique fp/claim-v1.json
-commit '約束を足す' '#9'
+agree .vanda/agreements/base.toml '#9' spec task-id-unique fp/spec-v1.json
+commit '仕様を足す' '#9'
 exec vanda check .vanda/checks/all.toml
 
-# ストーリー 1: 約束の文を変えて、今の中身を承認する
+# ストーリー 1: 仕様の文を変えて、今の中身を承認する
 exec git checkout -q -b story-1
 cp cases/a-v2.toml .vanda/promises/a.toml
-agree .vanda/agreements/story-1.toml '#1' spec task-id-unique fp/claim-v2.json
-commit '約束の文を変える' '#1'
+agree .vanda/agreements/story-1.toml '#1' spec task-id-unique fp/spec-v2.json
+commit '仕様の文を変える' '#1'
 exec vanda check .vanda/checks/story.toml --base main
 
-# ストーリー 2: 変える前の中身を承認し、別の約束を足して承認する
+# ストーリー 2: 変える前の中身を承認し、別の仕様を足して承認する
 exec git checkout -q main
 exec git checkout -q -b story-2
 cp cases/b.toml .vanda/promises/b.toml
-agree .vanda/agreements/story-2.toml '#2' spec task-id-unique fp/claim-v1.json
-agree .vanda/agreements/story-2.toml '#2' spec task-title-required fp/claim-b.json
-commit '約束を足す' '#2'
+agree .vanda/agreements/story-2.toml '#2' spec task-id-unique fp/spec-v1.json
+agree .vanda/agreements/story-2.toml '#2' spec task-title-required fp/spec-b.json
+commit '仕様を足す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 
 # ストーリー 1 が先にマージし、ストーリー 2 が main を取り込む
@@ -47,19 +47,19 @@ stderr 'task-id-unique'
 ! stderr '(?m)^panic: '
 
 # ストーリー 2 が今の中身を承認し直すと通る
-agree .vanda/agreements/story-2.toml '#2' spec task-id-unique fp/claim-v2.json
-commit '変わった約束を承認し直す' '#2'
+agree .vanda/agreements/story-2.toml '#2' spec task-id-unique fp/spec-v2.json
+commit '変わった仕様を承認し直す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 stdout '^チェック agreement（story #2）: 通った$'
 
-# ストーリー 2 が、前に承認した約束を自分で変えても、承認し直すまで止まる（誰が変えたかを問わない）
+# ストーリー 2 が、前に承認した仕様を自分で変えても、承認し直すまで止まる（誰が変えたかを問わない）
 cp cases/b-v2.toml .vanda/promises/b.toml
-commit '題の約束の文を変える' '#2'
+commit '題の仕様の文を変える' '#2'
 ! exec vanda check .vanda/checks/story.toml --base main
 stderr 'task-title-required'
 ! stderr '(?m)^panic: '
-agree .vanda/agreements/story-2.toml '#2' spec task-title-required fp/claim-b2.json
-commit '変えた約束を承認し直す' '#2'
+agree .vanda/agreements/story-2.toml '#2' spec task-title-required fp/spec-b2.json
+commit '変えた仕様を承認し直す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 
 -- .vanda/config.toml --
@@ -138,11 +138,11 @@ layers = ["model"]
 detail = "task_test.go"
 -- fp/term-task.json --
 {"definition":"A thing to do","id":"task","name":"Task"}
--- fp/claim-v1.json --
+-- fp/spec-v1.json --
 {"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","refines":["task-add"],"statement":"Task IDs are unique"}
--- fp/claim-v2.json --
+-- fp/spec-v2.json --
 {"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","refines":["task-add"],"statement":"No two tasks share an ID"}
--- fp/claim-b.json --
+-- fp/spec-b.json --
 {"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","refines":["task-add"],"statement":"Every task has a title"}
 -- cases/b-v2.toml --
 [[spec]]
@@ -158,7 +158,7 @@ stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
--- fp/claim-b2.json --
+-- fp/spec-b2.json --
 {"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","refines":["task-add"],"statement":"Every task has a non-empty title"}
 -- fp/feature-task-add.json --
 {"definition":"Add a task","id":"task-add","name":"Adding a task","refines":["no-lost-task"]}

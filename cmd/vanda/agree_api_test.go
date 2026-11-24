@@ -41,12 +41,12 @@ type agreeResponse struct {
 }
 
 var (
-	reviewClaimFP = sha256Hex([]byte(reviewStoryItemJSON["spec task-id-unique"]))
+	reviewSpecFP  = sha256Hex([]byte(reviewStoryItemJSON["spec task-id-unique"]))
 	reviewTitleFP = sha256Hex([]byte(reviewStoryItemJSON["spec task-title-required"]))
 	reviewFileFP  = sha256Hex([]byte(reviewScenarioStory))
 )
 
-func agreeClaim(id, fp string) map[string]any {
+func agreeSpec(id, fp string) map[string]any {
 	return map[string]any{"kind": "spec", "id": id, "path": nil, "fingerprint": fp, "story": reviewStory}
 }
 
@@ -108,14 +108,14 @@ func wantStoryTrailer(t *testing.T, r *reviewRepo, story string) {
 // @vanda:evidence agree-writes-and-commits
 // @vanda:evidence agree-removes-flags
 // @vanda:evidence agree-commit-has-story-trailer
-func Test承認すると承認の記録が1件増えその約束のフラグだけが外れほかの行は変わらず1つのコミットになる(t *testing.T) {
+func Test承認すると承認の記録が1件増えその仕様のフラグだけが外れほかの行は変わらず1つのコミットになる(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
 	head := r.git("rev-parse", "HEAD")
 	before := readAgreements(t, r.Root)
 
 	var got agreeResponse
-	if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), &got); code != 200 {
+	if code, msg := s.post("/api/agree", agreeSpec("task-id-unique", reviewSpecFP), &got); code != 200 {
 		t.Fatalf("承認できない（%d）: %s", code, msg)
 	}
 
@@ -128,7 +128,7 @@ func Test承認すると承認の記録が1件増えその約束のフラグだ�
 	if files := committedFiles(r, "HEAD"); !reflect.DeepEqual(files, []string{".vanda/agreements.toml", ".vanda/promises.toml"}) {
 		t.Errorf("コミットに入ったファイル: %v", files)
 	}
-	if subject := r.git("log", "-1", "--format=%s"); subject != "(chore) #24 で 約束 task-id-unique を承認する" {
+	if subject := r.git("log", "-1", "--format=%s"); subject != "(chore) #24 で 仕様 task-id-unique を承認する" {
 		t.Errorf("コミットのメッセージ: %q", subject)
 	}
 	wantStoryTrailer(t, r, reviewStory)
@@ -141,17 +141,17 @@ func Test承認すると承認の記録が1件増えその約束のフラグだ�
 		t.Fatalf("承認の記録が、元のものの後に 1 件足したものでない（%d 件 → %d 件）", len(before), len(after))
 	}
 	rec := after[len(after)-1]
-	if rec.Kind != "spec" || rec.Key != "task-id-unique" || rec.Fingerprint != reviewClaimFP || rec.Path != "" ||
+	if rec.Kind != "spec" || rec.Key != "task-id-unique" || rec.Fingerprint != reviewSpecFP || rec.Path != "" ||
 		rec.Story != reviewStory || rec.User.Name != reviewUserName || rec.User.Email != reviewUserEmail || rec.AgreedAt == nil {
 		t.Errorf("書き足した承認の記録: %+v", rec)
 	}
 	a := got.Agreement
-	if a.Kind != "spec" || a.Key != "task-id-unique" || str(a.Fingerprint) != reviewClaimFP || a.Path != nil ||
+	if a.Kind != "spec" || a.Key != "task-id-unique" || str(a.Fingerprint) != reviewSpecFP || a.Path != nil ||
 		a.Story != reviewStory || a.User.Name != reviewUserName || a.User.Email != reviewUserEmail || a.AgreedAt == "" {
 		t.Errorf("返した承認の記録: %+v", a)
 	}
 
-	// フラグを外すのは、承認した約束の flags と guesses の行だけ。コメント・空行・順・ほかの約束のフラグは変えない
+	// フラグを外すのは、承認した仕様の flags と guesses の行だけ。コメント・空行・順・ほかの仕様のフラグは変えない
 	want := strings.Replace(strings.Replace(reviewPromisesStory,
 		"flags = [\"ai-proposal\"]\n", "", 1),
 		"guesses = [\"タスクは消しても ID を使い回さない\"]\n", "", 1)
@@ -160,7 +160,7 @@ func Test承認すると承認の記録が1件増えその約束のフラグだ�
 		t.Fatal(err)
 	}
 	if string(data) != want {
-		t.Errorf("約束リストが、承認した約束の flags と guesses の行だけを消したものでない\n--- 今\n%s\n--- 思ったもの\n%s", data, want)
+		t.Errorf("約束リストが、承認した仕様の flags と guesses の行だけを消したものでない\n--- 今\n%s\n--- 思ったもの\n%s", data, want)
 	}
 
 	var review reviewResponse
@@ -168,7 +168,7 @@ func Test承認すると承認の記録が1件増えその約束のフラグだ�
 		t.Fatalf("一覧を読めない（%d）: %s", code, msg)
 	}
 	if e := findEntry(review.Entries, "task-id-unique"); e == nil || str(e.State) != "agreed" || len(e.Flags) != 0 {
-		t.Errorf("承認した約束が、一覧で承認済・フラグなしになっていない: %+v", e)
+		t.Errorf("承認した仕様が、一覧で承認済・フラグなしになっていない: %+v", e)
 	}
 }
 
@@ -181,8 +181,8 @@ func Test全部を承認すると段1のコミットのストーリーのチェ�
 		t.Fatalf("承認する前から、承認のチェックが通っている")
 	}
 	for _, body := range []map[string]any{
-		agreeClaim("task-id-unique", reviewClaimFP),
-		agreeClaim("task-title-required", reviewTitleFP),
+		agreeSpec("task-id-unique", reviewSpecFP),
+		agreeSpec("task-title-required", reviewTitleFP),
 		agreeFile("e2e/add-task.txtar", reviewFileFP),
 	} {
 		if code, msg := s.post("/api/agree", body, nil); code != 200 {
@@ -211,7 +211,7 @@ func Test承認と関係のない書きかけの変更はインデックスに�
 	r.git("add", "spec/Task.tla")
 	writeFile(t, r.Root, "notes.md", "メモ\n")
 
-	if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil); code != 200 {
+	if code, msg := s.post("/api/agree", agreeSpec("task-id-unique", reviewSpecFP), nil); code != 200 {
 		t.Fatalf("承認できない（%d）: %s", code, msg)
 	}
 	if files := committedFiles(r, "HEAD"); !reflect.DeepEqual(files, []string{".vanda/agreements.toml", ".vanda/promises.toml"}) {
@@ -240,8 +240,8 @@ func Test承認で変えるファイルに書きかけの変更があると承�
 		// 承認の対象が書いてあるファイルの書きかけは、先にコミットするよう理由に書く（docs/formats.md）
 		hint bool
 	}{
-		{"約束リストに書きかけがあるときの約束への承認", ".vanda/promises.toml", agreeClaim("task-id-unique", reviewClaimFP), true},
-		{"承認の記録に書きかけがあるときの約束への承認", ".vanda/agreements.toml", agreeClaim("task-id-unique", reviewClaimFP), false},
+		{"約束リストに書きかけがあるときの仕様への承認", ".vanda/promises.toml", agreeSpec("task-id-unique", reviewSpecFP), true},
+		{"承認の記録に書きかけがあるときの仕様への承認", ".vanda/agreements.toml", agreeSpec("task-id-unique", reviewSpecFP), false},
 		{"承認の記録に書きかけがあるときのファイルへの承認", ".vanda/agreements.toml", agreeFile("e2e/add-task.txtar", reviewFileFP), false},
 		// 見せていたフィンガープリントは書きかけの中身のもの（フィンガープリントの違いで断られるのでなく、書きかけで断られることを見るため）
 		{"承認するファイルそのものに書きかけがあるときのファイルへの承認", "e2e/add-task.txtar", agreeFile("e2e/add-task.txtar", sha256Hex([]byte(dirtyScenario))), true},
@@ -305,7 +305,7 @@ func Test承認する人のgitのuser_nameかuser_emailがないと承認でき�
 			if code, msg := s.get("/api/context", &ctx); code != 200 || ctx.User != nil {
 				t.Errorf("%s がないのに、context の user が null でない（%d %q）: %+v", key, code, msg, ctx.User)
 			}
-			if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil); code != 400 || msg == "" {
+			if code, msg := s.post("/api/agree", agreeSpec("task-id-unique", reviewSpecFP), nil); code != 400 || msg == "" {
 				t.Errorf("%d（%q）を返した。400 で断り、理由を出す", code, msg)
 			}
 			if r.git("rev-parse", "HEAD") != head || r.git("status", "--porcelain") != "" {
@@ -375,7 +375,7 @@ func Test見せていた中身のフィンガープリントが今の中身と�
 	_, r, s := setupAgree(t)
 	head := r.git("rev-parse", "HEAD")
 	old := sha256Hex([]byte(reviewItemJSON["spec task-id-unique"]))
-	if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", old), nil); code != 409 || msg == "" {
+	if code, msg := s.post("/api/agree", agreeSpec("task-id-unique", old), nil); code != 409 || msg == "" {
 		t.Errorf("%d（%q）を返した。409 で断り、理由を出す", code, msg)
 	}
 	if r.git("rev-parse", "HEAD") != head {
@@ -385,7 +385,7 @@ func Test見せていた中身のフィンガープリントが今の中身と�
 
 // ---- RV-17 承認を取り消す（POST /api/revoke） ----
 
-func revokeClaim(id, fp string) map[string]any {
+func revokeSpec(id, fp string) map[string]any {
 	return map[string]any{"kind": "spec", "id": id, "path": nil, "fingerprint": fp, "story": reviewStory, "base": "main"}
 }
 
@@ -398,7 +398,7 @@ type revokeResponse struct {
 // inlineRecord は、docs/formats.md の user = { … } の形で、task-id-unique の今の中身への承認の記録を書く（前に空行 1 つ）。
 func inlineRecord(story, name, email string) string {
 	return fmt.Sprintf("\n[[agreement]]\nkind = \"spec\"\nkey = \"task-id-unique\"\nfingerprint = %q\nagreed_at = 2026-10-31T12:00:00+09:00\nstory = %q\nuser = { name = %q, email = %q }\n",
-		reviewClaimFP, story, name, email)
+		reviewSpecFP, story, name, email)
 }
 
 func readFileString(t *testing.T, root, path string) string {
@@ -416,7 +416,7 @@ func setupRevoke(t *testing.T, extra func(base string) string) (string, *reviewR
 	t.Helper()
 	bin, r, s := setupAgree(t)
 	base := readFileString(t, r.Root, ".vanda/agreements.toml")
-	if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil); code != 200 {
+	if code, msg := s.post("/api/agree", agreeSpec("task-id-unique", reviewSpecFP), nil); code != 200 {
 		t.Fatalf("承認できない（%d）: %s", code, msg)
 	}
 	text := extra(base)
@@ -476,7 +476,7 @@ func Test自分が今のブランチで書いた承認を取り消すとその�
 	head := r.git("rev-parse", "HEAD")
 
 	var got revokeResponse
-	if code, msg := s.post("/api/revoke", revokeClaim("task-id-unique", reviewClaimFP), &got); code != 200 {
+	if code, msg := s.post("/api/revoke", revokeSpec("task-id-unique", reviewSpecFP), &got); code != 200 {
 		t.Fatalf("取り消せない（%d）: %s", code, msg)
 	}
 	if n := r.git("rev-list", "--count", head+"..HEAD"); n != "1" {
@@ -488,7 +488,7 @@ func Test自分が今のブランチで書いた承認を取り消すとその�
 	if files := committedFiles(r, "HEAD"); !reflect.DeepEqual(files, []string{".vanda/agreements.toml"}) {
 		t.Errorf("コミットに入ったファイル: %v", files)
 	}
-	if subject := r.git("log", "-1", "--format=%s"); subject != "(chore) #24 で 約束 task-id-unique の承認を取り消す" {
+	if subject := r.git("log", "-1", "--format=%s"); subject != "(chore) #24 で 仕様 task-id-unique の承認を取り消す" {
 		t.Errorf("コミットのメッセージ: %q", subject)
 	}
 	wantStoryTrailer(t, r, reviewStory)
@@ -519,14 +519,14 @@ func Test取り消すと今の人の記録だけが消えほかの人とほか�
 	story30 := inlineRecord("#30", reviewUserName, reviewUserEmail)
 	self := inlineRecord(reviewStory, reviewUserName, reviewUserEmail)
 	// 自分が、このストーリーで、前の中身に書いた記録（今の中身への承認ではない）
-	stale := strings.Replace(self, reviewClaimFP, sha256Hex([]byte(reviewItemJSON["spec task-id-unique"])), 1)
+	stale := strings.Replace(self, reviewSpecFP, sha256Hex([]byte(reviewItemJSON["spec task-id-unique"])), 1)
 	_, r, s, base := setupRevoke(t, func(base string) string {
 		return base + "\n# #24 の承認\n" + self + other + stale + story30 + self
 	})
 	want := base + "\n# #24 の承認\n" + other + stale + story30
 
 	var got revokeResponse
-	if code, msg := s.post("/api/revoke", revokeClaim("task-id-unique", reviewClaimFP), &got); code != 200 {
+	if code, msg := s.post("/api/revoke", revokeSpec("task-id-unique", reviewSpecFP), &got); code != 200 {
 		t.Fatalf("取り消せない（%d）: %s", code, msg)
 	}
 	if !got.StillAgreed || got.Removed != 2 {
@@ -595,7 +595,7 @@ func Test取り消せるのは今の人が今のブランチで書いた承認�
 				}
 				before := readFileString(t, r.Root, ".vanda/agreements.toml")
 				head := r.git("rev-parse", "HEAD")
-				code, msg := s.post("/api/revoke", revokeClaim("task-id-unique", reviewClaimFP), nil)
+				code, msg := s.post("/api/revoke", revokeSpec("task-id-unique", reviewSpecFP), nil)
 				if can {
 					if code != 200 {
 						t.Fatalf("取り消せない（%d）: %s", code, msg)
@@ -629,7 +629,7 @@ func Test承認の記録のファイルに書きかけの変更があると取�
 	dirty := readFileString(t, r.Root, ".vanda/agreements.toml") + "# 書きかけ\n"
 	writeFile(t, r.Root, ".vanda/agreements.toml", dirty)
 	head := r.git("rev-parse", "HEAD")
-	if code, msg := s.post("/api/revoke", revokeClaim("task-id-unique", reviewClaimFP), nil); code != 409 || msg == "" {
+	if code, msg := s.post("/api/revoke", revokeSpec("task-id-unique", reviewSpecFP), nil); code != 409 || msg == "" {
 		t.Errorf("%d（%q）を返した。409 で断り、理由を出す", code, msg)
 	}
 	if r.git("rev-parse", "HEAD") != head || readFileString(t, r.Root, ".vanda/agreements.toml") != dirty {
@@ -642,8 +642,8 @@ func Test取り消すと段1の承認のチェックで止まりもう一度承�
 	t.Parallel()
 	bin, r, s := setupAgree(t)
 	for _, body := range []map[string]any{
-		agreeClaim("task-id-unique", reviewClaimFP),
-		agreeClaim("task-title-required", reviewTitleFP),
+		agreeSpec("task-id-unique", reviewSpecFP),
+		agreeSpec("task-title-required", reviewTitleFP),
 		agreeFile("e2e/add-task.txtar", reviewFileFP),
 	} {
 		if code, msg := s.post("/api/agree", body, nil); code != 200 {
@@ -653,7 +653,7 @@ func Test取り消すと段1の承認のチェックで止まりもう一度承�
 	if code, out, errs := r.vanda(bin, "check", ".vanda/checks/merge.toml", "--base", "main"); code != 0 {
 		t.Fatalf("全部を承認してもチェックが通らない（%d）\n%s%s", code, out, errs)
 	}
-	if code, msg := s.post("/api/revoke", revokeClaim("task-id-unique", reviewClaimFP), nil); code != 200 {
+	if code, msg := s.post("/api/revoke", revokeSpec("task-id-unique", reviewSpecFP), nil); code != 200 {
 		t.Fatalf("取り消せない（%d）: %s", code, msg)
 	}
 	if !strings.Contains(r.git("log", "-1", "--format=%B"), reviewStory) {
@@ -666,7 +666,7 @@ func Test取り消すと段1の承認のチェックで止まりもう一度承�
 	if !strings.Contains(out, "チェック story-origin（story）: 通った") {
 		t.Errorf("取り消しのコミットでコミットのストーリーのチェックが止まった\n%s%s", out, errs)
 	}
-	if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil); code != 200 {
+	if code, msg := s.post("/api/agree", agreeSpec("task-id-unique", reviewSpecFP), nil); code != 200 {
 		t.Fatalf("もう一度承認できない（%d）: %s", code, msg)
 	}
 	if code, out, errs := r.vanda(bin, "check", ".vanda/checks/merge.toml", "--base", "main"); code != 0 {
@@ -676,7 +676,7 @@ func Test取り消すと段1の承認のチェックで止まりもう一度承�
 
 // RV-06: キーを引用符で囲んだ flags・guesses（"flags"・'guesses'）も、承認でその行だけが消える
 // @vanda:evidence agree-removes-flags
-func Test引用符で囲んだキーのflagsとguessesの約束にも承認できその行だけが消える(t *testing.T) {
+func Test引用符で囲んだキーのflagsとguessesの仕様にも承認できその行だけが消える(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
 	text := readFileString(t, r.Root, ".vanda/promises.toml")
@@ -688,7 +688,7 @@ func Test引用符で囲んだキーのflagsとguessesの約束にも承認で�
 	writeFile(t, r.Root, ".vanda/promises.toml", quoted)
 	r.g.commitTracked("キーを引用符で囲む", reviewStory)
 
-	if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil); code != 200 {
+	if code, msg := s.post("/api/agree", agreeSpec("task-id-unique", reviewSpecFP), nil); code != 200 {
 		t.Fatalf("承認できない（%d）: %s", code, msg)
 	}
 	want := strings.Replace(strings.Replace(quoted, "\"flags\" = [\"ai-proposal\"]\n", "", 1), "'guesses' = [\"タスクは消しても ID を使い回さない\"]\n", "", 1)
@@ -718,7 +718,7 @@ func Test承認の記録を書くファイルがパターンから決まらな�
 	promises := readFileString(t, r.Root, ".vanda/promises.toml")
 
 	for _, body := range []map[string]any{
-		agreeClaim("task-id-unique", reviewClaimFP),
+		agreeSpec("task-id-unique", reviewSpecFP),
 		agreeFile("e2e/add-task.txtar", reviewFileFP),
 	} {
 		if code, msg := s.post("/api/agree", body, nil); code != 409 || msg == "" {
@@ -739,7 +739,7 @@ func Test承認の記録を書くファイルがパターンから決まらな�
 // RV-06 のガードレール: 承認でフラグを外すとき、外し方が決まっていない書き方（複数行の文字列の flags・guesses）で
 // 書いた約束リストは書き換えず、承認を 409 で断る。約束リストと承認の記録を壊さないため（docs/formats.md）
 // @vanda:evidence agree-removes-flags
-func Testフラグを複数行の文字列で書いた約束には承認を断り約束リストと承認の記録を書き換えない(t *testing.T) {
+func Testフラグを複数行の文字列で書いた仕様には承認を断り約束リストと承認の記録を書き換えない(t *testing.T) {
 	t.Parallel()
 	cases := []struct{ name, from, to string }{
 		{"guessesが複数行の文字列", `guesses = ["タスクは消しても ID を使い回さない"]`, "guesses = [\"\"\"タスクは消しても\nID を使い回さない\"\"\"]"},
@@ -759,7 +759,7 @@ func Testフラグを複数行の文字列で書いた約束には承認を断�
 			agreements := readFileString(t, r.Root, ".vanda/agreements.toml")
 			head := r.git("rev-parse", "HEAD")
 			// flags・guesses はフィンガープリントに入らないので、見せていたフィンガープリントは前のまま
-			if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil); code != 409 || msg == "" {
+			if code, msg := s.post("/api/agree", agreeSpec("task-id-unique", reviewSpecFP), nil); code != 409 || msg == "" {
 				t.Errorf("%d（%q）を返した。409 で断り、理由を出す", code, msg)
 			}
 			if r.git("rev-parse", "HEAD") != head || readFileString(t, r.Root, ".vanda/promises.toml") != promises || readFileString(t, r.Root, ".vanda/agreements.toml") != agreements {
@@ -893,7 +893,7 @@ func Test消したファイルは一覧に削除として前の中身と提案�
 	}
 }
 
-// RV-06: 今あるものを消したことは承認できない。約束にはなく、docs/formats.md の POST /api/agree の deleted に書いてある振る舞い
+// RV-06: 今あるものを消したことは承認できない。仕様にはなく、docs/formats.md の POST /api/agree の deleted に書いてある振る舞い
 func Test今あるファイルを消したことへの承認は断る(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -916,7 +916,7 @@ var agreeKinds = []struct {
 	setup                     func(r *reviewRepo)
 	change                    string // setup をした後の、一覧での変わり方
 }{
-	{"約束", "spec", "task-id-unique", "", reviewClaimFP, nil, "modified"},
+	{"仕様", "spec", "task-id-unique", "", reviewSpecFP, nil, "modified"},
 	{"用語", "term", "task", "", sha256Hex([]byte(reviewItemJSON["term task"])), nil, ""},
 	{"機能", "feature", "add-task", "", sha256Hex([]byte(reviewItemJSON["feature add-task"])), nil, ""},
 	{"性質", "property", "no-lost-task", "", sha256Hex([]byte(`{"id":"no-lost-task","statement":"登録したタスクは、消すまで失われない"}`)), func(r *reviewRepo) {
@@ -1068,7 +1068,7 @@ func Test書き足す承認の記録はuserをインラインの表で書きagre
 			before := readFileString(t, r.Root, ".vanda/agreements.toml")
 			// 秒より細かい所を切り捨てて比べる
 			start := time.Now().Truncate(time.Second)
-			if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil); code != 200 {
+			if code, msg := s.post("/api/agree", agreeSpec("task-id-unique", reviewSpecFP), nil); code != 200 {
 				t.Fatalf("承認できない（%d）: %s", code, msg)
 			}
 			end := time.Now()
@@ -1102,7 +1102,7 @@ func Test書き足す承認の記録のuserには承認した時のgitのuser_na
 	r.git("config", "user.name", "後から決めた人")
 	r.git("config", "user.email", "later@example.com")
 	var got agreeResponse
-	if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), &got); code != 200 {
+	if code, msg := s.post("/api/agree", agreeSpec("task-id-unique", reviewSpecFP), &got); code != 200 {
 		t.Fatalf("承認できない（%d）: %s", code, msg)
 	}
 	recs := readAgreements(t, r.Root)
@@ -1157,7 +1157,7 @@ func Test承認の記録はagreementsのパターンの順で最初にマッチ�
 			}
 			r.g.commitAll("承認の記録のファイルを変える", reviewStory)
 			head := r.git("rev-parse", "HEAD")
-			code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil)
+			code, msg := s.post("/api/agree", agreeSpec("task-id-unique", reviewSpecFP), nil)
 			if c.want == "" {
 				if code != 409 || msg == "" {
 					t.Errorf("%d（%q）を返した。409 で断り、理由を出す", code, msg)
@@ -1175,7 +1175,7 @@ func Test承認の記録はagreementsのパターンの順で最初にマッチ�
 			}
 			now := readFileString(t, r.Root, c.want)
 			added := appendedText(t, c.files[c.want], now)
-			if !strings.Contains(added, `key = "task-id-unique"`) || !strings.Contains(added, reviewClaimFP) {
+			if !strings.Contains(added, `key = "task-id-unique"`) || !strings.Contains(added, reviewSpecFP) {
 				t.Errorf("%s に、承認の記録が書き足されていない\n%s", c.want, now)
 			}
 			for p, b := range c.files {
@@ -1188,7 +1188,7 @@ func Test承認の記録はagreementsのパターンの順で最初にマッチ�
 }
 
 // @vanda:evidence agreements-explicit-file-may-be-absent
-func Test設定のagreementsにはっきり書いたファイルがなければ一覧と約束の詳細は誤りにせず承認の記録を空とみなす(t *testing.T) {
+func Test設定のagreementsにはっきり書いたファイルがなければ一覧と仕様の詳細は誤りにせず承認の記録を空とみなす(t *testing.T) {
 	t.Parallel()
 	hasChanged := func(e *reviewEntry) bool {
 		return e != nil && slices.Contains(e.Flags, "changed-since-agreement")
@@ -1224,16 +1224,16 @@ func Test設定のagreementsにはっきり書いたファイルがなければ�
 					t.Errorf("%s%s: state %q・flags %v（承認の記録が空なので、提案中で差分ありも付かないはず）", str(e.ID), str(e.Path), str(e.State), e.Flags)
 				}
 			}
-			var claim claimDetail
-			if code, msg := s.get("/api/specs/task-id-unique", &claim); code != 200 || claim.State != "proposed" {
-				t.Errorf("約束の詳細が %d・state %q: %s", code, claim.State, msg)
+			var spec specDetail
+			if code, msg := s.get("/api/specs/task-id-unique", &spec); code != 200 || spec.State != "proposed" {
+				t.Errorf("仕様の詳細が %d・state %q: %s", code, spec.State, msg)
 			}
 		})
 	}
 }
 
 // @vanda:evidence agree-inline-flags-refused
-func Testフラグか推測をインラインの表の中か複数行の文字列で書いた約束には承認を409で断り何も変えない(t *testing.T) {
+func Testフラグか推測をインラインの表の中か複数行の文字列で書いた仕様には承認を409で断り何も変えない(t *testing.T) {
 	t.Parallel()
 	// task-id-unique を、インラインの表の配列（1 行の spec = [{ … }]）で書き直したもの。task-title-required も同じ配列に入れる
 	// TOML では、表の見出しより後のキーはその表のものになるので、spec = [...] を先頭に置く
@@ -1256,14 +1256,14 @@ func Testフラグか推測をインラインの表の中か複数行の文字�
 			writeFile(t, r.Root, ".vanda/promises.toml", c.promises)
 			r.g.commitTracked("フラグの書き方を変える", reviewStory)
 			// 書き方を変えてもフィンガープリントは変わらない。今の中身のフィンガープリントで承認しようとする
-			var claim claimDetail
-			if code, msg := s.get("/api/specs/task-id-unique", &claim); code != 200 || claim.Fingerprint != reviewClaimFP {
-				t.Fatalf("書き方を変えた約束を読めないか、フィンガープリントが変わった（%d、%s）: %s", code, claim.Fingerprint, msg)
+			var spec specDetail
+			if code, msg := s.get("/api/specs/task-id-unique", &spec); code != 200 || spec.Fingerprint != reviewSpecFP {
+				t.Fatalf("書き方を変えた仕様を読めないか、フィンガープリントが変わった（%d、%s）: %s", code, spec.Fingerprint, msg)
 			}
 			promises := readFileString(t, r.Root, ".vanda/promises.toml")
 			agreements := readFileString(t, r.Root, ".vanda/agreements.toml")
 			head := r.git("rev-parse", "HEAD")
-			if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", reviewClaimFP), nil); code != 409 || msg == "" {
+			if code, msg := s.post("/api/agree", agreeSpec("task-id-unique", reviewSpecFP), nil); code != 409 || msg == "" {
 				t.Errorf("%d（%q）を返した。409 で断り、理由を出す", code, msg)
 			}
 			if r.git("rev-parse", "HEAD") != head || readFileString(t, r.Root, ".vanda/promises.toml") != promises || readFileString(t, r.Root, ".vanda/agreements.toml") != agreements {
@@ -1357,8 +1357,8 @@ func (h *blockingHook) release(n int) {
 	}
 }
 
-// claimState は、一覧の中身から、約束 id の state を読む。
-func claimState(body []byte, id string) string {
+// specState は、一覧の中身から、仕様 id の state を読む。
+func specState(body []byte, id string) string {
 	var rv reviewResponse
 	if err := json.Unmarshal(body, &rv); err != nil {
 		return "（一覧を読めない: " + err.Error() + "）"
@@ -1374,7 +1374,7 @@ func claimState(body []byte, id string) string {
 // 承認と取り消しのコミットの途中で止めたあいだに、ほかのリクエストを出し、どれも答えないことを確かめる。
 // 答えないことは、決まった時間（waitWindow）のあいだ答えが来ないことでしか確かめられない
 // @vanda:evidence serve-agree-one-at-a-time
-func Test承認と取り消しのあいだはほかの承認と一覧と約束の詳細とファイルの読み込みを待たせ終わった後に答える(t *testing.T) {
+func Test承認と取り消しのあいだはほかの承認と一覧と仕様の詳細とファイルの読み込みを待たせ終わった後に答える(t *testing.T) {
 	t.Parallel()
 	const waitWindow = 500 * time.Millisecond
 	_, r, s := setupAgree(t)
@@ -1422,33 +1422,33 @@ func Test承認と取り消しのあいだはほかの承認と一覧と約束�
 	}
 
 	// 承認のあいだ
-	send("1 件目の承認", http.MethodPost, "/api/agree", agreeClaim("task-id-unique", reviewClaimFP))
+	send("1 件目の承認", http.MethodPost, "/api/agree", agreeSpec("task-id-unique", reviewSpecFP))
 	h.waitStarted(1)
-	send("2 件目の承認", http.MethodPost, "/api/agree", agreeClaim("task-title-required", reviewTitleFP))
+	send("2 件目の承認", http.MethodPost, "/api/agree", agreeSpec("task-title-required", reviewTitleFP))
 	send("一覧", http.MethodGet, "/api/review?view=branch&base=main", nil)
-	send("約束の詳細", http.MethodGet, "/api/specs/task-id-unique", nil)
+	send("仕様の詳細", http.MethodGet, "/api/specs/task-id-unique", nil)
 	send("ファイル", http.MethodGet, "/api/file?path="+q("e2e/add-task.txtar"), nil)
 	noAnswer("承認のあいだ", 1)
 	h.release(1)
 	got := collect("承認の後", 5, 2)
-	if st := claimState(got["一覧"].body, "task-id-unique"); st != "agreed" {
+	if st := specState(got["一覧"].body, "task-id-unique"); st != "agreed" {
 		t.Errorf("承認のあいだに求めた一覧の task-id-unique が %s（承認を待ってから読むので agreed のはず）", st)
 	}
-	var detail claimDetail
-	if err := json.Unmarshal(got["約束の詳細"].body, &detail); err != nil || detail.State != "agreed" {
-		t.Errorf("承認のあいだに求めた約束の詳細の state が %q（承認を待ってから読むので agreed のはず）: %v", detail.State, err)
+	var detail specDetail
+	if err := json.Unmarshal(got["仕様の詳細"].body, &detail); err != nil || detail.State != "agreed" {
+		t.Errorf("承認のあいだに求めた仕様の詳細の state が %q（承認を待ってから読むので agreed のはず）: %v", detail.State, err)
 	}
 
 	// 取り消しのあいだ
-	send("取り消し", http.MethodPost, "/api/revoke", revokeClaim("task-id-unique", reviewClaimFP))
+	send("取り消し", http.MethodPost, "/api/revoke", revokeSpec("task-id-unique", reviewSpecFP))
 	h.waitStarted(3)
 	send("取り消しのあいだの一覧", http.MethodGet, "/api/review?view=branch&base=main", nil)
-	send("取り消しのあいだの約束の詳細", http.MethodGet, "/api/specs/task-id-unique", nil)
+	send("取り消しのあいだの仕様の詳細", http.MethodGet, "/api/specs/task-id-unique", nil)
 	send("取り消しのあいだのファイル", http.MethodGet, "/api/file?path="+q("e2e/add-task.txtar"), nil)
 	noAnswer("取り消しのあいだ", 3)
 	h.release(3)
 	got = collect("取り消しの後", 4, 4)
-	if st := claimState(got["取り消しのあいだの一覧"].body, "task-id-unique"); st != "proposed" {
+	if st := specState(got["取り消しのあいだの一覧"].body, "task-id-unique"); st != "proposed" {
 		t.Errorf("取り消しのあいだに求めた一覧の task-id-unique が %s（取り消しを待ってから読むので proposed のはず）", st)
 	}
 	if n := len(readAgreements(t, r.Root)); n != 9 {
@@ -1481,7 +1481,7 @@ func Test同時に出した承認と取り消しと読み込みはどれも失�
 
 	reads := []struct{ what, path string }{
 		{"一覧", "/api/review?view=branch&base=main"},
-		{"約束の詳細", "/api/specs/task-id-unique"},
+		{"仕様の詳細", "/api/specs/task-id-unique"},
 		{"ファイル", "/api/file?path=" + q("e2e/add-task.txtar")},
 		{"画面で選べるもの", "/api/context"},
 	}
@@ -1543,16 +1543,16 @@ func Test同時に出した承認と取り消しと読み込みはどれも失�
 	}
 
 	run("承認", map[string]map[string]any{
-		"task-id-unique への承認":      agreeClaim("task-id-unique", reviewClaimFP),
-		"task-title-required への承認": agreeClaim("task-title-required", reviewTitleFP),
+		"task-id-unique への承認":      agreeSpec("task-id-unique", reviewSpecFP),
+		"task-title-required への承認": agreeSpec("task-title-required", reviewTitleFP),
 		"e2e/add-task.txtar への承認":  agreeFile("e2e/add-task.txtar", reviewFileFP),
 	}, "/api/agree")
 	if n := r.git("rev-list", "--count", before+"..HEAD"); n != "3" {
 		t.Errorf("同時に出した 3 件の承認のコミットが %s 個（1 件ずつ 3 個のはず）", n)
 	}
 	run("取り消し", map[string]map[string]any{
-		"task-id-unique の取り消し":      revokeClaim("task-id-unique", reviewClaimFP),
-		"task-title-required の取り消し": revokeClaim("task-title-required", reviewTitleFP),
+		"task-id-unique の取り消し":      revokeSpec("task-id-unique", reviewSpecFP),
+		"task-title-required の取り消し": revokeSpec("task-title-required", reviewTitleFP),
 	}, "/api/revoke")
 	if n := r.git("rev-list", "--count", before+"..HEAD"); n != "5" {
 		t.Errorf("承認と取り消しのコミットが %s 個（承認 3 個と取り消し 2 個の 5 個のはず）", n)

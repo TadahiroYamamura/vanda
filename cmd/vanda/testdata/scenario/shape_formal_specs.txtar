@@ -1,7 +1,7 @@
-# 約束リストの形: 形式手法を使う機能（formal が真。省けば core と同じ）を refines する約束には、model-check の予定と
+# 約束リストの形: 形式手法を使う機能（formal が真。省けば core と同じ）を refines する仕様には、model-check の予定と
 # model_check_waiver のどちらか一方だけを書く。どちらもないか、両方あれば promise-list-shape の誤り。
 # @vanda:evidence promise-list-formal-claims
-# 形式手法を使わない機能だけを refines する約束は、どちらもなくても通る（model_check_waiver を書いたときは約束で決まっていないので確かめない）。
+# 形式手法を使わない機能だけを refines する仕様は、どちらもなくても通る（model_check_waiver を書いたときは仕様で決まっていないので確かめない）。
 
 exec git init -q -b main
 expand .vanda/config.toml

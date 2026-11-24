@@ -7,7 +7,7 @@ import { http, HttpResponse } from "msw";
 import { App } from "../App";
 import type { Entry } from "../api";
 import { isInaccessible } from "@testing-library/dom";
-import { apiError, claimDetail, claimEntry, claimHistory, expectLoading, gate, claimRef, ctx, defaultHandlers, featureRef, fileEntry, plain, propertyDetail, propertyEntry, propertyRef, requests, review, server, story, termRef, truthDetail, truthEntry, truthRef } from "./fixtures";
+import { apiError, specDetail, specEntry, specHistory, expectLoading, gate, specRef, ctx, defaultHandlers, featureRef, fileEntry, plain, propertyDetail, propertyEntry, propertyRef, requests, review, server, story, termRef, truthDetail, truthEntry, truthRef } from "./fixtures";
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterAll(() => server.close());
@@ -46,7 +46,7 @@ describe("RV-04 フラグ", () => {
   // @vanda:evidence review-flag-labels
   // 一覧ではフラグをアイコンで出す（review-list-icons）ので、バッジは 1 件の詳細で確かめ、一覧のアイコンにも同じ説明が出ることを確かめる
   it("フラグは詳細では短い言葉のバッジで出し説明はバッジにマウスを乗せたときかフォーカスしたときに出し一覧のアイコンにも同じ説明を出す", async () => {
-    open([claimEntry(1, "task-id-unique", { flags: ["ai-proposal", "guess", "changed-since-agreement"] })]);
+    open([specEntry(1, "task-id-unique", { flags: ["ai-proposal", "guess", "changed-since-agreement"] })]);
     const user = userEvent.setup();
     await openEntry(/task-id-unique/);
     // tipOf は、マウスを乗せたときとフォーカスしたときにだけ説明が出ることを確かめ、説明の文を返す
@@ -74,8 +74,8 @@ describe("RV-04 フラグ", () => {
 
   // @vanda:evidence review-flag-labels
   it("フラグのないものにはバッジを出さない", async () => {
-    open([claimEntry(1, "plain-claim")]);
-    await screen.findAllByText(/plain-claim/);
+    open([specEntry(1, "plain-spec")]);
+    await screen.findAllByText(/plain-spec/);
     for (const label of [/AI\s?案/, /推測/, /差分あり/]) {
       expect(screen.queryByText(label)).toBeNull();
       expect(screen.queryByRole("img", { name: label }), `${label} のアイコンが出ている`).toBeNull();
@@ -87,9 +87,9 @@ describe("RV-01・RV-02・RV-05 一覧と中身", () => {
   // @vanda:evidence review-numbering
   it("通し番号と総数を出し追加と変更と削除を区別して見せる", async () => {
     open([
-      claimEntry(1, "c-added", { change: "added", before: null }),
-      claimEntry(2, "c-modified"),
-      claimEntry(3, "c-deleted", { change: "deleted", after: null, fingerprint: null }),
+      specEntry(1, "c-added", { change: "added", before: null }),
+      specEntry(2, "c-modified"),
+      specEntry(3, "c-deleted", { change: "deleted", after: null, fingerprint: null }),
       fileEntry(4, "e2e/old.txtar", { change: "deleted", after: null, fingerprint: null }),
     ]);
     for (const id of ["c-added", "c-modified", "c-deleted", "e2e/old.txtar"]) await screen.findAllByText(new RegExp(id));
@@ -99,7 +99,7 @@ describe("RV-01・RV-02・RV-05 一覧と中身", () => {
 
   // @vanda:evidence review-before-after
   it("変更したものは変更前と変更後の中身を見せる", async () => {
-    open([claimEntry(1, "c-modified")]);
+    open([specEntry(1, "c-modified")]);
     const user = userEvent.setup();
     const [item] = await screen.findAllByText(/c-modified/);
     if (!screen.queryByText(/c-modified の前の文/)) await user.click(item);
@@ -113,9 +113,9 @@ describe("RV-01・RV-02・RV-05 一覧と中身", () => {
     const del = { change: "deleted", after: null, fingerprint: null } as const;
     open(
       states.flatMap(([st], i) => [
-        claimEntry(4 * i + 1, `c-${st}`, { state: st }),
+        specEntry(4 * i + 1, `c-${st}`, { state: st }),
         fileEntry(4 * i + 2, `e2e/${st}.txtar`, { state: st }),
-        claimEntry(4 * i + 3, `c-del-${st}`, { ...del, state: st }),
+        specEntry(4 * i + 3, `c-del-${st}`, { ...del, state: st }),
         fileEntry(4 * i + 4, `e2e/del-${st}.txtar`, { ...del, state: st }),
       ]),
     );
@@ -143,7 +143,7 @@ describe("RV-10 長い一覧をたたむ", () => {
   // @vanda:evidence review-groups-fold
   it("長いまとまりはたたんでたたんだ件数を示し開くと中が見える", async () => {
     const files = Array.from({ length: 60 }, (_, i) => fileEntry(i + 2, `e2e/s${String(i).padStart(2, "0")}.txtar`));
-    open([claimEntry(1, "c-one"), ...files]);
+    open([specEntry(1, "c-one"), ...files]);
     await screen.findAllByText(/c-one/);
     expect(screen.queryByText(/e2e\/s59\.txtar/)).toBeNull();
     expect(document.body.textContent).toMatch(/60/);
@@ -158,9 +158,9 @@ describe("RV-10 長い一覧をたたむ", () => {
   it("用語と機能は別々のまとまりとしてたたみ片方を開いてももう片方はたたんだままで総数と通し番号は変わらない", async () => {
     const pad = (i: number) => String(i).padStart(2, "0");
     const terms = Array.from({ length: 11 }, (_, i) =>
-      claimEntry(i + 1, `t-${pad(i)}`, { kind: "term", group: "terms", before: { name: `t-${pad(i)}`, definition: plain("定義"), partOf: null, assumes: [] }, after: { name: `t-${pad(i)}`, definition: plain("定義"), partOf: null, assumes: [] } }));
+      specEntry(i + 1, `t-${pad(i)}`, { kind: "term", group: "terms", before: { name: `t-${pad(i)}`, definition: plain("定義"), partOf: null, assumes: [] }, after: { name: `t-${pad(i)}`, definition: plain("定義"), partOf: null, assumes: [] } }));
     const features = Array.from({ length: 11 }, (_, i) =>
-      claimEntry(i + 12, `f-${pad(i)}`, { kind: "feature", group: "features", before: { name: `f-${pad(i)}`, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null }, after: { name: `f-${pad(i)}`, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null } }));
+      specEntry(i + 12, `f-${pad(i)}`, { kind: "feature", group: "features", before: { name: `f-${pad(i)}`, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null }, after: { name: `f-${pad(i)}`, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null } }));
     window.history.pushState({}, "", "/?view=branch&base=main&sel=" + encodeURIComponent("path:e2e/a.txtar"));
     open([...terms, ...features, fileEntry(23, "e2e/a.txtar")]);
     const one = await listRow("e2e/a.txtar");
@@ -190,7 +190,7 @@ describe("RV-10 長い一覧をたたむ", () => {
 describe("RV-06 承認する", () => {
   // @vanda:evidence agree-on-screen
   it("承認すると見せていた中身のフィンガープリントとストーリーを送り一覧を読み直す", async () => {
-    const e = claimEntry(1, "task-id-unique");
+    const e = specEntry(1, "task-id-unique");
     open([e]);
     let posted: unknown = null;
     server.use(
@@ -270,11 +270,11 @@ describe("RV-06 承認する", () => {
     await waitFor(() => expect(reviewRequests().length).toBeGreaterThan(before));
   });
 
-  // 約束にはなく、docs/formats.md の entries[].agree に書いてある振る舞い（失効した承認を解くために、承認済でも承認し直せる）
+  // 仕様にはなく、docs/formats.md の entries[].agree に書いてある振る舞い（失効した承認を解くために、承認済でも承認し直せる）
   it("承認済でもこのストーリーで承認できる件には承認のボタンを出し承認できない件には出さない", async () => {
     // ほかのストーリーの承認で承認済だが、このストーリーの承認が失効した件（API が承認できると答える）
-    const reagree = claimEntry(1, "c-reagree", { state: "agreed", detachedAgreement: { by: ["#31"] }, agree: { possible: true, reason: null } });
-    const done = claimEntry(2, "c-done", { state: "agreed", agree: { possible: false, reason: "このストーリーで今の中身にもう承認しています" } });
+    const reagree = specEntry(1, "c-reagree", { state: "agreed", detachedAgreement: { by: ["#31"] }, agree: { possible: true, reason: null } });
+    const done = specEntry(2, "c-done", { state: "agreed", agree: { possible: false, reason: "このストーリーで今の中身にもう承認しています" } });
     open([reagree, done]);
     await openEntry(/c-reagree/);
     await waitFor(() => expect(within(detailRegion()).getAllByRole("button", { name: /承認する/ }).length).toBe(1));
@@ -286,7 +286,7 @@ describe("RV-06 承認する", () => {
 
   // @vanda:evidence agree-refusal-shown
   it("承認を断られたら理由を出す", async () => {
-    open([claimEntry(1, "task-id-unique")]);
+    open([specEntry(1, "task-id-unique")]);
     server.use(http.post("/api/agree", () => apiError(409, "約束リストに書きかけの変更がある。先にコミットする")));
     const user = userEvent.setup();
     const [item] = await screen.findAllByText(/task-id-unique/);
@@ -303,7 +303,7 @@ describe("RV-06 承認する", () => {
   it("承認できない人のときは承認のボタンをクリックできず理由を出す", async () => {
     server.use(http.get("/api/context", () => HttpResponse.json({ ...ctx, user: null })));
     // 承認できるかは API（entries[].agree）が決める。git の人が分からないときの API の答えを、手で作って渡す
-    const e = claimEntry(1, "task-id-unique", { agree: { possible: false, reason: "git の user.name と user.email が分かりません" } });
+    const e = specEntry(1, "task-id-unique", { agree: { possible: false, reason: "git の user.name と user.email が分かりません" } });
     server.use(http.get("/api/review", () => HttpResponse.json(review([e]))));
     server.use(http.get("/api/story", () => HttpResponse.json(story)));
     render(<App />);
@@ -319,8 +319,8 @@ describe("RV-13・RV-14 レビュー単位と失効した承認", () => {
   // @vanda:evidence review-detached-shown
   // @vanda:evidence review-detached-unchanged-shown
   it("失効した承認をそれを失効させたストーリーと一緒に示す", async () => {
-    const detached = claimEntry(0, "c-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
-    open([claimEntry(1, "c-changed", { detachedAgreement: { by: ["#31"] } })], { detached: [detached] });
+    const detached = specEntry(0, "c-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
+    open([specEntry(1, "c-changed", { detachedAgreement: { by: ["#31"] } })], { detached: [detached] });
     await screen.findAllByText(/c-changed/);
     await screen.findAllByText(/c-detached/);
     expect(bodyText()).toMatch(/承認が失効した/);
@@ -338,8 +338,8 @@ describe("RV-13・RV-14 レビュー単位と失効した承認", () => {
     window.history.pushState({}, "", "/?view=story&story=%2324");
     open(
       [
-        claimEntry(1, "c-shared", {
-          otherCommits: [{ commit: "d".repeat(40), subject: "#30 で同じ約束を変える", stories: ["#30"] }],
+        specEntry(1, "c-shared", {
+          otherCommits: [{ commit: "d".repeat(40), subject: "#30 で同じ仕様を変える", stories: ["#30"] }],
         }),
       ],
       { view: "story", base: null, mergeBase: null },
@@ -354,7 +354,7 @@ describe("RV-13・RV-14 レビュー単位と失効した承認", () => {
   // @vanda:evidence context-default-base
   // @vanda:evidence context-base-always-shown
   it("今比べているベースブランチを示し選び直すとそのベースブランチで読み直す", async () => {
-    open([claimEntry(1, "c-one")]);
+    open([specEntry(1, "c-one")]);
     await screen.findAllByText(/c-one/);
     expect(document.body.textContent).toContain("main");
     const user = userEvent.setup();
@@ -368,7 +368,7 @@ describe("RV-13・RV-14 レビュー単位と失効した承認", () => {
 describe("CM-08 ストーリーストア", () => {
   // @vanda:evidence story-shown-on-screen
   it("ストーリーの題と本文と添付ファイルへのリンクを見せる", async () => {
-    open([claimEntry(1, "c-one")]);
+    open([specEntry(1, "c-one")]);
     expect(await screen.findByText(/タスクの ID を重ならないようにする/)).toBeTruthy();
     expect(screen.getByText(/本文です/)).toBeTruthy();
     const link = screen.getByRole("link", { name: /画面の案/ }) as HTMLAnchorElement;
@@ -377,14 +377,14 @@ describe("CM-08 ストーリーストア", () => {
 
   // @vanda:evidence story-error-shown-on-screen
   it("ストーリーストアの誤りは黙って空にせず理由を出す", async () => {
-    open([claimEntry(1, "c-one")], {}, http.get("/api/story", () => apiError(502, "Bad credentials")));
+    open([specEntry(1, "c-one")], {}, http.get("/api/story", () => apiError(502, "Bad credentials")));
     expect(await screen.findByText(/Bad credentials/)).toBeTruthy();
   });
 
   // @vanda:evidence context-story-store
   it("ストーリーストアが設定にないときは読みに行かず注記で出す", async () => {
     server.use(http.get("/api/context", () => HttpResponse.json({ ...ctx, storyStore: "" })));
-    server.use(http.get("/api/review", () => HttpResponse.json(review([claimEntry(1, "c-one")]))));
+    server.use(http.get("/api/review", () => HttpResponse.json(review([specEntry(1, "c-one")]))));
     render(<App />);
     await screen.findAllByText(/c-one/);
     expect(requests.some((r) => r.url.pathname === "/api/story")).toBe(false);
@@ -427,7 +427,7 @@ describe("CM-08 ストーリーの本文の Markdown", () => {
 
   // @vanda:evidence story-body-markdown
   it("本文の見出しと箇条書きと表とコードとリンクを描き生のHTMLは要素にしない", async () => {
-    open([claimEntry(1, "c-one")], {}, http.get("/api/story", () => HttpResponse.json({ ...story, body })));
+    open([specEntry(1, "c-one")], {}, http.get("/api/story", () => HttpResponse.json({ ...story, body })));
     await screen.findByText(/タスクの ID を重ならないようにする/);
     const root = document.querySelector(".story-body") as HTMLElement;
     expect(root, "本文を描く .story-body がない").toBeTruthy();
@@ -449,7 +449,7 @@ describe("CM-08 ストーリーの本文の Markdown", () => {
 
   // @vanda:evidence story-links-new-tab
   it("本文のリンクとストーリーストアで開くリンクと添付のリンクは新しいタブで開き開いた先から戻れないようにする", async () => {
-    open([claimEntry(1, "c-one")], {}, http.get("/api/story", () => HttpResponse.json({ ...story, body: "[資料](https://example.com/doc)" })));
+    open([specEntry(1, "c-one")], {}, http.get("/api/story", () => HttpResponse.json({ ...story, body: "[資料](https://example.com/doc)" })));
     await screen.findByText(/タスクの ID を重ならないようにする/);
     const links = [
       screen.getByRole("link", { name: "資料" }),
@@ -501,9 +501,9 @@ describe("RV-05 変更前と変更後の差分", () => {
     ];
     const layers = [{ op: "equal", text: "model" }];
     open([
-      claimEntry(1, "c-ev", {
-        before: { ...claimEntry(1, "c-ev").before!, evidence: [ev("implementation", "scenario-test", null), ev("plan", "model-check", "TLA+ の古い計画で確かめる"), ev("release", "human-review", null)] },
-        after: { ...claimEntry(1, "c-ev").after!, evidence: [ev("implementation", "scenario-test", null), ev("plan", "model-check", "TLA+ の新しい計画で確かめる"), ev("operation", "sensor", null)] },
+      specEntry(1, "c-ev", {
+        before: { ...specEntry(1, "c-ev").before!, evidence: [ev("implementation", "scenario-test", null), ev("plan", "model-check", "TLA+ の古い計画で確かめる"), ev("release", "human-review", null)] },
+        after: { ...specEntry(1, "c-ev").after!, evidence: [ev("implementation", "scenario-test", null), ev("plan", "model-check", "TLA+ の新しい計画で確かめる"), ev("operation", "sensor", null)] },
         diff: {
           fields: { statement: [{ op: "delete", text: "c-ev の前の文" }, { op: "insert", text: "c-ev の後の文" }] },
           evidence: {
@@ -540,11 +540,11 @@ describe("RV-05 変更前と変更後の差分", () => {
   });
 
   // @vanda:evidence review-before-after
-  it("約束の項目の差分は1列で消した語をdelに足した語をinsに出し変わっていない項目は中身を1回だけ出す", async () => {
+  it("仕様の項目の差分は1列で消した語をdelに足した語をinsに出し変わっていない項目は中身を1回だけ出す", async () => {
     open([
-      claimEntry(1, "c-diff", {
-        before: { ...claimEntry(1, "c-diff").before!, statement: plain("タスクの ID はたぶん重ならない"), rationale: plain("消す相手を決めるため") },
-        after: { ...claimEntry(1, "c-diff").after!, statement: plain("タスクの ID は絶対に重ならない"), rationale: plain("消す相手を決めるため") },
+      specEntry(1, "c-diff", {
+        before: { ...specEntry(1, "c-diff").before!, statement: plain("タスクの ID はたぶん重ならない"), rationale: plain("消す相手を決めるため") },
+        after: { ...specEntry(1, "c-diff").after!, statement: plain("タスクの ID は絶対に重ならない"), rationale: plain("消す相手を決めるため") },
         diff: {
           fields: {
             statement: [
@@ -572,21 +572,21 @@ describe("RV-05 変更前と変更後の差分", () => {
 
 describe("RV-16・RV-17 1 件の詳細の変更履歴と承認の履歴・取り消し", () => {
   // @vanda:evidence detail-origin-and-history
-  it("約束の1件の詳細に変更履歴のコミットと承認の履歴を見せる", async () => {
-    open([claimEntry(1, "task-id-unique")], {}, http.get("/api/specs/:id/history", () =>
-      HttpResponse.json(claimHistory({
-        origin: [{ commit: "1".repeat(40), date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの約束を置く", stories: ["#1"], change: "added" }],
+  it("仕様の1件の詳細に変更履歴のコミットと承認の履歴を見せる", async () => {
+    open([specEntry(1, "task-id-unique")], {}, http.get("/api/specs/:id/history", () =>
+      HttpResponse.json(specHistory({
+        origin: [{ commit: "1".repeat(40), date: "2026-10-01T12:00:00+09:00", subject: "#1 はじめの仕様を置く", stories: ["#1"], change: "added" }],
         agreements: [{ user: { name: "前に承認した人", email: "a@example.com" }, agreedAt: "2026-10-02T12:00:00+09:00", story: "#1", fingerprint: "sha256:" + "b".repeat(64), current: false }],
       })),
     ));
     await openEntry(/task-id-unique/);
-    await waitFor(() => expect(bodyText()).toContain("#1 はじめの約束を置く"));
+    await waitFor(() => expect(bodyText()).toContain("#1 はじめの仕様を置く"));
     expect(bodyText()).toContain("前に承認した人");
   });
 
   // @vanda:evidence revoke-on-screen
   it("承認済の件で取り消すと今の中身のフィンガープリントとストーリーとベースブランチで取り消しを求め一覧を読み直す", async () => {
-    const e = claimEntry(1, "task-id-unique", { state: "agreed", revoke: { possible: true, reason: null, others: [] } });
+    const e = specEntry(1, "task-id-unique", { state: "agreed", revoke: { possible: true, reason: null, others: [] } });
     let posted: unknown = null;
     open([e], {}, http.post("/api/revoke", async ({ request }) => {
       posted = await request.json();
@@ -605,7 +605,7 @@ describe("RV-16・RV-17 1 件の詳細の変更履歴と承認の履歴・取り
   it("取り消せない件には取り消しのボタンを出さず取り消せない理由を示す", async () => {
     // 取り消せるかと理由は API（entries[].revoke）が決める。その答えを手で作って渡す
     for (const reason of ["ほかの人が書いた承認です", "ベースブランチにすでにある承認です", "このストーリーの承認がありません"]) {
-      open([claimEntry(1, "task-id-unique", { state: "agreed", revoke: { possible: false, reason, others: [] } })]);
+      open([specEntry(1, "task-id-unique", { state: "agreed", revoke: { possible: false, reason, others: [] } })]);
       await openEntry(/task-id-unique/);
       await screen.findAllByText(/承認済/);
       expect(screen.queryByRole("button", { name: /取り消/ }), `${reason}: 取り消しのボタンがある`).toBeNull();
@@ -622,7 +622,7 @@ describe("RV-06 承認した後に読み直す", () => {
     let agreed = false;
     server.use(...defaultHandlers(review([])));
     server.use(
-      http.get("/api/review", () => HttpResponse.json(review([claimEntry(1, "task-id-unique", { state: agreed ? "agreed" : "proposed" })]))),
+      http.get("/api/review", () => HttpResponse.json(review([specEntry(1, "task-id-unique", { state: agreed ? "agreed" : "proposed" })]))),
       http.post("/api/agree", () => {
         agreed = true;
         return HttpResponse.json({ commit: "c".repeat(40), agreement: {} });
@@ -655,7 +655,7 @@ describe("RV-13 ストーリーの示し方", () => {
     ] as const;
     for (const c of cases) {
       window.history.pushState({}, "", c.url);
-      open([claimEntry(1, "c-one")], c.over);
+      open([specEntry(1, "c-one")], c.over);
       await screen.findAllByText(/c-one/);
       const sel = storySelect();
       if (c.want === null) {
@@ -674,13 +674,13 @@ describe("RV-13 ストーリーの示し方", () => {
 describe("RV-02 一覧の 1 件を選ぶ", () => {
   // @vanda:evidence entry-select-anywhere
   it("一覧の1件は名前のほか番号と種類と状態のアイコンとフラグのアイコンと枠の端をクリックしても選ばれる", async () => {
-    open([claimEntry(1, "c-one"), claimEntry(2, "c-two", { flags: ["ai-proposal"] })]);
+    open([specEntry(1, "c-one"), specEntry(2, "c-two", { flags: ["ai-proposal"] })]);
     const user = userEvent.setup();
     const nameButton = async (id: string) => (await screen.findAllByText(id)).map((el) => el.closest("button")).find((b) => b?.closest("li"))!;
     const frame = async () => (await nameButton("c-two")).closest("li")! as HTMLElement;
     const spots: [string, () => Promise<HTMLElement>][] = [
       ["番号", async () => within(await frame()).getByText("2", { exact: true })],
-      ["種類", async () => within(await frame()).getByText("約束", { exact: true })],
+      ["種類", async () => within(await frame()).getByText("仕様", { exact: true })],
       ["状態のアイコン", async () => within(await frame()).getByRole("img", { name: "提案中" })],
       ["フラグのアイコン", async () => within(await frame()).getByRole("img", { name: "AI 案" })],
       ["枠の端", frame],
@@ -696,9 +696,9 @@ describe("RV-02 一覧の 1 件を選ぶ", () => {
 
 describe("RV-01・RV-02・RV-04 一覧の 1 件の出し方", () => {
   const term = (no: number, id: string) =>
-    claimEntry(no, id, { kind: "term", group: "terms", before: { name: id, definition: plain("定義"), partOf: null, assumes: [] }, after: { name: id, definition: plain("定義"), partOf: null, assumes: [] } });
+    specEntry(no, id, { kind: "term", group: "terms", before: { name: id, definition: plain("定義"), partOf: null, assumes: [] }, after: { name: id, definition: plain("定義"), partOf: null, assumes: [] } });
   const feature = (no: number, id: string) =>
-    claimEntry(no, id, { kind: "feature", group: "features", before: { name: id, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null }, after: { name: id, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null } });
+    specEntry(no, id, { kind: "feature", group: "features", before: { name: id, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null }, after: { name: id, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null } });
   // 1 行目は名前の所のボタン、2 行目はその後ろ
   const firstLine = (li: HTMLElement) => within(li).getByRole("button");
   const secondLine = (li: HTMLElement) => firstLine(li).nextElementSibling as HTMLElement;
@@ -706,9 +706,9 @@ describe("RV-01・RV-02・RV-04 一覧の 1 件の出し方", () => {
   // @vanda:evidence review-list-first-line
   it("一覧の1件の1行目には通し番号と名前だけを出し追加と変更と削除の記号と言葉は出さず種類は2行目の左端に出し追加か変更か削除かは詳細に出す", async () => {
     const cases = [
-      { e: claimEntry(1, "c-added", { change: "added", before: null }), name: "c-added", kind: "約束", change: "追加" },
-      { e: claimEntry(2, "c-modified"), name: "c-modified", kind: "約束", change: "変更" },
-      { e: claimEntry(3, "c-deleted", { change: "deleted", after: null, fingerprint: null }), name: "c-deleted", kind: "約束", change: "削除" },
+      { e: specEntry(1, "c-added", { change: "added", before: null }), name: "c-added", kind: "仕様", change: "追加" },
+      { e: specEntry(2, "c-modified"), name: "c-modified", kind: "仕様", change: "変更" },
+      { e: specEntry(3, "c-deleted", { change: "deleted", after: null, fingerprint: null }), name: "c-deleted", kind: "仕様", change: "削除" },
       { e: term(4, "t-term"), name: "t-term", kind: "用語", change: null },
       { e: feature(5, "f-feature"), name: "f-feature", kind: "機能", change: null },
       { e: propertyEntry(10, "p-property"), name: "p-property", kind: "性質", change: "変更" },
@@ -742,14 +742,14 @@ describe("RV-01・RV-02・RV-04 一覧の 1 件の出し方", () => {
   it("一覧の1件の2行目には種類の後ろに状態のアイコンを1つと立っているフラグのアイコンを並べ承認が失効したものは提案中でなく承認が失効したを出し状態は丸の形でフラグは丸のない形にする", async () => {
     const all = ["ai-proposal", "guess", "changed-since-agreement"] as const;
     const cases = [
-      { e: claimEntry(1, "c-proposed"), icons: ["提案中"] },
-      { e: claimEntry(2, "c-agreed-flags", { state: "agreed", flags: [...all] }), icons: ["承認済", "AI 案", "推測", "差分あり"] },
-      { e: claimEntry(3, "c-guess-ai", { flags: ["guess", "ai-proposal"] }), icons: ["提案中", "推測", "AI 案"] },
-      { e: claimEntry(4, "c-detached-proposed", { flags: ["changed-since-agreement"], detachedAgreement: { by: ["#31"] } }), icons: ["承認が失効した", "差分あり"] },
-      { e: claimEntry(5, "c-detached-agreed", { state: "agreed", detachedAgreement: { by: ["#31"] } }), icons: ["承認が失効した"] },
+      { e: specEntry(1, "c-proposed"), icons: ["提案中"] },
+      { e: specEntry(2, "c-agreed-flags", { state: "agreed", flags: [...all] }), icons: ["承認済", "AI 案", "推測", "差分あり"] },
+      { e: specEntry(3, "c-guess-ai", { flags: ["guess", "ai-proposal"] }), icons: ["提案中", "推測", "AI 案"] },
+      { e: specEntry(4, "c-detached-proposed", { flags: ["changed-since-agreement"], detachedAgreement: { by: ["#31"] } }), icons: ["承認が失効した", "差分あり"] },
+      { e: specEntry(5, "c-detached-agreed", { state: "agreed", detachedAgreement: { by: ["#31"] } }), icons: ["承認が失効した"] },
       { e: fileEntry(6, "e2e/agreed.txtar", { state: "agreed" }), icons: ["承認済"] },
     ];
-    const unchanged = claimEntry(0, "c-detached-unchanged", { no: null, change: "unchanged", before: null, flags: ["ai-proposal"], detachedAgreement: { by: ["#30"] } });
+    const unchanged = specEntry(0, "c-detached-unchanged", { no: null, change: "unchanged", before: null, flags: ["ai-proposal"], detachedAgreement: { by: ["#30"] } });
     open(
       cases.map((c) => c.e),
       { detached: [unchanged] },
@@ -783,9 +783,9 @@ describe("RV-01・RV-02・RV-04 一覧の 1 件の出し方", () => {
   // @vanda:evidence review-icon-names
   it("一覧のアイコンにマウスを乗せたときかキーボードでフォーカスしたときにそのアイコンの言葉を出しスクリーンリーダーにも同じ言葉を渡す", async () => {
     open([
-      claimEntry(1, "c-proposed", { flags: ["ai-proposal", "guess", "changed-since-agreement"] }),
-      claimEntry(2, "c-agreed", { state: "agreed" }),
-      claimEntry(3, "c-detached", { detachedAgreement: { by: ["#31"] } }),
+      specEntry(1, "c-proposed", { flags: ["ai-proposal", "guess", "changed-since-agreement"] }),
+      specEntry(2, "c-agreed", { state: "agreed" }),
+      specEntry(3, "c-detached", { detachedAgreement: { by: ["#31"] } }),
     ]);
     await listRow("c-proposed");
     const user = userEvent.setup();
@@ -815,7 +815,7 @@ describe("RV-01・RV-02・RV-04 一覧の 1 件の出し方", () => {
 });
 
 describe("RV-18 詳細の画面から戻る", () => {
-  // レビュー単位がストーリーのときはベースブランチを選ぶ所が出ないので、組は 3 つ。戻る経路（約束の詳細・ファイルの画面）と全部回す
+  // レビュー単位がストーリーのときはベースブランチを選ぶ所が出ないので、組は 3 つ。戻る経路（仕様の詳細・ファイルの画面）と全部回す
   const states = [
     { name: "何も付けない URL", url: "/", over: {} },
     { name: "ブランチでベースブランチがmain", url: "/?view=branch&base=main&story=%2324", over: {} },
@@ -823,18 +823,18 @@ describe("RV-18 詳細の画面から戻る", () => {
     { name: "ストーリー", url: "/?view=story&story=%2324", over: { view: "story", base: null, mergeBase: null } },
   ];
   const routes = [
-    { name: "約束の詳細", entry: "task-id-unique", link: "約束の詳細を開く" },
+    { name: "仕様の詳細", entry: "task-id-unique", link: "仕様の詳細を開く" },
     { name: "ファイルの画面", entry: "e2e/add-task.txtar", link: "ファイルの画面を開く" },
   ];
   // @vanda:evidence back-restores-state
-  it("約束の詳細とファイルの画面からストーリーのレビューへ戻ると行く前と同じベースブランチとレビュー単位とストーリーと選んだ件に戻る", async () => {
+  it("仕様の詳細とファイルの画面からストーリーのレビューへ戻ると行く前と同じベースブランチとレビュー単位とストーリーと選んだ件に戻る", async () => {
     for (const st of states) {
       for (const rt of routes) {
         const where = `${st.name}・${rt.name}`;
         window.history.pushState({}, "", st.url);
         requests.length = 0;
-        open([claimEntry(1, "task-id-unique"), fileEntry(2, "e2e/add-task.txtar"), claimEntry(3, "c-other")], st.over,
-          http.get("/api/specs/:id", () => HttpResponse.json(claimDetail())),
+        open([specEntry(1, "task-id-unique"), fileEntry(2, "e2e/add-task.txtar"), specEntry(3, "c-other")], st.over,
+          http.get("/api/specs/:id", () => HttpResponse.json(specDetail())),
           http.get("/api/file", () => HttpResponse.json({ path: "e2e/add-task.txtar", text: "exec vanda add 買い物\n" })));
         const user = userEvent.setup();
         const nameButton = async (id: string) => (await screen.findAllByText(id)).map((el) => el.closest("button")).find((b) => b?.closest("li"))!;
@@ -866,7 +866,7 @@ describe("Story: のトレーラーの誤り", () => {
   // @vanda:evidence story-trailer-errors-shown
   it("文脈にトレーラーの誤りがあると画面の上に知らせを出しコミットの短いハッシュとsubjectと理由を並べなければ出さない", async () => {
     for (const trailerErrors of [errors, []]) {
-      open([claimEntry(1, "c-one")], {}, http.get("/api/context", () => HttpResponse.json({ ...ctx, trailerErrors })));
+      open([specEntry(1, "c-one")], {}, http.get("/api/context", () => HttpResponse.json({ ...ctx, trailerErrors })));
       await screen.findAllByText(/c-one/);
       const alert = screen.queryByRole("alert", { name: "Story: のトレーラーの誤り" });
       if (trailerErrors.length === 0) {
@@ -895,9 +895,9 @@ describe("RV-01 一覧の絞り込み", () => {
   const notAgreedBox = () => within(list()).getByRole("checkbox", { name: "承認済でないものだけ" });
 
   const term = (no: number, id: string, name: string, definition: string, over: Partial<Entry> = {}) =>
-    claimEntry(no, id, { kind: "term", group: "terms", before: { name, definition: plain(definition), partOf: null, assumes: [] }, after: { name, definition: plain(definition), partOf: null, assumes: [] }, ...over });
+    specEntry(no, id, { kind: "term", group: "terms", before: { name, definition: plain(definition), partOf: null, assumes: [] }, after: { name, definition: plain(definition), partOf: null, assumes: [] }, ...over });
   const feature = (no: number, id: string, name: string, definition: string) =>
-    claimEntry(no, id, { kind: "feature", group: "features", before: { name, definition: plain(definition), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null }, after: { name, definition: plain(definition), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null } });
+    specEntry(no, id, { kind: "feature", group: "features", before: { name, definition: plain(definition), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null }, after: { name, definition: plain(definition), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null } });
   // 一覧の API は、まとまりごとに続けて返す（まとまりが飛び飛びだと、同じまとまりが 2 つ出る）
   const byGroup = (es: Entry[]) => ["terms", "features", "layer:model", "files"].flatMap((g) => es.filter((e) => e.group === g));
   const statementOf = (statement: string, rationale: string | null = null) => ({
@@ -915,9 +915,9 @@ describe("RV-01 一覧の絞り込み", () => {
   // 書く文字は大文字と小文字を混ぜ、マッチする側も、見る所ごとに大文字・小文字を変える
   const textEntries = () => {
     const hits: [string, Entry][] = [
-      ["約束の ID", claimEntry(1, "apple-claim")],
-      ["約束の文", claimEntry(2, "c-statement", { after: statementOf("APPLE を数える") })],
-      ["消した約束の前の文", claimEntry(3, "c-deleted", { change: "deleted", after: null, fingerprint: null, before: statementOf("apple を消す") })],
+      ["仕様の ID", specEntry(1, "apple-spec")],
+      ["仕様の文", specEntry(2, "c-statement", { after: statementOf("APPLE を数える") })],
+      ["消した仕様の前の文", specEntry(3, "c-deleted", { change: "deleted", after: null, fingerprint: null, before: statementOf("apple を消す") })],
       ["用語の ID", term(4, "t-apple", "果物", "食べるもの")],
       ["用語の名前", term(5, "t-name", "りんご ApPlE", "食べるもの")],
       ["用語の定義", term(6, "t-def", "果物", "赤い aPPLE のこと")],
@@ -926,8 +926,8 @@ describe("RV-01 一覧の絞り込み", () => {
       ["ファイルのパス", fileEntry(9, "e2e/APPLE.txtar")],
     ];
     const misses: [string, Entry][] = [
-      ["文にも ID にもない約束", claimEntry(10, "c-miss")],
-      ["理由にだけある約束", claimEntry(11, "c-rationale", { after: statementOf("数える", "apple のため") })],
+      ["文にも ID にもない仕様", specEntry(10, "c-miss")],
+      ["理由にだけある仕様", specEntry(11, "c-rationale", { after: statementOf("数える", "apple のため") })],
       ["中身にだけあるファイル", fileEntry(12, "e2e/other.txtar", { after: { text: "apple\n" } })],
       ["名前と定義にない用語", term(13, "t-miss", "果物", "食べるもの")],
     ];
@@ -935,13 +935,13 @@ describe("RV-01 一覧の絞り込み", () => {
   };
 
   // @vanda:evidence review-filter-text
-  it("書いた文字で絞り込むと約束と用語と機能はIDと名前と文と定義にファイルはパスにその文字を大文字と小文字を区別せずに含むものだけを出す", async () => {
+  it("書いた文字で絞り込むと仕様と用語と機能はIDと名前と文と定義にファイルはパスにその文字を大文字と小文字を区別せずに含むものだけを出す", async () => {
     const { hits, misses } = textEntries();
-    const detachedHit = claimEntry(0, "apple-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
-    const detachedMiss = claimEntry(0, "c-detached-miss", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
+    const detachedHit = specEntry(0, "apple-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
+    const detachedMiss = specEntry(0, "c-detached-miss", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
     open(byGroup([...hits, ...misses].map(([, e]) => e)), { detached: [detachedHit, detachedMiss] });
     const name = (e: Entry) => (e.kind === "file" ? e.path! : e.id!);
-    await waitFor(() => expect(shown("apple-claim")).toBe(true));
+    await waitFor(() => expect(shown("apple-spec")).toBe(true));
     // 絞り込む前は全部出る
     for (const [what, e] of [...hits, ...misses]) expect(shown(name(e)), `絞り込む前に${what}が出ない`).toBe(true);
     await userEvent.setup().type(searchBox(), "aPpLe");
@@ -956,19 +956,19 @@ describe("RV-01 一覧の絞り込み", () => {
   // 承認済でないもの（提案中と、承認が失効したもの）。消したものは、消したことへの承認がなければ提案中
   const stateEntries = () => {
     const kept: [string, Entry][] = [
-      ["提案中の約束", claimEntry(1, "c-proposed", { state: "proposed" })],
+      ["提案中の仕様", specEntry(1, "c-proposed", { state: "proposed" })],
       ["提案中のファイル", fileEntry(2, "e2e/proposed.txtar", { state: "proposed" })],
-      ["承認が失効した提案中の約束", claimEntry(3, "c-detached-proposed", { state: "proposed", detachedAgreement: { by: ["#31"] } })],
-      ["ほかのストーリーの承認で承認済だが承認が失効した約束", claimEntry(4, "c-detached-agreed", { state: "agreed", detachedAgreement: { by: ["#31"] } })],
-      ["消したことへの承認がない消した約束", claimEntry(7, "c-deleted-proposed", { change: "deleted", after: null, state: "proposed", fingerprint: null })],
+      ["承認が失効した提案中の仕様", specEntry(3, "c-detached-proposed", { state: "proposed", detachedAgreement: { by: ["#31"] } })],
+      ["ほかのストーリーの承認で承認済だが承認が失効した仕様", specEntry(4, "c-detached-agreed", { state: "agreed", detachedAgreement: { by: ["#31"] } })],
+      ["消したことへの承認がない消した仕様", specEntry(7, "c-deleted-proposed", { change: "deleted", after: null, state: "proposed", fingerprint: null })],
     ];
     const dropped: [string, Entry][] = [
-      ["承認済の約束", claimEntry(5, "c-agreed", { state: "agreed" })],
+      ["承認済の仕様", specEntry(5, "c-agreed", { state: "agreed" })],
       ["承認済のファイル", fileEntry(6, "e2e/agreed.txtar", { state: "agreed" })],
-      ["消したことを承認済の消した約束", claimEntry(8, "c-deleted-agreed", { change: "deleted", after: null, state: "agreed", fingerprint: null })],
+      ["消したことを承認済の消した仕様", specEntry(8, "c-deleted-agreed", { change: "deleted", after: null, state: "agreed", fingerprint: null })],
     ];
     const detached = [
-      claimEntry(0, "u-detached-proposed", { no: null, change: "unchanged", before: null, state: "proposed", detachedAgreement: { by: ["#30"] } }),
+      specEntry(0, "u-detached-proposed", { no: null, change: "unchanged", before: null, state: "proposed", detachedAgreement: { by: ["#30"] } }),
       fileEntry(0, "e2e/u-detached-agreed.txtar", { no: null, change: "unchanged", before: null, state: "agreed", detachedAgreement: { by: ["#30"] } }),
     ];
     return { kept, dropped, detached };
@@ -996,10 +996,10 @@ describe("RV-01 一覧の絞り込み", () => {
   // @vanda:evidence review-filter-not-agreed
   it("承認済でないものだけにするのと文字の絞り込みを重ねると両方にマッチするものだけを出す", async () => {
     open([
-      claimEntry(1, "pear-proposed", { state: "proposed" }),
-      claimEntry(2, "pear-agreed", { state: "agreed" }),
-      claimEntry(3, "plum-proposed", { state: "proposed" }),
-      claimEntry(4, "plum-agreed", { state: "agreed" }),
+      specEntry(1, "pear-proposed", { state: "proposed" }),
+      specEntry(2, "pear-agreed", { state: "agreed" }),
+      specEntry(3, "plum-proposed", { state: "proposed" }),
+      specEntry(4, "plum-agreed", { state: "agreed" }),
     ]);
     await waitFor(() => expect(shown("pear-proposed")).toBe(true));
     const user = userEvent.setup();
@@ -1013,7 +1013,7 @@ describe("RV-01 一覧の絞り込み", () => {
 
   // @vanda:evidence review-filter-count
   it("絞り込んでいるあいだは全体の件数に加えて絞り込んだ後の件数を示し絞り込んでいないときは全体の件数だけを示す", async () => {
-    open([claimEntry(1, "pear-a"), claimEntry(2, "pear-b", { state: "agreed" }), claimEntry(3, "plum-c"), claimEntry(4, "fig-e"), fileEntry(5, "e2e/pear.txtar")]);
+    open([specEntry(1, "pear-a"), specEntry(2, "pear-b", { state: "agreed" }), specEntry(3, "plum-c"), specEntry(4, "fig-e"), fileEntry(5, "e2e/pear.txtar")]);
     const heading = () => within(list()).getByRole("heading", { level: 2 }).textContent ?? "";
     await waitFor(() => expect(heading()).toMatch(/全 5 件/));
     expect(heading()).not.toMatch(/絞り込/);
@@ -1034,8 +1034,8 @@ describe("RV-01 一覧の絞り込み", () => {
 
   // @vanda:evidence review-filter-count
   it("絞り込みで1件もなければその旨を示し1件でもマッチすれば示さない", async () => {
-    const detached = claimEntry(0, "kiwi-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
-    open([claimEntry(1, "pear-a"), claimEntry(2, "plum-b")], { detached: [detached] });
+    const detached = specEntry(0, "kiwi-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
+    open([specEntry(1, "pear-a"), specEntry(2, "plum-b")], { detached: [detached] });
     const none = () => within(list()).queryByText(/絞り込みの条件にマッチするものはありません/) !== null;
     await waitFor(() => expect(shown("pear-a")).toBe(true));
     expect(none(), "絞り込む前から 0 件と示している").toBe(false);
@@ -1054,9 +1054,9 @@ describe("RV-01 一覧の絞り込み", () => {
   });
 
   // @vanda:evidence review-filter-kept
-  it("絞り込みの条件をURLに残し読み込み直しても約束の詳細から戻っても同じ条件で絞り込む", async () => {
-    const entries = [claimEntry(1, "pear-a"), claimEntry(2, "pear-b", { state: "agreed" }), claimEntry(3, "plum-c")];
-    const detail = http.get("/api/specs/:id", () => HttpResponse.json(claimDetail({ id: "pear-a" })));
+  it("絞り込みの条件をURLに残し読み込み直しても仕様の詳細から戻っても同じ条件で絞り込む", async () => {
+    const entries = [specEntry(1, "pear-a"), specEntry(2, "pear-b", { state: "agreed" }), specEntry(3, "plum-c")];
+    const detail = http.get("/api/specs/:id", () => HttpResponse.json(specDetail({ id: "pear-a" })));
     open(entries, {}, detail);
     await waitFor(() => expect(shown("plum-c")).toBe(true));
     const user = userEvent.setup();
@@ -1081,9 +1081,9 @@ describe("RV-01 一覧の絞り込み", () => {
     await waitFor(() => expect(shown("pear-a")).toBe(true));
     filtered();
 
-    // 約束の詳細へ移って戻る
+    // 仕様の詳細へ移って戻る
     await user.click(within(list()).getByText("pear-a", { exact: true }));
-    await user.click(await screen.findByRole("link", { name: "約束の詳細を開く" }));
+    await user.click(await screen.findByRole("link", { name: "仕様の詳細を開く" }));
     await user.click(await screen.findByRole("link", { name: "ストーリーのレビューへ戻る" }));
     await waitFor(() => expect(shown("pear-a")).toBe(true));
     filtered();
@@ -1094,7 +1094,7 @@ describe("RV-01 一覧の絞り込み", () => {
 // （docs/plans/stage4-references.md の「API の形」と「画面」）。
 describe("参照", () => {
   const ref = (text: string, id: string) => ({ text, ref: id });
-  // fieldRefs は、自然言語で書く項目の全部（約束の 6 つ、用語の定義、機能の定義と形式手法を使わない理由）に、それぞれ別の用語を指す参照を書いたときの、見せる名前
+  // fieldRefs は、自然言語で書く項目の全部（仕様の 6 つ、用語の定義、機能の定義と形式手法を使わない理由）に、それぞれ別の用語を指す参照を書いたときの、見せる名前
   const fieldRefs = {
     statement: "文の用語",
     rationale: "理由の用語",
@@ -1114,8 +1114,8 @@ describe("参照", () => {
   const allRefs = {
     ...termRefs,
     "f-sort": featureRef("並べ替え", "タスクを順に並べる", { core: false, formal: false }),
-    "c-other": claimRef("ほかの約束の文"),
-    "c-gone": claimRef("消えた約束の文", false),
+    "c-other": specRef("ほかの仕様の文"),
+    "c-gone": specRef("消えた仕様の文", false),
     "p-up": propertyRef("上の性質の文"),
     "u-disk": truthRef("ディスクの前提の文"),
     "p-past": propertyRef("今ない性質の文", false),
@@ -1124,8 +1124,8 @@ describe("参照", () => {
     "f-past": featureRef("今ない機能", "今ない機能の定義", { current: false, core: false, formal: false }),
   };
 
-  const claimWithRefs = () =>
-    claimEntry(1, "c-all", {
+  const specWithRefs = () =>
+    specEntry(1, "c-all", {
       change: "added",
       before: null,
       after: {
@@ -1141,12 +1141,12 @@ describe("参照", () => {
       },
     } as Partial<Entry>);
   const termWithRefs = () =>
-    claimEntry(2, "t-ref", {
+    specEntry(2, "t-ref", {
       kind: "term", group: "terms", change: "added", before: null,
       after: { name: "参照を持つ用語", definition: [ref(fieldRefs.termDefinition, idOf("termDefinition")), { text: "の一部" }], partOf: null, assumes: [] },
     } as Partial<Entry>);
   const featureWithRefs = () =>
-    claimEntry(3, "f-ref", {
+    specEntry(3, "f-ref", {
       kind: "feature", group: "features", change: "added", before: null,
       after: {
         name: "参照を持つ機能",
@@ -1197,8 +1197,8 @@ describe("参照", () => {
   };
 
   // @vanda:evidence reference-shown
-  it("一覧の詳細では自然言語で書く項目のどれでも参照を用語と機能は名前で約束と性質と前提はIDで参照だと分かる見た目で出す", async () => {
-    open([claimWithRefs(), termWithRefs(), featureWithRefs()], { refs: allRefs });
+  it("一覧の詳細では自然言語で書く項目のどれでも参照を用語と機能は名前で仕様と性質と前提はIDで参照だと分かる見た目で出す", async () => {
+    open([specWithRefs(), termWithRefs(), featureWithRefs()], { refs: allRefs });
     const cases: [RegExp, Field[]][] = [
       [/c-all/, ["statement", "rationale", "condition", "guesses", "modelCheckWaiver", "detail"]],
       [/t-ref/, ["termDefinition"]],
@@ -1216,11 +1216,11 @@ describe("参照", () => {
     await openEntry(/c-all/);
     await waitFor(() => expect(detailRegion().textContent).toContain("並べ替え"));
     expectRefLook(refElement(detailRegion(), "並べ替え"), "並べ替え", "機能を指す参照");
-    expectRefLook(refElement(detailRegion(), "c-other"), "c-other", "約束を指す参照");
-    expectRefLook(refElement(detailRegion(), "c-gone"), "c-gone", "今ない約束を指す参照");
+    expectRefLook(refElement(detailRegion(), "c-other"), "c-other", "仕様を指す参照");
+    expectRefLook(refElement(detailRegion(), "c-gone"), "c-gone", "今ない仕様を指す参照");
     expectRefLook(refElement(detailRegion(), "今ない用語"), "今ない用語", "今ない用語を指す参照");
     expectRefLook(refElement(detailRegion(), "今ない機能"), "今ない機能", "今ない機能を指す参照");
-    // 性質と前提は名前を持たないので、約束と同じく ID で見せる
+    // 性質と前提は名前を持たないので、仕様と同じく ID で見せる
     expectRefLook(refElement(detailRegion(), "p-up"), "p-up", "性質を指す参照");
     expectRefLook(refElement(detailRegion(), "u-disk"), "u-disk", "前提を指す参照");
     expectRefLook(refElement(detailRegion(), "p-past"), "p-past", "今ない性質を指す参照");
@@ -1228,10 +1228,10 @@ describe("参照", () => {
   });
 
   // @vanda:evidence reference-shown
-  it("参照のうち今の約束リストにある約束と用語と機能と性質と前提はその詳細のページへのリンクにし今の約束リストにないものはリンクにしない", async () => {
+  it("参照のうち今の約束リストにある仕様と用語と機能と性質と前提はその詳細のページへのリンクにし今の約束リストにないものはリンクにしない", async () => {
     window.history.pushState({}, "", "/");
-    open([claimWithRefs()], { refs: allRefs },
-      http.get("/api/specs/:id", ({ params }) => HttpResponse.json(claimDetail({ id: String(params.id), statement: plain(`${String(params.id)} の詳細の文`) }))),
+    open([specWithRefs()], { refs: allRefs },
+      http.get("/api/specs/:id", ({ params }) => HttpResponse.json(specDetail({ id: String(params.id), statement: plain(`${String(params.id)} の詳細の文`) }))),
       http.get("/api/terms/:id", ({ params }) =>
         HttpResponse.json({ id: String(params.id), name: `${String(params.id)} の詳細の名前`, definition: plain("用語の詳細の定義"), partOf: null, children: [], assumes: [], refs: {} })),
       http.get("/api/features/:id", ({ params }) =>
@@ -1245,7 +1245,7 @@ describe("参照", () => {
       expect(within(detailRegion()).queryByRole("link", { name }), `${name} がリンクになっている`).toBeNull();
     }
     const cases: [string, string, string][] = [
-      ["c-other", "/claims/c-other", "c-other の詳細の文"],
+      ["c-other", "/specs/c-other", "c-other の詳細の文"],
       [fieldRefs.statement, "/terms/t-statement", "t-statement の詳細の名前"],
       ["並べ替え", "/features/f-sort", "f-sort の詳細の名前"],
       ["p-up", "/properties/p-up", "p-up の詳細の文"],
@@ -1269,9 +1269,9 @@ describe("参照", () => {
   // @vanda:evidence reference-shown
   it("項目の差分の中の参照も名前で参照だと分かる見た目で出し消した参照はdelに足した参照はinsに出す", async () => {
     open([
-      claimEntry(1, "c-diff", {
-        before: { ...claimEntry(1, "c-diff").before!, statement: [ref("前も後もある用語", "t-both"), { text: "は" }, ref("消した用語", "t-gone"), { text: "を使う" }] },
-        after: { ...claimEntry(1, "c-diff").after!, statement: [ref("前も後もある用語", "t-both"), { text: "は" }, ref("足した用語", "t-new"), { text: "を使う" }] },
+      specEntry(1, "c-diff", {
+        before: { ...specEntry(1, "c-diff").before!, statement: [ref("前も後もある用語", "t-both"), { text: "は" }, ref("消した用語", "t-gone"), { text: "を使う" }] },
+        after: { ...specEntry(1, "c-diff").after!, statement: [ref("前も後もある用語", "t-both"), { text: "は" }, ref("足した用語", "t-new"), { text: "を使う" }] },
         diff: {
           fields: {
             statement: [
@@ -1312,27 +1312,27 @@ describe("参照", () => {
     { id: "f-core", name: "コアだけの機能", text: "コアだけの機能の定義", core: true, formal: false, current: true },
     { id: "f-formal", name: "形式だけの機能", text: "形式だけの機能の定義", core: false, formal: true, current: true },
     { id: "f-none", name: "マークのない機能", text: "マークのない機能の定義", core: false, formal: false, current: false },
-    { id: "c-other", name: "c-other", text: "ほかの約束の文", current: true },
-    { id: "c-gone", name: "c-gone", text: "消えた約束の文", current: false },
+    { id: "c-other", name: "c-other", text: "ほかの仕様の文", current: true },
+    { id: "c-gone", name: "c-gone", text: "消えた仕様の文", current: false },
   ];
   const popupRefs = Object.fromEntries(
     popupTargets.map((p) => [
       p.id,
       p.id.startsWith("t-") ? termRef(p.name, p.text, p.current)
         : p.id.startsWith("f-") ? featureRef(p.name, `文の用語を使う${p.text}`, { current: p.current, core: p.core!, formal: p.formal!, pieces: [ref("文の用語", "t-statement"), { text: `を使う${p.text}` }] })
-        : claimRef(p.text, p.current),
+        : specRef(p.text, p.current),
     ]),
   );
   const popupEntry = () =>
-    claimEntry(1, "c-pop", {
+    specEntry(1, "c-pop", {
       change: "added",
       before: null,
       after: {
-        ...claimEntry(1, "c-pop").after!,
+        ...specEntry(1, "c-pop").after!,
         statement: popupTargets.flatMap((p) => [ref(p.name, p.id), { text: "と" }]),
       },
     } as Partial<Entry>);
-  // expectTipContent は、ポップアップが、指す先の ID と中身（用語と機能は定義、約束は文）と、機能ならコア機能か・形式手法を使う機能かのマークを持つかを確かめる
+  // expectTipContent は、ポップアップが、指す先の ID と中身（用語と機能は定義、仕様は文）と、機能ならコア機能か・形式手法を使う機能かのマークを持つかを確かめる
   const expectTipContent = (tip: HTMLElement, p: (typeof popupTargets)[number], how: string) => {
     const text = tip.textContent ?? "";
     expect(text, `${p.name}: ${how}のポップアップに ID がない`).toContain(p.id);
@@ -1424,18 +1424,18 @@ describe("参照の絞り込み", () => {
   const searchBox = () => within(list()).getByRole("searchbox", { name: "絞り込み" });
   const ref = (text: string, id: string) => ({ text, ref: id });
   const withStatement = (no: number, id: string, statement: { text: string; ref?: string }[]) =>
-    claimEntry(no, id, { after: { ...claimEntry(no, id).after!, statement } } as Partial<Entry>);
+    specEntry(no, id, { after: { ...specEntry(no, id).after!, statement } } as Partial<Entry>);
 
   // @vanda:evidence reference-filter
   it("書いた文字で絞り込むと参照を置き換えた後の文で探し名前でマッチし書いたままの参照や指す用語のIDではマッチしない", async () => {
-    const deletedBefore = { ...claimEntry(3, "c-deleted").before!, statement: [ref("りんご", "t-apple"), { text: "を消す" }] };
+    const deletedBefore = { ...specEntry(3, "c-deleted").before!, statement: [ref("りんご", "t-apple"), { text: "を消す" }] };
     const entries: Entry[] = [
       withStatement(1, "c-fruit", [ref("りんご", "t-apple"), { text: "を数える" }]),
       // {@@ を {@ にした文字のセグメント。見せる文字に {@id:t-apple} がある
       withStatement(2, "c-literal", [{ text: "{@id:t-apple} は文字" }]),
-      claimEntry(3, "c-deleted", { change: "deleted", after: null, fingerprint: null, before: deletedBefore } as Partial<Entry>),
+      specEntry(3, "c-deleted", { change: "deleted", after: null, fingerprint: null, before: deletedBefore } as Partial<Entry>),
       withStatement(4, "c-plain", [{ text: "バナナを数える" }]),
-      claimEntry(5, "t-def", {
+      specEntry(5, "t-def", {
         kind: "term", group: "terms",
         before: { name: "果物", definition: [ref("りんご", "t-apple"), { text: "の仲間" }], partOf: null, assumes: [] },
         after: { name: "果物", definition: [ref("りんご", "t-apple"), { text: "の仲間" }], partOf: null, assumes: [] },
@@ -1453,7 +1453,7 @@ describe("参照の絞り込み", () => {
         for (const [id, on] of Object.entries(want)) expect(shown(id), `「${text}」で ${id} が${on ? "出ない" : "出ている"}`).toBe(on);
       });
     };
-    // 参照を置き換えた名前でマッチする（約束の文、消した約束の前の文、用語の定義）
+    // 参照を置き換えた名前でマッチする（仕様の文、消した仕様の前の文、用語の定義）
     await search("りんご", { "c-fruit": true, "c-deleted": true, "t-def": true, "c-literal": false, "c-plain": false });
     // 書いたままの参照ではマッチしない。見せる文字に {@id:…} がある c-literal だけにマッチする
     await search("{@id:t-apple}", { "c-fruit": false, "c-deleted": false, "t-def": false, "c-literal": true, "c-plain": false });
@@ -1473,7 +1473,7 @@ describe("ヘッダー", () => {
       { name: "user.nameとuser.emailがない", over: { user: null }, want: ["story-24", "user.name", "user.email", "設定されていません", "0.1.0"], not: ["承認する人", "po@example.com"] },
     ];
     for (const c of cases) {
-      open([claimEntry(1, "c-one")], {}, http.get("/api/context", () => HttpResponse.json({ ...ctx, ...c.over })));
+      open([specEntry(1, "c-one")], {}, http.get("/api/context", () => HttpResponse.json({ ...ctx, ...c.over })));
       const banner = screen.getByRole("banner");
       await waitFor(() => expect(banner.textContent, `${c.name}: 帯に ${c.want[0]} がない`).toContain(c.want[0]));
       for (const w of c.want) expect(banner.textContent, `${c.name}: 帯に ${w} がない`).toContain(w);
@@ -1492,11 +1492,11 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
     const add = { change: "added", before: null } as const;
     const del = { change: "deleted", after: null, fingerprint: null } as const;
     open([
-      claimEntry(1, "c-add-1", add),
-      claimEntry(2, "c-add-2", add),
-      claimEntry(3, "c-mod-1"),
-      claimEntry(4, "c-mod-2"),
-      claimEntry(5, "c-del-1", del),
+      specEntry(1, "c-add-1", add),
+      specEntry(2, "c-add-2", add),
+      specEntry(3, "c-mod-1"),
+      specEntry(4, "c-mod-2"),
+      specEntry(5, "c-del-1", del),
       fileEntry(6, "e2e/add.txtar", add),
       fileEntry(7, "e2e/mod.txtar"),
       fileEntry(8, "e2e/mod2.txtar"),
@@ -1512,8 +1512,8 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
 
   // @vanda:evidence review-detached-on-top
   it("一覧の外に示す失効した承認はまとまりの上に承認が失効したものとしてまとめ総数に数えないことを添える", async () => {
-    const unchanged = (id: string) => claimEntry(0, id, { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
-    open([claimEntry(1, "c-model"), fileEntry(2, "e2e/a.txtar")], { detached: [unchanged("c-detached-1"), unchanged("c-detached-2")] });
+    const unchanged = (id: string) => specEntry(0, id, { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
+    open([specEntry(1, "c-model"), fileEntry(2, "e2e/a.txtar")], { detached: [unchanged("c-detached-1"), unchanged("c-detached-2")] });
     await listRow("c-detached-1");
     const headings = within(listRegion()).getAllByRole("heading", { level: 3 });
     const top = headings.find((h) => /承認が失効したもの/.test(h.textContent ?? ""));
@@ -1534,11 +1534,11 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
   // @vanda:evidence review-empty-note
   it("変わったものが0件なら比べる元と今のあいだで変わったものはないと示し1件でもあれば示さない", async () => {
     const note = "比べる元と今のあいだで、変わったものはありません。";
-    const detached = claimEntry(0, "c-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
+    const detached = specEntry(0, "c-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
     const cases = [
       { name: "0 件", entries: [], over: {}, shown: true },
       { name: "失効した承認だけがある", entries: [], over: { detached: [detached] }, shown: true },
-      { name: "1 件", entries: [claimEntry(1, "c-one")], over: {}, shown: false },
+      { name: "1 件", entries: [specEntry(1, "c-one")], over: {}, shown: false },
     ];
     for (const c of cases) {
       open(c.entries, c.over);
@@ -1556,8 +1556,8 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
   // @vanda:evidence review-groups-fold-over-ten
   it("画面を開いた時11件以上のまとまりはたたみ10件以下のまとまりと選んだ件を含むまとまりは開いておく", async () => {
     const pad = (i: number) => String(i).padStart(2, "0");
-    const model = Array.from({ length: 10 }, (_, i) => claimEntry(i + 1, `m-${pad(i)}`));
-    const db = Array.from({ length: 11 }, (_, i) => claimEntry(i + 11, `d-${pad(i)}`, { group: "layer:db" }));
+    const model = Array.from({ length: 10 }, (_, i) => specEntry(i + 1, `m-${pad(i)}`));
+    const db = Array.from({ length: 11 }, (_, i) => specEntry(i + 11, `d-${pad(i)}`, { group: "layer:db" }));
     const files = Array.from({ length: 11 }, (_, i) => fileEntry(i + 22, `e2e/f-${pad(i)}.txtar`));
     window.history.pushState({}, "", "/?view=branch&base=main&sel=" + encodeURIComponent("path:e2e/f-05.txtar"));
     open([...model, ...db, ...files]);
@@ -1569,19 +1569,19 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
   });
 
   // @vanda:evidence review-order
-  it("一覧は性質と前提と用語と機能と設定のレイヤーの順の約束とエビデンスの本体のまとまりの順に並べ通し番号を付けて出す", async () => {
+  it("一覧は性質と前提と用語と機能と設定のレイヤーの順の仕様とエビデンスの本体のまとまりの順に並べ通し番号を付けて出す", async () => {
     const term = (no: number, id: string) =>
-      claimEntry(no, id, { kind: "term", group: "terms", before: { name: id, definition: plain("定義"), partOf: null, assumes: [] }, after: { name: id, definition: plain("定義"), partOf: null, assumes: [] } });
+      specEntry(no, id, { kind: "term", group: "terms", before: { name: id, definition: plain("定義"), partOf: null, assumes: [] }, after: { name: id, definition: plain("定義"), partOf: null, assumes: [] } });
     const feature = (no: number, id: string) =>
-      claimEntry(no, id, { kind: "feature", group: "features", before: { name: id, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null }, after: { name: id, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null } });
+      specEntry(no, id, { kind: "feature", group: "features", before: { name: id, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null }, after: { name: id, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null } });
     const entries = [
       propertyEntry(1, "p-a"),
       truthEntry(2, "u-a"),
       term(3, "t-a"),
       feature(4, "f-a"),
-      claimEntry(5, "m-a"),
-      claimEntry(6, "m-b"),
-      claimEntry(7, "d-a", { group: "layer:db" }),
+      specEntry(5, "m-a"),
+      specEntry(6, "m-b"),
+      specEntry(7, "d-a", { group: "layer:db" }),
       fileEntry(8, "db/a.sql", { fileType: "guardrail" }),
       fileEntry(9, "e2e/a.txtar"),
     ];
@@ -1598,22 +1598,22 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
 
 describe("RV-02 1 件の詳細", () => {
   // @vanda:evidence review-detail-links
-  it("1件の詳細に約束なら約束の詳細を開くファイルならファイルの画面を開くのリンクを出し削除したものには出さない", async () => {
+  it("1件の詳細に仕様なら仕様の詳細を開くファイルならファイルの画面を開くのリンクを出し削除したものには出さない", async () => {
     const del = { change: "deleted", after: null, fingerprint: null } as const;
     const cases = [
-      { e: claimEntry(1, "c-mod"), name: "c-mod", link: "約束の詳細を開く", href: /^\/claims\/c-mod(\?|$)/ },
-      { e: claimEntry(2, "c-add", { change: "added", before: null }), name: "c-add", link: "約束の詳細を開く", href: /^\/claims\/c-add(\?|$)/ },
-      { e: claimEntry(3, "c-del", del), name: "c-del", link: null, href: null },
+      { e: specEntry(1, "c-mod"), name: "c-mod", link: "仕様の詳細を開く", href: /^\/specs\/c-mod(\?|$)/ },
+      { e: specEntry(2, "c-add", { change: "added", before: null }), name: "c-add", link: "仕様の詳細を開く", href: /^\/specs\/c-add(\?|$)/ },
+      { e: specEntry(3, "c-del", del), name: "c-del", link: null, href: null },
       { e: fileEntry(4, "e2e/mod.txtar"), name: "e2e/mod.txtar", link: "ファイルの画面を開く", href: /^\/files\?(.*&)?path=e2e%2Fmod\.txtar(&|$)/ },
       { e: fileEntry(5, "e2e/add.txtar", { change: "added", before: null }), name: "e2e/add.txtar", link: "ファイルの画面を開く", href: /^\/files\?(.*&)?path=e2e%2Fadd\.txtar(&|$)/ },
       { e: fileEntry(6, "e2e/del.txtar", del), name: "e2e/del.txtar", link: null, href: null },
     ];
-    open(cases.map((c) => c.e), {}, http.get("/api/specs/:id", () => HttpResponse.json(claimDetail())));
+    open(cases.map((c) => c.e), {}, http.get("/api/specs/:id", () => HttpResponse.json(specDetail())));
     const user = userEvent.setup();
     for (const c of cases) {
       await user.click(within(await listRow(c.name)).getByRole("button"));
       await waitFor(() => expect(within(detailRegion()).getByText(c.name, { selector: "h2", exact: false })).toBeTruthy());
-      for (const name of ["約束の詳細を開く", "ファイルの画面を開く"]) {
+      for (const name of ["仕様の詳細を開く", "ファイルの画面を開く"]) {
         const links = within(detailRegion()).queryAllByRole("link", { name });
         expect(links.length, `${c.name} の「${name}」のリンクの数`).toBe(name === c.link ? 1 : 0);
         if (name === c.link) expect(links[0].getAttribute("href"), `${c.name} のリンクの先`).toMatch(c.href!);
@@ -1622,14 +1622,14 @@ describe("RV-02 1 件の詳細", () => {
   });
 
   // @vanda:evidence review-added-content
-  it("追加した約束と用語と機能と性質と前提とファイルは今の中身を示す", async () => {
-    const claim = claimEntry(1, "c-new", {
+  it("追加した仕様と用語と機能と性質と前提とファイルは今の中身を示す", async () => {
+    const spec = specEntry(1, "c-new", {
       change: "added",
       before: null,
       after: {
-        statement: plain("足した約束の文"),
-        rationale: plain("足した約束の理由"),
-        condition: plain("足した約束の条件"),
+        statement: plain("足した仕様の文"),
+        rationale: plain("足した仕様の理由"),
+        condition: plain("足した仕様の条件"),
         refines: ["add-task"], assumes: ["disk-works"],
         layers: ["model", "db"],
         evidence: [{ stage: "implementation", type: "random-check", layers: ["db"], detail: plain("足したエビデンスの予定の詳細") }],
@@ -1638,8 +1638,8 @@ describe("RV-02 1 件の詳細", () => {
         modelCheckWaiver: null,
       },
     });
-    const term = claimEntry(2, "t-new", { kind: "term", group: "terms", change: "added", before: null, after: { name: "足した用語の名前", definition: plain("足した用語の定義"), partOf: "task", assumes: ["net-works"] } });
-    const feature = claimEntry(3, "f-new", {
+    const term = specEntry(2, "t-new", { kind: "term", group: "terms", change: "added", before: null, after: { name: "足した用語の名前", definition: plain("足した用語の定義"), partOf: "task", assumes: ["net-works"] } });
+    const feature = specEntry(3, "f-new", {
       kind: "feature",
       group: "features",
       change: "added",
@@ -1649,10 +1649,10 @@ describe("RV-02 1 件の詳細", () => {
     const file = fileEntry(4, "e2e/new.txtar", { change: "added", before: null, after: { text: "足したファイルの本文\n" } });
     const property = propertyEntry(5, "p-new", { change: "added", before: null, after: { statement: plain("足した性質の文"), rationale: plain("足した性質の理由"), refines: ["reliable", "safe"], assumes: ["disk-works"] } });
     const truth = truthEntry(6, "u-new", { change: "added", before: null, after: { statement: plain("足した前提の文") } });
-    open([claim, term, feature, file, property, truth], {}, http.get("/api/specs/:id", () => HttpResponse.json(claimDetail())),
+    open([spec, term, feature, file, property, truth], {}, http.get("/api/specs/:id", () => HttpResponse.json(specDetail())),
       http.get("/api/features/:id", () => HttpResponse.json({ id: "f-new", name: "足した機能の名前", definition: plain("足した機能の定義"), core: true, formal: false, refines: [], specs: [], refs: {} })));
     const cases = [
-      { name: "c-new", want: ["足した約束の文", "足した約束の理由", "足した約束の条件", "add-task", "disk-works", "足したエビデンスの予定の詳細", "足した推測の 1 つ目", "足した推測の 2 つ目"], also: [/ランダムチェック|random-check/, /モデル|model/, /DB|db/] },
+      { name: "c-new", want: ["足した仕様の文", "足した仕様の理由", "足した仕様の条件", "add-task", "disk-works", "足したエビデンスの予定の詳細", "足した推測の 1 つ目", "足した推測の 2 つ目"], also: [/ランダムチェック|random-check/, /モデル|model/, /DB|db/] },
       { name: "t-new", want: ["足した用語の名前", "足した用語の定義", "task", "net-works"], also: [] },
       { name: "f-new", want: ["足した機能の名前", "足した機能の定義", "no-lost-task", "足した機能の形式手法を使わない理由"], also: [] },
       { name: "e2e/new.txtar", want: ["足したファイルの本文"], also: [] },
@@ -1669,35 +1669,35 @@ describe("RV-02 1 件の詳細", () => {
     }
   });
 
-  // 機能の 1 件の詳細に並べる、その機能を refines する約束（review-term-feature-claims）。詳細のページ（term-feature-page-claims）と同じ一覧。
-  // 用語には並べない（約束リストから subjects がなくなり、用語の詳細の API は約束を返さない）
+  // 機能の 1 件の詳細に並べる、その機能を refines する仕様（review-term-feature-specs）。詳細のページ（term-feature-page-specs）と同じ一覧。
+  // 用語には並べない（約束リストから subjects がなくなり、用語の詳細の API は仕様を返さない）
   type Change = "added" | "modified" | "deleted";
   const termTF = (no: number, id: string, change: Change) => {
     const content = { name: id, definition: plain(`${id} の定義`), partOf: null, assumes: [] };
-    return claimEntry(no, id, { kind: "term", group: "terms", change, before: change === "added" ? null : content, after: change === "deleted" ? null : content, ...(change === "deleted" ? { fingerprint: null } : {}) });
+    return specEntry(no, id, { kind: "term", group: "terms", change, before: change === "added" ? null : content, after: change === "deleted" ? null : content, ...(change === "deleted" ? { fingerprint: null } : {}) });
   };
   const featureTF = (no: number, id: string, change: Change) => {
     const content = { name: id, definition: plain(`${id} の定義`), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null };
-    return claimEntry(no, id, { kind: "feature", group: "features", change, before: change === "added" ? null : content, after: change === "deleted" ? null : content, ...(change === "deleted" ? { fingerprint: null } : {}) });
+    return specEntry(no, id, { kind: "feature", group: "features", change, before: change === "added" ? null : content, after: change === "deleted" ? null : content, ...(change === "deleted" ? { fingerprint: null } : {}) });
   };
-  // tfClaims は、機能 id を refines する約束。約束リストに書いた順（ID の順と違う）。文に id を入れ、どの用語・機能の一覧かを見分ける
-  const tfClaims = (id: string) => [
-    { id: "c-z", statement: plain(`${id} の最初に書いた約束の文`) },
-    { id: "c-a", statement: plain(`${id} の次に書いた約束の文`) },
-    { id: "c-m", statement: plain(`${id} の最後に書いた約束の文`) },
+  // tfSpecs は、機能 id を refines する仕様。約束リストに書いた順（ID の順と違う）。文に id を入れ、どの用語・機能の一覧かを見分ける
+  const tfSpecs = (id: string) => [
+    { id: "c-z", statement: plain(`${id} の最初に書いた仕様の文`) },
+    { id: "c-a", statement: plain(`${id} の次に書いた仕様の文`) },
+    { id: "c-m", statement: plain(`${id} の最後に書いた仕様の文`) },
   ];
-  // tfHandlers は、用語・機能の詳細の API（docs/formats.md の GET /api/terms/<ID>・GET /api/features/<ID>）。claimsOf(id) を、機能 id を refines する約束（specs）として返す
-  const tfHandlers = (claimsOf: (id: string) => { id: string; statement: ReturnType<typeof plain> }[]) => [
+  // tfHandlers は、用語・機能の詳細の API（docs/formats.md の GET /api/terms/<ID>・GET /api/features/<ID>）。specsOf(id) を、機能 id を refines する仕様（specs）として返す
+  const tfHandlers = (specsOf: (id: string) => { id: string; statement: ReturnType<typeof plain> }[]) => [
     http.get("/api/terms/:id", ({ params }) =>
       HttpResponse.json({ id: String(params.id), name: String(params.id), definition: plain(`${String(params.id)} の定義`), partOf: null, children: [], assumes: [], refs: {} })),
     http.get("/api/features/:id", ({ params }) =>
-      HttpResponse.json({ id: String(params.id), name: String(params.id), definition: plain(`${String(params.id)} の定義`), core: false, formal: false, refines: [], specs: claimsOf(String(params.id)), refs: {} })),
+      HttpResponse.json({ id: String(params.id), name: String(params.id), definition: plain(`${String(params.id)} の定義`), core: false, formal: false, refines: [], specs: specsOf(String(params.id)), refs: {} })),
   ];
-  const claimLinkPaths = () =>
-    within(detailRegion()).queryAllByRole("link").map((a) => new URL((a as HTMLAnchorElement).href).pathname).filter((p) => p.startsWith("/claims/"));
+  const specLinkPaths = () =>
+    within(detailRegion()).queryAllByRole("link").map((a) => new URL((a as HTMLAnchorElement).href).pathname).filter((p) => p.startsWith("/specs/"));
 
   // @vanda:evidence review-term-feature-claims
-  it("追加と変更した機能の1件の詳細にそれをrefinesする約束を渡した順にIDと文で並べIDを約束の詳細へのリンクにし移った先から同じ状態に戻れ用語の1件の詳細には約束の一覧を出さない", async () => {
+  it("追加と変更した機能の1件の詳細にそれをrefinesする仕様を渡した順にIDと文で並べIDを仕様の詳細へのリンクにし移った先から同じ状態に戻れ用語の1件の詳細には仕様の一覧を出さない", async () => {
     // 既定の値（URL に書いていないレビュー単位・ベースブランチ）も引き継ぐかを見るため、何も付けない URL で開く（pitfall link-drops-default-state）
     window.history.pushState({}, "", "/");
     const terms = [
@@ -1708,46 +1708,46 @@ describe("RV-02 1 件の詳細", () => {
       { e: featureTF(3, "f-add", "added"), id: "f-add" },
       { e: featureTF(4, "f-mod", "modified"), id: "f-mod" },
     ];
-    open([...terms, ...cases].map((c) => c.e), {}, ...tfHandlers(tfClaims),
-      http.get("/api/specs/:id", ({ params }) => HttpResponse.json(claimDetail({ id: String(params.id), statement: plain(`${String(params.id)} の詳細の文`) }))));
+    open([...terms, ...cases].map((c) => c.e), {}, ...tfHandlers(tfSpecs),
+      http.get("/api/specs/:id", ({ params }) => HttpResponse.json(specDetail({ id: String(params.id), statement: plain(`${String(params.id)} の詳細の文`) }))));
     const user = userEvent.setup();
     for (const c of terms) {
       await user.click(within(await listRow(c.id)).getByRole("button"));
       await waitFor(() => expect(detailRegion().textContent, `${c.id}: 今の中身が出ない`).toContain(`${c.id} の定義`));
       // 出ないことを見るので、読みに行っていた場合にその答えが届くのを待つ
       await new Promise((r) => setTimeout(r, 50));
-      expect(detailRegion().textContent ?? "", `${c.id}: 用語に約束の一覧を出した`).not.toContain("約束の文");
-      expect(claimLinkPaths(), `${c.id}: 用語に約束の詳細へのリンクがある`).toEqual([]);
+      expect(detailRegion().textContent ?? "", `${c.id}: 用語に仕様の一覧を出した`).not.toContain("仕様の文");
+      expect(specLinkPaths(), `${c.id}: 用語に仕様の詳細へのリンクがある`).toEqual([]);
     }
     for (const c of cases) {
       await user.click(within(await listRow(c.id)).getByRole("button"));
-      await waitFor(() => expect(detailRegion().textContent, `${c.id}: 約束の一覧が出ない`).toContain(`${c.id} の最後に書いた約束の文`));
+      await waitFor(() => expect(detailRegion().textContent, `${c.id}: 仕様の一覧が出ない`).toContain(`${c.id} の最後に書いた仕様の文`));
       const text = detailRegion().textContent ?? "";
       let at = -1;
-      for (const t of ["c-z", `${c.id} の最初に書いた約束の文`, "c-a", `${c.id} の次に書いた約束の文`, "c-m", `${c.id} の最後に書いた約束の文`]) {
+      for (const t of ["c-z", `${c.id} の最初に書いた仕様の文`, "c-a", `${c.id} の次に書いた仕様の文`, "c-m", `${c.id} の最後に書いた仕様の文`]) {
         const i = text.indexOf(t, at + 1);
         expect(i, `${c.id}: ${t} が渡した順に出ていない`).toBeGreaterThan(at);
         at = i;
       }
-      expect(claimLinkPaths(), `${c.id}: 約束の詳細へのリンク`).toEqual(["/claims/c-z", "/claims/c-a", "/claims/c-m"]);
+      expect(specLinkPaths(), `${c.id}: 仕様の詳細へのリンク`).toEqual(["/specs/c-z", "/specs/c-a", "/specs/c-m"]);
       for (const id of ["c-z", "c-a", "c-m"]) {
-        expect(new URL((within(detailRegion()).getByRole("link", { name: id }) as HTMLAnchorElement).href).pathname, `${c.id}: ${id} のリンク`).toBe(`/claims/${id}`);
+        expect(new URL((within(detailRegion()).getByRole("link", { name: id }) as HTMLAnchorElement).href).pathname, `${c.id}: ${id} のリンク`).toBe(`/specs/${id}`);
       }
-      // リンクから約束の詳細へ移り、ストーリーのレビューへ戻ると、行く前と同じ URL（選んだ件を含む）に戻る
+      // リンクから仕様の詳細へ移り、ストーリーのレビューへ戻ると、行く前と同じ URL（選んだ件を含む）に戻る
       const beforeURL = window.location.pathname + window.location.search;
       await user.click(within(detailRegion()).getByRole("link", { name: "c-a" }));
-      expect(await screen.findByText("c-a の詳細の文"), `${c.id}: 移った先に約束の詳細が出ない`).toBeTruthy();
-      expect(window.location.pathname).toBe("/claims/c-a");
+      expect(await screen.findByText("c-a の詳細の文"), `${c.id}: 移った先に仕様の詳細が出ない`).toBeTruthy();
+      expect(window.location.pathname).toBe("/specs/c-a");
       await user.click(await screen.findByRole("link", { name: "ストーリーのレビューへ戻る" }));
       await waitFor(() => expect(window.location.pathname).toBe("/"));
-      expect(window.location.pathname + window.location.search, `${c.id}: 約束の詳細から戻った URL`).toBe(beforeURL);
+      expect(window.location.pathname + window.location.search, `${c.id}: 仕様の詳細から戻った URL`).toBe(beforeURL);
     }
   });
 
   // @vanda:evidence review-term-feature-claims
-  it("追加と変更した機能の1件の詳細はそれをrefinesする約束がなければその旨を示し約束の詳細へのリンクを出さない", async () => {
-    // 文言は言葉の書き分けで変わるので、refines するものがないことを示す文かだけを見る
-    const note = /refines する.*ありません/;
+  it("追加と変更した機能の1件の詳細はそれをrefinesする仕様がなければその旨を示し仕様の詳細へのリンクを出さない", async () => {
+    // 文言は言葉の書き分けで変わるので、具体化する仕様がないことを示す文かだけを見る
+    const note = /具体化する仕様.*ありません/;
     const cases = [
       { e: featureTF(3, "f-add", "added"), id: "f-add", note },
       { e: featureTF(4, "f-mod", "modified"), id: "f-mod", note },
@@ -1756,19 +1756,19 @@ describe("RV-02 1 件の詳細", () => {
     const user = userEvent.setup();
     for (const c of cases) {
       await user.click(within(await listRow(c.id)).getByRole("button"));
-      await waitFor(() => expect(detailRegion().textContent, `${c.id}: 約束がないことを示さない`).toMatch(c.note));
-      expect(claimLinkPaths(), `${c.id}: 約束がないのに約束の詳細へのリンクがある`).toEqual([]);
+      await waitFor(() => expect(detailRegion().textContent, `${c.id}: 仕様がないことを示さない`).toMatch(c.note));
+      expect(specLinkPaths(), `${c.id}: 仕様がないのに仕様の詳細へのリンクがある`).toEqual([]);
     }
   });
 
   // @vanda:evidence review-term-feature-claims
-  it("削除した用語と機能の1件の詳細には約束の一覧を出さない", async () => {
+  it("削除した用語と機能の1件の詳細には仕様の一覧を出さない", async () => {
     const cases = [
       { e: termTF(1, "t-del", "deleted"), id: "t-del" },
       { e: featureTF(2, "f-del", "deleted"), id: "f-del" },
     ];
-    // 詳細の API は約束を返す（読みに行けば一覧が出る）
-    open(cases.map((c) => c.e), {}, ...tfHandlers(tfClaims));
+    // 詳細の API は仕様を返す（読みに行けば一覧が出る）
+    open(cases.map((c) => c.e), {}, ...tfHandlers(tfSpecs));
     const user = userEvent.setup();
     for (const c of cases) {
       await user.click(within(await listRow(c.id)).getByRole("button"));
@@ -1776,10 +1776,10 @@ describe("RV-02 1 件の詳細", () => {
       // 出ないことを見るので、読みに行っていた場合にその答えが届くのを待つ
       await new Promise((r) => setTimeout(r, 50));
       const text = detailRegion().textContent ?? "";
-      expect(text, `${c.id}: 削除したのに約束の一覧を出した`).not.toContain("約束の文");
-      expect(text, `${c.id}: 削除したのに約束がないことを示した`).not.toMatch(/refines する.*ありません/);
+      expect(text, `${c.id}: 削除したのに仕様の一覧を出した`).not.toContain("仕様の文");
+      expect(text, `${c.id}: 削除したのに仕様がないことを示した`).not.toMatch(/具体化する仕様.*ありません/);
       expect(text, `${c.id}: 削除したのに読み込み中のマークを出した`).not.toContain("読み込んでいます");
-      expect(claimLinkPaths(), `${c.id}: 削除したのに約束の詳細へのリンクがある`).toEqual([]);
+      expect(specLinkPaths(), `${c.id}: 削除したのに仕様の詳細へのリンクがある`).toEqual([]);
     }
   });
 });
@@ -1788,7 +1788,7 @@ describe("CM-08 ストーリーのエリア", () => {
   // @vanda:evidence story-open-link
   it("ストーリーにストーリーストアのURLがあればストーリーストアで開くのリンクを出しなければ出さない", async () => {
     for (const url of ["https://github.com/owner/app/issues/24", "https://issues.example.com/browse/24", ""]) {
-      open([claimEntry(1, "c-one")], {}, http.get("/api/story", () => HttpResponse.json({ ...story, url })));
+      open([specEntry(1, "c-one")], {}, http.get("/api/story", () => HttpResponse.json({ ...story, url })));
       await screen.findByText(/タスクの ID を重ならないようにする/);
       const links = screen.queryAllByRole("link", { name: "ストーリーストアで開く" });
       if (url === "") expect(links.length, "URL がないのにリンクを出した").toBe(0);
@@ -1804,13 +1804,13 @@ describe("CM-08 ストーリーのエリア", () => {
   // @vanda:evidence story-undecided-note
   it("ストーリーが決まっていなければストーリーのエリアにストーリーが決まっていないので選ぶよう示し決まっていれば示さない", async () => {
     const note = "ストーリーが決まっていません。ストーリーを選んでください。";
-    open([claimEntry(1, "c-one")], { story: null, storyChoice: "all", branchStories: [] });
+    open([specEntry(1, "c-one")], { story: null, storyChoice: "all", branchStories: [] });
     await listRow("c-one");
     const panel = () => document.querySelector(".story-panel") as HTMLElement;
     expect(await within(panel()).findByText(note)).toBeTruthy();
     cleanup();
     server.resetHandlers();
-    open([claimEntry(1, "c-one")]);
+    open([specEntry(1, "c-one")]);
     await screen.findByText(/タスクの ID を重ならないようにする/);
     expect(screen.queryByText(note)).toBeNull();
   });
@@ -1821,7 +1821,7 @@ describe("RV-06・RV-17 承認と取り消しのボタン", () => {
   it("承認のボタンにはストーリーIDで承認すると承認するストーリーのIDを書く", async () => {
     for (const id of ["#24", "#31"]) {
       window.history.pushState({}, "", `/?view=branch&base=main&story=${encodeURIComponent(id)}`);
-      open([claimEntry(1, "c-one"), fileEntry(2, "e2e/a.txtar")], { story: id });
+      open([specEntry(1, "c-one"), fileEntry(2, "e2e/a.txtar")], { story: id });
       const user = userEvent.setup();
       for (const name of ["c-one", "e2e/a.txtar"]) {
         await user.click(within(await listRow(name)).getByRole("button"));
@@ -1842,7 +1842,7 @@ describe("RV-06・RV-17 承認と取り消しのボタン", () => {
     ];
     for (const c of cases) {
       // 承認できるかと理由は API（entries[].agree）が決める。その答えを手で作って渡す
-      open([claimEntry(1, "c-one", { agree: { possible: false, reason: c.reason } })], c.over, http.get("/api/context", () => HttpResponse.json({ ...ctx, ...c.ctxOver })));
+      open([specEntry(1, "c-one", { agree: { possible: false, reason: c.reason } })], c.over, http.get("/api/context", () => HttpResponse.json({ ...ctx, ...c.ctxOver })));
       await userEvent.setup().click(within(await listRow("c-one")).getByRole("button"));
       const button = await within(detailRegion()).findByRole("button", { name: /承認する/ });
       expect((button as HTMLButtonElement).disabled, `${c.name}: 承認のボタンをクリックできる`).toBe(true);
@@ -1862,7 +1862,7 @@ describe("RV-06・RV-17 承認と取り消しのボタン", () => {
     for (const c of cases) {
       let revoked = false;
       const entry = () =>
-        claimEntry(1, "c-agreed", revoked
+        specEntry(1, "c-agreed", revoked
           ? { state: c.stillAgreed ? "agreed" : "proposed", revoke: c.stillAgreed ? { possible: false, reason: "このストーリーの承認がありません", others: [] } : null }
           : { state: "agreed", agree: { possible: false, reason: "このストーリーで今の中身にもう承認しています" }, revoke: { possible: true, reason: null, others: c.others } });
       open([], {},
@@ -1898,11 +1898,11 @@ describe("API のエラー", () => {
     const cases = [
       { name: "一覧", method: "get", path: "/api/review", status: 500, message: "一覧の数と差分の数が合いません。", fix: "vanda の不具合として知らせてください。" },
       { name: "ストーリー", method: "get", path: "/api/story", status: 502, message: "Bad credentials", fix: "GH_TOKEN を確かめてください。" },
-      { name: "画面で選べるもの", method: "get", path: "/api/context", status: 500, message: "設定を読めません（2 件。最初の 1 件: …）。", fix: "vanda doctor で誤りを確かめて、直してください。" },
-      { name: "承認", method: "post", path: "/api/agree", status: 409, message: "約束 c-one の中身が、画面に表示した後に変わりました。", fix: "一覧を読み直し、今の中身を確かめてから承認してください。" },
+      { name: "画面で選べるもの", method: "get", path: "/api/context", status: 500, message: "設定を読めません（2 件。最初の 1 件: …）。", fix: "誤りを直して、コミットしてください。vanda check でも、同じ誤りがすべて出ます。" },
+      { name: "承認", method: "post", path: "/api/agree", status: 409, message: "仕様 c-one の中身が、画面に表示した後に変わりました。", fix: "一覧を読み直し、今の中身を確かめてから承認してください。" },
     ] as const;
     for (const c of cases) {
-      open([claimEntry(1, "c-one")], {}, http[c.method](c.path, () => fail(c.status, c.message, c.fix)));
+      open([specEntry(1, "c-one")], {}, http[c.method](c.path, () => fail(c.status, c.message, c.fix)));
       if (c.name === "承認") {
         const user = userEvent.setup();
         await user.click(within(await listRow("c-one")).getByRole("button"));
@@ -1924,20 +1924,20 @@ describe("API のエラー", () => {
 });
 
 describe("一覧を読み込む間に選んだ件を先に出す", () => {
-  // 選んだ 1 件の種類ごと（約束・用語・機能・性質・前提・ファイル）に、詳細の API が返す今の中身と、一覧の件（変更前の中身は「前の」で見分ける）
+  // 選んだ 1 件の種類ごと（仕様・用語・機能・性質・前提・ファイル）に、詳細の API が返す今の中身と、一覧の件（変更前の中身は「前の」で見分ける）
   const tf = { partOf: null, assumes: [] };
   const cases = [
     {
-      kind: "約束", sel: "spec:c-sel", flag: true, shown: ["先に出す約束の文", "先に出す理由", "先に出す条件"],
-      entry: claimEntry(1, "c-sel", { flags: ["ai-proposal"], before: { ...claimEntry(1, "c-sel").before as object, statement: plain("約束の前の文") } as Entry["before"] }),
+      kind: "仕様", sel: "spec:c-sel", flag: true, shown: ["先に出す仕様の文", "先に出す理由", "先に出す条件"],
+      entry: specEntry(1, "c-sel", { flags: ["ai-proposal"], before: { ...specEntry(1, "c-sel").before as object, statement: plain("仕様の前の文") } as Entry["before"] }),
     },
     {
       kind: "用語", sel: "term:t-sel", flag: true, shown: ["先に出す用語の定義"],
-      entry: claimEntry(1, "t-sel", { kind: "term", group: "terms", flags: ["ai-proposal"], before: { name: "先に出す用語", definition: plain("用語の前の定義"), ...tf }, after: { name: "先に出す用語", definition: plain("一覧の用語の定義"), ...tf } }),
+      entry: specEntry(1, "t-sel", { kind: "term", group: "terms", flags: ["ai-proposal"], before: { name: "先に出す用語", definition: plain("用語の前の定義"), ...tf }, after: { name: "先に出す用語", definition: plain("一覧の用語の定義"), ...tf } }),
     },
     {
       kind: "機能", sel: "feature:f-sel", flag: true, shown: ["先に出す機能の定義"],
-      entry: claimEntry(1, "f-sel", { kind: "feature", group: "features", flags: ["ai-proposal"],
+      entry: specEntry(1, "f-sel", { kind: "feature", group: "features", flags: ["ai-proposal"],
         before: { name: "先に出す機能", definition: plain("機能の前の定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null },
         after: { name: "先に出す機能", definition: plain("一覧の機能の定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null } }),
     },
@@ -1955,8 +1955,8 @@ describe("一覧を読み込む間に選んだ件を先に出す", () => {
     },
   ];
   const details = [
-    http.get("/api/specs/:id", () => HttpResponse.json(claimDetail({
-      id: "c-sel", statement: plain("先に出す約束の文"), rationale: plain("先に出す理由"), condition: plain("先に出す条件"), state: "proposed", flags: ["ai-proposal"],
+    http.get("/api/specs/:id", () => HttpResponse.json(specDetail({
+      id: "c-sel", statement: plain("先に出す仕様の文"), rationale: plain("先に出す理由"), condition: plain("先に出す条件"), state: "proposed", flags: ["ai-proposal"],
     }))),
     http.get("/api/terms/:id", () =>
       HttpResponse.json({ id: "t-sel", name: "先に出す用語", definition: plain("先に出す用語の定義"), partOf: null, children: [], assumes: [], refs: {} })),
@@ -1969,7 +1969,7 @@ describe("一覧を読み込む間に選んだ件を先に出す", () => {
 
   // @vanda:evidence review-detail-shown-before-list
   // @vanda:evidence loading-indicator
-  it("一覧が届く前でもURLで選んだ約束と用語と機能と性質と前提とファイルの今の中身を出し変更前の中身と状態とフラグと承認のボタンは一覧が届いてから出す", async () => {
+  it("一覧が届く前でもURLで選んだ仕様と用語と機能と性質と前提とファイルの今の中身を出し変更前の中身と状態とフラグと承認のボタンは一覧が届いてから出す", async () => {
     for (const c of cases) {
       const g = gate();
       window.history.pushState({}, "", "/?view=branch&base=main&sel=" + encodeURIComponent(c.sel));
@@ -2000,10 +2000,10 @@ describe("一覧を読み込む間に選んだ件を先に出す", () => {
   // @vanda:evidence review-detail-shown-before-list
   it("一覧が届く前にURLで選んだ件が今はないものなら誤りを出さず一覧を待ち一覧が届いたら消す前の中身を出す", async () => {
     const g = gate();
-    const gone = claimEntry(1, "c-gone", { change: "deleted", after: null, before: { ...claimEntry(1, "c-gone").before as object, statement: plain("消す前の約束の文") } as Entry["before"] });
+    const gone = specEntry(1, "c-gone", { change: "deleted", after: null, before: { ...specEntry(1, "c-gone").before as object, statement: plain("消す前の仕様の文") } as Entry["before"] });
     window.history.pushState({}, "", "/?view=branch&base=main&sel=" + encodeURIComponent("spec:c-gone"));
     open([gone], {},
-      http.get("/api/specs/:id", () => apiError(404, "約束 c-gone は約束リストにありません。")),
+      http.get("/api/specs/:id", () => apiError(404, "仕様 c-gone は約束リストにありません。")),
       http.get("/api/review", async () => {
         await g.wait;
         return HttpResponse.json(review([gone]));
@@ -2014,7 +2014,7 @@ describe("一覧を読み込む間に選んだ件を先に出す", () => {
     await new Promise((r) => setTimeout(r, 50));
     expect(bodyText(), "今はない件の誤りを出した").not.toContain("約束リストにありません");
     g.open();
-    await waitFor(() => expect(bodyText()).toContain("消す前の約束の文"));
+    await waitFor(() => expect(bodyText()).toContain("消す前の仕様の文"));
     expect(bodyText()).not.toContain("約束リストにありません");
   });
 });

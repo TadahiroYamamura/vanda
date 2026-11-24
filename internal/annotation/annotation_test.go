@@ -70,7 +70,7 @@ x
 \* @vanda:term task
 Tasks == {1, 2}
 
-(* @vanda:claim task-id-unique *)
+(* @vanda:spec task-id-unique *)
 (* 補助の説明
    (* 入れ子 *) *)
 LOCAL Unique(s, f(_)) == TRUE
@@ -79,7 +79,7 @@ LOCAL Unique(s, f(_)) == TRUE
 \* @vanda:feature add-task
 Add(t) == t \* 足す
 
-\* @vanda:claim ids
+\* @vanda:spec ids
 ids[t \in Tasks] == t
 ====
 `,
@@ -102,10 +102,10 @@ CREATE UNIQUE INDEX task_id ON task(id);
 	want := `db/schema.sql:01 evidence task-id-unique -> CREATE UNIQUE INDEX task_id ON task(id);
 e2e/add.txtar:01 evidence add-task -> add
 spec/Task.tla:02 term task -> Tasks
-spec/Task.tla:05 claim task-id-unique -> Unique
+spec/Task.tla:05 spec task-id-unique -> Unique
 spec/Task.tla:10 internal 状態の型 -> Add
 spec/Task.tla:11 feature add-task -> Add
-spec/Task.tla:14 claim ids -> ids
+spec/Task.tla:14 spec ids -> ids
 x/a_test.go:03 evidence task-id-unique -> TestTaskID
 x/a_test.go:08 sensor task-id-unique -> Store.Add
 `
@@ -126,7 +126,7 @@ func TestReadは書き方と置き場所の誤りを行の付いたエラーで�
 // @vanda:evidence a b
 func TestA(t *testing.T) {}
 
-// @vanda:claimx a
+// @vanda:specx a
 func TestB(t *testing.T) {}
 
 // @vanda:evidence a
@@ -163,7 +163,7 @@ VARIABLE x
 	_, errs := Read(root, files, rules)
 	want := [][]string{
 		{"x/a_test.go:3: ", "@vanda:evidence", "ID が 2 つ以上"},
-		{"x/a_test.go:6: ", "@vanda:claimx", "決まった種類"},
+		{"x/a_test.go:6: ", "@vanda:specx", "決まった種類"},
 		{"x/a_test.go:9: ", "アノテーション", "func の宣言の直前のコメント"},
 		{"x/a_test.go:15: ", "@vanda:internal", "理由"},
 		{"x/a_test.go:18: ", "@vanda:sensor", "ID"},
@@ -187,7 +187,7 @@ VARIABLE x
 // @vanda:evidence annotation-outside-comment-ignored
 func TestReadはその言語のコメントの外にあるアノテーションを数えない(t *testing.T) {
 	root, files := setup(t, map[string]string{
-		"x/a_test.go": "package x\n\nvar s = \"@vanda:evidence a b\"\nvar r = `\n// @vanda:claimx\n`\n",
+		"x/a_test.go": "package x\n\nvar s = \"@vanda:evidence a b\"\nvar r = `\n// @vanda:specx\n`\n",
 		"e2e/a.txtar": "# 説明\n-- .vanda/promises.toml --\n# @vanda:evidence a b\n",
 		"spec/A.tla":  "---- MODULE A ----\nX == \"\\* @vanda:term a b\"\n====\n",
 		"db/a.sql":    "CREATE TABLE t (id int); /* @vanda:evidence a b */\nSELECT '-- @vanda:evidence a b';\n",
@@ -278,7 +278,7 @@ func TestReadはvanda_adaptersのアダプタの失敗と返し漏れを誤り�
 // @vanda:evidence annotation-kinds-per-builtin-adapter
 func TestReadは言語ごとに決まった種類のほかを誤りにする(t *testing.T) {
 	root, files := setup(t, map[string]string{
-		"x/a_test.go": "package x\n\n// @vanda:claim a\nfunc TestA(t *testing.T) {}\n",
+		"x/a_test.go": "package x\n\n// @vanda:spec a\nfunc TestA(t *testing.T) {}\n",
 		"e2e/a.txtar": "# @vanda:sensor a\n-- a --\n",
 		"spec/A.tla":  "\\* @vanda:evidence a\nX == 1\n",
 		"db/a.sql":    "-- @vanda:term a\nCREATE TABLE t (id int);\n",
@@ -296,8 +296,8 @@ func TestReadは言語ごとに決まった種類のほかを誤りにする(t *
 	want := [][]string{
 		{"db/a.sql:1: ", "@vanda:term", "sql のアダプタのファイル", "書けるのは evidence"},
 		{"e2e/a.txtar:1: ", "@vanda:sensor", "txtar のアダプタのファイル", "書けるのは evidence"},
-		{"spec/A.tla:1: ", "@vanda:evidence", "tla のアダプタのファイル", "書けるのは term・feature・claim・internal"},
-		{"x/a_test.go:3: ", "@vanda:claim", "go のアダプタのファイル", "書けるのは evidence・sensor"},
+		{"spec/A.tla:1: ", "@vanda:evidence", "tla のアダプタのファイル", "書けるのは term・feature・spec・internal"},
+		{"x/a_test.go:3: ", "@vanda:spec", "go のアダプタのファイル", "書けるのは evidence・sensor"},
 	}
 	got := errs.Error()
 	if len(strings.Split(got, "\n")) != len(want) {
@@ -336,7 +336,7 @@ func lineWith(got, prefix string, frags ...string) bool {
 	return false
 }
 
-// ---- 約束の文から作ったテスト（docs/plans/self-hosting.md・evidence.md の見直しで足した） ----
+// ---- 仕様の文から作ったテスト（docs/plans/self-hosting.md・evidence.md の見直しで足した） ----
 
 // @vanda:evidence annotation-backquoted-ignored
 func TestReadはコメントの中のバッククォートで囲んだ書き方を数えず1行に2つあるかを見るときも数えない(t *testing.T) {
@@ -425,7 +425,7 @@ func TestReadはtsのフックとstepと変数の名前とテストでない呼�
 		"変数の宣言":          "// @vanda:evidence c1\nconst n = 1;\n",
 		"空行をはさむ":         "// @vanda:evidence c1\n\ntest(\"t\", () => {});\n",
 		"expect":         "test(\"t\", () => {\n// @vanda:evidence c1\nexpect(1).toBe(1);\n});\n",
-		"evidenceのほかの種類": "// @vanda:claim c1\ntest(\"t\", () => {});\n",
+		"evidenceのほかの種類": "// @vanda:spec c1\ntest(\"t\", () => {});\n",
 	}
 	for name, src := range cases {
 		t.Run(name, func(t *testing.T) {
