@@ -35,7 +35,7 @@ var BuiltinAdapters = []string{"go", "txtar", "tla", "sql", "ts"}
 // EvidenceKinds は、[[annotation]] の types に書けるエビデンスのタイプ（書ける順）と、そのタイプのエビデンスとして
 // 揃っているとするアノテーションの種類。human-review はアノテーションで確かめず、proof はまだ扱えないので、書けない
 var EvidenceKinds = []struct{ Type, Kind string }{
-	{"model-check", "claim"},
+	{"model-check", "spec"},
 	{"cross-check", "evidence"},
 	{"random-check", "evidence"},
 	{"scenario-test", "evidence"},

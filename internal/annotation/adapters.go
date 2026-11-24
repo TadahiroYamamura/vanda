@@ -159,7 +159,7 @@ func isTxtarMarker(line string) bool {
 // （`Name ==`、`Name(…) ==`。`LOCAL` が付いてもよい）。
 type tlaAdapter struct{}
 
-func (tlaAdapter) kinds() []string { return []string{"term", "feature", "claim", "internal"} }
+func (tlaAdapter) kinds() []string { return []string{"term", "feature", "spec", "internal"} }
 
 func (tlaAdapter) comments(file string, src []byte) ([]string, []diag.Error) {
 	rows := strings.Split(string(src), "\n")

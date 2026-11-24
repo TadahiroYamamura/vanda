@@ -298,10 +298,10 @@ story = "#24"
 
 ### 書き方（どの言語でも同じ）
 
-- 1 行に 1 つ、`@vanda:<種類> <ID>` か `@vanda:internal <理由>` と書く。種類は `term`・`feature`・`claim`・`internal`・`evidence`・`sensor`
+- 1 行に 1 つ、`@vanda:<種類> <ID>` か `@vanda:internal <理由>` と書く。種類は `term`・`feature`・`spec`・`internal`・`evidence`・`sensor`
 - `internal` のほかは、ID を 1 つだけ書く。2 つ以上の約束に関わるなら、行を分ける
 - 同じ行で閉じたブロックのコメントの閉じ（`*)`・`*/`・`-->`）は、ID や理由に含めない
-- 次のものは誤り: 決まっていない種類（`@vanda:foo`、`@vanda:claimx`）、ID のないもの、ID が 2 つ以上あるもの、理由のない `internal`、1 行に 2 つ以上の `@vanda:`
+- 次のものは誤り: 決まっていない種類（`@vanda:foo`、`@vanda:specx`、前の形の `@vanda:claim`）、ID のないもの、ID が 2 つ以上あるもの、理由のない `internal`、1 行に 2 つ以上の `@vanda:`
 - コメントの中で、バッククォートで囲んだもの（例: `` `@vanda:term` ``）はアノテーションとして数えない。説明の文で書き方に触れるときに使う。同じ行に本物のアノテーションがあっても、1 行に 2 つ以上の `@vanda:` の誤りにしない（例: `@vanda:internal` の理由の文で、書き方に触れるとき）
 - アノテーションとして数えるのは、そのアダプタが知っている言語のコメントの中の `@vanda:` だけ。文字列の中などコメントの外の `@vanda:` は、数えず、誤りにもしない。カスタムアダプタでは、vanda は言語が分からないので、`@vanda:` のある行をすべてアダプタに渡し、コメントの外の行はアダプタに `"annotation": false` で返してもらう
 
@@ -311,7 +311,7 @@ story = "#24"
 |---|---|---|---|
 | `go` | `evidence`・`sensor` | 数えるのは `//`・`/* */` のコメントの中だけ。`func` の宣言の直前のコメント（空行をはさまない doc comment）に書く。ほかの所のコメントは誤り | `func` の名前（テストなら `TestXxx`）。メソッドは `型.名前`（例: `Store.Add`） |
 | `txtar` | `evidence` | 数えるのは、最初のファイルの区切り（`-- 名前 --` の行）より前の、`#` で始まるコメントの行だけ（testscript の命令の行は数えない）。ファイル全体に付く。区切りより後は中のファイルの中身なので、数えない | ファイルの名前から `.txtar` を除いたもの（testscript のサブテストの名前） |
-| `tla` | `term`・`feature`・`claim`・`internal` | 数えるのは、コメント（`\*`、入れ子にできる `(* *)`）の中だけ。文字列の中は数えない | アノテーションの後の、空行でもコメントでもない最初の行の定義の名前（`Name ==`、`Name(…) ==`、関数の定義 `Name[…] ==`。前に `LOCAL` があってもよい）。その行が定義でなければ誤り |
+| `tla` | `term`・`feature`・`spec`・`internal` | 数えるのは、コメント（`\*`、入れ子にできる `(* *)`）の中だけ。文字列の中は数えない | アノテーションの後の、空行でもコメントでもない最初の行の定義の名前（`Name ==`、`Name(…) ==`、関数の定義 `Name[…] ==`。前に `LOCAL` があってもよい）。その行が定義でなければ誤り |
 | `sql` | `evidence` | 数えるのは、文字列（`'…'`）の外の `--` から行の終わりまでのコメントの中だけ | アノテーションの後の、空行でもコメント（`--` で始まる行）でもない最初の行の中身を、前後の空白を除いてそのまま |
 | `ts` | `evidence` | 数えるのは `//`・`/* */` のコメントの中だけ。文字列・テンプレート文字列・正規表現の中は数えない。`test`・`it`・`describe` から始まる呼び出し（後ろに付く修飾は名前を決めずにすべて受け付ける。`.skip`・`.only`・`.todo`・`.each(…)(…)`、Playwright の `test.describe`・`test.describe.serial` など）の直前のコメント（空行をはさまない）に書く。`beforeEach`・`afterEach`・`beforeAll`・`afterAll`・`step` が付いた呼び出しの直前と、ほかの所のコメントは誤り | 最後の呼び出しの最初の引数（`.each(表)("名前", …)` なら `"名前"`）。文字列か、テンプレート文字列なら書いてあるとおりの文字（`${op} を…` はそのまま）。`describe`（`test.describe` を含む）の中なら、外側から順に ` > ` でつなぐ（例: `ReviewPage > 一覧を出す`）。名前が変数などで決まった文字でなければ誤り |
 
@@ -416,7 +416,7 @@ scope = "story"
 | チェック | 確かめること |
 |---|---|
 | `promise-list-shape` | 読み込みの誤り（TOML、型、必須の項目、決まっていない表と項目）。ID の形と重複。`part_of` の先が用語にあり、循環しない。`refines`・`assumes` の決まり（約束リストの「関係」）。`layers` が設定のレイヤーにある。エビデンスの `layers` が約束の `layers` の中にある。約束のどのレイヤーにもエビデンスがある。`stage`・`type`・`flags` が決まった値。`formal_waiver` の決まり。形式手法を使う機能を `refines` する約束に、`model-check` の予定と `model_check_waiver` のどちらか一方だけがある |
-| `annotation-links` | アノテーションの読み込みの誤り。`term` は用語を、`feature` は機能を、`claim`・`evidence`・`sensor` は約束を指す。TLA+ の仕様の型（下）に `term` か `internal` があり、`feature` がない。`term` も `internal` もない誤りは型の定義の行を、`feature` を付けた誤りはそのアノテーションの行を指す |
+| `annotation-links` | アノテーションの読み込みの誤り。`term` は用語を、`feature` は機能を、`spec`・`evidence`・`sensor` は仕様を指す（性質・前提を指すアノテーションはなく、性質・前提の ID を書いたものは誤り）。TLA+ の仕様の型（下）に `term` か `internal` があり、`feature` がない。`term` も `internal` もない誤りは型の定義の行を、`feature` を付けた誤りはそのアノテーションの行を指す |
 | `story-origin` | マージベースより後の、マージコミットでないコミットのうち、約束リストのファイル（今のパターンで決める）を変えたものに、`Story:` のトレーラーがある。トレーラーの誤り（2 つ以上、`id_pattern` に合わない）も、そのコミットの誤りにする |
 | `agreement` | 承認の対象（約束リストの項目（仕様・用語・機能・性質・前提）と、`types` に `scenario-test` か `model-check` を含む `[[annotation]]` のパターンにマッチするファイルと、`[[guardrail]]` の `paths` にマッチするファイル。どのアダプタで読むかによらない。`types` がどちらも含まないパターン（Go のテストなど）だけにマッチするファイルは対象にしない）の今の中身が承認済。約束に `flags`・`guesses` が残っていない。中身を承認したことのある約束リストの項目・承認の対象のファイルが今なければ、消したことへの承認がある。スコープ `story` では、そのストーリーで変わったものだけを見て（マージベースにあって今ないものは、承認したことがあるかによらず、消したことへの承認を求める）、さらに、そのストーリーの失効した承認（下）も誤りにする |
 | `agreement-targets` | 承認の記録の読み込みの誤り（`kind` が `file` の記録に `path` がない、`key` が `fingerprint`（消したことへの承認なら `path`）と違う、`kind` が `file` でない記録に `path` がある、など）。`kind` が `spec`・`term`・`feature`・`property`・`truth` の承認が、約束リストにあるその種類の項目か、消したことへの承認のある項目を指す |
@@ -442,7 +442,7 @@ scope = "story"
 
 | タイプ | 揃っているとするアノテーションの種類 |
 |---|---|
-| `model-check` | `@vanda:claim` |
+| `model-check` | `@vanda:spec` |
 | `cross-check`・`random-check`・`scenario-test`・`unit-test`・`interface-test`・`concurrency-test` | `@vanda:evidence` |
 | `guardrail` | 次の 2 つがどちらもあるときだけ揃う。ガードレールの定義（`[[guardrail]]` の `paths` にマッチするファイル）の `@vanda:evidence`（`types` は問わない）。`types` に `guardrail` を含む `[[annotation]]` で読んだ、ガードレールの定義でないファイルの `@vanda:evidence`（ガードレールが拒むことを確かめるテストなど） |
 | `sensor` | 次の 2 つがどちらもあるときだけ揃う。`types` に `sensor` を含む `[[annotation]]` で読んだ `@vanda:sensor`（実装のコードの中のセンサーの場所）。`types` に `sensor` を含む `[[annotation]]` で読んだ `@vanda:evidence`（センサーが、約束が破れた時に見つけることを確かめるテスト） |

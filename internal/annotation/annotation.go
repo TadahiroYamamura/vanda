@@ -33,7 +33,7 @@ var Builtins = []AdapterInfo{
 }
 
 // Kinds は、アノテーションの種類。internal のほかは ID を 1 つ取る。
-var Kinds = []string{"term", "feature", "claim", "internal", "evidence", "sensor"}
+var Kinds = []string{"term", "feature", "spec", "internal", "evidence", "sensor"}
 
 const marker = "@vanda:"
 
