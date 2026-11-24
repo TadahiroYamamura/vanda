@@ -8,7 +8,7 @@ description = "合意の判定の TLA+ のモデル"
 [[layer]]
 id = "cli"
 name = "CLI"
-description = "vanda の命令（check・doctor・init・serve の起動）"
+description = "vanda の命令（check・init・serve の起動）"
 
 [[layer]]
 id = "api"
