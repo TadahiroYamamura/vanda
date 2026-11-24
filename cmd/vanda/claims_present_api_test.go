@@ -38,9 +38,9 @@ func bp(b bool) *bool { return &b }
 
 func presentClaim(id string) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "\n[[claim]]\nid = %q\nsubjects = [\"t\"]\nstatement = \"エビデンスのタイプ\"\nlayers = [\"model\"]\n", id)
+	fmt.Fprintf(&b, "\n[[spec]]\nid = %q\nrefines = [\"f\"]\nstatement = \"エビデンスのタイプ\"\nlayers = [\"model\"]\n", id)
 	for _, p := range presentTypes {
-		fmt.Fprintf(&b, "\n[[claim.evidence]]\nstage = \"implementation\"\ntype = %q\nlayers = [\"model\"]\n", p.typ)
+		fmt.Fprintf(&b, "\n[[spec.evidence]]\nstage = \"implementation\"\ntype = %q\nlayers = [\"model\"]\n", p.typ)
 	}
 	return b.String()
 }
@@ -85,9 +85,9 @@ adapter = "file"
 paths = ["db/schema.sql"]
 `, version))
 	halfClaim := func(id string) string {
-		return fmt.Sprintf("\n[[claim]]\nid = %q\nsubjects = [\"t\"]\nstatement = \"片方\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"guardrail\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"sensor\"\nlayers = [\"model\"]\n", id)
+		return fmt.Sprintf("\n[[spec]]\nid = %q\nrefines = [\"f\"]\nstatement = \"片方\"\nlayers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"guardrail\"\nlayers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"sensor\"\nlayers = [\"model\"]\n", id)
 	}
-	writeFile(t, root, ".vanda/promises.toml", "[[term]]\nid = \"t\"\nname = \"n\"\ndefinition = \"d\"\n"+presentClaim("all-types")+presentClaim("no-types")+halfClaim("half-a")+halfClaim("half-b"))
+	writeFile(t, root, ".vanda/promises.toml", "[[term]]\nid = \"t\"\nname = \"n\"\ndefinition = \"d\"\n\n[[property]]\nid = \"p\"\nstatement = \"s\"\n\n[[feature]]\nid = \"f\"\nname = \"n\"\ndefinition = \"d\"\nrefines = [\"p\"]\n"+presentClaim("all-types")+presentClaim("no-types")+halfClaim("half-a")+halfClaim("half-b"))
 	// half-a は、ガードレールの定義とセンサーの場所だけ
 	writeFile(t, root, "db/schema.sql", "-- @vanda:evidence all-types\n-- @vanda:evidence half-a\nCREATE TABLE y (id INTEGER);\n")
 	writeFile(t, root, "internal/half/half.go", "package half\n\n// @vanda:sensor half-a\nfunc Check() error { return nil }\n")

@@ -143,32 +143,52 @@ id = "task"
 name = "タスク"
 definition = "利用者がやること"
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/promises.toml --
 [[term]]
 id = "task"
 name = "タスク"
 definition = "利用者がやること"
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/promises-bad.toml --
 [[term]]
 id = "Task_ID"
@@ -180,16 +200,26 @@ id = "task"
 name = "タスク"
 definition = "利用者がやること"
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- task_test.go --
 package task
 

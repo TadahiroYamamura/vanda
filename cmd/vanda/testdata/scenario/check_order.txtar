@@ -4,7 +4,7 @@
 # @vanda:evidence check-error-order
 #
 # 2 つのチェックが、それぞれ別のファイルを指すエラーを出すようにしておき、並べる順を入れ替えると、エラーの出る順も入れ替わることを確かめる。
-# - 約束リストの形: .vanda/promises/aaa.toml の 2 行目（ID の形）、.vanda/promises/qqq-broken.toml の 3 行目（subjects の先がない）と 9 行目（決まった値にないステージ）
+# - 約束リストの形: .vanda/promises/aaa.toml の 2 行目（ID の形）、.vanda/promises/qqq-broken.toml の 3 行目（refines の先がない）と 9 行目（決まった値にないステージ）
 # - 読まれていないファイル: どのパターンにもマッチしない .vanda/zzz-stray.toml
 # 1 つのチェックの中では、ファイルの場所の順、同じファイルなら行の順に出る。出力の順は、毎回同じ。
 # チェックごとの「チェック <名前>（<スコープ>）: 通った」か「失敗（<件数> 件）」の行は標準出力に、誤りの中身は標準エラーに出る。
@@ -89,14 +89,14 @@ id = "good"
 name = "正しい ID"
 definition = "英小文字で始まる"
 -- .vanda/promises/qqq-broken.toml --
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["nothing"]
+refines = ["nothing"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "no-such-stage"
 type = "unit-test"
 layers = ["model"]
@@ -106,15 +106,25 @@ detail = "task_test.go"
 id = "task"
 name = "タスク"
 definition = "利用者がやること"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/fixed.toml --
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]

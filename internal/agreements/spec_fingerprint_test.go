@@ -99,6 +99,7 @@ type termM struct {
 
 type featureM struct {
 	ID, Name, Definition string
+	Refines              []string
 	Core, Formal         *bool
 	Waiver               *string
 }
@@ -111,7 +112,7 @@ type evidenceM struct {
 
 type claimM struct {
 	ID                   string
-	Subjects             []string
+	Refines              []string
 	Statement            string
 	Rationale, Condition *string
 	Layers               []string
@@ -135,7 +136,7 @@ func (t termM) fields() obj {
 }
 
 func (f featureM) fields() obj {
-	o := obj{{"id", f.ID}, {"name", f.Name}, {"definition", f.Definition}}
+	o := obj{{"id", f.ID}, {"name", f.Name}, {"definition", f.Definition}, {"refines", f.Refines}}
 	if f.Core != nil {
 		o = append(o, field{"core", *f.Core})
 	}
@@ -158,7 +159,7 @@ func (e evidenceM) fields() obj {
 
 // fields は、フィンガープリントに入る項目だけを返す。flags と guesses は render で別に足す。
 func (c claimM) fields() obj {
-	o := obj{{"id", c.ID}, {"subjects", c.Subjects}, {"statement", c.Statement}, {"layers", c.Layers}}
+	o := obj{{"id", c.ID}, {"refines", c.Refines}, {"statement", c.Statement}, {"layers", c.Layers}}
 	if c.Rationale != nil {
 		o = append(o, field{"rationale", *c.Rationale})
 	}
@@ -403,7 +404,7 @@ func render(st style, l promiseList) string {
 		tables = append(tables, func(b *strings.Builder) { renderTable(b, st, "feature", x.fields()) })
 	}
 	for _, x := range l.claims {
-		tables = append(tables, func(b *strings.Builder) { renderTable(b, st, "claim", append(x.fields(), x.extra()...)) })
+		tables = append(tables, func(b *strings.Builder) { renderTable(b, st, "spec", append(x.fields(), x.extra()...)) })
 	}
 	var b strings.Builder
 	for _, j := range st.perm(len(tables)) {
@@ -488,12 +489,12 @@ func optional[T any](t *rapid.T, g *rapid.Generator[T], label string) *T {
 
 func listGen(t *rapid.T) promiseList {
 	text := textGen()
-	ids := rapid.SliceOfNDistinct(rapid.StringMatching(`[a-z][a-z0-9]{0,4}(-[a-z0-9]{1,4}){0,2}`), 3, 3, rapid.ID[string]).Draw(t, "ID")
+	ids := rapid.SliceOfNDistinct(rapid.StringMatching(`[a-z][a-z0-9]{0,4}(-[a-z0-9]{1,4}){0,2}`), 4, 4, rapid.ID[string]).Draw(t, "ID")
 	layers := rapid.SliceOfNDistinct(rapid.SampledFrom([]string{"model", "cli", "db"}), 1, 3, rapid.ID[string])
 	term := termM{ID: ids[0], Name: text.Draw(t, "用語の名前"), Definition: text.Draw(t, "用語の定義"), PartOf: optional(t, text, "part_of")}
 	core := optional(t, rapid.Bool(), "core")
 	formal := optional(t, rapid.Bool(), "formal")
-	feature := featureM{ID: ids[1], Name: text.Draw(t, "機能の名前"), Definition: text.Draw(t, "機能の定義"), Core: core, Formal: formal}
+	feature := featureM{ID: ids[1], Name: text.Draw(t, "機能の名前"), Definition: text.Draw(t, "機能の定義"), Refines: []string{ids[3]}, Core: core, Formal: formal}
 	if core != nil && *core && formal != nil && !*formal {
 		w := text.Draw(t, "formal_waiver")
 		feature.Waiver = &w
@@ -508,7 +509,7 @@ func listGen(t *rapid.T) promiseList {
 		}
 	}), 1, 3).Draw(t, "エビデンス")
 	claim := claimM{
-		ID: ids[2], Subjects: []string{ids[0], ids[1]}[:rapid.IntRange(1, 2).Draw(t, "対象の数")],
+		ID: ids[2], Refines: []string{ids[1], ids[0]}[:rapid.IntRange(1, 2).Draw(t, "refines の数")],
 		Statement: text.Draw(t, "文"), Rationale: optional(t, text, "理由"), Condition: optional(t, text, "条件"),
 		Layers: claimLayers, Evidence: evs,
 	}
@@ -567,9 +568,9 @@ func boolp(b bool) *bool    { return &b }
 func baseList() promiseList {
 	return promiseList{
 		terms:    []termM{{ID: "task", Name: "タスク", Definition: "やること"}},
-		features: []featureM{{ID: "task-add", Name: "タスクの登録", Definition: "タスクを足す"}},
+		features: []featureM{{ID: "task-add", Name: "タスクの登録", Definition: "タスクを足す", Refines: []string{"no-lost-task"}}},
 		claims: []claimM{{
-			ID: "task-id-unique", Subjects: []string{"task"}, Statement: "タスクの ID は重ならない",
+			ID: "task-id-unique", Refines: []string{"task-add"}, Statement: "タスクの ID は重ならない",
 			Rationale: strp("ID で指すため"), Condition: strp("いつも"), Layers: []string{"model", "cli"},
 			Evidence: []evidenceM{
 				{Stage: "implementation", Type: "unit-test", Layers: []string{"model"}, Detail: strp("task_test.go")},
@@ -602,7 +603,7 @@ func Testフィンガープリントに入る項目のどれを変えてもフ�
 		{"約束の理由", "task-id-unique", func(l *promiseList) { l.claims[0].Rationale = strp("別の理由") }, true},
 		{"約束の理由を省く", "task-id-unique", func(l *promiseList) { l.claims[0].Rationale = nil }, true},
 		{"約束の条件", "task-id-unique", func(l *promiseList) { l.claims[0].Condition = strp("登録のとき") }, true},
-		{"約束の対象", "task-id-unique", func(l *promiseList) { l.claims[0].Subjects = []string{"task", "task-add"} }, true},
+		{"約束の refines", "task-id-unique", func(l *promiseList) { l.claims[0].Refines = []string{"task-add", "task-list"} }, true},
 		{"約束のレイヤーの順", "task-id-unique", func(l *promiseList) { l.claims[0].Layers = []string{"cli", "model"} }, true},
 		{"約束のレイヤー", "task-id-unique", func(l *promiseList) { l.claims[0].Layers = []string{"model", "cli", "db"} }, true},
 		{"エビデンスのステージ", "task-id-unique", func(l *promiseList) { l.claims[0].Evidence[0].Stage = "release" }, true},
@@ -712,32 +713,33 @@ core = true
 name = "タスクの登録"
 id = "add-task"
 definition = "タスクを足す"
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 statement = "タスクの ID は重ならない"
-subjects = ["task", "add-task"]
+refines = ["add-task", "list-task"]
 rationale = "見分けるため"
 layers = ["model", "db"]
 id = "task-unique"
 condition = "いつも"
 
-[[claim.evidence]]
+[[spec.evidence]]
 type = "unit-test"
 stage = "implementation"
 layers = ["model"]
 detail = "TestUnique"
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "plan"
 layers = ["db", "model"]
 type = "guardrail"
 `
 	want := map[string]string{
 		"task":     `{"definition":"やること","id":"task","name":"タスク","part_of":"whole"}`,
-		"add-task": `{"core":true,"definition":"タスクを足す","formal":false,"formal_waiver":"状態を持たないため","id":"add-task","name":"タスクの登録"}`,
+		"add-task": `{"core":true,"definition":"タスクを足す","formal":false,"formal_waiver":"状態を持たないため","id":"add-task","name":"タスクの登録","refines":["no-lost-task"]}`,
 		"task-unique": `{"condition":"いつも","evidence":[{"detail":"TestUnique","layers":["model"],"stage":"implementation","type":"unit-test"},` +
 			`{"layers":["db","model"],"stage":"plan","type":"guardrail"}],"id":"task-unique","layers":["model","db"],` +
-			`"rationale":"見分けるため","statement":"タスクの ID は重ならない","subjects":["task","add-task"]}`,
+			`"rationale":"見分けるため","refines":["add-task","list-task"],"statement":"タスクの ID は重ならない"}`,
 	}
 	got := load(t, t.TempDir(), src)
 	for id, j := range want {

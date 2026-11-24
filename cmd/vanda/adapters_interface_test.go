@@ -269,7 +269,7 @@ func Test設定にはっきり書いた約束リストのファイルがなけ�
 }
 
 // CM-09: 設定の promises のパターンにマッチするファイルを、すべて約束リストとして読む。
-// a.toml の約束は b.toml の用語を対象にするので、b.toml を読まなければ subjects の先がない誤りになる
+// a.toml の約束は b.toml の機能を refines するので、b.toml を読まなければ refines の先がない誤りになる
 // @vanda:evidence promise-list-reads-all-patterns
 func Test設定のpromisesのパターンにマッチするファイルをすべて約束リストとして読む(t *testing.T) {
 	t.Parallel()
@@ -279,8 +279,8 @@ func Test設定のpromisesのパターンにマッチするファイルをすべ
 		t.Fatal(err)
 	}
 	files := map[string]string{
-		".vanda/promises/a.toml":     "[[claim]]\nid = \"task-unique\"\nsubjects = [\"task\"]\nstatement = \"タスクは重ならない\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n",
-		".vanda/promises/sub/b.toml": "[[term]]\nid = \"task\"\nname = \"タスク\"\ndefinition = \"やること\"\n",
+		".vanda/promises/a.toml":     "[[spec]]\nid = \"task-unique\"\nrefines = [\"add-task\"]\nstatement = \"タスクは重ならない\"\nlayers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n",
+		".vanda/promises/sub/b.toml": "[[term]]\nid = \"task\"\nname = \"タスク\"\ndefinition = \"やること\"\n\n[[feature]]\nid = \"add-task\"\nname = \"タスクの登録\"\ndefinition = \"タスクを足す\"\nrefines = [\"no-lost-task\"]\n\n[[property]]\nid = \"no-lost-task\"\nstatement = \"登録したタスクは失われない\"\n",
 		".vanda/promises/c.toml":     "[[term]]\nid = \"Bad_ID\"\nname = \"誤った ID\"\ndefinition = \"読まれていれば誤りになる\"\n",
 		".vanda/not-promises/d.toml": "[[term]]\nid = \"Other_Bad\"\nname = \"マッチしない\"\ndefinition = \"読まれない\"\n",
 		".vanda/promises/readme.md":  "パターンにマッチしない\n",
@@ -291,7 +291,7 @@ func Test設定のpromisesのパターンにマッチするファイルをすべ
 	writeFile(t, root, ".vanda/config.toml", strings.Replace(cfg, "\n[[layer]]", extra+"\n[[layer]]", 1))
 	newRVGit(t, root).commitAll("(test) チェックの前にコミットする", "")
 	code, _, errs := runVandaIn(t, bin, root, newRVGit(t, root).env, "check", ".vanda/checks/shape.toml")
-	// c.toml の誤りは出て、b.toml を読んだので a.toml の subjects の誤りは出ない。パターンにマッチしない d.toml は読まない
+	// c.toml の誤りは出て、b.toml を読んだので a.toml の refines の誤りは出ない。パターンにマッチしない d.toml は読まない
 	if code != 1 || !strings.Contains(errs, ".vanda/promises/c.toml") || strings.Contains(errs, "a.toml") || strings.Contains(errs, "Other_Bad") {
 		t.Errorf("パターンにマッチするファイルだけを全部読んでいない（%d）\n%s", code, errs)
 	}
@@ -578,7 +578,7 @@ func Test_vanda_adaptersのアダプタがtimeoutを過ぎたら約束の詳細�
 	if err != nil {
 		t.Fatal(err)
 	}
-	promises := "[[term]]\nid = \"task\"\nname = \"タスク\"\ndefinition = \"やること\"\n\n[[claim]]\nid = \"task-id-unique\"\nsubjects = [\"task\"]\nstatement = \"タスクの ID は重ならない\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n"
+	promises := "[[term]]\nid = \"task\"\nname = \"タスク\"\ndefinition = \"やること\"\n\n[[spec]]\nid = \"task-id-unique\"\nrefines = [\"add-task\"]\nstatement = \"タスクの ID は重ならない\"\nlayers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n\n[[feature]]\nid = \"add-task\"\nname = \"タスクの登録\"\ndefinition = \"タスクを足す\"\nrefines = [\"no-lost-task\"]\n\n[[property]]\nid = \"no-lost-task\"\nstatement = \"登録したタスクは失われない\"\n"
 	root := ifaceRepo(t, version, annotationRule("slow-adapter", "timeout = 1\n")+"\n[gui]\nbase = \"main\"\n",
 		map[string]string{".vanda/promises.toml": promises, "ext/a.ext": "@vanda:evidence task-id-unique\n"},
 		map[string]string{"slow-adapter": "cat >/dev/null\nsleep 30\n"})

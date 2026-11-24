@@ -18,15 +18,21 @@ definition = "消す用語の定義"
 id = "f-old"
 name = "消す機能"
 definition = "消す機能の定義"
+refines = ["p"]
 
 [[term]]
 id = "t-root"
 name = "タスク"
 definition = "やること"
+
+[[property]]
+id = "p"
+statement = "性質の文"
 `
 
 // story-24 の約束リスト（今の約束リスト）。
 // 子の用語（t-child-b・t-child-a）と約束（c-z・c-a・c-m）は、ID の順と書いた順が違うように並べる。
+// 約束の refines は、機能ごとに、refines する約束がない・1 つ・2 つになるように書く。
 // 機能は core・formal の書き方の組み合わせ（両方省く、core だけ書く、formal だけ書く、両方書く）を全部置く
 const tfAPIStory = `[[term]]
 id = "t-root"
@@ -61,17 +67,20 @@ part_of = "t-mid"
 id = "f-plain"
 name = "ふつうの機能"
 definition = "{@id:t-root}を見る"
+refines = ["p"]
 
 [[feature]]
 id = "f-core"
 name = "コアの機能"
 definition = "{@id:f-plain}より大事"
+refines = ["p"]
 core = true
 
 [[feature]]
 id = "f-core-noformal"
 name = "形式手法を使わないコアの機能"
 definition = "大事だが形で確かめない"
+refines = ["p"]
 core = true
 formal = false
 formal_waiver = "{@id:t-root}は小さい"
@@ -80,49 +89,55 @@ formal_waiver = "{@id:t-root}は小さい"
 id = "f-formal"
 name = "形式手法を使う機能の例"
 definition = "形で確かめる"
+refines = ["p"]
 formal = true
 
 [[feature]]
 id = "f-both-false"
 name = "どちらでもない機能"
 definition = "書いて偽にした"
+refines = ["p"]
 core = false
 formal = false
 
-[[claim]]
+[[spec]]
 id = "c-z"
-subjects = ["t-mid", "f-core"]
+refines = ["f-core"]
 statement = "{@id:t-mid}は重ならない"
 layers = ["model"]
 model_check_waiver = "小さい"
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 
-[[claim]]
+[[spec]]
 id = "c-a"
-subjects = ["t-root"]
+refines = ["f-both-false"]
 statement = "{@id:t-root}を足せる"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 
-[[claim]]
+[[spec]]
 id = "c-m"
-subjects = ["f-plain", "t-mid", "f-core"]
+refines = ["f-plain", "f-core"]
 statement = "{@id:f-core}は{@id:c-a}の後に{@id:f-formal}を使う"
 layers = ["model"]
 model_check_waiver = "小さい"
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
+
+[[property]]
+id = "p"
+statement = "性質の文"
 `
 
 type tfClaim struct {
@@ -234,9 +249,8 @@ func tfRefsOf(ids ...string) map[string]refInfo {
 }
 
 // @vanda:evidence term-page-content
-// @vanda:evidence term-feature-page-claims
 // @vanda:evidence reference-shown
-func Test用語の詳細は名前とIDとセグメントに分けた定義と親の用語と書いた順の子の用語とそれを対象に持つ約束を書いた順に返す(t *testing.T) {
+func Test用語の詳細は名前とIDとセグメントに分けた定義と親の用語と書いた順の子の用語を返す(t *testing.T) {
 	t.Parallel()
 	s := setupTFAPI(t)
 
@@ -255,14 +269,9 @@ func Test用語の詳細は名前とIDとセグメントに分けた定義と親
 	}
 	// 子は、part_of に t-mid を書いた用語だけを、約束リストに書いた順に（t-other は t-root の子なので入らない）
 	wantNamedList(t, "t-mid の children", mid.Children, []tfNamed{named("t-child-b", "ID の接頭辞"), named("t-child-a", "ID の番号")})
-	// subjects に t-mid を持つ約束を、約束リストに書いた順に（c-a は持たないので入らない）
-	wantClaims(t, "t-mid", mid.Claims, []tfClaim{
-		{ID: "c-z", Statement: fragsOf("タスクの ID>t-mid", "は重ならない")},
-		{ID: "c-m", Statement: fragsOf("コアの機能>f-core", "は", "c-a>c-a", "の後に", "形式手法を使う機能の例>f-formal", "を使う")},
-	})
-	wantRefs(t, "t-mid の詳細", mid.Refs, tfRefsOf("t-root", "t-mid", "f-core", "c-a", "f-formal"))
+	wantRefs(t, "t-mid の詳細", mid.Refs, tfRefsOf("t-root"))
 
-	// part_of を書いていない用語は partOf が null。子も約束もない用語は [] にする
+	// part_of を書いていない用語は partOf が null。子のない用語は [] にする
 	var root tfTerm
 	if code, msg := s.get("/api/terms/t-root", &root); code != 200 {
 		t.Fatalf("用語 t-root の詳細を読めない（%d）: %s", code, msg)
@@ -271,14 +280,12 @@ func Test用語の詳細は名前とIDとセグメントに分けた定義と親
 		t.Errorf("t-root の partOf が null でない: %+v", root.PartOf)
 	}
 	wantNamedList(t, "t-root の children", root.Children, []tfNamed{named("t-mid", "タスクの ID"), named("t-other", "ほかの用語")})
-	wantClaims(t, "t-root", root.Claims, []tfClaim{{ID: "c-a", Statement: fragsOf("タスク>t-root", "を足せる")}})
 
 	var leaf tfTerm
 	if code, msg := s.get("/api/terms/t-child-a", &leaf); code != 200 {
 		t.Fatalf("用語 t-child-a の詳細を読めない（%d）: %s", code, msg)
 	}
 	wantNamedList(t, "t-child-a の children", leaf.Children, nil)
-	wantClaims(t, "t-child-a", leaf.Claims, nil)
 	if leaf.Refs == nil {
 		t.Errorf("t-child-a の refs が null（何も指していなくても {} のはず）")
 	}
@@ -287,7 +294,7 @@ func Test用語の詳細は名前とIDとセグメントに分けた定義と親
 // @vanda:evidence feature-page-content
 // @vanda:evidence term-feature-page-claims
 // @vanda:evidence reference-shown
-func Test機能の詳細は名前とIDとセグメントに分けた定義とコア機能か形式手法を使う機能かとそれを対象に持つ約束を書いた順に返す(t *testing.T) {
+func Test機能の詳細は名前とIDとセグメントに分けた定義とコア機能か形式手法を使う機能かとそれをrefinesする約束を書いた順に返す(t *testing.T) {
 	t.Parallel()
 	s := setupTFAPI(t)
 
@@ -310,7 +317,9 @@ func Test機能の詳細は名前とIDとセグメントに分けた定義とコ
 			[]string{"f-plain", "t-mid", "f-core", "c-a", "f-formal"}},
 		{"f-core-noformal", "形式手法を使わないコアの機能", textOf("大事だが形で確かめない"), true, false, nil, nil},
 		{"f-formal", "形式手法を使う機能の例", textOf("形で確かめる"), false, true, nil, nil},
-		{"f-both-false", "どちらでもない機能", textOf("書いて偽にした"), false, false, nil, nil},
+		{"f-both-false", "どちらでもない機能", textOf("書いて偽にした"), false, false,
+			[]tfClaim{{ID: "c-a", Statement: fragsOf("タスク>t-root", "を足せる")}},
+			[]string{"t-root"}},
 	}
 	for _, c := range cases {
 		var f tfFeature

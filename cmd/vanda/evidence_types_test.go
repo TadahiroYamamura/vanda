@@ -60,13 +60,23 @@ id = "task"
 name = "タスク"
 definition = "やること"
 
-[[claim]]
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
+
+[[feature]]
+id = "add-task"
+name = "タスクの登録"
+definition = "タスクを足す"
+refines = ["no-lost-task"]
+
+[[spec]]
 id = "task-id-unique"
-subjects = ["task"]
+refines = ["add-task"]
 statement = "タスクの ID は重ならない"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = %q
 layers = ["model"]

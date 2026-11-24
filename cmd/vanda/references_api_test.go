@@ -43,46 +43,52 @@ definition = "消える定義"
 id = "f-rename"
 name = "古い機能"
 definition = "前の機能の定義"
+refines = ["p"]
 
 [[feature]]
 id = "f-gone"
 name = "消える機能"
 definition = "消える機能の定義"
+refines = ["p"]
 
-[[claim]]
+[[spec]]
 id = "c-other"
-subjects = ["t-keep"]
+refines = ["f-rename"]
 statement = "ほかの約束は{@id:t-keep}を数える"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 
-[[claim]]
+[[spec]]
 id = "c-ref"
-subjects = ["t-keep"]
+refines = ["f-rename"]
 statement = "{@id:t-rename}と{@id:f-rename}は{@id:t-gone}と{@id:f-gone}と{@id:c-other}を使う"
 rationale = "{@@id:x}は文字"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "{@id:f-rename}で試す"
 
-[[claim]]
+[[spec]]
 id = "c-same"
-subjects = ["t-keep"]
+refines = ["f-rename"]
 statement = "{@id:t-keep}と新しい用語を数える"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
+
+[[property]]
+id = "p"
+statement = "性質の文"
 `
 
 // story-24 の約束リスト。t-rename・f-rename の名前と定義を変え、t-gone・f-gone を消し、c-ref の文から消したものへの参照を外す
@@ -100,21 +106,22 @@ definition = "後の定義"
 id = "f-rename"
 name = "新しい機能"
 definition = "{@id:t-keep}を足す"
+refines = ["p"]
 
-[[claim]]
+[[spec]]
 id = "c-other"
-subjects = ["t-keep"]
+refines = ["f-rename"]
 statement = "ほかの約束は{@id:t-keep}を数える"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 
-[[claim]]
+[[spec]]
 id = "c-ref"
-subjects = ["t-keep"]
+refines = ["f-rename"]
 statement = "{@id:t-rename}と{@id:f-rename}は{@id:c-other}を必ず使う"
 rationale = "{@@id:x}は文字"
 condition = "{@id:t-keep}がある"
@@ -122,22 +129,26 @@ layers = ["model"]
 guesses = ["{@id:t-rename}の推測"]
 model_check_waiver = "{@id:f-rename}は形で確かめない"
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "{@id:f-rename}で確かめる"
 
-[[claim]]
+[[spec]]
 id = "c-same"
-subjects = ["t-keep"]
+refines = ["f-rename"]
 statement = "タスクと{@id:t-rename}をいつも数える"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
+
+[[property]]
+id = "p"
+statement = "性質の文"
 `
 
 type refDiffPart struct {

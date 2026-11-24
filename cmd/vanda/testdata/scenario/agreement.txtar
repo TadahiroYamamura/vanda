@@ -18,6 +18,7 @@ stderr '(?m)promises\.toml.*\btask\b($|[^-])'
 
 # 承認すると通る
 agree .vanda/agreements.toml '#1' term task fp/term-task.json
+agree .vanda/agreements.toml '#1' feature task-add fp/feature-task-add.json
 agree .vanda/agreements.toml '#1' claim task-id-unique fp/claim-v1.json
 commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
@@ -89,50 +90,70 @@ id = "task"
 name = "Task"
 definition = "A thing to do"
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "Task IDs are unique"
 rationale = "Tasks are referred to by ID"
 condition = "always"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[feature]]
+id = "task-add"
+name = "Adding a task"
+definition = "Add a task"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "Registered tasks are never lost"
 -- cases/promises-v1.toml --
 [[term]]
 id = "task"
 name = "Task"
 definition = "A thing to do"
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "Task IDs are unique"
 rationale = "Tasks are referred to by ID"
 condition = "always"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[feature]]
+id = "task-add"
+name = "Adding a task"
+definition = "Add a task"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "Registered tasks are never lost"
 -- cases/promises-v1-reformatted.toml --
-[[claim]]
+[[spec]]
 layers    =    [ "model" ]
 condition = 'always'
 rationale = "Tasks are referred to by ID"
 statement = 'Task IDs are unique'
-subjects  = [
-  "task",
+refines   = [
+  "task-add",
 ]
 id = "task-id-unique"
 
-  [[claim.evidence]]
+  [[spec.evidence]]
   type = 'unit-test'
   detail = "task_test.go"
   layers = ['model']
@@ -142,87 +163,139 @@ id = "task-id-unique"
 definition = 'A thing to do'
 name="Task"
 id="task"
+
+[[feature]]
+id = "task-add"
+name = "Adding a task"
+definition = "Add a task"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "Registered tasks are never lost"
 -- cases/promises-v1-flags.toml --
 [[term]]
 id = "task"
 name = "Task"
 definition = "A thing to do"
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "Task IDs are unique"
 rationale = "Tasks are referred to by ID"
 condition = "always"
 layers = ["model"]
 flags = ["ai-proposal"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[feature]]
+id = "task-add"
+name = "Adding a task"
+definition = "Add a task"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "Registered tasks are never lost"
 -- cases/promises-v1-guesses.toml --
 [[term]]
 id = "task"
 name = "Task"
 definition = "A thing to do"
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "Task IDs are unique"
 rationale = "Tasks are referred to by ID"
 condition = "always"
 layers = ["model"]
 guesses = ["IDs are assigned in order"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[feature]]
+id = "task-add"
+name = "Adding a task"
+definition = "Add a task"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "Registered tasks are never lost"
 -- cases/promises-v2.toml --
 [[term]]
 id = "task"
 name = "Task"
 definition = "A thing to do"
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "No two tasks share an ID"
 rationale = "Tasks are referred to by ID"
 condition = "always"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[feature]]
+id = "task-add"
+name = "Adding a task"
+definition = "Add a task"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "Registered tasks are never lost"
 -- cases/promises-v2-renamed.toml --
 [[term]]
 id = "task"
 name = "Task"
 definition = "A thing to do"
 
-[[claim]]
+[[spec]]
 id = "task-ids-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "No two tasks share an ID"
 rationale = "Tasks are referred to by ID"
 condition = "always"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[feature]]
+id = "task-add"
+name = "Adding a task"
+definition = "Add a task"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "Registered tasks are never lost"
 -- fp/term-task.json --
 {"definition":"A thing to do","id":"task","name":"Task"}
+-- fp/feature-task-add.json --
+{"definition":"Add a task","id":"task-add","name":"Adding a task","refines":["no-lost-task"]}
 -- fp/claim-v1.json --
-{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"Task IDs are unique","subjects":["task"]}
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","refines":["task-add"],"statement":"Task IDs are unique"}
 -- fp/claim-v2.json --
-{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"No two tasks share an ID","subjects":["task"]}
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","refines":["task-add"],"statement":"No two tasks share an ID"}

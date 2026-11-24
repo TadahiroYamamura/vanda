@@ -42,13 +42,23 @@ id = "t"
 name = "用語"
 definition = "定義"
 
-[[claim]]
+[[property]]
+id = "p"
+statement = "性質"
+
+[[feature]]
+id = "f"
+name = "機能"
+definition = "定義"
+refines = ["p"]
+
+[[spec]]
 id = "c"
-subjects = ["t"]
+refines = ["f"]
 statement = "前の文"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["model"]

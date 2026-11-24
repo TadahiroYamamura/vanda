@@ -42,11 +42,6 @@ type claimDetail struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
 	} `json:"layers"`
-	Subjects []struct {
-		Kind string `json:"kind"`
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	} `json:"subjects"`
 	State       string   `json:"state"`
 	Fingerprint string   `json:"fingerprint"`
 	Flags       []string `json:"flags"`
@@ -128,7 +123,7 @@ func checkFound(t *testing.T, typ string, got []claimFound, want []wantFound) {
 // @vanda:evidence claim-detail-origin
 // @vanda:evidence claim-detail-agreements
 // @vanda:evidence found-file-state-shown
-func Test約束の詳細は文とレイヤーと対象とエビデンスのタイプごとの中身と変更履歴と承認の履歴を示す(t *testing.T) {
+func Test約束の詳細は文とレイヤーとエビデンスのタイプごとの中身と変更履歴と承認の履歴を示す(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
 	// 推測だけを書き換えたコミット。フィンガープリントが変わらないので、変更履歴には出ない
@@ -145,9 +140,6 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 	}
 	if len(got.Layers) != 2 || got.Layers[0].ID != "model" || got.Layers[0].Name != "モデル" || got.Layers[1].ID != "db" || got.Layers[1].Name != "DB" {
 		t.Errorf("レイヤー: %+v", got.Layers)
-	}
-	if len(got.Subjects) != 1 || got.Subjects[0].Kind != "term" || got.Subjects[0].ID != "task-id" || got.Subjects[0].Name != "タスクの ID" {
-		t.Errorf("対象: %+v", got.Subjects)
 	}
 	if got.State != "proposed" || got.Fingerprint != reviewClaimFP ||
 		!reflect.DeepEqual(got.Flags, []string{"ai-proposal"}) || !reflect.DeepEqual(fragsList(got.Guesses), []string{"消したタスクの ID は使い回さない"}) {
@@ -250,50 +242,6 @@ func Test約束の詳細は文とレイヤーと対象とエビデンスのタ�
 	}
 }
 
-// CL-01: 約束リストにない ID は、約束リストの形のチェックの誤りになるが、約束の詳細は出す
-// @vanda:evidence claim-detail-subjects
-func Test約束の詳細の対象は用語か機能の名前とIDを約束のsubjectsの順に示し約束リストにないIDは種類と名前をnullにする(t *testing.T) {
-	t.Parallel()
-	_, r, s := setupAgree(t)
-	writeFile(t, r.Root, ".vanda/promises.toml", reviewPromisesStory+`
-[[claim]]
-id = "task-subjects"
-subjects = ["add-task", "no-such-subject", "task-id"]
-statement = "対象を 3 つ持つ"
-layers = ["model"]
-
-[[claim.evidence]]
-stage = "implementation"
-type = "unit-test"
-layers = ["model"]
-`)
-	r.g.commitTracked("対象を 3 つ持つ約束を足す", reviewStory)
-	var got struct {
-		Subjects []struct {
-			Kind *string `json:"kind"`
-			ID   string  `json:"id"`
-			Name *string `json:"name"`
-		} `json:"subjects"`
-	}
-	if code, msg := s.get("/api/claims/task-subjects", &got); code != 200 {
-		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
-	}
-	want := []string{"feature add-task タスクの登録", "<null> no-such-subject <null>", "term task-id タスクの ID"}
-	var have []string
-	for _, sub := range got.Subjects {
-		show := func(p *string) string {
-			if p == nil {
-				return "<null>"
-			}
-			return *p
-		}
-		have = append(have, show(sub.Kind)+" "+sub.ID+" "+show(sub.Name))
-	}
-	if strings.Join(have, "\n") != strings.Join(want, "\n") {
-		t.Errorf("対象:\n%s\n--- 思ったもの\n%s", strings.Join(have, "\n"), strings.Join(want, "\n"))
-	}
-}
-
 // CL-02: エビデンスの予定があっても、指すアノテーションがなければ found は空
 // @vanda:evidence claim-detail-evidence-content
 func Test約束の詳細は指すアノテーションのないエビデンスの予定をfoundが空のものとして示す(t *testing.T) {
@@ -325,7 +273,7 @@ func Test約束の詳細は変更履歴と承認の履歴を含めず変更履�
 			t.Errorf("約束の詳細に %s がある: %s", k, detail[k])
 		}
 	}
-	for _, k := range []string{"id", "state", "statement", "layers", "subjects", "guesses", "evidence"} {
+	for _, k := range []string{"id", "state", "statement", "layers", "guesses", "evidence"} {
 		if _, ok := detail[k]; !ok {
 			t.Errorf("約束の詳細に %s がない", k)
 		}

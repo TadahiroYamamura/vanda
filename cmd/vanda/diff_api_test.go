@@ -67,23 +67,28 @@ definition = "前の定義"
 id = "f"
 name = "機能"
 definition = "同じ定義"
+refines = ["p"]
 core = true
 formal = false
 formal_waiver = "まだ形式手法を使わない"
 
-[[claim]]
+[[spec]]
 id = "c"
-subjects = ["t"]
+refines = ["f"]
 statement = "タスクの ID は重ならない"
 rationale = "消す相手を決めるため"
 layers = ["model"]
 guesses = ["前の推測"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "前の中身"
+
+[[property]]
+id = "p"
+statement = "性質の文"
 `
 
 const diffPromisesStory = `[[term]]
@@ -95,24 +100,29 @@ definition = "後の定義"
 id = "f"
 name = "機能"
 definition = "同じ定義"
+refines = ["p"]
 core = true
 formal = false
 formal_waiver = "当面は形式手法を使わない"
 
-[[claim]]
+[[spec]]
 id = "c"
-subjects = ["t"]
+refines = ["f"]
 statement = "タスクの ID は絶対に重ならない"
 rationale = "消す相手を決めるため"
 condition = "タスクがある"
 layers = ["model"]
 guesses = ["後の推測"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "後の中身"
+
+[[property]]
+id = "p"
+statement = "性質の文"
 `
 
 func setupDiff(t *testing.T) reviewResponse {
@@ -409,10 +419,10 @@ type evidenceDiff struct {
 	} `json:"evidence"`
 }
 
-const evidenceDiffTerm = "[[term]]\nid = \"t\"\nname = \"用語\"\ndefinition = \"定義\"\n\n[[claim]]\nid = \"ev\"\nsubjects = [\"t\"]\nstatement = \"エビデンスを変える\"\nlayers = [\"model\", \"db\"]\n"
+const evidenceDiffTerm = "[[term]]\nid = \"t\"\nname = \"用語\"\ndefinition = \"定義\"\n\n[[property]]\nid = \"p\"\nstatement = \"性質の文\"\n\n[[feature]]\nid = \"f\"\nname = \"機能\"\ndefinition = \"定義\"\nrefines = [\"p\"]\n\n[[spec]]\nid = \"ev\"\nrefines = [\"f\"]\nstatement = \"エビデンスを変える\"\nlayers = [\"model\", \"db\"]\n"
 
 func evidenceTOML(stage, typ string, layers []string, detail string) string {
-	s := fmt.Sprintf("\n[[claim.evidence]]\nstage = %q\ntype = %q\nlayers = [\"%s\"]\n", stage, typ, strings.Join(layers, "\", \""))
+	s := fmt.Sprintf("\n[[spec.evidence]]\nstage = %q\ntype = %q\nlayers = [\"%s\"]\n", stage, typ, strings.Join(layers, "\", \""))
 	if detail != "" {
 		s += fmt.Sprintf("detail = %q\n", detail)
 	}

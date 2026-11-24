@@ -357,17 +357,22 @@ definition = "利用者がやること"
 id = "task-add"
 name = "タスクの登録"
 definition = "タスクを足す"
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- task.go --
 package task
 

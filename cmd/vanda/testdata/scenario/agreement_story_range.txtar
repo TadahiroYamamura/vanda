@@ -62,37 +62,57 @@ id = "task"
 name = "Task"
 definition = "A thing to do"
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "Task IDs are unique"
 rationale = "Tasks are referred to by ID"
 condition = "always"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[feature]]
+id = "task-add"
+name = "Adding a task"
+definition = "Add a task"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "Registered tasks are never lost"
 -- cases/a-without-claim.toml --
 [[term]]
 id = "task"
 name = "Task"
 definition = "A thing to do"
+
+[[feature]]
+id = "task-add"
+name = "Adding a task"
+definition = "Add a task"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "Registered tasks are never lost"
 -- cases/b.toml --
-[[claim]]
+[[spec]]
 id = "task-title-required"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "Every task has a title"
 rationale = "Tasks are listed by title"
 condition = "always"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
 -- fp/claim-b.json --
-{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","statement":"Every task has a title","subjects":["task"]}
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","refines":["task-add"],"statement":"Every task has a title"}

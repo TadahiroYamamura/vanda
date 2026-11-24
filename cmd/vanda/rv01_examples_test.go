@@ -222,7 +222,7 @@ var rvExamples = []rvExample{
 		story: map[string][]rvEntry{
 			"#25": {{Kind: "file", Key: "db/b.sql", Change: "deleted"}, {Kind: "file", Key: "db/c.sql", Change: "added"}},
 			// #1 が足した db/a.sql は今ないので出ない。db/c.sql を最初に変えたのは #25
-			"#1": {{Kind: "term", Key: "base", Change: "added"}},
+			"#1": {{Kind: "term", Key: "base", Change: "added"}, {Kind: "feature", Key: "base-feature", Change: "added"}},
 		},
 	},
 	{

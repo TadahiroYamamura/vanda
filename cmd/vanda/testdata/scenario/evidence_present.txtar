@@ -153,62 +153,72 @@ id = "task"
 name = "タスク"
 definition = "利用者がやること"
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "model-check"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "guardrail"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "cross-check"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "random-check"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "interface-test"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "concurrency-test"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "operation"
 type = "sensor"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "release"
 type = "human-review"
 layers = ["model"]
 detail = "docs/no-such-review.md"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- e2e/add.txtar --
 ># @vanda:evidence task-id-unique
 >exec echo add
@@ -300,72 +310,112 @@ id = "task"
 name = "タスク"
 definition = "利用者がやること"
 
-[[claim]]
+[[spec]]
 id = "task-title-required"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "タスクには題がある"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/promises-proof.toml --
 [[term]]
 id = "task"
 name = "タスク"
 definition = "利用者がやること"
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "proof"
 layers = ["model"]
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/promises-main.toml --
 [[term]]
 id = "task"
 name = "タスク"
 definition = "利用者がやること"
 
-[[claim]]
+[[spec]]
 id = "task-reviewed-no-annotation"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/promises-story.toml --
 [[term]]
 id = "task"
 name = "タスク"
 definition = "利用者がやること"
 
-[[claim]]
+[[spec]]
 id = "task-reviewed-no-annotation"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 
-[[claim]]
+[[spec]]
 id = "task-title-required"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "タスクには題がある"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"

@@ -96,8 +96,23 @@ func (s rvState) clone() rvState {
 	return c
 }
 
-// 約束の対象に使う用語。どの操作も変えないので、一覧には出ない。
+// どの操作も変えない用語。一覧には出ない。
 const rvBaseTerm = "base"
+
+// 約束が refines する機能と、機能が refines する性質。どの操作も変えないので、一覧には出ない。
+// 性質は、まだ一覧に出すものでないので、状態（rvState）には入れず、約束リストの 1 つ目のファイルの末尾にいつも書く。
+const (
+	rvBaseFeature  = "base-feature"
+	rvBaseProperty = "base-property"
+)
+
+// rvTable は、種類 kind の項目を書く、約束リストの表の名前を返す。一覧と承認の記録の種類は claim のまま、表だけが spec になった
+func rvTable(kind string) string {
+	if kind == "claim" {
+		return "spec"
+	}
+	return kind
+}
 
 const rvPromiseFiles = 3
 
@@ -331,7 +346,7 @@ func rvRenderItem(id string, it rvItem, pick rvPick) string {
 	if pick(3) == 0 {
 		b.WriteString("# メモ\n")
 	}
-	fmt.Fprintf(&b, "[[%s]]\n", it.kind)
+	fmt.Fprintf(&b, "[[%s]]\n", rvTable(it.kind))
 	lines := map[string]string{"id": rvValue(id, pick)}
 	var detail string
 	for k, v := range it.fields {
@@ -342,8 +357,11 @@ func rvRenderItem(id string, it rvItem, pick rvPick) string {
 		lines[k] = rvValue(v, pick)
 	}
 	inlineEvidence := false
+	if it.kind == "feature" {
+		lines["refines"] = rvArray([]string{rvBaseProperty}, pick)
+	}
 	if it.kind == "claim" {
-		lines["subjects"] = rvArray([]string{rvBaseTerm}, pick)
+		lines["refines"] = rvArray([]string{rvBaseFeature}, pick)
 		lines["layers"] = rvArray([]string{"model"}, pick)
 		if pick(2) == 0 {
 			inlineEvidence = true
@@ -375,7 +393,7 @@ func rvRenderItem(id string, it rvItem, pick rvPick) string {
 			rvKeyLine("detail", rvValue(detail, pick), pick),
 		}
 		rvShuffle(ev, pick)
-		b.WriteString("[[claim.evidence]]\n" + strings.Join(ev, ""))
+		b.WriteString("[[spec.evidence]]\n" + strings.Join(ev, ""))
 	}
 	return b.String()
 }
@@ -397,6 +415,9 @@ func rvRenderPromises(items map[string]rvItem, pick rvPick) []string {
 				b.WriteString(strings.Repeat("\n", 1+pick(3)))
 			}
 			b.WriteString(rvRenderItem(id, items[id], pick))
+		}
+		if f == 0 {
+			fmt.Fprintf(&b, "\n[[property]]\nid = %q\nstatement = \"もとの性質\"\n", rvBaseProperty)
 		}
 		out[f] = b.String()
 	}
@@ -492,6 +513,12 @@ func rvParsedItems(t fataler, srcs map[int]string) map[string]rvItem {
 			t.Fatalf("%s を読めない: %v\n%s", rvPromisePath(f), err, src)
 		}
 		for kind, tables := range doc {
+			if kind == "property" {
+				continue
+			}
+			if kind == "spec" {
+				kind = "claim"
+			}
 			for _, tab := range tables {
 				it := rvItem{kind: kind, fields: map[string]string{}, file: f}
 				var id string
@@ -499,9 +526,9 @@ func rvParsedItems(t fataler, srcs map[int]string) map[string]rvItem {
 					switch k {
 					case "id":
 						id, _ = v.(string)
-					case "subjects", "layers":
+					case "refines", "layers":
 					case "evidence":
-						// [[claim.evidence]] は []map[string]any に、インラインの表の配列は []any に読まれる
+						// [[spec.evidence]] は []map[string]any に、インラインの表の配列は []any に読まれる
 						var ev map[string]any
 						switch evs := v.(type) {
 						case []map[string]any:

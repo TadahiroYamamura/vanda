@@ -32,7 +32,7 @@ agree -deleted .vanda/agreements.toml '#1' claim task-id-unique
 commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/targets.toml
 
-# 機能を消す
+# 機能を消す（機能を refines する約束は、消したことを承認済みなので、一緒に消しておく）
 cp cases/without-feature.toml .vanda/promises.toml
 commit 'チェックする前にコミットする'
 ! exec vanda check .vanda/checks/targets.toml
@@ -86,17 +86,22 @@ definition = "タスクに付ける文"
 id = "task-add"
 name = "タスクの登録"
 definition = "タスクを足す"
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/all.toml --
 [[term]]
 id = "task"
@@ -112,17 +117,22 @@ definition = "タスクに付ける文"
 id = "task-add"
 name = "タスクの登録"
 definition = "タスクを足す"
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/empty.toml --
 -- cases/without-claim.toml --
 [[term]]
@@ -139,6 +149,11 @@ definition = "タスクに付ける文"
 id = "task-add"
 name = "タスクの登録"
 definition = "タスクを足す"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/without-feature.toml --
 [[term]]
 id = "task"
@@ -150,16 +165,9 @@ id = "note"
 name = "メモ"
 definition = "タスクに付ける文"
 
-[[claim]]
-id = "task-id-unique"
-subjects = ["task", "task-add"]
-statement = "タスクの ID は重ならない"
-layers = ["model"]
-
-[[claim.evidence]]
-stage = "implementation"
-type = "unit-test"
-layers = ["model"]
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/without-term.toml --
 [[term]]
 id = "task"
@@ -170,14 +178,19 @@ definition = "利用者がやること"
 id = "task-add"
 name = "タスクの登録"
 definition = "タスクを足す"
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"

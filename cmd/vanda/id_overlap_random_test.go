@@ -18,7 +18,7 @@ import (
 // 無作為に作った約束リストで、vanda check が出す誤りの場所が、テストの中で数えた「後に出てきたもの」と一致することを確かめる。
 
 type overlapItem struct {
-	kind string // term・feature・claim
+	kind string // term・feature・spec
 	id   string
 	file int
 }
@@ -28,7 +28,7 @@ type overlapLoc struct {
 	line int
 }
 
-// 重複が起きやすいよう、ID は小さな集まりから選ぶ。base は重複しない用語で、約束の対象に使う。
+// 重複が起きやすいよう、ID は小さな集まりから選ぶ。base-property と base-feature は重複しない性質と機能で、refines の先に使う。
 var overlapIDs = []string{"a", "b", "c-1", "d2"}
 
 func renderOverlap(items []overlapItem, files int) (map[string]string, map[int]overlapLoc) {
@@ -50,10 +50,12 @@ func renderOverlap(items []overlapItem, files int) (map[string]string, map[int]o
 			locs[i] = overlapLoc{path, line}
 			write(fmt.Sprintf("id = %q\n", it.id))
 			switch it.kind {
-			case "term", "feature":
+			case "term":
 				write("name = \"名前\"\ndefinition = \"定義\"\n")
-			case "claim":
-				write("subjects = [\"base\"]\nstatement = \"文\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n")
+			case "feature":
+				write("name = \"名前\"\ndefinition = \"定義\"\nrefines = [\"base-property\"]\n")
+			case "spec":
+				write("refines = [\"base-feature\"]\nstatement = \"文\"\nlayers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n")
 			}
 			write("\n")
 		}
@@ -101,7 +103,7 @@ func Test分けたファイルをまたいでも重複したIDは後に出てき
 	fixed := map[string]string{
 		".vanda/config.toml":        fmt.Sprintf("version = %q\npromises = [\".vanda/promises/*.toml\"]\n\n[[layer]]\nid = \"model\"\nname = \"モデル\"\ndescription = \"判定と状態の変化\"\n", version),
 		".vanda/checks/shape.toml":  "[[check]]\nname = \"promise-list-shape\"\nscope = \"all\"\n",
-		".vanda/promises/base.toml": "[[term]]\nid = \"base\"\nname = \"もと\"\ndefinition = \"約束の対象\"\n",
+		".vanda/promises/base.toml": "[[property]]\nid = \"base-property\"\nstatement = \"もとの性質\"\n\n[[feature]]\nid = \"base-feature\"\nname = \"もと\"\ndefinition = \"refines の先\"\nrefines = [\"base-property\"]\n",
 	}
 	for path, src := range fixed {
 		writeFile(t, root, path, src)
@@ -113,7 +115,7 @@ func Test分けたファイルをまたいでも重複したIDは後に出てき
 		files := rapid.IntRange(1, 3).Draw(rt, "ファイルの数")
 		items := rapid.SliceOfN(rapid.Custom(func(rt *rapid.T) overlapItem {
 			return overlapItem{
-				kind: rapid.SampledFrom([]string{"term", "feature", "claim"}).Draw(rt, "表"),
+				kind: rapid.SampledFrom([]string{"term", "feature", "spec"}).Draw(rt, "表"),
 				id:   rapid.SampledFrom(overlapIDs).Draw(rt, "ID"),
 				file: rapid.IntRange(0, files-1).Draw(rt, "ファイル"),
 			}

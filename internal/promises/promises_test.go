@@ -27,7 +27,11 @@ func write(t *testing.T, files map[string]string) (string, []string) {
 // @vanda:evidence promise-list-reads-all-patterns
 func TestLoadは複数のファイルから用語と機能と約束を読む(t *testing.T) {
 	root, files := write(t, map[string]string{
-		".vanda/promises/a.toml": `[[term]]
+		".vanda/promises/a.toml": `[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
+
+[[term]]
 id = "task"
 name = "タスク"
 definition = "やること"
@@ -42,19 +46,21 @@ part_of = "task"
 id = "add-task"
 name = "タスクの登録"
 definition = "タスクを足す"
+refines = ["no-lost-task"]
 core = true
 
 [[feature]]
 id = "list-task"
 name = "タスクの一覧"
 definition = "タスクを並べる"
+refines = ["no-lost-task"]
 core = true
 formal = false
 formal_waiver = "表示だけのため"
 `,
-		".vanda/promises/b.toml": `[[claim]]
+		".vanda/promises/b.toml": `[[spec]]
 id = "task-id-unique"
-subjects = ["task-id"]
+refines = ["add-task"]
 statement = "タスクの ID は重ならない"
 rationale = "見分けるため"
 condition = "いつも"
@@ -62,13 +68,13 @@ layers = ["model", "db"]
 flags = ["ai-proposal"]
 guesses = ["DB に一意の制約を付けられる"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "TestTaskID"
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "guardrail"
 layers = ["db"]
@@ -95,7 +101,7 @@ detail = "db/schema.sql"
 }
 
 func TestLoadはcoreでない機能のformalを省けば偽とみなす(t *testing.T) {
-	root, files := write(t, map[string]string{".vanda/promises.toml": "[[feature]]\nid = \"f\"\nname = \"n\"\ndefinition = \"d\"\ncore = false\n"})
+	root, files := write(t, map[string]string{".vanda/promises.toml": "[[feature]]\nid = \"f\"\nname = \"n\"\ndefinition = \"d\"\nrefines = [\"p\"]\ncore = false\n"})
 	l, errs := Load(root, files, []string{".vanda/promises.toml"}, false)
 	if errs != nil {
 		t.Fatal(errs)
@@ -109,14 +115,14 @@ func TestLoadはcoreでない機能のformalを省けば偽とみなす(t *testi
 // @vanda:evidence promise-list-unknown-entries-rejected
 // @vanda:evidence promise-list-explicit-file-must-exist
 func TestLoadは型の違いと足りない項目と決まっていない項目を行の付いたエラーで全部返す(t *testing.T) {
-	root, files := write(t, map[string]string{".vanda/promises.toml": `[[claim]]
+	root, files := write(t, map[string]string{".vanda/promises.toml": `[[spec]]
 id = "c"
-subjects = "task"
+refines = "f"
 rationale = "r"
 layers = []
 note = "x"
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 layers = ["model"]
 
@@ -124,6 +130,7 @@ layers = ["model"]
 id = "f"
 name = "n"
 definition = "d"
+refines = ["p"]
 core = "yes"
 
 [[story]]
@@ -131,13 +138,13 @@ id = "s"
 `})
 	_, errs := Load(root, files, []string{".vanda/promises.toml", ".vanda/more.toml"}, false)
 	want := [][]string{
-		{".vanda/promises.toml:3: ", "subjects", "文字列の配列"},
-		{".vanda/promises.toml:1: ", `claim "c" の statement`, `statement = "…"`},
+		{".vanda/promises.toml:3: ", "refines", "文字列の配列"},
+		{".vanda/promises.toml:1: ", `spec "c" の statement`, `statement = "…"`},
 		{".vanda/promises.toml:5: ", "layers", "空"},
-		{".vanda/promises.toml:8: ", `claim "c" の evidence の 1 件目 の type`},
+		{".vanda/promises.toml:8: ", `spec "c" の evidence の 1 件目 の type`},
 		{".vanda/promises.toml:6: ", "note", "決まった項目"},
-		{".vanda/promises.toml:16: ", "core", "真偽"},
-		{".vanda/promises.toml:18: ", "story", "決まった項目"},
+		{".vanda/promises.toml:17: ", "core", "真偽"},
+		{".vanda/promises.toml:19: ", "story", "決まった項目"},
 		{".vanda/more.toml: ", "約束リストのファイル"},
 	}
 	got := errs.Error()
@@ -152,9 +159,9 @@ id = "s"
 }
 
 func TestLoadはインラインの表の中の項目は行を書かずに場所を示す(t *testing.T) {
-	root, files := write(t, map[string]string{".vanda/promises.toml": `[[claim]]
+	root, files := write(t, map[string]string{".vanda/promises.toml": `[[spec]]
 id = "c"
-subjects = ["t"]
+refines = ["f"]
 statement = "s"
 rationale = "r"
 condition = "c"
@@ -163,7 +170,7 @@ evidence = [{ stage = "implementation", type = "unit-test", layers = "model", de
 `})
 	_, errs := Load(root, files, []string{".vanda/promises.toml"}, false)
 	// 行を示せない誤りは、ID と項目で場所を示す
-	if !lineWith(errs.Error(), `.vanda/promises.toml: claim "c" の evidence の 1 件目 の layers: `, "layers", "文字列の配列") {
+	if !lineWith(errs.Error(), `.vanda/promises.toml: spec "c" の evidence の 1 件目 の layers: `, "layers", "文字列の配列") {
 		t.Errorf("インラインの表の layers の誤りが、ID と項目で場所を示していない:\n%s", errs)
 	}
 }
@@ -173,14 +180,15 @@ func TestLoadは省いてよい項目を省いても読める(t *testing.T) {
 id = "f"
 name = "n"
 definition = "d"
+refines = ["p"]
 
-[[claim]]
+[[spec]]
 id = "c"
-subjects = ["f"]
+refines = ["f"]
 statement = "s"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
@@ -195,10 +203,10 @@ layers = ["model"]
 }
 
 // @vanda:evidence promise-list-required-fields
-func TestLoadはsubjectsとevidenceが空なら誤りにする(t *testing.T) {
-	root, files := write(t, map[string]string{".vanda/promises.toml": "[[claim]]\nid = \"c\"\nsubjects = []\nstatement = \"s\"\nlayers = [\"m\"]\nevidence = []\n"})
+func TestLoadは仕様のrefinesとevidenceが空なら誤りにする(t *testing.T) {
+	root, files := write(t, map[string]string{".vanda/promises.toml": "[[spec]]\nid = \"c\"\nrefines = []\nstatement = \"s\"\nlayers = [\"m\"]\nevidence = []\n"})
 	_, errs := Load(root, files, []string{".vanda/promises.toml"}, false)
-	for _, w := range [][]string{{".vanda/promises.toml:3: ", "subjects", "空"}, {".vanda/promises.toml:6: ", "evidence が 1 つも"}} {
+	for _, w := range [][]string{{".vanda/promises.toml:3: ", "refines", "空"}, {".vanda/promises.toml:6: ", "evidence が 1 つも"}} {
 		if !lineWith(errs.Error(), w[0], w[1:]...) {
 			t.Errorf("エラーに %q がない:\n%s", w, errs)
 		}

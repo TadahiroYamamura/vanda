@@ -59,7 +59,7 @@ func fieldsFlagClaim(i int, story bool) string {
 	if story {
 		statement = "v1"
 	}
-	fmt.Fprintf(&b, "\n[[claim]]\nid = \"flag-%d\"\nsubjects = [\"t-keep\"]\nstatement = %q\nlayers = [\"model\"]\n", i, statement)
+	fmt.Fprintf(&b, "\n[[spec]]\nid = \"flag-%d\"\nrefines = [\"f-keep\"]\nstatement = %q\nlayers = [\"model\"]\n", i, statement)
 	if story {
 		if i&bitAI != 0 {
 			b.WriteString("flags = [\"ai-proposal\"]\n")
@@ -72,15 +72,25 @@ func fieldsFlagClaim(i int, story bool) string {
 			b.WriteString("guesses = []\n")
 		}
 	}
-	b.WriteString("\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n")
+	b.WriteString("\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n")
 	return b.String()
 }
 
 func fieldsFlagFP(i int, statement string) string {
-	return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"flag-%d","layers":["model"],"statement":%q,"subjects":["t-keep"]}`, i, statement)))
+	return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"flag-%d","layers":["model"],"refines":["f-keep"],"statement":%q}`, i, statement)))
 }
 
 const fieldsBaseRest = `
+[[property]]
+id = "p"
+statement = "性質の文"
+
+[[feature]]
+id = "f-keep"
+name = "変えない機能"
+definition = "約束が refines する機能"
+refines = ["p"]
+
 [[term]]
 id = "t-keep"
 name = "変えない用語"
@@ -100,6 +110,7 @@ definition = "消す"
 id = "f-mod"
 name = "変える機能"
 definition = "前"
+refines = ["p"]
 core = true
 formal = false
 formal_waiver = "理由 1"
@@ -108,42 +119,53 @@ formal_waiver = "理由 1"
 id = "f-del"
 name = "消す機能"
 definition = "消す"
+refines = ["p"]
 
-[[claim]]
+[[spec]]
 id = "z-cli"
-subjects = ["t-keep"]
+refines = ["f-keep"]
 statement = "CLI の約束"
 layers = ["cli", "model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["cli", "model"]
 
-[[claim]]
+[[spec]]
 id = "a-db"
-subjects = ["t-keep"]
+refines = ["f-keep"]
 statement = "DB の約束"
 layers = ["db"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "guardrail"
 layers = ["db"]
 
-[[claim]]
+[[spec]]
 id = "flag-agreed"
-subjects = ["t-keep"]
+refines = ["f-keep"]
 statement = "v0"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 `
 
 const fieldsStoryRest = `
+[[property]]
+id = "p"
+statement = "性質の文"
+
+[[feature]]
+id = "f-keep"
+name = "変えない機能"
+definition = "約束が refines する機能"
+refines = ["p"]
+
 [[term]]
 id = "t-keep"
 name = "変えない用語"
@@ -159,6 +181,7 @@ part_of = "t-keep"
 id = "f-mod"
 name = "変える機能"
 definition = "前"
+refines = ["p"]
 core = true
 formal = false
 formal_waiver = "理由 2"
@@ -167,54 +190,55 @@ formal_waiver = "理由 2"
 id = "f-new"
 name = "新しい機能"
 definition = "足す"
+refines = ["p"]
 
-[[claim]]
+[[spec]]
 id = "z-cli"
-subjects = ["t-keep"]
+refines = ["f-keep"]
 statement = "CLI の約束（改）"
 layers = ["cli", "model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["cli", "model"]
 
-[[claim]]
+[[spec]]
 id = "a-db"
-subjects = ["t-keep"]
+refines = ["f-keep"]
 statement = "DB の約束（改）"
 rationale = "理由"
 condition = "条件"
 layers = ["db"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "guardrail"
 layers = ["db"]
 detail = "制約で拒む"
 
-[[claim]]
+[[spec]]
 id = "flag-agreed"
-subjects = ["t-keep"]
+refines = ["f-keep"]
 statement = "v1"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 
 # 最初のレイヤー（db）が、設定のレイヤーの順で後ろにある（cli より後）。設定の順で先のレイヤーでなく、最初のレイヤーのまとまりに入る
-[[claim]]
+[[spec]]
 id = "c-new"
-subjects = ["t-keep"]
+refines = ["f-keep"]
 statement = "足した約束"
 rationale = "足した理由"
 condition = "足した条件"
 layers = ["db", "cli"]
 guesses = ["足した推測 1", "足した推測 2"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["db", "cli"]
@@ -266,7 +290,7 @@ func newFieldsRepo(t *testing.T, version string) *fieldsRepo {
 	}
 	// flag-agreed は、前の中身と今の中身の両方を承認してある（今の中身に合う承認があれば、差分ありにしない）
 	agreedFP := func(v string) string {
-		return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"flag-agreed","layers":["model"],"statement":%q,"subjects":["t-keep"]}`, v)))
+		return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"flag-agreed","layers":["model"],"refines":["f-keep"],"statement":%q}`, v)))
 	}
 	agreements.WriteString(agreementTOML("claim", "flag-agreed", agreedFP("v0"), "", "#1", "テスト担当", "tester@example.com"))
 	sqlFP := sha256Hex([]byte(fieldsSQLBase))
@@ -394,6 +418,10 @@ func jsonEqual(t *testing.T, where string, got json.RawMessage, want string) {
 	if err := json.Unmarshal([]byte(want), &w); err != nil {
 		t.Fatalf("テストの %s の期待値が JSON でない: %v", where, err)
 	}
+	// subjects は約束リストからなくなった。代わりに API で返す項目（refines の先）は、API の形を直す時に決まるので、ここでは比べない
+	if m, ok := g.(map[string]any); ok {
+		delete(m, "subjects")
+	}
 	if !reflect.DeepEqual(g, w) {
 		t.Errorf("%s:\n%s\n--- 思ったもの\n%s", where, got, want)
 	}
@@ -409,11 +437,11 @@ func Test変更前と変更後の中身は約束リストに書いたとおり�
 		key, before, after string
 	}{
 		{"a-db",
-			`{"statement":[{"text":"DB の約束"}],"rationale":null,"condition":null,"subjects":["t-keep"],"layers":["db"],"evidence":[{"stage":"implementation","type":"guardrail","layers":["db"],"detail":null}],"flags":[],"guesses":[],"modelCheckWaiver":null}`,
-			`{"statement":[{"text":"DB の約束（改）"}],"rationale":[{"text":"理由"}],"condition":[{"text":"条件"}],"subjects":["t-keep"],"layers":["db"],"evidence":[{"stage":"implementation","type":"guardrail","layers":["db"],"detail":[{"text":"制約で拒む"}]}],"flags":[],"guesses":[],"modelCheckWaiver":null}`},
+			`{"statement":[{"text":"DB の約束"}],"rationale":null,"condition":null,"layers":["db"],"evidence":[{"stage":"implementation","type":"guardrail","layers":["db"],"detail":null}],"flags":[],"guesses":[],"modelCheckWaiver":null}`,
+			`{"statement":[{"text":"DB の約束（改）"}],"rationale":[{"text":"理由"}],"condition":[{"text":"条件"}],"layers":["db"],"evidence":[{"stage":"implementation","type":"guardrail","layers":["db"],"detail":[{"text":"制約で拒む"}]}],"flags":[],"guesses":[],"modelCheckWaiver":null}`},
 		{"flag-3",
-			`{"statement":[{"text":"v0"}],"rationale":null,"condition":null,"subjects":["t-keep"],"layers":["model"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["model"],"detail":null}],"flags":[],"guesses":[],"modelCheckWaiver":null}`,
-			`{"statement":[{"text":"v1"}],"rationale":null,"condition":null,"subjects":["t-keep"],"layers":["model"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["model"],"detail":null}],"flags":["ai-proposal"],"guesses":[[{"text":"確かめていない"}]],"modelCheckWaiver":null}`},
+			`{"statement":[{"text":"v0"}],"rationale":null,"condition":null,"layers":["model"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["model"],"detail":null}],"flags":[],"guesses":[],"modelCheckWaiver":null}`,
+			`{"statement":[{"text":"v1"}],"rationale":null,"condition":null,"layers":["model"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["model"],"detail":null}],"flags":["ai-proposal"],"guesses":[[{"text":"確かめていない"}]],"modelCheckWaiver":null}`},
 		{"t-mod", `{"name":"変える用語","definition":[{"text":"前"}],"partOf":null}`, `{"name":"変える用語","definition":[{"text":"後"}],"partOf":"t-keep"}`},
 		{"t-del", `{"name":"消す用語","definition":[{"text":"消す"}],"partOf":null}`, `null`},
 		{"f-mod", `{"name":"変える機能","definition":[{"text":"前"}],"core":true,"formal":false,"formalWaiver":[{"text":"理由 1"}]}`,
@@ -423,7 +451,7 @@ func Test変更前と変更後の中身は約束リストに書いたとおり�
 		{"spec/M.tla", fmt.Sprintf(`{"text":%q}`, fieldsTLA), `null`},
 		{"e2e/a.txtar", `null`, fmt.Sprintf(`{"text":%q}`, fieldsNewScenario)},
 		{"c-new", `null`,
-			`{"statement":[{"text":"足した約束"}],"rationale":[{"text":"足した理由"}],"condition":[{"text":"足した条件"}],"subjects":["t-keep"],"layers":["db","cli"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["db","cli"],"detail":[{"text":"表の制約で確かめる"}]}],"flags":[],"guesses":[[{"text":"足した推測 1"}],[{"text":"足した推測 2"}]],"modelCheckWaiver":null}`},
+			`{"statement":[{"text":"足した約束"}],"rationale":[{"text":"足した理由"}],"condition":[{"text":"足した条件"}],"layers":["db","cli"],"evidence":[{"stage":"implementation","type":"unit-test","layers":["db","cli"],"detail":[{"text":"表の制約で確かめる"}]}],"flags":[],"guesses":[[{"text":"足した推測 1"}],[{"text":"足した推測 2"}]],"modelCheckWaiver":null}`},
 		{"t-new", `null`, `{"name":"足した用語","definition":[{"text":"足した定義"}],"partOf":"t-keep"}`},
 	}
 	for _, c := range cases {

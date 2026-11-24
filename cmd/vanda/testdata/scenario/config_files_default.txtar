@@ -84,57 +84,87 @@ id = "task"
 name = "タスク"
 definition = "利用者がやること"
 
-[[claim]]
+[[spec]]
 id = "task-add-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/promises.toml --
 [[term]]
 id = "task"
 name = "タスク"
 definition = "利用者がやること"
 
-[[claim]]
+[[spec]]
 id = "task-add-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/promises-bad-stage.toml --
 [[term]]
 id = "task"
 name = "タスク"
 definition = "利用者がやること"
 
-[[claim]]
+[[spec]]
 id = "task-add-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "no-such-stage"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[feature]]
+id = "task-add"
+name = "タスクの登録"
+definition = "タスクを足す"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/promises-without-claim.toml --
 [[term]]
 id = "task"

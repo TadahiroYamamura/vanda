@@ -69,34 +69,39 @@ name = "タスクの ID"
 definition = "タスクを見分ける名前"
 part_of = "task"
 
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
+
 [[feature]]
 id = "add-task"
 name = "タスクの登録"
 definition = "タスクを足す"
+refines = ["no-lost-task"]
 
 # ID の重なり
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task-id"]
+refines = ["add-task"]
 statement = "タスクの ID は重ならない"
 layers = ["model", "db"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "plan"
 type = "model-check"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "guardrail"
 layers = ["db"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
@@ -115,50 +120,55 @@ name = "タスクの ID"
 definition = "タスクを見分ける名前"
 part_of = "task"
 
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
+
 [[feature]]
 id = "add-task"
 name = "タスクの登録"
 definition = "タスクを足す"
+refines = ["no-lost-task"]
 
 # ID の重なり
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task-id"]
+refines = ["add-task"]
 statement = "タスクの ID は、すべてのタスクを通して重ならない"
 layers = ["model", "db"]
 # AI が足した言い回し
 flags = ["ai-proposal"]
 guesses = ["タスクは消しても ID を使い回さない"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "plan"
 type = "model-check"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "guardrail"
 layers = ["db"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 
-[[claim]]
+[[spec]]
 id = "task-title-required"
-subjects = ["add-task"]
+refines = ["add-task"]
 statement = "タスクの題は空にできない"
 layers = ["model"]
 flags = ["ai-proposal"]
 guesses = ["題の長さの上限はまだ決めていない"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["model"]
@@ -209,12 +219,12 @@ func TestUnique(t *testing.T) {}
 var reviewItemJSON = map[string]string{
 	"term task":        `{"definition":"やること","id":"task","name":"タスク"}`,
 	"term task-id":     `{"definition":"タスクを見分ける名前","id":"task-id","name":"タスクの ID","part_of":"task"}`,
-	"feature add-task": `{"definition":"タスクを足す","id":"add-task","name":"タスクの登録"}`,
+	"feature add-task": `{"definition":"タスクを足す","id":"add-task","name":"タスクの登録","refines":["no-lost-task"]}`,
 	"claim task-id-unique": `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"},` +
 		`{"layers":["model"],"stage":"plan","type":"model-check"},` +
 		`{"layers":["db"],"stage":"implementation","type":"guardrail"},` +
 		`{"layers":["model"],"stage":"implementation","type":"unit-test"}],` +
-		`"id":"task-id-unique","layers":["model","db"],"statement":"タスクの ID は重ならない","subjects":["task-id"]}`,
+		`"id":"task-id-unique","layers":["model","db"],"refines":["add-task"],"statement":"タスクの ID は重ならない"}`,
 }
 
 // ストーリー #24 の後の中身の、フィンガープリントの元の JSON。flags と guesses は含めない。
@@ -223,9 +233,9 @@ var reviewStoryItemJSON = map[string]string{
 		`{"layers":["model"],"stage":"plan","type":"model-check"},` +
 		`{"layers":["db"],"stage":"implementation","type":"guardrail"},` +
 		`{"layers":["model"],"stage":"implementation","type":"unit-test"}],` +
-		`"id":"task-id-unique","layers":["model","db"],"statement":"タスクの ID は、すべてのタスクを通して重ならない","subjects":["task-id"]}`,
+		`"id":"task-id-unique","layers":["model","db"],"refines":["add-task"],"statement":"タスクの ID は、すべてのタスクを通して重ならない"}`,
 	"claim task-title-required": `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"}],` +
-		`"id":"task-title-required","layers":["model"],"statement":"タスクの題は空にできない","subjects":["add-task"]}`,
+		`"id":"task-title-required","layers":["model"],"refines":["add-task"],"statement":"タスクの題は空にできない"}`,
 }
 
 // ストーリー #24 の、レビュー単位がブランチ（ベースブランチ main）のときに、一覧に出るもの。

@@ -40,7 +40,11 @@ func refPromises(vals map[string]string, termName, featureName string) string {
 	if featureName == "" {
 		featureName = "タスクを足す"
 	}
-	return fmt.Sprintf(`[[term]]
+	return fmt.Sprintf(`[[property]]
+id = "p"
+statement = "性質の文"
+
+[[term]]
 id = "t"
 name = %q
 definition = %s
@@ -49,19 +53,21 @@ definition = %s
 id = "f-formal"
 name = "形で確かめる機能"
 definition = "形で確かめる"
+refines = ["p"]
 core = true
 
 [[feature]]
 id = "f-waived"
 name = %q
 definition = %s
+refines = ["p"]
 core = true
 formal = false
 formal_waiver = %s
 
-[[claim]]
+[[spec]]
 id = "c"
-subjects = ["t", "f-formal"]
+refines = ["f-formal"]
 statement = %s
 rationale = %s
 condition = %s
@@ -69,7 +75,7 @@ layers = ["model"]
 guesses = ["参照のない推測", %s]
 model_check_waiver = %s
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
@@ -283,15 +289,19 @@ func Test壊れた参照は壊れ方のどれでも自然言語で書く項目�
 
 // フィンガープリントの元の JSON は、約束リストの書いたままの文（参照を置き換える前）から手で書いた（docs/formats.md の「フィンガープリント」）。
 const (
-	fpClaimJSON = `{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"c","layers":["model"],"statement":"{@id:t}は{@id:f}で足し、{@@id:x}は文字","subjects":["t"]}`
+	fpClaimJSON = `{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"c","layers":["model"],"refines":["f"],"statement":"{@id:t}は{@id:f}で足し、{@@id:x}は文字"}`
 	fpTermV1    = `{"definition":"やること","id":"t","name":"タスク"}`
 	fpTermV2    = `{"definition":"やるべきこと","id":"t","name":"仕事"}`
-	fpFeatureV1 = `{"definition":"タスクを足す","id":"f","name":"タスクの登録"}`
-	fpFeatureV2 = `{"definition":"仕事を足す","id":"f","name":"仕事の登録"}`
+	fpFeatureV1 = `{"definition":"タスクを足す","id":"f","name":"タスクの登録","refines":["p"]}`
+	fpFeatureV2 = `{"definition":"仕事を足す","id":"f","name":"仕事の登録","refines":["p"]}`
 )
 
 func fpPromises(termName, termDef, featureName, featureDef string) string {
-	return fmt.Sprintf(`[[term]]
+	return fmt.Sprintf(`[[property]]
+id = "p"
+statement = "性質の文"
+
+[[term]]
 id = "t"
 name = %q
 definition = %q
@@ -300,14 +310,15 @@ definition = %q
 id = "f"
 name = %q
 definition = %q
+refines = ["p"]
 
-[[claim]]
+[[spec]]
 id = "c"
-subjects = ["t"]
+refines = ["f"]
 statement = "{@id:t}は{@id:f}で足し、{@@id:x}は文字"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]

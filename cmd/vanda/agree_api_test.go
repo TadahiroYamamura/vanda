@@ -1151,11 +1151,11 @@ func Test設定のagreementsにはっきり書いたファイルがなければ�
 // @vanda:evidence agree-inline-flags-refused
 func Testフラグか推測をインラインの表の中か複数行の文字列で書いた約束には承認を409で断り何も変えない(t *testing.T) {
 	t.Parallel()
-	// task-id-unique を、インラインの表の配列（1 行の claim = [{ … }]）で書き直したもの。task-title-required も同じ配列に入れる
-	// TOML では、表の見出しより後のキーはその表のものになるので、claim = [...] を先頭に置く
-	inline := `claim = [{ id = "task-id-unique", subjects = ["task-id"], statement = "タスクの ID は、すべてのタスクを通して重ならない", layers = ["model", "db"], flags = ["ai-proposal"], guesses = ["タスクは消しても ID を使い回さない"], ` +
+	// task-id-unique を、インラインの表の配列（1 行の spec = [{ … }]）で書き直したもの。task-title-required も同じ配列に入れる
+	// TOML では、表の見出しより後のキーはその表のものになるので、spec = [...] を先頭に置く
+	inline := `spec = [{ id = "task-id-unique", refines = ["add-task"], statement = "タスクの ID は、すべてのタスクを通して重ならない", layers = ["model", "db"], flags = ["ai-proposal"], guesses = ["タスクは消しても ID を使い回さない"], ` +
 		`evidence = [{ stage = "implementation", type = "scenario-test", layers = ["model"] }, { stage = "plan", type = "model-check", layers = ["model"] }, { stage = "implementation", type = "guardrail", layers = ["db"] }, { stage = "implementation", type = "unit-test", layers = ["model"] }] }, ` +
-		`{ id = "task-title-required", subjects = ["add-task"], statement = "タスクの題は空にできない", layers = ["model"], flags = ["ai-proposal"], guesses = ["題の長さの上限はまだ決めていない"], evidence = [{ stage = "implementation", type = "scenario-test", layers = ["model"] }] }]` + "\n\n" +
+		`{ id = "task-title-required", refines = ["add-task"], statement = "タスクの題は空にできない", layers = ["model"], flags = ["ai-proposal"], guesses = ["題の長さの上限はまだ決めていない"], evidence = [{ stage = "implementation", type = "scenario-test", layers = ["model"] }] }]` + "\n\n" +
 		strings.SplitN(reviewPromisesStory, "# ID の重なり\n", 2)[0]
 	cases := []struct{ name, promises string }{
 		{"インラインの表の中", inline},

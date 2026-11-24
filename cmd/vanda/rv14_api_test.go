@@ -13,18 +13,19 @@ import (
 // RV-14: ストーリーが前に承認したのに、今の中身にそのストーリーの承認がなくなったものを示す（GET /api/review）。
 // 一覧に出るもの（比べる元と今で変わったもの）は entries[].detachedAgreement に、変わっていないものは detached に出る。
 
-const rv14Term = "[[term]]\nid = \"t\"\nname = \"n\"\ndefinition = \"d\"\n"
+// 約束が refines する機能 f と、機能が refines する性質 p も、一緒に置く
+const rv14Term = "[[term]]\nid = \"t\"\nname = \"n\"\ndefinition = \"d\"\n\n[[property]]\nid = \"p\"\nstatement = \"s\"\n\n[[feature]]\nid = \"f\"\nname = \"n\"\ndefinition = \"d\"\nrefines = [\"p\"]\n"
 
 func rv14Promises(a, b int) string {
 	claim := func(id string, v int) string {
-		return fmt.Sprintf("\n[[claim]]\nid = %q\nsubjects = [\"t\"]\nstatement = \"v%d\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", id, v)
+		return fmt.Sprintf("\n[[spec]]\nid = %q\nrefines = [\"f\"]\nstatement = \"v%d\"\nlayers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", id, v)
 	}
 	return rv14Term + claim("item-a", a) + claim("item-b", b)
 }
 
 // rv14FP は、docs/formats.md の決まった形の JSON を手で書き、そのフィンガープリントを返す。
 func rv14FP(id string, v int) string {
-	return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":%q,"layers":["model"],"statement":"v%d","subjects":["t"]}`, id, v)))
+	return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":%q,"layers":["model"],"refines":["f"],"statement":"v%d"}`, id, v)))
 }
 
 type rv14Repo struct {
@@ -84,7 +85,8 @@ func newRV14Repo(t *testing.T, version string) *rv14Repo {
 	r.g.run("config", "user.email", reviewUserEmail)
 	writeFile(t, root, ".vanda/config.toml", fmt.Sprintf("version = %q\n\n[[layer]]\nid = \"model\"\nname = \"モデル\"\ndescription = \"判定と状態の変化\"\n", version))
 	writeFile(t, root, ".vanda/promises.toml", rv14Promises(0, 0))
-	writeFile(t, root, ".vanda/agreements.toml", agreementTOML("term", "t", sha256Hex([]byte(`{"definition":"d","id":"t","name":"n"}`)), "", "#9", "テスト担当", "tester@example.com"))
+	writeFile(t, root, ".vanda/agreements.toml", agreementTOML("term", "t", sha256Hex([]byte(`{"definition":"d","id":"t","name":"n"}`)), "", "#9", "テスト担当", "tester@example.com")+
+		agreementTOML("feature", "f", sha256Hex([]byte(`{"definition":"d","id":"f","name":"n","refines":["p"]}`)), "", "#9", "テスト担当", "tester@example.com"))
 	r.agree("item-a", 0, "#9", 0)
 	r.agree("item-b", 0, "#9", 0)
 	r.commit("はじめ", "#9", 0)

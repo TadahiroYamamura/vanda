@@ -1,7 +1,7 @@
 # CMD-10 約束リストの形: core = true かつ formal = false なら formal_waiver がある。それ以外で formal_waiver を書くと誤り。
 # @vanda:evidence promise-list-formal-waiver
 # core = true で formal を省けば formal = true、core を省けば core = false、core = false で formal を省けば formal = false とみなす。
-# formal が真になる機能を subjects に持つ約束には、model-check の予定か model_check_waiver のどちらかが要る（shape_formal_claims.txtar）
+# formal が真になる機能を refines する約束には、model-check の予定か model_check_waiver のどちらかが要る（shape_formal_claims.txtar）
 # ので、その場合の例には model_check_waiver を書き、formal_waiver の誤りだけが出るようにする。
 
 exec git init -q -b main
@@ -148,20 +148,25 @@ id = "task-add"
 name = "タスクの登録"
 definition = "タスクを足す"
 core = false
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-omit-formal-omit-waiver-no.toml --
 [[term]]
 id = "task"
@@ -172,20 +177,25 @@ definition = "利用者がやること"
 id = "task-add"
 name = "タスクの登録"
 definition = "タスクを足す"
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-omit-formal-omit-waiver-yes.toml --
 [[term]]
 id = "task"
@@ -197,20 +207,25 @@ id = "task-add"
 name = "タスクの登録"
 definition = "タスクを足す"
 formal_waiver = "画面の並びだけで、状態を持たないため"
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-omit-formal-false-waiver-no.toml --
 [[term]]
 id = "task"
@@ -222,20 +237,25 @@ id = "task-add"
 name = "タスクの登録"
 definition = "タスクを足す"
 formal = false
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-omit-formal-false-waiver-yes.toml --
 [[term]]
 id = "task"
@@ -248,20 +268,25 @@ name = "タスクの登録"
 definition = "タスクを足す"
 formal = false
 formal_waiver = "画面の並びだけで、状態を持たないため"
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-omit-formal-true-waiver-no.toml --
 [[term]]
 id = "task"
@@ -273,21 +298,26 @@ id = "task-add"
 name = "タスクの登録"
 definition = "タスクを足す"
 formal = true
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 model_check_waiver = "登録の順で結果が変わらないため"
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-omit-formal-true-waiver-yes.toml --
 [[term]]
 id = "task"
@@ -300,21 +330,26 @@ name = "タスクの登録"
 definition = "タスクを足す"
 formal = true
 formal_waiver = "画面の並びだけで、状態を持たないため"
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 model_check_waiver = "登録の順で結果が変わらないため"
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-false-formal-omit-waiver-no.toml --
 [[term]]
 id = "task"
@@ -326,20 +361,25 @@ id = "task-add"
 name = "タスクの登録"
 definition = "タスクを足す"
 core = false
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-false-formal-omit-waiver-yes.toml --
 [[term]]
 id = "task"
@@ -352,20 +392,25 @@ name = "タスクの登録"
 definition = "タスクを足す"
 core = false
 formal_waiver = "画面の並びだけで、状態を持たないため"
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-false-formal-false-waiver-no.toml --
 [[term]]
 id = "task"
@@ -378,20 +423,25 @@ name = "タスクの登録"
 definition = "タスクを足す"
 core = false
 formal = false
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-false-formal-false-waiver-yes.toml --
 [[term]]
 id = "task"
@@ -405,20 +455,25 @@ definition = "タスクを足す"
 core = false
 formal = false
 formal_waiver = "画面の並びだけで、状態を持たないため"
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-false-formal-true-waiver-no.toml --
 [[term]]
 id = "task"
@@ -431,21 +486,26 @@ name = "タスクの登録"
 definition = "タスクを足す"
 core = false
 formal = true
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 model_check_waiver = "登録の順で結果が変わらないため"
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-false-formal-true-waiver-yes.toml --
 [[term]]
 id = "task"
@@ -459,21 +519,26 @@ definition = "タスクを足す"
 core = false
 formal = true
 formal_waiver = "画面の並びだけで、状態を持たないため"
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 model_check_waiver = "登録の順で結果が変わらないため"
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-true-formal-omit-waiver-no.toml --
 [[term]]
 id = "task"
@@ -485,21 +550,26 @@ id = "task-add"
 name = "タスクの登録"
 definition = "タスクを足す"
 core = true
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 model_check_waiver = "登録の順で結果が変わらないため"
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-true-formal-omit-waiver-yes.toml --
 [[term]]
 id = "task"
@@ -512,21 +582,26 @@ name = "タスクの登録"
 definition = "タスクを足す"
 core = true
 formal_waiver = "画面の並びだけで、状態を持たないため"
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 model_check_waiver = "登録の順で結果が変わらないため"
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-true-formal-false-waiver-no.toml --
 [[term]]
 id = "task"
@@ -539,20 +614,25 @@ name = "タスクの登録"
 definition = "タスクを足す"
 core = true
 formal = false
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-true-formal-false-waiver-yes.toml --
 [[term]]
 id = "task"
@@ -566,20 +646,25 @@ definition = "タスクを足す"
 core = true
 formal = false
 formal_waiver = "画面の並びだけで、状態を持たないため"
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-true-formal-true-waiver-no.toml --
 [[term]]
 id = "task"
@@ -592,21 +677,26 @@ name = "タスクの登録"
 definition = "タスクを足す"
 core = true
 formal = true
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 model_check_waiver = "登録の順で結果が変わらないため"
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
 -- cases/core-true-formal-true-waiver-yes.toml --
 [[term]]
 id = "task"
@@ -620,18 +710,23 @@ definition = "タスクを足す"
 core = true
 formal = true
 formal_waiver = "画面の並びだけで、状態を持たないため"
+refines = ["no-lost-task"]
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task", "task-add"]
+refines = ["task-add"]
 statement = "タスクの ID は重ならない"
 rationale = "ID でタスクを指すため"
 condition = "いつも"
 layers = ["model"]
 model_check_waiver = "登録の順で結果が変わらないため"
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
+
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"

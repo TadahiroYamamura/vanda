@@ -29,7 +29,8 @@ func newRVRepo(t fataler, root, version, firstStory string, pick rvPick) *rvRepo
 		state: newRVState(), used: map[string]bool{}}
 	r.g.run("init", "-q", "-b", "main")
 	writeFile(t, root, ".vanda/config.toml", rvConfig(version))
-	r.state.items[rvBaseTerm] = rvItem{kind: "term", fields: map[string]string{"name": "もと", "definition": "約束の対象"}}
+	r.state.items[rvBaseTerm] = rvItem{kind: "term", fields: map[string]string{"name": "もと", "definition": "変えない用語"}}
+	r.state.items[rvBaseFeature] = rvItem{kind: "feature", fields: map[string]string{"name": "もとの機能", "definition": "約束が refines する機能"}}
 	r.flush()
 	r.commit(firstStory)
 	return r
@@ -79,7 +80,7 @@ func rvItemFields(kind string) []string {
 
 func (r *rvRepo) item(id string) rvItem {
 	it, ok := r.state.items[id]
-	if !ok || id == rvBaseTerm {
+	if !ok || id == rvBaseTerm || id == rvBaseFeature {
 		r.t.Fatalf("ID %s は変えられる項目でない", id)
 	}
 	return it

@@ -53,16 +53,16 @@ func TestItemFingerprintは書き方の違いで変わらずflagsとguessesを�
 
 // @vanda:evidence fingerprint-excludes-flags
 func TestItemFingerprintは約束のエビデンスを含めフラグを除く(t *testing.T) {
-	const want = "sha256:8229b8e3daf4b1dd844d0abb996706e57d70d90b8737c38ed3b612cabce12195"
-	root, files := writeFiles(t, map[string]string{".vanda/promises.toml": `[[claim]]
+	const want = "sha256:60a6817471d20202dec15842a21784e3431a7085ffe28a8eaec1faf3b9f0fcf9"
+	root, files := writeFiles(t, map[string]string{".vanda/promises.toml": `[[spec]]
 id = "c"
-subjects = ["task"]
+refines = ["f"]
 statement = "s"
 layers = ["model"]
 flags = ["ai-proposal"]
 guesses = ["g"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 type = "unit-test"
 stage = "implementation"
 layers = ["model"]

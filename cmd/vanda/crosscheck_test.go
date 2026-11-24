@@ -410,15 +410,16 @@ type xcheckRepo struct {
 
 var xcheckPaths = map[string]string{"i2": "e2e/item-2.txtar", "i3": "e2e/item-3.txtar"}
 
-const xcheckTerm = "[[term]]\nid = \"t\"\nname = \"n\"\ndefinition = \"d\"\n"
+// 約束が refines する機能 f と、機能が refines する性質 p も、一緒に置く
+const xcheckTerm = "[[term]]\nid = \"t\"\nname = \"n\"\ndefinition = \"d\"\n\n[[property]]\nid = \"p\"\nstatement = \"s\"\n\n[[feature]]\nid = \"f\"\nname = \"n\"\ndefinition = \"d\"\nrefines = [\"p\"]\n"
 
 func claimTOML(ver int) string {
-	return fmt.Sprintf("\n[[claim]]\nid = \"item-1\"\nsubjects = [\"t\"]\nstatement = \"v%d\"\nlayers = [\"model\"]\n\n[[claim.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", ver)
+	return fmt.Sprintf("\n[[spec]]\nid = \"item-1\"\nrefines = [\"f\"]\nstatement = \"v%d\"\nlayers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", ver)
 }
 
 // claimFingerprint は、docs/formats.md の決まった形の JSON を手で書き、その SHA-256 を返す。
 func claimFingerprint(ver int) string {
-	return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"item-1","layers":["model"],"statement":"v%d","subjects":["t"]}`, ver)))
+	return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"item-1","layers":["model"],"refines":["f"],"statement":"v%d"}`, ver)))
 }
 
 func fileContent(ver int) string { return fmt.Sprintf("# v%d\n", ver) }
@@ -446,9 +447,10 @@ types = ["scenario-test"]
 	writeFile(t, root, ".vanda/checks/all.toml", "[[check]]\nname = \"agreement\"\nscope = \"all\"\n")
 	writeFile(t, root, ".vanda/checks/story.toml", "[[check]]\nname = \"agreement\"\nscope = \"story\"\n")
 	r.sync(init)
-	// 用語 t はモデルの項目でないので、はじめから、どのストーリーでもない #9 で承認しておく
+	// 用語 t と機能 f はモデルの項目でないので、はじめから、どのストーリーでもない #9 で承認しておく
 	writeFile(t, root, ".vanda/agreements/story-9.toml", agreementTOML("term", "t",
-		sha256Hex([]byte(`{"definition":"d","id":"t","name":"n"}`)), "", "#9", "テスト担当", "tester@example.com"))
+		sha256Hex([]byte(`{"definition":"d","id":"t","name":"n"}`)), "", "#9", "テスト担当", "tester@example.com")+
+		agreementTOML("feature", "f", sha256Hex([]byte(`{"definition":"d","id":"f","name":"n","refines":["p"]}`)), "", "#9", "テスト担当", "tester@example.com"))
 	r.git("init", "-q", "-b", "main")
 	r.commit("はじめの中身", "#9")
 	r.base = r.git("rev-parse", "HEAD")

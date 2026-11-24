@@ -9,6 +9,7 @@
 exec git init -q -b main
 expand .vanda/config.toml
 agree .vanda/agreements/base.toml '#9' term task fp/term-task.json
+agree .vanda/agreements/base.toml '#9' feature task-add fp/feature-task-add.json
 agree .vanda/agreements/base.toml '#9' claim task-id-unique fp/claim-v1.json
 commit '約束を足す' '#9'
 exec vanda check .vanda/checks/all.toml
@@ -78,15 +79,15 @@ scope = "all"
 name = "agreement"
 scope = "story"
 -- .vanda/promises/a.toml --
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "Task IDs are unique"
 rationale = "Tasks are referred to by ID"
 condition = "always"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
@@ -96,30 +97,40 @@ detail = "task_test.go"
 id = "task"
 name = "Task"
 definition = "A thing to do"
+
+[[feature]]
+id = "task-add"
+name = "Adding a task"
+definition = "Add a task"
+refines = ["no-lost-task"]
+
+[[property]]
+id = "no-lost-task"
+statement = "Registered tasks are never lost"
 -- cases/a-v2.toml --
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "No two tasks share an ID"
 rationale = "Tasks are referred to by ID"
 condition = "always"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
 -- cases/b.toml --
-[[claim]]
+[[spec]]
 id = "task-title-required"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "Every task has a title"
 rationale = "Tasks are listed by title"
 condition = "always"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
@@ -127,24 +138,26 @@ detail = "task_test.go"
 -- fp/term-task.json --
 {"definition":"A thing to do","id":"task","name":"Task"}
 -- fp/claim-v1.json --
-{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"Task IDs are unique","subjects":["task"]}
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","refines":["task-add"],"statement":"Task IDs are unique"}
 -- fp/claim-v2.json --
-{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","statement":"No two tasks share an ID","subjects":["task"]}
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","refines":["task-add"],"statement":"No two tasks share an ID"}
 -- fp/claim-b.json --
-{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","statement":"Every task has a title","subjects":["task"]}
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","refines":["task-add"],"statement":"Every task has a title"}
 -- cases/b-v2.toml --
-[[claim]]
+[[spec]]
 id = "task-title-required"
-subjects = ["task"]
+refines = ["task-add"]
 statement = "Every task has a non-empty title"
 rationale = "Tasks are listed by title"
 condition = "always"
 layers = ["model"]
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = "task_test.go"
 -- fp/claim-b2.json --
-{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","statement":"Every task has a non-empty title","subjects":["task"]}
+{"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","refines":["task-add"],"statement":"Every task has a non-empty title"}
+-- fp/feature-task-add.json --
+{"definition":"Add a task","id":"task-add","name":"Adding a task","refines":["no-lost-task"]}
