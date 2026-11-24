@@ -100,9 +100,13 @@
 | 約束リスト | 変えない |
 | PO | オーナー |
 | 監督 | 使わない（文に応じて、オーナーか開発者（人）にする） |
+| refines（画面の行の名前） | 具体化する（行の名前は「具体化する性質」「具体化する機能」、見出しは「この機能を具体化する仕様」） |
+| assumes（画面の行の名前） | 前提にする（行の名前は「前提」） |
 
 - 書き分ける所: チェックの誤りの文、画面、コードのコメントと名前、`docs/formats.md`、`docs/spec.md`、`CLAUDE.md`
 - `.claude/rules/promises.md` を `docs/plans/promise-reorg-rules-draft.md` の中身に、スキル promise-writing を `docs/plans/promise-reorg-skill-draft.md` の中身に、同じ変更の中で書き換える
+- 画面の URL の `/claims/<ID>` を `/specs/<ID>` に変える
+- TOML の項目の名前（`refines`・`assumes`）と、チェックの誤りの文の中の項目の名前は、英語のまま。日本語にするのは、画面の行の名前と見出し
 - 関係の種類と、書ける組み合わせの表を、`docs/formats.md` に書く
 - 規則の草案に、機能にするものの基準（それなしでは目的を達成できないものだけを機能にする。部品は機能にしない。約束リストは小さく始め、要ると判断した時に足す）を足してから、書き換える
 
