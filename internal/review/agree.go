@@ -215,7 +215,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	if promiseFile != "" {
 		out, err := removeFlags(originals[promiseFile], claim)
 		if err != nil {
-			return nil, conflict(err.Error(), "flags と guesses を [[claim]] の表の行として書き直すか、手で消してから承認してください。")
+			return nil, conflict(err.Error(), "flags と guesses を [[spec]] の表の行として書き直すか、手で消してから承認してください。")
 		}
 		if err := os.WriteFile(filepath.Join(o.Root, filepath.FromSlash(promiseFile)), out, 0o644); err != nil {
 			return nil, fail(err)

@@ -87,7 +87,7 @@ func claimContent(e snapshot.Entry, r *refs, base *side) ClaimContent {
 		Statement: r.pieces(c.Statement, base),
 		Rationale: r.optPieces(e.Table.Has("rationale"), c.Rationale, base),
 		Condition: r.optPieces(e.Table.Has("condition"), c.Condition, base),
-		Subjects:  strs(c.Subjects),
+		Subjects:  []string{},
 		Layers:    strs(c.Layers),
 		Evidence:  []EvidenceContent{},
 		Flags:     strs(c.Flags),

@@ -78,6 +78,13 @@ func (l *List) Proses() []Prose {
 			out = append(out, Prose{Table: t, Key: key, Index: -1, Text: s})
 		}
 	}
+	for _, p := range l.Properties {
+		add(p.Table, "statement", p.Statement)
+		add(p.Table, "rationale", p.Rationale)
+	}
+	for _, t := range l.Truths {
+		add(t.Table, "statement", t.Statement)
+	}
 	for _, t := range l.Terms {
 		add(t.Table, "definition", t.Definition)
 	}

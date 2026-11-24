@@ -25,4 +25,4 @@ func items(l *promises.List) []item {
 	return out
 }
 
-var kindName = map[string]string{"term": "用語", "feature": "機能", "claim": "約束"}
+var kindName = map[string]string{"property": "性質", "truth": "前提", "term": "用語", "feature": "機能", "claim": "約束"}

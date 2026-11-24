@@ -109,22 +109,6 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 	for _, l := range c.Layers {
 		d.Layers = append(d.Layers, LayerRef{ID: l, Name: names[l]})
 	}
-	for _, sub := range c.Subjects {
-		ref := SubjectRef{ID: sub}
-		for _, kind := range []string{"term", "feature"} {
-			if e, ok := s.cur.items[kind+":"+sub]; ok {
-				ref.Kind = ptr(kind)
-				if e.Term != nil {
-					ref.Name = ptr(e.Term.Name)
-				} else {
-					ref.Name = ptr(e.Feature.Name)
-				}
-				break
-			}
-		}
-		d.Subjects = append(d.Subjects, ref)
-	}
-
 	anns, aerrs := annotation.ReadWith(o.Root, s.cur.text, s.cur.snap.Files, o.Cfg.Annotations)
 	if aerrs != nil {
 		return nil, &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("アノテーションに誤りがあるため、エビデンスを探せません（%d 件。最初の 1 件: %s）。", len(aerrs), aerrs[0].Error()), Fix: "vanda check の annotation-links で誤りを確かめて、直してください。"}

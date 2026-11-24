@@ -8,6 +8,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/diag"
 	"github.com/TadahiroYamamura/vanda/internal/promises"
+	"github.com/TadahiroYamamura/vanda/internal/tomlread"
 )
 
 var Stages = []string{"plan", "implementation", "release", "operation"}
@@ -24,6 +25,12 @@ func (e *env) promiseListShape() []diag.Error {
 	}
 	// 重複は、出てきた順（ファイルの場所の順、同じファイルなら行の順）で見て、後に出てきたほうを誤りにする
 	all := items(e.list)
+	for _, p := range e.list.Properties {
+		all = append(all, item{kind: "property", id: p.ID, table: p.Table, raw: p.Raw})
+	}
+	for _, t := range e.list.Truths {
+		all = append(all, item{kind: "truth", id: t.ID, table: t.Table, raw: t.Raw})
+	}
 	sort.SliceStable(all, func(i, j int) bool {
 		a, b := all[i].table, all[j].table
 		if a.Doc.File != b.Doc.File {
@@ -42,7 +49,7 @@ func (e *env) promiseListShape() []diag.Error {
 			continue
 		}
 		if prev, dup := where[it.id]; dup {
-			errs = append(errs, it.table.Err("id", fmt.Sprintf("ID %s が、%s の%s（%s）と重複しています", quote(it.id), place(prev), kindName[prev.kind], prev.id), "用語・機能・約束のどれとも重複しない ID にしてください"))
+			errs = append(errs, it.table.Err("id", fmt.Sprintf("ID %s が、%s の%s（%s）と重複しています", quote(it.id), place(prev), itemName(prev.kind), prev.id), "性質・前提・用語・機能・仕様のどれとも重複しない ID にしてください"))
 			continue
 		}
 		where[it.id] = it
@@ -88,13 +95,10 @@ func (e *env) promiseListShape() []diag.Error {
 		}
 	}
 
+	errs = append(errs, e.relationErrs(kindOf)...)
+
 	for _, c := range e.list.Claims {
 		errs = append(errs, formalClaim(c, formal)...)
-		for _, s := range c.Subjects {
-			if k := kindOf(s); k != "term" && k != "feature" {
-				errs = append(errs, c.Table.Err("subjects", "subjects の "+quote(s)+" が用語にも機能にもありません"+notKind(k), "subjects に、約束リストにある用語か機能の ID を書いてください"))
-			}
-		}
 		for _, l := range c.Layers {
 			if !layers[l] {
 				errs = append(errs, c.Table.Err("layers", "レイヤー "+quote(l)+" が設定にありません", "layers を "+orNone(layerIDs)+" から選ぶか、.vanda/config.toml の [[layer]] に足してください"))
@@ -123,7 +127,7 @@ func (e *env) promiseListShape() []diag.Error {
 		}
 		for _, l := range c.Layers {
 			if layers[l] && !covered[l] {
-				errs = append(errs, c.Table.Err("layers", "レイヤー "+quote(l)+" を確かめるエビデンスがありません", "layers に "+l+" を含む [[claim.evidence]] を足してください"))
+				errs = append(errs, c.Table.Err("layers", "レイヤー "+quote(l)+" を確かめるエビデンスがありません", "layers に "+l+" を含む [[spec.evidence]] を足してください"))
 			}
 		}
 	}
@@ -149,7 +153,7 @@ func refErrs(l *promises.List, all []item) []diag.Error {
 			case part.Broken != "":
 				errs = append(errs, p.Table.Err(p.Key, key+"の参照 "+quote(part.Text)+" が {@id:<ID>} の形ではありません（"+part.Broken+"）", "{@id:<ID>} の形に直すか、"+literal))
 			case part.Ref != "" && !ids[part.Ref]:
-				errs = append(errs, p.Table.Err(p.Key, key+"の参照 "+quote(part.Text)+" が指す用語・機能・約束がありません", "約束リストにある用語・機能・約束の ID に直すか、"+literal))
+				errs = append(errs, p.Table.Err(p.Key, key+"の参照 "+quote(part.Text)+" が指す項目がありません", "約束リストにある項目の ID に直すか、"+literal))
 			}
 		}
 	}
@@ -187,6 +191,100 @@ func (e *env) partOfCycles() []diag.Error {
 	return errs
 }
 
+// relationErrs は、refines と assumes の先の種類、重なり、機能をつなげる性質、性質の refines の循環を確かめる。
+func (e *env) relationErrs(kindOf func(string) string) []diag.Error {
+	var errs []diag.Error
+	// 先の種類が違う ID は、関係をたどる時にも使わないので、種類の合うものだけを返す
+	targets := func(t *tomlread.Table, key string, ids []string, want string) []string {
+		var ok []string
+		seen := map[string]bool{}
+		for _, id := range ids {
+			if seen[id] {
+				continue
+			}
+			seen[id] = true
+			if n := count(ids, id); n > 1 {
+				errs = append(errs, t.Err(key, key+" に "+quote(id)+" が "+fmt.Sprint(n)+" 度あります", key+" の "+quote(id)+" を 1 つにしてください"))
+			}
+			if k := kindOf(id); k != want {
+				errs = append(errs, t.Err(key, key+" の "+quote(id)+" が"+kindName[want]+"にありません"+notItem(k), key+" に、約束リストにある"+kindName[want]+"の ID を書いてください"))
+				continue
+			}
+			ok = append(ok, id)
+		}
+		return ok
+	}
+
+	parents := map[string][]string{}
+	child := map[string]string{}
+	for _, p := range e.list.Properties {
+		ups := targets(p.Table, "refines", p.Refines, "property")
+		targets(p.Table, "assumes", p.Assumes, "truth")
+		// 重複した ID の後のほうは、ID の重複の誤りになっている。関係は、最初のものだけでたどる
+		if _, dup := parents[p.ID]; dup {
+			continue
+		}
+		parents[p.ID] = ups
+		for _, up := range ups {
+			if _, ok := child[up]; !ok {
+				child[up] = p.ID
+			}
+		}
+	}
+	for _, p := range e.list.Properties {
+		if path := pathBack(p.ID, parents); path != nil {
+			errs = append(errs, p.Table.Err("refines", "refines が循環しています（"+strings.Join(path, " → ")+"）", "どれかの refines を消すか、別の性質にしてください"))
+		}
+	}
+	for _, t := range e.list.Terms {
+		targets(t.Table, "assumes", t.Assumes, "truth")
+	}
+	for _, f := range e.list.Features {
+		for _, up := range targets(f.Table, "refines", f.Refines, "property") {
+			if c, ok := child[up]; ok {
+				errs = append(errs, f.Table.Err("refines", "refines の性質 "+quote(up)+" は、下に性質（"+quote(c)+"）を持つため、機能をつなげられません", "refines に、下に性質を持たない性質の ID を書いてください"))
+			}
+		}
+	}
+	for _, c := range e.list.Claims {
+		targets(c.Table, "refines", c.Refines, "feature")
+		targets(c.Table, "assumes", c.Assumes, "truth")
+	}
+	return errs
+}
+
+// pathBack は、start から parents をたどって start に戻る道を返す。戻らなければ nil。
+func pathBack(start string, parents map[string][]string) []string {
+	seen := map[string]bool{}
+	var walk func(cur string, path []string) []string
+	walk = func(cur string, path []string) []string {
+		for _, next := range parents[cur] {
+			if next == start {
+				return append(path, next)
+			}
+			if seen[next] {
+				continue
+			}
+			seen[next] = true
+			if found := walk(next, append(path, next)); found != nil {
+				return found
+			}
+		}
+		return nil
+	}
+	return walk(start, []string{start})
+}
+
+func count(xs []string, x string) int {
+	n := 0
+	for _, v := range xs {
+		if v == x {
+			n++
+		}
+	}
+	return n
+}
+
 func place(it item) string {
 	if l := it.table.Line("id"); l > 0 {
 		return fmt.Sprintf("%s:%d", it.table.Doc.File, l)
@@ -201,6 +299,21 @@ func notKind(k string) string {
 	return "（" + kindName[k] + "の ID）"
 }
 
+// TODO: 言葉の書き分け（docs/plans/promise-reorg-shape-impl.md の 2.7）で kindName の「約束」を「仕様」に直したら、itemName と notItem を消し、kindName と notKind を使う
+func itemName(kind string) string {
+	if kind == "claim" {
+		return "仕様"
+	}
+	return kindName[kind]
+}
+
+func notItem(k string) string {
+	if k == "" {
+		return ""
+	}
+	return "（" + itemName(k) + "の ID）"
+}
+
 func orNone(xs []string) string {
 	if len(xs) == 0 {
 		return "（設定にレイヤーがありません）"
@@ -208,10 +321,10 @@ func orNone(xs []string) string {
 	return strings.Join(xs, "・")
 }
 
-// formalClaim は、形式手法を使う機能を subjects に持つ約束に、model-check の予定と model_check_waiver のどちらか一方だけがあるかを確かめる。
+// formalClaim は、形式手法を使う機能を refines する仕様に、model-check の予定と model_check_waiver のどちらか一方だけがあるかを確かめる。
 func formalClaim(c *promises.Claim, formal map[string]bool) []diag.Error {
 	var features []string
-	for _, s := range c.Subjects {
+	for _, s := range c.Refines {
 		if formal[s] {
 			features = append(features, s)
 		}
@@ -229,7 +342,7 @@ func formalClaim(c *promises.Claim, formal map[string]bool) []diag.Error {
 	which := "形式手法を使う機能（" + strings.Join(features, "・") + "）"
 	switch {
 	case !planned && !waiver:
-		return []diag.Error{c.Table.Err("subjects", "約束 "+c.ID+" は"+which+"を subjects に持ちますが、model-check の予定も、TLA+ で確かめない理由（model_check_waiver）もありません", "type = \"model-check\" の [[claim.evidence]] を足すか、model_check_waiver に理由を書いてください")}
+		return []diag.Error{c.Table.Err("refines", "約束 "+c.ID+" は"+which+"を refines しますが、model-check の予定も、TLA+ で確かめない理由（model_check_waiver）もありません", "type = \"model-check\" の [[spec.evidence]] を足すか、model_check_waiver に理由を書いてください")}
 	case planned && waiver:
 		return []diag.Error{c.Table.Err("model_check_waiver", "約束 "+c.ID+" に、model-check の予定と、TLA+ で確かめない理由（model_check_waiver）の両方があります", "TLA+ で確かめるなら model_check_waiver を消し、確かめないなら model-check の予定を消してください")}
 	}

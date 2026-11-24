@@ -97,23 +97,37 @@ id_pattern = "#[0-9]+"
 ## 約束リスト（既定は `.vanda/promises.toml`）
 
 ```toml
+[[property]]
+id = "no-lost-task"
+statement = "登録したタスクは失われない"
+rationale = "…"
+refines = ["reliable"]
+assumes = ["disk-works"]
+
+[[truth]]
+id = "disk-works"
+statement = "ディスクに書いたものは、読み戻せる"
+
 [[term]]
 id = "task-id"
 name = "タスクの ID"
 definition = "タスクを見分ける名前"
 part_of = "task"
+assumes = ["disk-works"]
 
 [[feature]]
 id = "add-task"
 name = "タスクの登録"
 definition = "タスクを足す"
+refines = ["no-lost-task"]
 core = true
 formal = false
 formal_waiver = "…"
 
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task-id"]
+refines = ["add-task"]
+assumes = ["disk-works"]
 statement = "タスクの ID は重ならない"
 rationale = "…"
 condition = "…"
@@ -122,7 +136,7 @@ flags = ["ai-proposal"]
 guesses = ["…"]
 model_check_waiver = "…"
 
-[[claim.evidence]]
+[[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["model"]
@@ -131,50 +145,78 @@ detail = "…"
 
 | 表 | 項目 | 型 | 必ずか |
 |---|---|---|---|
-| `[[term]]` | `id`・`name`・`definition` | 文字列 | 必ず |
+| `[[property]]`（性質） | `id`・`statement` | 文字列 | 必ず |
+| | `rationale` | 文字列 | 省いてよい |
+| | `refines` | 文字列の配列（上の性質の ID） | 省いてよい。省いた性質は、一番上の性質 |
+| | `assumes` | 文字列の配列（前提の ID） | 省いてよい |
+| `[[truth]]`（前提） | `id`・`statement` | 文字列 | 必ず |
+| `[[term]]`（用語） | `id`・`name`・`definition` | 文字列 | 必ず |
 | | `part_of` | 文字列（用語の ID を 1 つ） | 省いてよい |
-| `[[feature]]` | `id`・`name`・`definition` | 文字列 | 必ず |
+| | `assumes` | 文字列の配列（前提の ID） | 省いてよい |
+| `[[feature]]`（機能） | `id`・`name`・`definition` | 文字列 | 必ず |
+| | `refines` | 文字列の配列（性質の ID） | 必ず。1 つ以上 |
 | | `core` | 真偽 | 省いてよい。省けば偽 |
 | | `formal` | 真偽 | 省いてよい。省けば `core` と同じ値とみなす |
 | | `formal_waiver` | 文字列 | `core = true` かつ `formal = false` のときは必ず。それ以外で書いたら誤り |
-| `[[claim]]` | `id`・`statement` | 文字列 | 必ず |
-| | `subjects` | 文字列の配列（用語か機能の ID。約束の ID は書けない） | 必ず。1 つ以上 |
+| `[[spec]]`（仕様） | `id`・`statement` | 文字列 | 必ず |
+| | `refines` | 文字列の配列（機能の ID） | 必ず。1 つ以上 |
+| | `assumes` | 文字列の配列（前提の ID） | 省いてよい |
 | | `layers` | 文字列の配列（設定のレイヤーの ID） | 必ず。1 つ以上 |
 | | `rationale`・`condition` | 文字列 | 省いてよい |
 | | `flags` | 文字列の配列（`ai-proposal` だけ） | 省いてよい |
 | | `guesses` | 文字列の配列 | 省いてよい |
-| | `model_check_waiver` | 文字列 | TLA+ で確かめない理由。形式手法を使う機能（`formal` が真。省けば `core` と同じ）を `subjects` に持つ約束には、`type = "model-check"` の予定とこれのどちらか一方だけを書く（どちらもないか両方あれば誤り） |
-| | `[[claim.evidence]]` | 表の配列 | 必ず。1 つ以上 |
-| `[[claim.evidence]]` | `stage` | 文字列（`plan`・`implementation`・`release`・`operation`） | 必ず |
+| | `model_check_waiver` | 文字列 | TLA+ で確かめない理由。形式手法を使う機能（`formal` が真。省けば `core` と同じ）を `refines` する仕様には、`type = "model-check"` の予定とこれのどちらか一方だけを書く（どちらもないか両方あれば誤り） |
+| | `[[spec.evidence]]` | 表の配列 | 必ず。1 つ以上 |
+| `[[spec.evidence]]`（エビデンス） | `stage` | 文字列（`plan`・`implementation`・`release`・`operation`） | 必ず |
 | | `type` | 文字列（`docs/spec.md` の「エビデンスのタイプ」の値） | 必ず |
-| | `layers` | 文字列の配列（約束の `layers` の中から） | 必ず。1 つ以上 |
+| | `layers` | 文字列の配列（仕様の `layers` の中から） | 必ず。1 つ以上 |
 | | `detail` | 文字列 | 省いてよい |
 
-- ID は、英小文字で始め、英小文字・数字をハイフンでつないだ形（例: `task-id`、`a2`）。用語・機能・約束の ID は、すべてのファイルを通して重複しない
+- ID は、英小文字で始め、英小文字・数字をハイフンでつないだ形（例: `task-id`、`a2`）。性質・前提・用語・機能・仕様の ID は、すべてのファイルを通して重複しない
 - 空の ID（`id = ""`）は、形の誤り
 - 重複した ID の誤りは、表の種類を問わず、出てきた順（ファイルの場所の順、同じファイルなら行の順）で後に出てきたほうの行を指し、前に出てきた場所をメッセージに書く
 - 知らない表・項目の誤りは、その表の見出し・項目の行を指す
-- 表は `term`・`feature`・`claim` だけ。決まっていない表と項目は、エラーにする
-- `[[claim.evidence]]` は、インラインの表の配列（`evidence = [{ … }]`）で書いてもよい。ただし、エラーでは行を示せない
+- 表は `property`・`truth`・`term`・`feature`・`spec` だけ。決まっていない表と項目は、エラーにする
+- 性質と前提は、名前（`name`）を持たない。性質には、エビデンスを書けない
+- `[[spec.evidence]]` は、インラインの表の配列（`evidence = [{ … }]`）で書いてもよい。ただし、エラーでは行を示せない
 - 設定の `promises` のパターンにマッチするファイルを、すべて読む
+
+### 関係
+
+項目どうしの関係は、次の種類だけを書ける。向きはどれも、具体から抽象へ。書ける組み合わせでないものは、promise-list-shape の誤りにする。
+
+| 関係 | 意味 | 書き方 | 書ける組み合わせ |
+|---|---|---|---|
+| part_of | 用語の種類を並べる | 用語の `part_of` | 用語→用語 |
+| refines | 上の層の項目を具体化する | 性質・機能・仕様の `refines` | 性質→性質、機能→性質、仕様→機能 |
+| assumes | 成り立つ前提 | 性質・用語・仕様の `assumes` | 性質→前提、用語→前提、仕様→前提 |
+| supports | エビデンスが仕様を支持する | `[[spec.evidence]]` を仕様の下に書く | エビデンス→仕様 |
+| mentions | 文の中の参照（下の「参照」） | `{@id:<ID>}` | どの項目からどの項目へも |
+
+- `refines`・`assumes` の ID の項目が約束リストにない、または、種類が上の組み合わせに合わなければ誤り
+- 機能が `refines` できるのは、下に性質を持たない性質（ほかの性質から `refines` されていない性質）だけ
+- 性質の `refines` をたどって自分に戻れば誤り（循環）。`part_of` も同じ
+- 1 つの `refines`・`assumes` の配列の中に、同じ ID を 2 度書けば誤り
+- 1 つの項目から、複数の上の項目へ `refines` を書いてよい。一番上の性質（`refines` を書かない性質）は、いくつあってもよい
+- 下に何もつながっていない性質（性質も機能も `refines` していない）は、誤りにしない
 
 ### 参照（`{@id:<ID>}`）
 
-名前を除く、自然言語で書く項目の中に `{@id:<ID>}` と書くと、その ID の用語・機能・約束を指す参照になる。
+名前を除く、自然言語で書く項目の中に `{@id:<ID>}` と書くと、その ID の項目（性質・前提・用語・機能・仕様）を指す参照になる。
 
 ```toml
-[[claim]]
+[[spec]]
 id = "task-id-unique"
-subjects = ["task-id"]
+refines = ["add-task"]
 statement = "{@id:task-id} は重ならない"
 ```
 
-- 参照を書ける項目: 用語の `definition`、機能の `definition`・`formal_waiver`、約束の `statement`・`rationale`・`condition`・`guesses`（の各要素）・`model_check_waiver`、エビデンスの `detail`。`id`・`name`・`subjects` などの中の `{@id:…}` は、参照として読まない
+- 参照を書ける項目: 性質の `statement`・`rationale`、前提の `statement`、用語の `definition`、機能の `definition`・`formal_waiver`、仕様の `statement`・`rationale`・`condition`・`guesses`（の各要素）・`model_check_waiver`、エビデンスの `detail`。`id`・`name`・`refines`・`assumes` などの中の `{@id:…}` は、参照として読まない
 - 文を左から読む。`{@@` は、参照ではなく文字の `{@` として読む（`{@@id:x}` は文字の `{@id:x}`、`{@@@` は文字の `{@@`）。ほかの `{@` は参照の始まりで、次の `}` までを `<種類>:<値>` として読む
 - 次のどれかなら、promise-list-shape の誤りにする。誤りは、その項目の行を指す
   - `}` がない、`:` がない、値（ID）が空（`{@<種類>:<値>}` の形でない）
   - 種類が `id` でない
-  - 値の ID の用語・機能・約束が、約束リストにない
+  - 値の ID の項目が、約束リストにない
 - フィンガープリントは、参照を置き換える前の、書いたままの文から作る。参照先の名前や定義を変えても、参照元のフィンガープリントは変わらない
 
 ## 承認の記録（既定は `.vanda/agreements.toml`）
@@ -240,7 +282,7 @@ story = "#24"
 決まった形の JSON:
 
 - 表は `{…}`。キーを名前の順（UTF-8 のバイトの順）に並べる
-- 配列は `[…]`。順はそのまま（表の配列 `[[claim.evidence]]` も、書いた順）
+- 配列は `[…]`。順はそのまま（表の配列 `[[spec.evidence]]` も、書いた順）
 - 文字列は `"…"`。エスケープするのは、`"` → `\"`、`\` → `\\`、改行 → `\n`、復帰 → `\r`、タブ → `\t`、そのほかの U+0000〜U+001F → `\u00xx`（16 進の小文字）だけ。日本語などの文字や、`<`・`>`・`&` は、UTF-8 のまま書く
 - 真偽は `true`・`false`、整数は 10 進
 - 区切りの `,` と `:` の前後に空白を入れない。最後に改行を付けない
@@ -371,7 +413,7 @@ scope = "story"
 
 | チェック | 確かめること |
 |---|---|
-| `promise-list-shape` | 読み込みの誤り（TOML、型、必須の項目、決まっていない表と項目）。ID の形と重複。`part_of` の先が用語にあり、循環しない。`subjects` の先が用語か機能にある。`layers` が設定のレイヤーにある。エビデンスの `layers` が約束の `layers` の中にある。約束のどのレイヤーにもエビデンスがある。`stage`・`type`・`flags` が決まった値。`formal_waiver` の決まり。形式手法を使う機能を `subjects` に持つ約束に、`model-check` の予定と `model_check_waiver` のどちらか一方だけがある |
+| `promise-list-shape` | 読み込みの誤り（TOML、型、必須の項目、決まっていない表と項目）。ID の形と重複。`part_of` の先が用語にあり、循環しない。`refines`・`assumes` の決まり（約束リストの「関係」）。`layers` が設定のレイヤーにある。エビデンスの `layers` が約束の `layers` の中にある。約束のどのレイヤーにもエビデンスがある。`stage`・`type`・`flags` が決まった値。`formal_waiver` の決まり。形式手法を使う機能を `refines` する約束に、`model-check` の予定と `model_check_waiver` のどちらか一方だけがある |
 | `annotation-links` | アノテーションの読み込みの誤り。`term` は用語を、`feature` は機能を、`claim`・`evidence`・`sensor` は約束を指す。TLA+ の仕様の型（下）に `term` か `internal` があり、`feature` がない。`term` も `internal` もない誤りは型の定義の行を、`feature` を付けた誤りはそのアノテーションの行を指す |
 | `story-origin` | マージベースより後の、マージコミットでないコミットのうち、約束リストのファイル（今のパターンで決める）を変えたものに、`Story:` のトレーラーがある。トレーラーの誤り（2 つ以上、`id_pattern` に合わない）も、そのコミットの誤りにする |
 | `agreement` | 承認の対象（約束・用語・機能と、`types` に `scenario-test` か `model-check` を含む `[[annotation]]` のパターンにマッチするファイルと、`[[guardrail]]` の `paths` にマッチするファイル。どのアダプタで読むかによらない。`types` がどちらも含まないパターン（Go のテストなど）だけにマッチするファイルは対象にしない）の今の中身が承認済。約束に `flags`・`guesses` が残っていない。中身を承認したことのある約束・用語・機能・承認の対象のファイルが今なければ、消したことへの承認がある。スコープ `story` では、そのストーリーで変わったものだけを見て（マージベースにあって今ないものは、承認したことがあるかによらず、消したことへの承認を求める）、さらに、そのストーリーの失効した承認（下）も誤りにする |

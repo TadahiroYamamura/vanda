@@ -36,7 +36,7 @@ type NamedRef struct {
 	Name *string `json:"name"`
 }
 
-// ClaimSummary は、用語・機能を subjects に持つ約束の 1 つ。
+// ClaimSummary は、機能を refines する約束の 1 つ。
 type ClaimSummary struct {
 	ID        string  `json:"id"`
 	Statement []Piece `json:"statement"`
@@ -93,7 +93,7 @@ func Feature(o Options, id string) (*FeatureDetail, *Error) {
 	return d, nil
 }
 
-// claimsAbout は、subject を subjects に持つ約束を、約束リストに書いた順に返す。
+// claimsAbout は、subject を refines する約束を、約束リストに書いた順に返す。
 func (s *state) claimsAbout(subject string) []ClaimSummary {
 	out := []ClaimSummary{}
 	seen := map[string]bool{}
@@ -102,7 +102,7 @@ func (s *state) claimsAbout(subject string) []ClaimSummary {
 			continue
 		}
 		seen[e.ID] = true
-		for _, sub := range e.Claim.Subjects {
+		for _, sub := range e.Claim.Refines {
 			if sub == subject {
 				out = append(out, ClaimSummary{ID: e.ID, Statement: s.refs.pieces(e.Claim.Statement, nil)})
 				break

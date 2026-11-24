@@ -11,17 +11,32 @@ import (
 )
 
 type List struct {
-	Files    []string
-	Terms    []*Term
-	Features []*Feature
-	Claims   []*Claim
+	Files      []string
+	Properties []*Property
+	Truths     []*Truth
+	Terms      []*Term
+	Features   []*Feature
+	Claims     []*Claim
 }
 
-// Item は、用語・機能・約束に共通するもの。Raw は読み込んだ表そのもの（フィンガープリントを作る元）。
+// Item は、性質・前提・用語・機能・約束に共通するもの。Raw は読み込んだ表そのもの（フィンガープリントを作る元）。
 type Item struct {
 	ID    string
 	Table *tomlread.Table
 	Raw   map[string]any
+}
+
+type Property struct {
+	Item
+	Statement string
+	Rationale string
+	Refines   []string
+	Assumes   []string
+}
+
+type Truth struct {
+	Item
+	Statement string
 }
 
 type Term struct {
@@ -29,12 +44,14 @@ type Term struct {
 	Name       string
 	Definition string
 	PartOf     string // 書いていなければ空
+	Assumes    []string
 }
 
 type Feature struct {
 	Item
 	Name       string
 	Definition string
+	Refines    []string
 	Core       bool
 	// Formal は、書いていなければ、core = true のとき真とみなした値
 	Formal       bool
@@ -43,7 +60,8 @@ type Feature struct {
 
 type Claim struct {
 	Item
-	Subjects  []string
+	Refines   []string
+	Assumes   []string
 	Statement string
 	Rationale string
 	Condition string
@@ -94,13 +112,31 @@ func LoadWith(read tomlread.Reader, files, patterns []string, allowMissing bool)
 }
 
 func (l *List) read(top *tomlread.Table) {
+	properties, _ := top.Tables("property", false)
+	for _, t := range properties {
+		x := &Property{Item: item(t, "property")}
+		x.Statement, _ = t.Str("statement", true)
+		x.Rationale, _ = t.Str("rationale", false)
+		x.Refines, _ = t.Strs("refines", false)
+		x.Assumes, _ = t.Strs("assumes", false)
+		t.Unknown("id, statement, rationale, refines, assumes")
+		l.Properties = append(l.Properties, x)
+	}
+	truths, _ := top.Tables("truth", false)
+	for _, t := range truths {
+		x := &Truth{Item: item(t, "truth")}
+		x.Statement, _ = t.Str("statement", true)
+		t.Unknown("id, statement")
+		l.Truths = append(l.Truths, x)
+	}
 	terms, _ := top.Tables("term", false)
 	for _, t := range terms {
 		x := &Term{Item: item(t, "term")}
 		x.Name, _ = t.Str("name", true)
 		x.Definition, _ = t.Str("definition", true)
 		x.PartOf, _ = t.Str("part_of", false)
-		t.Unknown("id, name, definition, part_of")
+		x.Assumes, _ = t.Strs("assumes", false)
+		t.Unknown("id, name, definition, part_of, assumes")
 		l.Terms = append(l.Terms, x)
 	}
 	features, _ := top.Tables("feature", false)
@@ -108,6 +144,7 @@ func (l *List) read(top *tomlread.Table) {
 		x := &Feature{Item: item(t, "feature")}
 		x.Name, _ = t.Str("name", true)
 		x.Definition, _ = t.Str("definition", true)
+		x.Refines = nonEmpty(t, "refines", "性質の ID")
 		x.Core, _ = t.Bool("core", false)
 		formal, ok := t.Bool("formal", false)
 		if ok {
@@ -116,13 +153,14 @@ func (l *List) read(top *tomlread.Table) {
 			x.Formal = x.Core
 		}
 		x.FormalWaiver, _ = t.Str("formal_waiver", false)
-		t.Unknown("id, name, definition, core, formal, formal_waiver")
+		t.Unknown("id, name, definition, refines, core, formal, formal_waiver")
 		l.Features = append(l.Features, x)
 	}
-	claims, _ := top.Tables("claim", false)
-	for _, t := range claims {
-		x := &Claim{Item: item(t, "claim")}
-		x.Subjects = nonEmpty(t, "subjects", "用語か機能の ID")
+	specs, _ := top.Tables("spec", false)
+	for _, t := range specs {
+		x := &Claim{Item: item(t, "spec")}
+		x.Refines = nonEmpty(t, "refines", "機能の ID")
+		x.Assumes, _ = t.Strs("assumes", false)
 		x.Statement, _ = t.Str("statement", true)
 		x.Rationale, _ = t.Str("rationale", false)
 		x.Condition, _ = t.Str("condition", false)
@@ -132,7 +170,7 @@ func (l *List) read(top *tomlread.Table) {
 		x.ModelCheckWaiver, _ = t.Str("model_check_waiver", false)
 		evs, ok := t.Tables("evidence", true)
 		if ok && len(evs) == 0 {
-			t.ErrAt("evidence", "evidence が 1 つもありません", "[[claim.evidence]] を 1 つ以上書いてください")
+			t.ErrAt("evidence", "evidence が 1 つもありません", "[[spec.evidence]] を 1 つ以上書いてください")
 		}
 		for _, et := range evs {
 			e := &Evidence{Table: et}
@@ -143,10 +181,10 @@ func (l *List) read(top *tomlread.Table) {
 			et.Unknown("stage, type, layers, detail")
 			x.Evidence = append(x.Evidence, e)
 		}
-		t.Unknown("id, subjects, statement, rationale, condition, layers, flags, guesses, evidence, model_check_waiver")
+		t.Unknown("id, refines, assumes, statement, rationale, condition, layers, flags, guesses, evidence, model_check_waiver")
 		l.Claims = append(l.Claims, x)
 	}
-	top.Unknown("term, feature, claim")
+	top.Unknown("property, truth, term, feature, spec")
 }
 
 func item(t *tomlread.Table, kind string) Item {
