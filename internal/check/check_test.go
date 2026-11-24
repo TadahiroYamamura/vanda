@@ -1331,11 +1331,15 @@ func shapeOf(t *testing.T, r *repoT, promises string) (bool, string) {
 	return pass, out
 }
 
-// minimalPromises は、省いてよい項目をすべて省いた約束リスト。行は、性質の id が 2 行目、用語の id が 6 行目、
-// 機能の id が 11 行目、約束の id が 17 行目、エビデンスの stage が 23 行目
+// minimalPromises は、省いてよい項目をすべて省いた約束リスト。表の見出しの行は、性質が 1 行目、前提が 5 行目、用語が 9 行目、
+// 機能が 14 行目、約束が 20 行目、エビデンスが 26 行目
 const minimalPromises = `[[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
+
+[[truth]]
+id = "disk-works"
+statement = "ディスクに書いたものは、読み戻せる"
 
 [[term]]
 id = "task"
@@ -1361,28 +1365,34 @@ layers = ["model"]
 `
 
 // @vanda:evidence promise-list-required-field-names
-func TestPromiseListShapeは用語と機能と約束とエビデンスの必須の項目がなければ誤りにし省いてよい項目は省いても通す(t *testing.T) {
+func TestPromiseListShapeは性質と前提と用語と機能と約束とエビデンスの必須の項目がなければ誤りにし省いてよい項目は省いても通す(t *testing.T) {
 	r := goodRepo(t)
 	if pass, out := shapeOf(t, r, minimalPromises); !pass {
 		t.Fatalf("省いてよい項目を省いた約束リストが通らない\n%s", out)
 	}
+	// head は、項目を持つべき表の見出しの行。項目がない誤りは、この行を指す（docs/formats.md）
 	cases := []struct {
 		name, line, key string
+		head            int
 	}{
-		{"用語のid", `id = "task"`, "id"},
-		{"用語のname", `name = "タスク"`, "name"},
-		{"用語のdefinition", `definition = "やること"`, "definition"},
-		{"機能のid", `id = "add-task"`, "id"},
-		{"機能のname", `name = "タスクの登録"`, "name"},
-		{"機能のdefinition", `definition = "タスクを足す"`, "definition"},
-		{"約束のid", `id = "c"`, "id"},
-		{"約束のrefines", `refines = ["add-task"]`, "refines"},
-		{"約束のstatement", `statement = "s"`, "statement"},
-		{"約束のlayers", "statement = \"s\"\nlayers = [\"model\"]", "layers"},
-		{"約束のevidence", "\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]", "evidence"},
-		{"エビデンスのstage", `stage = "implementation"`, "stage"},
-		{"エビデンスのtype", `type = "unit-test"`, "type"},
-		{"エビデンスのlayers", "type = \"unit-test\"\nlayers = [\"model\"]", "layers"},
+		{"性質のid", `id = "no-lost-task"`, "id", 1},
+		{"性質のstatement", `statement = "登録したタスクは失われない"`, "statement", 1},
+		{"前提のid", `id = "disk-works"`, "id", 5},
+		{"前提のstatement", `statement = "ディスクに書いたものは、読み戻せる"`, "statement", 5},
+		{"用語のid", `id = "task"`, "id", 9},
+		{"用語のname", `name = "タスク"`, "name", 9},
+		{"用語のdefinition", `definition = "やること"`, "definition", 9},
+		{"機能のid", `id = "add-task"`, "id", 14},
+		{"機能のname", `name = "タスクの登録"`, "name", 14},
+		{"機能のdefinition", `definition = "タスクを足す"`, "definition", 14},
+		{"機能のrefines", `refines = ["no-lost-task"]`, "refines", 14},
+		{"約束のid", `id = "c"`, "id", 20},
+		{"約束のrefines", `refines = ["add-task"]`, "refines", 20},
+		{"約束のstatement", `statement = "s"`, "statement", 20},
+		{"約束のlayers", "statement = \"s\"\nlayers = [\"model\"]", "layers", 20},
+		{"エビデンスのstage", `stage = "implementation"`, "stage", 26},
+		{"エビデンスのtype", `type = "unit-test"`, "type", 26},
+		{"エビデンスのlayers", "type = \"unit-test\"\nlayers = [\"model\"]", "layers", 26},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -1391,11 +1401,22 @@ func TestPromiseListShapeは用語と機能と約束とエビデンスの必須�
 			if src == minimalPromises {
 				t.Fatalf("約束リストに %q がない", c.line)
 			}
-			if pass, out := shapeOf(t, r, src); pass || !lineWith(out, ".vanda/promises.toml:", c.key, "ありません") {
-				t.Errorf("%s がない約束リストが、%s がないことを示す誤りにならない\n%s", c.name, c.key, out)
+			if pass, out := shapeOf(t, r, src); pass || !lineWith(out, ".vanda/promises.toml:"+strconv.Itoa(c.head)+": ", c.key, "ありません") {
+				t.Errorf("%s がない約束リストが、表の見出しの行（%d 行目）を指して %s がないことを示す誤りにならない\n%s", c.name, c.head, c.key, out)
 			}
 		})
 	}
+	// evidence は項目の行でなく表なので、[[spec.evidence]] の表をまるごと消す
+	t.Run("約束のevidence", func(t *testing.T) {
+		const table = "\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n"
+		src := strings.Replace(minimalPromises, table, "", 1)
+		if src == minimalPromises {
+			t.Fatal("約束リストに [[spec.evidence]] の表がない")
+		}
+		if pass, out := shapeOf(t, r, src); pass || !lineWith(out, ".vanda/promises.toml:20: ", "evidence", "ありません") {
+			t.Errorf("evidence がない約束が、表の見出しの行（20 行目）を指して evidence がないことを示す誤りにならない\n%s", out)
+		}
+	})
 }
 
 // keepFirstLine は、複数行の s のうち、最後の行を除いたもの（改行付き）を返す。1 行なら空を返す。
@@ -1408,15 +1429,16 @@ func keepFirstLine(s string) string {
 }
 
 // @vanda:evidence promise-list-non-empty
-func TestPromiseListShapeは約束のrefinesとlayersとevidenceとエビデンスのlayersが空なら誤りにする(t *testing.T) {
+func TestPromiseListShapeは機能と約束のrefinesと約束のlayersとevidenceとエビデンスのlayersが空なら誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	cases := []struct {
 		name, from, to, prefix, key string
 	}{
-		{"約束のrefines", `refines = ["add-task"]`, `refines = []`, ".vanda/promises.toml:18: ", "refines"},
-		{"約束のlayers", "statement = \"s\"\nlayers = [\"model\"]", "statement = \"s\"\nlayers = []", ".vanda/promises.toml:20: ", "layers"},
-		{"約束のevidence", "layers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", "layers = [\"model\"]\nevidence = []\n", ".vanda/promises.toml:21: ", "evidence"},
-		{"エビデンスのlayers", "type = \"unit-test\"\nlayers = [\"model\"]", "type = \"unit-test\"\nlayers = []", ".vanda/promises.toml:25: ", "layers"},
+		{"機能のrefines", `refines = ["no-lost-task"]`, `refines = []`, ".vanda/promises.toml:18: ", "refines"},
+		{"約束のrefines", `refines = ["add-task"]`, `refines = []`, ".vanda/promises.toml:22: ", "refines"},
+		{"約束のlayers", "statement = \"s\"\nlayers = [\"model\"]", "statement = \"s\"\nlayers = []", ".vanda/promises.toml:24: ", "layers"},
+		{"約束のevidence", "layers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", "layers = [\"model\"]\nevidence = []\n", ".vanda/promises.toml:25: ", "evidence"},
+		{"エビデンスのlayers", "type = \"unit-test\"\nlayers = [\"model\"]", "type = \"unit-test\"\nlayers = []", ".vanda/promises.toml:29: ", "layers"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -1439,26 +1461,37 @@ func TestPromiseListShapeは約束リストの項目が決まった型でなけ�
 		name, from, to string
 		line           int
 	}{
-		{"用語のidが整数", `id = "task"`, `id = 1`, 6},
-		{"用語のnameが真偽", `name = "タスク"`, `name = true`, 7},
-		{"用語のdefinitionが配列", `definition = "やること"`, `definition = ["やること"]`, 8},
-		{"用語のpart_ofが整数", `definition = "やること"`, "definition = \"やること\"\npart_of = 1", 9},
-		{"機能のcoreが文字列", `definition = "タスクを足す"`, "definition = \"タスクを足す\"\ncore = \"yes\"", 14},
-		{"機能のformalが整数", `definition = "タスクを足す"`, "definition = \"タスクを足す\"\nformal = 1", 14},
-		{"機能のformal_waiverが真偽", `definition = "タスクを足す"`, "definition = \"タスクを足す\"\ncore = true\nformal = false\nformal_waiver = true", 16},
-		{"約束のrefinesが文字列", `refines = ["add-task"]`, `refines = "add-task"`, 18},
-		{"約束のrefinesに整数", `refines = ["add-task"]`, `refines = [1]`, 18},
-		{"約束のstatementが整数", `statement = "s"`, `statement = 1`, 19},
-		{"約束のlayersが文字列", "statement = \"s\"\nlayers = [\"model\"]", "statement = \"s\"\nlayers = \"model\"", 20},
-		{"約束のrationaleが整数", `statement = "s"`, "statement = \"s\"\nrationale = 1", 20},
-		{"約束のconditionが配列", `statement = "s"`, "statement = \"s\"\ncondition = [\"c\"]", 20},
-		{"約束のflagsが文字列", `statement = "s"`, "statement = \"s\"\nflags = \"ai-proposal\"", 20},
-		{"約束のguessesが表", `statement = "s"`, "statement = \"s\"\nguesses = { a = \"g\" }", 20},
-		{"約束のevidenceが文字列", "layers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", "layers = [\"model\"]\nevidence = \"unit-test\"\n", 21},
-		{"エビデンスのstageが整数", `stage = "implementation"`, `stage = 1`, 23},
-		{"エビデンスのtypeが真偽", `type = "unit-test"`, `type = true`, 24},
-		{"エビデンスのlayersが文字列", "type = \"unit-test\"\nlayers = [\"model\"]", "type = \"unit-test\"\nlayers = \"model\"", 25},
-		{"エビデンスのdetailが整数", "type = \"unit-test\"\nlayers = [\"model\"]", "type = \"unit-test\"\nlayers = [\"model\"]\ndetail = 1", 26},
+		{"性質のidが整数", `id = "no-lost-task"`, `id = 1`, 2},
+		{"性質のstatementが配列", `statement = "登録したタスクは失われない"`, `statement = ["登録したタスクは失われない"]`, 3},
+		{"性質のrationaleが整数", `statement = "登録したタスクは失われない"`, "statement = \"登録したタスクは失われない\"\nrationale = 1", 4},
+		{"性質のrefinesが文字列", `statement = "登録したタスクは失われない"`, "statement = \"登録したタスクは失われない\"\nrefines = \"upper\"", 4},
+		{"性質のassumesに整数", `statement = "登録したタスクは失われない"`, "statement = \"登録したタスクは失われない\"\nassumes = [1]", 4},
+		{"前提のidが真偽", `id = "disk-works"`, `id = true`, 6},
+		{"前提のstatementが整数", `statement = "ディスクに書いたものは、読み戻せる"`, `statement = 1`, 7},
+		{"用語のassumesが文字列", `definition = "やること"`, "definition = \"やること\"\nassumes = \"disk-works\"", 13},
+		{"機能のrefinesが文字列", `refines = ["no-lost-task"]`, `refines = "no-lost-task"`, 18},
+		{"機能のrefinesに整数", `refines = ["no-lost-task"]`, `refines = [1]`, 18},
+		{"約束のassumesが文字列", `statement = "s"`, "statement = \"s\"\nassumes = \"disk-works\"", 24},
+		{"用語のidが整数", `id = "task"`, `id = 1`, 10},
+		{"用語のnameが真偽", `name = "タスク"`, `name = true`, 11},
+		{"用語のdefinitionが配列", `definition = "やること"`, `definition = ["やること"]`, 12},
+		{"用語のpart_ofが整数", `definition = "やること"`, "definition = \"やること\"\npart_of = 1", 13},
+		{"機能のcoreが文字列", `definition = "タスクを足す"`, "definition = \"タスクを足す\"\ncore = \"yes\"", 18},
+		{"機能のformalが整数", `definition = "タスクを足す"`, "definition = \"タスクを足す\"\nformal = 1", 18},
+		{"機能のformal_waiverが真偽", `definition = "タスクを足す"`, "definition = \"タスクを足す\"\ncore = true\nformal = false\nformal_waiver = true", 20},
+		{"約束のrefinesが文字列", `refines = ["add-task"]`, `refines = "add-task"`, 22},
+		{"約束のrefinesに整数", `refines = ["add-task"]`, `refines = [1]`, 22},
+		{"約束のstatementが整数", `statement = "s"`, `statement = 1`, 23},
+		{"約束のlayersが文字列", "statement = \"s\"\nlayers = [\"model\"]", "statement = \"s\"\nlayers = \"model\"", 24},
+		{"約束のrationaleが整数", `statement = "s"`, "statement = \"s\"\nrationale = 1", 24},
+		{"約束のconditionが配列", `statement = "s"`, "statement = \"s\"\ncondition = [\"c\"]", 24},
+		{"約束のflagsが文字列", `statement = "s"`, "statement = \"s\"\nflags = \"ai-proposal\"", 24},
+		{"約束のguessesが表", `statement = "s"`, "statement = \"s\"\nguesses = { a = \"g\" }", 24},
+		{"約束のevidenceが文字列", "layers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n", "layers = [\"model\"]\nevidence = \"unit-test\"\n", 25},
+		{"エビデンスのstageが整数", `stage = "implementation"`, `stage = 1`, 27},
+		{"エビデンスのtypeが真偽", `type = "unit-test"`, `type = true`, 28},
+		{"エビデンスのlayersが文字列", "type = \"unit-test\"\nlayers = [\"model\"]", "type = \"unit-test\"\nlayers = \"model\"", 29},
+		{"エビデンスのdetailが整数", "type = \"unit-test\"\nlayers = [\"model\"]", "type = \"unit-test\"\nlayers = [\"model\"]\ndetail = 1", 30},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -1474,12 +1507,14 @@ func TestPromiseListShapeは約束リストの項目が決まった型でなけ�
 	}
 	// 決まった型の値なら通る
 	ok := strings.NewReplacer(
-		`definition = "やること"`+"\n", "definition = \"やること\"\npart_of = \"task\"\n",
+		`statement = "登録したタスクは失われない"`+"\n", "statement = \"登録したタスクは失われない\"\nrationale = \"r\"\nrefines = [\"upper\"]\nassumes = [\"disk-works\"]\n",
+		`definition = "やること"`+"\n", "definition = \"やること\"\npart_of = \"task\"\nassumes = [\"disk-works\"]\n",
 		`definition = "タスクを足す"`+"\n", "definition = \"タスクを足す\"\ncore = true\nformal = false\nformal_waiver = \"状態を持たないため\"\n",
-		`statement = "s"`+"\n", "statement = \"s\"\nrationale = \"r\"\ncondition = \"c\"\nflags = [\"ai-proposal\"]\nguesses = [\"g\"]\n",
+		`statement = "s"`+"\n", "statement = \"s\"\nassumes = [\"disk-works\"]\nrationale = \"r\"\ncondition = \"c\"\nflags = [\"ai-proposal\"]\nguesses = [\"g\"]\n",
 	).Replace(minimalPromises) + "detail = \"d\"\n"
 	// part_of が自分を指すと循環になるので、別の用語を指させる
-	ok = strings.Replace(ok, `part_of = "task"`, `part_of = "whole"`, 1) + "\n[[term]]\nid = \"whole\"\nname = \"全体\"\ndefinition = \"まとまり\"\n"
+	ok = strings.Replace(ok, `part_of = "task"`, `part_of = "whole"`, 1) + "\n[[term]]\nid = \"whole\"\nname = \"全体\"\ndefinition = \"まとまり\"\n" +
+		"\n[[property]]\nid = \"upper\"\nstatement = \"上の性質\"\n"
 	if pass, out := shapeOf(t, r, ok); !pass {
 		t.Errorf("決まった型で書いた約束リストが通らない\n%s", out)
 	}

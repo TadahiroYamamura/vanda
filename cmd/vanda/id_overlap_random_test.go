@@ -7,18 +7,19 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
 	"pgregory.net/rapid"
 )
 
-// CMD-10 約束リストの形: ID は用語・機能・約束を通し、分けたファイルをまたいでも重複しない。
+// CMD-10 約束リストの形: ID は性質・前提・用語・機能・約束を通し、分けたファイルをまたいでも重複しない。
 // 重複した ID の誤りは、後に出てきたほう（ファイルの場所の順、同じファイルなら行の順）の行を指す（docs/formats.md）。
 // 無作為に作った約束リストで、vanda check が出す誤りの場所が、テストの中で数えた「後に出てきたもの」と一致することを確かめる。
 
 type overlapItem struct {
-	kind string // term・feature・spec
+	kind string // property・truth・term・feature・spec
 	id   string
 	file int
 }
@@ -50,6 +51,8 @@ func renderOverlap(items []overlapItem, files int) (map[string]string, map[int]o
 			locs[i] = overlapLoc{path, line}
 			write(fmt.Sprintf("id = %q\n", it.id))
 			switch it.kind {
+			case "property", "truth":
+				write("statement = \"文\"\n")
 			case "term":
 				write("name = \"名前\"\ndefinition = \"定義\"\n")
 			case "feature":
@@ -90,7 +93,8 @@ func expectedOverlaps(items []overlapItem, locs map[int]overlapLoc) map[overlapL
 
 // @vanda:evidence promise-list-id-unique
 func Test分けたファイルをまたいでも重複したIDは後に出てきたものの場所だけを誤りにする(t *testing.T) {
-	t.Parallel()
+	// t.Parallel() を呼ばない。rapid のシードはプロセスに 1 つのフラグなので、並行に動くほかのテストがフラグを書き換えると、
+	// 記録に出したシードと、実際に使ったシードが食い違う
 	bin := buildVanda(t)
 	version, err := runningVersion(bin)
 	if err != nil {
@@ -109,13 +113,16 @@ func Test分けたファイルをまたいでも重複したIDは後に出てき
 		writeFile(t, root, path, src)
 	}
 
-	// 落ちたときに rapid が testdata/rapid にファイルを書かないようにする。再現は、rapid が記録に出すシードで行う
+	seed := rvRandomSeed(t)
+	t.Logf("シード: VANDA_RV01_SEED=%d", seed)
+	setFlag(t, "rapid.seed", strconv.FormatUint(seed, 10))
+	// 落ちたときに rapid が testdata/rapid にファイルを書かないようにする。再現は、記録に出したシードで行う
 	setFlag(t, "rapid.nofailfile", "true")
 	rapid.Check(t, func(rt *rapid.T) {
 		files := rapid.IntRange(1, 3).Draw(rt, "ファイルの数")
 		items := rapid.SliceOfN(rapid.Custom(func(rt *rapid.T) overlapItem {
 			return overlapItem{
-				kind: rapid.SampledFrom([]string{"term", "feature", "spec"}).Draw(rt, "表"),
+				kind: rapid.SampledFrom([]string{"property", "truth", "term", "feature", "spec"}).Draw(rt, "表"),
 				id:   rapid.SampledFrom(overlapIDs).Draw(rt, "ID"),
 				file: rapid.IntRange(0, files-1).Draw(rt, "ファイル"),
 			}

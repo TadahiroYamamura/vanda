@@ -3,6 +3,7 @@ package promises
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -25,11 +26,22 @@ func write(t *testing.T, files map[string]string) (string, []string) {
 }
 
 // @vanda:evidence promise-list-reads-all-patterns
-func TestLoadは複数のファイルから用語と機能と約束を読む(t *testing.T) {
+func TestLoadは複数のファイルから性質と前提と用語と機能と約束を決まった項目で読む(t *testing.T) {
 	root, files := write(t, map[string]string{
 		".vanda/promises/a.toml": `[[property]]
+id = "reliable"
+statement = "安心して使える"
+
+[[property]]
 id = "no-lost-task"
 statement = "登録したタスクは失われない"
+rationale = "失われると使えないため"
+refines = ["reliable"]
+assumes = ["disk-works"]
+
+[[truth]]
+id = "disk-works"
+statement = "ディスクに書いたものは、読み戻せる"
 
 [[term]]
 id = "task"
@@ -41,6 +53,7 @@ id = "task-id"
 name = "タスクの ID"
 definition = "タスクを見分ける名前"
 part_of = "task"
+assumes = ["disk-works"]
 
 [[feature]]
 id = "add-task"
@@ -60,7 +73,8 @@ formal_waiver = "表示だけのため"
 `,
 		".vanda/promises/b.toml": `[[spec]]
 id = "task-id-unique"
-refines = ["add-task"]
+refines = ["add-task", "list-task"]
+assumes = ["disk-works"]
 statement = "タスクの ID は重ならない"
 rationale = "見分けるため"
 condition = "いつも"
@@ -85,8 +99,27 @@ detail = "db/schema.sql"
 	if errs != nil {
 		t.Fatal(errs)
 	}
+	if len(l.Properties) != 2 {
+		t.Fatalf("property: %+v", l.Properties)
+	}
+	if top := l.Properties[0]; top.ID != "reliable" || top.Statement != "安心して使える" || top.Rationale != "" || len(top.Refines) != 0 || len(top.Assumes) != 0 {
+		t.Errorf("省いてよい項目を省いた性質: %+v", top)
+	}
+	if p := l.Properties[1]; p.ID != "no-lost-task" || p.Statement != "登録したタスクは失われない" || p.Rationale != "失われると使えないため" ||
+		!reflect.DeepEqual(p.Refines, []string{"reliable"}) || !reflect.DeepEqual(p.Assumes, []string{"disk-works"}) {
+		t.Errorf("property: %+v", p)
+	}
+	if len(l.Truths) != 1 || l.Truths[0].ID != "disk-works" || l.Truths[0].Statement != "ディスクに書いたものは、読み戻せる" {
+		t.Errorf("truth: %+v", l.Truths)
+	}
 	if len(l.Terms) != 2 || l.Terms[1].PartOf != "task" || l.Terms[0].PartOf != "" {
 		t.Errorf("term: %+v", l.Terms)
+	}
+	if len(l.Terms) == 2 && (len(l.Terms[0].Assumes) != 0 || !reflect.DeepEqual(l.Terms[1].Assumes, []string{"disk-works"})) {
+		t.Errorf("term の assumes: %+v %+v", l.Terms[0], l.Terms[1])
+	}
+	if len(l.Features) == 2 && (!reflect.DeepEqual(l.Features[0].Refines, []string{"no-lost-task"}) || !reflect.DeepEqual(l.Features[1].Refines, []string{"no-lost-task"})) {
+		t.Errorf("feature の refines: %+v %+v", l.Features[0], l.Features[1])
 	}
 	if len(l.Features) != 2 || !l.Features[0].Formal || l.Features[1].Formal || l.Features[1].FormalWaiver != "表示だけのため" {
 		t.Errorf("feature: formal を省いた core の機能は真、書いた機能は書いたまま: %+v %+v", l.Features[0], l.Features[1])
@@ -95,6 +128,9 @@ detail = "db/schema.sql"
 		t.Fatalf("claim: %+v", l.Claims)
 	}
 	c := l.Claims[0]
+	if !reflect.DeepEqual(c.Refines, []string{"add-task", "list-task"}) || !reflect.DeepEqual(c.Assumes, []string{"disk-works"}) {
+		t.Errorf("claim の refines・assumes: %v %v", c.Refines, c.Assumes)
+	}
 	if c.ID != "task-id-unique" || len(c.Evidence) != 2 || c.Evidence[1].Detail != "db/schema.sql" || c.Flags[0] != "ai-proposal" || c.Guesses[0] != "DB に一意の制約を付けられる" {
 		t.Errorf("claim: %+v", c)
 	}
