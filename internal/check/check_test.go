@@ -420,13 +420,30 @@ func TestAgreementは提案中とフラグと承認していないファイル�
 }
 
 // @vanda:evidence agreements-point-to-existing-items
-func TestAgreementTargetsは約束リストにない項目を指す承認を出す(t *testing.T) {
+func TestAgreementTargetsは約束リストにない項目か種類の違う項目を指す承認を出す(t *testing.T) {
 	r := goodRepo(t)
 	cfg := r.config()
-	r.agreeAll("#1", cfg, "[[agreement]]\nkind = \"claim\"\nkey = \"gone\"\nfingerprint = \"sha256:0000000000000000000000000000000000000000000000000000000000000000\"\nuser = { name = \"PO\", email = \"po@example.com\" }\nagreed_at = 2026-10-31T12:00:00Z\nstory = \"#1\"\n\n")
-	r.commit("(test) ない約束への承認を足す", "")
+	// 1 件は 8 行（見出し、kind、key、fingerprint、user、agreed_at、story、空行）。key の行は 3、11、19、…
+	rec := func(kind, key string) string {
+		return recordOf(`kind = "`+kind+`"`, `key = "`+key+`"`, `fingerprint = "`+zeroFP+`"`, `user = { name = "PO", email = "po@example.com" }`, `agreed_at = 2026-10-31T12:00:00Z`, `story = "#1"`)
+	}
+	// 約束リストにない ID を指すものと、あっても種類の違う項目の ID を指すもの（task は用語、no-lost-task は性質、task-unique は仕様）
+	records := rec("spec", "gone") + rec("property", "gone") + rec("truth", "gone") +
+		rec("property", "task") + rec("truth", "no-lost-task") + rec("spec", "no-lost-task") + rec("property", "task-unique") + rec("term", "no-lost-task")
+	r.agreeAll("#1", cfg, records)
+	r.commit("(test) ない項目への承認を足す", "")
 	_, out, _ := r.run("[[check]]\nname = \"agreement-targets\"\nscope = \"all\"\n", "", "")
-	expect(t, out, [][]string{{".vanda/agreements.toml:3: ", "承認の記録", `約束 "gone"`, "指して"}})
+	expect(t, out, [][]string{
+		{"チェック agreement-targets（all）: 失敗（8 件）"},
+		{".vanda/agreements.toml:3: ", "承認の記録", `約束 "gone"`, "指して"},
+		{".vanda/agreements.toml:11: ", "承認の記録", `性質 "gone"`, "指して"},
+		{".vanda/agreements.toml:19: ", "承認の記録", `前提 "gone"`, "指して"},
+		{".vanda/agreements.toml:27: ", "承認の記録", `性質 "task"`, "指して"},
+		{".vanda/agreements.toml:35: ", "承認の記録", `前提 "no-lost-task"`, "指して"},
+		{".vanda/agreements.toml:43: ", "承認の記録", `約束 "no-lost-task"`, "指して"},
+		{".vanda/agreements.toml:51: ", "承認の記録", `性質 "task-unique"`, "指して"},
+		{".vanda/agreements.toml:59: ", "承認の記録", `用語 "no-lost-task"`, "指して"},
+	})
 }
 
 // @vanda:evidence check-evidence-present
@@ -434,8 +451,10 @@ func TestAgreementTargetsは約束リストにない項目を指す承認を出�
 func TestEvidencePresentはタイプに合うアノテーションのない予定とproofを出す(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{
-		".vanda/promises.toml": basePromises + "\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"proof\"\nlayers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"sensor\"\nlayers = [\"model\"]\n",
-		"db/schema.sql":        "CREATE UNIQUE INDEX t ON task(id);\n",
+		// 終わりの性質と前提は、エビデンスを持たない。エビデンス完備のチェックは仕様だけを見るので、誤りの数は変わらない
+		".vanda/promises.toml": basePromises + "\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"proof\"\nlayers = [\"model\"]\n\n[[spec.evidence]]\nstage = \"implementation\"\ntype = \"sensor\"\nlayers = [\"model\"]\n" +
+			"\n[[property]]\nid = \"reliable\"\nstatement = \"頼れる\"\nassumes = [\"disk-works\"]\n\n[[truth]]\nid = \"disk-works\"\nstatement = \"ディスクに書いたものは、読み戻せる\"\n",
+		"db/schema.sql": "CREATE UNIQUE INDEX t ON task(id);\n",
 	})
 	r.commit("(test) 予定を足しガードレールの定義のアノテーションを外す", "")
 	_, out, _ := r.run("[[check]]\nname = \"evidence-present\"\nscope = \"all\"\n", "", "")
@@ -1062,13 +1081,15 @@ func TestRunはスコープstoryのagreementとevidence_presentの結果の行�
 		t.Errorf("結果の行:\n%s\n--- 思ったもの\n%s", out, want)
 	}
 	// 失敗の行にも書く。ストーリーは --story で選んだもの
-	r.write(map[string]string{".vanda/promises.toml": strings.Replace(basePromises, "やること", "すること", 1)})
-	r.commit("(feat) 用語を変える", "#8")
+	// 用語と性質を変え、前提を足す。どれも承認のチェックで止まり、エビデンス完備のチェックは、仕様でないものにエビデンスを求めない
+	r.write(map[string]string{".vanda/promises.toml": strings.NewReplacer("やること", "すること", "登録したタスクは失われない", "タスクは失われない").Replace(basePromises) +
+		"\n[[truth]]\nid = \"disk-works\"\nstatement = \"ディスクに書いたものは、読み戻せる\"\n"})
+	r.commit("(feat) 用語と性質を変え、前提を足す", "#8")
 	_, out, err = r.run(checks, "main", "#8")
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect(t, out, [][]string{{"チェック agreement（story #8）: 失敗（1 件）"}, {"チェック evidence-present（story #8）: 通った"}, {"チェック story-origin（story）: 通った"}})
+	expect(t, out, [][]string{{"チェック agreement（story #8）: 失敗（3 件）"}, {"チェック evidence-present（story #8）: 通った"}, {"チェック story-origin（story）: 通った"}})
 }
 
 // @vanda:evidence branch-point-merge-base
@@ -1236,7 +1257,7 @@ func recordOf(fields ...string) string {
 func TestAgreementTargetsは承認の記録のfingerprintがsha256と16進の小文字64文字でなければ誤りにする(t *testing.T) {
 	hex64 := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 	rec := func(fp string) string {
-		return recordOf(`kind = "claim"`, `key = "task-unique"`, `fingerprint = "`+fp+`"`, `user = { name = "PO", email = "po@example.com" }`, `agreed_at = 2026-10-31T12:00:00Z`, `story = "#1"`)
+		return recordOf(`kind = "spec"`, `key = "task-unique"`, `fingerprint = "`+fp+`"`, `user = { name = "PO", email = "po@example.com" }`, `agreed_at = 2026-10-31T12:00:00Z`, `story = "#1"`)
 	}
 	for _, fp := range []string{
 		"sha256:" + strings.ToUpper(hex64),
@@ -1265,7 +1286,7 @@ func TestAgreementTargetsは承認の記録のfingerprintがsha256と16進の小
 // @vanda:evidence agreements-required-fields
 func TestAgreementTargetsは承認の記録の必須の項目がないかkindが決まった値でなければ誤りにする(t *testing.T) {
 	full := map[string]string{
-		"kind":        `kind = "claim"`,
+		"kind":        `kind = "spec"`,
 		"key":         `key = "task-unique"`,
 		"fingerprint": `fingerprint = "` + zeroFP + `"`,
 		"user":        `user = { name = "PO", email = "po@example.com" }`,
@@ -1299,21 +1320,36 @@ func TestAgreementTargetsは承認の記録の必須の項目がないかkindが
 			t.Errorf("user の %s がない承認の記録が誤りにならない\n%s", name, out)
 		}
 	}
-	// kind の決まった値は claim・term・feature・file
+	// kind の決まった値は spec・term・feature・property・truth・file（docs/formats.md の「承認の記録」）。
+	// 元の約束リストには前提がないので、行の番号がずれないよう、終わりに足す
+	withTruth := func(records string) (bool, string) {
+		r := goodRepo(t)
+		r.write(map[string]string{".vanda/promises.toml": basePromises + "\n[[truth]]\nid = \"disk-works\"\nstatement = \"ディスクに書いたものは、読み戻せる\"\n"})
+		r.agreeAll("#1", r.config(), records)
+		r.commit("(test) 前提と承認の記録を足す", "")
+		pass, out, err := r.run("[[check]]\nname = \"agreement-targets\"\nscope = \"all\"\n", "", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return pass, out
+	}
 	valid := map[string]string{
-		"claim":   recordOf(`kind = "claim"`, `key = "task-unique"`, `fingerprint = "`+zeroFP+`"`, full["user"], full["agreed_at"], full["story"]),
-		"term":    recordOf(`kind = "term"`, `key = "task"`, `fingerprint = "`+zeroFP+`"`, full["user"], full["agreed_at"], full["story"]),
-		"feature": recordOf(`kind = "feature"`, `key = "add-task"`, `fingerprint = "`+zeroFP+`"`, full["user"], full["agreed_at"], full["story"]),
-		"file":    recordOf(`kind = "file"`, `key = "`+zeroFP+`"`, `fingerprint = "`+zeroFP+`"`, `path = "e2e/add.txtar"`, full["user"], full["agreed_at"], full["story"]),
+		"spec":     recordOf(`kind = "spec"`, `key = "task-unique"`, `fingerprint = "`+zeroFP+`"`, full["user"], full["agreed_at"], full["story"]),
+		"term":     recordOf(`kind = "term"`, `key = "task"`, `fingerprint = "`+zeroFP+`"`, full["user"], full["agreed_at"], full["story"]),
+		"feature":  recordOf(`kind = "feature"`, `key = "add-task"`, `fingerprint = "`+zeroFP+`"`, full["user"], full["agreed_at"], full["story"]),
+		"property": recordOf(`kind = "property"`, `key = "no-lost-task"`, `fingerprint = "`+zeroFP+`"`, full["user"], full["agreed_at"], full["story"]),
+		"truth":    recordOf(`kind = "truth"`, `key = "disk-works"`, `fingerprint = "`+zeroFP+`"`, full["user"], full["agreed_at"], full["story"]),
+		"file":     recordOf(`kind = "file"`, `key = "`+zeroFP+`"`, `fingerprint = "`+zeroFP+`"`, `path = "e2e/add.txtar"`, full["user"], full["agreed_at"], full["story"]),
 	}
 	for kind, rec := range valid {
-		if pass, out := agreementTargetsWith(t, rec); !pass {
+		if pass, out := withTruth(rec); !pass {
 			t.Errorf("kind = %q の承認の記録が誤りになった\n%s", kind, out)
 		}
 	}
-	for _, kind := range []string{"story", "Claim", "files", "evidence", ""} {
-		rec := strings.Replace(valid["claim"], `kind = "claim"`, `kind = "`+kind+`"`, 1)
-		if pass, out := agreementTargetsWith(t, rec); pass || !lineWith(out, ".vanda/agreements.toml:2: ", "kind", `"`+kind+`"`) {
+	// claim は前の形の値。読み替えずに誤りにする
+	for _, kind := range []string{"claim", "story", "Claim", "Spec", "specs", "files", "evidence", ""} {
+		rec := strings.Replace(valid["spec"], `kind = "spec"`, `kind = "`+kind+`"`, 1)
+		if pass, out := withTruth(rec); pass || !lineWith(out, ".vanda/agreements.toml:2: ", "kind", `"`+kind+`"`) {
 			t.Errorf("kind = %q が、kind の行を指す誤りにならない\n%s", kind, out)
 		}
 	}

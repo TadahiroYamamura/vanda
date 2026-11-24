@@ -41,13 +41,13 @@ type agreeResponse struct {
 }
 
 var (
-	reviewClaimFP = sha256Hex([]byte(reviewStoryItemJSON["claim task-id-unique"]))
-	reviewTitleFP = sha256Hex([]byte(reviewStoryItemJSON["claim task-title-required"]))
+	reviewClaimFP = sha256Hex([]byte(reviewStoryItemJSON["spec task-id-unique"]))
+	reviewTitleFP = sha256Hex([]byte(reviewStoryItemJSON["spec task-title-required"]))
 	reviewFileFP  = sha256Hex([]byte(reviewScenarioStory))
 )
 
 func agreeClaim(id, fp string) map[string]any {
-	return map[string]any{"kind": "claim", "id": id, "path": nil, "fingerprint": fp, "story": reviewStory}
+	return map[string]any{"kind": "spec", "id": id, "path": nil, "fingerprint": fp, "story": reviewStory}
 }
 
 func agreeFile(path, fp string) map[string]any {
@@ -141,12 +141,12 @@ func Test承認すると承認の記録が1件増えその約束のフラグだ�
 		t.Fatalf("承認の記録が、元のものの後に 1 件足したものでない（%d 件 → %d 件）", len(before), len(after))
 	}
 	rec := after[len(after)-1]
-	if rec.Kind != "claim" || rec.Key != "task-id-unique" || rec.Fingerprint != reviewClaimFP || rec.Path != "" ||
+	if rec.Kind != "spec" || rec.Key != "task-id-unique" || rec.Fingerprint != reviewClaimFP || rec.Path != "" ||
 		rec.Story != reviewStory || rec.User.Name != reviewUserName || rec.User.Email != reviewUserEmail || rec.AgreedAt == nil {
 		t.Errorf("書き足した承認の記録: %+v", rec)
 	}
 	a := got.Agreement
-	if a.Kind != "claim" || a.Key != "task-id-unique" || str(a.Fingerprint) != reviewClaimFP || a.Path != nil ||
+	if a.Kind != "spec" || a.Key != "task-id-unique" || str(a.Fingerprint) != reviewClaimFP || a.Path != nil ||
 		a.Story != reviewStory || a.User.Name != reviewUserName || a.User.Email != reviewUserEmail || a.AgreedAt == "" {
 		t.Errorf("返した承認の記録: %+v", a)
 	}
@@ -374,7 +374,7 @@ func Test見せていた中身のフィンガープリントが今の中身と�
 	t.Parallel()
 	_, r, s := setupAgree(t)
 	head := r.git("rev-parse", "HEAD")
-	old := sha256Hex([]byte(reviewItemJSON["claim task-id-unique"]))
+	old := sha256Hex([]byte(reviewItemJSON["spec task-id-unique"]))
 	if code, msg := s.post("/api/agree", agreeClaim("task-id-unique", old), nil); code != 409 || msg == "" {
 		t.Errorf("%d（%q）を返した。409 で断り、理由を出す", code, msg)
 	}
@@ -386,7 +386,7 @@ func Test見せていた中身のフィンガープリントが今の中身と�
 // ---- RV-17 承認を取り消す（POST /api/revoke） ----
 
 func revokeClaim(id, fp string) map[string]any {
-	return map[string]any{"kind": "claim", "id": id, "path": nil, "fingerprint": fp, "story": reviewStory, "base": "main"}
+	return map[string]any{"kind": "spec", "id": id, "path": nil, "fingerprint": fp, "story": reviewStory, "base": "main"}
 }
 
 type revokeResponse struct {
@@ -397,7 +397,7 @@ type revokeResponse struct {
 
 // inlineRecord は、docs/formats.md の user = { … } の形で、task-id-unique の今の中身への承認の記録を書く（前に空行 1 つ）。
 func inlineRecord(story, name, email string) string {
-	return fmt.Sprintf("\n[[agreement]]\nkind = \"claim\"\nkey = \"task-id-unique\"\nfingerprint = %q\nagreed_at = 2026-10-31T12:00:00+09:00\nstory = %q\nuser = { name = %q, email = %q }\n",
+	return fmt.Sprintf("\n[[agreement]]\nkind = \"spec\"\nkey = \"task-id-unique\"\nfingerprint = %q\nagreed_at = 2026-10-31T12:00:00+09:00\nstory = %q\nuser = { name = %q, email = %q }\n",
 		reviewClaimFP, story, name, email)
 }
 
@@ -519,7 +519,7 @@ func Test取り消すと今の人の記録だけが消えほかの人とほか�
 	story30 := inlineRecord("#30", reviewUserName, reviewUserEmail)
 	self := inlineRecord(reviewStory, reviewUserName, reviewUserEmail)
 	// 自分が、このストーリーで、前の中身に書いた記録（今の中身への承認ではない）
-	stale := strings.Replace(self, reviewClaimFP, sha256Hex([]byte(reviewItemJSON["claim task-id-unique"])), 1)
+	stale := strings.Replace(self, reviewClaimFP, sha256Hex([]byte(reviewItemJSON["spec task-id-unique"])), 1)
 	_, r, s, base := setupRevoke(t, func(base string) string {
 		return base + "\n# #24 の承認\n" + self + other + stale + story30 + self
 	})
@@ -909,14 +909,25 @@ func Test今あるファイルを消したことへの承認は断る(t *testing
 
 // ---- 承認と取り消しのコミットのメッセージ・承認の記録の書き方 ----
 
-// 承認と取り消しの対象。用語と機能は main で #1 が承認済だが、#24 では承認していないので承認できる
+// 承認と取り消しの対象。用語と機能は main で #1 が承認済だが、#24 では承認していないので承認できる。
+// 性質は #24 で文を変え、前提は #24 で足す（setup）。フィンガープリントの元の JSON は手で書いた
 var agreeKinds = []struct {
 	label, kind, id, path, fp string
+	setup                     func(r *reviewRepo)
+	change                    string // setup をした後の、一覧での変わり方
 }{
-	{"約束", "claim", "task-id-unique", "", reviewClaimFP},
-	{"用語", "term", "task", "", sha256Hex([]byte(reviewItemJSON["term task"]))},
-	{"機能", "feature", "add-task", "", sha256Hex([]byte(reviewItemJSON["feature add-task"]))},
-	{"ファイル", "file", "", "e2e/add-task.txtar", reviewFileFP},
+	{"約束", "spec", "task-id-unique", "", reviewClaimFP, nil, "modified"},
+	{"用語", "term", "task", "", sha256Hex([]byte(reviewItemJSON["term task"])), nil, ""},
+	{"機能", "feature", "add-task", "", sha256Hex([]byte(reviewItemJSON["feature add-task"])), nil, ""},
+	{"性質", "property", "no-lost-task", "", sha256Hex([]byte(`{"id":"no-lost-task","statement":"登録したタスクは、消すまで失われない"}`)), func(r *reviewRepo) {
+		writeFile(r.t, r.Root, ".vanda/promises.toml", strings.Replace(reviewPromisesStory, `statement = "登録したタスクは失われない"`, `statement = "登録したタスクは、消すまで失われない"`, 1))
+		r.g.commitAll("性質の文を変える", reviewStory)
+	}, "modified"},
+	{"前提", "truth", "disk-works", "", sha256Hex([]byte(`{"id":"disk-works","statement":"ディスクに書いたものは、読み戻せる"}`)), func(r *reviewRepo) {
+		writeFile(r.t, r.Root, ".vanda/promises.toml", reviewPromisesStory+"\n[[truth]]\nid = \"disk-works\"\nstatement = \"ディスクに書いたものは、読み戻せる\"\n")
+		r.g.commitAll("前提を足す", reviewStory)
+	}, "added"},
+	{"ファイル", "file", "", "e2e/add-task.txtar", reviewFileFP, nil, "modified"},
 }
 
 func agreeBody(kind, id, path, fp string) map[string]any {
@@ -929,23 +940,88 @@ func agreeBody(kind, id, path, fp string) map[string]any {
 	return body
 }
 
+// agreeKindEntry は、一覧から、種類 kind で ID か場所が target の件の、変わり方・状態・フィンガープリント・承認できるか・取り消せるかを読む。
+// 一覧になければ found が偽
+func agreeKindEntry(t *testing.T, s *vandaServer, kind, target string) (found bool, change, state, fp string, canAgree, canRevoke bool) {
+	t.Helper()
+	var got struct {
+		Entries []struct {
+			Kind        string  `json:"kind"`
+			ID          *string `json:"id"`
+			Path        *string `json:"path"`
+			Change      string  `json:"change"`
+			State       string  `json:"state"`
+			Fingerprint *string `json:"fingerprint"`
+			Agree       *struct {
+				Possible bool `json:"possible"`
+			} `json:"agree"`
+			Revoke *struct {
+				Possible bool `json:"possible"`
+			} `json:"revoke"`
+		} `json:"entries"`
+	}
+	if code, msg := s.get("/api/review?view=branch&base=main", &got); code != 200 {
+		t.Fatalf("一覧を読めない（%d）: %s", code, msg)
+	}
+	for _, e := range got.Entries {
+		if e.Kind == kind && (str(e.ID) == target || str(e.Path) == target) {
+			return true, e.Change, e.State, str(e.Fingerprint), e.Agree != nil && e.Agree.Possible, e.Revoke != nil && e.Revoke.Possible
+		}
+	}
+	return false, "", "", "", false, false
+}
+
+// 種類は docs/formats.md の kind のすべて（spec・term・feature・property・truth・file）を回す
 // @vanda:evidence agree-commit-message
 // @vanda:evidence revoke-commit-message
-func Test承認と取り消しのコミットのsubjectは種類とIDか場所をストーリーのIDと合わせて書く(t *testing.T) {
+func Test承認と取り消しはどの種類にもでき承認の記録とコミットのsubjectに種類とIDか場所をストーリーのIDと合わせて書く(t *testing.T) {
 	t.Parallel()
 	for _, k := range agreeKinds {
 		t.Run(k.label, func(t *testing.T) {
 			t.Parallel()
 			_, r, s := setupAgree(t)
+			if k.setup != nil {
+				k.setup(r)
+			}
 			target := k.id
 			if k.kind == "file" {
 				target = k.path
 			}
-			if code, msg := s.post("/api/agree", agreeBody(k.kind, k.id, k.path, k.fp), nil); code != 200 {
+			// ストーリーで変えたものは、一覧に提案中で出て、承認できる
+			if k.change != "" {
+				found, change, state, fp, canAgree, _ := agreeKindEntry(t, s, k.kind, target)
+				if !found || change != k.change || state != "proposed" || fp != k.fp || !canAgree {
+					t.Errorf("承認の前の一覧: found %v、change %q、state %q、fingerprint %q、承認できるか %v（思ったもの %q・proposed・%q・true）", found, change, state, fp, canAgree, k.change, k.fp)
+				}
+			}
+			before := readAgreements(t, r.Root)
+			var res agreeResponse
+			if code, msg := s.post("/api/agree", agreeBody(k.kind, k.id, k.path, k.fp), &res); code != 200 {
 				t.Fatalf("承認できない（%d）: %s", code, msg)
 			}
 			if got, want := r.git("log", "-1", "--format=%s"), "(chore) #24 で "+k.label+" "+target+" を承認する"; got != want {
 				t.Errorf("承認のコミットの subject: %q（思ったもの %q）", got, want)
+			}
+			// 承認の記録とレスポンスに、種類とキーを書く（ファイルのキーはフィンガープリント）
+			wantKey, wantPath := k.id, ""
+			if k.kind == "file" {
+				wantKey, wantPath = k.fp, k.path
+			}
+			after := readAgreements(t, r.Root)
+			if len(after) != len(before)+1 {
+				t.Fatalf("承認の記録が %d 件から %d 件になった（1 件増えるはず）", len(before), len(after))
+			}
+			if rec := after[len(after)-1]; rec.Kind != k.kind || rec.Key != wantKey || rec.Fingerprint != k.fp || rec.Path != wantPath || rec.Story != reviewStory {
+				t.Errorf("書き足した承認の記録: %+v（思ったもの kind %q、key %q、fingerprint %q、path %q）", rec, k.kind, wantKey, k.fp, wantPath)
+			}
+			if a := res.Agreement; a.Kind != k.kind || a.Key != wantKey || str(a.Fingerprint) != k.fp || str(a.Path) != wantPath {
+				t.Errorf("レスポンスの agreement: %+v（思ったもの kind %q、key %q）", a, k.kind, wantKey)
+			}
+			if k.change != "" {
+				found, _, state, _, _, canRevoke := agreeKindEntry(t, s, k.kind, target)
+				if !found || state != "agreed" || !canRevoke {
+					t.Errorf("承認の後の一覧: found %v、state %q、取り消せるか %v（思ったもの agreed・true）", found, state, canRevoke)
+				}
 			}
 			body := agreeBody(k.kind, k.id, k.path, k.fp)
 			body["base"] = "main"
@@ -954,6 +1030,14 @@ func Test承認と取り消しのコミットのsubjectは種類とIDか場所�
 			}
 			if got, want := r.git("log", "-1", "--format=%s"), "(chore) #24 で "+k.label+" "+target+" の承認を取り消す"; got != want {
 				t.Errorf("取り消しのコミットの subject: %q（思ったもの %q）", got, want)
+			}
+			if now := readAgreements(t, r.Root); !reflect.DeepEqual(now, before) {
+				t.Errorf("取り消した後の承認の記録が、承認の前と違う: %d 件（前は %d 件）", len(now), len(before))
+			}
+			if k.change != "" {
+				if found, _, state, _, _, _ := agreeKindEntry(t, s, k.kind, target); !found || state != "proposed" {
+					t.Errorf("取り消した後の一覧: found %v、state %q（思ったもの proposed）", found, state)
+				}
 			}
 		})
 	}
@@ -1141,7 +1225,7 @@ func Test設定のagreementsにはっきり書いたファイルがなければ�
 				}
 			}
 			var claim claimDetail
-			if code, msg := s.get("/api/claims/task-id-unique", &claim); code != 200 || claim.State != "proposed" {
+			if code, msg := s.get("/api/specs/task-id-unique", &claim); code != 200 || claim.State != "proposed" {
 				t.Errorf("約束の詳細が %d・state %q: %s", code, claim.State, msg)
 			}
 		})
@@ -1173,7 +1257,7 @@ func Testフラグか推測をインラインの表の中か複数行の文字�
 			r.g.commitTracked("フラグの書き方を変える", reviewStory)
 			// 書き方を変えてもフィンガープリントは変わらない。今の中身のフィンガープリントで承認しようとする
 			var claim claimDetail
-			if code, msg := s.get("/api/claims/task-id-unique", &claim); code != 200 || claim.Fingerprint != reviewClaimFP {
+			if code, msg := s.get("/api/specs/task-id-unique", &claim); code != 200 || claim.Fingerprint != reviewClaimFP {
 				t.Fatalf("書き方を変えた約束を読めないか、フィンガープリントが変わった（%d、%s）: %s", code, claim.Fingerprint, msg)
 			}
 			promises := readFileString(t, r.Root, ".vanda/promises.toml")
@@ -1280,7 +1364,7 @@ func claimState(body []byte, id string) string {
 		return "（一覧を読めない: " + err.Error() + "）"
 	}
 	for _, e := range rv.Entries {
-		if e.Kind == "claim" && str(e.ID) == id {
+		if e.Kind == "spec" && str(e.ID) == id {
 			return str(e.State)
 		}
 	}
@@ -1342,7 +1426,7 @@ func Test承認と取り消しのあいだはほかの承認と一覧と約束�
 	h.waitStarted(1)
 	send("2 件目の承認", http.MethodPost, "/api/agree", agreeClaim("task-title-required", reviewTitleFP))
 	send("一覧", http.MethodGet, "/api/review?view=branch&base=main", nil)
-	send("約束の詳細", http.MethodGet, "/api/claims/task-id-unique", nil)
+	send("約束の詳細", http.MethodGet, "/api/specs/task-id-unique", nil)
 	send("ファイル", http.MethodGet, "/api/file?path="+q("e2e/add-task.txtar"), nil)
 	noAnswer("承認のあいだ", 1)
 	h.release(1)
@@ -1359,7 +1443,7 @@ func Test承認と取り消しのあいだはほかの承認と一覧と約束�
 	send("取り消し", http.MethodPost, "/api/revoke", revokeClaim("task-id-unique", reviewClaimFP))
 	h.waitStarted(3)
 	send("取り消しのあいだの一覧", http.MethodGet, "/api/review?view=branch&base=main", nil)
-	send("取り消しのあいだの約束の詳細", http.MethodGet, "/api/claims/task-id-unique", nil)
+	send("取り消しのあいだの約束の詳細", http.MethodGet, "/api/specs/task-id-unique", nil)
 	send("取り消しのあいだのファイル", http.MethodGet, "/api/file?path="+q("e2e/add-task.txtar"), nil)
 	noAnswer("取り消しのあいだ", 3)
 	h.release(3)
@@ -1367,8 +1451,8 @@ func Test承認と取り消しのあいだはほかの承認と一覧と約束�
 	if st := claimState(got["取り消しのあいだの一覧"].body, "task-id-unique"); st != "proposed" {
 		t.Errorf("取り消しのあいだに求めた一覧の task-id-unique が %s（取り消しを待ってから読むので proposed のはず）", st)
 	}
-	if n := len(readAgreements(t, r.Root)); n != 8 {
-		t.Errorf("承認の記録が %d 件（はじめの 7 件に、2 件足して 1 件消したので 8 件のはず）", n)
+	if n := len(readAgreements(t, r.Root)); n != 9 {
+		t.Errorf("承認の記録が %d 件（はじめの 8 件に、2 件足して 1 件消したので 9 件のはず）", n)
 	}
 }
 
@@ -1397,7 +1481,7 @@ func Test同時に出した承認と取り消しと読み込みはどれも失�
 
 	reads := []struct{ what, path string }{
 		{"一覧", "/api/review?view=branch&base=main"},
-		{"約束の詳細", "/api/claims/task-id-unique"},
+		{"約束の詳細", "/api/specs/task-id-unique"},
 		{"ファイル", "/api/file?path=" + q("e2e/add-task.txtar")},
 		{"画面で選べるもの", "/api/context"},
 	}

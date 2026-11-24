@@ -2,6 +2,8 @@ package main_test
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -10,7 +12,7 @@ import (
 	"testing"
 )
 
-// CL-01・02・04・05 約束の詳細（GET /api/claims/<約束の ID>）と、ファイルの中身（GET /api/file）。
+// CL-01・02・04・05 約束の詳細（GET /api/specs/<約束の ID>）と、ファイルの中身（GET /api/file）。
 // リポジトリは review_repo_test.go の newReviewRepo（HEAD は story-24）。
 
 type claimFound struct {
@@ -55,7 +57,7 @@ type claimDetail struct {
 	} `json:"evidence"`
 }
 
-// claimHistory は、約束の変更履歴と承認の履歴（GET /api/claims/<約束の ID>/history）
+// claimHistory は、約束の変更履歴と承認の履歴（GET /api/specs/<約束の ID>/history）
 type claimHistory struct {
 	Origin []struct {
 		Commit  string   `json:"commit"`
@@ -79,7 +81,7 @@ type claimHistory struct {
 func getHistory(t *testing.T, s *vandaServer, id string) claimHistory {
 	t.Helper()
 	var h claimHistory
-	if code, msg := s.get("/api/claims/"+id+"/history", &h); code != 200 {
+	if code, msg := s.get("/api/specs/"+id+"/history", &h); code != 200 {
 		t.Fatalf("約束 %s の変更履歴と承認の履歴を読めない（%d）: %s", id, code, msg)
 	}
 	return h
@@ -132,7 +134,7 @@ func Test約束の詳細は文とレイヤーとエビデンスのタイプご�
 	r.g.commitTracked("推測を書き換える", "#25")
 
 	var got claimDetail
-	if code, msg := s.get("/api/claims/task-id-unique", &got); code != 200 {
+	if code, msg := s.get("/api/specs/task-id-unique", &got); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
 	}
 	if got.ID != "task-id-unique" || got.Statement.String() != "タスクの ID は、すべてのタスクを通して重ならない" || got.Rationale != nil || got.Condition != nil {
@@ -190,7 +192,7 @@ func Test約束の詳細は文とレイヤーとエビデンスのタイプご�
 	}
 
 	if len(h.Agreements) != 1 || h.Agreements[0].Story != "#1" || h.Agreements[0].Current ||
-		h.Agreements[0].Fingerprint != sha256Hex([]byte(reviewItemJSON["claim task-id-unique"])) || h.Agreements[0].User.Name != "テスト担当" {
+		h.Agreements[0].Fingerprint != sha256Hex([]byte(reviewItemJSON["spec task-id-unique"])) || h.Agreements[0].User.Name != "テスト担当" {
 		t.Errorf("承認の履歴: %+v", h.Agreements)
 	}
 
@@ -199,7 +201,7 @@ func Test約束の詳細は文とレイヤーとエビデンスのタイプご�
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = f.WriteString(agreementTOML("claim", "task-id-unique", reviewClaimFP, "", reviewStory, reviewUserName, reviewUserEmail))
+	_, err = f.WriteString(agreementTOML("spec", "task-id-unique", reviewClaimFP, "", reviewStory, reviewUserName, reviewUserEmail))
 	if cerr := f.Close(); err == nil {
 		err = cerr
 	}
@@ -208,7 +210,7 @@ func Test約束の詳細は文とレイヤーとエビデンスのタイプご�
 	}
 	r.g.commitTracked("承認する", "#24")
 	var again claimDetail
-	if code, msg := s.get("/api/claims/task-id-unique", &again); code != 200 {
+	if code, msg := s.get("/api/specs/task-id-unique", &again); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
 	}
 	if again.ID != "task-id-unique" || again.State != "agreed" {
@@ -233,7 +235,7 @@ func Test約束の詳細は文とレイヤーとエビデンスのタイプご�
 	}
 	r.g.commitTracked("シナリオを承認する", "#30")
 	var agreedFile claimDetail
-	if code, msg := s.get("/api/claims/task-id-unique", &agreedFile); code != 200 {
+	if code, msg := s.get("/api/specs/task-id-unique", &agreedFile); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
 	}
 	wantStates["e2e/add-task.txtar"] = "agreed"
@@ -248,7 +250,7 @@ func Test約束の詳細は指すアノテーションのないエビデンス�
 	t.Parallel()
 	_, _, s := setupAgree(t)
 	var got claimDetail
-	if code, msg := s.get("/api/claims/task-title-required", &got); code != 200 {
+	if code, msg := s.get("/api/specs/task-title-required", &got); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
 	}
 	if len(got.Evidence) != 1 || got.Evidence[0].Type != "scenario-test" || got.Evidence[0].Found == nil || len(got.Evidence[0].Found) != 0 {
@@ -265,7 +267,7 @@ func Test約束の詳細は変更履歴と承認の履歴を含めず変更履�
 	t.Parallel()
 	_, _, s := setupAgree(t)
 	var detail map[string]json.RawMessage
-	if code, msg := s.get("/api/claims/task-id-unique", &detail); code != 200 {
+	if code, msg := s.get("/api/specs/task-id-unique", &detail); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
 	}
 	for _, k := range []string{"origin", "agreements"} {
@@ -279,7 +281,7 @@ func Test約束の詳細は変更履歴と承認の履歴を含めず変更履�
 		}
 	}
 	var history map[string]json.RawMessage
-	if code, msg := s.get("/api/claims/task-id-unique/history", &history); code != 200 {
+	if code, msg := s.get("/api/specs/task-id-unique/history", &history); code != 200 {
 		t.Fatalf("変更履歴と承認の履歴を読めない（%d）: %s", code, msg)
 	}
 	var keys []string
@@ -294,7 +296,7 @@ func Test約束の詳細は変更履歴と承認の履歴を含めず変更履�
 	if len(h.Origin) == 0 || len(h.Agreements) == 0 {
 		t.Errorf("変更履歴か承認の履歴が空: %+v", h)
 	}
-	code, msg := s.get("/api/claims/no-such-claim/history", nil)
+	code, msg := s.get("/api/specs/no-such-claim/history", nil)
 	if code != 404 || msg != "約束 no-such-claim は約束リストにありません。" {
 		t.Errorf("ない約束の変更履歴と承認の履歴: %d %q", code, msg)
 	}
@@ -317,7 +319,7 @@ func Test承認の履歴は承認した日時の新しい順に並び同じ日�
 	want := []string{"#44", "#42", "#43", "#41", "#45"}
 	var b strings.Builder
 	for _, rec := range recs {
-		b.WriteString(strings.Replace(agreementTOML("claim", "task-id-unique", reviewClaimFP, "", rec.story, reviewUserName, reviewUserEmail),
+		b.WriteString(strings.Replace(agreementTOML("spec", "task-id-unique", reviewClaimFP, "", rec.story, reviewUserName, reviewUserEmail),
 			"agreed_at = 2026-10-31T12:00:00+09:00", "agreed_at = "+rec.at, 1))
 	}
 	writeFile(t, r.Root, ".vanda/agreements.toml", readFileString(t, r.Root, ".vanda/agreements.toml")+b.String())
@@ -338,8 +340,8 @@ func Test約束の詳細とファイルの中身はないものを404にする(t
 	t.Parallel()
 	_, _, s := setupAgree(t)
 	for _, path := range []string{
-		"/api/claims/no-such-claim",
-		"/api/claims/task-id", // 用語の ID
+		"/api/specs/no-such-claim",
+		"/api/specs/task-id", // 用語の ID
 		"/api/file?path=" + q("README.md"),
 		"/api/file?path=" + q(".vanda/config.toml"),
 		"/api/file?path=" + q("../outside.txt"),
@@ -369,7 +371,7 @@ func Testファイルの中身は承認の対象のファイルとアノテー�
 	}
 }
 
-// CL-08: GET /api/claims/<ID>/at/<コミット> は、そのコミットの時点の約束の中身を返す（docs/formats.md）。
+// CL-08: GET /api/specs/<ID>/at/<コミット> は、そのコミットの時点の約束の中身を返す（docs/formats.md）。
 // 期待する文は、newReviewRepo が main と story-24 に書いた約束リストから手で書いた。
 // @vanda:evidence claim-at-commit
 func Testその時点の約束の中身は変更履歴のコミットと承認の記録のコミットの時点の文を返す(t *testing.T) {
@@ -388,7 +390,7 @@ func Testその時点の約束の中身は変更履歴のコミットと承認�
 				Statement frags `json:"statement"`
 			} `json:"content"`
 		}
-		if code, msg := s.get("/api/claims/task-id-unique/at/"+commit, &got); code != 200 {
+		if code, msg := s.get("/api/specs/task-id-unique/at/"+commit, &got); code != 200 {
 			t.Fatalf("%s の時点の中身を読めない（%d）: %s", c.rev, code, msg)
 		}
 		if got.ID != "task-id-unique" || got.Commit != commit || got.Content.Statement.String() != c.want {
@@ -400,7 +402,7 @@ func Testその時点の約束の中身は変更履歴のコミットと承認�
 				Statement frags `json:"statement"`
 			} `json:"content"`
 		}
-		if code, msg := s.get("/api/claims/task-id-unique/at/"+commit[:7], &short); code != 200 || short.Content.Statement.String() != c.want {
+		if code, msg := s.get("/api/specs/task-id-unique/at/"+commit[:7], &short); code != 200 || short.Content.Statement.String() != c.want {
 			t.Errorf("短いハッシュで %s の時点を読めない（%d %q）: %+v", c.rev, code, msg, short)
 		}
 	}
@@ -424,13 +426,13 @@ func Testその時点の約束の中身はハッシュでない形を400にし�
 		name, path string
 		want       int
 	}{
-		{"ハッシュでない文字", "/api/claims/task-id-unique/at/main", 400},
-		{"短すぎるハッシュ", "/api/claims/task-id-unique/at/abc", 400},
-		{"16進でない文字", "/api/claims/task-id-unique/at/zzzzzzz", 400},
-		{"65 文字のハッシュ", "/api/claims/task-id-unique/at/" + strings.Repeat("a", 65), 400},
-		{"ないコミット", "/api/claims/task-id-unique/at/" + strings.Repeat("0", 40), 404},
+		{"ハッシュでない文字", "/api/specs/task-id-unique/at/main", 400},
+		{"短すぎるハッシュ", "/api/specs/task-id-unique/at/abc", 400},
+		{"16進でない文字", "/api/specs/task-id-unique/at/zzzzzzz", 400},
+		{"65 文字のハッシュ", "/api/specs/task-id-unique/at/" + strings.Repeat("a", 65), 400},
+		{"ないコミット", "/api/specs/task-id-unique/at/" + strings.Repeat("0", 40), 404},
 		// task-title-required は story-24 で足したので、main の時点にはない
-		{"その時点にない約束", "/api/claims/task-title-required/at/" + main, 404},
+		{"その時点にない約束", "/api/specs/task-title-required/at/" + main, 404},
 	}
 	for _, c := range cases {
 		if code, msg := s.get(c.path, nil); code != c.want || msg == "" {
@@ -469,7 +471,7 @@ func Testその時点の約束の中身は今の設定にないレイヤーの�
 			Layers []string `json:"layers"`
 		} `json:"content"`
 	}
-	if code, msg := s.get("/api/claims/task-id-unique/at/"+gone, &got); code != 200 {
+	if code, msg := s.get("/api/specs/task-id-unique/at/"+gone, &got); code != 200 {
 		t.Fatalf("今の設定にないレイヤーのある時点を読めない（%d）: %s", code, msg)
 	}
 	type layer = struct {
@@ -481,7 +483,7 @@ func Testその時点の約束の中身は今の設定にないレイヤーの�
 		t.Errorf("layers: %+v、content.layers: %v（思ったもの %+v と [gone model]）", got.Layers, got.Content.Layers, want)
 	}
 
-	code, msg := s.get("/api/claims/task-id-unique/at/"+broken, nil)
+	code, msg := s.get("/api/specs/task-id-unique/at/"+broken, nil)
 	if code != 500 || msg == "" {
 		t.Errorf("読めない約束リストの時点: %d（%q）を返した。500 で理由を出す", code, msg)
 	}
@@ -552,6 +554,112 @@ func Test約束の変更履歴はコミットごとにそのコミットのStory
 		}
 		if len(o.Stories) != len(w) || (len(w) > 0 && !reflect.DeepEqual(o.Stories, w)) {
 			t.Errorf("コミット %s（%s）のストーリー: %v（思ったもの %v）", o.Commit, o.Subject, o.Stories, w)
+		}
+	}
+}
+
+// claimLeft は、JSON の値の中の、名前に claim を含む項目と、値が claim の kind を、場所を付けて返す。
+// 利用者が書いた文（ID、ファイルの中身など）は値なので、見ない
+func claimLeft(where string, v any) []string {
+	var out []string
+	switch x := v.(type) {
+	case map[string]any:
+		for k, child := range x {
+			if strings.Contains(strings.ToLower(k), "claim") {
+				out = append(out, where+"."+k)
+			}
+			if s, ok := child.(string); ok && k == "kind" && strings.EqualFold(s, "claim") {
+				out = append(out, where+".kind = "+s)
+			}
+			out = append(out, claimLeft(where+"."+k, child)...)
+		}
+	case []any:
+		for i, child := range x {
+			out = append(out, claimLeft(fmt.Sprintf("%s[%d]", where, i), child)...)
+		}
+	}
+	return out
+}
+
+// 型の名前 claim は spec に改名した（docs/formats.md の「GUI の API」）。前のパスと値は読み替えない
+func TestAPIのパスとレスポンスの項目とkindの値にclaimが残っていない(t *testing.T) {
+	t.Parallel()
+	_, r, s := setupAgree(t)
+	// 性質と前提と、それを指す参照（refs に種類が出る）も一覧と詳細に出るようにする
+	writeFile(t, r.Root, ".vanda/promises.toml", strings.Replace(reviewPromisesStory, `statement = "タスクの題は空にできない"`, `statement = "{@id:task-id-unique} と同じく、{@id:disk-works} のもとでタスクの題は空にできない"`, 1)+
+		"\n[[truth]]\nid = \"disk-works\"\nstatement = \"ディスクに書いたものは、読み戻せる\"\n\n[[property]]\nid = \"reliable\"\nstatement = \"頼れる\"\n")
+	r.g.commitAll("前提と性質を足す", reviewStory)
+	main := r.git("rev-parse", "main")
+
+	// 前のパスは、どれも 404
+	for _, path := range []string{
+		"/api/claims/task-id-unique",
+		"/api/claims/task-id-unique/history",
+		"/api/claims/task-id-unique/at/" + main,
+		"/api/claims",
+		"/api/claim/task-id-unique",
+	} {
+		if res := rawCall(s.URL, path, http.MethodGet, path, nil); res.err != nil || res.code != 404 {
+			t.Errorf("前のパス %s が %d を返した（404 のはず。%v）", path, res.code, res.err)
+		}
+	}
+
+	// 今のパスのレスポンスに、claim の付く項目も、claim の kind もない
+	for _, path := range []string{
+		"/api/context",
+		"/api/review?view=branch&base=main",
+		"/api/review?view=story&story=" + q(reviewStory),
+		"/api/review?view=story&story=" + q("#1"),
+		"/api/specs/task-id-unique",
+		"/api/specs/task-title-required",
+		"/api/specs/task-id-unique/history",
+		"/api/specs/task-id-unique/at/" + main,
+		"/api/terms/task-id",
+		"/api/features/add-task",
+		"/api/properties/no-lost-task",
+		"/api/properties/no-lost-task/history",
+		"/api/truths/disk-works",
+		"/api/truths/disk-works/history",
+		"/api/file?path=" + q("spec/Task.tla"),
+	} {
+		res := rawCall(s.URL, path, http.MethodGet, path, nil)
+		if res.err != nil || res.code != 200 {
+			t.Errorf("%s を読めない（%d、%v）: %s", path, res.code, res.err, res.body)
+			continue
+		}
+		var v any
+		if err := json.Unmarshal(res.body, &v); err != nil {
+			t.Errorf("%s の中身が JSON でない: %v", path, err)
+			continue
+		}
+		if left := claimLeft(path, v); len(left) > 0 {
+			sort.Strings(left)
+			t.Errorf("%s のレスポンスに claim が残っている:\n  %s", path, strings.Join(left, "\n  "))
+		}
+	}
+
+	// 承認と取り消しは、kind の claim を受け付けない。何も書かない。同じリクエストは、kind を spec にすれば通る（断ったのが、ほかの理由でないこと）
+	for _, c := range []struct {
+		path string
+		body func(kind string) map[string]any
+	}{
+		{"/api/agree", func(kind string) map[string]any {
+			return map[string]any{"kind": kind, "id": "task-id-unique", "path": nil, "fingerprint": reviewClaimFP, "story": reviewStory}
+		}},
+		{"/api/revoke", func(kind string) map[string]any {
+			return map[string]any{"kind": kind, "id": "task-id-unique", "path": nil, "fingerprint": reviewClaimFP, "story": reviewStory, "base": "main"}
+		}},
+	} {
+		head := r.git("rev-parse", "HEAD")
+		before := readFileString(t, r.Root, ".vanda/agreements.toml")
+		if res := rawCall(s.URL, c.path, http.MethodPost, c.path, c.body("claim")); res.err != nil || res.code < 400 || res.code >= 500 {
+			t.Errorf("kind が claim の %s が %d を返した（リクエストの誤りとして断るはず。%v）: %s", c.path, res.code, res.err, res.body)
+		}
+		if r.git("rev-parse", "HEAD") != head || readFileString(t, r.Root, ".vanda/agreements.toml") != before {
+			t.Errorf("kind が claim の %s で、コミットか承認の記録が変わった", c.path)
+		}
+		if code, msg := s.post(c.path, c.body("spec"), nil); code != 200 {
+			t.Errorf("kind が spec の %s ができない（%d）: %s", c.path, code, msg)
 		}
 	}
 }

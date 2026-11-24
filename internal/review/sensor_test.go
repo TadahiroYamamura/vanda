@@ -152,7 +152,7 @@ func (r *sensorRepo) claimReq() AgreeRequest {
 		r.t.Fatalf("約束の詳細を読めない: %v", err)
 	}
 	id := "c"
-	return AgreeRequest{Kind: "claim", ID: &id, Fingerprint: *d.Fingerprint, Story: sensorStory}
+	return AgreeRequest{Kind: "spec", ID: &id, Fingerprint: *d.Fingerprint, Story: sensorStory}
 }
 
 func (r *sensorRepo) fileReq() AgreeRequest {
@@ -370,7 +370,7 @@ var oldRecord = []string{oldFingerprint, `name = "テスト担当"`, `story = "`
 // @vanda:evidence old-agreements-kept-as-history
 func Test承認の記録を書いた後にフィンガープリントの合わない古い記録を消すと承認を500にしてファイルを元に戻す(t *testing.T) {
 	r := newSensorRepo(t)
-	r.write(".vanda/agreements.toml", sensorRecord("claim", "c", oldFingerprint, "", "テスト担当", sensorStory)+
+	r.write(".vanda/agreements.toml", sensorRecord("spec", "c", oldFingerprint, "", "テスト担当", sensorStory)+
 		sensorRecord("file", oldFingerprint, oldFingerprint, "e2e/s.txtar", "テスト担当", sensorStory))
 	r.commit("前の承認", sensorStory)
 	for _, req := range []AgreeRequest{r.claimReq(), r.fileReq()} {
@@ -412,15 +412,15 @@ func Test取り消しで書き換えた後に取り消してはいけない記�
 			req := r.claimReq()
 			// ベースブランチにすでにある記録は、main に書いて story-2 に取り込む
 			r.git("switch", "-q", "main")
-			r.write(".vanda/agreements.toml", strings.Replace(sensorRecord("claim", "c", req.Fingerprint, "", "テスト担当", sensorStory),
+			r.write(".vanda/agreements.toml", strings.Replace(sensorRecord("spec", "c", req.Fingerprint, "", "テスト担当", sensorStory),
 				"agreed_at = 2026-10-31T12:00:00+09:00", "agreed_at = 2026-10-30T12:00:00+09:00", 1))
 			r.commit("main で承認する", "#1")
 			r.git("switch", "-q", "story-2")
 			r.git("merge", "-q", "--no-edit", "-m", "main を取り込む\n\nStory: "+sensorStory, "main")
 			r.write(".vanda/agreements.toml", r.read(".vanda/agreements.toml")+
-				sensorRecord("claim", "c", oldFingerprint, "", "テスト担当", sensorStory)+
-				sensorRecord("claim", "c", req.Fingerprint, "", "ほかの人", sensorStory)+
-				sensorRecord("claim", "c", req.Fingerprint, "", "テスト担当", sensorStory))
+				sensorRecord("spec", "c", oldFingerprint, "", "テスト担当", sensorStory)+
+				sensorRecord("spec", "c", req.Fingerprint, "", "ほかの人", sensorStory)+
+				sensorRecord("spec", "c", req.Fingerprint, "", "テスト担当", sensorStory))
 			r.commit("承認する", sensorStory)
 			before := r.state()
 			called := setHook(t, &Hooks.AfterRevokeWrite, dropRecord(t, c.frags...))
@@ -459,12 +459,18 @@ func Test_checkCountは一覧の数が差分の数に合わないか同じもの
 		es      []Entry
 		ok      bool
 	}{
-		{"数が合う", ch("claim:a", "path:x"), []Entry{en("claim:a", "modified"), en("path:x", "added")}, true},
+		{"数が合う", ch("spec:a", "path:x"), []Entry{en("spec:a", "modified"), en("path:x", "added")}, true},
 		{"名前の変更は古い場所の削除と新しい場所の追加の2件", ch("path:x", "path:y"), []Entry{en("path:x", "deleted"), en("path:y", "added")}, true},
 		{"空", nil, nil, true},
-		{"一覧が足りない", ch("claim:a", "path:x"), []Entry{en("claim:a", "modified")}, false},
-		{"一覧が多い", ch("claim:a"), []Entry{en("claim:a", "modified"), en("path:x", "added")}, false},
-		{"同じものが2度", ch("claim:a", "path:x"), []Entry{en("claim:a", "modified"), en("claim:a", "modified")}, false},
+		// 性質と前提も、種類と ID で 1 件ずつ数える（同じ ID でも、種類が違えば別のもの）
+		{"性質と前提も数が合う", ch("property:a", "truth:a", "spec:a"), []Entry{en("property:a", "added"), en("truth:a", "modified"), en("spec:a", "deleted")}, true},
+		{"性質が足りない", ch("property:a", "truth:a"), []Entry{en("truth:a", "modified")}, false},
+		{"前提が足りない", ch("property:a", "truth:a"), []Entry{en("property:a", "modified")}, false},
+		{"性質が2度で前提がない", ch("property:a", "truth:a"), []Entry{en("property:a", "modified"), en("property:a", "modified")}, false},
+		{"前提が余計", ch("property:a"), []Entry{en("property:a", "modified"), en("truth:a", "added")}, false},
+		{"一覧が足りない", ch("spec:a", "path:x"), []Entry{en("spec:a", "modified")}, false},
+		{"一覧が多い", ch("spec:a"), []Entry{en("spec:a", "modified"), en("path:x", "added")}, false},
+		{"同じものが2度", ch("spec:a", "path:x"), []Entry{en("spec:a", "modified"), en("spec:a", "modified")}, false},
 		{"差分2つで1件", ch("path:x", "path:y"), []Entry{en("path:y", "added")}, false},
 	}
 	for _, c := range cases {

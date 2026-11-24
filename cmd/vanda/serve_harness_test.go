@@ -316,7 +316,7 @@ func Testほかのサイトから来たGETでないリクエストは403で断�
 	r := newReviewRepo(t, version)
 	s := startServe(t, bin, r.Root, r.Env)
 	head := r.git("rev-parse", "HEAD")
-	body := `{"kind":"claim","id":"task-id-unique","path":null,"fingerprint":"sha256:0","story":"#24"}`
+	body := `{"kind":"spec","id":"task-id-unique","path":null,"fingerprint":"sha256:0","story":"#24"}`
 	send := func(method, origin string) int {
 		t.Helper()
 		var rd io.Reader
@@ -624,8 +624,10 @@ func Test起動したvanda_serveはAPIのリクエストごとに設定を読み
 	requests := []struct{ method, path string }{
 		{http.MethodGet, "/api/context"},
 		{http.MethodGet, "/api/review?view=branch&base=main"},
-		{http.MethodGet, "/api/claims/task-id-unique"},
-		{http.MethodGet, "/api/claims/task-id-unique/at/" + r.git("rev-parse", "main")},
+		{http.MethodGet, "/api/specs/task-id-unique"},
+		{http.MethodGet, "/api/specs/task-id-unique/at/" + r.git("rev-parse", "main")},
+		{http.MethodGet, "/api/properties/no-lost-task"},
+		{http.MethodGet, "/api/properties/no-lost-task/history"},
 		{http.MethodGet, "/api/file?path=" + q("e2e/add-task.txtar")},
 		{http.MethodGet, "/api/story?id=" + q(reviewStory)},
 		{http.MethodPost, "/api/agree"},

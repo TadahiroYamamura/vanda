@@ -112,7 +112,11 @@ func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]b
 		case e.Kind == "file" && (e.ID != nil || e.Path == nil || str(e.FileType) != rvFileType(str(e.Path))):
 			fmt.Fprintf(&b, "  ファイルの id・path・fileType が決まりどおりでない: %s（id %v、fileType %q）\n", r, e.ID, str(e.FileType))
 		case e.Kind != "file" && (e.ID == nil || e.Path != nil || e.FileType != nil):
-			fmt.Fprintf(&b, "  約束・用語・機能の id・path・fileType が決まりどおりでない: %s\n", r)
+			fmt.Fprintf(&b, "  約束リストの項目の id・path・fileType が決まりどおりでない: %s\n", r)
+		}
+		// まとまり（group）は、種類から決まる（docs/formats.md）。rvConfig のレイヤーは model だけ
+		if want := map[string]string{"spec": "layer:model", "term": "terms", "feature": "features", "property": "properties", "truth": "truths", "file": "files"}[e.Kind]; e.Group != want {
+			fmt.Fprintf(&b, "  group が %q（%q のはず）: %s\n", e.Group, want, r)
 		}
 		if (e.Change == "added") != isNull(e.Before) || (e.Change == "deleted") != isNull(e.After) {
 			fmt.Fprintf(&b, "  before は追加のときだけ、after は削除のときだけ null: %s\n", r)

@@ -32,12 +32,18 @@ var rvExamples = []rvExample{
 	{
 		name: "追加・変更・削除のそれぞれが1度ずつ出て名前の変更は削除と追加の2件になり変わっていないものもコミットしていない書きかけの変更も出ない",
 		build: func(r *rvRepo) {
-			r.addItem("claim", "c-keep", 0)
-			r.addItem("claim", "c-change", 1)
+			r.addItem("spec", "c-keep", 0)
+			r.addItem("spec", "c-change", 1)
 			r.addItem("term", "t-del", 0)
 			r.addItem("feature", "f-change", 2)
 			r.addItem("term", "t-keep", 1)
 			r.addItem("feature", "f-keep", 0)
+			r.addItem("property", "p-keep", 1)
+			r.addItem("property", "p-change", 2)
+			r.addItem("property", "p-del", 0)
+			r.addItem("truth", "u-keep", 2)
+			r.addItem("truth", "u-change", 0)
+			r.addItem("truth", "u-del", 1)
 			r.addFileAt(rvScenario, "e2e/keep.txtar")
 			ren := r.addFileAt(rvScenario, "e2e/old.txtar")
 			r.addFileAt(rvGuardrail, "db/schema.sql")
@@ -50,19 +56,31 @@ var rvExamples = []rvExample{
 			r.changeItem("c-change", "condition")
 			r.deleteItem("t-del")
 			r.changeItem("f-change", "definition")
+			r.changeItem("p-change", "rationale")
+			r.deleteItem("p-del")
+			r.addItem("property", "p-new", 1)
+			r.changeItem("u-change", "statement")
+			r.deleteItem("u-del")
+			r.addItem("truth", "u-new", 2)
 			r.renameFileTo(ren, "e2e/sub/new-name.txtar")
 			r.addFileAt(rvNoise, "notes/memo.md")
 			r.commit("#24")
 			// ここから下はコミットしない（作業ツリーの書きかけの変更と、まだ git が追っていないファイル）。一覧には出ない
 			r.changeFile(m)
-			r.addItem("claim", "c-new", 2)
+			r.addItem("spec", "c-new", 2)
 			r.addFileAt(rvScenario, "e2e/new.txtar")
 			r.deleteFile(del)
 		},
 		branch: map[string][]rvEntry{"main": {
-			{Kind: "claim", Key: "c-change", Change: "modified"},
+			{Kind: "spec", Key: "c-change", Change: "modified"},
 			{Kind: "term", Key: "t-del", Change: "deleted"},
 			{Kind: "feature", Key: "f-change", Change: "modified"},
+			{Kind: "property", Key: "p-change", Change: "modified"},
+			{Kind: "property", Key: "p-del", Change: "deleted"},
+			{Kind: "property", Key: "p-new", Change: "added"},
+			{Kind: "truth", Key: "u-change", Change: "modified"},
+			{Kind: "truth", Key: "u-del", Change: "deleted"},
+			{Kind: "truth", Key: "u-new", Change: "added"},
 			{Kind: "file", Key: "e2e/old.txtar", Change: "deleted"},
 			{Kind: "file", Key: "e2e/sub/new-name.txtar", Change: "added"},
 		}},
@@ -70,7 +88,7 @@ var rvExamples = []rvExample{
 	{
 		name: "約束の文が変わらずシナリオのファイルだけが変わったものも出る",
 		build: func(r *rvRepo) {
-			r.addItem("claim", "c-a", 0)
+			r.addItem("spec", "c-a", 0)
 			s := r.addFileAt(rvScenario, "e2e/a.txtar")
 			r.commit("#1")
 			r.newBranch("story-24")
@@ -87,8 +105,8 @@ var rvExamples = []rvExample{
 	{
 		name: "項目の順や空白や引用符やファイルの分け方だけを変えたものは出ない",
 		build: func(r *rvRepo) {
-			r.addItem("claim", "c-a", 0)
-			r.addItem("claim", "c-b", 0)
+			r.addItem("spec", "c-a", 0)
+			r.addItem("spec", "c-b", 0)
 			r.addItem("term", "t-a", 1)
 			r.addItem("feature", "f-a", 2)
 			r.commit("#1")
@@ -109,8 +127,8 @@ var rvExamples = []rvExample{
 	{
 		name: "レビュー単位がブランチのときはベースブランチとのマージベースからの差分でベースブランチを変えると一覧も変わる",
 		build: func(r *rvRepo) {
-			r.addItem("claim", "c-a", 0)
-			r.addItem("claim", "c-b", 0)
+			r.addItem("spec", "c-a", 0)
+			r.addItem("spec", "c-b", 0)
 			r.commit("#1")
 			r.newBranch("release")
 			r.changeItem("c-a", "statement")
@@ -120,37 +138,37 @@ var rvExamples = []rvExample{
 			r.commit("#24")
 			// マージベースより後に main で足したものは、main と比べても出ない（main の先端との差分ではない）
 			r.switchTo("main")
-			r.addItem("claim", "c-main", 1)
+			r.addItem("spec", "c-main", 1)
 			r.commit("#3")
 			r.switchTo("story-24")
 		},
 		branch: map[string][]rvEntry{
 			"release": {
-				{Kind: "claim", Key: "c-b", Change: "modified"},
+				{Kind: "spec", Key: "c-b", Change: "modified"},
 			},
 			"main": {
-				{Kind: "claim", Key: "c-a", Change: "modified"},
-				{Kind: "claim", Key: "c-b", Change: "modified"},
+				{Kind: "spec", Key: "c-a", Change: "modified"},
+				{Kind: "spec", Key: "c-b", Change: "modified"},
 			},
 		},
 	},
 	{
 		name: "レビュー単位がストーリーのときは途中で足して後で消したものを出さずそのストーリーのIDのないコミットが途中で変えたものを示す",
 		build: func(r *rvRepo) {
-			r.addItem("claim", "c-a", 0)
-			r.addItem("claim", "c-b", 0)
+			r.addItem("spec", "c-a", 0)
+			r.addItem("spec", "c-b", 0)
 			s1 := r.addFileAt(rvScenario, "e2e/s1.txtar")
 			s2 := r.addFileAt(rvScenario, "e2e/s2.txtar")
 			r.commit("#1")
 			r.newBranch("story-24")
 			r.changeItem("c-a", "statement")
-			r.addItem("claim", "c-tmp", 1)
+			r.addItem("spec", "c-tmp", 1)
 			r.commit("#24")
 			r.changeItem("c-a", "condition")
 			r.commit("#25")
 			r.deleteItem("c-tmp")
 			r.renameFileTo(s2, "e2e/s2-renamed.txtar")
-			r.addItem("claim", "c-new", 2)
+			r.addItem("spec", "c-new", 2)
 			r.commit("#24")
 			r.changeFile(s1)
 			r.commit("#25")
@@ -158,21 +176,21 @@ var rvExamples = []rvExample{
 			r.commit("")
 		},
 		branch: map[string][]rvEntry{"main": {
-			{Kind: "claim", Key: "c-a", Change: "modified"},
-			{Kind: "claim", Key: "c-new", Change: "added"},
+			{Kind: "spec", Key: "c-a", Change: "modified"},
+			{Kind: "spec", Key: "c-new", Change: "added"},
 			{Kind: "file", Key: "e2e/s2.txtar", Change: "deleted"},
 			{Kind: "file", Key: "e2e/s2-renamed.txtar", Change: "added"},
 			{Kind: "file", Key: "e2e/s1.txtar", Change: "modified"},
 		}},
 		story: map[string][]rvEntry{
 			"#24": {
-				{Kind: "claim", Key: "c-a", Change: "modified", Others: "#25"},
-				{Kind: "claim", Key: "c-new", Change: "added", Others: "-"},
+				{Kind: "spec", Key: "c-a", Change: "modified", Others: "#25"},
+				{Kind: "spec", Key: "c-new", Change: "added", Others: "-"},
 				{Kind: "file", Key: "e2e/s2.txtar", Change: "deleted"},
 				{Kind: "file", Key: "e2e/s2-renamed.txtar", Change: "added"},
 			},
 			"#25": {
-				{Kind: "claim", Key: "c-a", Change: "modified"},
+				{Kind: "spec", Key: "c-a", Change: "modified"},
 				{Kind: "file", Key: "e2e/s1.txtar", Change: "modified"},
 			},
 		},
@@ -222,7 +240,7 @@ var rvExamples = []rvExample{
 		story: map[string][]rvEntry{
 			"#25": {{Kind: "file", Key: "db/b.sql", Change: "deleted"}, {Kind: "file", Key: "db/c.sql", Change: "added"}},
 			// #1 が足した db/a.sql は今ないので出ない。db/c.sql を最初に変えたのは #25
-			"#1": {{Kind: "term", Key: "base", Change: "added"}, {Kind: "feature", Key: "base-feature", Change: "added"}},
+			"#1": {{Kind: "term", Key: "base", Change: "added"}, {Kind: "feature", Key: "base-feature", Change: "added"}, {Kind: "property", Key: "base-property", Change: "added"}},
 		},
 	},
 	{

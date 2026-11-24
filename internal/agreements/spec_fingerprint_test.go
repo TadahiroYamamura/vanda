@@ -92,9 +92,20 @@ func TestItemFingerprintは手で作った例と同じ値になりflagsとguesse
 
 // ---- 約束リストの項目の、テストの中の写し ----
 
+type propertyM struct {
+	ID, Statement    string
+	Rationale        *string
+	Refines, Assumes []string // nil なら書かない
+}
+
+type truthM struct {
+	ID, Statement string
+}
+
 type termM struct {
 	ID, Name, Definition string
 	PartOf               *string
+	Assumes              []string // nil なら書かない
 }
 
 type featureM struct {
@@ -113,6 +124,7 @@ type evidenceM struct {
 type claimM struct {
 	ID                   string
 	Refines              []string
+	Assumes              []string // nil なら書かない
 	Statement            string
 	Rationale, Condition *string
 	Layers               []string
@@ -127,10 +139,31 @@ type field struct {
 
 type obj []field
 
+func (p propertyM) fields() obj {
+	o := obj{{"id", p.ID}, {"statement", p.Statement}}
+	if p.Rationale != nil {
+		o = append(o, field{"rationale", *p.Rationale})
+	}
+	if p.Refines != nil {
+		o = append(o, field{"refines", p.Refines})
+	}
+	if p.Assumes != nil {
+		o = append(o, field{"assumes", p.Assumes})
+	}
+	return o
+}
+
+func (t truthM) fields() obj {
+	return obj{{"id", t.ID}, {"statement", t.Statement}}
+}
+
 func (t termM) fields() obj {
 	o := obj{{"id", t.ID}, {"name", t.Name}, {"definition", t.Definition}}
 	if t.PartOf != nil {
 		o = append(o, field{"part_of", *t.PartOf})
+	}
+	if t.Assumes != nil {
+		o = append(o, field{"assumes", t.Assumes})
 	}
 	return o
 }
@@ -160,6 +193,9 @@ func (e evidenceM) fields() obj {
 // fields は、フィンガープリントに入る項目だけを返す。flags と guesses は render で別に足す。
 func (c claimM) fields() obj {
 	o := obj{{"id", c.ID}, {"refines", c.Refines}, {"statement", c.Statement}, {"layers", c.Layers}}
+	if c.Assumes != nil {
+		o = append(o, field{"assumes", c.Assumes})
+	}
 	if c.Rationale != nil {
 		o = append(o, field{"rationale", *c.Rationale})
 	}
@@ -390,13 +426,21 @@ func renderTable(b *strings.Builder, st style, header string, o obj) {
 }
 
 type promiseList struct {
-	terms    []termM
-	features []featureM
-	claims   []claimM
+	properties []propertyM
+	truths     []truthM
+	terms      []termM
+	features   []featureM
+	claims     []claimM
 }
 
 func render(st style, l promiseList) string {
 	var tables []func(*strings.Builder)
+	for _, x := range l.properties {
+		tables = append(tables, func(b *strings.Builder) { renderTable(b, st, "property", x.fields()) })
+	}
+	for _, x := range l.truths {
+		tables = append(tables, func(b *strings.Builder) { renderTable(b, st, "truth", x.fields()) })
+	}
 	for _, x := range l.terms {
 		tables = append(tables, func(b *strings.Builder) { renderTable(b, st, "term", x.fields()) })
 	}
@@ -438,6 +482,12 @@ func load(t interface {
 		}
 		fps[id] = fp
 	}
+	for _, x := range list.Properties {
+		add(x.ID, x.Raw)
+	}
+	for _, x := range list.Truths {
+		add(x.ID, x.Raw)
+	}
 	for _, x := range list.Terms {
 		add(x.ID, x.Raw)
 	}
@@ -452,6 +502,12 @@ func load(t interface {
 
 func expected(l promiseList) map[string]string {
 	m := map[string]string{}
+	for _, x := range l.properties {
+		m[x.ID] = expectedFingerprint(x.fields())
+	}
+	for _, x := range l.truths {
+		m[x.ID] = expectedFingerprint(x.fields())
+	}
 	for _, x := range l.terms {
 		m[x.ID] = expectedFingerprint(x.fields())
 	}
@@ -489,9 +545,19 @@ func optional[T any](t *rapid.T, g *rapid.Generator[T], label string) *T {
 
 func listGen(t *rapid.T) promiseList {
 	text := textGen()
-	ids := rapid.SliceOfNDistinct(rapid.StringMatching(`[a-z][a-z0-9]{0,4}(-[a-z0-9]{1,4}){0,2}`), 4, 4, rapid.ID[string]).Draw(t, "ID")
+	ids := rapid.SliceOfNDistinct(rapid.StringMatching(`[a-z][a-z0-9]{0,4}(-[a-z0-9]{1,4}){0,2}`), 6, 6, rapid.ID[string]).Draw(t, "ID")
+	// refines・assumes は、書かない・空・1 つ・2 つを作る。指す先があるかは、フィンガープリントには関わらない
+	idList := func(label string) []string {
+		n := rapid.IntRange(-1, 2).Draw(t, label+"の数")
+		if n < 0 {
+			return nil
+		}
+		return append([]string{}, []string{ids[5], ids[4]}[:n]...)
+	}
+	property := propertyM{ID: ids[3], Statement: text.Draw(t, "性質の文"), Rationale: optional(t, text, "性質の理由"), Refines: idList("性質の refines"), Assumes: idList("性質の assumes")}
+	truth := truthM{ID: ids[5], Statement: text.Draw(t, "前提の文")}
 	layers := rapid.SliceOfNDistinct(rapid.SampledFrom([]string{"model", "cli", "db"}), 1, 3, rapid.ID[string])
-	term := termM{ID: ids[0], Name: text.Draw(t, "用語の名前"), Definition: text.Draw(t, "用語の定義"), PartOf: optional(t, text, "part_of")}
+	term := termM{ID: ids[0], Name: text.Draw(t, "用語の名前"), Definition: text.Draw(t, "用語の定義"), PartOf: optional(t, text, "part_of"), Assumes: idList("用語の assumes")}
 	core := optional(t, rapid.Bool(), "core")
 	formal := optional(t, rapid.Bool(), "formal")
 	feature := featureM{ID: ids[1], Name: text.Draw(t, "機能の名前"), Definition: text.Draw(t, "機能の定義"), Refines: []string{ids[3]}, Core: core, Formal: formal}
@@ -511,7 +577,7 @@ func listGen(t *rapid.T) promiseList {
 	claim := claimM{
 		ID: ids[2], Refines: []string{ids[1], ids[0]}[:rapid.IntRange(1, 2).Draw(t, "refines の数")],
 		Statement: text.Draw(t, "文"), Rationale: optional(t, text, "理由"), Condition: optional(t, text, "条件"),
-		Layers: claimLayers, Evidence: evs,
+		Layers: claimLayers, Evidence: evs, Assumes: idList("約束の assumes"),
 	}
 	if rapid.Bool().Draw(t, "flags") {
 		claim.Flags = []string{"ai-proposal"}
@@ -519,7 +585,7 @@ func listGen(t *rapid.T) promiseList {
 	if rapid.Bool().Draw(t, "guesses") {
 		claim.Guesses = rapid.SliceOfN(text, 0, 2).Draw(t, "推測")
 	}
-	return promiseList{terms: []termM{term}, features: []featureM{feature}, claims: []claimM{claim}}
+	return promiseList{properties: []propertyM{property}, truths: []truthM{truth}, terms: []termM{term}, features: []featureM{feature}, claims: []claimM{claim}}
 }
 
 // @vanda:evidence fingerprint-ignores-formatting
@@ -542,6 +608,16 @@ func Test約束リストの項目の順と空白と引用符とコメントの�
 }
 
 func jsonOf(l promiseList, id string) string {
+	for _, x := range l.properties {
+		if x.ID == id {
+			return canonical(x.fields())
+		}
+	}
+	for _, x := range l.truths {
+		if x.ID == id {
+			return canonical(x.fields())
+		}
+	}
 	for _, x := range l.terms {
 		if x.ID == id {
 			return canonical(x.fields())
@@ -567,8 +643,10 @@ func boolp(b bool) *bool    { return &b }
 
 func baseList() promiseList {
 	return promiseList{
-		terms:    []termM{{ID: "task", Name: "タスク", Definition: "やること"}},
-		features: []featureM{{ID: "task-add", Name: "タスクの登録", Definition: "タスクを足す", Refines: []string{"no-lost-task"}}},
+		properties: []propertyM{{ID: "no-lost-task", Statement: "登録したタスクは失われない", Rationale: strp("頼れるように"), Refines: []string{"reliable"}, Assumes: []string{"disk-works"}}},
+		truths:     []truthM{{ID: "disk-works", Statement: "ディスクに書いたものは、読み戻せる"}},
+		terms:      []termM{{ID: "task", Name: "タスク", Definition: "やること"}},
+		features:   []featureM{{ID: "task-add", Name: "タスクの登録", Definition: "タスクを足す", Refines: []string{"no-lost-task"}}},
 		claims: []claimM{{
 			ID: "task-id-unique", Refines: []string{"task-add"}, Statement: "タスクの ID は重ならない",
 			Rationale: strp("ID で指すため"), Condition: strp("いつも"), Layers: []string{"model", "cli"},
@@ -592,6 +670,20 @@ func Testフィンガープリントに入る項目のどれを変えてもフ�
 		{"用語の名前", "task", func(l *promiseList) { l.terms[0].Name = "タスク2" }, true},
 		{"用語の定義", "task", func(l *promiseList) { l.terms[0].Definition = "すること" }, true},
 		{"用語の part_of を書く", "task", func(l *promiseList) { l.terms[0].PartOf = strp("work") }, true},
+		{"用語の assumes を書く", "task", func(l *promiseList) { l.terms[0].Assumes = []string{"disk-works"} }, true},
+		{"性質の文", "no-lost-task", func(l *promiseList) { l.properties[0].Statement = "タスクは失われない" }, true},
+		{"性質の理由", "no-lost-task", func(l *promiseList) { l.properties[0].Rationale = strp("別の理由") }, true},
+		{"性質の理由を省く", "no-lost-task", func(l *promiseList) { l.properties[0].Rationale = nil }, true},
+		{"性質の refines", "no-lost-task", func(l *promiseList) { l.properties[0].Refines = []string{"safe"} }, true},
+		{"性質の refines を足す", "no-lost-task", func(l *promiseList) { l.properties[0].Refines = []string{"reliable", "safe"} }, true},
+		{"性質の refines を省く", "no-lost-task", func(l *promiseList) { l.properties[0].Refines = nil }, true},
+		{"性質の assumes", "no-lost-task", func(l *promiseList) { l.properties[0].Assumes = []string{"net-works"} }, true},
+		{"性質の assumes を省く", "no-lost-task", func(l *promiseList) { l.properties[0].Assumes = nil }, true},
+		{"前提の文", "disk-works", func(l *promiseList) { l.truths[0].Statement = "ディスクは壊れない" }, true},
+		{"機能の refines", "task-add", func(l *promiseList) { l.features[0].Refines = []string{"reliable"} }, true},
+		{"機能の refines の順", "task-add", func(l *promiseList) {
+			l.features[0].Refines = []string{"reliable", "no-lost-task"}
+		}, true},
 		{"機能の名前", "task-add", func(l *promiseList) { l.features[0].Name = "登録" }, true},
 		{"機能の定義", "task-add", func(l *promiseList) { l.features[0].Definition = "足す" }, true},
 		{"機能の core を書く", "task-add", func(l *promiseList) { l.features[0].Core = boolp(false) }, true},
@@ -604,6 +696,9 @@ func Testフィンガープリントに入る項目のどれを変えてもフ�
 		{"約束の理由を省く", "task-id-unique", func(l *promiseList) { l.claims[0].Rationale = nil }, true},
 		{"約束の条件", "task-id-unique", func(l *promiseList) { l.claims[0].Condition = strp("登録のとき") }, true},
 		{"約束の refines", "task-id-unique", func(l *promiseList) { l.claims[0].Refines = []string{"task-add", "task-list"} }, true},
+		{"約束の refines を入れ替える", "task-id-unique", func(l *promiseList) { l.claims[0].Refines = []string{"task-list"} }, true},
+		{"約束の assumes を書く", "task-id-unique", func(l *promiseList) { l.claims[0].Assumes = []string{"disk-works"} }, true},
+		{"約束の assumes を空で書く", "task-id-unique", func(l *promiseList) { l.claims[0].Assumes = []string{} }, true},
 		{"約束のレイヤーの順", "task-id-unique", func(l *promiseList) { l.claims[0].Layers = []string{"cli", "model"} }, true},
 		{"約束のレイヤー", "task-id-unique", func(l *promiseList) { l.claims[0].Layers = []string{"model", "cli", "db"} }, true},
 		{"エビデンスのステージ", "task-id-unique", func(l *promiseList) { l.claims[0].Evidence[0].Stage = "release" }, true},
@@ -654,6 +749,15 @@ func Test約束リストのIDを変えるとフィンガープリントが変わ
 	if after["task-ids-unique"] == before["task-id-unique"] {
 		t.Fatal("ID を変えてもフィンガープリントが変わらない")
 	}
+	l = baseList()
+	l.properties[0].ID, l.truths[0].ID = "tasks-not-lost", "disk-is-fine"
+	after = load(t, root, render(plainStyle{}, l))
+	if after["tasks-not-lost"] == before["no-lost-task"] {
+		t.Error("性質の ID を変えてもフィンガープリントが変わらない")
+	}
+	if after["disk-is-fine"] == before["disk-works"] {
+		t.Error("前提の ID を変えてもフィンガープリントが変わらない")
+	}
 }
 
 // @vanda:evidence fingerprint-as-written
@@ -699,7 +803,7 @@ func Testフィンガープリントは元のバイト列のSHA256をsha256と16
 // 項目のフィンガープリントの期待値は、手で書いた決まった形の JSON のバイト列のフィンガープリント（ファイルのフィンガープリントと同じ作り方）にする
 //
 // @vanda:evidence fingerprint-item-json
-func Test約束と用語と機能のフィンガープリントはキーをバイトの順に並べ配列を書いた順にし空白と最後の改行のないJSONから作る(t *testing.T) {
+func Test性質と前提と約束と用語と機能のフィンガープリントはキーをバイトの順に並べ配列を書いた順にし空白と最後の改行のないJSONから作る(t *testing.T) {
 	src := `[[term]]
 part_of = "whole"
 name = "タスク"
@@ -715,9 +819,31 @@ id = "add-task"
 definition = "タスクを足す"
 refines = ["no-lost-task"]
 
+[[property]]
+statement = "登録したタスクは失われない"
+refines = ["reliable", "safe"]
+rationale = "頼れるように"
+id = "no-lost-task"
+assumes = ["disk-works"]
+
+[[property]]
+statement = '頼れる'
+id = "reliable"
+
+[[truth]]
+statement = "ディスクに書いたものは、読み戻せる"
+id = "disk-works"
+
+[[term]]
+assumes = ["disk-works", "net-works"]
+name = "一覧"
+id = "list"
+definition = "並べたもの"
+
 [[spec]]
 statement = "タスクの ID は重ならない"
 refines = ["add-task", "list-task"]
+assumes = ["net-works", "disk-works"]
 rationale = "見分けるため"
 layers = ["model", "db"]
 id = "task-unique"
@@ -735,9 +861,13 @@ layers = ["db", "model"]
 type = "guardrail"
 `
 	want := map[string]string{
-		"task":     `{"definition":"やること","id":"task","name":"タスク","part_of":"whole"}`,
-		"add-task": `{"core":true,"definition":"タスクを足す","formal":false,"formal_waiver":"状態を持たないため","id":"add-task","name":"タスクの登録","refines":["no-lost-task"]}`,
-		"task-unique": `{"condition":"いつも","evidence":[{"detail":"TestUnique","layers":["model"],"stage":"implementation","type":"unit-test"},` +
+		"task":         `{"definition":"やること","id":"task","name":"タスク","part_of":"whole"}`,
+		"no-lost-task": `{"assumes":["disk-works"],"id":"no-lost-task","rationale":"頼れるように","refines":["reliable","safe"],"statement":"登録したタスクは失われない"}`,
+		"reliable":     `{"id":"reliable","statement":"頼れる"}`,
+		"disk-works":   `{"id":"disk-works","statement":"ディスクに書いたものは、読み戻せる"}`,
+		"list":         `{"assumes":["disk-works","net-works"],"definition":"並べたもの","id":"list","name":"一覧"}`,
+		"add-task":     `{"core":true,"definition":"タスクを足す","formal":false,"formal_waiver":"状態を持たないため","id":"add-task","name":"タスクの登録","refines":["no-lost-task"]}`,
+		"task-unique": `{"assumes":["net-works","disk-works"],"condition":"いつも","evidence":[{"detail":"TestUnique","layers":["model"],"stage":"implementation","type":"unit-test"},` +
 			`{"layers":["db","model"],"stage":"plan","type":"guardrail"}],"id":"task-unique","layers":["model","db"],` +
 			`"rationale":"見分けるため","refines":["add-task","list-task"],"statement":"タスクの ID は重ならない"}`,
 	}

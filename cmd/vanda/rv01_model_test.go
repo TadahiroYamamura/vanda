@@ -20,8 +20,8 @@ import (
 
 // rvEntry は、一覧の 1 件の期待値。
 type rvEntry struct {
-	Kind   string // claim・term・feature・file
-	Key    string // 約束・用語・機能は ID。ファイルは今の場所（削除なら、前の場所）
+	Kind   string // spec・term・feature・property・truth・file
+	Key    string // 約束リストの項目は ID。ファイルは今の場所（削除なら、前の場所）
 	Change string // added・modified・deleted
 	// Others は、レビュー単位がストーリーのときに、そのストーリーで最初に変えた後に同じものを変えた、そのストーリーの ID のないコミット。
 	// コミットごとに、メッセージにあるストーリーの ID（ないものは "-"）を書き、名前の順に , でつなぐ。
@@ -37,7 +37,7 @@ func (e rvEntry) String() string {
 }
 
 type rvItem struct {
-	kind   string            // term・feature・claim
+	kind   string            // term・feature・spec・property・truth
 	fields map[string]string // id のほかの、変えられる項目。約束のエビデンスの detail は "evidence.detail"
 	file   int               // どの約束リストのファイルに書くか（書き方だけの違いなので、一覧には効かない）
 }
@@ -99,20 +99,14 @@ func (s rvState) clone() rvState {
 // どの操作も変えない用語。一覧には出ない。
 const rvBaseTerm = "base"
 
-// 約束が refines する機能と、機能が refines する性質。どの操作も変えないので、一覧には出ない。
-// 性質は、まだ一覧に出すものでないので、状態（rvState）には入れず、約束リストの 1 つ目のファイルの末尾にいつも書く。
+// 約束が refines する機能と、機能が refines する性質。どの操作も変えないので、最初のコミットの後は一覧に出ない。
 const (
 	rvBaseFeature  = "base-feature"
 	rvBaseProperty = "base-property"
 )
 
-// rvTable は、種類 kind の項目を書く、約束リストの表の名前を返す。一覧と承認の記録の種類は claim のまま、表だけが spec になった
-func rvTable(kind string) string {
-	if kind == "claim" {
-		return "spec"
-	}
-	return kind
-}
+// rvItemKinds は、約束リストの項目の種類（docs/formats.md の kind から file を除いたもの）。
+var rvItemKinds = []string{"spec", "term", "feature", "property", "truth"}
 
 const rvPromiseFiles = 3
 
@@ -141,7 +135,7 @@ paths = ["db/*.sql"]
 
 func rvFileKind(class string) bool { return class != rvNoise }
 
-// rvVal は、一覧のキーの 1 つの中身。kind は claim・term・feature・file、body は比べる中身。
+// rvVal は、一覧のキーの 1 つの中身。kind は spec・term・feature・property・truth・file、body は比べる中身。
 type rvVal struct {
 	kind string
 	body string
@@ -346,7 +340,7 @@ func rvRenderItem(id string, it rvItem, pick rvPick) string {
 	if pick(3) == 0 {
 		b.WriteString("# メモ\n")
 	}
-	fmt.Fprintf(&b, "[[%s]]\n", rvTable(it.kind))
+	fmt.Fprintf(&b, "[[%s]]\n", it.kind)
 	lines := map[string]string{"id": rvValue(id, pick)}
 	var detail string
 	for k, v := range it.fields {
@@ -360,7 +354,7 @@ func rvRenderItem(id string, it rvItem, pick rvPick) string {
 	if it.kind == "feature" {
 		lines["refines"] = rvArray([]string{rvBaseProperty}, pick)
 	}
-	if it.kind == "claim" {
+	if it.kind == "spec" {
 		lines["refines"] = rvArray([]string{rvBaseFeature}, pick)
 		lines["layers"] = rvArray([]string{"model"}, pick)
 		if pick(2) == 0 {
@@ -384,7 +378,7 @@ func rvRenderItem(id string, it rvItem, pick rvPick) string {
 	for _, k := range keys {
 		b.WriteString(rvKeyLine(k, lines[k], pick))
 	}
-	if it.kind == "claim" && !inlineEvidence {
+	if it.kind == "spec" && !inlineEvidence {
 		b.WriteString(strings.Repeat("\n", pick(2)))
 		ev := []string{
 			rvKeyLine("stage", rvValue("implementation", pick), pick),
@@ -415,9 +409,6 @@ func rvRenderPromises(items map[string]rvItem, pick rvPick) []string {
 				b.WriteString(strings.Repeat("\n", 1+pick(3)))
 			}
 			b.WriteString(rvRenderItem(id, items[id], pick))
-		}
-		if f == 0 {
-			fmt.Fprintf(&b, "\n[[property]]\nid = %q\nstatement = \"もとの性質\"\n", rvBaseProperty)
 		}
 		out[f] = b.String()
 	}
@@ -513,12 +504,6 @@ func rvParsedItems(t fataler, srcs map[int]string) map[string]rvItem {
 			t.Fatalf("%s を読めない: %v\n%s", rvPromisePath(f), err, src)
 		}
 		for kind, tables := range doc {
-			if kind == "property" {
-				continue
-			}
-			if kind == "spec" {
-				kind = "claim"
-			}
 			for _, tab := range tables {
 				it := rvItem{kind: kind, fields: map[string]string{}, file: f}
 				var id string

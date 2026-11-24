@@ -30,6 +30,7 @@ func newRVRepo(t fataler, root, version, firstStory string, pick rvPick) *rvRepo
 	r.g.run("init", "-q", "-b", "main")
 	writeFile(t, root, ".vanda/config.toml", rvConfig(version))
 	r.state.items[rvBaseTerm] = rvItem{kind: "term", fields: map[string]string{"name": "もと", "definition": "変えない用語"}}
+	r.state.items[rvBaseProperty] = rvItem{kind: "property", fields: map[string]string{"statement": "もとの性質"}}
 	r.state.items[rvBaseFeature] = rvItem{kind: "feature", fields: map[string]string{"name": "もとの機能", "definition": "約束が refines する機能"}}
 	r.flush()
 	r.commit(firstStory)
@@ -58,7 +59,12 @@ func (r *rvRepo) addItem(kind, id string, file int) {
 	case "term", "feature":
 		f["name"] = fmt.Sprintf("名前 %d", n)
 		f["definition"] = fmt.Sprintf("定義 %d", n)
-	case "claim":
+	case "property":
+		f["statement"] = fmt.Sprintf("文 %d", n)
+		f["rationale"] = fmt.Sprintf("理由 %d", n)
+	case "truth":
+		f["statement"] = fmt.Sprintf("文 %d", n)
+	case "spec":
 		f["statement"] = fmt.Sprintf("文 %d", n)
 		f["rationale"] = fmt.Sprintf("理由 %d", n)
 		f["condition"] = fmt.Sprintf("条件 %d", n)
@@ -72,15 +78,20 @@ func (r *rvRepo) addItem(kind, id string, file int) {
 
 // rvItemFields は、種類ごとの、変えられる項目。
 func rvItemFields(kind string) []string {
-	if kind == "claim" {
+	switch kind {
+	case "spec":
 		return []string{"statement", "rationale", "condition", "evidence.detail"}
+	case "property":
+		return []string{"statement", "rationale"}
+	case "truth":
+		return []string{"statement"}
 	}
 	return []string{"name", "definition"}
 }
 
 func (r *rvRepo) item(id string) rvItem {
 	it, ok := r.state.items[id]
-	if !ok || id == rvBaseTerm || id == rvBaseFeature {
+	if !ok || id == rvBaseTerm || id == rvBaseFeature || id == rvBaseProperty {
 		r.t.Fatalf("ID %s は変えられる項目でない", id)
 	}
 	return it

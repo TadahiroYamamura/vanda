@@ -19,18 +19,24 @@ import (
 // 一覧を API から読んで比べるのは、API の形が docs/formats.md に書かれてから足す。
 
 var (
-	rvClaimIDs   = []string{"c-a", "c-b", "c-c", "c-d"}
-	rvTermIDs    = []string{"t-a", "t-b", "t-c", "t-d"}
-	rvFeatureIDs = []string{"f-a", "f-b", "f-c", "f-d"}
-	rvStories    = []string{"#1", "#24", "#25", ""}
+	rvClaimIDs    = []string{"c-a", "c-b", "c-c", "c-d"}
+	rvTermIDs     = []string{"t-a", "t-b", "t-c", "t-d"}
+	rvFeatureIDs  = []string{"f-a", "f-b", "f-c", "f-d"}
+	rvPropertyIDs = []string{"p-a", "p-b", "p-c", "p-d"}
+	rvTruthIDs    = []string{"u-a", "u-b", "u-c", "u-d"}
+	rvStories     = []string{"#1", "#24", "#25", ""}
 )
 
 func rvIDs(kind string) []string {
 	switch kind {
-	case "claim":
+	case "spec":
 		return rvClaimIDs
 	case "term":
 		return rvTermIDs
+	case "property":
+		return rvPropertyIDs
+	case "truth":
+		return rvTruthIDs
 	default:
 		return rvFeatureIDs
 	}
@@ -71,11 +77,11 @@ func setFlag(t *testing.T, name, value string) {
 // rvRandomOp は、今の状態でできる操作を 1 つ選んで当てる。
 func rvRandomOp(rt *rapid.T, r *rvRepo) string {
 	var ops []string
-	// 約束・用語・機能のどれを変えるかを先に選び、その中から項目を選ぶ。項目の全体から選ぶと、数の多い種類に偏り、
+	// 項目の種類のどれを変えるかを先に選び、その中から項目を選ぶ。項目の全体から選ぶと、数の多い種類に偏り、
 	// レビュー単位がブランチのときに用語や機能の削除がほとんど出ないシードが出たため
 	var present, absent []string
 	presentKinds := map[string][]string{}
-	for _, kind := range []string{"claim", "term", "feature"} {
+	for _, kind := range rvItemKinds {
 		for _, id := range rvIDs(kind) {
 			if _, ok := r.state.items[id]; ok {
 				present = append(present, id)
@@ -87,7 +93,7 @@ func rvRandomOp(rt *rapid.T, r *rvRepo) string {
 	}
 	pickPresent := func(label string) string {
 		var kinds []string
-		for _, k := range []string{"claim", "term", "feature"} {
+		for _, k := range rvItemKinds {
 			if len(presentKinds[k]) > 0 {
 				kinds = append(kinds, k)
 			}
@@ -220,14 +226,16 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 		if t.Failed() || checks < 100 {
 			return
 		}
-		// 下限は、100 回の実行を 112 通りのシードで数えた、組ごとの回数の最小のおよそ 3 分の 1。シードによってたまたま下回らないようにする。
-		// 数えた最小（平均）: レビュー単位がブランチのときの種類と変化の組でいちばん少ないのは機能の削除の 6（16.9）、ブランチのときの名前の変更は 19（30.6）、
+		// 下限は、100 回の実行をいくつものシードで数えた、組ごとの回数の最小より、十分に小さくする。シードによってたまたま下回らないようにする。
+		// 項目の種類が 3 つ（仕様・用語・機能）の時に 112 通りのシードで数えた最小（平均）: ブランチのときの名前の変更は 19（30.6）、
 		// ストーリーのときの組は 79（103.5。変更）以上。名前の変更は、古い場所の削除と新しい場所の追加の 2 件として出るようになった後も、
 		// 同じ中身の削除と追加の組として数える。
+		// 性質と前提を足して種類が 5 つになった後に 21 通りのシードで数えた、レビュー単位がブランチのときの種類と変化の組の最小（平均）は、
+		// 機能の削除の 4（9.8）、前提の削除の 5（9.9）。種類が増えた分だけ 1 つの組の回数が減ったので、組ごとの下限は 1（1 度も出ないことだけを防ぐ）にした。
 		// 生成が偏って、ある変化を確かめないまま通るのを防ぐ
-		for _, kind := range []string{"claim", "term", "feature", "file"} {
+		for _, kind := range append(append([]string{}, rvItemKinds...), "file") {
 			for _, change := range []string{"added", "modified", "deleted"} {
-				atLeast(t, seen, "ブランチ/"+kind+"/"+change, 2)
+				atLeast(t, seen, "ブランチ/"+kind+"/"+change, 1)
 			}
 		}
 		atLeast(t, seen, "ブランチ/名前を変えたファイル（同じ中身の削除と追加）", 6)
@@ -251,7 +259,7 @@ func runRV01Random(t *testing.T, compare rvCompare) {
 		}()
 
 		// 変更・削除・名前の変更が一覧に出るには、マージベースより前からあるものが要るので、はじめにいくつか置く
-		for _, kind := range []string{"claim", "term", "feature"} {
+		for _, kind := range rvItemKinds {
 			for _, id := range rvIDs(kind) {
 				if rapid.Bool().Draw(rt, "はじめに置く項目か") {
 					r.addItem(kind, id, rapid.IntRange(0, rvPromiseFiles-1).Draw(rt, "ファイル"))
