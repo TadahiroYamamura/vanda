@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/TadahiroYamamura/vanda/internal/version"
 	"github.com/rogpeppe/go-internal/testscript"
 )
 
@@ -72,17 +73,9 @@ func buildVanda(t *testing.T) string {
 
 var semverPattern = regexp.MustCompile(`v?(\d+)\.(\d+)\.(\d+)`)
 
-// `vanda version` の出力の形は計画に書かれていないので、出力の中の最初のバージョンの形の文字列を、動いている vanda のバージョンとみなす。
-func runningVersion(bin string) (string, error) {
-	out, err := exec.Command(bin, "version").Output()
-	if err != nil {
-		return "", fmt.Errorf("vanda version が失敗した: %w", err)
-	}
-	v := semverPattern.FindString(string(out))
-	if v == "" {
-		return "", fmt.Errorf("vanda version の出力にバージョンが見つからない: %q", out)
-	}
-	return v, nil
+// テストが起こす vanda は、このソースからビルドするので、動いている vanda のバージョンは internal/version のものと同じ。
+func runningVersion(string) (string, error) {
+	return version.Current, nil
 }
 
 // 動いているバージョンより新しいバージョンと古いバージョンを作る。v を付けるかどうかは、動いているバージョンの書き方に合わせる。
