@@ -105,11 +105,11 @@ func (e *env) agreement(scope string) []diag.Error {
 		if !changed {
 			continue
 		}
-		if it.claim != nil {
-			if len(it.claim.Flags) > 0 {
-				errs = append(errs, it.table.Err("flags", "約束 "+it.id+" にフラグ（"+strings.Join(it.claim.Flags, "・")+"）が残っています", "承認するときに、フラグを外してください（承認の後にフラグだけを立てたなら、中身を確かめ直してから外してください）"))
+		if it.spec != nil {
+			if len(it.spec.Flags) > 0 {
+				errs = append(errs, it.table.Err("flags", "約束 "+it.id+" にフラグ（"+strings.Join(it.spec.Flags, "・")+"）が残っています", "承認するときに、フラグを外してください（承認の後にフラグだけを立てたなら、中身を確かめ直してから外してください）"))
 			}
-			if len(it.claim.Guesses) > 0 {
+			if len(it.spec.Guesses) > 0 {
 				errs = append(errs, it.table.Err("guesses", "約束 "+it.id+" に推測（guesses）が残っています", "推測を確かめ、承認するときに guesses を外してください"))
 			}
 		}
@@ -240,7 +240,7 @@ func (e *env) evidencePresent(scope string) []diag.Error {
 		return cannot("アノテーション", len(e.annErrs), "annotation-links")
 	}
 	var errs []diag.Error
-	for _, c := range e.list.Claims {
+	for _, c := range e.list.Specs {
 		if scope == ScopeStory && !e.changedItems["spec:"+c.ID] {
 			continue
 		}

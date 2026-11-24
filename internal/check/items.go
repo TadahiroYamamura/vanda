@@ -12,7 +12,7 @@ type item struct {
 	id    string
 	table *tomlread.Table
 	raw   map[string]any
-	claim *promises.Claim
+	spec  *promises.Spec
 }
 
 func (it item) key() string { return it.kind + ":" + it.id }
@@ -20,7 +20,7 @@ func (it item) key() string { return it.kind + ":" + it.id }
 func items(l *promises.List) []item {
 	var out []item
 	for _, e := range snapshot.Entries(l) {
-		out = append(out, item{kind: e.Kind, id: e.ID, table: e.Table, raw: e.Raw, claim: e.Claim})
+		out = append(out, item{kind: e.Kind, id: e.ID, table: e.Table, raw: e.Raw, spec: e.Spec})
 	}
 	return out
 }

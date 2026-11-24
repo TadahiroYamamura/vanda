@@ -60,7 +60,7 @@ export interface EvidenceContent {
   detail: Prose | null;
 }
 
-export interface ClaimContent {
+export interface SpecContent {
   statement: Prose;
   rationale: Prose | null;
   condition: Prose | null;
@@ -104,7 +104,7 @@ export interface TruthContent {
   statement: Prose;
 }
 
-export type Content = ClaimContent | TermContent | FeatureContent | PropertyContent | TruthContent | FileContent;
+export type Content = SpecContent | TermContent | FeatureContent | PropertyContent | TruthContent | FileContent;
 
 export interface CommitRef {
   commit: string;
@@ -216,7 +216,7 @@ export interface ItemRef {
   name: string | null;
 }
 
-export interface ClaimDetail {
+export interface SpecDetail {
   id: string;
   statement: Prose;
   rationale: Prose | null;
@@ -232,23 +232,23 @@ export interface ClaimDetail {
   refs: Refs;
 }
 
-export interface ClaimHistory {
+export interface SpecHistory {
   origin: { commit: string; date: string; subject: string; stories: string[]; change: "added" | "modified" }[];
   agreements: { user: User; agreedAt: string; story: string; fingerprint: string; current: boolean; commit?: string | null }[];
 }
 
-export interface ClaimAt {
+export interface SpecAt {
   id: string;
   commit: string;
   date: string;
   subject: string;
   stories: string[];
-  content: ClaimContent;
+  content: SpecContent;
   layers?: LayerRef[];
   refs: Refs;
 }
 
-export interface ClaimSummary {
+export interface SpecSummary {
   id: string;
   statement: Prose;
 }
@@ -275,7 +275,7 @@ export interface FeatureDetail {
   core: boolean;
   formal: boolean;
   refines: ItemRef[];
-  specs: ClaimSummary[];
+  specs: SpecSummary[];
   refs: Refs;
 }
 
@@ -344,13 +344,13 @@ export const api = {
   review: (view: string, base: string | null, story: string | null) =>
     call<Review>(`/api/review?${q({ view, base, story })}`),
   story: (id: string) => call<Story>(`/api/story?${q({ id })}`),
-  claim: (id: string) => call<ClaimDetail>(`/api/specs/${encodeURIComponent(id)}`),
-  claimHistory: (id: string) => call<ClaimHistory>(`/api/specs/${encodeURIComponent(id)}/history`),
-  claimAt: (id: string, commit: string) => call<ClaimAt>(`/api/specs/${encodeURIComponent(id)}/at/${encodeURIComponent(commit)}`),
+  spec: (id: string) => call<SpecDetail>(`/api/specs/${encodeURIComponent(id)}`),
+  specHistory: (id: string) => call<SpecHistory>(`/api/specs/${encodeURIComponent(id)}/history`),
+  specAt: (id: string, commit: string) => call<SpecAt>(`/api/specs/${encodeURIComponent(id)}/at/${encodeURIComponent(commit)}`),
   property: (id: string) => call<PropertyDetail>(`/api/properties/${encodeURIComponent(id)}`),
-  propertyHistory: (id: string) => call<ClaimHistory>(`/api/properties/${encodeURIComponent(id)}/history`),
+  propertyHistory: (id: string) => call<SpecHistory>(`/api/properties/${encodeURIComponent(id)}/history`),
   truth: (id: string) => call<TruthDetail>(`/api/truths/${encodeURIComponent(id)}`),
-  truthHistory: (id: string) => call<ClaimHistory>(`/api/truths/${encodeURIComponent(id)}/history`),
+  truthHistory: (id: string) => call<SpecHistory>(`/api/truths/${encodeURIComponent(id)}/history`),
   term: (id: string) => call<TermDetail>(`/api/terms/${encodeURIComponent(id)}`),
   feature: (id: string) => call<FeatureDetail>(`/api/features/${encodeURIComponent(id)}`),
   file: (path: string) => call<{ path: string; text: string }>(`/api/file?${q({ path })}`),

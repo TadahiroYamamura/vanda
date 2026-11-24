@@ -1,14 +1,14 @@
 import { Fragment, type ReactNode, useState } from "react";
-import { api, type ClaimHistory as History } from "../api";
+import { api, type SpecHistory as History } from "../api";
 import { ErrorBox, Loading, shortCommit, useLoad } from "./common";
 import { LayerChips } from "./Chips";
 import { EvidenceGroups } from "./EvidenceGroups";
 import { Prose, ProseLines, RefsProvider } from "./Prose";
 
-// ClaimHistory は、約束の変更履歴（CL-04）と承認の履歴（CL-05）。約束の詳細の画面と、レビューの画面の 1 件の詳細（RV-16）で使う。
+// SpecHistory は、約束の変更履歴（CL-04）と承認の履歴（CL-05）。約束の詳細の画面と、レビューの画面の 1 件の詳細（RV-16）で使う。
 // 変更履歴と承認の履歴は、約束の詳細と同時に読み始めるため、読み込みは使う側が持つ（ここで読むと、詳細を読み終えるまで読み始められない）
 // 性質と前提の詳細でも使う。その時点の中身を返す API は仕様にしかないので、noAt で、その時点の中身の列を出さない
-export function ClaimHistory(props: { id: string; history: { data: History | null; error: unknown }; level: "h2" | "h3"; noAt?: boolean }) {
+export function SpecHistory(props: { id: string; history: { data: History | null; error: unknown }; level: "h2" | "h3"; noAt?: boolean }) {
   const id = props.id;
   const at = !props.noAt;
   const c = props.history.data;
@@ -70,7 +70,7 @@ export function ClaimHistory(props: { id: string; history: { data: History | nul
                   </td>
                 )}
               </tr>
-              {at && isOpen(`origin:${o.commit}`) && <ClaimAtRow cols={6} id={id} commit={o.commit} level={sub} />}
+              {at && isOpen(`origin:${o.commit}`) && <SpecAtRow cols={6} id={id} commit={o.commit} level={sub} />}
               </Fragment>
             ))}
           </tbody>
@@ -115,7 +115,7 @@ export function ClaimHistory(props: { id: string; history: { data: History | nul
                   </td>
                 )}
               </tr>
-              {at && a.commit && isOpen(`agreement:${i}`) && <ClaimAtRow cols={5} id={id} commit={a.commit} level={sub} />}
+              {at && a.commit && isOpen(`agreement:${i}`) && <SpecAtRow cols={5} id={id} commit={a.commit} level={sub} />}
               </Fragment>
             ))}
           </tbody>
@@ -149,9 +149,9 @@ function ExpandButton(props: { open: boolean; onClick: () => void }) {
   );
 }
 
-// ClaimAtRow は、ある時点の約束の中身（変更前と変更後の表（RV-05）と同じ項目と並び）を、クリックした行のすぐ下の行に出す。中身は API が、その時点の約束リストから読んだもの。
-function ClaimAtRow(props: { cols: number; id: string; commit: string; level: "h3" | "h4" }) {
-  const d = useLoad(() => api.claimAt(props.id, props.commit), `${props.id}@${props.commit}`);
+// SpecAtRow は、ある時点の約束の中身（変更前と変更後の表（RV-05）と同じ項目と並び）を、クリックした行のすぐ下の行に出す。中身は API が、その時点の約束リストから読んだもの。
+function SpecAtRow(props: { cols: number; id: string; commit: string; level: "h3" | "h4" }) {
+  const d = useLoad(() => api.specAt(props.id, props.commit), `${props.id}@${props.commit}`);
   const none = "（なし）";
   const rows: [string, ReactNode][] = d.data
     ? [
@@ -186,10 +186,10 @@ function ClaimAtRow(props: { cols: number; id: string; commit: string; level: "h
       ]
     : [];
   return (
-    <tr className="claim-at-row">
+    <tr className="spec-at-row">
       <td colSpan={props.cols}>
-        <section className="claim-at" aria-label="その時点の約束の中身">
-          <div className="claim-at-head">
+        <section className="spec-at" aria-label="その時点の約束の中身">
+          <div className="spec-at-head">
             <strong>コミット {shortCommit(props.commit)} の時点の中身</strong>
             {d.data && (
               <span className="note">

@@ -35,7 +35,7 @@ var Hooks struct {
 //
 // @vanda:sensor agree-writes-and-commits
 // @vanda:sensor agree-removes-flags
-func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
+func (s *state) verify(rec AgreementRecord, spec *promises.Spec) error {
 	snap, err := snapshot.Working(s.o.Root, s.o.Cfg)
 	if err != nil {
 		return err
@@ -55,16 +55,16 @@ func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
 	if !found {
 		return errors.New("書き足した承認が、読み直した承認の記録に見つかりません")
 	}
-	if claim == nil {
+	if spec == nil {
 		return nil
 	}
 	after := newSide(snap)
-	key := "spec:" + claim.ID
+	key := "spec:" + spec.ID
 	if rec.Fingerprint == nil || after.itemFP[key] != *rec.Fingerprint {
 		return errors.New("フラグを外したら、約束のフィンガープリントが変わりました")
 	}
 	want := map[string]any{}
-	for k, v := range claim.Raw {
+	for k, v := range spec.Raw {
 		if k != "flags" && k != "guesses" {
 			want[k] = v
 		}

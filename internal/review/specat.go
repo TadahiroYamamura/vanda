@@ -11,22 +11,22 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
 )
 
-// ClaimAt は、あるコミットの時点の約束の中身（CL-08）。
-type ClaimAt struct {
-	ID      string       `json:"id"`
-	Commit  string       `json:"commit"`
-	Date    string       `json:"date"`
-	Subject string       `json:"subject"`
-	Stories []string     `json:"stories"`
-	Content ClaimContent `json:"content"`
+// SpecAt は、あるコミットの時点の約束の中身（CL-08）。
+type SpecAt struct {
+	ID      string      `json:"id"`
+	Commit  string      `json:"commit"`
+	Date    string      `json:"date"`
+	Subject string      `json:"subject"`
+	Stories []string    `json:"stories"`
+	Content SpecContent `json:"content"`
 	// Layers は、content の layers の順に、今の設定のレイヤーの名前を付けたもの。今の設定にないレイヤーは、名前を空にする
 	Layers []LayerRef `json:"layers"`
 	// Refs は、content の中のセグメントが指すすべての ID の、指す先
 	Refs map[string]RefTarget `json:"refs"`
 }
 
-// ClaimAtCommit は、コミット rev の時点の、約束 id の中身を返す。
-func ClaimAtCommit(o Options, id, rev string) (*ClaimAt, *Error) {
+// SpecAtCommit は、コミット rev の時点の、約束 id の中身を返す。
+func SpecAtCommit(o Options, id, rev string) (*SpecAt, *Error) {
 	// git の引数として読まれないよう、コミットのハッシュの形のものだけを受け付ける
 	if !isHash(rev) {
 		return nil, &Error{Status: http.StatusBadRequest, Message: "コミット " + rev + " が、コミットのハッシュ（16 進の 4〜64 文字）の形ではありません。", Fix: "変更履歴か承認の履歴から、もう一度選んでください。"}
@@ -58,7 +58,7 @@ func ClaimAtCommit(o Options, id, rev string) (*ClaimAt, *Error) {
 	at := newSide(snap)
 	for _, e := range snapshot.Entries(snap.List) {
 		if e.Kind == "spec" && e.ID == id {
-			c := claimContent(e, s.refs, at)
+			c := specContent(e, s.refs, at)
 			names := map[string]string{}
 			for _, l := range o.Cfg.Layers {
 				names[l.ID] = l.Name
@@ -67,7 +67,7 @@ func ClaimAtCommit(o Options, id, rev string) (*ClaimAt, *Error) {
 			for _, l := range c.Layers {
 				layers = append(layers, LayerRef{ID: l, Name: names[l]})
 			}
-			return &ClaimAt{ID: id, Commit: full, Date: date, Subject: subject, Stories: strs(storyIDs(o.Cfg, msg)), Content: c, Layers: layers, Refs: s.refs.targets()}, nil
+			return &SpecAt{ID: id, Commit: full, Date: date, Subject: subject, Stories: strs(storyIDs(o.Cfg, msg)), Content: c, Layers: layers, Refs: s.refs.targets()}, nil
 		}
 	}
 	return nil, &Error{Status: http.StatusNotFound, Message: fmt.Sprintf("コミット %s の時点には、約束 %s はありません。", short(full), id), Fix: "変更履歴か承認の履歴から、ほかの時点を選んでください。"}

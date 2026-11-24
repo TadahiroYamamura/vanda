@@ -92,7 +92,7 @@ func (l *List) Proses() []Prose {
 		add(f.Table, "definition", f.Definition)
 		add(f.Table, "formal_waiver", f.FormalWaiver)
 	}
-	for _, c := range l.Claims {
+	for _, c := range l.Specs {
 		add(c.Table, "statement", c.Statement)
 		add(c.Table, "rationale", c.Rationale)
 		add(c.Table, "condition", c.Condition)

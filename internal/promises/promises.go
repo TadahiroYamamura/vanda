@@ -16,7 +16,7 @@ type List struct {
 	Truths     []*Truth
 	Terms      []*Term
 	Features   []*Feature
-	Claims     []*Claim
+	Specs      []*Spec
 }
 
 // Item は、性質・前提・用語・機能・約束に共通するもの。Raw は読み込んだ表そのもの（フィンガープリントを作る元）。
@@ -58,7 +58,7 @@ type Feature struct {
 	FormalWaiver string // 書いていなければ空
 }
 
-type Claim struct {
+type Spec struct {
 	Item
 	Refines   []string
 	Assumes   []string
@@ -158,7 +158,7 @@ func (l *List) read(top *tomlread.Table) {
 	}
 	specs, _ := top.Tables("spec", false)
 	for _, t := range specs {
-		x := &Claim{Item: item(t, "spec")}
+		x := &Spec{Item: item(t, "spec")}
 		x.Refines = nonEmpty(t, "refines", "機能の ID")
 		x.Assumes, _ = t.Strs("assumes", false)
 		x.Statement, _ = t.Str("statement", true)
@@ -182,7 +182,7 @@ func (l *List) read(top *tomlread.Table) {
 			x.Evidence = append(x.Evidence, e)
 		}
 		t.Unknown("id, refines, assumes, statement, rationale, condition, layers, flags, guesses, evidence, model_check_waiver")
-		l.Claims = append(l.Claims, x)
+		l.Specs = append(l.Specs, x)
 	}
 	top.Unknown("property, truth, term, feature, spec")
 }

@@ -4,9 +4,9 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
 )
 
-// ClaimContent・TermContent・FeatureContent・PropertyContent・TruthContent・FileContent は、一覧と詳細に出す中身。省いた項目は nil（JSON の null）。
+// SpecContent・TermContent・FeatureContent・PropertyContent・TruthContent・FileContent は、一覧と詳細に出す中身。省いた項目は nil（JSON の null）。
 // 自然言語で書く項目は、参照を置き換えたセグメントの配列にする。
-type ClaimContent struct {
+type SpecContent struct {
 	Statement []Piece           `json:"statement"`
 	Rationale []Piece           `json:"rationale"`
 	Condition []Piece           `json:"condition"`
@@ -75,8 +75,8 @@ func strs(xs []string) []string {
 // Content は、項目の中身を、書いたとおりに返す。参照は r で置き換え、今の約束リストにない指す先は base から探す。
 func Content(e snapshot.Entry, r *refs, base *side) any {
 	switch {
-	case e.Claim != nil:
-		return claimContent(e, r, base)
+	case e.Spec != nil:
+		return specContent(e, r, base)
 	case e.Term != nil:
 		return TermContent{Name: e.Term.Name, Definition: r.pieces(e.Term.Definition, base), PartOf: optStr(e.Table.Has("part_of"), e.Term.PartOf), Assumes: strs(e.Term.Assumes)}
 	case e.Feature != nil:
@@ -100,9 +100,9 @@ func Content(e snapshot.Entry, r *refs, base *side) any {
 	return nil
 }
 
-func claimContent(e snapshot.Entry, r *refs, base *side) ClaimContent {
-	c := e.Claim
-	out := ClaimContent{
+func specContent(e snapshot.Entry, r *refs, base *side) SpecContent {
+	c := e.Spec
+	out := SpecContent{
 		Statement: r.pieces(c.Statement, base),
 		Rationale: r.optPieces(e.Table.Has("rationale"), c.Rationale, base),
 		Condition: r.optPieces(e.Table.Has("condition"), c.Condition, base),

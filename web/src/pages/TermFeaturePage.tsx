@@ -1,5 +1,5 @@
 import { api, type NamedRef } from "../api";
-import { ClaimList } from "../components/ClaimList";
+import { SpecList } from "../components/SpecList";
 import { ErrorBox, Loading, useLoad } from "../components/common";
 import { ItemRefs } from "../components/ItemRefs";
 import { detailURL, FeatureMarks, Prose, RefsProvider } from "../components/Prose";
@@ -88,7 +88,7 @@ export function FeaturePage(props: { id: string; params?: URLSearchParams }) {
               <ItemRefs items={d.data.refines} query={query} />
             </dd>
           </dl>
-          <ClaimList claims={d.data.specs} query={query} level="h2" />
+          <SpecList specs={d.data.specs} query={query} level="h2" />
         </RefsProvider>
       )}
     </div>

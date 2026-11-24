@@ -174,8 +174,8 @@ func itemDiff(before, after any) ItemDiff {
 	}
 	out := ItemDiff{Fields: fields}
 	switch b := before.(type) {
-	case ClaimContent:
-		a, ok := after.(ClaimContent)
+	case SpecContent:
+		a, ok := after.(SpecContent)
 		if !ok {
 			return out
 		}

@@ -25,7 +25,7 @@ type Entry struct {
 	Raw      map[string]any
 	Term     *promises.Term
 	Feature  *promises.Feature
-	Claim    *promises.Claim
+	Spec     *promises.Spec
 	Property *promises.Property
 	Truth    *promises.Truth
 }
@@ -45,8 +45,8 @@ func Entries(l *promises.List) []Entry {
 	for _, f := range l.Features {
 		out = append(out, Entry{Kind: "feature", ID: f.ID, Table: f.Table, Raw: f.Raw, Feature: f})
 	}
-	for _, c := range l.Claims {
-		out = append(out, Entry{Kind: "spec", ID: c.ID, Table: c.Table, Raw: c.Raw, Claim: c})
+	for _, c := range l.Specs {
+		out = append(out, Entry{Kind: "spec", ID: c.ID, Table: c.Table, Raw: c.Raw, Spec: c})
 	}
 	for _, p := range l.Properties {
 		out = append(out, Entry{Kind: "property", ID: p.ID, Table: p.Table, Raw: p.Raw, Property: p})

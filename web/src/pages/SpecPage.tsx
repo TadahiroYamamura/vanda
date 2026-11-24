@@ -3,22 +3,22 @@ import { ReviewAgree } from "../components/ReviewAgree";
 import { AgreementIcon, ErrorBox, Loading, PresentIcon, StateBadge, useLoad } from "../components/common";
 import { LayerChips } from "../components/Chips";
 import { EvidenceGroups } from "../components/EvidenceGroups";
-import { ClaimHistory } from "../components/ClaimHistory";
+import { SpecHistory } from "../components/SpecHistory";
 import { CodeBlock } from "../components/Code";
 import { ItemRefs } from "../components/ItemRefs";
 import { Prose, RefsProvider } from "../components/Prose";
 import { langOf } from "../highlight";
 import { Link, reviewQuery, reviewURL } from "../route";
 
-// ClaimPage は、約束の詳細（CL-01・02・04・05・07）。
-export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: Context | null }) {
-  const d = useLoad(() => api.claim(props.id), props.id);
+// SpecPage は、約束の詳細（CL-01・02・04・05・07）。
+export function SpecPage(props: { id: string; params?: URLSearchParams; ctx?: Context | null }) {
+  const d = useLoad(() => api.spec(props.id), props.id);
   // 変更履歴と承認の履歴は時間がかかるので、詳細と別に読み、詳細を先に出す（claim-detail-shown-before-history）
-  const h = useLoad(() => api.claimHistory(props.id), props.id);
+  const h = useLoad(() => api.specHistory(props.id), props.id);
   if (d.error != null) return <ErrorBox error={d.error} title="約束の詳細を読めません" />;
   if (!d.data) {
     return (
-      <div className="claim">
+      <div className="spec">
         <p className="note">
           <Link to={reviewURL(props.params)}>ストーリーのレビューへ戻る</Link>
         </p>
@@ -29,7 +29,7 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: C
   const c = d.data;
   return (
     <RefsProvider refs={c.refs} query={reviewQuery(props.params)}>
-    <div className="claim">
+    <div className="spec">
       <p className="note">
         <Link to={reviewURL(props.params)}>ストーリーのレビューへ戻る</Link>
       </p>
@@ -104,7 +104,7 @@ export function ClaimPage(props: { id: string; params?: URLSearchParams; ctx?: C
         />
       )}
 
-      <ClaimHistory id={c.id} history={h} level="h2" />
+      <SpecHistory id={c.id} history={h} level="h2" />
     </div>
     </RefsProvider>
   );

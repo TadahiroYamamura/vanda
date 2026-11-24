@@ -2,10 +2,10 @@ import { useState } from "react";
 // 本文の中の生の HTML は描かない（react-markdown の既定。rehype-raw などを足さない）。Issue の本文に悪意のある HTML があっても、画面で動かないようにするため
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { api, type ClaimContent, type Content, type Piece, type Refs, type User, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FileContent, type Kind, type PropertyContent, type Review, type TermContent, type TruthContent } from "../api";
+import { api, type SpecContent, type Content, type Piece, type Refs, type User, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FileContent, type Kind, type PropertyContent, type Review, type TermContent, type TruthContent } from "../api";
 import { AgreementIcon, ErrorBox, FlagBadge, ListIcon, Loading, PresentIcon, StateBadge, shortCommit, useLoad } from "../components/common";
-import { ClaimHistory } from "../components/ClaimHistory";
-import { ClaimList } from "../components/ClaimList";
+import { SpecHistory } from "../components/SpecHistory";
+import { SpecList } from "../components/SpecList";
 import { CodeBlock } from "../components/Code";
 import { LineDiff, Parts } from "../components/DiffView";
 import { LayerChips, LayerChipsDiff } from "../components/Chips";
@@ -513,8 +513,8 @@ function currentOf(sel: string): { kind: Kind; name: string; load: () => Promise
         kind: "spec",
         name,
         load: async () => {
-          const c = await api.claim(name);
-          const content: ClaimContent = {
+          const c = await api.spec(name);
+          const content: SpecContent = {
             statement: c.statement,
             rationale: c.rationale,
             condition: c.condition,
@@ -682,7 +682,7 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
       />
 
       <Compare entry={e} />
-      {e.kind === "spec" && e.id && e.change !== "deleted" && <ClaimSections key={written} id={e.id} query={props.query} />}
+      {e.kind === "spec" && e.id && e.change !== "deleted" && <SpecSections key={written} id={e.id} query={props.query} />}
       {e.kind === "feature" && e.id && (e.change === "added" || e.change === "modified") && <FeatureSpecs id={e.id} query={props.query} />}
     </div>
   );
@@ -698,7 +698,7 @@ function FeatureSpecs(props: { id: string; query: string }) {
       {d.error != null && <ErrorBox error={d.error} title="機能を refines する仕様を読めません" />}
       {d.data && (
         <RefsProvider refs={d.data.refs} query={props.query}>
-          <ClaimList claims={d.data.specs} query={props.query} level="h3" />
+          <SpecList specs={d.data.specs} query={props.query} level="h3" />
         </RefsProvider>
       )}
     </div>
@@ -789,7 +789,7 @@ function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
   const ids = (xs: string[]) => xs.join("・") || "（なし）";
   switch (kind) {
     case "spec": {
-      const x = c as ClaimContent;
+      const x = c as SpecContent;
       return [
         ["文", x.statement, "statement"],
         ["条件", opt(x.condition), "condition"],
@@ -889,12 +889,12 @@ function ItemCompare(props: { entry: Pick<Entry, "kind" | "diff" | "before" | "a
     const a = after?.[i];
     const label = labels[i];
     if (e.kind === "spec" && label === "エビデンスの予定") {
-      if (before && after && evidenceMarks) return <UnifiedEvidence before={(e.before as ClaimContent).evidence} after={(e.after as ClaimContent).evidence} marks={evidenceMarks} />;
-      return <EvidenceList items={((after ? e.after : e.before) as ClaimContent).evidence} />;
+      if (before && after && evidenceMarks) return <UnifiedEvidence before={(e.before as SpecContent).evidence} after={(e.after as SpecContent).evidence} marks={evidenceMarks} />;
+      return <EvidenceList items={((after ? e.after : e.before) as SpecContent).evidence} />;
     }
     if (e.kind === "spec" && label === "レイヤー") {
-      const bl = before ? (e.before as ClaimContent).layers : null;
-      const al = after ? (e.after as ClaimContent).layers : null;
+      const bl = before ? (e.before as SpecContent).layers : null;
+      const al = after ? (e.after as SpecContent).layers : null;
       if (bl && al) return <LayerChipsDiff before={bl} after={al} side="both" />;
       return <LayerChips layers={(al ?? bl) as string[]} />;
     }
@@ -937,10 +937,10 @@ function UnifiedEvidence(props: { before: EvidenceContent[]; after: EvidenceCont
   return <EvidenceList items={items} marks={marks} side="both" others={props.before} />;
 }
 
-// ClaimSections は、約束のエビデンスの予定と実際の表（RV-08。合格したかは段 3 で足す）と、変更履歴と承認の履歴（RV-16）。
-export function ClaimSections(props: { id: string; query?: string }) {
-  const d = useLoad(() => api.claim(props.id), props.id);
-  const h = useLoad(() => api.claimHistory(props.id), props.id);
+// SpecSections は、約束のエビデンスの予定と実際の表（RV-08。合格したかは段 3 で足す）と、変更履歴と承認の履歴（RV-16）。
+export function SpecSections(props: { id: string; query?: string }) {
+  const d = useLoad(() => api.spec(props.id), props.id);
+  const h = useLoad(() => api.specHistory(props.id), props.id);
   return (
     <div>
       <h3>エビデンスの予定と実際</h3>
@@ -980,7 +980,7 @@ export function ClaimSections(props: { id: string; query?: string }) {
         />
         </RefsProvider>
       )}
-      <ClaimHistory id={props.id} history={h} level="h3" />
+      <SpecHistory id={props.id} history={h} level="h3" />
     </div>
   );
 }

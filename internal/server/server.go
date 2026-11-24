@@ -36,9 +36,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/review", s.read(s.review))
 	mux.HandleFunc("POST /api/agree", s.agree)
 	mux.HandleFunc("POST /api/revoke", s.revoke)
-	mux.HandleFunc("GET /api/specs/{id}", s.read(s.claim))
-	mux.HandleFunc("GET /api/specs/{id}/history", s.read(s.claimHistory))
-	mux.HandleFunc("GET /api/specs/{id}/at/{commit}", s.read(s.claimAt))
+	mux.HandleFunc("GET /api/specs/{id}", s.read(s.spec))
+	mux.HandleFunc("GET /api/specs/{id}/history", s.read(s.specHistory))
+	mux.HandleFunc("GET /api/specs/{id}/at/{commit}", s.read(s.specAt))
 	mux.HandleFunc("GET /api/properties/{id}", s.read(s.property))
 	mux.HandleFunc("GET /api/properties/{id}/history", s.read(s.itemHistory("property")))
 	mux.HandleFunc("GET /api/truths/{id}", s.read(s.truth))
@@ -106,12 +106,12 @@ func (s *Server) review(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, res)
 }
 
-func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
+func (s *Server) spec(w http.ResponseWriter, r *http.Request) {
 	cfg, ok := s.config(w)
 	if !ok {
 		return
 	}
-	d, err := review.Claim(review.Options{Root: s.Root, Cfg: cfg}, r.PathValue("id"))
+	d, err := review.Spec(review.Options{Root: s.Root, Cfg: cfg}, r.PathValue("id"))
 	if err != nil {
 		writeReviewError(w, err)
 		return
@@ -119,12 +119,12 @@ func (s *Server) claim(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, d)
 }
 
-func (s *Server) claimHistory(w http.ResponseWriter, r *http.Request) {
+func (s *Server) specHistory(w http.ResponseWriter, r *http.Request) {
 	cfg, ok := s.config(w)
 	if !ok {
 		return
 	}
-	d, err := review.ClaimHistoryOf(review.Options{Root: s.Root, Cfg: cfg}, r.PathValue("id"))
+	d, err := review.SpecHistoryOf(review.Options{Root: s.Root, Cfg: cfg}, r.PathValue("id"))
 	if err != nil {
 		writeReviewError(w, err)
 		return
@@ -132,12 +132,12 @@ func (s *Server) claimHistory(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, d)
 }
 
-func (s *Server) claimAt(w http.ResponseWriter, r *http.Request) {
+func (s *Server) specAt(w http.ResponseWriter, r *http.Request) {
 	cfg, ok := s.config(w)
 	if !ok {
 		return
 	}
-	d, err := review.ClaimAtCommit(review.Options{Root: s.Root, Cfg: cfg}, r.PathValue("id"), r.PathValue("commit"))
+	d, err := review.SpecAtCommit(review.Options{Root: s.Root, Cfg: cfg}, r.PathValue("id"), r.PathValue("commit"))
 	if err != nil {
 		writeReviewError(w, err)
 		return

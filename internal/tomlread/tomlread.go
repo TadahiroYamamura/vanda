@@ -245,7 +245,7 @@ func (t *Table) Strs(key string, required bool) ([]string, bool) {
 	return out, true
 }
 
-// Tables は、表の配列（`[[key]]`）の項目を、要素ごとの Table にして返す。label は要素の名前（例: "claim"）。
+// Tables は、表の配列（`[[key]]`）の項目を、要素ごとの Table にして返す。label は要素の名前（例: "spec"）。
 func (t *Table) Tables(key string, required bool) ([]*Table, bool) {
 	t.used[key] = true
 	v, ok := t.M[key]
@@ -311,7 +311,7 @@ func (t *Table) Unknown(allowed string) {
 	}
 }
 
-// header は、場所の書き方から要素のインデックスを除き、TOML の見出しの名前にする（例: claim[0].evidence → claim.evidence）。
+// header は、場所の書き方から要素のインデックスを除き、TOML の見出しの名前にする（例: spec[0].evidence → spec.evidence）。
 func header(path string) string {
 	var b strings.Builder
 	skip := false

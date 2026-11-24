@@ -1,5 +1,5 @@
 import { api, type Context } from "../api";
-import { ClaimHistory } from "../components/ClaimHistory";
+import { SpecHistory } from "../components/SpecHistory";
 import { ErrorBox, Loading, StateBadge, useLoad } from "../components/common";
 import { ItemRefs } from "../components/ItemRefs";
 import { Prose, RefsProvider } from "../components/Prose";
@@ -13,7 +13,7 @@ export function PropertyPage(props: { id: string; params?: URLSearchParams; ctx?
   const h = useLoad(() => api.propertyHistory(props.id), props.id);
   const query = reviewQuery(props.params);
   return (
-    <div className="claim">
+    <div className="spec">
       <p className="note">
         <Link to={reviewURL(props.params)}>ストーリーのレビューへ戻る</Link>
       </p>
@@ -48,7 +48,7 @@ export function PropertyPage(props: { id: string; params?: URLSearchParams; ctx?
               <ItemRefs items={d.data.assumes} query={query} />
             </dd>
           </dl>
-          <ClaimHistory id={d.data.id} history={h} level="h2" noAt />
+          <SpecHistory id={d.data.id} history={h} level="h2" noAt />
         </RefsProvider>
       )}
     </div>
@@ -61,7 +61,7 @@ export function TruthPage(props: { id: string; params?: URLSearchParams; ctx?: C
   const h = useLoad(() => api.truthHistory(props.id), props.id);
   const query = reviewQuery(props.params);
   return (
-    <div className="claim">
+    <div className="spec">
       <p className="note">
         <Link to={reviewURL(props.params)}>ストーリーのレビューへ戻る</Link>
       </p>
@@ -84,7 +84,7 @@ export function TruthPage(props: { id: string; params?: URLSearchParams; ctx?: C
           <p className="statement user-text">
             <Prose pieces={d.data.statement} />
           </p>
-          <ClaimHistory id={d.data.id} history={h} level="h2" noAt />
+          <SpecHistory id={d.data.id} history={h} level="h2" noAt />
         </RefsProvider>
       )}
     </div>

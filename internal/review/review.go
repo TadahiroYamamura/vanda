@@ -491,7 +491,7 @@ func (s *state) itemState(e *Entry, cur snapshot.Entry) {
 	}
 	agreed := fp != "" && s.recs.Agreed(cur.Kind, cur.ID, fp)
 	e.State = ptr(stateName(agreed))
-	if c := cur.Claim; c != nil {
+	if c := cur.Spec; c != nil {
 		for _, f := range c.Flags {
 			if f == "ai-proposal" {
 				e.Flags = append(e.Flags, "ai-proposal")
@@ -568,10 +568,10 @@ func (s *state) fileState(e *Entry, path string) error {
 }
 
 func (s *state) group(e snapshot.Entry) string {
-	if e.Claim != nil && len(e.Claim.Layers) > 0 {
-		return "layer:" + e.Claim.Layers[0]
+	if e.Spec != nil && len(e.Spec.Layers) > 0 {
+		return "layer:" + e.Spec.Layers[0]
 	}
-	if e.Claim != nil {
+	if e.Spec != nil {
 		return "layer:"
 	}
 	switch e.Kind {

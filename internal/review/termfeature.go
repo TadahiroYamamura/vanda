@@ -27,7 +27,7 @@ type FeatureDetail struct {
 	Core       bool                 `json:"core"`
 	Formal     bool                 `json:"formal"`
 	Refines    []ItemRef            `json:"refines"`
-	Claims     []ClaimSummary       `json:"specs"`
+	Specs      []SpecSummary        `json:"specs"`
 	Refs       map[string]RefTarget `json:"refs"`
 }
 
@@ -37,8 +37,8 @@ type NamedRef struct {
 	Name *string `json:"name"`
 }
 
-// ClaimSummary は、機能を refines する仕様の 1 つ。
-type ClaimSummary struct {
+// SpecSummary は、機能を refines する仕様の 1 つ。
+type SpecSummary struct {
 	ID        string  `json:"id"`
 	Statement []Piece `json:"statement"`
 }
@@ -88,23 +88,23 @@ func Feature(o Options, id string) (*FeatureDetail, *Error) {
 	}
 	f := e.Feature
 	d := &FeatureDetail{ID: f.ID, Name: f.Name, Definition: s.refs.pieces(f.Definition, nil), Core: f.Core, Formal: f.Formal, Refines: s.itemRefs(f.Refines)}
-	d.Claims = s.claimsAbout(f.ID)
+	d.Specs = s.specsAbout(f.ID)
 	d.Refs = s.refs.targets()
 	return d, nil
 }
 
-// claimsAbout は、機能 feature を refines する仕様を、約束リストに書いた順に返す。
-func (s *state) claimsAbout(feature string) []ClaimSummary {
-	out := []ClaimSummary{}
+// specsAbout は、機能 feature を refines する仕様を、約束リストに書いた順に返す。
+func (s *state) specsAbout(feature string) []SpecSummary {
+	out := []SpecSummary{}
 	seen := map[string]bool{}
 	for _, e := range snapshot.Entries(s.cur.snap.List) {
-		if e.Claim == nil || seen[e.ID] {
+		if e.Spec == nil || seen[e.ID] {
 			continue
 		}
 		seen[e.ID] = true
-		for _, up := range e.Claim.Refines {
+		for _, up := range e.Spec.Refines {
 			if up == feature {
-				out = append(out, ClaimSummary{ID: e.ID, Statement: s.refs.pieces(e.Claim.Statement, nil)})
+				out = append(out, SpecSummary{ID: e.ID, Statement: s.refs.pieces(e.Spec.Statement, nil)})
 				break
 			}
 		}
@@ -182,8 +182,8 @@ func Truth(o Options, id string) (*TruthDetail, *Error) {
 	return d, nil
 }
 
-// ItemHistoryOf は、性質・前提（種類 kind）の変更履歴と承認の履歴を返す。形は、仕様のもの（ClaimHistoryOf）と同じ。
-func ItemHistoryOf(o Options, kind, id string) (*ClaimHistory, *Error) {
+// ItemHistoryOf は、性質・前提（種類 kind）の変更履歴と承認の履歴を返す。形は、仕様のもの（SpecHistoryOf）と同じ。
+func ItemHistoryOf(o Options, kind, id string) (*SpecHistory, *Error) {
 	s := &state{o: o, h: newHistory(o.Root, o.Cfg)}
 	cur, err := s.currentItem(kind, id)
 	if err != nil {

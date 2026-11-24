@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 export type Route =
   | { page: "review"; params: URLSearchParams }
-  | { page: "claim"; id: string; params: URLSearchParams }
+  | { page: "spec"; id: string; params: URLSearchParams }
   | { page: "term"; id: string; params: URLSearchParams }
   | { page: "feature"; id: string; params: URLSearchParams }
   | { page: "property"; id: string; params: URLSearchParams }
@@ -13,7 +13,7 @@ export type Route =
 export function parseRoute(loc: Location): Route {
   const params = new URLSearchParams(loc.search);
   const m = /^\/claims\/(.+)$/.exec(loc.pathname);
-  if (m) return { page: "claim", id: decodeURIComponent(m[1]), params };
+  if (m) return { page: "spec", id: decodeURIComponent(m[1]), params };
   const t = /^\/terms\/(.+)$/.exec(loc.pathname);
   if (t) return { page: "term", id: decodeURIComponent(t[1]), params };
   const f = /^\/features\/(.+)$/.exec(loc.pathname);

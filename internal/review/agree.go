@@ -75,7 +75,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 
 	rec := AgreementRecord{Kind: req.Kind, User: *user, AgreedAt: now.Format(time.RFC3339), Story: req.Story}
 	var target string // 一覧の名前（コミットのメッセージに書く）
-	var claim *promises.Claim
+	var spec *promises.Spec
 	var source string // 承認の対象が書いてあるファイル。消した約束リストの項目では空
 	var fp string
 	switch {
@@ -102,7 +102,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 			return nil, conflict(kindName[req.Kind]+" "+cur.ID+" のフィンガープリントを作れません。", "vanda check の promise-list-shape で誤りを確かめて、直してください。")
 		}
 		target = kindName[req.Kind] + " " + cur.ID
-		claim = cur.Claim
+		spec = cur.Spec
 		source = cur.Table.Doc.File
 	case req.Kind == "file":
 		if req.Path == nil || *req.Path == "" {
@@ -129,8 +129,8 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	}
 	files := []string{agreementsFile}
 	var promiseFile string
-	if claim != nil && (claim.Table.Has("flags") || claim.Table.Has("guesses")) {
-		promiseFile = claim.Table.Doc.File
+	if spec != nil && (spec.Table.Has("flags") || spec.Table.Has("guesses")) {
+		promiseFile = spec.Table.Doc.File
 		files = append(files, promiseFile)
 	}
 	// 承認の対象のファイルにコミットしていない変更があると、承認のコミットの時点のリポジトリが、承認した中身と合わなくなる
@@ -213,7 +213,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	}
 
 	if promiseFile != "" {
-		out, err := removeFlags(originals[promiseFile], claim)
+		out, err := removeFlags(originals[promiseFile], spec)
 		if err != nil {
 			return nil, conflict(err.Error(), "flags と guesses を [[spec]] の表の行として書き直すか、手で消してから承認してください。")
 		}
@@ -233,7 +233,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	if Hooks.AfterAgreeWrite != nil {
 		Hooks.AfterAgreeWrite(o.Root)
 	}
-	if err := s.verify(rec, claim); err != nil {
+	if err := s.verify(rec, spec); err != nil {
 		return nil, fail(err)
 	}
 	if create {
@@ -280,20 +280,20 @@ func (s *state) agreementsFile() (string, bool, *Error) {
 }
 
 // removeFlags は、約束の表から flags と guesses の行（複数行の配列なら、その全部の行）を消す。ほかの行は変えない。
-func removeFlags(src []byte, claim *promises.Claim) ([]byte, error) {
+func removeFlags(src []byte, spec *promises.Spec) ([]byte, error) {
 	lines := strings.SplitAfter(string(src), "\n")
 	drop := map[int]bool{}
 	for _, key := range []string{"flags", "guesses"} {
-		if !claim.Table.Has(key) {
+		if !spec.Table.Has(key) {
 			continue
 		}
-		start := claim.Table.Line(key)
+		start := spec.Table.Line(key)
 		if start == 0 || !startsWithKey(lines[start-1], key) {
-			return nil, fmt.Errorf("%s: 約束 %s の %s がインラインの表の中にあるため、消せません。", claim.Table.Doc.File, claim.ID, key)
+			return nil, fmt.Errorf("%s: 約束 %s の %s がインラインの表の中にあるため、消せません。", spec.Table.Doc.File, spec.ID, key)
 		}
 		end, err := valueEnd(lines, start-1)
 		if err != nil {
-			return nil, fmt.Errorf("%s:%d: 約束 %s の %s の終わりが分かりません（%v）。", claim.Table.Doc.File, start, claim.ID, key, err)
+			return nil, fmt.Errorf("%s:%d: 約束 %s の %s の終わりが分かりません（%v）。", spec.Table.Doc.File, start, spec.ID, key, err)
 		}
 		for i := start - 1; i <= end; i++ {
 			drop[i] = true

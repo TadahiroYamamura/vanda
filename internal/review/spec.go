@@ -15,7 +15,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
 )
 
-type ClaimDetail struct {
+type SpecDetail struct {
 	ID          string           `json:"id"`
 	Statement   []Piece          `json:"statement"`
 	Rationale   []Piece          `json:"rationale"`
@@ -81,8 +81,8 @@ type Found struct {
 	State *string `json:"state"`
 }
 
-// ClaimHistory は、約束の変更履歴と承認の履歴
-type ClaimHistory struct {
+// SpecHistory は、約束の変更履歴と承認の履歴
+type SpecHistory struct {
 	Origin     []OriginRef    `json:"origin"`
 	Agreements []AgreementRef `json:"agreements"`
 }
@@ -105,17 +105,17 @@ type AgreementRef struct {
 	Commit *string `json:"commit"`
 }
 
-// Claim は、約束の詳細を返す。変更履歴と承認の履歴は、履歴のコミットをたどって時間がかかるので、ClaimHistoryOf で別に返す。
-func Claim(o Options, id string) (*ClaimDetail, *Error) {
+// Spec は、約束の詳細を返す。変更履歴と承認の履歴は、履歴のコミットをたどって時間がかかるので、SpecHistoryOf で別に返す。
+func Spec(o Options, id string) (*SpecDetail, *Error) {
 	s := &state{o: o, h: newHistory(o.Root, o.Cfg)}
-	cur, e := s.currentClaim(id)
+	cur, e := s.currentSpec(id)
 	if e != nil {
 		return nil, e
 	}
 	key := "spec:" + id
-	c := cur.Claim
-	content := claimContent(cur, s.refs, nil)
-	d := &ClaimDetail{ID: c.ID, Statement: content.Statement, Rationale: content.Rationale, Condition: content.Condition, Flags: content.Flags, Guesses: content.Guesses,
+	c := cur.Spec
+	content := specContent(cur, s.refs, nil)
+	d := &SpecDetail{ID: c.ID, Statement: content.Statement, Rationale: content.Rationale, Condition: content.Condition, Flags: content.Flags, Guesses: content.Guesses,
 		Layers: []LayerRef{}, Refines: s.itemRefs(c.Refines), Assumes: s.itemRefs(c.Assumes), Evidence: []EvidenceDetail{}}
 	fp := s.cur.itemFP[key]
 	if fp != "" {
@@ -173,7 +173,7 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 	return d, nil
 }
 
-func (s *state) currentClaim(id string) (snapshot.Entry, *Error) {
+func (s *state) currentSpec(id string) (snapshot.Entry, *Error) {
 	if e := s.loadCurrent(); e != nil {
 		return snapshot.Entry{}, e
 	}
@@ -184,10 +184,10 @@ func (s *state) currentClaim(id string) (snapshot.Entry, *Error) {
 	return cur, nil
 }
 
-// ClaimHistoryOf は、約束の変更履歴と承認の履歴を返す。
-func ClaimHistoryOf(o Options, id string) (*ClaimHistory, *Error) {
+// SpecHistoryOf は、約束の変更履歴と承認の履歴を返す。
+func SpecHistoryOf(o Options, id string) (*SpecHistory, *Error) {
 	s := &state{o: o, h: newHistory(o.Root, o.Cfg)}
-	cur, e := s.currentClaim(id)
+	cur, e := s.currentSpec(id)
 	if e != nil {
 		return nil, e
 	}
@@ -195,10 +195,10 @@ func ClaimHistoryOf(o Options, id string) (*ClaimHistory, *Error) {
 }
 
 // historyOf は、今の約束リストの項目 cur の変更履歴と承認の履歴を返す。
-func (s *state) historyOf(cur snapshot.Entry) (*ClaimHistory, *Error) {
+func (s *state) historyOf(cur snapshot.Entry) (*SpecHistory, *Error) {
 	key := cur.Key()
 	fp := s.cur.itemFP[key]
-	d := &ClaimHistory{Origin: []OriginRef{}, Agreements: []AgreementRef{}}
+	d := &SpecHistory{Origin: []OriginRef{}, Agreements: []AgreementRef{}}
 
 	commits, err := s.h.loadCommits()
 	if err != nil {
@@ -320,7 +320,7 @@ func File(o Options, path string) (string, *Error) {
 // newestFirst は、変更履歴と承認の履歴を、新しいものが上の順に並べる。
 // 変更履歴はコミットの日時の新しい順、同じ日時なら履歴で後のコミットを先に。承認の履歴は承認した日時（agreed_at）の新しい順、
 // 同じ日時なら承認の記録のファイルで後に書いた記録を先に（同じ日時のときも、後から足したものが上に来るように）
-func newestFirst(d *ClaimHistory, commits []commit, recs []*agreements.Agreement) {
+func newestFirst(d *SpecHistory, commits []commit, recs []*agreements.Agreement) {
 	order := map[string]int{}
 	date := map[string]time.Time{}
 	for i, c := range commits {

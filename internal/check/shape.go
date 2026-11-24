@@ -91,8 +91,8 @@ func (e *env) promiseListShape() []diag.Error {
 
 	errs = append(errs, e.relationErrs(kindOf)...)
 
-	for _, c := range e.list.Claims {
-		errs = append(errs, formalClaim(c, formal)...)
+	for _, c := range e.list.Specs {
+		errs = append(errs, formalSpec(c, formal)...)
 		for _, l := range c.Layers {
 			if !layers[l] {
 				errs = append(errs, c.Table.Err("layers", "レイヤー "+quote(l)+" が設定にありません", "layers を "+orNone(layerIDs)+" から選ぶか、.vanda/config.toml の [[layer]] に足してください"))
@@ -240,7 +240,7 @@ func (e *env) relationErrs(kindOf func(string) string) []diag.Error {
 			}
 		}
 	}
-	for _, c := range e.list.Claims {
+	for _, c := range e.list.Specs {
 		targets(c.Table, "refines", c.Refines, "feature")
 		targets(c.Table, "assumes", c.Assumes, "truth")
 	}
@@ -315,8 +315,8 @@ func orNone(xs []string) string {
 	return strings.Join(xs, "・")
 }
 
-// formalClaim は、形式手法を使う機能を refines する仕様に、model-check の予定と model_check_waiver のどちらか一方だけがあるかを確かめる。
-func formalClaim(c *promises.Claim, formal map[string]bool) []diag.Error {
+// formalSpec は、形式手法を使う機能を refines する仕様に、model-check の予定と model_check_waiver のどちらか一方だけがあるかを確かめる。
+func formalSpec(c *promises.Spec, formal map[string]bool) []diag.Error {
 	var features []string
 	for _, s := range c.Refines {
 		if formal[s] {

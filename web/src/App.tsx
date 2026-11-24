@@ -1,7 +1,7 @@
 import { api } from "./api";
 import { LayerNames } from "./components/Chips";
 import { ErrorBox, useLoad } from "./components/common";
-import { ClaimPage, FilePage } from "./pages/ClaimPage";
+import { SpecPage, FilePage } from "./pages/SpecPage";
 import { ReviewPage } from "./pages/ReviewPage";
 import { PropertyPage, TruthPage } from "./pages/PropertyTruthPage";
 import { FeaturePage, TermPage } from "./pages/TermFeaturePage";
@@ -44,7 +44,7 @@ export function App() {
             <div className="fix">コミットのメッセージの末尾の Story: を、1 つだけ、設定の id_pattern に合う形で書いてください。</div>
           </section>
         )}
-        {route.page === "claim" && <ClaimPage id={route.id} params={route.params} ctx={ctx.data} />}
+        {route.page === "spec" && <SpecPage id={route.id} params={route.params} ctx={ctx.data} />}
         {route.page === "term" && <TermPage id={route.id} params={route.params} />}
         {route.page === "feature" && <FeaturePage id={route.id} params={route.params} />}
         {/* refines の先の性質へ移っても同じ部品が残るので、ID を key にして、前の性質の承認の結果の文を持ち越さない */}

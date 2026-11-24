@@ -102,8 +102,8 @@ func (r *refs) target(e snapshot.Entry, current bool, base *side) RefTarget {
 	case e.Feature != nil:
 		t.Name, body = ptr(e.Feature.Name), e.Feature.Definition
 		t.Core, t.Formal = ptr(e.Feature.Core), ptr(e.Feature.Formal)
-	case e.Claim != nil:
-		body = e.Claim.Statement
+	case e.Spec != nil:
+		body = e.Spec.Statement
 	case e.Property != nil:
 		body = e.Property.Statement
 	case e.Truth != nil:
