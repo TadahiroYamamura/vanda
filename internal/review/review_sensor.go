@@ -11,7 +11,7 @@ import (
 // （漏れも重複もない一覧という事後条件）。破れていれば、一覧を返さずに 500 にする。
 // 一覧の作り方が正しければ外からは破れないので、テストは、食い違う changes と es を直に渡して確かめる。
 //
-// @vanda:sensor review-count-verified
+// @vanda:sensor owner-reviews-every-change
 func checkCount(changes []rawChange, es []Entry) *Error {
 	seen := map[string]bool{}
 	for _, e := range es {

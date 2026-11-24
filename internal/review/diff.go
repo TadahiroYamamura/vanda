@@ -164,7 +164,7 @@ func partsByLine(parts []DiffPart, skip string) [][]DiffPart {
 }
 
 // itemDiff は、約束リストの項目の、文字の項目ごとの差分。両方に書いてある項目だけを入れる。
-// 自然言語で書く項目は、参照を見せる文字に置き換えた文どうしで比べる（reference-diff）。
+// 自然言語で書く項目は、参照を見せる文字に置き換えた文どうしで比べる。
 func itemDiff(before, after any) ItemDiff {
 	fields := map[string][]DiffPart{}
 	add := func(name string, a, b []Piece) {

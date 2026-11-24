@@ -50,7 +50,7 @@ func SpecAtCommit(o Options, id, rev string) (*SpecAt, *Error) {
 	if snap.ListErrs != nil {
 		return nil, &Error{Status: http.StatusInternalServerError, Message: fmt.Sprintf("コミット %s の時点の約束リストを読めません（%d 件。最初の 1 件: %s）。", short(full), len(snap.ListErrs), snap.ListErrs[0].Error()), Fix: "その時点の約束リストに誤りがあります。ほかの時点を選んでください。"}
 	}
-	// 参照の名前は今の約束リストのものを使い、今はない ID だけ、その時点のものを使う（reference-diff と同じ決まり）
+	// 参照の名前は今の約束リストのものを使い、今はない ID だけ、その時点のものを使う（差分で参照の名前を出す時と同じ決まり）
 	s := &state{o: o, h: newHistory(o.Root, o.Cfg)}
 	if e := s.loadCurrent(); e != nil {
 		return nil, e

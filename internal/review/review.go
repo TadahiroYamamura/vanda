@@ -713,7 +713,7 @@ func (s *state) detached(es []Entry) ([]Entry, error) {
 
 // changedBy は、HEAD の履歴で、記録 recs（そのストーリーの、キー key への承認）を最後に書き足したコミットより後のコミットのうち、
 // key の中身を変えたもののストーリーの ID を返す。written は、記録からそれを書き足したコミットへの表。
-// 承認の記録の agreed_at とコミットの日時を比べないのは、rebase や amend でコミットの日時が変わるため（仕様 review-detached-shown）。
+// 承認の記録の agreed_at とコミットの日時を比べないのは、rebase や amend でコミットの日時が変わるため。
 // まだコミットしていない記録しかなければ、それより後のコミットはないので空にする。
 func (s *state) changedBy(key string, recs []*agreements.Agreement, written map[*agreements.Agreement]string) ([]string, error) {
 	commits, err := s.h.loadCommits()

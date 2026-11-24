@@ -50,14 +50,14 @@ EverAgreed(i) == \E a \in agreements : a.item = i /\ a.fp # Absent
 
 (* 項目 i が承認のチェックで止まらない。今ある項目は承認済であること。今ない項目は、承認したことがあれば、             *)
 (* 消したことへの承認があること。一度も承認していないまま消したものは、承認の対象がなかったので止めない             *)
-\* @vanda:spec deleted-item-needs-agreement
+\* @vanda:spec check-passes-only-when-agreed
 Passes(i) == IF Present(i) THEN Agreed(i) ELSE (EverAgreed(i) => HasRecord(i, Absent))
 
 (* s の失効した承認: s が中身を承認したことがあり、今の中身に s の承認がない項目。誰が変えたかを問わない（オーナーの判断）。      *)
 (* 今ない項目（名前を変えた後の古い場所を含む）は、失効した承認にしない。消したことは、失効した承認でなく Passes で止める。   *)
-(* レビューで、今ないものを失効した承認として出さない（review-detached-shown）ことに合わせる（オーナーの決定）。                *)
+(* レビューで、今ないものを失効した承認として出さないことに合わせる（オーナーの決定）。                                       *)
 (* s が消したことだけを承認した項目を足し直しても、s の失効した承認にしない（オーナーの決定）                                   *)
-\* @vanda:spec detached-agreement
+\* @vanda:spec agreement-detached-when-content-changes
 Broken(s) ==
     {i \in Items :
         /\ Present(i)
@@ -70,8 +70,8 @@ Diff == {i \in Items : content[i] # base[i]}
 
 (* スコープ story（s）の承認のチェックが通る: 比べる元と今で違う項目が、どれも今の状態（中身か、ないこと）で承認済で、s の失効した承認がない。 *)
 (* スコープ all（Passes）と違い、比べる元にあって今ない項目は、承認したことがなくても、消したことへの承認を求める。          *)
-(* 承認したことのあるものだけに求めると、オーナーが一度も見ていない削除で通り、story-pass-only-when-seen に反する（TLC の反例） *)
-\* @vanda:spec check-agreement-story-scope
+(* 承認したことのあるものだけに求めると、オーナーが一度も見ていない削除で通り、性質 10（StoryPassOnlyWhenSeen）に反する（TLC の反例） *)
+\* @vanda:spec check-passes-only-when-agreed
 StoryPass(s) ==
     /\ \A i \in Diff : Agreed(i)
     /\ Broken(s) = {}
@@ -140,7 +140,7 @@ Agree(s, i) ==
 (* フラグは戻さない（モデルにはフラグがない）。                                                                          *)
 (* 取り消せる範囲（今の人が、今のブランチで書いた記録だけ）は、このモデルの粒度では表さない。                         *)
 (* ほかのストーリーの、今の中身への承認が残っていれば、承認済のまま                                                    *)
-\* @vanda:spec revoke-returns-to-proposed
+\* @vanda:spec revoke-own-agreement-only
 Revoke(s, i) ==
     /\ [item |-> i, fp |-> content[i], story |-> s] \in agreements
     /\ agreements' = agreements \ {[item |-> i, fp |-> content[i], story |-> s]}
@@ -159,7 +159,7 @@ Next == \E s \in Stories : Edit(s) \/ \E i \in Items : Agree(s, i) \/ Revoke(s, 
 Spec == Init /\ [][Next]_vars
 
 (* 性質 1: 操作ごとに付けた「承認済」と、承認の記録から判定した承認済が、いつも一致する *)
-\* @vanda:spec agreed-when-fingerprint-matches
+\* @vanda:spec agreement-detached-when-content-changes
 AgreedOnlyWithMatchingFingerprint == \A i \in Items : agreedNow[i] = Agreed(i)
 
 (* 性質 2: s の失効した承認があるあいだ、スコープ story（s）のチェックは止まる *)
@@ -167,13 +167,13 @@ BrokenBlocksStory == \A s \in Stories : Broken(s) # {} => ~ StoryPass(s)
 
 (* 性質 3: ほかのストーリーが今の中身を承認しても、s の承認は失効したまま。s が承認し直せば解ける *)
 (* 性質 4: s 自身が変えた項目も、s が前に中身を承認していれば、s が承認し直すまで失効したまま *)
-\* @vanda:spec detached-agreement
+\* @vanda:spec agreement-detached-when-content-changes
 OwnChangeBreaks ==
     [][\A s \in Stories, i \in Items, f \in Fps :
           (Change(s, i, f) /\ \E a \in agreements : a.item = i /\ a.story = s /\ a.fp # Absent) =>
               (i \in Broken(s)' <=> ~ [item |-> i, fp |-> f, story |-> s] \in agreements)]_vars
 
-\* @vanda:spec detached-until-story-reagrees
+\* @vanda:spec agreement-detached-when-content-changes
 OnlyOwnAgreementRepairs ==
     [][\A s, t \in Stories, i \in Items :
           /\ (Agree(t, i) /\ t # s /\ i \in Broken(s)) => i \in Broken(s)'
@@ -181,13 +181,13 @@ OnlyOwnAgreementRepairs ==
 
 (* 性質 5: 取り消しのほかの操作（中身の変更・追加・削除・名前の変更・承認）は、承認の記録を消さない。         *)
 (* フィンガープリントの合わなくなった記録も、今ない項目への記録も、履歴として残る                                            *)
-\* @vanda:spec old-agreements-kept-as-history
+\* @vanda:spec agreement-history-kept
 OnlyRevokeRemovesAgreements ==
     [][\A s \in Stories : (Edit(s) \/ \E i \in Items : Agree(s, i)) => agreements \subseteq agreements']_vars
 
 (* 性質 6: 承認したことのある項目が今なく、消したことへの承認がなければ、スコープ all のチェックは止まる。         *)
 (* 比べる元にあった項目なら、スコープ story のどのストーリーのチェックも止まる。消したことを誰かが承認すれば、その項目では止まらない *)
-\* @vanda:spec deleted-item-needs-agreement
+\* @vanda:spec check-passes-only-when-agreed
 DeletedBlocksWithoutAgreement ==
     \A i \in Items :
         /\ (~ Present(i) /\ EverAgreed(i) /\ ~ HasRecord(i, Absent)) =>
@@ -197,7 +197,7 @@ DeletedBlocksWithoutAgreement ==
 
 (* 性質 7: 名前を変えると、古い場所は消したものになり、新しい場所は、新しい場所への承認の記録がなければ、   *)
 (* 中身が同じでも提案中になる（古い場所への承認は移らない）                                                *)
-\* @vanda:spec renamed-file-needs-agreement
+\* @vanda:spec agreement-detached-when-content-changes
 RenameNeedsAgreement ==
     [][\A s \in Stories, i, j \in Items :
           Rename(s, i, j) =>
@@ -206,14 +206,14 @@ RenameNeedsAgreement ==
               /\ (~ HasRecord(j, content[i]) => ~ Agreed(j)')]_vars
 
 (* 性質 8: 別の項目が同じ中身で承認済でも（写し）、承認済になるのは、その項目への承認の記録があるときだけ *)
-\* @vanda:spec agreed-when-fingerprint-matches
+\* @vanda:spec agreement-detached-when-content-changes
 CopyIsNotAgreed ==
     \A i, j \in Items :
         (i # j /\ Present(j) /\ content[i] = content[j] /\ Agreed(i) /\ Agreed(j)) => HasRecord(j, content[j])
 
 (* 性質 9: スコープ all のチェックが通るなら、今ある項目の今の中身と、承認したことのある項目が今ないことは、どれも、   *)
 (* 承認の記録（取り消したものを除く）のどれかが承認したもの                                                    *)
-\* @vanda:spec pass-only-when-all-seen
+\* @vanda:spec check-passes-only-when-agreed
 PassOnlyWhenAllSeen ==
     AllPass =>
         \A i \in Items :
@@ -222,7 +222,7 @@ PassOnlyWhenAllSeen ==
 
 (* 性質 10: スコープ story（s）のチェックが通るなら、比べる元と今で違う項目は、どれも今の状態（今の中身か、ないこと）に、 *)
 (* 承認の記録（取り消したものを除く）のどれかが承認したもの                                               *)
-\* @vanda:spec story-pass-only-when-seen
+\* @vanda:spec check-passes-only-when-agreed
 StoryPassOnlyWhenSeen ==
     \A s \in Stories : StoryPass(s) => \A i \in Items : content[i] # base[i] => HasRecord(i, content[i])
 

@@ -40,7 +40,7 @@ func newRefs(cur *side) *refs {
 	return r
 }
 
-// lookup は、指す先を今の約束リストから探し、なければ比べる元 base から探す（reference-diff の決まり）。
+// lookup は、指す先を今の約束リストから探し、なければ比べる元 base から探す。
 func (r *refs) lookup(id string, base *side) (snapshot.Entry, bool, bool) {
 	if e, ok := r.cur[id]; ok {
 		return e, true, true

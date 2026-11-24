@@ -77,7 +77,7 @@ func (e *env) agreement(scope string) []diag.Error {
 		return scope == ScopeAll || changed[key]
 	}
 	// スコープ story では、そのストーリーが前に中身を承認したもの（失効した承認を探す先）も見る。
-	// 消したことにだけ承認したものは、足し直しても失効した承認にしない（仕様 detached-agreement の「中身を承認した」）
+	// 消したことにだけ承認したものは、中身を承認していないので、足し直しても失効した承認にしない
 	storyAgreed := map[string]bool{}
 	if scope == ScopeStory {
 		for _, a := range e.recs.Agreements {

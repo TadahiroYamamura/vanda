@@ -33,8 +33,8 @@ var Hooks struct {
 // verify は、書いた後の承認の記録と約束リストを読み直し、承認が今の中身に合い、フラグが外れたかを確かめる（コミットする前の事後条件）。
 // 破れていれば誤りを返し、Agree は書いたファイルを元に戻して 500 にする。
 //
-// @vanda:sensor agree-writes-and-commits
-// @vanda:sensor agree-removes-flags
+// @vanda:sensor agreement-keeps-files-safe
+// @vanda:sensor flags-block-check
 func (s *state) verify(rec AgreementRecord, spec *promises.Spec) error {
 	snap, err := snapshot.Working(s.o.Root, s.o.Cfg)
 	if err != nil {
@@ -102,7 +102,7 @@ func recordPlace(a *agreements.Agreement) string {
 // checkAgreeKept は、承認の記録を書き足した後に、書き足す前の記録がすべて残っているかを確かめる（コミットする前の事後条件）。
 // 書き足すだけで消さないので、フィンガープリントの合わない古い承認の記録も、履歴として残っているはず。
 //
-// @vanda:sensor old-agreements-kept-as-history
+// @vanda:sensor agreement-history-kept
 func checkAgreeKept(before, after []*agreements.Agreement) error {
 	if lost := lostRecords(before, after); len(lost) > 0 {
 		return fmt.Errorf("承認を書き足したら、%s の承認の記録が消えました", recordPlace(lost[0]))
@@ -114,7 +114,7 @@ func checkAgreeKept(before, after []*agreements.Agreement) error {
 // （deleted なら、消したこと）への、ストーリー story の記録だけかを確かめる（コミットする前の事後条件）。
 // 取り消す記録の選び方（revocable）を信じず、書き換える前と後の記録の違いから確かめる。
 //
-// @vanda:sensor old-agreements-kept-as-history
+// @vanda:sensor agreement-history-kept
 func checkRevokeKept(before, after []*agreements.Agreement, kind, key, fp string, deleted bool, story string) error {
 	for _, a := range lostRecords(before, after) {
 		if a.Kind != kind || a.Target() != key || a.Story != story || a.Deleted != deleted || !deleted && a.Fingerprint != fp {
@@ -127,7 +127,7 @@ func checkRevokeKept(before, after []*agreements.Agreement, kind, key, fp string
 // checkRevokeOwn は、取り消しで承認の記録を書き換えた後に、消えた記録が、今の人 user が、今のブランチ
 // （マージベースの時点の記録 base になかったもの）で書いたものだけかを確かめる（コミットする前の事後条件）。
 //
-// @vanda:sensor revoke-own-branch-only
+// @vanda:sensor revoke-own-agreement-only
 func checkRevokeOwn(before, after []*agreements.Agreement, user *User, base *agreements.Records) error {
 	lost := lostRecords(before, after)
 	if len(lost) == 0 {
@@ -153,8 +153,7 @@ func checkRevokeOwn(before, after []*agreements.Agreement, user *User, base *agr
 // （消した約束リストの項目なら、約束リストのファイル）と files に、コミットしていない変更が残っていないかを確かめる
 // （承認のコミットの時点のリポジトリが、承認した中身と合うこと）。
 //
-// @vanda:sensor agree-writes-and-commits
-// @vanda:sensor agree-rejects-uncommitted
+// @vanda:sensor agreement-keeps-files-safe
 func checkAgreeCommit(root string, files, sources []string) error {
 	if err := committedExactly(root, files); err != nil {
 		return err
@@ -172,7 +171,7 @@ func checkAgreeCommit(root string, files, sources []string) error {
 
 // checkRevokeCommit は、取り消しのコミットの後に、コミットが承認の記録のファイル files だけを含む（約束リストのフラグを戻していない）かを確かめる。
 //
-// @vanda:sensor revoke-commits-and-keeps-flags
+// @vanda:sensor revoke-own-agreement-only
 func checkRevokeCommit(root string, files []string) error {
 	return committedExactly(root, files)
 }

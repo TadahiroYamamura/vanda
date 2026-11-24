@@ -20,7 +20,7 @@ var Hooks struct {
 // checkCreated は、.vanda/ の中が、書いたファイル files（場所と中身）とちょうど同じかを確かめる。
 // 作る前からあった .vanda/ に書き込んでいれば、ほかのファイルが混じるか中身が違うので、ここで見つかる。
 //
-// @vanda:sensor init-keeps-existing
+// @vanda:sensor start-with-init
 func checkCreated(root string, files [][2]string) error {
 	want := map[string]string{}
 	for _, f := range files {
