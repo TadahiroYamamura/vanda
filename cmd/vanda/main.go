@@ -12,7 +12,6 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/diag"
 	"github.com/TadahiroYamamura/vanda/internal/repo"
-	"github.com/TadahiroYamamura/vanda/internal/version"
 )
 
 func main() {
@@ -41,7 +40,7 @@ func newRootCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	root.AddCommand(newVersionCommand(), newCheckCommand(), newServeCommand(), newInitCommand())
+	root.AddCommand(newCheckCommand(), newServeCommand(), newInitCommand())
 	return root
 }
 
@@ -85,19 +84,6 @@ func newCheckCommand() *cobra.Command {
 	cmd.Flags().StringVar(&base, "base", "", `ベースブランチ（scope = "story" のチェックがあるときに必要です）`)
 	cmd.Flags().StringVar(&story, "story", "", "ストーリーの ID（コミットの Story: のトレーラーから決まらないときに渡します）")
 	return cmd
-}
-
-// version は、.vanda/ がなくても、バージョンが合わなくても動く（バージョンが合わないときに、どのバージョンかを確かめるため）。
-func newVersionCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "version",
-		Short: "バージョンを表示します",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			fmt.Fprintln(cmd.OutOrStdout(), version.Current)
-			return nil
-		},
-	}
 }
 
 // loadCommittedConfig は、git のリポジトリのルートを探し、HEAD のコミットの設定を読んでバージョンを確かめる（チェックと画面は、コミットした中身だけを読むため）。

@@ -31,7 +31,7 @@
 
 ## バージョン
 
-`.vanda/config.toml` の `version` が動いている vanda のバージョンと合わないときは、`vanda check` も `vanda serve` も止まる。`vanda version` だけは止まらない。
+`.vanda/config.toml` の `version` が動いている vanda のバージョンと合わないときは、`vanda check` も `vanda serve` も止まる。
 
 ## ファイルのパターン
 
@@ -462,7 +462,6 @@ scope = "story"
 
 | コマンド | 中身 |
 |---|---|
-| `vanda version` | 動いている vanda のバージョンを、1 行で出す（例: `0.1.0`）。`.vanda/` がなくても、バージョンが合わなくても動く |
 | `vanda check <チェックの設定のファイル> [--base <ブランチ>] [--story <ID>]` | チェックする。チェックごとの結果の行は標準出力に、誤りの中身は標準エラーに出す。どれかが失敗したら終了コード 1 |
 
 ## GUI の API（`vanda serve`）
