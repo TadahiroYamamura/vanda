@@ -2,7 +2,7 @@
 
 この計画は、約束リストの新しい形の段 1 のテストを書くテスト担当のエージェントに渡す。テスト担当は、実装のコードを書き換えない。実装を読んで期待値を作らない。
 
-前提として読むもの: `CLAUDE.md`、`docs/plans/promise-reorg-shape-impl.md` の 2 章と 3 章、`docs/plans/promise-reorg-layers.md` の 3 章（関係の表）、`docs/formats.md`、`docs/pitfalls.jsonl`。
+前提として読むもの: `CLAUDE.md`、`docs/plans/promise-reorg-shape-impl.md` の 2 章と 3 章、対応の表、`docs/plans/promise-reorg-layers.md` の 3 章（関係の表）、`docs/formats.md`、`docs/pitfalls.jsonl`。
 
 この計画は、実装の計画がオーナーに承認されるまで、テスト担当に渡さない。
 
@@ -91,6 +91,7 @@
 | vanda 自身の約束リストで、promise-list-shape と annotation-links が通る |
 | 機能のすべてが、下に性質を持たない性質を 1 つ以上 `refines` している。仕様のすべてが、機能を 1 つ以上 `refines` している |
 | 消える仕様を指すアノテーションが、残っていない |
+| 今のテストとセンサーのアノテーションが、対応の表のとおりの仕様を指している（表にある今の仕様の ID ごとに、付け直す前の数と、付け直した後の数が合う） |
 | 承認の記録に、書き直す前の記録が残っていない |
 
 ### 消した機能
@@ -103,4 +104,6 @@
 ## 進め方
 
 - 型の改名で通らなくなった今のテストを、新しい名前に直す。直す時に、確かめていることを変えない
+- テストのファイルの中のアノテーションの付け直しは、テスト担当が行う。実装のコードの中の `@vanda:spec` と `@vanda:sensor` は、実装担当が行う
+- vanda doctor と vanda version のテストを消す
 - 部品ごとに報告する。実装が計画と違う時は、テストを実装に合わせず、報告する
