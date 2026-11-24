@@ -4,7 +4,7 @@ import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { isInaccessible } from "@testing-library/dom";
 import { expect } from "vitest";
-import type { ClaimDetail, ClaimHistory, Context, Entry, Piece, RefTarget, Review, Story } from "../api";
+import type { ClaimDetail, ClaimHistory, Context, Entry, Piece, PropertyDetail, RefTarget, Review, Story, TruthDetail } from "../api";
 
 export const ctx: Context = {
   version: "0.1.0",
@@ -34,12 +34,15 @@ export const termRef = (name: string, text: string, current = true, pieces: Piec
 export const featureRef = (name: string, text: string, o: { current?: boolean; core: boolean; formal: boolean; pieces?: Piece[] }): RefTarget => ({
   kind: "feature", name, text, current: o.current ?? true, pieces: o.pieces ?? plain(text), core: o.core, formal: o.formal,
 });
-export const claimRef = (text: string, current = true, pieces: Piece[] = plain(text)): RefTarget => ({ kind: "claim", name: null, text, current, pieces });
+export const claimRef = (text: string, current = true, pieces: Piece[] = plain(text)): RefTarget => ({ kind: "spec", name: null, text, current, pieces });
+// 性質と前提は、仕様と同じく名前を持たない
+export const propertyRef = (text: string, current = true, pieces: Piece[] = plain(text)): RefTarget => ({ kind: "property", name: null, text, current, pieces });
+export const truthRef = (text: string, current = true, pieces: Piece[] = plain(text)): RefTarget => ({ kind: "truth", name: null, text, current, pieces });
 
 export function claimEntry(no: number, id: string, over: Partial<Entry> = {}): Entry {
   return {
     no,
-    kind: "claim",
+    kind: "spec",
     id,
     path: null,
     fileType: null,
@@ -52,7 +55,7 @@ export function claimEntry(no: number, id: string, over: Partial<Entry> = {}): E
       statement: plain(`${id} の前の文`),
       rationale: null,
       condition: null,
-      subjects: ["task-id"],
+      refines: ["add-task"], assumes: [],
       layers: ["model"],
       evidence: [{ stage: "implementation", type: "unit-test", layers: ["model"], detail: null }],
       flags: [],
@@ -63,7 +66,7 @@ export function claimEntry(no: number, id: string, over: Partial<Entry> = {}): E
       statement: plain(`${id} の後の文`),
       rationale: null,
       condition: null,
-      subjects: ["task-id"],
+      refines: ["add-task"], assumes: [],
       layers: ["model"],
       evidence: [{ stage: "implementation", type: "unit-test", layers: ["model"], detail: null }],
       flags: [],
@@ -76,6 +79,27 @@ export function claimEntry(no: number, id: string, over: Partial<Entry> = {}): E
     diff: null,
     ...over,
   };
+}
+
+// propertyEntry・truthEntry は、一覧の性質・前提の 1 件（docs/formats.md の before・after の表の property・truth）
+export function propertyEntry(no: number, id: string, over: Partial<Entry> = {}): Entry {
+  return claimEntry(no, id, {
+    kind: "property",
+    group: "properties",
+    before: { statement: plain(`${id} の前の文`), rationale: null, refines: [], assumes: [] },
+    after: { statement: plain(`${id} の後の文`), rationale: null, refines: [], assumes: [] },
+    ...over,
+  });
+}
+
+export function truthEntry(no: number, id: string, over: Partial<Entry> = {}): Entry {
+  return claimEntry(no, id, {
+    kind: "truth",
+    group: "truths",
+    before: { statement: plain(`${id} の前の文`) },
+    after: { statement: plain(`${id} の後の文`) },
+    ...over,
+  });
 }
 
 export function fileEntry(no: number, path: string, over: Partial<Entry> = {}): Entry {
@@ -129,7 +153,8 @@ export function claimDetail(over: Partial<ClaimDetail> = {}): ClaimDetail {
     rationale: plain("重なると消す相手を決められない"),
     condition: plain("タスクが 1 つ以上ある"),
     layers: [{ id: "model", name: "モデル" }],
-    subjects: [{ kind: "term", id: "task-id", name: "タスクの ID" }],
+    refines: [{ kind: "feature", id: "add-task", name: "タスクの登録" }],
+    assumes: [],
     state: "proposed",
     fingerprint: "sha256:" + "a".repeat(64),
     flags: [],
@@ -140,7 +165,33 @@ export function claimDetail(over: Partial<ClaimDetail> = {}): ClaimDetail {
   };
 }
 
-// claimHistory は、約束の変更履歴と承認の履歴（GET /api/claims/<ID>/history）
+// propertyDetail・truthDetail は、性質・前提の詳細（GET /api/properties/<ID>・GET /api/truths/<ID>）
+export function propertyDetail(over: Partial<PropertyDetail> = {}): PropertyDetail {
+  return {
+    id: "no-lost-task",
+    statement: plain("登録したタスクは失われない"),
+    rationale: plain("頼れるようにするため"),
+    refines: [{ kind: "property", id: "reliable", name: null }],
+    assumes: [{ kind: "truth", id: "disk-works", name: null }],
+    state: "proposed",
+    fingerprint: "sha256:" + "b".repeat(64),
+    refs: {},
+    ...over,
+  };
+}
+
+export function truthDetail(over: Partial<TruthDetail> = {}): TruthDetail {
+  return {
+    id: "disk-works",
+    statement: plain("ディスクに書いたものは、読み戻せる"),
+    state: "proposed",
+    fingerprint: "sha256:" + "c".repeat(64),
+    refs: {},
+    ...over,
+  };
+}
+
+// claimHistory は、約束・性質・前提の変更履歴と承認の履歴（GET /api/specs/<ID>/history など）
 export function claimHistory(over: Partial<ClaimHistory> = {}): ClaimHistory {
   return { origin: [], agreements: [], ...over };
 }
@@ -172,7 +223,9 @@ export function defaultHandlers(r: Review) {
     http.get("/api/context", () => HttpResponse.json(ctx)),
     http.get("/api/review", () => HttpResponse.json(r)),
     http.get("/api/story", () => HttpResponse.json(story)),
-    http.get("/api/claims/:id/history", () => HttpResponse.json(claimHistory())),
+    http.get("/api/specs/:id/history", () => HttpResponse.json(claimHistory())),
+    http.get("/api/properties/:id/history", () => HttpResponse.json(claimHistory())),
+    http.get("/api/truths/:id/history", () => HttpResponse.json(claimHistory())),
   ];
 }
 
