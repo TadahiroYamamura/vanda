@@ -138,6 +138,19 @@ layers = ["model"]
 [[property]]
 id = "p"
 statement = "性質の文"
+
+[[property]]
+id = "p-shown"
+statement = "{@id:t-root}を守る"
+
+[[truth]]
+id = "tr-shown"
+statement = "ディスクは読める"
+
+[[term]]
+id = "t-refs"
+name = "性質と前提を指す用語"
+definition = "{@id:p-shown}と{@id:tr-shown}を前にする"
 `
 
 type tfClaim struct {
@@ -289,6 +302,22 @@ func Test用語の詳細は名前とIDとセグメントに分けた定義と親
 	if leaf.Refs == nil {
 		t.Errorf("t-child-a の refs が null（何も指していなくても {} のはず）")
 	}
+}
+
+// 性質と前提は名前を持たないので、参照は ID に置き換えて見せる（約束と同じ）。refs の中身は docs/formats.md の「セグメントの配列」の表
+func Test性質と前提への参照はIDに置き換えて見せrefsに種類と文を返す(t *testing.T) {
+	t.Parallel()
+	s := setupTFAPI(t)
+
+	var got tfTerm
+	if code, msg := s.get("/api/terms/t-refs", &got); code != 200 {
+		t.Fatalf("用語 t-refs の詳細を読めない（%d）: %s", code, msg)
+	}
+	wantFrags(t, "t-refs の definition", got.Definition, fragsOf("p-shown>p-shown", "と", "tr-shown>tr-shown", "を前にする"))
+	wantRefs(t, "t-refs の詳細", got.Refs, map[string]refInfo{
+		"p-shown":  {Kind: "property", Name: nil, Text: "タスクを守る", Current: true, Pieces: fragsOf("タスク>t-root", "を守る")},
+		"tr-shown": {Kind: "truth", Name: nil, Text: "ディスクは読める", Current: true, Pieces: textOf("ディスクは読める")},
+	})
 }
 
 // @vanda:evidence feature-page-content

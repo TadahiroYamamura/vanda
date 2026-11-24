@@ -12,6 +12,9 @@ import (
 
 // refFields は、名前を除く、自然言語で書く項目の全部（計画の「書き方」）。
 var refFields = []string{
+	"property.statement",
+	"property.rationale",
+	"truth.statement",
 	"term.definition",
 	"feature.definition",
 	"feature.formal_waiver",
@@ -42,7 +45,12 @@ func refPromises(vals map[string]string, termName, featureName string) string {
 	}
 	return fmt.Sprintf(`[[property]]
 id = "p"
-statement = "性質の文"
+statement = %s
+rationale = %s
+
+[[truth]]
+id = "tr"
+statement = %s
 
 [[term]]
 id = "t"
@@ -80,7 +88,7 @@ stage = "implementation"
 type = "unit-test"
 layers = ["model"]
 detail = %s
-`, termName, v("term.definition"), featureName, v("feature.definition"), v("feature.formal_waiver"),
+`, v("property.statement"), v("property.rationale"), v("truth.statement"), termName, v("term.definition"), featureName, v("feature.definition"), v("feature.formal_waiver"),
 		v("claim.statement"), v("claim.rationale"), v("claim.condition"), v("claim.guesses"), v("claim.model_check_waiver"), v("evidence.detail"))
 }
 
@@ -163,15 +171,21 @@ func refBaseline(t *testing.T, bin, version string) {
 }
 
 // @vanda:evidence reference-form
-func Test自然言語で書く項目のどれでも参照を読み用語と機能と約束のどれのIDも指せる(t *testing.T) {
+func Test自然言語で書く項目のどれでも参照を読み性質と前提と用語と機能と約束のどれのIDも指せる(t *testing.T) {
 	t.Parallel()
 	bin, version := refSetup(t)
 	refBaseline(t, bin, version)
 
-	// 用語・機能・約束のそれぞれを指す参照は、どの項目でも通る
-	ok := refPromises(allFields("{@id:t} と {@id:f-waived} と {@id:c} を指す"), "", "")
-	if code, out := refCheck(t, bin, version, ok); code != 0 {
-		t.Errorf("今ある用語・機能・約束を指す参照で、形のチェックが通らない（%d）\n%s", code, out)
+	// 性質・前提・用語・機能・約束のそれぞれを指す参照は、どの項目でも通る。型ごとに分けて、どの型を指した時に通らないかが分かるようにする
+	for kind, id := range map[string]string{"性質": "p", "前提": "tr", "用語": "t", "機能": "f-waived", "約束": "c"} {
+		ok := refPromises(allFields("{@id:"+id+"} を指す"), "", "")
+		if code, out := refCheck(t, bin, version, ok); code != 0 {
+			t.Errorf("今ある%sを指す参照で、形のチェックが通らない（%d）\n%s", kind, code, out)
+		}
+	}
+	all := refPromises(allFields("{@id:p} と {@id:tr} と {@id:t} と {@id:f-waived} と {@id:c} を指す"), "", "")
+	if code, out := refCheck(t, bin, version, all); code != 0 {
+		t.Errorf("今ある性質・前提・用語・機能・約束を指す参照で、形のチェックが通らない（%d）\n%s", code, out)
 	}
 
 	// ない ID を指すと、どの項目でも誤りになる（参照として読んでいる）。項目ごとに別の ID にして、どの誤りかを見分ける
