@@ -215,7 +215,7 @@ func Revoke(o Options, req RevokeRequest) (*RevokeResult, *Error) {
 			return nil, e
 		}
 		kind, key, target = req.Kind, k, t
-	case req.Kind == "claim" || req.Kind == "term" || req.Kind == "feature":
+	case isItemKind(req.Kind):
 		if req.ID == nil || *req.ID == "" {
 			return nil, badRequest(kindName[req.Kind]+"の取り消しに id がありません。", "id に ID を書いてください。")
 		}
@@ -237,7 +237,7 @@ func Revoke(o Options, req RevokeRequest) (*RevokeResult, *Error) {
 		}
 		kind, key, fp, target = "file", *req.Path, f, "ファイル "+*req.Path
 	default:
-		return nil, badRequest(fmt.Sprintf("対象の種類 %q はありません。", req.Kind), "kind を claim・term・feature・file のどれかにしてください。")
+		return nil, badRequest(fmt.Sprintf("対象の種類 %q はありません。", req.Kind), kindsFix())
 	}
 	if !req.Deleted && fp != req.Fingerprint {
 		return nil, conflict(target+" の中身が、画面に表示した後に変わりました（画面 "+req.Fingerprint+"、今 "+fp+"）。", "一覧を読み直し、今の中身を確かめてから取り消してください。")
@@ -407,11 +407,11 @@ func checkRemoved(before, after, remove []*agreements.Agreement) error {
 	return nil
 }
 
-// deletedTarget は、消したことへの承認と取り消しの対象を確かめ、記録の key（約束・用語・機能なら ID、ファイルなら場所）と、
+// deletedTarget は、消したことへの承認と取り消しの対象を確かめ、記録の key（約束リストの項目なら ID、ファイルなら場所）と、
 // 文言に使う名前を返す。今あるものは消していないので断る（画面に表示した後に足し直されたときも、ここで断る）。
 func (s *state) deletedTarget(kind string, id, path *string, what string) (string, string, *Error) {
-	switch kind {
-	case "claim", "term", "feature":
+	switch {
+	case isItemKind(kind):
 		if id == nil || *id == "" {
 			return "", "", badRequest(kindName[kind]+"の"+what+"に id がありません。", "id に ID を書いてください。")
 		}
@@ -419,7 +419,7 @@ func (s *state) deletedTarget(kind string, id, path *string, what string) (strin
 			return "", "", conflict(kindName[kind]+" "+*id+" は約束リストにあり、消していません。", "一覧を読み直してください。")
 		}
 		return *id, kindName[kind] + " " + *id, nil
-	case "file":
+	case kind == "file":
 		if path == nil || *path == "" {
 			return "", "", badRequest("ファイルの"+what+"に path がありません。", "path にファイルの場所を書いてください。")
 		}
@@ -431,5 +431,5 @@ func (s *state) deletedTarget(kind string, id, path *string, what string) (strin
 		}
 		return *path, "ファイル " + *path, nil
 	}
-	return "", "", badRequest(fmt.Sprintf("対象の種類 %q はありません。", kind), "kind を claim・term・feature・file のどれかにしてください。")
+	return "", "", badRequest(fmt.Sprintf("対象の種類 %q はありません。", kind), kindsFix())
 }

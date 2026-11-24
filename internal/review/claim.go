@@ -91,7 +91,7 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 	if e != nil {
 		return nil, e
 	}
-	key := "claim:" + id
+	key := "spec:" + id
 	c := cur.Claim
 	content := claimContent(cur, s.refs, nil)
 	d := &ClaimDetail{ID: c.ID, Statement: content.Statement, Rationale: content.Rationale, Condition: content.Condition, Flags: content.Flags, Guesses: content.Guesses,
@@ -100,7 +100,7 @@ func Claim(o Options, id string) (*ClaimDetail, *Error) {
 	if fp != "" {
 		d.Fingerprint = ptr(fp)
 	}
-	d.State = stateName(fp != "" && s.recs.Agreed("claim", c.ID, fp))
+	d.State = stateName(fp != "" && s.recs.Agreed("spec", c.ID, fp))
 
 	names := map[string]string{}
 	for _, l := range o.Cfg.Layers {
@@ -156,7 +156,7 @@ func (s *state) currentClaim(id string) (snapshot.Entry, *Error) {
 	if e := s.loadCurrent(); e != nil {
 		return snapshot.Entry{}, e
 	}
-	cur, ok := s.cur.items["claim:"+id]
+	cur, ok := s.cur.items["spec:"+id]
 	if !ok {
 		return snapshot.Entry{}, &Error{Status: http.StatusNotFound, Message: "約束 " + id + " は約束リストにありません。", Fix: "約束の ID を確かめてください。"}
 	}
@@ -170,8 +170,12 @@ func ClaimHistoryOf(o Options, id string) (*ClaimHistory, *Error) {
 	if e != nil {
 		return nil, e
 	}
-	key := "claim:" + id
-	c := cur.Claim
+	return s.historyOf(cur)
+}
+
+// historyOf は、今の約束リストの項目 cur の変更履歴と承認の履歴を返す。
+func (s *state) historyOf(cur snapshot.Entry) (*ClaimHistory, *Error) {
+	key := cur.Key()
 	fp := s.cur.itemFP[key]
 	d := &ClaimHistory{Origin: []OriginRef{}, Agreements: []AgreementRef{}}
 
@@ -197,7 +201,7 @@ func ClaimHistoryOf(o Options, id string) (*ClaimHistory, *Error) {
 			return nil, internalErr(err)
 		}
 		if _, inAfter := after.items[key]; !inAfter {
-			// 消した後に同じ ID で作り直したものは、新しい約束とみなすので、消すまでの変更履歴を捨てる
+			// 消した後に同じ ID で作り直したものは、新しい項目とみなすので、消すまでの変更履歴を捨てる
 			d.Origin = d.Origin[:0]
 			continue
 		}
@@ -211,7 +215,7 @@ func ClaimHistoryOf(o Options, id string) (*ClaimHistory, *Error) {
 	var mine []*agreements.Agreement
 	for _, a := range s.recs.Agreements {
 		// 消したことへの承認は中身を持たず、承認の履歴（中身ごとの承認）に並べられないので除く
-		if a.Kind == "claim" && a.Key == c.ID && !a.Deleted {
+		if a.Kind == cur.Kind && a.Key == cur.ID && !a.Deleted {
 			mine = append(mine, a)
 		}
 	}

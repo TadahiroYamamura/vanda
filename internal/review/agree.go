@@ -43,7 +43,7 @@ type AgreementRecord struct {
 	Story       string  `json:"story"`
 }
 
-// target は、記録の指す先（約束・用語・機能なら ID、ファイルなら場所）。agreements.Agreement の Target と同じ決め方。
+// target は、記録の指す先（約束リストの項目なら ID、ファイルなら場所）。agreements.Agreement の Target と同じ決め方。
 func (rec AgreementRecord) target() string {
 	if rec.Path != nil {
 		return *rec.Path
@@ -76,7 +76,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	rec := AgreementRecord{Kind: req.Kind, User: *user, AgreedAt: now.Format(time.RFC3339), Story: req.Story}
 	var target string // 一覧の名前（コミットのメッセージに書く）
 	var claim *promises.Claim
-	var source string // 承認の対象が書いてあるファイル。消した約束・用語・機能では空
+	var source string // 承認の対象が書いてあるファイル。消した約束リストの項目では空
 	var fp string
 	switch {
 	case req.Deleted:
@@ -88,7 +88,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		if req.Kind == "file" {
 			rec.Path, source = &key, key
 		}
-	case req.Kind == "claim" || req.Kind == "term" || req.Kind == "feature":
+	case isItemKind(req.Kind):
 		if req.ID == nil || *req.ID == "" {
 			return nil, badRequest(kindName[req.Kind]+"の承認に id がありません。", "id に ID を書いてください。")
 		}
@@ -120,7 +120,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 		target = "ファイル " + p
 		source = p
 	default:
-		return nil, badRequest(fmt.Sprintf("対象の種類 %q はありません。", req.Kind), "kind を claim・term・feature・file のどれかにしてください。")
+		return nil, badRequest(fmt.Sprintf("対象の種類 %q はありません。", req.Kind), kindsFix())
 	}
 
 	agreementsFile, create, e := s.agreementsFile()
@@ -136,7 +136,7 @@ func Agree(o Options, req AgreeRequest, now time.Time) (*AgreeResult, *Error) {
 	// 承認の対象のファイルにコミットしていない変更があると、承認のコミットの時点のリポジトリが、承認した中身と合わなくなる
 	sources := []string{source}
 	if source == "" {
-		// 消した約束・用語・機能には書いてあるファイルがないので、約束リストのどのファイル（消したファイルを含む）にも、
+		// 消した約束リストの項目には書いてあるファイルがないので、約束リストのどのファイル（消したファイルを含む）にも、
 		// コミットしていない変更がないことを求める
 		dirty, err := dirtyMatching(o.Root, o.Cfg.Promises)
 		if err != nil {

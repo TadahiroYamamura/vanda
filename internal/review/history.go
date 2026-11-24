@@ -45,20 +45,6 @@ func newSide(s *snapshot.Snapshot) *side {
 		}
 		sd.itemFP[e.Key()] = fp
 	}
-	// TODO: 性質と前提を承認の対象にする時（docs/plans/promise-reorg-shape-impl.md の 2.4）に、snapshot.Entries が返すようにして、ここを消す。
-	// それまでは、参照の指す先としてだけ足す（items と itemFP に足すと、変わったものの一覧と承認に出るため）
-	if s.List != nil {
-		for _, p := range s.List.Properties {
-			if _, dup := sd.ids[p.ID]; !dup {
-				sd.ids[p.ID] = snapshot.Entry{Kind: "property", ID: p.ID, Table: p.Table, Raw: p.Raw, Property: p}
-			}
-		}
-		for _, t := range s.List.Truths {
-			if _, dup := sd.ids[t.ID]; !dup {
-				sd.ids[t.ID] = snapshot.Entry{Kind: "truth", ID: t.ID, Table: t.Table, Raw: t.Raw, Truth: t}
-			}
-		}
-	}
 	for _, t := range s.Targets {
 		sd.types[t.Path] = t.Type
 	}

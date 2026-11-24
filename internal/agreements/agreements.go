@@ -11,7 +11,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/tomlread"
 )
 
-var Kinds = []string{"claim", "term", "feature", "file"}
+var Kinds = []string{"spec", "term", "feature", "property", "truth", "file"}
 
 type Agreement struct {
 	Table       *tomlread.Table
@@ -112,7 +112,7 @@ func (r *Records) read(top *tomlread.Table) {
 	top.Unknown("agreement")
 }
 
-// Target は、記録の指す先。約束・用語・機能なら ID、ファイルなら場所（path）。
+// Target は、記録の指す先。約束リストの項目なら ID、ファイルなら場所（path）。
 func (a *Agreement) Target() string {
 	if a.Kind == "file" {
 		return a.Path
@@ -120,7 +120,7 @@ func (a *Agreement) Target() string {
 	return a.Key
 }
 
-// Agreed は、対象の種類 kind・指す先 target（約束・用語・機能なら ID、ファイルなら場所）の今の中身のフィンガープリント fp に合う承認が 1 つでもあるかを返す。
+// Agreed は、対象の種類 kind・指す先 target（約束リストの項目なら ID、ファイルなら場所）の今の中身のフィンガープリント fp に合う承認が 1 つでもあるかを返す。
 // ファイルは場所でも見分ける。フィンガープリントだけでマッチさせると、承認済のファイルを写した先が、誰も読まないまま承認済になる
 func (r *Records) Agreed(kind, target, fp string) bool {
 	for _, a := range r.Agreements {

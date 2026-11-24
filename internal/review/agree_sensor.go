@@ -59,7 +59,7 @@ func (s *state) verify(rec AgreementRecord, claim *promises.Claim) error {
 		return nil
 	}
 	after := newSide(snap)
-	key := "claim:" + claim.ID
+	key := "spec:" + claim.ID
 	if rec.Fingerprint == nil || after.itemFP[key] != *rec.Fingerprint {
 		return errors.New("フラグを外したら、約束のフィンガープリントが変わりました")
 	}
@@ -150,7 +150,7 @@ func checkRevokeOwn(before, after []*agreements.Agreement, user *User, base *agr
 }
 
 // checkAgreeCommit は、承認のコミットの後に、コミットが承認で変えるファイル files だけを含み、承認の対象が書いてあるファイル sources
-// （消した約束・用語・機能なら、約束リストのファイル）と files に、コミットしていない変更が残っていないかを確かめる
+// （消した約束リストの項目なら、約束リストのファイル）と files に、コミットしていない変更が残っていないかを確かめる
 // （承認のコミットの時点のリポジトリが、承認した中身と合うこと）。
 //
 // @vanda:sensor agree-writes-and-commits

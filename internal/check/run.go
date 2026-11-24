@@ -56,7 +56,7 @@ type env struct {
 	goneFiles []string
 }
 
-// gone は、マージベースにあって今ない約束・用語・機能。file はマージベースでその項目があった約束リストのファイル
+// gone は、マージベースにあって今ない約束リストの項目。file はマージベースでその項目があった約束リストのファイル
 type gone struct {
 	kind, id, file string
 }

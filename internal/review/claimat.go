@@ -57,7 +57,7 @@ func ClaimAtCommit(o Options, id, rev string) (*ClaimAt, *Error) {
 	}
 	at := newSide(snap)
 	for _, e := range snapshot.Entries(snap.List) {
-		if e.Kind == "claim" && e.ID == id {
+		if e.Kind == "spec" && e.ID == id {
 			c := claimContent(e, s.refs, at)
 			names := map[string]string{}
 			for _, l := range o.Cfg.Layers {

@@ -395,7 +395,24 @@ func sortedKeys(cs *changeSet) []string {
 	return out
 }
 
-var kindName = map[string]string{"term": "用語", "feature": "機能", "claim": "約束", "file": "ファイル"}
+var kindName = map[string]string{"term": "用語", "feature": "機能", "spec": "約束", "property": "性質", "truth": "前提", "file": "ファイル"}
+
+// itemKinds は、約束リストの項目の種類（承認の記録と API の kind の値）。API の誤りの文に、この順で出す
+var itemKinds = []string{"spec", "term", "feature", "property", "truth"}
+
+func isItemKind(kind string) bool {
+	for _, k := range itemKinds {
+		if k == kind {
+			return true
+		}
+	}
+	return false
+}
+
+// kindsFix は、kind が決まった値でないときの、直し方の文。
+func kindsFix() string {
+	return "kind を " + strings.Join(itemKinds, "・") + "・file のどれかにしてください。"
+}
 
 // entries は、違うキーを一覧の 1 件ずつにする。中身が同じで場所だけが変わったファイルも、まとめずに、古い場所の削除と新しい場所の追加の 2 件にする
 // （ファイルは場所で見分け、どちらの場所にも承認が要るため）。
@@ -557,13 +574,18 @@ func (s *state) group(e snapshot.Entry) string {
 	if e.Claim != nil {
 		return "layer:"
 	}
-	if e.Kind == "feature" {
+	switch e.Kind {
+	case "property":
+		return "properties"
+	case "truth":
+		return "truths"
+	case "feature":
 		return "features"
 	}
 	return "terms"
 }
 
-// order は、まとまりの順（用語、機能、設定のレイヤーの順の約束、ファイル）、同じまとまりの中は ID か場所の順に並べる。
+// order は、まとまりの順（性質、前提、用語、機能、設定のレイヤーの順の仕様、ファイル）、同じまとまりの中は ID か場所の順に並べる。
 func (s *state) order(es []Entry) {
 	rank := map[string]int{}
 	for i, l := range s.o.Cfg.Layers {
@@ -571,18 +593,22 @@ func (s *state) order(es []Entry) {
 	}
 	groupRank := func(g string) (int, string) {
 		switch {
-		case g == "terms":
+		case g == "properties":
 			return 0, ""
-		case g == "features":
+		case g == "truths":
 			return 1, ""
+		case g == "terms":
+			return 2, ""
+		case g == "features":
+			return 3, ""
 		case g == "files":
-			return 4, ""
+			return 6, ""
 		}
 		if r, ok := rank[g]; ok {
-			return 2, fmt.Sprintf("%08d", r)
+			return 4, fmt.Sprintf("%08d", r)
 		}
 		// 設定にないレイヤーの約束は、約束リストの形のチェックで誤りになる。設定のレイヤーの後に、名前の順で置く
-		return 3, g
+		return 5, g
 	}
 	name := func(e Entry) string {
 		if e.ID != nil {

@@ -4,7 +4,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
 )
 
-// ClaimContent・TermContent・FeatureContent・FileContent は、一覧と詳細に出す中身。省いた項目は nil（JSON の null）。
+// ClaimContent・TermContent・FeatureContent・PropertyContent・TruthContent・FileContent は、一覧と詳細に出す中身。省いた項目は nil（JSON の null）。
 // 自然言語で書く項目は、参照を置き換えたセグメントの配列にする。
 type ClaimContent struct {
 	Statement []Piece           `json:"statement"`
@@ -38,6 +38,17 @@ type FeatureContent struct {
 	Core         *bool   `json:"core"`
 	Formal       *bool   `json:"formal"`
 	FormalWaiver []Piece `json:"formalWaiver"`
+}
+
+type PropertyContent struct {
+	Statement []Piece  `json:"statement"`
+	Rationale []Piece  `json:"rationale"`
+	Refines   []string `json:"refines"`
+	Assumes   []string `json:"assumes"`
+}
+
+type TruthContent struct {
+	Statement []Piece `json:"statement"`
 }
 
 type FileContent struct {
@@ -77,6 +88,11 @@ func Content(e snapshot.Entry, r *refs, base *side) any {
 			out.Formal = &v
 		}
 		return out
+	case e.Property != nil:
+		p := e.Property
+		return PropertyContent{Statement: r.pieces(p.Statement, base), Rationale: r.optPieces(e.Table.Has("rationale"), p.Rationale, base), Refines: strs(p.Refines), Assumes: strs(p.Assumes)}
+	case e.Truth != nil:
+		return TruthContent{Statement: r.pieces(e.Truth.Statement, base)}
 	}
 	return nil
 }

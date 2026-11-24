@@ -163,7 +163,7 @@ func partsByLine(parts []DiffPart, skip string) [][]DiffPart {
 	return out
 }
 
-// itemDiff は、約束・用語・機能の文字の項目ごとの差分。両方に書いてある項目だけを入れる。
+// itemDiff は、約束リストの項目の、文字の項目ごとの差分。両方に書いてある項目だけを入れる。
 // 自然言語で書く項目は、参照を見せる文字に置き換えた文どうしで比べる（reference-diff）。
 func itemDiff(before, after any) ItemDiff {
 	fields := map[string][]DiffPart{}
@@ -199,6 +199,19 @@ func itemDiff(before, after any) ItemDiff {
 		fields["name"] = charDiff(b.Name, a.Name)
 		add("definition", b.Definition, a.Definition)
 		add("formalWaiver", b.FormalWaiver, a.FormalWaiver)
+	case PropertyContent:
+		a, ok := after.(PropertyContent)
+		if !ok {
+			return out
+		}
+		add("statement", b.Statement, a.Statement)
+		add("rationale", b.Rationale, a.Rationale)
+	case TruthContent:
+		a, ok := after.(TruthContent)
+		if !ok {
+			return out
+		}
+		add("statement", b.Statement, a.Statement)
 	}
 	return out
 }

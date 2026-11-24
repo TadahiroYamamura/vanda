@@ -5,7 +5,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/diag"
 )
 
-var targetKind = map[string]string{"term": "term", "feature": "feature", "claim": "claim", "evidence": "claim", "sensor": "claim"}
+var targetKind = map[string]string{"term": "term", "feature": "feature", "claim": "spec", "evidence": "spec", "sensor": "spec"}
 
 // annotationLinks は、アノテーションのつながりのチェック。
 func (e *env) annotationLinks() []diag.Error {

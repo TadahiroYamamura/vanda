@@ -17,16 +17,15 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/tomlread"
 )
 
-// Entry は、約束リストの項目（用語・機能・約束）を、種類を問わずに扱うためのもの。
+// Entry は、約束リストの項目（用語・機能・仕様・性質・前提）を、種類を問わずに扱うためのもの。
 type Entry struct {
-	Kind    string // term・feature・claim
-	ID      string
-	Table   *tomlread.Table
-	Raw     map[string]any
-	Term    *promises.Term
-	Feature *promises.Feature
-	Claim   *promises.Claim
-	// Property・Truth は、参照の指す先として作る時だけ入る。Entries は、性質と前提を返さない
+	Kind     string // term・feature・spec・property・truth
+	ID       string
+	Table    *tomlread.Table
+	Raw      map[string]any
+	Term     *promises.Term
+	Feature  *promises.Feature
+	Claim    *promises.Claim
 	Property *promises.Property
 	Truth    *promises.Truth
 }
@@ -34,7 +33,7 @@ type Entry struct {
 // Key は、種類と ID をつないだキー。ID は種類をまたいで重複しない決まりだが、重複した誤りがあっても別のものとして数えるため、種類も入れる。
 func (e Entry) Key() string { return e.Kind + ":" + e.ID }
 
-// Entries は、用語・機能・約束の順に返す。
+// Entries は、用語・機能・仕様・性質・前提の順に返す。
 func Entries(l *promises.List) []Entry {
 	if l == nil {
 		return nil
@@ -47,7 +46,13 @@ func Entries(l *promises.List) []Entry {
 		out = append(out, Entry{Kind: "feature", ID: f.ID, Table: f.Table, Raw: f.Raw, Feature: f})
 	}
 	for _, c := range l.Claims {
-		out = append(out, Entry{Kind: "claim", ID: c.ID, Table: c.Table, Raw: c.Raw, Claim: c})
+		out = append(out, Entry{Kind: "spec", ID: c.ID, Table: c.Table, Raw: c.Raw, Claim: c})
+	}
+	for _, p := range l.Properties {
+		out = append(out, Entry{Kind: "property", ID: p.ID, Table: p.Table, Raw: p.Raw, Property: p})
+	}
+	for _, t := range l.Truths {
+		out = append(out, Entry{Kind: "truth", ID: t.ID, Table: t.Table, Raw: t.Raw, Truth: t})
 	}
 	return out
 }

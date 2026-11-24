@@ -6,9 +6,9 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/tomlread"
 )
 
-// item は、約束リストの項目（用語・機能・約束）を、種類を問わずに扱うためのもの。
+// item は、約束リストの項目（用語・機能・仕様・性質・前提）を、種類を問わずに扱うためのもの。
 type item struct {
-	kind  string // term・feature・claim
+	kind  string // term・feature・spec・property・truth
 	id    string
 	table *tomlread.Table
 	raw   map[string]any
@@ -25,4 +25,4 @@ func items(l *promises.List) []item {
 	return out
 }
 
-var kindName = map[string]string{"property": "性質", "truth": "前提", "term": "用語", "feature": "機能", "claim": "約束"}
+var kindName = map[string]string{"property": "性質", "truth": "前提", "term": "用語", "feature": "機能", "spec": "約束"}

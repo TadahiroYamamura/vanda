@@ -25,12 +25,6 @@ func (e *env) promiseListShape() []diag.Error {
 	}
 	// 重複は、出てきた順（ファイルの場所の順、同じファイルなら行の順）で見て、後に出てきたほうを誤りにする
 	all := items(e.list)
-	for _, p := range e.list.Properties {
-		all = append(all, item{kind: "property", id: p.ID, table: p.Table, raw: p.Raw})
-	}
-	for _, t := range e.list.Truths {
-		all = append(all, item{kind: "truth", id: t.ID, table: t.Table, raw: t.Raw})
-	}
 	sort.SliceStable(all, func(i, j int) bool {
 		a, b := all[i].table, all[j].table
 		if a.Doc.File != b.Doc.File {
@@ -301,7 +295,7 @@ func notKind(k string) string {
 
 // TODO: 言葉の書き分け（docs/plans/promise-reorg-shape-impl.md の 2.7）で kindName の「約束」を「仕様」に直したら、itemName と notItem を消し、kindName と notKind を使う
 func itemName(kind string) string {
-	if kind == "claim" {
+	if kind == "spec" {
 		return "仕様"
 	}
 	return kindName[kind]

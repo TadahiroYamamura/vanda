@@ -136,7 +136,7 @@ func (e *env) agreement(scope string) []diag.Error {
 	return append(errs, e.deletions(scope)...)
 }
 
-// targetKey は、承認の対象のキー。約束・用語・機能は "<種類>:<ID>"、ファイルは "path:<場所>"。
+// targetKey は、承認の対象のキー。約束リストの項目は "<種類>:<ID>"、ファイルは "path:<場所>"。
 func targetKey(kind, target string) string {
 	if kind == "file" {
 		return "path:" + target
@@ -241,7 +241,7 @@ func (e *env) evidencePresent(scope string) []diag.Error {
 	}
 	var errs []diag.Error
 	for _, c := range e.list.Claims {
-		if scope == ScopeStory && !e.changedItems["claim:"+c.ID] {
+		if scope == ScopeStory && !e.changedItems["spec:"+c.ID] {
 			continue
 		}
 		for _, ev := range c.Evidence {
