@@ -1,6 +1,6 @@
 # CMD-03: 設定の誤り、バージョンの違い、チェックの設定の誤り、--base・--story の誤りは、チェックを始める前に標準エラーに出し、
 # チェックごとの結果の行を出さずに終了コード 1 で終わる。
-# @vanda:evidence check-errors-before-run
+# @vanda:evidence check-runs-in-ci
 
 exec git init -q -b main
 expand .vanda/config.toml

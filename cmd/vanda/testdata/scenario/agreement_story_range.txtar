@@ -1,6 +1,5 @@
 # CMD-10 承認: スコープを story にすると、ベースブランチとのマージベースより後に変わったものだけが対象になる。
-# @vanda:evidence check-agreement-story-scope
-# @vanda:evidence deleted-item-needs-agreement
+# @vanda:evidence check-passes-only-when-agreed
 # main には承認していない仕様（task-id-unique）が残っているが、ストーリー 2 で変えていないので、スコープ story（ストーリー 2）のチェックでは止めない。
 
 exec git init -q -b main

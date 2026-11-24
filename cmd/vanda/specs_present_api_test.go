@@ -45,7 +45,7 @@ func presentSpec(id string) string {
 	return b.String()
 }
 
-// @vanda:evidence evidence-presence-shown
+// @vanda:evidence screen-matches-check
 func Test仕様の詳細はエビデンスのタイプごとに揃っているかを示す(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)

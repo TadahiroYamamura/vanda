@@ -124,7 +124,7 @@ const (
 
 // ID の書き方の入力欄に書いたものが、そのまま答えになれば、入力欄は空から始まっている（既定の答えがあれば、その後ろに書き足される）
 //
-// @vanda:evidence init-no-store-id-pattern
+// @vanda:evidence start-with-init
 func TestAskはストーリーストアにカスタムアダプタか使わないを選ぶとIDの書き方の質問を空の入力欄から始める(t *testing.T) {
 	const typed = "ABC-[0-9]+"
 	cases := []struct {
@@ -165,7 +165,7 @@ func TestAskはストーリーストアにカスタムアダプタか使わな�
 	}
 }
 
-// @vanda:evidence init-write-failure-cleans
+// @vanda:evidence start-with-init
 func TestWriteはファイルを書く途中で失敗したら作りかけの_vandaを消して誤りを返す(t *testing.T) {
 	cases := []struct {
 		name   string

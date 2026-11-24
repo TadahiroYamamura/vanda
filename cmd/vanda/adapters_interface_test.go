@@ -71,7 +71,7 @@ const answerLine1 = "cat >/dev/null\nprintf '%s' '{\"names\":[{\"line\":1,\"name
 // CMD-10: .vanda/adapters/ の直下のファイルの名前、ディレクトリの名前をアダプタの名前とし、ファイルならそれを、
 // ディレクトリなら直下の run を動かす。どちらも動いたことを、返した名前の行のアノテーションの ID が約束リストに
 // ないという誤りが出ることで確かめる
-// @vanda:evidence project-adapter-name
+// @vanda:evidence annotation-adapter-contract
 func Test_vanda_adaptersのアダプタは直下のファイルとディレクトリの直下のrunを名前で動かす(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -102,7 +102,7 @@ func Test_vanda_adaptersのアダプタは直下のファイルとディレク�
 
 // CMD-10: アダプタは、リポジトリのルートを作業ディレクトリにし、設定の args をそのまま引数として渡して動かす。
 // vanda をリポジトリの下のディレクトリで動かしても、作業ディレクトリはルート
-// @vanda:evidence project-adapter-args-and-cwd
+// @vanda:evidence annotation-adapter-contract
 func Test_vanda_adaptersのアダプタはリポジトリのルートでargsをそのまま渡されて動く(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -130,7 +130,7 @@ func Test_vanda_adaptersのアダプタはリポジトリのルートでargsを�
 }
 
 // CMD-10: アダプタが 0 でない終了コードで終わったら、標準エラーに書いた理由を誤りのメッセージに含める
-// @vanda:evidence project-adapter-failure-reason
+// @vanda:evidence annotation-adapter-contract
 func Test_vanda_adaptersのアダプタが失敗すると標準エラーの理由が誤りに入る(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -148,7 +148,7 @@ func Test_vanda_adaptersのアダプタが失敗すると標準エラーの理�
 }
 
 // CMD-10: アダプタが "annotation": false と返した行は、アノテーションとして数えず、書き方の確かめもしない
-// @vanda:evidence project-adapter-not-annotation
+// @vanda:evidence annotation-adapter-contract
 func Test_vanda_adaptersのアダプタがannotationにfalseを返した行は数えず書き方も確かめない(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -166,7 +166,7 @@ func Test_vanda_adaptersのアダプタがannotationにfalseを返した行は�
 }
 
 // CMD-10: アダプタがない・実行の権限がない・1 行目に動かし方がない・ディレクトリに run がないときは、場所と直し方を書いた誤り
-// @vanda:evidence project-adapter-not-runnable
+// @vanda:evidence annotation-adapter-contract
 func Test_vanda_adaptersのアダプタを動かせないときは場所と直し方を書いた誤りになる(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -208,7 +208,7 @@ func Test_vanda_adaptersのアダプタを動かせないときは場所と直�
 
 // CMD-10: アダプタの答えに、渡していない行・空の名前・同じ行の 2 つ以上の答え・name と annotation の両方・
 // 決まっていない項目があれば誤り。渡した行に答えないのも誤り
-// @vanda:evidence project-adapter-response-errors
+// @vanda:evidence annotation-adapter-contract
 func Test_vanda_adaptersのアダプタの答えの誤りはそのファイルの誤りになる(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -241,7 +241,7 @@ func Test_vanda_adaptersのアダプタの答えの誤りはそのファイル�
 
 // CM-09: 設定にはっきり書いた、ワイルドカードのない場所のファイルがなければ誤り。ワイルドカードのあるパターンが
 // 何にもマッチしないのは誤りにしない
-// @vanda:evidence promise-list-explicit-file-must-exist
+// @vanda:evidence mistakes-reported-with-fix
 func Test設定にはっきり書いた約束リストのファイルがなければ誤りでワイルドカードなら誤りにしない(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -269,7 +269,7 @@ func Test設定にはっきり書いた約束リストのファイルがなけ�
 
 // CM-09: 設定の promises のパターンにマッチするファイルを、すべて約束リストとして読む。
 // a.toml の仕様は b.toml の機能を refines するので、b.toml を読まなければ refines の先がない誤りになる
-// @vanda:evidence promise-list-reads-all-patterns
+// @vanda:evidence mistakes-reported-with-fix
 func Test設定のpromisesのパターンにマッチするファイルをすべて約束リストとして読む(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -299,8 +299,8 @@ func Test設定のpromisesのパターンにマッチするファイルをすべ
 // CMD-10: アダプタには、アノテーションを読むファイルの HEAD のコミットの中身を、標準入力の JSON の content で渡す。
 // 作業ツリーには、行のずれる書きかけ（コミットしていない変更）と、git add しただけの変更の 2 つを試す。
 // アダプタは受け取った標準入力を .in.json に書き写し、1 行目に名前を返す
-// @vanda:evidence project-adapter-reads-committed-content
-// @vanda:evidence reads-committed-files-only
+// @vanda:evidence annotation-adapter-contract
+// @vanda:evidence screen-matches-check
 func Test_vanda_adaptersのアダプタはコミットしていない変更があってもHEADの中身をcontentで受け取る(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -341,7 +341,7 @@ func Test_vanda_adaptersのアダプタはコミットしていない変更が�
 
 // CMD-10: アダプタが [[annotation]] の timeout（秒）を過ぎても終わらなければ、止めて、どのアダプタかを書いたタイムアウトの誤りにする。
 // sleep の 30 秒を待たずに、timeout の 1 秒で終わることも見る
-// @vanda:evidence project-adapter-annotation-timeout
+// @vanda:evidence annotation-adapter-contract
 func Test_vanda_adaptersのアダプタがtimeoutを過ぎたらどのアダプタかを書いたタイムアウトの誤りで止まる(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -365,7 +365,7 @@ func Test_vanda_adaptersのアダプタがtimeoutを過ぎたらどのアダプ�
 
 // RV: 画面の API でも、アダプタが timeout を過ぎたら止めて、どのアダプタかを書いたタイムアウトの誤りを返す
 // （レスポンスを返さずに待ち続けることがない）。仕様の詳細はエビデンスを探すのでアノテーションを読む
-// @vanda:evidence project-adapter-annotation-timeout
+// @vanda:evidence annotation-adapter-contract
 func Test_vanda_adaptersのアダプタがtimeoutを過ぎたら仕様の詳細のAPIがどのアダプタかを書いたタイムアウトの誤りを返す(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -390,7 +390,7 @@ func Test_vanda_adaptersのアダプタがtimeoutを過ぎたら仕様の詳細�
 	}
 }
 
-// @vanda:evidence project-adapter-missing-answer
+// @vanda:evidence annotation-adapter-contract
 func Test_vanda_adaptersのアダプタが渡した行のどれかに答えなければvanda_checkがその行を指して誤りにする(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)

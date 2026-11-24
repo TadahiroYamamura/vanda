@@ -1,5 +1,5 @@
 # CM-09: 設定の [story] の args は、カスタムアダプタにだけ書ける。決まっていない項目は誤りになる。
-# @vanda:evidence project-adapter-args-only-for-project
+# @vanda:evidence annotation-adapter-contract
 
 exec git init -q -b main
 

@@ -1,6 +1,5 @@
 # CMD-10 読まれていないファイル: .vanda/ にあるのに、設定のどのパターンにもマッチしないファイルがあると止まる。
-# @vanda:evidence unread-files-excludes-adapters
-# @vanda:evidence check-unread-files
+# @vanda:evidence mistakes-reported-with-fix
 # .vanda/config.toml と .vanda/checks/*.toml と、アダプタの置き場所 .vanda/adapters/ の下は除く。
 # パターンの ** は下のディレクトリにもマッチする。
 

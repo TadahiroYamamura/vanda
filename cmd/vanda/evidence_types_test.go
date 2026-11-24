@@ -246,7 +246,7 @@ func pairRepo(t *testing.T, version, planned, extTypes string, files map[string]
 // CMD-10: guardrail の予定は、ガードレールの定義（[[guardrail]] の paths）の evidence と、types に guardrail を含む
 // [[annotation]] で読んだ、定義でないファイルの evidence の両方があるときだけ揃う。定義だけ・検証だけ・両方の 3 通りと、
 // 両方あるときの片方の種類の全部を回す
-// @vanda:evidence check-evidence-guardrail-needs-definition
+// @vanda:evidence check-passes-only-with-evidence
 func Test_guardrailの予定はガードレールの定義と拒むことの確かめの両方のevidenceがあるときだけ揃う(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -306,7 +306,7 @@ func Test_guardrailの予定はガードレールの定義と拒むことの確�
 
 // CMD-10: sensor の予定は、types に sensor を含む [[annotation]] で読んだ sensor（センサーの場所）と evidence（センサーの検証）
 // の両方があるときだけ揃う。場所だけ・検証だけ・両方の 3 通りと、両方あるときの片方の種類の全部を回す
-// @vanda:evidence check-evidence-sensor-needs-check
+// @vanda:evidence check-passes-only-with-evidence
 func Test_sensorの予定はセンサーの場所と検証の両方があるときだけ揃う(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)

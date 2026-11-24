@@ -1,5 +1,5 @@
 # アノテーションの読み取り: 1 つのファイルが 2 つ以上の [[annotation]] のパターンにマッチすると止まる。
-# @vanda:evidence annotation-one-rule-per-file
+# @vanda:evidence annotations-link-evidence
 
 exec git init -q -b main
 

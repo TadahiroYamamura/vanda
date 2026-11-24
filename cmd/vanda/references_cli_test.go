@@ -170,7 +170,7 @@ func refBaseline(t *testing.T, bin, version string) {
 	}
 }
 
-// @vanda:evidence reference-form
+// @vanda:evidence mistakes-reported-with-fix
 func Test自然言語で書く項目のどれでも参照を読み性質と前提と用語と機能と仕様のどれのIDも指せる(t *testing.T) {
 	t.Parallel()
 	bin, version := refSetup(t)
@@ -206,7 +206,7 @@ func Test自然言語で書く項目のどれでも参照を読み性質と前�
 	wantErrorsAt(t, bad, out, ids)
 }
 
-// @vanda:evidence reference-form
+// @vanda:evidence mistakes-reported-with-fix
 func Test用語と機能の名前の中の参照の形の文字は参照として読まない(t *testing.T) {
 	t.Parallel()
 	bin, version := refSetup(t)
@@ -223,7 +223,7 @@ func Test用語と機能の名前の中の参照の形の文字は参照とし�
 	}
 }
 
-// @vanda:evidence reference-literal
+// @vanda:evidence mistakes-reported-with-fix
 func Test二つ重ねたアットは文字として読み参照にも誤りにもならない(t *testing.T) {
 	t.Parallel()
 	bin, version := refSetup(t)
@@ -247,7 +247,7 @@ func Test二つ重ねたアットは文字として読み参照にも誤りに�
 	}
 }
 
-// @vanda:evidence reference-literal
+// @vanda:evidence mistakes-reported-with-fix
 func Test二つ重ねたアットの直後の参照は参照として読む(t *testing.T) {
 	t.Parallel()
 	bin, version := refSetup(t)
@@ -260,7 +260,7 @@ func Test二つ重ねたアットの直後の参照は参照として読む(t *t
 	wantErrorsAt(t, bad, out, allFields("nope-after"))
 }
 
-// @vanda:evidence reference-broken
+// @vanda:evidence mistakes-reported-with-fix
 func Test壊れた参照は壊れ方のどれでも自然言語で書く項目のどれでもその行を指す約束リストの形の誤りになる(t *testing.T) {
 	t.Parallel()
 	bin, version := refSetup(t)
@@ -340,7 +340,7 @@ layers = ["model"]
 `, termName, termDef, featureName, featureDef)
 }
 
-// @vanda:evidence reference-fingerprint-raw
+// @vanda:evidence agreement-detached-when-content-changes
 func Test参照先の用語と機能の名前と定義を変えても参照元の仕様の承認は失効しない(t *testing.T) {
 	t.Parallel()
 	bin, version := refSetup(t)

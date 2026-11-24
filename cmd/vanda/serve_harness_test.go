@@ -246,9 +246,7 @@ func q(v string) string { return url.QueryEscape(v) }
 // テストの中で起動した vanda サーバーが、テストの終わりに止まることを確かめる（stop が確かめる）。
 // あわせて、Host が 127.0.0.1:<待ち受けているポート>・localhost:<待ち受けているポート> でないリクエストを断ることも確かめる
 // （CM-01: 自分のマシンの中でだけ開く）。
-// @vanda:evidence serve-rejects-foreign-host
-// @vanda:evidence serve-listens-localhost
-// @vanda:evidence serve-prints-url
+// @vanda:evidence server-operated-only-from-own-screen
 func Test起動したvanda_serveは止めると止まりほかのHostのリクエストを断る(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -306,7 +304,7 @@ func Test起動したvanda_serveは止めると止まりほかのHostのリク�
 }
 
 // GET 以外のリクエストで、Origin があって http://<Host> でなければ 403 で断る（ブラウザーのほかのサイトからの書き込みを防ぐ）
-// @vanda:evidence serve-rejects-foreign-origin
+// @vanda:evidence server-operated-only-from-own-screen
 func Testほかのサイトから来たGETでないリクエストは403で断りOriginがないか同じなら断らない(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -390,7 +388,7 @@ func runServeToEnd(t *testing.T, bin, dir string, env []string, args ...string) 
 	}
 }
 
-// @vanda:evidence serve-config-error-stops
+// @vanda:evidence mistakes-reported-with-fix
 func Test設定に誤りがあればvanda_serveは待ち受けを始めずに誤りを標準エラーに出し終了コード1で終わる(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -454,7 +452,6 @@ func wantPortAdvice(t *testing.T, where string, code int, stdout, stderr string)
 	}
 }
 
-// @vanda:evidence serve-port-unavailable
 func Test待ち受けられないポートを渡すとvanda_serveは空いているポートか__port_0を渡すよう伝えて終了コード1で終わる(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -470,7 +467,6 @@ func Test待ち受けられないポートを渡すとvanda_serveは空いてい
 }
 
 // ほかのプロセスが待ち受けている本物のポートを渡す
-// @vanda:evidence serve-port-unavailable
 func Testほかのものが待ち受けているポートを渡すとvanda_serveは空いているポートか__port_0を渡すよう伝えて終了コード1で終わりそのポートを奪わない(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -533,7 +529,6 @@ func fakeOpenerPath(t *testing.T, fail bool) string {
 	return dir
 }
 
-// @vanda:evidence serve-browser-open-failure
 func Testブラウザを開けなければvanda_serveは開いたURLとそれをブラウザで開くよう促す文を標準エラーに出し動き続ける(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)
@@ -583,7 +578,7 @@ func Testブラウザを開けなければvanda_serveは開いたURLとそれを
 	}
 }
 
-// @vanda:evidence serve-reloads-config
+// @vanda:evidence mistakes-reported-with-fix
 func Test起動したvanda_serveはAPIのリクエストごとに設定を読み直し読めなければ誤りの数と最初の1件を書いた500を返す(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)

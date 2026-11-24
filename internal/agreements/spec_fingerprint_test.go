@@ -20,7 +20,7 @@ import (
 // CM-03 のフィンガープリントのテスト。期待値は docs/formats.md の「フィンガープリント」から作る。
 // 決まった形の JSON は、実装の CanonicalJSON を使わず、このファイルの canonical で作る。
 
-// @vanda:evidence fingerprint-file-content
+// @vanda:evidence agreement-detached-when-content-changes
 func TestFileFingerprintはファイルの中身そのもののSHA256に接頭辞を付ける(t *testing.T) {
 	// 期待値は sha256sum で作った値
 	cases := map[string]string{
@@ -73,7 +73,7 @@ func TestCanonicalJSONは浮動小数点数と日時をエラーにする(t *tes
 	}
 }
 
-// @vanda:evidence fingerprint-excludes-flags
+// @vanda:evidence agreement-detached-when-content-changes
 func TestItemFingerprintは手で作った例と同じ値になりflagsとguessesを除く(t *testing.T) {
 	// docs/formats.md の例。期待値は {"definition":"やること","id":"task","name":"タスク"} を sha256sum にかけた値
 	want := "sha256:8d0b08167c5bf0bbb777f239b51dc94e46f55369dce46bea2ff4dfb23325832d"
@@ -588,7 +588,7 @@ func listGen(t *rapid.T) promiseList {
 	return promiseList{properties: []propertyM{property}, truths: []truthM{truth}, terms: []termM{term}, features: []featureM{feature}, specs: []specM{spec}}
 }
 
-// @vanda:evidence fingerprint-ignores-formatting
+// @vanda:evidence agreement-detached-when-content-changes
 func Test約束リストの項目の順と空白と引用符とコメントの違いではフィンガープリントが変わらず決まった形のJSONのフィンガープリントになる(t *testing.T) {
 	root := t.TempDir()
 	rapid.Check(t, func(rt *rapid.T) {
@@ -658,7 +658,7 @@ func baseList() promiseList {
 	}
 }
 
-// @vanda:evidence fingerprint-excludes-flags
+// @vanda:evidence agreement-detached-when-content-changes
 func Testフィンガープリントに入る項目のどれを変えてもフィンガープリントが変わりflagsとguessesでは変わらない(t *testing.T) {
 	type change struct {
 		name    string
@@ -739,7 +739,7 @@ func Testフィンガープリントに入る項目のどれを変えてもフ�
 	}
 }
 
-// @vanda:evidence changed-id-is-new
+// @vanda:evidence agreement-detached-when-content-changes
 func Test約束リストのIDを変えるとフィンガープリントが変わる(t *testing.T) {
 	root := t.TempDir()
 	before := load(t, root, render(plainStyle{}, baseList()))
@@ -760,7 +760,7 @@ func Test約束リストのIDを変えるとフィンガープリントが変わ
 	}
 }
 
-// @vanda:evidence fingerprint-as-written
+// @vanda:evidence agreement-detached-when-content-changes
 func Test_formalを省いたものとformalをtrueと書いたものは別のフィンガープリントになる(t *testing.T) {
 	root := t.TempDir()
 	a := baseList()
@@ -776,7 +776,7 @@ func Test_formalを省いたものとformalをtrueと書いたものは別のフ
 
 // 期待値は sha256sum で作った値。どれも sha256: に続けて 16 進の小文字 64 文字
 //
-// @vanda:evidence fingerprint-form
+// @vanda:evidence agreement-detached-when-content-changes
 func Testフィンガープリントは元のバイト列のSHA256をsha256と16進の小文字64文字で書いたもの(t *testing.T) {
 	files := map[string]string{
 		"":           "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -802,7 +802,7 @@ func Testフィンガープリントは元のバイト列のSHA256をsha256と16
 
 // 項目のフィンガープリントの期待値は、手で書いた決まった形の JSON のバイト列のフィンガープリント（ファイルのフィンガープリントと同じ作り方）にする
 //
-// @vanda:evidence fingerprint-item-json
+// @vanda:evidence agreement-detached-when-content-changes
 func Test性質と前提と仕様と用語と機能のフィンガープリントはキーをバイトの順に並べ配列を書いた順にし空白と最後の改行のないJSONから作る(t *testing.T) {
 	src := `[[term]]
 part_of = "whole"
@@ -885,7 +885,7 @@ type = "guardrail"
 	}
 }
 
-// @vanda:evidence fingerprint-json-strings
+// @vanda:evidence agreement-detached-when-content-changes
 func Test決まった形のJSONの文字列は決まった文字だけをエスケープし真偽と整数はそのまま書く(t *testing.T) {
 	// U+0000〜U+001F の全部と、エスケープするほかの 2 文字、エスケープしない文字
 	escaped := map[rune]string{'"': `\"`, '\\': `\\`, '\n': `\n`, '\r': `\r`, '\t': `\t`}

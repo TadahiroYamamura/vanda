@@ -93,8 +93,8 @@ func attachmentList(got storyResponse) []string {
 }
 
 // CM-08
-// @vanda:evidence story-github-read
-// @vanda:evidence story-github-token
+// @vanda:evidence owner-reads-story-with-review
+// @vanda:evidence token-sent-only-to-its-host
 func Testストーリーストアから題と本文と添付ファイルへのリンクを読める(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -149,7 +149,7 @@ func Testストーリーストアから題と本文と添付ファイルへの�
 }
 
 // CM-08: 添付ファイルの決まりの、マッチするものとマッチしないもの
-// @vanda:evidence story-github-attachments
+// @vanda:evidence owner-reads-story-with-review
 func Testストーリーの添付ファイルは決まったURLで始まるリンクと画像だけで名前はリンクの文字かURLの最後の部分(t *testing.T) {
 	t.Parallel()
 	st := newStorySetup(t)
@@ -170,7 +170,7 @@ func Testストーリーの添付ファイルは決まったURLで始まるリ�
 }
 
 // CM-08: 誤りは、黙って空にせず、理由を出す
-// @vanda:evidence story-errors
+// @vanda:evidence owner-reads-story-with-review
 func Testストーリーストアの誤りは理由を画面に出す(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -205,7 +205,7 @@ func Testストーリーストアの誤りは理由を画面に出す(t *testing
 }
 
 // id_pattern を、数字の並びが 0 個・2 個以上の ID も書けるものにする（既定の #[0-9]+ では、数字の並びがいつもちょうど 1 つになる）
-// @vanda:evidence story-github-issue-number
+// @vanda:evidence owner-reads-story-with-review
 func Test組み込みのgithubのアダプタはストーリーのIDの最後の数字の並びをIssueの番号にし数字がなければ400にする(t *testing.T) {
 	t.Parallel()
 	st := newStorySetup(t)
@@ -272,7 +272,7 @@ printf '{"title":"args: %s","body":"%s","url":""}' "$*" "$in"
 
 // CM-08: ストーリーストアのカスタムアダプタは、ファイルの形でもディレクトリの形（直下の run）でも動き、args が渡る。
 // 組み込みのアダプタ（github）と同じ名前なら、.vanda/adapters/ のものを使う
-// @vanda:evidence story-project-adapter
+// @vanda:evidence story-adapter-contract
 func Testストーリーストアのカスタムアダプタはファイルとディレクトリの形で動きargsが渡り組み込みのものより先に使われる(t *testing.T) {
 	t.Parallel()
 	cases := []struct {

@@ -52,7 +52,7 @@ func changeSpec(t *testing.T, r *reviewRepo, statement, msg string) string {
 	return r.git("rev-parse", "HEAD")
 }
 
-// @vanda:evidence story-id-from-trailer
+// @vanda:evidence changes-traceable-to-story
 func Test画面のストーリーはStoryのトレーラーからだけ読みsubjectと本文とトレーラーでない段落のIDは数えない(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -84,7 +84,7 @@ func Test画面のストーリーはStoryのトレーラーからだけ読みsub
 	}
 }
 
-// @vanda:evidence story-trailer-errors-shown
+// @vanda:evidence changes-traceable-to-story
 func TestStoryのトレーラーが誤ったコミットがあってもAPIは200で返しそのストーリーを空にして誤りを新しい順に返す(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)

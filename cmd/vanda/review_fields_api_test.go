@@ -380,7 +380,7 @@ func setupFields(t *testing.T) (string, *fieldsRepo, *vandaServer, reviewRespons
 }
 
 // RV-04
-// @vanda:evidence review-flags
+// @vanda:evidence flags-visible-before-open
 func Testフラグは仕様のflagsとguessesと前の承認から決まった順に立つ(t *testing.T) {
 	t.Parallel()
 	_, _, _, got := setupFields(t)
@@ -426,9 +426,7 @@ func Testフラグは仕様のflagsとguessesと前の承認から決まった�
 
 // RV-10・RV-02
 // z-cli（layers が cli・model）と c-new（layers が db・cli）で、2 つ以上のレイヤーを持つ仕様が最初のレイヤーのまとまりに入ることを見る
-// @vanda:evidence review-numbering
-// @vanda:evidence review-order
-// @vanda:evidence review-group-first-layer
+// @vanda:evidence owner-reviews-every-change
 func Test一覧は性質と前提と用語と機能と設定のレイヤーの順の仕様とファイルのまとまりに分かれその中はIDか場所の順に並びその順に通し番号が付く(t *testing.T) {
 	t.Parallel()
 	_, _, _, got := setupFields(t)
@@ -471,8 +469,7 @@ func jsonEqual(t *testing.T, where string, got json.RawMessage, want string) {
 }
 
 // RV-05
-// @vanda:evidence review-before-after
-// @vanda:evidence review-added-content
+// @vanda:evidence owner-understands-each-change
 func Test変更前と変更後の中身は約束リストに書いたとおりの項目で省いたものはnullになる(t *testing.T) {
 	t.Parallel()
 	_, _, _, got := setupFields(t)
@@ -592,8 +589,7 @@ type contextResponse struct {
 }
 
 // CM-06・CM-09
-// @vanda:evidence context-default-base
-// @vanda:evidence context-bases
+// @vanda:evidence owner-reviews-every-change
 func Test画面で選べるものは今の設定とブランチと履歴から決まる(t *testing.T) {
 	t.Parallel()
 	bin, r, s, _ := setupFields(t)
@@ -645,7 +641,7 @@ func Test画面で選べるものは今の設定とブランチと履歴から�
 }
 
 // CM-08・CM-09: storyStore は、設定のストーリーストアのアダプタ
-// @vanda:evidence context-story-store
+// @vanda:evidence owner-reads-story-with-review
 func Test画面で選べるもののストーリーストアは設定のアダプタを示す(t *testing.T) {
 	t.Parallel()
 	for _, c := range []struct{ conf, want string }{
@@ -675,7 +671,7 @@ func Test画面で選べるもののストーリーストアは設定のアダ�
 
 // RV-13: レビュー単位がブランチで story を省いたときは、マージベースより後のコミットのメッセージにある ID が 1 つなら
 // それを使い、0 か 2 つ以上なら null にする。story を名指ししたときは、それを使う
-// @vanda:evidence review-story-choice
+// @vanda:evidence owner-reviews-every-change
 func Testレビュー単位がブランチのときストーリーはブランチのコミットから1つに決まるときだけ決まり名指ししたものはそのまま使う(t *testing.T) {
 	t.Parallel()
 	cases := []struct {

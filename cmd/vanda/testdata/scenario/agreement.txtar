@@ -1,7 +1,7 @@
 # CMD-10 承認: 今の中身がすべて承認済で、フラグ（flags・guesses）が残っていないと通る。
-# @vanda:evidence changed-id-is-new
-# @vanda:evidence check-agreement-flags-left
-# @vanda:evidence check-agreement-targets
+# @vanda:evidence agreement-detached-when-content-changes
+# @vanda:evidence flags-block-check
+# @vanda:evidence check-passes-only-when-agreed
 # CM-03: フィンガープリントは flags と guesses を除いた中身から作る。同じ中身に 2 つのストーリーが承認しても承認済。仕様の ID を変えると提案中。
 #
 # フィンガープリントの元の JSON（fp/ の下）は、約束リストの項目から手で書いた（キーを名前の順に並べ、空白なし）。

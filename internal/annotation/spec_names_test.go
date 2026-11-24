@@ -73,7 +73,7 @@ func checkError(t *testing.T, path, src, adapter string, line int) {
 	t.Fatalf("%q で始まるエラーがない:\n%s", prefix, strings.Join(errs, "\n"))
 }
 
-// @vanda:evidence annotation-go-func-doc
+// @vanda:evidence annotations-link-evidence
 func TestGoのアノテーションは次のfuncの名前に付きメソッドは型と名前をつなぐ(t *testing.T) {
 	src := `package task
 
@@ -105,7 +105,7 @@ func helper() {}
 	})
 }
 
-// @vanda:evidence annotation-txtar-comment-lines
+// @vanda:evidence annotations-link-evidence
 func Test_txtarのアノテーションはファイルからtxtarを除いた名前に付く(t *testing.T) {
 	src := `# タスクを足すと、ID が重ならない
 # @vanda:evidence task-id-unique
@@ -120,7 +120,7 @@ ok
 	})
 }
 
-// @vanda:evidence annotation-txtar-comment-lines
+// @vanda:evidence annotations-link-evidence
 func Test_txtarの最初の区切りより後のアノテーションは中のファイルの中身なので数えず誤りにもしない(t *testing.T) {
 	src := `# @vanda:evidence task-id-unique
 exec vanda add
@@ -134,7 +134,7 @@ ok
 	})
 }
 
-// @vanda:evidence annotation-tla-definition
+// @vanda:evidence annotations-link-evidence
 func TestTLAのアノテーションは後の空行でもコメントでもない最初の行の定義の名前に付く(t *testing.T) {
 	src := `---- MODULE Task ----
 \* @vanda:term task
@@ -174,7 +174,7 @@ Count[x \in Small] == x + 1
 	checkRead(t, "spec/Task.tla", src, "tla", []want{{2, "spec", "task-title-required", "Count"}})
 }
 
-// @vanda:evidence annotation-outside-comment-ignored
+// @vanda:evidence annotations-link-evidence
 func Test文字列の中の書き方はアノテーションとして数えず誤りにもしない(t *testing.T) {
 	t.Run("go", func(t *testing.T) {
 		checkRead(t, "task.go", "package task\n\nconst usage = \"@vanda:evidence no-such-id\"\n\nvar raw = `@vanda:foo x y`\n", "go", nil)
@@ -187,7 +187,7 @@ func Test文字列の中の書き方はアノテーションとして数えず�
 	})
 }
 
-// @vanda:evidence annotation-sql-statement
+// @vanda:evidence annotations-link-evidence
 func TestSQLのアノテーションは後の空行でもコメントでもない最初の行の中身に付く(t *testing.T) {
 	src := `-- @vanda:evidence task-id-unique
 
@@ -216,7 +216,7 @@ B == {2}
 
 // 言語ごとに書ける種類（オーナーの決定）: Go は evidence・sensor、txtar は evidence、TLA+ は term・feature・spec・internal、SQL は evidence。
 // 6 つの種類 × 4 つの言語を全部回し、書けない組み合わせは誤り、書ける組み合わせは読めることを確かめる。
-// @vanda:evidence annotation-kinds-per-builtin-adapter
+// @vanda:evidence annotations-link-evidence
 func Test言語ごとに書ける種類だけを読みほかの組み合わせはその行で誤りにする(t *testing.T) {
 	allowed := map[string][]string{
 		"go":    {"evidence", "sensor"},

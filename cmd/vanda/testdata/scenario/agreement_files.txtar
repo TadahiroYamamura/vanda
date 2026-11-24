@@ -1,7 +1,6 @@
 # CMD-10 承認: エビデンスの本体のファイル（シナリオ、ガードレールの定義、オラクルの定義）も、今の中身を承認していないと止まる。
-# @vanda:evidence renamed-file-needs-agreement
-# @vanda:evidence deleted-item-needs-agreement
-# @vanda:evidence check-agreement-targets
+# @vanda:evidence agreement-detached-when-content-changes
+# @vanda:evidence check-passes-only-when-agreed
 # ファイルは場所と中身のフィンガープリントで見分ける。名前を変えると、古い場所は消したもの、新しい場所は（中身が同じでも）提案中になる。
 # 承認済のファイルを写した先も提案中。中身を 1 文字変えると提案中になる。
 #

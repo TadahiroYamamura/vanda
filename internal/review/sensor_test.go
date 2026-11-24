@@ -186,10 +186,9 @@ func wantSensor500(t *testing.T, what string, called *bool, err *Error) {
 	}
 }
 
-// @vanda:evidence agree-writes-and-commits
-// @vanda:evidence agree-removes-flags
-// @vanda:evidence agree-rejects-uncommitted
-// @vanda:evidence revoke-commits-and-keeps-flags
+// @vanda:evidence agreement-keeps-files-safe
+// @vanda:evidence flags-block-check
+// @vanda:evidence revoke-own-agreement-only
 func Test口がnilで事後条件を破らなければ承認も取り消しもセンサーに止められない(t *testing.T) {
 	r := newSensorRepo(t)
 	for _, req := range []AgreeRequest{r.specReq(), r.fileReq()} {
@@ -206,7 +205,7 @@ func Test口がnilで事後条件を破らなければ承認も取り消しも�
 	}
 }
 
-// @vanda:evidence agree-removes-flags
+// @vanda:evidence flags-block-check
 func Test承認の記録を書いた後に約束リストへflagsを書き戻すと承認を500にしてファイルを元に戻す(t *testing.T) {
 	r := newSensorRepo(t)
 	before := r.state()
@@ -222,7 +221,7 @@ func Test承認の記録を書いた後に約束リストへflagsを書き戻す
 	}
 }
 
-// @vanda:evidence agree-writes-and-commits
+// @vanda:evidence agreement-keeps-files-safe
 func Test承認の記録を書いた後に記録を書き換えると承認を500にしてファイルを元に戻す(t *testing.T) {
 	cases := []struct {
 		name string
@@ -264,7 +263,7 @@ func Test承認の記録を書いた後に記録を書き換えると承認を50
 	}
 }
 
-// @vanda:evidence agree-writes-and-commits
+// @vanda:evidence agreement-keeps-files-safe
 func Test承認のコミットにほかのファイルを入れると承認を500にしてそのコミットを伝える(t *testing.T) {
 	r := newSensorRepo(t)
 	called := setHook(t, &Hooks.AfterAgreeCommit, func(root string) {
@@ -281,7 +280,7 @@ func Test承認のコミットにほかのファイルを入れると承認を50
 	}
 }
 
-// @vanda:evidence agree-rejects-uncommitted
+// @vanda:evidence agreement-keeps-files-safe
 func Test承認のコミットの後に承認の対象のファイルが書き換わっていると承認を500にする(t *testing.T) {
 	r := newSensorRepo(t)
 	cases := []struct {
@@ -303,7 +302,7 @@ func Test承認のコミットの後に承認の対象のファイルが書き�
 	}
 }
 
-// @vanda:evidence revoke-commits-and-keeps-flags
+// @vanda:evidence revoke-own-agreement-only
 func Test取り消しのコミットに約束リストの変更を入れると取り消しを500にする(t *testing.T) {
 	r := newSensorRepo(t)
 	req := r.specReq()
@@ -367,7 +366,7 @@ const oldFingerprint = "sha256:0000000000000000000000000000000000000000000000000
 // フィンガープリントの合わない古い記録（今の人が story-2 で書いたもの）を見分けるマーク
 var oldRecord = []string{oldFingerprint, `name = "テスト担当"`, `story = "` + sensorStory + `"`}
 
-// @vanda:evidence old-agreements-kept-as-history
+// @vanda:evidence agreement-history-kept
 func Test承認の記録を書いた後にフィンガープリントの合わない古い記録を消すと承認を500にしてファイルを元に戻す(t *testing.T) {
 	r := newSensorRepo(t)
 	r.write(".vanda/agreements.toml", sensorRecord("spec", "c", oldFingerprint, "", "テスト担当", sensorStory)+
@@ -394,8 +393,8 @@ func Test承認の記録を書いた後にフィンガープリントの合わ�
 	}
 }
 
-// @vanda:evidence revoke-own-branch-only
-// @vanda:evidence old-agreements-kept-as-history
+// @vanda:evidence revoke-own-agreement-only
+// @vanda:evidence agreement-history-kept
 func Test取り消しで書き換えた後に取り消してはいけない記録を消すと取り消しを500にしてファイルを元に戻す(t *testing.T) {
 	// 取り消してはいけない記録は、取り消す記録（今の人が story-2 で書いた、今の中身へのストーリー #2 の記録）と、
 	// 次のどれか 1 つだけが違う。ほかの人が書いた・ベースブランチにすでにある・フィンガープリントが合わない
@@ -443,7 +442,7 @@ func Test取り消しで書き換えた後に取り消してはいけない記�
 }
 
 // 一覧の作り方が正しければ外からは破れないので、食い違う changes と entries を直に渡す
-// @vanda:evidence review-count-verified
+// @vanda:evidence owner-reviews-every-change
 func Test_checkCountは一覧の数が差分の数に合わないか同じものが2度出れば500にする(t *testing.T) {
 	ch := func(keys ...string) []rawChange {
 		var out []rawChange

@@ -43,7 +43,7 @@ const listRow = async (name: string) => (await within(await screen.findByRole("r
 const reviewRequests = () => requests.filter((r) => r.url.pathname === "/api/review");
 
 describe("RV-04 フラグ", () => {
-  // @vanda:evidence review-flag-labels
+  // @vanda:evidence flags-visible-before-open
   // 一覧ではフラグをアイコンで出す（review-list-icons）ので、バッジは 1 件の詳細で確かめ、一覧のアイコンにも同じ説明が出ることを確かめる
   it("フラグは詳細では短い言葉のバッジで出し説明はバッジにマウスを乗せたときかフォーカスしたときに出し一覧のアイコンにも同じ説明を出す", async () => {
     open([specEntry(1, "task-id-unique", { flags: ["ai-proposal", "guess", "changed-since-agreement"] })]);
@@ -72,7 +72,7 @@ describe("RV-04 フラグ", () => {
     }
   });
 
-  // @vanda:evidence review-flag-labels
+  // @vanda:evidence flags-visible-before-open
   it("フラグのないものにはバッジを出さない", async () => {
     open([specEntry(1, "plain-spec")]);
     await screen.findAllByText(/plain-spec/);
@@ -84,7 +84,7 @@ describe("RV-04 フラグ", () => {
 });
 
 describe("RV-01・RV-02・RV-05 一覧と中身", () => {
-  // @vanda:evidence review-numbering
+  // @vanda:evidence owner-reviews-every-change
   it("通し番号と総数を出し追加と変更と削除を区別して見せる", async () => {
     open([
       specEntry(1, "c-added", { change: "added", before: null }),
@@ -97,7 +97,7 @@ describe("RV-01・RV-02・RV-05 一覧と中身", () => {
     for (const w of [/追加/, /変更/, /削除/]) expect(bodyText()).toMatch(w);
   });
 
-  // @vanda:evidence review-before-after
+  // @vanda:evidence owner-understands-each-change
   it("変更したものは変更前と変更後の中身を見せる", async () => {
     open([specEntry(1, "c-modified")]);
     const user = userEvent.setup();
@@ -107,7 +107,7 @@ describe("RV-01・RV-02・RV-05 一覧と中身", () => {
     expect(await screen.findByText(/c-modified の後の文/)).toBeTruthy();
   });
 
-  // @vanda:evidence review-state-shown
+  // @vanda:evidence owner-reviews-every-change
   it("一覧の1件ごとに承認の状態を提案中か承認済かで示し削除したものも消したことへの承認で示す", async () => {
     const states = [["proposed", "提案中"], ["agreed", "承認済"]] as const;
     const del = { change: "deleted", after: null, fingerprint: null } as const;
@@ -128,7 +128,7 @@ describe("RV-01・RV-02・RV-05 一覧と中身", () => {
     }
   });
 
-  // @vanda:evidence tla-math-symbols
+  // @vanda:evidence owner-understands-each-change
   it("オラクルの定義のファイルの中身は数学の記号で見せる", async () => {
     open([fileEntry(1, "spec/Task.tla", { fileType: "oracle", before: { text: "S == a /\\ b\n" }, after: { text: "S == a \\/ b\n" } })]);
     await openEntry(/spec\/Task\.tla/);
@@ -140,7 +140,7 @@ describe("RV-01・RV-02・RV-05 一覧と中身", () => {
 });
 
 describe("RV-10 長い一覧をたたむ", () => {
-  // @vanda:evidence review-groups-fold
+  // @vanda:evidence owner-reviews-every-change
   it("長いまとまりはたたんでたたんだ件数を示し開くと中が見える", async () => {
     const files = Array.from({ length: 60 }, (_, i) => fileEntry(i + 2, `e2e/s${String(i).padStart(2, "0")}.txtar`));
     open([specEntry(1, "c-one"), ...files]);
@@ -154,7 +154,7 @@ describe("RV-10 長い一覧をたたむ", () => {
     expect((await screen.findAllByText(/e2e\/s59\.txtar/)).length).toBeGreaterThan(0);
   });
 
-  // @vanda:evidence review-groups-fold
+  // @vanda:evidence owner-reviews-every-change
   it("用語と機能は別々のまとまりとしてたたみ片方を開いてももう片方はたたんだままで総数と通し番号は変わらない", async () => {
     const pad = (i: number) => String(i).padStart(2, "0");
     const terms = Array.from({ length: 11 }, (_, i) =>
@@ -188,7 +188,7 @@ describe("RV-10 長い一覧をたたむ", () => {
 });
 
 describe("RV-06 承認する", () => {
-  // @vanda:evidence agree-on-screen
+  // @vanda:evidence agreement-bound-to-seen-content
   it("承認すると見せていた中身のフィンガープリントとストーリーを送り一覧を読み直す", async () => {
     const e = specEntry(1, "task-id-unique");
     open([e]);
@@ -250,7 +250,7 @@ describe("RV-06 承認する", () => {
     }
   });
 
-  // @vanda:evidence review-deleted-shown
+  // @vanda:evidence owner-reviews-every-change
   it("削除したものは消す前の中身を見せ消したことを承認するとdeletedを添えて送り一覧を読み直す", async () => {
     const e = fileEntry(1, "e2e/old.txtar", { change: "deleted", after: null, fingerprint: null, before: { text: "消す前のシナリオの中身\n" } });
     open([e]);
@@ -284,7 +284,7 @@ describe("RV-06 承認する", () => {
     expect(within(detailRegion()).queryAllByRole("button", { name: /承認する/ }).length).toBe(0);
   });
 
-  // @vanda:evidence agree-refusal-shown
+  // @vanda:evidence agreement-bound-to-seen-content
   it("承認を断られたら理由を出す", async () => {
     open([specEntry(1, "task-id-unique")]);
     server.use(http.post("/api/agree", () => apiError(409, "約束リストに書きかけの変更がある。先にコミットする")));
@@ -299,7 +299,7 @@ describe("RV-06 承認する", () => {
     expect(await screen.findByText(/約束リストに書きかけの変更がある/)).toBeTruthy();
   });
 
-  // @vanda:evidence context-no-user-cannot-agree
+  // @vanda:evidence agreement-history-kept
   it("承認できない人のときは承認のボタンをクリックできず理由を出す", async () => {
     server.use(http.get("/api/context", () => HttpResponse.json({ ...ctx, user: null })));
     // 承認できるかは API（entries[].agree）が決める。git の人が分からないときの API の答えを、手で作って渡す
@@ -316,8 +316,7 @@ describe("RV-06 承認する", () => {
 });
 
 describe("RV-13・RV-14 レビュー単位と失効した承認", () => {
-  // @vanda:evidence review-detached-shown
-  // @vanda:evidence review-detached-unchanged-shown
+  // @vanda:evidence agreement-detached-when-content-changes
   it("失効した承認をそれを失効させたストーリーと一緒に示す", async () => {
     const detached = specEntry(0, "c-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
     open([specEntry(1, "c-changed", { detachedAgreement: { by: ["#31"] } })], { detached: [detached] });
@@ -333,7 +332,7 @@ describe("RV-13・RV-14 レビュー単位と失効した承認", () => {
     await waitFor(() => expect(bodyText()).toContain("#30"));
   });
 
-  // @vanda:evidence review-other-commits
+  // @vanda:evidence owner-reviews-every-change
   it("レビュー単位がストーリーのときはほかのストーリーが途中で変えたことを示す", async () => {
     window.history.pushState({}, "", "/?view=story&story=%2324");
     open(
@@ -351,8 +350,7 @@ describe("RV-13・RV-14 レビュー単位と失効した承認", () => {
     expect(req.url.searchParams.get("story")).toBe("#24");
   });
 
-  // @vanda:evidence context-default-base
-  // @vanda:evidence context-base-always-shown
+  // @vanda:evidence owner-reviews-every-change
   it("今比べているベースブランチを示し選び直すとそのベースブランチで読み直す", async () => {
     open([specEntry(1, "c-one")]);
     await screen.findAllByText(/c-one/);
@@ -366,7 +364,7 @@ describe("RV-13・RV-14 レビュー単位と失効した承認", () => {
 });
 
 describe("CM-08 ストーリーストア", () => {
-  // @vanda:evidence story-shown-on-screen
+  // @vanda:evidence owner-reads-story-with-review
   it("ストーリーの題と本文と添付ファイルへのリンクを見せる", async () => {
     open([specEntry(1, "c-one")]);
     expect(await screen.findByText(/タスクの ID を重ならないようにする/)).toBeTruthy();
@@ -375,13 +373,13 @@ describe("CM-08 ストーリーストア", () => {
     expect(link.href).toBe("https://github.com/user-attachments/assets/1");
   });
 
-  // @vanda:evidence story-error-shown-on-screen
+  // @vanda:evidence owner-reads-story-with-review
   it("ストーリーストアの誤りは黙って空にせず理由を出す", async () => {
     open([specEntry(1, "c-one")], {}, http.get("/api/story", () => apiError(502, "Bad credentials")));
     expect(await screen.findByText(/Bad credentials/)).toBeTruthy();
   });
 
-  // @vanda:evidence context-story-store
+  // @vanda:evidence owner-reads-story-with-review
   it("ストーリーストアが設定にないときは読みに行かず注記で出す", async () => {
     server.use(http.get("/api/context", () => HttpResponse.json({ ...ctx, storyStore: "" })));
     server.use(http.get("/api/review", () => HttpResponse.json(review([specEntry(1, "c-one")]))));
@@ -391,7 +389,7 @@ describe("CM-08 ストーリーストア", () => {
     expect(document.body.textContent).toContain("題と本文なし（ストーリーストアが未設定）");
   });
 
-  // @vanda:evidence review-error-shown
+  // @vanda:evidence owner-reviews-every-change
   it("一覧を読めないときは理由を出す", async () => {
     server.use(http.get("/api/context", () => HttpResponse.json(ctx)));
     server.use(http.get("/api/story", () => HttpResponse.json(story)));
@@ -425,7 +423,7 @@ describe("CM-08 ストーリーの本文の Markdown", () => {
     '<img src="x" onerror="window.__pwned = true">',
   ].join("\n");
 
-  // @vanda:evidence story-body-markdown
+  // @vanda:evidence server-operated-only-from-own-screen
   it("本文の見出しと箇条書きと表とコードとリンクを描き生のHTMLは要素にしない", async () => {
     open([specEntry(1, "c-one")], {}, http.get("/api/story", () => HttpResponse.json({ ...story, body })));
     await screen.findByText(/タスクの ID を重ならないようにする/);
@@ -447,7 +445,7 @@ describe("CM-08 ストーリーの本文の Markdown", () => {
     expect(danger?.getAttribute("href") ?? "").toBe("");
   });
 
-  // @vanda:evidence story-links-new-tab
+  // @vanda:evidence server-operated-only-from-own-screen
   it("本文のリンクとストーリーストアで開くリンクと添付のリンクは新しいタブで開き開いた先から戻れないようにする", async () => {
     open([specEntry(1, "c-one")], {}, http.get("/api/story", () => HttpResponse.json({ ...story, body: "[資料](https://example.com/doc)" })));
     await screen.findByText(/タスクの ID を重ならないようにする/);
@@ -464,7 +462,7 @@ describe("CM-08 ストーリーの本文の Markdown", () => {
 });
 
 describe("RV-05 変更前と変更後の差分", () => {
-  // @vanda:evidence review-file-diff-lines
+  // @vanda:evidence owner-understands-each-change
   it("ファイルの差分は消した所と足した所を変わらない所と見分けられるように見せる", async () => {
     open([
       fileEntry(1, "e2e/w.txtar", {
@@ -490,7 +488,7 @@ describe("RV-05 変更前と変更後の差分", () => {
     expect(look(del[0])).not.toBe(look(ins[0]));
   });
 
-  // @vanda:evidence review-before-after
+  // @vanda:evidence owner-understands-each-change
   it("エビデンスの予定はエビデンスごとに足したものと消したものにバッジを付け変わったものは中の差分を見せる", async () => {
     const ev = (stage: string, type: string, detail: string | null) => ({ stage, type, layers: ["model"], detail: detail === null ? null : plain(detail) });
     const detail = [
@@ -539,7 +537,7 @@ describe("RV-05 変更前と変更後の差分", () => {
     expect(del[0].tagName + del[0].className).not.toBe(ins[0].tagName + ins[0].className);
   });
 
-  // @vanda:evidence review-before-after
+  // @vanda:evidence owner-understands-each-change
   it("仕様の項目の差分は1列で消した語をdelに足した語をinsに出し変わっていない項目は中身を1回だけ出す", async () => {
     open([
       specEntry(1, "c-diff", {
@@ -571,7 +569,7 @@ describe("RV-05 変更前と変更後の差分", () => {
 });
 
 describe("RV-16・RV-17 1 件の詳細の変更履歴と承認の履歴・取り消し", () => {
-  // @vanda:evidence detail-origin-and-history
+  // @vanda:evidence agreement-history-kept
   it("仕様の1件の詳細に変更履歴のコミットと承認の履歴を見せる", async () => {
     open([specEntry(1, "task-id-unique")], {}, http.get("/api/specs/:id/history", () =>
       HttpResponse.json(specHistory({
@@ -584,7 +582,7 @@ describe("RV-16・RV-17 1 件の詳細の変更履歴と承認の履歴・取り
     expect(bodyText()).toContain("前に承認した人");
   });
 
-  // @vanda:evidence revoke-on-screen
+  // @vanda:evidence revoke-own-agreement-only
   it("承認済の件で取り消すと今の中身のフィンガープリントとストーリーとベースブランチで取り消しを求め一覧を読み直す", async () => {
     const e = specEntry(1, "task-id-unique", { state: "agreed", revoke: { possible: true, reason: null, others: [] } });
     let posted: unknown = null;
@@ -600,8 +598,7 @@ describe("RV-16・RV-17 1 件の詳細の変更履歴と承認の履歴・取り
     await waitFor(() => expect(reviewRequests().length).toBeGreaterThan(before));
   });
 
-  // @vanda:evidence revoke-on-screen
-  // @vanda:evidence revoke-reason-shown
+  // @vanda:evidence revoke-own-agreement-only
   it("取り消せない件には取り消しのボタンを出さず取り消せない理由を示す", async () => {
     // 取り消せるかと理由は API（entries[].revoke）が決める。その答えを手で作って渡す
     for (const reason of ["ほかの人が書いた承認です", "ベースブランチにすでにある承認です", "このストーリーの承認がありません"]) {
@@ -617,7 +614,7 @@ describe("RV-16・RV-17 1 件の詳細の変更履歴と承認の履歴・取り
 });
 
 describe("RV-06 承認した後に読み直す", () => {
-  // @vanda:evidence agree-on-screen-reloads
+  // @vanda:evidence agreement-bound-to-seen-content
   it("画面で承認した後に一覧を読み直し承認した後の状態を見せる", async () => {
     let agreed = false;
     server.use(...defaultHandlers(review([])));
@@ -646,7 +643,7 @@ describe("RV-13 ストーリーの示し方", () => {
     screen.queryAllByRole("combobox").find((s) => Array.from((s as HTMLSelectElement).options).some((o) => o.value.startsWith("#"))) as HTMLSelectElement | undefined;
   const optionIds = (s: HTMLSelectElement) => Array.from(s.options).map((o) => o.value).filter((v) => v !== "");
 
-  // @vanda:evidence review-story-choice
+  // @vanda:evidence owner-reviews-every-change
   it("ブランチのコミットからストーリーが1つに決まれば選ばせずに示し2つ以上ならブランチのストーリーから見つからなければすべてのストーリーから選ばせる", async () => {
     const cases = [
       { name: "1 つに決まる", over: { storyChoice: "fixed", story: "#24", branchStories: ["#24"] }, url: "/?view=branch&base=main", want: null },
@@ -672,7 +669,7 @@ describe("RV-13 ストーリーの示し方", () => {
 });
 
 describe("RV-02 一覧の 1 件を選ぶ", () => {
-  // @vanda:evidence entry-select-anywhere
+  // @vanda:evidence owner-reviews-every-change
   it("一覧の1件は名前のほか番号と種類と状態のアイコンとフラグのアイコンと枠の端をクリックしても選ばれる", async () => {
     open([specEntry(1, "c-one"), specEntry(2, "c-two", { flags: ["ai-proposal"] })]);
     const user = userEvent.setup();
@@ -703,7 +700,7 @@ describe("RV-01・RV-02・RV-04 一覧の 1 件の出し方", () => {
   const firstLine = (li: HTMLElement) => within(li).getByRole("button");
   const secondLine = (li: HTMLElement) => firstLine(li).nextElementSibling as HTMLElement;
 
-  // @vanda:evidence review-list-first-line
+  // @vanda:evidence owner-reviews-every-change
   it("一覧の1件の1行目には通し番号と名前だけを出し追加と変更と削除の記号と言葉は出さず種類は2行目の左端に出し追加か変更か削除かは詳細に出す", async () => {
     const cases = [
       { e: specEntry(1, "c-added", { change: "added", before: null }), name: "c-added", kind: "仕様", change: "追加" },
@@ -738,7 +735,7 @@ describe("RV-01・RV-02・RV-04 一覧の 1 件の出し方", () => {
     }
   });
 
-  // @vanda:evidence review-list-icons
+  // @vanda:evidence flags-visible-before-open
   it("一覧の1件の2行目には種類の後ろに状態のアイコンを1つと立っているフラグのアイコンを並べ承認が失効したものは提案中でなく承認が失効したを出し状態は丸の形でフラグは丸のない形にする", async () => {
     const all = ["ai-proposal", "guess", "changed-since-agreement"] as const;
     const cases = [
@@ -780,7 +777,7 @@ describe("RV-01・RV-02・RV-04 一覧の 1 件の出し方", () => {
     expect(new Set(shapes.values()).size, "形が同じアイコンがある").toBe(6);
   });
 
-  // @vanda:evidence review-icon-names
+  // @vanda:evidence flags-visible-before-open
   it("一覧のアイコンにマウスを乗せたときかキーボードでフォーカスしたときにそのアイコンの言葉を出しスクリーンリーダーにも同じ言葉を渡す", async () => {
     open([
       specEntry(1, "c-proposed", { flags: ["ai-proposal", "guess", "changed-since-agreement"] }),
@@ -826,7 +823,7 @@ describe("RV-18 詳細の画面から戻る", () => {
     { name: "仕様の詳細", entry: "task-id-unique", link: "仕様の詳細を開く" },
     { name: "ファイルの画面", entry: "e2e/add-task.txtar", link: "ファイルの画面を開く" },
   ];
-  // @vanda:evidence back-restores-state
+  // @vanda:evidence owner-reviews-every-change
   it("仕様の詳細とファイルの画面からストーリーのレビューへ戻ると行く前と同じベースブランチとレビュー単位とストーリーと選んだ件に戻る", async () => {
     for (const st of states) {
       for (const rt of routes) {
@@ -863,7 +860,7 @@ describe("Story: のトレーラーの誤り", () => {
     { commit: "1111111aaaaaaa1111111aaaaaaa1111111aaaaa", subject: "トレーラーが書き方に合わない", message: "Story: のトレーラーの値 PROJ-1 が、ストーリーの ID の書き方（#[0-9]+）に合いません。" },
     { commit: "2222222bbbbbbb2222222bbbbbbb2222222bbbbb", subject: "トレーラーが 2 つ", message: "Story: のトレーラーが 2 つあります（#77・#78）。1 つのコミットに書けるのは 1 つだけです。" },
   ];
-  // @vanda:evidence story-trailer-errors-shown
+  // @vanda:evidence changes-traceable-to-story
   it("文脈にトレーラーの誤りがあると画面の上に知らせを出しコミットの短いハッシュとsubjectと理由を並べなければ出さない", async () => {
     for (const trailerErrors of [errors, []]) {
       open([specEntry(1, "c-one")], {}, http.get("/api/context", () => HttpResponse.json({ ...ctx, trailerErrors })));
@@ -934,7 +931,7 @@ describe("RV-01 一覧の絞り込み", () => {
     return { hits, misses };
   };
 
-  // @vanda:evidence review-filter-text
+  // @vanda:evidence owner-reviews-every-change
   it("書いた文字で絞り込むと仕様と用語と機能はIDと名前と文と定義にファイルはパスにその文字を大文字と小文字を区別せずに含むものだけを出す", async () => {
     const { hits, misses } = textEntries();
     const detachedHit = specEntry(0, "apple-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
@@ -974,7 +971,7 @@ describe("RV-01 一覧の絞り込み", () => {
     return { kept, dropped, detached };
   };
 
-  // @vanda:evidence review-filter-not-agreed
+  // @vanda:evidence owner-reviews-every-change
   it("承認済でないものだけにすると提案中のものと承認が失効したものだけを出し承認済のものは消したものも含めて出さない", async () => {
     const { kept, dropped, detached } = stateEntries();
     open(byGroup([...kept, ...dropped].map(([, e]) => e)), { detached });
@@ -993,7 +990,7 @@ describe("RV-01 一覧の絞り込み", () => {
     for (const [what, e] of [...kept, ...dropped]) expect(shown(name(e)), `外した後に${what}が出ない`).toBe(true);
   });
 
-  // @vanda:evidence review-filter-not-agreed
+  // @vanda:evidence owner-reviews-every-change
   it("承認済でないものだけにするのと文字の絞り込みを重ねると両方にマッチするものだけを出す", async () => {
     open([
       specEntry(1, "pear-proposed", { state: "proposed" }),
@@ -1011,7 +1008,7 @@ describe("RV-01 一覧の絞り込み", () => {
     expect(shown("plum-agreed"), "どちらにもマッチしないものが出ている").toBe(false);
   });
 
-  // @vanda:evidence review-filter-count
+  // @vanda:evidence owner-reviews-every-change
   it("絞り込んでいるあいだは全体の件数に加えて絞り込んだ後の件数を示し絞り込んでいないときは全体の件数だけを示す", async () => {
     open([specEntry(1, "pear-a"), specEntry(2, "pear-b", { state: "agreed" }), specEntry(3, "plum-c"), specEntry(4, "fig-e"), fileEntry(5, "e2e/pear.txtar")]);
     const heading = () => within(list()).getByRole("heading", { level: 2 }).textContent ?? "";
@@ -1032,7 +1029,7 @@ describe("RV-01 一覧の絞り込み", () => {
     expect(heading()).toMatch(/全 5 件/);
   });
 
-  // @vanda:evidence review-filter-count
+  // @vanda:evidence owner-reviews-every-change
   it("絞り込みで1件もなければその旨を示し1件でもマッチすれば示さない", async () => {
     const detached = specEntry(0, "kiwi-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
     open([specEntry(1, "pear-a"), specEntry(2, "plum-b")], { detached: [detached] });
@@ -1053,7 +1050,7 @@ describe("RV-01 一覧の絞り込み", () => {
     expect(none(), "承認が失効したものが出ているのに 0 件と示している").toBe(false);
   });
 
-  // @vanda:evidence review-filter-kept
+  // @vanda:evidence owner-reviews-every-change
   it("絞り込みの条件をURLに残し読み込み直しても仕様の詳細から戻っても同じ条件で絞り込む", async () => {
     const entries = [specEntry(1, "pear-a"), specEntry(2, "pear-b", { state: "agreed" }), specEntry(3, "plum-c")];
     const detail = http.get("/api/specs/:id", () => HttpResponse.json(specDetail({ id: "pear-a" })));
@@ -1196,7 +1193,7 @@ describe("参照", () => {
     }
   };
 
-  // @vanda:evidence reference-shown
+  // @vanda:evidence item-detail-in-one-place
   it("一覧の詳細では自然言語で書く項目のどれでも参照を用語と機能は名前で仕様と性質と前提はIDで参照だと分かる見た目で出す", async () => {
     open([specWithRefs(), termWithRefs(), featureWithRefs()], { refs: allRefs });
     const cases: [RegExp, Field[]][] = [
@@ -1227,7 +1224,7 @@ describe("参照", () => {
     for (const id of ["f-sort", "t-past", "f-past"]) expect(shownText(detailRegion()), `参照の指す ID ${id} が出た`).not.toContain(id);
   });
 
-  // @vanda:evidence reference-shown
+  // @vanda:evidence item-detail-in-one-place
   it("参照のうち今の約束リストにある仕様と用語と機能と性質と前提はその詳細のページへのリンクにし今の約束リストにないものはリンクにしない", async () => {
     window.history.pushState({}, "", "/");
     open([specWithRefs()], { refs: allRefs },
@@ -1266,7 +1263,7 @@ describe("参照", () => {
     }
   });
 
-  // @vanda:evidence reference-shown
+  // @vanda:evidence item-detail-in-one-place
   it("項目の差分の中の参照も名前で参照だと分かる見た目で出し消した参照はdelに足した参照はinsに出す", async () => {
     open([
       specEntry(1, "c-diff", {
@@ -1344,7 +1341,7 @@ describe("参照", () => {
     }
   };
 
-  // @vanda:evidence reference-popup
+  // @vanda:evidence item-detail-in-one-place
   it("参照にマウスを乗せた時とフォーカスした時に指す先のIDと中身と機能ならコア機能か形式手法を使う機能かのマークをポップアップで出し離れるかEscで消す", async () => {
     open([popupEntry()], { refs: popupRefs });
     await openEntry(/c-pop/);
@@ -1382,7 +1379,7 @@ describe("参照", () => {
     }
   });
 
-  // @vanda:evidence reference-popup
+  // @vanda:evidence item-detail-in-one-place
   it("ポップアップの中の文の参照は参照の見た目で出しリンクにもせずマウスを乗せてもフォーカスしても次のポップアップを出さない", async () => {
     open([popupEntry()], { refs: popupRefs });
     await openEntry(/c-pop/);
@@ -1426,7 +1423,7 @@ describe("参照の絞り込み", () => {
   const withStatement = (no: number, id: string, statement: { text: string; ref?: string }[]) =>
     specEntry(no, id, { after: { ...specEntry(no, id).after!, statement } } as Partial<Entry>);
 
-  // @vanda:evidence reference-filter
+  // @vanda:evidence owner-reviews-every-change
   it("書いた文字で絞り込むと参照を置き換えた後の文で探し名前でマッチし書いたままの参照や指す用語のIDではマッチしない", async () => {
     const deletedBefore = { ...specEntry(3, "c-deleted").before!, statement: [ref("りんご", "t-apple"), { text: "を消す" }] };
     const entries: Entry[] = [
@@ -1465,7 +1462,6 @@ describe("参照の絞り込み", () => {
 });
 
 describe("ヘッダー", () => {
-  // @vanda:evidence header-context
   it("ヘッダーに今のブランチとgitのuser.nameとuser.emailとvandaのバージョンを示しブランチにいないときとuser.nameとuser.emailがないときはそう示す", async () => {
     const cases = [
       { name: "ブランチにいて人が分かる", over: {}, want: ["story-24", "承認する人", "po@example.com", "0.1.0"], not: ["ブランチにいません", "設定されていません"] },
@@ -1487,7 +1483,7 @@ describe("ヘッダー", () => {
 describe("RV-01 一覧の件数・並び・失効した承認", () => {
   const listHeading = () => within(listRegion()).getByRole("heading", { level: 2 });
 
-  // @vanda:evidence review-change-counts
+  // @vanda:evidence owner-reviews-every-change
   it("一覧の総数とともに追加と変更と削除のそれぞれの件数を示す", async () => {
     const add = { change: "added", before: null } as const;
     const del = { change: "deleted", after: null, fingerprint: null } as const;
@@ -1510,7 +1506,7 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
     expect(text, "削除の件数").toMatch(/削除\D{0,3}1([^0-9]|$)/);
   });
 
-  // @vanda:evidence review-detached-on-top
+  // @vanda:evidence agreement-detached-when-content-changes
   it("一覧の外に示す失効した承認はまとまりの上に承認が失効したものとしてまとめ総数に数えないことを添える", async () => {
     const unchanged = (id: string) => specEntry(0, id, { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
     open([specEntry(1, "c-model"), fileEntry(2, "e2e/a.txtar")], { detached: [unchanged("c-detached-1"), unchanged("c-detached-2")] });
@@ -1531,7 +1527,7 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
     expect(listHeading().textContent).not.toMatch(/(^|[^0-9])4([^0-9]|$)/);
   });
 
-  // @vanda:evidence review-empty-note
+  // @vanda:evidence owner-reviews-every-change
   it("変わったものが0件なら比べる元と今のあいだで変わったものはないと示し1件でもあれば示さない", async () => {
     const note = "比べる元と今のあいだで、変わったものはありません。";
     const detached = specEntry(0, "c-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
@@ -1553,7 +1549,7 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
     }
   });
 
-  // @vanda:evidence review-groups-fold-over-ten
+  // @vanda:evidence owner-reviews-every-change
   it("画面を開いた時11件以上のまとまりはたたみ10件以下のまとまりと選んだ件を含むまとまりは開いておく", async () => {
     const pad = (i: number) => String(i).padStart(2, "0");
     const model = Array.from({ length: 10 }, (_, i) => specEntry(i + 1, `m-${pad(i)}`));
@@ -1568,7 +1564,7 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
     for (const e of files) expect(shown(e.path!), `選んだ件を含む 11 件のまとまりの ${e.path} が見えない`).toBe(true);
   });
 
-  // @vanda:evidence review-order
+  // @vanda:evidence owner-reviews-every-change
   it("一覧は性質と前提と用語と機能と設定のレイヤーの順の仕様とエビデンスの本体のまとまりの順に並べ通し番号を付けて出す", async () => {
     const term = (no: number, id: string) =>
       specEntry(no, id, { kind: "term", group: "terms", before: { name: id, definition: plain("定義"), partOf: null, assumes: [] }, after: { name: id, definition: plain("定義"), partOf: null, assumes: [] } });
@@ -1597,7 +1593,7 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
 });
 
 describe("RV-02 1 件の詳細", () => {
-  // @vanda:evidence review-detail-links
+  // @vanda:evidence item-detail-in-one-place
   it("1件の詳細に仕様なら仕様の詳細を開くファイルならファイルの画面を開くのリンクを出し削除したものには出さない", async () => {
     const del = { change: "deleted", after: null, fingerprint: null } as const;
     const cases = [
@@ -1621,7 +1617,7 @@ describe("RV-02 1 件の詳細", () => {
     }
   });
 
-  // @vanda:evidence review-added-content
+  // @vanda:evidence owner-understands-each-change
   it("追加した仕様と用語と機能と性質と前提とファイルは今の中身を示す", async () => {
     const spec = specEntry(1, "c-new", {
       change: "added",
@@ -1696,7 +1692,7 @@ describe("RV-02 1 件の詳細", () => {
   const specLinkPaths = () =>
     within(detailRegion()).queryAllByRole("link").map((a) => new URL((a as HTMLAnchorElement).href).pathname).filter((p) => p.startsWith("/specs/"));
 
-  // @vanda:evidence review-term-feature-claims
+  // @vanda:evidence item-detail-in-one-place
   it("追加と変更した機能の1件の詳細にそれをrefinesする仕様を渡した順にIDと文で並べIDを仕様の詳細へのリンクにし移った先から同じ状態に戻れ用語の1件の詳細には仕様の一覧を出さない", async () => {
     // 既定の値（URL に書いていないレビュー単位・ベースブランチ）も引き継ぐかを見るため、何も付けない URL で開く（pitfall link-drops-default-state）
     window.history.pushState({}, "", "/");
@@ -1744,7 +1740,7 @@ describe("RV-02 1 件の詳細", () => {
     }
   });
 
-  // @vanda:evidence review-term-feature-claims
+  // @vanda:evidence item-detail-in-one-place
   it("追加と変更した機能の1件の詳細はそれをrefinesする仕様がなければその旨を示し仕様の詳細へのリンクを出さない", async () => {
     // 文言は言葉の書き分けで変わるので、具体化する仕様がないことを示す文かだけを見る
     const note = /具体化する仕様.*ありません/;
@@ -1761,7 +1757,7 @@ describe("RV-02 1 件の詳細", () => {
     }
   });
 
-  // @vanda:evidence review-term-feature-claims
+  // @vanda:evidence item-detail-in-one-place
   it("削除した用語と機能の1件の詳細には仕様の一覧を出さない", async () => {
     const cases = [
       { e: termTF(1, "t-del", "deleted"), id: "t-del" },
@@ -1785,7 +1781,7 @@ describe("RV-02 1 件の詳細", () => {
 });
 
 describe("CM-08 ストーリーのエリア", () => {
-  // @vanda:evidence story-open-link
+  // @vanda:evidence owner-reads-story-with-review
   it("ストーリーにストーリーストアのURLがあればストーリーストアで開くのリンクを出しなければ出さない", async () => {
     for (const url of ["https://github.com/owner/app/issues/24", "https://issues.example.com/browse/24", ""]) {
       open([specEntry(1, "c-one")], {}, http.get("/api/story", () => HttpResponse.json({ ...story, url })));
@@ -1801,7 +1797,7 @@ describe("CM-08 ストーリーのエリア", () => {
     }
   });
 
-  // @vanda:evidence story-undecided-note
+  // @vanda:evidence owner-reads-story-with-review
   it("ストーリーが決まっていなければストーリーのエリアにストーリーが決まっていないので選ぶよう示し決まっていれば示さない", async () => {
     const note = "ストーリーが決まっていません。ストーリーを選んでください。";
     open([specEntry(1, "c-one")], { story: null, storyChoice: "all", branchStories: [] });
@@ -1817,7 +1813,7 @@ describe("CM-08 ストーリーのエリア", () => {
 });
 
 describe("RV-06・RV-17 承認と取り消しのボタン", () => {
-  // @vanda:evidence agree-button-label
+  // @vanda:evidence agreement-bound-to-seen-content
   it("承認のボタンにはストーリーIDで承認すると承認するストーリーのIDを書く", async () => {
     for (const id of ["#24", "#31"]) {
       window.history.pushState({}, "", `/?view=branch&base=main&story=${encodeURIComponent(id)}`);
@@ -1834,7 +1830,7 @@ describe("RV-06・RV-17 承認と取り消しのボタン", () => {
     }
   });
 
-  // @vanda:evidence agree-cannot-reason-shown
+  // @vanda:evidence agreement-bound-to-seen-content
   it("ストーリーが決まっていないかgitのuser.nameとuser.emailがなくて承認できない時は承認のボタンをクリックできなくし理由を示す", async () => {
     const cases = [
       { name: "ストーリーが決まっていない", ctxOver: {}, over: { story: null, storyChoice: "all", branchStories: [] }, reason: "ストーリーを選ぶと、承認できます。" },
@@ -1852,7 +1848,7 @@ describe("RV-06・RV-17 承認と取り消しのボタン", () => {
     }
   });
 
-  // @vanda:evidence revoke-others-shown
+  // @vanda:evidence revoke-own-agreement-only
   it("取り消してもほかの人の承認が残る時は取り消す前にその人の名前と承認済のままになることを示し取り消した後にも承認済のままであることを示す", async () => {
     const stays = /承認済み?のまま/;
     const cases = [
@@ -1893,7 +1889,7 @@ describe("RV-06・RV-17 承認と取り消しのボタン", () => {
 describe("API のエラー", () => {
   const fail = (status: number, message: string, fix: string) => HttpResponse.json({ error: { message, fix } }, { status });
 
-  // @vanda:evidence api-error-fix-shown
+  // @vanda:evidence mistakes-reported-with-fix
   it("画面はAPIのエラーを出す時に何がどうなっているかとどうすればよいかの両方を出す", async () => {
     const cases = [
       { name: "一覧", method: "get", path: "/api/review", status: 500, message: "一覧の数と差分の数が合いません。", fix: "vanda の不具合として知らせてください。" },
@@ -1915,7 +1911,7 @@ describe("API のエラー", () => {
     }
   });
 
-  // @vanda:evidence context-error-shown
+  // @vanda:evidence mistakes-reported-with-fix
   it("画面を開いた時に今の設定と選べるものを読めなければAPIが返した理由を出す", async () => {
     server.use(http.get("/api/context", () => apiError(500, "設定（.vanda/config.toml）を読めません（1 件。最初の 1 件: .vanda/config.toml:3: foo は決まった項目ではありません。）。")));
     render(<App />);
@@ -1967,8 +1963,8 @@ describe("一覧を読み込む間に選んだ件を先に出す", () => {
     http.get("/api/file", () => HttpResponse.json({ path: "e2e/sel.txtar", text: "先に出すファイルの中身\n" })),
   ];
 
-  // @vanda:evidence review-detail-shown-before-list
-  // @vanda:evidence loading-indicator
+  // @vanda:evidence item-detail-in-one-place
+  // @vanda:evidence owner-reviews-every-change
   it("一覧が届く前でもURLで選んだ仕様と用語と機能と性質と前提とファイルの今の中身を出し変更前の中身と状態とフラグと承認のボタンは一覧が届いてから出す", async () => {
     for (const c of cases) {
       const g = gate();
@@ -1997,7 +1993,7 @@ describe("一覧を読み込む間に選んだ件を先に出す", () => {
   });
 
   // 今はない 1 件（消したもの）は、詳細の API では読めないので、一覧を待つ
-  // @vanda:evidence review-detail-shown-before-list
+  // @vanda:evidence item-detail-in-one-place
   it("一覧が届く前にURLで選んだ件が今はないものなら誤りを出さず一覧を待ち一覧が届いたら消す前の中身を出す", async () => {
     const g = gate();
     const gone = specEntry(1, "c-gone", { change: "deleted", after: null, before: { ...specEntry(1, "c-gone").before as object, statement: plain("消す前の仕様の文") } as Entry["before"] });

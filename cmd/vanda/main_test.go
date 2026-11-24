@@ -61,7 +61,7 @@ func writeChecks(t *testing.T, dir string) {
 	}
 }
 
-// @vanda:evidence config-version-mismatch
+// @vanda:evidence mistakes-reported-with-fix
 func TestCheckはバージョンが合わなければ止まる(t *testing.T) {
 	dir := gitRepo(t, `version = "9.9.9"`)
 	writeChecks(t, dir)
@@ -73,7 +73,7 @@ func TestCheckはバージョンが合わなければ止まる(t *testing.T) {
 	}
 }
 
-// @vanda:evidence outside-git-repository
+// @vanda:evidence mistakes-reported-with-fix
 func TestCheckはgitのリポジトリの外では誤りにする(t *testing.T) {
 	dir := t.TempDir()
 	writeChecks(t, dir)
@@ -113,7 +113,7 @@ func Test消したコマンドのdoctorとversionはどこで動かしても決�
 	}
 }
 
-// @vanda:evidence check-config-required
+// @vanda:evidence check-runs-in-ci
 func TestCheckはチェックの設定のファイルを渡さなければ誤りにする(t *testing.T) {
 	dir := gitRepo(t, `version = "0.1.0"`)
 	code, _, errs := runIn(t, dir, "check")
@@ -122,8 +122,7 @@ func TestCheckはチェックの設定のファイルを渡さなければ誤り
 	}
 }
 
-// @vanda:evidence check-runs-in-order-and-fails
-// @vanda:evidence check-output-lines
+// @vanda:evidence check-runs-in-ci
 func TestCheckはチェックの設定のファイルをカレントディレクトリから読み失敗なら終了コード1にする(t *testing.T) {
 	dir := gitRepo(t, `version = "0.1.0"`)
 	sub := filepath.Join(dir, "sub")
@@ -151,7 +150,7 @@ func TestCheckはチェックの設定のファイルをカレントディレク
 	}
 }
 
-// @vanda:evidence config-file-required
+// @vanda:evidence mistakes-reported-with-fix
 func Test設定のファイルがなければcheckは場所の出る誤りにする(t *testing.T) {
 	dir := gitRepo(t, "")
 	writeChecks(t, dir)
@@ -161,7 +160,7 @@ func Test設定のファイルがなければcheckは場所の出る誤りにす
 	}
 }
 
-// @vanda:evidence init-terminal-streams
+// @vanda:evidence start-with-init
 func Test端末かどうかは端末の属性で決まり_dev_nullもパイプもファイルも端末でない(t *testing.T) {
 	ptmx, tty, err := pty.Open()
 	if err != nil {
@@ -202,7 +201,7 @@ func Test端末かどうかは端末の属性で決まり_dev_nullもパイプ�
 	}
 }
 
-// @vanda:evidence check-errors-before-run
+// @vanda:evidence check-runs-in-ci
 func TestCheckはチェックを始める前の誤りを標準エラーに出し結果の行を出さずに終了コード1で終わる(t *testing.T) {
 	const okConfig = "version = \"0.1.0\"\n"
 	const storyChecks = "[[check]]\nname = \"agreement\"\nscope = \"story\"\n"
@@ -245,7 +244,7 @@ func TestCheckはチェックを始める前の誤りを標準エラーに出し
 	}
 }
 
-// @vanda:evidence init-check-failure-keeps
+// @vanda:evidence start-with-init
 func Test_vanda_initは作った設定を読み直して誤りがあれば_vandaを残して直すべき誤りを返す(t *testing.T) {
 	files := [][2]string{
 		{".vanda/config.toml", "version = \"0.1.0\"\n\n[story]\nid_pattern = \"(\"\n"},

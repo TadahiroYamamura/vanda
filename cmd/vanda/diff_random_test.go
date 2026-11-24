@@ -84,7 +84,7 @@ func checkDiffLines(rt *rapid.T, path, before, after string, lines []diffLine) {
 
 // RV-05 のランダムチェック。手で作った例（diff_api_test.go）では、行の LCS が 1 通りに決まる例しか確かめていないので、
 // 同じ行が何度も出るファイルを無作為に作り、行の分け方によらずに言える決まりを確かめる
-// @vanda:evidence review-file-diff-lines
+// @vanda:evidence owner-understands-each-change
 func Testファイルの差分は無作為な変更前と変更後でもすべての行をファイルの順に1度ずつ並べ書き換えた行だけを文字の単位で比べる(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)

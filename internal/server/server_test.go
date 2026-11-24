@@ -10,7 +10,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/server"
 )
 
-// @vanda:evidence serve-rejects-foreign-host
+// @vanda:evidence server-operated-only-from-own-screen
 func TestHostが待ち受けているポートの127_0_0_1かlocalhostでないリクエストは403で断る(t *testing.T) {
 	// 45123 で待ち受けている接続に来たリクエストとして送る。ない API（/api/nope）は、Host を通れば 404 になる
 	listening := &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 45123}

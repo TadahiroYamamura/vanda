@@ -81,9 +81,7 @@ paths = ["db/schema.sql"]
 	}
 }
 
-// @vanda:evidence adapter-name-unknown
-// @vanda:evidence config-unknown-entries-rejected
-// @vanda:evidence config-version-mismatch
+// @vanda:evidence mistakes-reported-with-fix
 func TestLoadはエラーを行の付いた1件1行で全部返す(t *testing.T) {
 	root := writeConfig(t, `version = "0.2.0"
 promises = []
@@ -122,7 +120,7 @@ id_pattern = "("
 	}
 }
 
-// @vanda:evidence config-version-mismatch
+// @vanda:evidence mistakes-reported-with-fix
 func TestLoadは設定のバージョンが動いているvandaより古いとvandaの形に書き換えるよう知らせてないコマンドは案内しない(t *testing.T) {
 	root := writeConfig(t, `version = "0.0.9"`)
 	_, errs := Load(root)
@@ -135,7 +133,7 @@ func TestLoadは設定のバージョンが動いているvandaより古いとva
 	}
 }
 
-// @vanda:evidence promise-list-id-shape
+// @vanda:evidence mistakes-reported-with-fix
 func TestIsID(t *testing.T) {
 	for s, want := range map[string]bool{"task": true, "task-id-2": true, "2a": false, "a2": true, "": false, "Task": false, "-a": false, "a-": false, "a--b": false, "a_b": false, "タスク": false} {
 		if IsID(s) != want {
@@ -144,7 +142,7 @@ func TestIsID(t *testing.T) {
 	}
 }
 
-// @vanda:evidence config-id-pattern-not-empty-match
+// @vanda:evidence mistakes-reported-with-fix
 func TestLoadは空の文字列にマッチするid_patternを受け付けない(t *testing.T) {
 	root := writeConfig(t, "version = \"0.1.0\"\n[story]\nid_pattern = \"[0-9]*\"\n")
 	_, errs := Load(root)
@@ -183,9 +181,8 @@ func annConfig(body string) string {
 	return "version = \"0.1.0\"\n\n[[annotation]]\npaths = [\"x/*\"]\n" + body
 }
 
-// @vanda:evidence annotation-types-required
-// @vanda:evidence annotation-types-empty
-// @vanda:evidence annotation-types-unsatisfiable-allowed
+// @vanda:evidence mistakes-reported-with-fix
+// @vanda:evidence check-passes-only-with-evidence
 func TestLoadはtypesがないか書けないタイプを書いた設定を誤りにし空と満たせないタイプは受け付ける(t *testing.T) {
 	bad := map[string]string{
 		"typesがない":     "adapter = \"go\"\n",
@@ -214,7 +211,7 @@ func TestLoadはtypesがないか書けないタイプを書いた設定を誤�
 	}
 }
 
-// @vanda:evidence config-github-only-fields
+// @vanda:evidence mistakes-reported-with-fix
 func TestLoadはstoryのrepositoryとapi_urlを組み込みのgithubのときだけ受け付ける(t *testing.T) {
 	ok := "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"o/r\"\napi_url = \"https://example.com\"\n"
 	if _, errs := Load(writeConfig(t, ok)); errs != nil {
@@ -247,7 +244,7 @@ func writeAdapter(t *testing.T, root, path, body string) {
 	}
 }
 
-// @vanda:evidence project-adapter-args-only-for-project
+// @vanda:evidence annotation-adapter-contract
 func TestLoadはargsを組み込みのアダプタとadapterのない表に書けば誤りにする(t *testing.T) {
 	for name, body := range map[string]string{
 		"組み込みのgo":      "adapter = \"go\"\ntypes = [\"unit-test\"]\nargs = [\"x\"]\n",
@@ -269,7 +266,7 @@ func TestLoadはargsを組み込みのアダプタとadapterのない表に書�
 	}
 }
 
-// @vanda:evidence config-annotation-timeout
+// @vanda:evidence annotation-adapter-contract
 func TestLoadはtimeoutを1以上の整数の秒でカスタムアダプタの表にだけ受け付け省けば20秒にする(t *testing.T) {
 	for name, body := range map[string]string{
 		"0":           "adapter = \"md\"\ntypes = [\"unit-test\"]\ntimeout = 0\n",
@@ -309,8 +306,7 @@ func TestLoadはtimeoutを1以上の整数の秒でカスタムアダプタの�
 	}
 }
 
-// @vanda:evidence project-adapter-name
-// @vanda:evidence project-adapter-overrides-builtin
+// @vanda:evidence annotation-adapter-contract
 func TestLoadはvanda_adaptersの直下のファイルとディレクトリのrunを名前で指し組み込みと同じ名前ならそちらを使う(t *testing.T) {
 	root := writeConfig(t, "version = \"0.1.0\"\n\n[[annotation]]\npaths = [\"a/*\"]\nadapter = \"md\"\ntypes = [\"unit-test\"]\n\n[[annotation]]\npaths = [\"b/*\"]\nadapter = \"rs\"\ntypes = [\"unit-test\"]\n\n[[annotation]]\npaths = [\"c/*\"]\nadapter = \"go\"\ntypes = [\"unit-test\"]\n\n[[annotation]]\npaths = [\"d/*\"]\nadapter = \"txtar\"\ntypes = [\"scenario-test\"]\n")
 	writeAdapter(t, root, "md", "#!/bin/sh\n")
@@ -337,7 +333,7 @@ func TestLoadはvanda_adaptersの直下のファイルとディレクトリのru
 
 // 1 行目に動かし方がないものは、動かしたときに分かるので、annotation の Read のテストで確かめる
 //
-// @vanda:evidence project-adapter-not-runnable
+// @vanda:evidence annotation-adapter-contract
 func TestUserAdapterのCheckはない実行できないrunがないアダプタを場所と直し方の誤りにする(t *testing.T) {
 	root := t.TempDir()
 	writeAdapter(t, root, "ok", "#!/bin/sh\n")
@@ -372,7 +368,7 @@ func loadErrs(t *testing.T, body string) string {
 	return ""
 }
 
-// @vanda:evidence config-annotation-types-unique
+// @vanda:evidence mistakes-reported-with-fix
 func TestLoadはannotationのtypesに同じタイプを2つ以上書けば誤りにし違うタイプだけなら受け付ける(t *testing.T) {
 	for name, types := range map[string]string{
 		"同じタイプが2つ":    `["unit-test", "unit-test"]`,
@@ -397,7 +393,7 @@ func TestLoadはannotationのtypesに同じタイプを2つ以上書けば誤り
 	}
 }
 
-// @vanda:evidence config-api-url-default
+// @vanda:evidence owner-reads-story-with-review
 func TestLoadは組み込みのgithubでapi_urlを省けばhttps_api_github_comを使う(t *testing.T) {
 	root := writeConfig(t, "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"o/r\"\n")
 	cfg, errs := Load(root)
@@ -417,7 +413,7 @@ func TestLoadは組み込みのgithubでapi_urlを省けばhttps_api_github_com�
 	}
 }
 
-// @vanda:evidence config-api-url-scheme
+// @vanda:evidence mistakes-reported-with-fix
 func TestLoadはapi_urlがhttpかhttpsで始まらなければ誤りにする(t *testing.T) {
 	body := func(u string) string {
 		return "version = \"0.1.0\"\n[story]\nadapter = \"github\"\nrepository = \"o/r\"\napi_url = \"" + u + "\"\n"
@@ -434,7 +430,7 @@ func TestLoadはapi_urlがhttpかhttpsで始まらなければ誤りにする(t 
 	}
 }
 
-// @vanda:evidence config-github-repository
+// @vanda:evidence mistakes-reported-with-fix
 func TestLoadは組み込みのgithubでrepositoryがないかowner_repoの形でなければ誤りにする(t *testing.T) {
 	if got := loadErrs(t, "version = \"0.1.0\"\n[story]\nadapter = \"github\"\n"); !lineWith(got, ".vanda/config.toml:2: ", "repository") {
 		t.Errorf("repository がないのに、[story] の行を指す誤りにならない:\n%s", got)
@@ -454,7 +450,7 @@ func TestLoadは組み込みのgithubでrepositoryがないかowner_repoの形�
 	}
 }
 
-// @vanda:evidence config-guardrail-adapter-file
+// @vanda:evidence mistakes-reported-with-fix
 func TestLoadはguardrailのadapterにfileのほかを書けば誤りにする(t *testing.T) {
 	body := func(a string) string {
 		return "version = \"0.1.0\"\n\n[[guardrail]]\nadapter = \"" + a + "\"\npaths = [\"db/schema.sql\"]\n"
@@ -469,7 +465,7 @@ func TestLoadはguardrailのadapterにfileのほかを書けば誤りにする(t
 	}
 }
 
-// @vanda:evidence config-id-pattern-default
+// @vanda:evidence changes-traceable-to-story
 func TestLoadはid_patternを省けばストーリーのIDの書き方をシャープと数字にする(t *testing.T) {
 	for name, body := range map[string]string{
 		"storyの表がない":            "version = \"0.1.0\"\n",
@@ -489,7 +485,7 @@ func TestLoadはid_patternを省けばストーリーのIDの書き方をシャ�
 	}
 }
 
-// @vanda:evidence config-id-pattern-regex
+// @vanda:evidence mistakes-reported-with-fix
 func TestLoadはid_patternが正規表現として読めなければ誤りにする(t *testing.T) {
 	body := func(p string) string {
 		return "version = \"0.1.0\"\n[story]\nid_pattern = '" + p + "'\n"
@@ -507,7 +503,7 @@ func TestLoadはid_patternが正規表現として読めなければ誤りにす
 	}
 }
 
-// @vanda:evidence config-layer-id
+// @vanda:evidence mistakes-reported-with-fix
 func TestLoadはlayerのidが決まった形でないかほかのレイヤーと重複すれば誤りにする(t *testing.T) {
 	layer := func(id string) string {
 		return "\n[[layer]]\nid = \"" + id + "\"\nname = \"n\"\ndescription = \"d\"\n"
@@ -527,7 +523,7 @@ func TestLoadはlayerのidが決まった形でないかほかのレイヤーと
 	}
 }
 
-// @vanda:evidence config-pattern-syntax
+// @vanda:evidence mistakes-reported-with-fix
 func TestLoadはファイルのパターンの書き方が誤っていればどの項目でも誤りにする(t *testing.T) {
 	// どの項目にも、そのパターンだけを書く。wrap は、項目の行が 3 行目になるように書く
 	wrap := map[string]func(p string) string{
@@ -561,7 +557,7 @@ func TestLoadはファイルのパターンの書き方が誤っていればど�
 	}
 }
 
-// @vanda:evidence config-patterns-not-empty
+// @vanda:evidence mistakes-reported-with-fix
 func TestLoadはpromisesとagreementsとannotationとguardrailのpathsにパターンが1つもなければ誤りにする(t *testing.T) {
 	for name, c := range map[string]struct{ body, prefix string }{
 		"promises":         {"version = \"0.1.0\"\npromises = []\n", ".vanda/config.toml:2: "},
@@ -577,7 +573,7 @@ func TestLoadはpromisesとagreementsとannotationとguardrailのpathsにパタ�
 	}
 }
 
-// @vanda:evidence config-required-fields
+// @vanda:evidence mistakes-reported-with-fix
 func TestLoadはversionとlayerとannotationとguardrailの必須の項目がなければ誤りにする(t *testing.T) {
 	const layerAll = "\n[[layer]]\nid = \"model\"\nname = \"n\"\ndescription = \"d\"\n"
 	cases := []struct {

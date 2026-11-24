@@ -280,7 +280,7 @@ func goodRepo(t *testing.T) *repoT {
 	return r
 }
 
-// @vanda:evidence check-evidence-proof-and-unchecked
+// @vanda:evidence check-passes-only-with-evidence
 func TestRunは整った約束リストと承認とエビデンスなら全部のチェックを通す(t *testing.T) {
 	r := goodRepo(t)
 	pass, out, err := r.run(allChecks, "", "")
@@ -309,15 +309,9 @@ func expect(t *testing.T, out string, want [][]string) {
 	}
 }
 
-// @vanda:evidence promise-list-part-of
-// @vanda:evidence promise-list-id-unique
-// @vanda:evidence promise-list-id-shape
-// @vanda:evidence promise-list-formal-waiver
-// @vanda:evidence promise-list-subjects-exist
-// @vanda:evidence promise-list-layers-known
-// @vanda:evidence promise-list-every-layer-has-evidence
-// @vanda:evidence promise-list-fixed-values
-// @vanda:evidence promise-list-evidence-layers-within-claim
+// @vanda:evidence mistakes-reported-with-fix
+// @vanda:evidence core-specs-need-model-check
+// @vanda:evidence check-passes-only-with-evidence
 func TestPromiseListShapeは値とIDと指す先の誤りを出す(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{".vanda/promises.toml": `[[term]]
@@ -393,8 +387,7 @@ statement = "s"
 	})
 }
 
-// @vanda:evidence annotation-links-tla-types
-// @vanda:evidence annotation-links-kinds
+// @vanda:evidence annotations-link-evidence
 func TestAnnotationLinksは指す先のないIDと種類の違いと型の用語の抜けを出す(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{
@@ -411,8 +404,8 @@ func TestAnnotationLinksは指す先のないIDと種類の違いと型の用語
 	})
 }
 
-// @vanda:evidence check-agreement-targets
-// @vanda:evidence check-agreement-flags-left
+// @vanda:evidence check-passes-only-when-agreed
+// @vanda:evidence flags-block-check
 func TestAgreementは提案中とフラグと承認していないファイルを出す(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{
@@ -429,7 +422,7 @@ func TestAgreementは提案中とフラグと承認していないファイル�
 	})
 }
 
-// @vanda:evidence agreements-point-to-existing-items
+// @vanda:evidence mistakes-reported-with-fix
 func TestAgreementTargetsは約束リストにない項目か種類の違う項目を指す承認を出す(t *testing.T) {
 	r := goodRepo(t)
 	cfg := r.config()
@@ -456,8 +449,7 @@ func TestAgreementTargetsは約束リストにない項目か種類の違う項�
 	})
 }
 
-// @vanda:evidence check-evidence-present
-// @vanda:evidence check-evidence-proof-and-unchecked
+// @vanda:evidence check-passes-only-with-evidence
 func TestEvidencePresentはタイプに合うアノテーションのない予定とproofを出す(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{
@@ -476,7 +468,7 @@ func TestEvidencePresentはタイプに合うアノテーションのない予�
 	})
 }
 
-// @vanda:evidence check-unread-files
+// @vanda:evidence mistakes-reported-with-fix
 func TestUnreadFilesは設定とチェックの設定のほかの読まれていないファイルを出す(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{".vanda/checks/push.toml": "", ".vanda/notes.md": "x", ".vanda/checks/old/a.toml": ""})
@@ -485,7 +477,7 @@ func TestUnreadFilesは設定とチェックの設定のほかの読まれてい
 	expect(t, out, [][]string{{"チェック unread-files（all）: 失敗（2 件）"}, {".vanda/checks/old/a.toml: ", ".vanda/ に", "読まれて"}, {".vanda/notes.md: ", ".vanda/ に", "読まれて"}})
 }
 
-// @vanda:evidence check-story-origin
+// @vanda:evidence changes-traceable-to-story
 func TestStoryOriginは約束リストを変えたコミットにストーリーのIDがなければ出す(t *testing.T) {
 	r := goodRepo(t)
 	r.git("checkout", "-q", "-b", "work")
@@ -501,7 +493,7 @@ func TestStoryOriginは約束リストを変えたコミットにストーリー
 
 const storyAgreement = "[[check]]\nname = \"agreement\"\nscope = \"story\"\n"
 
-// @vanda:evidence check-agreement-story-scope
+// @vanda:evidence check-passes-only-when-agreed
 func TestAgreementのスコープstoryはそのストーリーで変わったものだけを見る(t *testing.T) {
 	r := goodRepo(t)
 	r.git("checkout", "-q", "-b", "work")
@@ -518,7 +510,7 @@ func TestAgreementのスコープstoryはそのストーリーで変わったも
 	expect(t, out, [][]string{{"チェック agreement（story #2）: 失敗（1 件）"}, {".vanda/promises.toml:6: ", "用語 task の今の中身", "承認"}})
 }
 
-// @vanda:evidence check-agreement-story-scope
+// @vanda:evidence check-passes-only-when-agreed
 func TestAgreementのスコープstoryはほかのストーリーが承認してもそのストーリーの失効した承認で止める(t *testing.T) {
 	r := goodRepo(t)
 	r.git("checkout", "-q", "-b", "work")
@@ -542,11 +534,9 @@ func TestAgreementのスコープstoryはほかのストーリーが承認して
 	expect(t, out, [][]string{{"チェック agreement（story #1）: 失敗（1 件）"}, {".vanda/promises.toml:6: ", "用語 task の", "ストーリー #1 の承認が失効し"}})
 }
 
-// @vanda:evidence agreed-when-fingerprint-matches
-// @vanda:evidence old-agreements-kept-as-history
-// @vanda:evidence detached-agreement
-// @vanda:evidence detached-until-story-reagrees
-// @vanda:evidence revoke-returns-to-proposed
+// @vanda:evidence agreement-detached-when-content-changes
+// @vanda:evidence agreement-history-kept
+// @vanda:evidence revoke-own-agreement-only
 func Testフィンガープリントの合わない承認の記録は誤りにせず失効した承認を承認し直すまで残し記録を除くと提案中に戻す(t *testing.T) {
 	r := goodRepo(t)
 	r.git("checkout", "-q", "-b", "work")
@@ -601,9 +591,8 @@ func Testフィンガープリントの合わない承認の記録は誤りに�
 	expect(t, out, [][]string{{"チェック agreement（all）: 失敗（1 件）"}, {".vanda/promises.toml:6: ", "用語 task の今の中身", "まだ承認していません"}})
 }
 
-// @vanda:evidence check-base-required-for-story
-// @vanda:evidence check-story-from-commits
-// @vanda:evidence check-story-arg-pattern
+// @vanda:evidence check-runs-in-ci
+// @vanda:evidence changes-traceable-to-story
 func TestRunはスコープstoryのストーリーが決まらなければ止める(t *testing.T) {
 	r := goodRepo(t)
 	r.git("checkout", "-q", "-b", "work")
@@ -638,7 +627,7 @@ func TestRunはスコープstoryのストーリーが決まらなければ止め
 	}
 }
 
-// @vanda:evidence check-scope-per-check
+// @vanda:evidence check-runs-in-ci
 func TestLoadSpecsはチェックの名前とスコープの誤りを出す(t *testing.T) {
 	_, errs := LoadSpecs("c.toml", []byte("[[check]]\nname = \"x\"\nscope = \"all\"\n[[check]]\nname = \"story-origin\"\nscope = \"all\"\n[[check]]\nname = \"agreement\"\nscope = \"some\"\n"))
 	expect(t, errs.Error(), [][]string{{"c.toml:2: ", `チェック "x"`}, {"c.toml:6: ", "チェック story-origin", "スコープ all", "scope を story"}, {"c.toml:9: ", `スコープ "some"`, "決まった値"}})
@@ -647,8 +636,7 @@ func TestLoadSpecsはチェックの名前とスコープの誤りを出す(t *t
 	}
 }
 
-// @vanda:evidence check-output-lines
-// @vanda:evidence check-runs-in-order-and-fails
+// @vanda:evidence check-runs-in-ci
 func TestRunはチェックごとの結果の行を標準出力に誤りの中身を標準エラーに出す(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{".vanda/notes.md": "x"})
@@ -670,7 +658,7 @@ func TestRunはチェックごとの結果の行を標準出力に誤りの中�
 	}
 }
 
-// @vanda:evidence promise-list-id-shape
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeは空のIDを誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{".vanda/promises.toml": strings.Replace(basePromises, `id = "add-task"`, `id = ""`, 1)})
@@ -679,7 +667,7 @@ func TestPromiseListShapeは空のIDを誤りにする(t *testing.T) {
 	expect(t, out, [][]string{{".vanda/promises.toml:11: ", `機能の ID ""`, "決まった形"}})
 }
 
-// @vanda:evidence promise-list-id-unique
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeは重複したIDを表の種類でなく出てきた順で後のほうの行に出す(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{
@@ -722,7 +710,7 @@ func lineWith(got, prefix string, frags ...string) bool {
 
 // ---- 仕様の文から作ったテスト ----
 
-// @vanda:evidence agreements-unknown-entries-rejected
+// @vanda:evidence mistakes-reported-with-fix
 func TestAgreementTargetsは承認の記録の決まっていない表と項目を誤りにする(t *testing.T) {
 	for name, extra := range map[string]string{
 		"決まっていない項目": "[[agreement]]\nkind = \"term\"\nkey = \"task\"\nfingerprint = \"sha256:0000000000000000000000000000000000000000000000000000000000000000\"\nuser = { name = \"PO\", email = \"po@example.com\" }\nagreed_at = 2026-10-31T12:00:00Z\nstory = \"#1\"\nnote = \"x\"\n\n",
@@ -740,7 +728,7 @@ func TestAgreementTargetsは承認の記録の決まっていない表と項目�
 	}
 }
 
-// @vanda:evidence annotation-links-kinds
+// @vanda:evidence annotations-link-evidence
 func TestAnnotationLinksは種類ごとに指す先の表が違えば全部の組み合わせで誤りにする(t *testing.T) {
 	// 種類 → 指してよい表。ID は baseFiles の用語 task・機能 add-task・仕様 task-unique・性質 no-lost-task と、ここで足す前提 disk-works。
 	// 性質と前提は、どの種類のアノテーションからも指せない（docs/formats.md の「アノテーション」）
@@ -773,7 +761,7 @@ func TestAnnotationLinksは種類ごとに指す先の表が違えば全部の�
 	}
 }
 
-// @vanda:evidence check-agreement-flags-left
+// @vanda:evidence flags-block-check
 func TestAgreementは承認済でも仕様にflagsかguessesが残っていれば誤りにする(t *testing.T) {
 	for name, add := range map[string]string{"flags": "flags = [\"ai-proposal\"]", "guesses": "guesses = [\"g\"]"} {
 		t.Run(name, func(t *testing.T) {
@@ -792,7 +780,7 @@ func TestAgreementは承認済でも仕様にflagsかguessesが残っていれ�
 	}
 }
 
-// @vanda:evidence check-blocked-by-unreadable-input
+// @vanda:evidence mistakes-reported-with-fix
 func TestRunは読めない入力を前提にするほかのチェックを読めないため行えないとして失敗にする(t *testing.T) {
 	cases := []struct {
 		name, file, body string
@@ -820,8 +808,8 @@ func TestRunは読めない入力を前提にするほかのチェックを読�
 	}
 }
 
-// @vanda:evidence renamed-file-needs-agreement
-// @vanda:evidence check-agreement-targets
+// @vanda:evidence agreement-detached-when-content-changes
+// @vanda:evidence check-passes-only-when-agreed
 func TestAgreementは承認の対象のファイルの名前を変えたら古い場所に消したことへの承認を新しい場所に承認を求め中身を変えれば止める(t *testing.T) {
 	r := goodRepo(t)
 	src, err := os.ReadFile(filepath.Join(r.root, "e2e/add.txtar"))
@@ -879,7 +867,7 @@ func TestAgreementは承認の対象のファイルの名前を変えたら古�
 	}
 }
 
-// @vanda:evidence unread-files-excludes-adapters
+// @vanda:evidence mistakes-reported-with-fix
 func TestUnreadFilesはvanda_adaptersの下のファイルを除く(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{".vanda/adapters/a": "x", ".vanda/adapters/b/run": "x", ".vanda/adapters/c/d/e.toml": "x", ".vanda/adapters.toml": "x"})
@@ -890,7 +878,7 @@ func TestUnreadFilesはvanda_adaptersの下のファイルを除く(t *testing.T
 	}
 }
 
-// @vanda:evidence annotation-types-empty
+// @vanda:evidence check-passes-only-with-evidence
 func TestEvidencePresentはtypesが空のannotationで読んだアノテーションでどのタイプも満たさない(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{".vanda/config.toml": strings.Replace(baseConfig, "adapter = \"go\"\ntypes = [\"unit-test\", \"cross-check\", \"random-check\", \"interface-test\", \"concurrency-test\", \"sensor\", \"guardrail\"]", "adapter = \"go\"\ntypes = []", 1)})
@@ -905,7 +893,7 @@ func TestEvidencePresentはtypesが空のannotationで読んだアノテーシ�
 // 機能の書き方（formal が真になるかは、formal を省けば core と同じ）と、仕様の model-check の予定・model_check_waiver の
 // 書き方の全部の組み合わせ。形式手法を使わない機能に model_check_waiver を書いたときは、仕様で決まっていないので確かめない
 //
-// @vanda:evidence promise-list-formal-claims
+// @vanda:evidence core-specs-need-model-check
 func TestPromiseListShapeは形式手法を使う機能を対象にする仕様にmodel_checkの予定とmodel_check_waiverのどちらか一方だけを求める(t *testing.T) {
 	features := []struct {
 		name, fields string
@@ -960,7 +948,7 @@ func TestPromiseListShapeは形式手法を使う機能を対象にする仕様�
 // カスタムアダプタで読むシナリオ（E2E など）とオラクルも承認の対象にし、組み込みの txtar・tla で読んでも、types が
 // どちらも含まないパターンだけにマッチするファイルは承認の対象にしない。どのファイルにもアノテーションは書かない
 //
-// @vanda:evidence check-agreement-targets
+// @vanda:evidence check-passes-only-when-agreed
 func TestAgreementは承認の対象のファイルをアダプタの名前でなくannotationのtypesで決める(t *testing.T) {
 	cases := []struct {
 		path, rule string
@@ -1008,7 +996,7 @@ var checkNames = map[string][]string{
 	"evidence-present":   {"all", "story"},
 }
 
-// @vanda:evidence check-name-known
+// @vanda:evidence check-runs-in-ci
 func TestLoadSpecsは決まったチェックの名前を受け付けほかの名前をチェックの設定の誤りにする(t *testing.T) {
 	for name, scopes := range checkNames {
 		if _, errs := LoadSpecs("c.toml", []byte("[[check]]\nname = \""+name+"\"\nscope = \""+scopes[0]+"\"\n")); errs != nil {
@@ -1023,7 +1011,7 @@ func TestLoadSpecsは決まったチェックの名前を受け付けほかの�
 	}
 }
 
-// @vanda:evidence check-scope-table
+// @vanda:evidence check-runs-in-ci
 func TestLoadSpecsはチェックごとに決まったスコープだけを受け付ける(t *testing.T) {
 	for name, scopes := range checkNames {
 		for _, scope := range []string{"all", "story"} {
@@ -1039,7 +1027,7 @@ func TestLoadSpecsはチェックごとに決まったスコープだけを受�
 	}
 }
 
-// @vanda:evidence check-config-unknown-entries-rejected
+// @vanda:evidence check-runs-in-ci
 func TestLoadSpecsはcheckのほかの表とnameとscopeのほかの項目をチェックの設定の誤りにする(t *testing.T) {
 	const ok = "[[check]]\nname = \"agreement\"\nscope = \"all\"\n"
 	cases := []struct{ name, src, prefix, key string }{
@@ -1062,7 +1050,7 @@ func TestLoadSpecsはcheckのほかの表とnameとscopeのほかの項目をチ
 	}
 }
 
-// @vanda:evidence check-base-unused-without-story
+// @vanda:evidence check-runs-in-ci
 func TestRunはスコープstoryのチェックがなければbaseを使わずないブランチを渡しても誤りにしない(t *testing.T) {
 	r := goodRepo(t)
 	for _, base := range []string{"", "main", "no-such-branch", "origin/nothing"} {
@@ -1077,7 +1065,7 @@ func TestRunはスコープstoryのチェックがなければbaseを使わず�
 	}
 }
 
-// @vanda:evidence check-output-story-id
+// @vanda:evidence check-runs-in-ci
 func TestRunはスコープstoryのagreementとevidence_presentの結果の行にチェックに使ったストーリーのIDを書く(t *testing.T) {
 	r := goodRepo(t)
 	r.git("checkout", "-q", "-b", "work")
@@ -1104,7 +1092,7 @@ func TestRunはスコープstoryのagreementとevidence_presentの結果の行�
 	expect(t, out, [][]string{{"チェック agreement（story #8）: 失敗（3 件）"}, {"チェック evidence-present（story #8）: 通った"}, {"チェック story-origin（story）: 通った"}})
 }
 
-// @vanda:evidence branch-point-merge-base
+// @vanda:evidence check-passes-only-when-agreed
 func TestスコープstoryのチェックはベースブランチとHEADのmerge_baseをマージベースにする(t *testing.T) {
 	r := goodRepo(t)
 	r.git("checkout", "-q", "-b", "work")
@@ -1143,7 +1131,7 @@ func TestスコープstoryのチェックはベースブランチとHEADのmerge
 	}
 }
 
-// @vanda:evidence check-guardrail-file-missing
+// @vanda:evidence check-passes-only-when-agreed
 func TestAgreementはguardrailのpathsに書いたワイルドカードのない場所のファイルがなければ誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	r.write(map[string]string{".vanda/config.toml": strings.Replace(baseConfig, `paths = ["db/schema.sql"]`, `paths = ["db/schema.sql", "db/missing.sql", "db/*.none", "db/**/*.ddl"]`, 1)})
@@ -1159,7 +1147,7 @@ func TestAgreementはguardrailのpathsに書いたワイルドカードのない
 	}
 }
 
-// @vanda:evidence check-load-errors-owner
+// @vanda:evidence mistakes-reported-with-fix
 func Test約束リストとアノテーションと承認の記録の読み込みの誤りとエラーはそれぞれのチェックだけが出す(t *testing.T) {
 	cases := []struct {
 		name, file, body string
@@ -1192,7 +1180,7 @@ func Test約束リストとアノテーションと承認の記録の読み込�
 	}
 }
 
-// @vanda:evidence agreements-default-file-may-be-absent
+// @vanda:evidence mistakes-reported-with-fix
 func TestAgreementTargetsは設定にagreementsを書かず既定のファイルがなければ承認の記録を空とみなす(t *testing.T) {
 	r := goodRepo(t)
 	r.git("rm", "-q", ".vanda/agreements.toml")
@@ -1214,7 +1202,7 @@ func TestAgreementTargetsは設定にagreementsを書かず既定のファイル
 	}
 }
 
-// @vanda:evidence agreements-explicit-file-may-be-absent
+// @vanda:evidence mistakes-reported-with-fix
 func TestAgreementTargetsは設定のagreementsにはっきり書いたファイルがなければ誤りにせず承認の記録を空とみなす(t *testing.T) {
 	cases := []struct{ name, patterns, absent string }{
 		{"既定と同じ場所", `[".vanda/agreements.toml"]`, ".vanda/agreements.toml"},
@@ -1265,7 +1253,7 @@ func recordOf(fields ...string) string {
 	return "[[agreement]]\n" + strings.Join(fields, "\n") + "\n\n"
 }
 
-// @vanda:evidence agreements-fingerprint-shape
+// @vanda:evidence mistakes-reported-with-fix
 func TestAgreementTargetsは承認の記録のfingerprintがsha256と16進の小文字64文字でなければ誤りにする(t *testing.T) {
 	hex64 := "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 	rec := func(fp string) string {
@@ -1295,7 +1283,7 @@ func TestAgreementTargetsは承認の記録のfingerprintがsha256と16進の小
 	}
 }
 
-// @vanda:evidence agreements-required-fields
+// @vanda:evidence mistakes-reported-with-fix
 func TestAgreementTargetsは承認の記録の必須の項目がないかkindが決まった値でなければ誤りにする(t *testing.T) {
 	full := map[string]string{
 		"kind":        `kind = "spec"`,
@@ -1412,7 +1400,7 @@ type = "unit-test"
 layers = ["model"]
 `
 
-// @vanda:evidence promise-list-required-field-names
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeは性質と前提と用語と機能と仕様とエビデンスの必須の項目がなければ誤りにし省いてよい項目は省いても通す(t *testing.T) {
 	r := goodRepo(t)
 	if pass, out := shapeOf(t, r, minimalPromises); !pass {
@@ -1476,7 +1464,7 @@ func keepFirstLine(s string) string {
 	return s[:i+1]
 }
 
-// @vanda:evidence promise-list-non-empty
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeは機能と仕様のrefinesと仕様のlayersとevidenceとエビデンスのlayersが空なら誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	cases := []struct {
@@ -1501,7 +1489,7 @@ func TestPromiseListShapeは機能と仕様のrefinesと仕様のlayersとeviden
 	}
 }
 
-// @vanda:evidence promise-list-field-types
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeは約束リストの項目が決まった型でなければ誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	// 型の違う値に置き換える行。置き換えた行を指す誤りになる
@@ -1568,7 +1556,7 @@ func TestPromiseListShapeは約束リストの項目が決まった型でなけ�
 	}
 }
 
-// @vanda:evidence promise-list-fixed-value-list
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeは決まった値のstageとtypeとflagsを受け付けほかの値を誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	values := []struct {

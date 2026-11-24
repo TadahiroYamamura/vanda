@@ -8,7 +8,7 @@ import (
 // コミットのストーリーの ID（docs/formats.md の「コミットのストーリーの ID」）。メッセージは手で書き、
 // スコープ story の agreement がどのストーリーに決まったか（結果の行）か、決まらなかった誤りで見る。
 
-// @vanda:evidence story-id-from-trailer
+// @vanda:evidence changes-traceable-to-story
 func Testストーリーの_IDはメッセージの最後の段落のStoryのトレーラーからだけ読みsubjectと本文のIDは数えない(t *testing.T) {
 	cases := []struct {
 		name, msg string
@@ -46,9 +46,8 @@ func Testストーリーの_IDはメッセージの最後の段落のStoryのト
 
 // スコープ story の agreement・evidence-present を含む設定では、トレーラーの誤りは --story を渡してもチェックの前の誤り。
 // story-origin だけなら、約束リストを変えたそのコミットだけが story-origin の失敗。スコープがすべて all なら見ない
-// @vanda:evidence story-trailer-at-most-one
-// @vanda:evidence story-trailer-matches-pattern
-// @vanda:evidence check-story-arg-pattern
+// @vanda:evidence changes-traceable-to-story
+// @vanda:evidence check-runs-in-ci
 func TestStoryのトレーラーの誤りは決めるチェックではチェックの前に止めstory_originではそのコミットの失敗にしallでは見ない(t *testing.T) {
 	const (
 		storyEvidence = "[[check]]\nname = \"evidence-present\"\nscope = \"story\"\n"

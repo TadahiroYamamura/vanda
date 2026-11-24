@@ -105,9 +105,9 @@ func wantStoryTrailer(t *testing.T, r *reviewRepo, story string) {
 }
 
 // RV-06・RV-04
-// @vanda:evidence agree-writes-and-commits
-// @vanda:evidence agree-removes-flags
-// @vanda:evidence agree-commit-has-story-trailer
+// @vanda:evidence agreement-keeps-files-safe
+// @vanda:evidence flags-block-check
+// @vanda:evidence agreement-history-kept
 func Test承認すると承認の記録が1件増えその仕様のフラグだけが外れほかの行は変わらず1つのコミットになる(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -173,7 +173,7 @@ func Test承認すると承認の記録が1件増えその仕様のフラグだ�
 }
 
 // RV-06・CMD-10
-// @vanda:evidence agree-writes-and-commits
+// @vanda:evidence agreement-keeps-files-safe
 func Test全部を承認すると段1のコミットのストーリーのチェックと承認のチェックが通る(t *testing.T) {
 	t.Parallel()
 	bin, r, s := setupAgree(t)
@@ -202,7 +202,7 @@ func Test全部を承認すると段1のコミットのストーリーのチェ�
 }
 
 // RV-06
-// @vanda:evidence agree-writes-and-commits
+// @vanda:evidence agreement-keeps-files-safe
 func Test承認と関係のない書きかけの変更はインデックスに足したものも承認のコミットに入らず残る(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -229,7 +229,7 @@ func Test承認と関係のない書きかけの変更はインデックスに�
 }
 
 // RV-06
-// @vanda:evidence agree-rejects-uncommitted
+// @vanda:evidence agreement-keeps-files-safe
 func Test承認で変えるファイルに書きかけの変更があると承認を断り理由を出し何も変えない(t *testing.T) {
 	t.Parallel()
 	dirtyScenario := reviewScenarioStory + "# 書きかけ\n"
@@ -280,7 +280,7 @@ func Test承認で変えるファイルに書きかけの変更があると承�
 }
 
 // RV-06
-// @vanda:evidence context-no-user-cannot-agree
+// @vanda:evidence agreement-history-kept
 func Test承認する人のgitのuser_nameかuser_emailがないと承認できず理由を出す(t *testing.T) {
 	t.Parallel()
 	for _, key := range []string{"user.name", "user.email"} {
@@ -316,7 +316,7 @@ func Test承認する人のgitのuser_nameかuser_emailがないと承認でき�
 }
 
 // RV-06
-// @vanda:evidence agree-writes-and-commits
+// @vanda:evidence agreement-keeps-files-safe
 func Testファイルにも承認でき承認の記録だけが1つのコミットになる(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -351,7 +351,7 @@ func Testファイルにも承認でき承認の記録だけが1つのコミッ�
 }
 
 // RV-06: 同じストーリーで、今の中身にもう承認していれば断る
-// @vanda:evidence agree-rejects-duplicate
+// @vanda:evidence agreement-keeps-files-safe
 func Test同じストーリーで今の中身にもう承認していれば承認を断る(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -369,7 +369,7 @@ func Test同じストーリーで今の中身にもう承認していれば承�
 }
 
 // RV-06: 画面に見せていた中身と今の中身が違えば断る
-// @vanda:evidence agree-rejects-stale
+// @vanda:evidence agreement-bound-to-seen-content
 func Test見せていた中身のフィンガープリントが今の中身と違うと承認を断る(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -456,10 +456,8 @@ func revokeEntry(t *testing.T, s *vandaServer) (state string, possible *bool, re
 }
 
 // RV-17
-// @vanda:evidence revoke-commits-and-keeps-flags
-// @vanda:evidence revoke-own-branch-only
-// @vanda:evidence revoke-returns-to-proposed
-// @vanda:evidence agree-commit-has-story-trailer
+// @vanda:evidence revoke-own-agreement-only
+// @vanda:evidence agreement-history-kept
 func Test自分が今のブランチで書いた承認を取り消すとその記録と直前の空行だけが消え1つのコミットになりフラグは戻らない(t *testing.T) {
 	t.Parallel()
 	_, r, s, base := setupRevoke(t, func(base string) string {
@@ -510,9 +508,7 @@ func Test自分が今のブランチで書いた承認を取り消すとその�
 }
 
 // RV-17。人の違う記録は残り、同じ人の同じ記録が 2 つあれば両方消える。ほかのストーリーの記録と、前の中身への記録も残る
-// @vanda:evidence revoke-own-branch-only
-// @vanda:evidence revoke-removes-all-duplicates
-// @vanda:evidence revoke-returns-to-proposed
+// @vanda:evidence revoke-own-agreement-only
 func Test取り消すと今の人の記録だけが消えほかの人とほかのストーリーの記録は残り承認済のままになる(t *testing.T) {
 	t.Parallel()
 	other := inlineRecord(reviewStory, "ほかの人", "other@example.com")
@@ -541,8 +537,7 @@ func Test取り消すと今の人の記録だけが消えほかの人とほか�
 }
 
 // RV-17。誰が × どこで書いたか、の組み合わせを全部回す
-// @vanda:evidence revoke-own-branch-only
-// @vanda:evidence revoke-refused
+// @vanda:evidence revoke-own-agreement-only
 func Test取り消せるのは今の人が今のブランチで書いた承認だけでほかは一覧で取り消せないとなりAPIで断られる(t *testing.T) {
 	t.Parallel()
 	writers := []struct {
@@ -620,7 +615,7 @@ func Test取り消せるのは今の人が今のブランチで書いた承認�
 }
 
 // RV-17
-// @vanda:evidence revoke-commits-and-keeps-flags
+// @vanda:evidence revoke-own-agreement-only
 func Test承認の記録のファイルに書きかけの変更があると取り消しを断り理由を出し何も変えない(t *testing.T) {
 	t.Parallel()
 	_, r, s, _ := setupRevoke(t, func(base string) string {
@@ -675,7 +670,7 @@ func Test取り消すと段1の承認のチェックで止まりもう一度承�
 }
 
 // RV-06: キーを引用符で囲んだ flags・guesses（"flags"・'guesses'）も、承認でその行だけが消える
-// @vanda:evidence agree-removes-flags
+// @vanda:evidence flags-block-check
 func Test引用符で囲んだキーのflagsとguessesの仕様にも承認できその行だけが消える(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -702,7 +697,7 @@ func Test引用符で囲んだキーのflagsとguessesの仕様にも承認で�
 
 // RV-06 のガードレール: 承認の記録を書くファイルが決まらない（設定の agreements のパターンのどれにもマッチするファイルがなく、
 // 最初のパターンにワイルドカードがある）ときは、ファイルを作らずに 409 で断る（docs/formats.md）
-// @vanda:evidence agree-writes-and-commits
+// @vanda:evidence agreement-keeps-files-safe
 func Test承認の記録を書くファイルがパターンから決まらなければ承認を断りファイルを作らずコミットもしない(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -738,7 +733,7 @@ func Test承認の記録を書くファイルがパターンから決まらな�
 
 // RV-06 のガードレール: 承認でフラグを外すとき、外し方が決まっていない書き方（複数行の文字列の flags・guesses）で
 // 書いた約束リストは書き換えず、承認を 409 で断る。約束リストと承認の記録を壊さないため（docs/formats.md）
-// @vanda:evidence agree-removes-flags
+// @vanda:evidence flags-block-check
 func Testフラグを複数行の文字列で書いた仕様には承認を断り約束リストと承認の記録を書き換えない(t *testing.T) {
 	t.Parallel()
 	cases := []struct{ name, from, to string }{
@@ -788,8 +783,8 @@ type deletedReview struct {
 }
 
 // RV-01・RV-06・RV-17: 消したもの
-// @vanda:evidence review-deleted-shown
-// @vanda:evidence revoke-returns-to-proposed
+// @vanda:evidence owner-reviews-every-change
+// @vanda:evidence revoke-own-agreement-only
 func Test消したファイルは一覧に削除として前の中身と提案中で出て消したことを承認すると承認済になり取り消すと提案中に戻る(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -972,8 +967,7 @@ func agreeKindEntry(t *testing.T, s *vandaServer, kind, target string) (found bo
 }
 
 // 種類は docs/formats.md の kind のすべて（spec・term・feature・property・truth・file）を回す
-// @vanda:evidence agree-commit-message
-// @vanda:evidence revoke-commit-message
+// @vanda:evidence agreement-history-kept
 func Test承認と取り消しはどの種類にもでき承認の記録とコミットのsubjectに種類とIDか場所をストーリーのIDと合わせて書く(t *testing.T) {
 	t.Parallel()
 	for _, k := range agreeKinds {
@@ -1052,7 +1046,7 @@ func appendedText(t *testing.T, before, after string) string {
 	return after[len(before):]
 }
 
-// @vanda:evidence agree-record-form
+// @vanda:evidence agreement-history-kept
 func Test書き足す承認の記録はuserをインラインの表で書きagreed_atに手元のタイムゾーンを付けた秒までの日時を書く(t *testing.T) {
 	t.Parallel()
 	for tz, offset := range map[string]string{"Asia/Tokyo": "+09:00", "Asia/Kolkata": "+05:30"} {
@@ -1094,7 +1088,7 @@ func Test書き足す承認の記録はuserをインラインの表で書きagre
 	}
 }
 
-// @vanda:evidence agree-record-user-from-git
+// @vanda:evidence agreement-history-kept
 func Test書き足す承認の記録のuserには承認した時のgitのuser_nameとuser_emailを書く(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -1123,7 +1117,7 @@ func Test書き足す承認の記録のuserには承認した時のgitのuser_na
 	}
 }
 
-// @vanda:evidence agree-record-file
+// @vanda:evidence agreement-keeps-files-safe
 func Test承認の記録はagreementsのパターンの順で最初にマッチしたファイルに書き足しマッチしなければワイルドカードのない最初のパターンのファイルを作る(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -1187,7 +1181,7 @@ func Test承認の記録はagreementsのパターンの順で最初にマッチ�
 	}
 }
 
-// @vanda:evidence agreements-explicit-file-may-be-absent
+// @vanda:evidence mistakes-reported-with-fix
 func Test設定のagreementsにはっきり書いたファイルがなければ一覧と仕様の詳細は誤りにせず承認の記録を空とみなす(t *testing.T) {
 	t.Parallel()
 	hasChanged := func(e *reviewEntry) bool {
@@ -1232,7 +1226,7 @@ func Test設定のagreementsにはっきり書いたファイルがなければ�
 	}
 }
 
-// @vanda:evidence agree-inline-flags-refused
+// @vanda:evidence agreement-keeps-files-safe
 func Testフラグか推測をインラインの表の中か複数行の文字列で書いた仕様には承認を409で断り何も変えない(t *testing.T) {
 	t.Parallel()
 	// task-id-unique を、インラインの表の配列（1 行の spec = [{ … }]）で書き直したもの。task-title-required も同じ配列に入れる
@@ -1373,7 +1367,7 @@ func specState(body []byte, id string) string {
 
 // 承認と取り消しのコミットの途中で止めたあいだに、ほかのリクエストを出し、どれも答えないことを確かめる。
 // 答えないことは、決まった時間（waitWindow）のあいだ答えが来ないことでしか確かめられない
-// @vanda:evidence serve-agree-one-at-a-time
+// @vanda:evidence agreement-keeps-files-safe
 func Test承認と取り消しのあいだはほかの承認と一覧と仕様の詳細とファイルの読み込みを待たせ終わった後に答える(t *testing.T) {
 	t.Parallel()
 	const waitWindow = 500 * time.Millisecond
@@ -1467,7 +1461,7 @@ func buildRaceVanda(t *testing.T) string {
 	return bin
 }
 
-// @vanda:evidence serve-agree-one-at-a-time
+// @vanda:evidence agreement-keeps-files-safe
 func Test同時に出した承認と取り消しと読み込みはどれも失敗せず承認と取り消しが1件ずつ1つのコミットになり競合がない(t *testing.T) {
 	t.Parallel()
 	bin := buildRaceVanda(t)

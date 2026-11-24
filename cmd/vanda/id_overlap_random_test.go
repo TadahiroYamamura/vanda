@@ -91,7 +91,7 @@ func expectedOverlaps(items []overlapItem, locs map[int]overlapLoc) map[overlapL
 	return want
 }
 
-// @vanda:evidence promise-list-id-unique
+// @vanda:evidence mistakes-reported-with-fix
 func Test分けたファイルをまたいでも重複したIDは後に出てきたものの場所だけを誤りにする(t *testing.T) {
 	// t.Parallel() を呼ばない。rapid のシードはプロセスに 1 つのフラグなので、並行に動くほかのテストがフラグを書き換えると、
 	// 記録に出したシードと、実際に使ったシードが食い違う

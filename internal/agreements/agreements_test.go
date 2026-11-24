@@ -27,8 +27,7 @@ func writeFiles(t *testing.T, files map[string]string) (string, []string) {
 }
 
 // 期待値のフィンガープリントは、手で書いた JSON を sha256sum に通して作った
-// @vanda:evidence fingerprint-ignores-formatting
-// @vanda:evidence fingerprint-excludes-flags
+// @vanda:evidence agreement-detached-when-content-changes
 func TestItemFingerprintは書き方の違いで変わらずflagsとguessesを含めない(t *testing.T) {
 	const want = "sha256:ead0b1ff85473e3117de7dfb1514f5d4d749cc30a0eb431c015014c47a59bbe5"
 	srcs := []string{
@@ -51,7 +50,7 @@ func TestItemFingerprintは書き方の違いで変わらずflagsとguessesを�
 	}
 }
 
-// @vanda:evidence fingerprint-excludes-flags
+// @vanda:evidence agreement-detached-when-content-changes
 func TestItemFingerprintは仕様のエビデンスを含めフラグを除く(t *testing.T) {
 	const want = "sha256:60a6817471d20202dec15842a21784e3431a7085ffe28a8eaec1faf3b9f0fcf9"
 	root, files := writeFiles(t, map[string]string{".vanda/promises.toml": `[[spec]]
@@ -99,7 +98,7 @@ func TestCanonicalJSONは制御文字だけをエスケープする(t *testing.T
 	}
 }
 
-// @vanda:evidence fingerprint-file-content
+// @vanda:evidence agreement-detached-when-content-changes
 func TestFileFingerprintは中身そのものから作る(t *testing.T) {
 	if got := FileFingerprint([]byte("hello\n")); got != "sha256:5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03" {
 		t.Errorf("got %s", got)
@@ -109,8 +108,7 @@ func TestFileFingerprintは中身そのものから作る(t *testing.T) {
 const fpA = "sha256:5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03"
 const fpB = "sha256:ead0b1ff85473e3117de7dfb1514f5d4d749cc30a0eb431c015014c47a59bbe5"
 
-// @vanda:evidence changed-id-is-new
-// @vanda:evidence agreed-when-fingerprint-matches
+// @vanda:evidence agreement-detached-when-content-changes
 func TestAgreedは種類とキーとフィンガープリントがすべて合いファイルなら場所も合う承認があるときだけ真(t *testing.T) {
 	root, files := writeFiles(t, map[string]string{".vanda/agreements.toml": `[[agreement]]
 kind = "spec"
@@ -161,7 +159,7 @@ email = "po@example.com"
 	}
 }
 
-// @vanda:evidence agreements-file-record-path
+// @vanda:evidence mistakes-reported-with-fix
 func TestLoadは承認の記録の誤りを行の付いたエラーで全部返す(t *testing.T) {
 	root, files := writeFiles(t, map[string]string{".vanda/agreements.toml": `[[agreement]]
 kind = "story"
@@ -203,7 +201,7 @@ story = "#24"
 
 const userLine = "user = { name = \"PO\", email = \"po@example.com\" }\nagreed_at = 2026-10-31T12:00:00Z\nstory = \"#24\"\n"
 
-// @vanda:evidence deletion-agreement-record
+// @vanda:evidence check-passes-only-when-agreed
 func TestLoadは消したことへの承認の記録をfingerprintの代わりにdeletedで読み中身への承認と分けて数える(t *testing.T) {
 	root, files := writeFiles(t, map[string]string{".vanda/agreements.toml": "[[agreement]]\nkind = \"file\"\nkey = \"e2e/old.txtar\"\ndeleted = true\npath = \"e2e/old.txtar\"\n" + userLine +
 		"\n[[agreement]]\nkind = \"spec\"\nkey = \"gone\"\ndeleted = true\n" + userLine})
@@ -240,8 +238,8 @@ func TestLoadは消したことへの承認の記録をfingerprintの代わり�
 	}
 }
 
-// @vanda:evidence deletion-agreement-record
-// @vanda:evidence agreements-file-record-path
+// @vanda:evidence check-passes-only-when-agreed
+// @vanda:evidence mistakes-reported-with-fix
 func TestLoadは消したことへの承認の記録の形の誤りを行の付いたエラーで返す(t *testing.T) {
 	cases := []struct {
 		name, body string

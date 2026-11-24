@@ -24,7 +24,7 @@ const lines: DiffLine[] = [
 ];
 
 describe("ファイルの行の差分", () => {
-  // @vanda:evidence review-file-diff-lines
+  // @vanda:evidence owner-understands-each-change
   it("行の種類と変更前と変更後の番号と文がAPIのdiff.linesと合う", () => {
     const { container } = render(<LineDiff lines={lines} lang={null} />);
     const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>("table.diff-lines tr.diff-line"));
@@ -41,7 +41,7 @@ describe("ファイルの行の差分", () => {
     });
   });
 
-  // @vanda:evidence review-file-diff-lines
+  // @vanda:evidence owner-understands-each-change
   it("書き換えた行の消した所と足した所をつなげると変更前と変更後の行になる", () => {
     const { container } = render(<LineDiff lines={lines} lang={null} />);
     const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>("tr.diff-line"));
@@ -57,7 +57,7 @@ describe("ファイルの行の差分", () => {
     for (const i of [0, 3, 4]) expect(rows[i].querySelector(".diff-part:is(del, ins)")).toBeNull();
   });
 
-  // @vanda:evidence diff-whitespace-marked
+  // @vanda:evidence owner-understands-each-change
   it("空白だけを足した所と消した所にも足した消したマークを付ける", () => {
     // 足した空白・消した空白は、半角の続いた空白・全角の空白・タブを全部回す
     const spaces = ["  ", "　", "\t"];
@@ -78,7 +78,7 @@ describe("ファイルの行の差分", () => {
     });
   });
 
-  // @vanda:evidence review-file-diff-lines
+  // @vanda:evidence owner-understands-each-change
   it("改行のない最後の行にだけマークを付ける", () => {
     const { container } = render(<LineDiff lines={lines} lang={null} />);
     const rows = Array.from(container.querySelectorAll<HTMLTableRowElement>("tr.diff-line"));
@@ -108,8 +108,7 @@ function copyContents(el: HTMLElement): string {
 const tla = "---- MODULE M ----\n\\* 置き換えないコメント a == b\nS == \\A x \\in T : x' # x /\\ <<a, b>> # <<>>\n====\n";
 
 describe("シンタックスハイライト", () => {
-  // @vanda:evidence tla-math-symbols
-  // @vanda:evidence tla-copy-ascii
+  // @vanda:evidence owner-understands-each-change
   it("シンタックスハイライトを読み込んだ後もTLAは記号で見えコピーするとリポジトリの文字に戻る", async () => {
     const { container } = render(<CodeBlock source={tla} lang="tlaplus" />);
     const pre = container.querySelector<HTMLElement>("pre.code[data-lang=tlaplus]");
@@ -124,7 +123,7 @@ describe("シンタックスハイライト", () => {
     expect(copyContents(pre!).replace(/\n$/, "")).toBe(tla.replace(/\n$/, ""));
   }, 20000);
 
-  // @vanda:evidence highlight-fallback
+  // @vanda:evidence owner-understands-each-change
   it("シンタックスハイライトを読み込めないときも文字は全部見える", async () => {
     // 時間で待たず、シンタックスハイライトが断られたことを画面の部品が受け取るまで待つ。断りを見るこちらの then を先に付けるので、
     // それが済んだ後に act の中でもう一度待てば、画面の部品の側の後始末も済んでいる

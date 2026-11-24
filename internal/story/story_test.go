@@ -125,8 +125,7 @@ var ghLogins = map[string]string{
 	"api.github.com.example.net": "ghe_gh_lookalike",
 }
 
-// @vanda:evidence story-github-token
-// @vanda:evidence doctor-github-token
+// @vanda:evidence token-sent-only-to-its-host
 func Testトークンはapi_urlのホストがapi_github_comならGH_TOKENかgithub_comのghのものでほかのホストならGH_ENTERPRISE_TOKENかそのホストのghのもの(t *testing.T) {
 	both := map[string]string{"GH_TOKEN": "env_dotcom", "GH_ENTERPRISE_TOKEN": "env_enterprise"}
 	cases := []struct {
@@ -168,8 +167,7 @@ func Testトークンはapi_urlのホストがapi_github_comならGH_TOKENかgit
 	}
 }
 
-// @vanda:evidence story-github-token-missing
-// @vanda:evidence doctor-github-token
+// @vanda:evidence token-sent-only-to-its-host
 func Test_api_urlのホストに合うトークンが見つからなければリクエストを送らずにストーリーストアのエラーにする(t *testing.T) {
 	cases := []struct {
 		name   string
@@ -224,7 +222,7 @@ func captureStderr(t *testing.T, fn func()) string {
 	return <-done
 }
 
-// @vanda:evidence story-github-http-warning
+// @vanda:evidence token-sent-only-to-its-host
 func Test_api_urlがhttpならトークンを送るたびに暗号化されずに流れることを標準エラーに出す(t *testing.T) {
 	cases := []struct {
 		name      string

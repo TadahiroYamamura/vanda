@@ -1,5 +1,5 @@
 # CMD-10 承認（スコープを story にする）、RV-14:
-# @vanda:evidence check-agreement-story-scope
+# @vanda:evidence check-passes-only-when-agreed
 # ストーリー 1 が仕様を変えて承認し、ストーリー 2 が変える前の中身を承認していたとき、
 # スコープ story（ストーリー 1）のチェックは通り、スコープ story（ストーリー 2）のチェックは止まる。ストーリー 2 が今の中身を承認し直すと通る。
 #

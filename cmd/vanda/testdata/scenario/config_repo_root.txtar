@@ -1,6 +1,5 @@
 # CMD-01: .vanda/ は git のリポジトリのルートで探す。リポジトリの中のどこで動かしても同じ .vanda/ を使い、リポジトリの外では誤りになる。
-# @vanda:evidence outside-git-repository
-# @vanda:evidence doctor-ok-line
+# @vanda:evidence mistakes-reported-with-fix
 
 # リポジトリの外
 ! exec vanda check .vanda/checks/all.toml

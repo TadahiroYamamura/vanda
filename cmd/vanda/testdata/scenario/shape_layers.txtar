@@ -1,7 +1,6 @@
 # CMD-10 約束リストの形: エビデンスの layers は仕様の layers の中にある。仕様に書いたどのレイヤーにも、それを確かめるエビデンスが 1 つ以上ある。
-# @vanda:evidence promise-list-evidence-layers-within-claim
-# @vanda:evidence promise-list-every-layer-has-evidence
-# @vanda:evidence promise-list-layers-known
+# @vanda:evidence mistakes-reported-with-fix
+# @vanda:evidence check-passes-only-with-evidence
 
 exec git init -q -b main
 expand .vanda/config.toml

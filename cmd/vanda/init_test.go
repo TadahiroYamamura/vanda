@@ -848,11 +848,7 @@ func initSetup(t *testing.T) (string, string) {
 // ---- テスト ----
 
 // CMD-11
-// @vanda:evidence init-defaults-from-repository
-// @vanda:evidence init-writes-files
-// @vanda:evidence init-values-only
-// @vanda:evidence init-default-types
-// @vanda:evidence init-guide
+// @vanda:evidence start-with-init
 func Test既定の答えのまま進めると読み取った値で5つのファイルができciのチェックが通る(t *testing.T) {
 	t.Parallel()
 	bin, version := initSetup(t)
@@ -946,9 +942,7 @@ func Test既定の答えのまま進めると読み取った値で5つのファ�
 }
 
 // CMD-11: ストーリーストアの選択肢の全部で、質問 3・4 の出方と既定と、書かれる [story] が合う
-// @vanda:evidence init-store-choices
-// @vanda:evidence init-missing-project-adapter
-// @vanda:evidence init-no-store-id-pattern
+// @vanda:evidence start-with-init
 func Testストーリーストアの選択肢ごとに質問の出方と既定とstoryの中身が合う(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1005,7 +999,7 @@ func Testストーリーストアの選択肢ごとに質問の出方と既定�
 }
 
 // CMD-11: 見つからなかった言語を選ぶと書かれ、選びを外すと書かれない
-// @vanda:evidence init-language-choices
+// @vanda:evidence start-with-init
 func Test言語を選ぶ質問で見つからなかった言語を選ぶと書かれ選びを外すと書かれない(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1041,8 +1035,7 @@ func newEmptyInitRepo(t *testing.T) *initRepo {
 
 // CMD-11: 初期化した直後のリポジトリでも、言語を選んで [[annotation]] を書ける。1 つも選ばなければ、案内に
 // [[annotation]] を書くことが足される（.vanda/adapters/ にカスタムアダプタを置いて足せることは、いつも出る）
-// @vanda:evidence init-language-choices
-// @vanda:evidence init-guide
+// @vanda:evidence start-with-init
 func Test初期化した直後のリポジトリでも言語を選べ1つも選ばなければ案内にannotationを書くことが出る(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1099,7 +1092,7 @@ func Test初期化した直後のリポジトリでも言語を選べ1つも選�
 
 // CMD-11: 答えを変えると、その値で書かれる（ベースブランチ、リポジトリ、ID の書き方、読むファイルのパターン。カスタムアダプタの名前と引数は
 // ストーリーストアの選択肢のテストで変える）
-// @vanda:evidence init-patterns
+// @vanda:evidence start-with-init
 func Test答えを変えるとその値で書かれる(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1127,7 +1120,7 @@ func Test答えを変えるとその値で書かれる(t *testing.T) {
 }
 
 // CMD-11: 形に合わない答えは、理由が出て同じ質問にとどまる（選択肢は矢印キーで選ぶので、選択肢にない番号は書けない）
-// @vanda:evidence init-validates-answers
+// @vanda:evidence start-with-init
 func Test形に合わない答えは理由が出て同じ質問にとどまる(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1161,7 +1154,7 @@ func Test形に合わない答えは理由が出て同じ質問にとどまる(t
 }
 
 // CMD-11: 読むファイルのパターンの書き方の誤り（config-pattern-syntax）は、理由が出て同じ質問にとどまり、設定に書かれない。
-// @vanda:evidence init-validates-answers
+// @vanda:evidence start-with-init
 func Test読むファイルのパターンの書き方が誤っていると理由が出て聞き直し入れ直したパターンだけが書かれる(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1188,7 +1181,7 @@ func Test読むファイルのパターンの書き方が誤っていると理�
 }
 
 // CMD-11: 作る前の確かめで n と答えると、何も作られない
-// @vanda:evidence init-decline-creates-nothing
+// @vanda:evidence start-with-init
 func Test作る前の確かめでnと答えると何も作られない(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1204,7 +1197,7 @@ func Test作る前の確かめでnと答えると何も作られない(t *testin
 }
 
 // CMD-11: 途中で入力を終える（Ctrl+D）と、何も作られない。質問ごとに回す
-// @vanda:evidence init-decline-creates-nothing
+// @vanda:evidence start-with-init
 func Test途中で入力を終えると何も作られない(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1233,9 +1226,7 @@ func Test途中で入力を終えると何も作られない(t *testing.T) {
 }
 
 // CMD-11: 止める場合は、何も書かれず、理由が標準エラーに出て、終了コードが 1
-// @vanda:evidence init-requires-terminal
-// @vanda:evidence init-terminal-streams
-// @vanda:evidence init-keeps-existing
+// @vanda:evidence start-with-init
 func Test止める場合は何も書かず理由を標準エラーに出し終了コード1で終わる(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1386,7 +1377,7 @@ func snapshotDir(t *testing.T, dir string) map[string]string {
 // ---- 擬似端末を通さないテスト（initcmd の公開の関数を直に呼ぶ） ----
 
 // CMD-11: remote の URL の形ごとに、GitHub のリポジトリが読めるか
-// @vanda:evidence init-defaults-from-repository
+// @vanda:evidence start-with-init
 func Test_remoteのURLの形ごとにGitHubのリポジトリが読めるかが決まる(t *testing.T) {
 	t.Parallel()
 	for _, c := range initRemotes {
@@ -1419,7 +1410,7 @@ var initRemotes = []struct {
 }
 
 // CMD-11: remote の URL の形ごとに、ストーリーストア・リポジトリ・ベースブランチの既定の答えが決まる
-// @vanda:evidence init-defaults-from-repository
+// @vanda:evidence start-with-init
 func Test_remoteのURLの形ごとにストーリーストアとリポジトリとベースブランチの既定の答えが決まる(t *testing.T) {
 	t.Parallel()
 	for _, c := range initRemotes {
@@ -1456,8 +1447,7 @@ func Test_remoteのURLの形ごとにストーリーストアとリポジトリ�
 
 // CMD-11: 言語のあるなしの全部の組み合わせ（5 つの言語で 32 通り）で、見つかる言語と、その既定のパターンが合う。
 // 既定のパターンは、言語ごとに書いた順に比べる（ts は 2 つ）
-// @vanda:evidence init-defaults-from-repository
-// @vanda:evidence init-patterns
+// @vanda:evidence start-with-init
 func Test言語のあるなしの全部の組み合わせで見つかる言語と既定のパターンが合う(t *testing.T) {
 	t.Parallel()
 	for mask := 0; mask < 1<<len(initLangs); mask++ {
@@ -1515,9 +1505,7 @@ func filesToDir(t *testing.T, files [][2]string) string {
 }
 
 // CMD-11: 答えから作る 5 つのファイル。ストーリーストアの選択肢の全部と、言語の選び方で、書かれる [story] と [[annotation]] が合う
-// @vanda:evidence init-writes-files
-// @vanda:evidence init-values-only
-// @vanda:evidence init-default-types
+// @vanda:evidence start-with-init
 func Test答えから作る5つのファイルはストーリーストアと言語の答えのとおりに値だけで書かれる(t *testing.T) {
 	t.Parallel()
 	bin, version := initSetup(t)
@@ -1596,8 +1584,7 @@ func Test答えから作る5つのファイルはストーリーストアと言�
 
 // CMD-11: チェックの設定には、今あるチェックを、docs/formats.md の「チェックの種類」の順に書く。ブランチで動かす ci.toml はチェックごとに決まったスコープで全部を、
 // ベースブランチで動かす main.toml は story-origin を除いてスコープ all で書く
-// @vanda:evidence init-writes-files
-// @vanda:evidence init-check-configs
+// @vanda:evidence start-with-init
 func Testチェックの設定のci_tomlには今あるチェックが全部決まったスコープで入りmain_tomlにはstory_originを除いてスコープallで入る(t *testing.T) {
 	t.Parallel()
 	// 書けるスコープが 1 つのものはそれ。all と story の両方を書ける agreement と evidence-present は、ブランチではストーリーで変わったものを見る story
@@ -1652,7 +1639,7 @@ const initRepeat = 30
 
 // CMD-11: 質問が出るのを待ってから答えを 1 回だけ送ると、2 問目以降の答えも読み落とされずに最後まで進む。
 // 読み落としはときどきしか起きないので、同じ流れを initRepeat 回まわす
-// @vanda:evidence init-reads-answers-sent-after-prompt
+// @vanda:evidence start-with-init
 func Test質問が出てから1回だけ答えを送ると2問目以降の答えも読み落とされずに最後まで進む(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1745,7 +1732,7 @@ func startInitOnTTY(t *testing.T, bin, dir string, env []string) (*initSession, 
 }
 
 // CMD-11: 中断・作らないの答え・誤りのどれで終わっても、vanda init は端末を始める前の状態に戻す
-// @vanda:evidence init-restores-terminal
+// @vanda:evidence start-with-init
 func Test_vanda_initは中断や作らないの答えや誤りで終わっても端末を始める前の状態に戻す(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)
@@ -1800,7 +1787,7 @@ func Test_vanda_initは中断や作らないの答えや誤りで終わっても
 }
 
 // CMD-11: カスタムアダプタの名前に、組み込みのアダプタと同じ名前（github・go など）を答えても断らない
-// @vanda:evidence init-accepts-builtin-name
+// @vanda:evidence start-with-init
 func Test_vanda_adaptersのアダプタの名前に組み込みのアダプタと同じ名前を答えても断らない(t *testing.T) {
 	t.Parallel()
 	bin, _ := initSetup(t)

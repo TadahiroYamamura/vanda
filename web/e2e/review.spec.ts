@@ -231,9 +231,8 @@ async function agreeAll(page: Page, items: string[]) {
 
 const items = ["task-id-unique", "task-title-required", "e2e/add-task.txtar"];
 
-// @vanda:evidence context-base-always-shown
-// @vanda:evidence agree-on-screen
-// @vanda:evidence review-numbering
+// @vanda:evidence owner-reviews-every-change
+// @vanda:evidence agreement-bound-to-seen-content
 test("ブランチのコミットからストーリーが決まるブランチで一覧を見て全部を承認するとvanda checkの承認のチェックが通る", async ({ page }) => {
   expect(repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main").code, "承認する前からチェックが通っている").toBe(1);
   await page.goto(serve.url + "/");
@@ -304,7 +303,7 @@ const routes = [
 
 for (const v of states) {
   for (const route of routes) {
-      // @vanda:evidence back-restores-state
+      // @vanda:evidence owner-reviews-every-change
       test(`${v.name}選んだ仕様で${route.name}ストーリーのレビューへ戻ると行く前と同じ状態に戻る`, async ({ page }) => {
         // シナリオに task-id-unique のエビデンスを付け、仕様の文も変える。release は、このコミットの直前から分かれたことに
         // する（release と比べても task-id-unique が一覧に出て、main と比べたときとは一覧が変わる）
@@ -504,7 +503,7 @@ const pages = [
 ];
 
 for (const pg of pages) {
-  // @vanda:evidence claim-at-commit
+  // @vanda:evidence agreement-history-kept
   test(`${pg.name}で変更履歴の各コミットを選ぶとそのコミットの時点の仕様の中身が出る`, async ({ page }) => {
     commitV3(repo);
     repo.write(".vanda/promises.toml", promisesAt(v4));
@@ -546,7 +545,7 @@ for (const pg of pages) {
     await expect(page.getByText("データベース")).toHaveCount(0);
   });
 
-  // @vanda:evidence claim-at-commit
+  // @vanda:evidence agreement-history-kept
   test(`${pg.name}で仕様を変える前の承認の記録を選ぶと今の中身でなく承認を書いたコミットの時点の中身が出る`, async ({ page }) => {
     commitV3(repo);
     // v3 のときに画面で承認し、その後に v4 へ変える
@@ -751,7 +750,7 @@ function withoutRecord(text: string, key: string, story: string): string[] {
 }
 
 // CL-04。消した後に同じ ID で作り直し、推測だけを変え、横のブランチで変えてマージする。日時は、どのコミットも buildRepo のコミットより後にずらす
-// @vanda:evidence claim-detail-origin
+// @vanda:evidence agreement-history-kept
 test("仕様の詳細の変更履歴には作り直した後の仕様のフィンガープリントが変わったマージでないコミットだけが新しい順に出て消すまでのコミットと推測だけを変えたコミットとマージのコミットは出ない", async ({ page }) => {
   const later = (h: number) => new Date(Date.now() + h * 3600_000).toISOString();
   const first = repo.git("rev-parse", "main");
@@ -818,7 +817,7 @@ function decorateAgreements(r: Repo) {
   commit(r, "承認の記録にコメントを足す", "#24");
 }
 
-// @vanda:evidence revoke-on-screen
+// @vanda:evidence revoke-own-agreement-only
 test("承認済の仕様で承認を取り消すとストーリーの今の中身への承認の記録だけが1つのコミットで消え提案中に戻りチェックで止まりもう一度承認すると通る", async ({ page }) => {
   decorateAgreements(repo);
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
@@ -954,7 +953,7 @@ async function agreeTaskIdUnique(page: Page) {
   expect((await res).status()).toBe(200);
 }
 
-// @vanda:evidence review-story-choice
+// @vanda:evidence owner-reviews-every-change
 test("レビュー単位がブランチでブランチのコミットからストーリーが1つに決まるときは選ぶ欄を出さずに示しそのストーリーで承認できる", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main");
   await expect(page.getByText(/ストーリー\s*[:：]\s*#24/).first(), "決まったストーリーが示されない").toBeVisible();
@@ -963,7 +962,7 @@ test("レビュー単位がブランチでブランチのコミットからス�
   expect(repo.git("log", "-1", "--format=%s")).toContain("#24 で");
 });
 
-// @vanda:evidence review-story-choice
+// @vanda:evidence owner-reviews-every-change
 test("レビュー単位がブランチでブランチに2つ以上のストーリーのコミットがあるときはそのブランチのストーリーだけを1度ずつ選ばせる", async ({ page }) => {
   repo.git("-c", "user.name=テスト担当", "-c", "user.email=tester@example.com", "commit", "-q", "--allow-empty", "-m", "直す\n\nStory: #30");
   await page.goto(serve.url + "/?view=branch&base=main");
@@ -972,7 +971,7 @@ test("レビュー単位がブランチでブランチに2つ以上のストー�
   await expect.poll(async () => (await storyChoices(page)).sort()).toEqual(["#24", "#30"]);
 });
 
-// @vanda:evidence review-story-choice
+// @vanda:evidence owner-reviews-every-change
 test("レビュー単位がブランチでストーリーのIDを持つコミットがないときはすべてのストーリーから1度ずつ選ばせる", async ({ page }) => {
   // story-24 から ID のないコミットだけのブランチを作り、story-24 と比べる（設定の既定のベースブランチ main とは別）
   repo.git("switch", "-q", "-c", "plain");
@@ -1210,8 +1209,7 @@ async function revokeHere(page: Page, url: RegExp) {
 
 // RV-18 の画面の移り方は、クエリのない / から始めて画面の操作だけで移る。ストーリーは URL で名指しせず、
 // ブランチのコミットから決まる（#24）
-// @vanda:evidence agree-from-detail-pages
-// @vanda:evidence agree-from-detail-pages-stay
+// @vanda:evidence agreement-bound-to-seen-content
 test("レビューの画面から仕様の詳細へ移って承認すると1コミットで記録が増えその画面で承認済になり履歴に足され戻ると一覧でも承認済でその画面で取り消せる", async ({ page }) => {
   await page.goto(serve.url + "/");
   await select(page, "task-id-unique");
@@ -1236,8 +1234,7 @@ test("レビューの画面から仕様の詳細へ移って承認すると1コ�
   await expect(listIcon(page, "task-id-unique", "提案中")).toBeVisible();
 });
 
-// @vanda:evidence agree-from-detail-pages
-// @vanda:evidence agree-from-detail-pages-stay
+// @vanda:evidence agreement-bound-to-seen-content
 test("エビデンスのファイルのリンクからファイルの画面へ移って承認すると1コミットで記録が増えその画面で承認済になり戻ると一覧でも承認済でその画面で取り消せる", async ({ page }) => {
   repo.write("e2e/add-task.txtar", annotatedScenario);
   commit(repo, "シナリオをエビデンスにする", "#24");
@@ -1260,8 +1257,7 @@ test("エビデンスのファイルのリンクからファイルの画面へ�
   expect(recordsOf(fp, "#24"), "取り消してもファイルへの承認の記録が残っている").toBe(0);
 });
 
-// @vanda:evidence agree-from-detail-pages
-// @vanda:evidence agree-from-detail-pages-stay
+// @vanda:evidence agreement-bound-to-seen-content
 test("レビューの画面の一覧のファイルからファイルの画面へ移って承認すると1コミットで記録が増えその画面で承認済になり戻ると一覧でも承認済でその画面で取り消せる", async ({ page }) => {
   const fp = sha(scenarioStory);
   await page.goto(serve.url + "/");
@@ -1286,7 +1282,7 @@ test("レビューの画面の一覧のファイルからファイルの画面�
 for (const w of writers) {
   for (const pl of places) {
     const can = w.self && !pl.onBase;
-    // @vanda:evidence agree-from-detail-pages
+    // @vanda:evidence agreement-bound-to-seen-content
     test(`仕様の詳細の画面で${w.name}が${pl.name}で書いた承認の記録は${can ? "取り消せる" : "取り消せず取り消しのボタンが出ない"}`, async ({ page }) => {
       repo.write(".vanda/promises.toml", promises(v2Statement, false, true));
       commit(repo, "フラグを外す", "#24");
@@ -1315,7 +1311,7 @@ for (const w of writers) {
   }
 }
 
-// @vanda:evidence agree-from-detail-pages-notes
+// @vanda:evidence agreement-bound-to-seen-content
 test("ストーリーのレビューから一覧にないファイルや仕様を開くと承認のボタンがなくこのストーリーでは変わっていないと示す", async ({ page }) => {
   // release は story-24 の今と同じ。release と比べると一覧は空なので、どのファイルも仕様も一覧にない
   repo.git("branch", "release", "story-24");
@@ -1339,7 +1335,7 @@ test("ストーリーのレビューから一覧にないファイルや仕様�
   await expect(page.getByRole("button", { name: /承認する/ })).toHaveCount(0);
 });
 
-// @vanda:evidence agree-from-detail-pages-notes
+// @vanda:evidence agreement-bound-to-seen-content
 test("仕様の詳細とファイルの画面をURLで直接開くと承認のボタンがなくストーリーのレビューから開くと承認できると示す", async ({ page }) => {
   for (const path of ["/specs/task-id-unique", "/files?path=" + encodeURIComponent("e2e/add-task.txtar")]) {
     await page.goto(serve.url + path);
@@ -1485,7 +1481,7 @@ async function expectFileStates(page: Page, scenario: "提案中" | "承認済",
 }
 
 for (const pg of pages) {
-  // @vanda:evidence found-file-state-shown
+  // @vanda:evidence item-detail-in-one-place
   test(`${pg.name}の実際のエビデンスのシナリオには承認の状態のアイコンが付き承認すると承認済に承認してから変えると提案中になりGoの単体テストには付かない`, async ({ page }) => {
     withGoEvidence(repo);
     await pg.open(page);
@@ -1515,7 +1511,7 @@ test("エビデンスのファイルの画面で承認して戻るとエビデ�
 });
 
 // CL-01: 仕様の詳細に、文・理由・条件・レイヤーを示す（レイヤーは設定の名前で）
-// @vanda:evidence claim-detail-fields
+// @vanda:evidence item-detail-in-one-place
 test("仕様の詳細の画面に文と理由と条件とレイヤーの名前が出る", async ({ page }) => {
   repo.write(".vanda/promises.toml", promisesAt(v4));
   commit(repo, "理由と条件を書く", "#24");
@@ -1526,7 +1522,7 @@ test("仕様の詳細の画面に文と理由と条件とレイヤーの名前�
 });
 
 // RV-05: 変更したものは、変更前と変更後の中身を示す（仕様は文の差分、ファイルは行）
-// @vanda:evidence review-before-after
+// @vanda:evidence owner-understands-each-change
 test("レビューの画面で変えた仕様とファイルの変更前と変更後の中身が出る", async ({ page }) => {
   await page.goto(serve.url + "/");
   await select(page, "task-id-unique");
@@ -1540,7 +1536,7 @@ test("レビューの画面で変えた仕様とファイルの変更前と変�
 });
 
 // RV-14: そのストーリーが承認した後に中身が変わったものを「承認が失効した」と示す
-// @vanda:evidence review-detached-shown
+// @vanda:evidence agreement-detached-when-content-changes
 test("ストーリーが承認した仕様を変えると一覧に承認が失効したと出る", async ({ page }) => {
   await page.goto(serve.url + "/");
   await agreeAll(page, ["task-id-unique"]);
@@ -1554,7 +1550,7 @@ test("ストーリーが承認した仕様を変えると一覧に承認が失�
   await expect(page.getByText(/#24/).first()).toBeVisible();
 });
 
-// @vanda:evidence review-deleted-shown
+// @vanda:evidence owner-reviews-every-change
 test("消したファイルは一覧に削除として出て消す前の中身を見せ消したことを承認すると承認済になりストーリーの承認のチェックが通る", async ({ page }) => {
   rmSync(join(repo.root, "e2e/add-task.txtar"));
   commit(repo, "シナリオを消す", "#24");
@@ -1577,7 +1573,7 @@ test("消したファイルは一覧に削除として出て消す前の中身�
 });
 
 // RV-01・RV-04: 一覧の 1 件の 2 行目に、種類・状態のアイコン・フラグのアイコンを並べる。承認すると承認済に、承認した後に中身が変わると承認が失効したに変わる
-// @vanda:evidence review-list-icons
+// @vanda:evidence flags-visible-before-open
 test("一覧の1件の2行目に種類と状態のアイコンとフラグのアイコンが並びマウスを乗せると言葉が出て承認すると承認済に承認の後に変えると承認が失効したに変わる", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   const row = listItem(page, "task-title-required");
@@ -1615,8 +1611,7 @@ test("一覧の1件の2行目に種類と状態のアイコンとフラグのア
 });
 
 // RV-10・RV-02: 一覧は仕様のレイヤー・用語と機能・ファイルのまとまりに分け、たたむとたたんだ件数を示す。1 件ごとに通し番号と総数
-// @vanda:evidence review-groups-fold
-// @vanda:evidence review-numbering
+// @vanda:evidence owner-reviews-every-change
 test("一覧はまとまりに分かれ通し番号と総数が出てまとまりをたたむと件数が出て中が隠れる", async ({ page }) => {
   await page.goto(serve.url + "/");
   await expect(page.getByText(/全 3 件/).first()).toBeVisible();
@@ -1634,7 +1629,7 @@ test("一覧はまとまりに分かれ通し番号と総数が出てまとま�
 });
 
 // CM-08: ストーリーストアが設定にあれば、題・本文・添付ファイルへのリンクを出す。ストーリーストアはカスタムアダプタにする
-// @vanda:evidence story-shown-on-screen
+// @vanda:evidence owner-reads-story-with-review
 test("ストーリーストアのカスタムアダプタから読んだ題と本文と添付ファイルへのリンクがレビューの画面に出る", async ({ page }) => {
   const cfg = readFileSync(join(repo.root, ".vanda/config.toml"), "utf8");
   repo.write(".vanda/config.toml", cfg + '\n[story]\nadapter = "story"\n');
@@ -1651,7 +1646,7 @@ printf '%s' '{"title":"タスクの ID を重ならないようにする","body"
 });
 
 // CL-07: TLA+ の定義は記号で見せ、コピーしたときはリポジトリの文字のまま（ASCII）にする
-// @vanda:evidence tla-copy-ascii
+// @vanda:evidence owner-understands-each-change
 test("仕様の詳細の画面でTLAの定義をコピーするとリポジトリの文字のままになる", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const def = "Unique == \\A a, b \\in Ids : a = b => a = b";
@@ -1717,7 +1712,7 @@ function measureSymbols(page: Page) {
   });
 }
 
-// @vanda:evidence tla-symbol-keeps-width
+// @vanda:evidence owner-understands-each-change
 test("TLAの記号は元のASCIIの文字数ぶんの等幅の文字の幅を取り中央に描かれ縦に揃えた並びが崩れない", async ({ page }) => {
   await openTlaModel(page, alignedDef);
   const { unit, boxes } = await measureSymbols(page);
@@ -1736,7 +1731,7 @@ test("TLAの記号は元のASCIIの文字数ぶんの等幅の文字の幅を取
   expect(Math.abs(second.left - first.left), `1 行目の ∧（${first.left}px）と 2 行目の ∧（${second.left}px）の桁が揃わない`).toBeLessThanOrEqual(0.5);
 });
 
-// @vanda:evidence tla-symbol-font
+// @vanda:evidence owner-understands-each-change
 test("TLAの記号は画面に同梱したNoto Sans Mathを読み込んでその書体だけで描かれる", async ({ page }) => {
   await openTlaModel(page, alignedDef);
   await expect
@@ -1798,8 +1793,7 @@ async function expectListed(page: Page, want: string[], where: string) {
   }
 }
 
-// @vanda:evidence review-filter-text
-// @vanda:evidence review-filter-not-agreed
+// @vanda:evidence owner-reviews-every-change
 test("一覧を文字で絞り込み承認した後に承認済でないものだけにすると承認したものが消え文字の絞り込みと重ねられる", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await expectListed(page, items, "絞り込む前");
@@ -1829,7 +1823,7 @@ test("一覧を文字で絞り込み承認した後に承認済でないもの�
   await expectListed(page, ["task-id-unique"], "承認済でないものだけを外したとき");
 });
 
-// @vanda:evidence review-filter-kept
+// @vanda:evidence owner-reviews-every-change
 test("絞り込みの条件は仕様の詳細から戻っても読み込み直しても残る", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await expectListed(page, items, "絞り込む前");

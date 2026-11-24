@@ -1,10 +1,6 @@
 # CMD-03: vanda check は、チェックの設定のファイルを必須の引数で受け取る。既定のチェックは持たない。
-# @vanda:evidence check-config-required
-# @vanda:evidence check-base-required-for-story
-# @vanda:evidence check-story-from-commits
-# @vanda:evidence story-id-from-trailer
-# @vanda:evidence check-base-unused-without-story
-# @vanda:evidence check-output-story-id
+# @vanda:evidence check-runs-in-ci
+# @vanda:evidence changes-traceable-to-story
 # スコープを story にするチェックを含む設定では、--base も必須。スコープが all のチェックだけなら、渡さなくてよい。
 
 exec git init -q -b main

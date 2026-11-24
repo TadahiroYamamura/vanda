@@ -63,7 +63,7 @@ const history = specHistory({
 });
 
 // CL-01
-// @vanda:evidence claim-detail-fields
+// @vanda:evidence item-detail-in-one-place
 it("仕様の詳細は文と理由と条件とレイヤーとrefinesの先を見せる", async () => {
   open(detail);
   expect(await screen.findByText(/タスクの ID は重ならない/)).toBeTruthy();
@@ -73,8 +73,8 @@ it("仕様の詳細は文と理由と条件とレイヤーとrefinesの先を見
 });
 
 // CL-02・CL-07・RV-08
-// @vanda:evidence claim-detail-evidence-content
-// @vanda:evidence tla-math-symbols
+// @vanda:evidence item-detail-in-one-place
+// @vanda:evidence owner-understands-each-change
 it("エビデンスをタイプごとにシナリオは本文をTLAは定義を記号でガードレールは定義をテストは名前と場所で見せる", async () => {
   open(detail);
   await screen.findByText(/タスクの ID は重ならない/);
@@ -90,8 +90,7 @@ it("エビデンスをタイプごとにシナリオは本文をTLAは定義を�
 });
 
 // CL-04・CL-05
-// @vanda:evidence claim-detail-origin
-// @vanda:evidence claim-detail-agreements
+// @vanda:evidence agreement-history-kept
 it("変更履歴にコミットとストーリーを承認の履歴に承認した人とストーリーと今の中身に合うかを見せる", async () => {
   open(detail, history);
   await screen.findByText(/タスクの ID は重ならない/);
@@ -101,7 +100,7 @@ it("変更履歴にコミットとストーリーを承認の履歴に承認し�
   expect(bodyText()).toContain("提案中");
 });
 
-// @vanda:evidence claim-detail-error-shown
+// @vanda:evidence mistakes-reported-with-fix
 it("仕様の詳細を読めないときは理由を出す", async () => {
   server.use(
     http.get("/api/context", () => HttpResponse.json(ctx)),
@@ -128,7 +127,7 @@ function openFromReview(path: string, entries: Entry[], d: SpecDetail = specDeta
   render(<App />);
 }
 
-// @vanda:evidence agree-from-detail-pages
+// @vanda:evidence agreement-bound-to-seen-content
 it("ストーリーのレビューから移ってきた仕様の詳細の画面とファイルの画面で一覧にあるものには承認のボタンを出す", async () => {
   openFromReview("/specs/task-id-unique" + fromReview, [specEntry(1, "task-id-unique")]);
   expect(await screen.findByRole("button", { name: /承認する/ })).toBeTruthy();
@@ -137,14 +136,14 @@ it("ストーリーのレビューから移ってきた仕様の詳細の画面�
   expect(await screen.findByRole("button", { name: /承認する/ })).toBeTruthy();
 });
 
-// @vanda:evidence agree-from-detail-pages
+// @vanda:evidence agreement-bound-to-seen-content
 it("ストーリーのレビューから移ってきた仕様の詳細の画面で承認済の仕様には取り消しのボタンを出す", async () => {
   const e = specEntry(1, "task-id-unique", { state: "agreed", revoke: { possible: true, reason: null, others: [] } });
   openFromReview("/specs/task-id-unique" + fromReview, [e], specDetail({ state: "agreed" }));
   expect(await screen.findByRole("button", { name: /取り消/ })).toBeTruthy();
 });
 
-// @vanda:evidence agree-from-detail-pages-notes
+// @vanda:evidence agreement-bound-to-seen-content
 it("一覧にない仕様とファイルは変わっていないと示しストーリーが分からないときはレビューから開くと承認できると示す", async () => {
   openFromReview("/specs/task-id-unique" + fromReview, [specEntry(1, "other-spec")]);
   expect(await screen.findByText("このストーリーでは変わっていない仕様です。")).toBeTruthy();
@@ -160,7 +159,7 @@ it("一覧にない仕様とファイルは変わっていないと示しスト�
   expect(screen.queryByRole("button", { name: /承認する/ })).toBeNull();
 });
 
-// @vanda:evidence agree-from-detail-pages-stay
+// @vanda:evidence agreement-bound-to-seen-content
 it("仕様の詳細の画面で承認した後もその画面にとどまる", async () => {
   const e = specEntry(1, "task-id-unique");
   let posted: unknown = null;
@@ -179,7 +178,7 @@ it("仕様の詳細の画面で承認した後もその画面にとどまる", a
 });
 
 // CL-02: エビデンスは、ステージ（計画・実装・リリース・運用の順）ごとに分け、その中をタイプごとに分ける
-// @vanda:evidence claim-detail-evidence-grouping
+// @vanda:evidence item-detail-in-one-place
 it("エビデンスをステージの順の見出しの下にタイプの見出しで分けて見せる", async () => {
   const ev = (stage: string, type: string) => ({ stage, type, layers: ["model"], detail: null, present: false, found: [] });
   open(specDetail({ evidence: [ev("operation", "sensor"), ev("implementation", "unit-test"), ev("plan", "model-check"), ev("release", "human-review"), ev("implementation", "guardrail"), ev("implementation", "scenario-test")] }));
@@ -198,7 +197,7 @@ it("エビデンスをステージの順の見出しの下にタイプの見出�
 });
 
 // CL-08: 変更履歴のコミットか承認の記録を選ぶと、その時点の仕様の中身を示す
-// @vanda:evidence claim-at-commit
+// @vanda:evidence agreement-history-kept
 it("変更履歴のコミットと承認の記録を開くとその時点の仕様の中身を読んで見せる", async () => {
   const commit = "1".repeat(40);
   const agreedAt = "2".repeat(40);
@@ -236,8 +235,8 @@ const presenceNames: [boolean | null, string][] = [
 // typeGroup は、タイプの見出しのまとまり（見出しの親）
 const typeGroup = (type: string) => screen.getAllByRole("heading").find((h) => (h.textContent ?? "").trim() === type)!.parentElement!;
 
-// @vanda:evidence evidence-presence-shown
-// @vanda:evidence evidence-presence-three-states
+// @vanda:evidence screen-matches-check
+// @vanda:evidence item-detail-in-one-place
 it("エビデンスの予定ごとに揃っているとないとアノテーションでは確かめないを見分けて示す", async () => {
   const types: Record<string, [string, string]> = { true: ["scenario-test", "シナリオテスト"], false: ["model-check", "モデル検査"], null: ["human-review", "人のレビュー"] };
   open(specDetail({
@@ -259,7 +258,7 @@ it("エビデンスの予定ごとに揃っているとないとアノテーシ�
   }
 });
 
-// @vanda:evidence found-file-state-shown
+// @vanda:evidence item-detail-in-one-place
 it("実際のエビデンスのうち承認の対象のファイルには今の中身が承認済か提案中かを示し承認の対象でないものには示さない", async () => {
   const states: ["agreed" | "proposed" | null, string | null][] = [["agreed", "承認済"], ["proposed", "提案中"], [null, null]];
   const files: Record<string, [string, string, string]> = {
@@ -298,7 +297,7 @@ it("実際のエビデンスのうち承認の対象のファイルには今の�
 });
 
 // jsdom は描画の幅を持たないので、幅 400px で横にスクロールしないことは E2E（review.spec.ts）で見る。ここでは、省略せずに全部出すことを見る
-// @vanda:evidence evidence-detail-no-truncate
+// @vanda:evidence item-detail-in-one-place
 it("エビデンスの予定の詳細は長い文も改行も省略せずに全部出す", async () => {
   const detail = [
     "TLA+ のモデルで、タスクを足す・消す・足し直すを 3 回まで繰り返し、どの順でも ID が重ならないことを確かめる予定。".repeat(4),
@@ -315,7 +314,7 @@ it("エビデンスの予定の詳細は長い文も改行も省略せずに全�
 // 続いた空白・全角の空白・改行は、要素の文字にそのまま残っているかで見る（見た目で詰まらないかは E2E で見る）
 const spaced = "タスクの  ID　は\n  重ならない";
 
-// @vanda:evidence keep-user-whitespace
+// @vanda:evidence owner-understands-each-change
 it("仕様の詳細とその時点の中身は利用者が書いた文の続いた空白と全角の空白と改行をそのまま持つ", async () => {
   const commit = "1".repeat(40);
   server.use(
@@ -365,7 +364,7 @@ function openHistory(at: Parameters<typeof http.get>[1] = ({ params }) =>
 const historyRow = async (text: RegExp) => (await screen.findByText(text)).closest("tr")! as HTMLElement;
 const toggleOf = (row: HTMLElement) => within(row).getByRole("button", { name: /その時点の中身を(開く|たたむ)/ });
 
-// @vanda:evidence claim-at-commit-toggle
+// @vanda:evidence agreement-history-kept
 it("変更履歴と承認の履歴の行をクリックするとその時点の中身が開きもう一度クリックするとたたまりボタンをクリックしても1回だけ切り替わる", async () => {
   openHistory();
   const user = userEvent.setup();
@@ -388,7 +387,7 @@ it("変更履歴と承認の履歴の行をクリックするとその時点の�
   }
 });
 
-// @vanda:evidence claim-at-commit-multiple-open
+// @vanda:evidence agreement-history-kept
 it("その時点の中身を2つ以上開くとそれぞれが同時に出たままになり1つをたたんでもほかは開いたままにする", async () => {
   openHistory();
   const user = userEvent.setup();
@@ -403,7 +402,7 @@ it("その時点の中身を2つ以上開くとそれぞれが同時に出たま
   }
 });
 
-// @vanda:evidence claim-at-commit-unknown-layer
+// @vanda:evidence agreement-history-kept
 it("その時点の中身のレイヤーのうち今の設定にないものはIDのまま出す", async () => {
   openHistory(({ params }) =>
     HttpResponse.json({
@@ -423,7 +422,7 @@ it("その時点の中身のレイヤーのうち今の設定にないものはI
   expect(at.textContent).toContain("モデル");
 });
 
-// @vanda:evidence claim-at-commit-error-shown
+// @vanda:evidence agreement-history-kept
 it("その時点の約束リストが読めない承認の記録を選ぶとAPIが返した理由を出す", async () => {
   openHistory(() => apiError(500, "コミット 3333333 の .vanda/promises.toml を読めません（4 行目）"));
   const row = await historyRow(/前に承認した人/);
@@ -484,7 +483,7 @@ const expectRefLookIn = (el: HTMLElement | undefined, name: string, where: strin
   }
 };
 
-// @vanda:evidence reference-shown
+// @vanda:evidence item-detail-in-one-place
 it("仕様の詳細では文と理由と条件と推測とエビデンスの詳細の参照を用語と機能は名前で仕様はIDで参照だと分かる見た目で出し今の約束リストにあるものだけを詳細のページへのリンクにする", async () => {
   open(detailWithRefs());
   await waitFor(() => expect(bodyText()).toContain("詳細の用語"));
@@ -510,7 +509,7 @@ it("仕様の詳細では文と理由と条件と推測とエビデンスの詳�
   }
 });
 
-// @vanda:evidence reference-shown
+// @vanda:evidence item-detail-in-one-place
 it("仕様の履歴で開いたその時点の中身の参照もその時点のrefsの名前で参照だと分かる見た目で出す", async () => {
   const commit = "1".repeat(40);
   server.use(
@@ -532,7 +531,7 @@ it("仕様の履歴で開いたその時点の中身の参照もその時点のr
   expect(screen.queryByRole("link", { name: "その時点だけの用語" }), "今の約束リストにない用語がリンクになっている").toBeNull();
 });
 
-// @vanda:evidence reference-popup
+// @vanda:evidence item-detail-in-one-place
 it("仕様の詳細の参照にマウスを乗せた時とフォーカスした時に指す先のIDと用語と機能はその定義を仕様はその文をポップアップで出し離れると消す", async () => {
   open(detailWithRefs());
   await waitFor(() => expect(bodyText()).toContain("詳細の用語"));
@@ -568,7 +567,7 @@ it("仕様の詳細の参照にマウスを乗せた時とフォーカスした�
 });
 
 // CL-01
-// @vanda:evidence claim-detail-state
+// @vanda:evidence item-detail-in-one-place
 it("仕様の詳細の見出しに仕様のIDと今の中身が承認済か提案中かを示す", async () => {
   for (const [state, label, other] of [["proposed", "提案中", "承認済"], ["agreed", "承認済", "提案中"]] as const) {
     window.history.pushState({}, "", "/specs/task-other-id");
@@ -583,7 +582,7 @@ it("仕様の詳細の見出しに仕様のIDと今の中身が承認済か提�
 });
 
 // CL-01
-// @vanda:evidence claim-detail-subjects
+// @vanda:evidence item-detail-in-one-place
 it("仕様の詳細のrefinesとassumesの先には用語と機能なら名前とIDを名前を持たない性質と前提ならIDを詳細へのリンクで示し約束リストにないIDには約束リストにないと添える", async () => {
   open(specDetail({
     refines: [
@@ -618,7 +617,7 @@ it("仕様の詳細のrefinesとassumesの先には用語と機能なら名前�
 });
 
 // CL-01
-// @vanda:evidence claim-detail-guesses
+// @vanda:evidence item-detail-in-one-place
 it("仕様の詳細に推測があれば1つずつ示す", async () => {
   const guesses = ["消したタスクの ID は使い回さない", "ID は 1 から数える", "ID は数字だけ"];
   open(specDetail({ guesses: guesses.map(plain) }));
@@ -630,7 +629,7 @@ it("仕様の詳細に推測があれば1つずつ示す", async () => {
 });
 
 // CL-02
-// @vanda:evidence claim-detail-found-location
+// @vanda:evidence item-detail-in-one-place
 it("実際のエビデンスごとに付いているものの名前とファイルと行を書いたファイルの画面へのリンクを示しTLAならファイル全体へのリンクも示す", async () => {
   window.history.pushState({}, "", "/specs/task-id-unique" + "?view=branch&base=main&story=%2324");
   open(detail);
@@ -654,7 +653,7 @@ it("実際のエビデンスごとに付いているものの名前とファイ�
   }
 });
 
-// @vanda:evidence file-page-error-shown
+// @vanda:evidence mistakes-reported-with-fix
 it("ファイルの画面でファイルを読めない時はAPIが返した理由を出す", async () => {
   window.history.pushState({}, "", "/files?path=" + encodeURIComponent("e2e/none.txtar"));
   server.use(
@@ -665,7 +664,7 @@ it("ファイルの画面でファイルを読めない時はAPIが返した理�
   expect(await screen.findByText(/e2e\/none\.txtar は、承認の対象のファイルでもアノテーションを読むファイルでもありません/)).toBeTruthy();
 });
 
-// @vanda:evidence api-error-fix-shown
+// @vanda:evidence mistakes-reported-with-fix
 it("仕様の詳細の画面とファイルの画面はAPIのエラーを出す時に何がどうなっているかとどうすればよいかの両方を出す", async () => {
   const cases = [
     { path: "/specs/task-id-unique", api: "/api/specs/:id", message: "仕様 task-id-unique は約束リストにありません。", fix: "約束リストを確かめてください。" },
@@ -737,7 +736,7 @@ describe("用語と機能の詳細", () => {
     }
   };
 
-  // @vanda:evidence term-page-content
+  // @vanda:evidence item-detail-in-one-place
   it("用語の詳細のページに名前とIDと定義と親の用語と子の用語とassumesの先を示し定義の参照は参照の見た目で出す", async () => {
     openAt("/terms/t-mid?view=branch&base=main", http.get("/api/terms/:id", () => HttpResponse.json(termDetail())));
     await waitFor(() => expect(shownText()).toContain("まん中の用語"));
@@ -749,7 +748,7 @@ describe("用語と機能の詳細", () => {
     expect(linksIn("前提"), "assumes の先へのリンク").toEqual(["/truths/disk-works"]);
   });
 
-  // @vanda:evidence term-page-content
+  // @vanda:evidence item-detail-in-one-place
   it("用語の詳細のページは親の用語がなければ親を示さず親が約束リストにないIDならそのIDを示す", async () => {
     openAt("/terms/t-mid", http.get("/api/terms/:id", () => HttpResponse.json(termDetail({ partOf: null, children: [] }))));
     await waitFor(() => expect(shownText()).toContain("まん中の用語"));
@@ -763,7 +762,7 @@ describe("用語と機能の詳細", () => {
     expect(shownText(), "約束リストにない親の ID がない").toContain("t-missing-parent");
   });
 
-  // @vanda:evidence feature-page-content
+  // @vanda:evidence item-detail-in-one-place
   it("機能の詳細のページに名前とIDと定義とrefinesの先とコア機能か形式手法を使う機能かのマークを示す", async () => {
     for (const core of [true, false]) {
       for (const formal of [true, false]) {
@@ -785,7 +784,7 @@ describe("用語と機能の詳細", () => {
     }
   });
 
-  // @vanda:evidence term-feature-page-claims
+  // @vanda:evidence item-detail-in-one-place
   it("機能の詳細のページにそれをrefinesする仕様を書いた順にIDと文で並べそれぞれ仕様の詳細へのリンクにし用語の詳細のページには仕様の一覧を出さない", async () => {
     // 用語の詳細の API は仕様を返さない（約束リストから subjects がなくなった）。用語のページに、仕様の詳細へのリンクはない
     openAt("/terms/t-mid?view=branch&base=main", http.get("/api/terms/:id", () => HttpResponse.json(termDetail())));
@@ -804,7 +803,7 @@ describe("用語と機能の詳細", () => {
     expect(window.location.pathname).toBe("/specs/c-a");
   });
 
-  // @vanda:evidence term-feature-page-claims
+  // @vanda:evidence item-detail-in-one-place
   it("機能の詳細のページはそれをrefinesする仕様がなければ仕様の詳細へのリンクを出さない", async () => {
     openAt("/features/f-sort", http.get("/api/features/:id", () => HttpResponse.json(featureDetail({ specs: [] }))));
     await waitFor(() => expect(shownText()).toContain("定義の中の用語"));
@@ -812,7 +811,7 @@ describe("用語と機能の詳細", () => {
     expect(specLinks, "仕様がないのに仕様の詳細へのリンクがある").toHaveLength(0);
   });
 
-  // @vanda:evidence term-feature-page-missing
+  // @vanda:evidence item-detail-in-one-place
   it("今の約束リストにないIDの用語と機能の詳細のページを開くとそのIDが約束リストにないことを示す", async () => {
     for (const [path, api, message] of [
       ["/terms/t-none", "/api/terms/:id", "用語 t-none は約束リストにありません。"],
@@ -974,8 +973,8 @@ describe("読み込みの間に先に出すもの", () => {
   // ストーリーのレビューから移ってきた時の承認のボタンの読み込みと混ざらないよう、レビューのクエリを付けずに開く
   beforeEach(() => window.history.pushState({}, "", "/specs/task-id-unique"));
 
-  // @vanda:evidence claim-detail-shown-before-history
-  // @vanda:evidence loading-indicator
+  // @vanda:evidence item-detail-in-one-place
+  // @vanda:evidence owner-reviews-every-change
   it("変更履歴と承認の履歴が届く前に仕様の詳細の中身を出し変更履歴と承認の履歴のエリアには読み込み中のマークを出し届いたら履歴に替える", async () => {
     const g = gate();
     server.use(
@@ -1012,7 +1011,7 @@ describe("読み込みの間に先に出すもの", () => {
     expect(screen.queryByText("読み込んでいます…"), "届いた後も読み込み中のマークが残る").toBeNull();
   });
 
-  // @vanda:evidence loading-indicator
+  // @vanda:evidence owner-reviews-every-change
   it("仕様の詳細が届く前は読み込み中のマークを出す", async () => {
     const g = gate();
     server.use(

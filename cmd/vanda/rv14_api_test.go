@@ -144,9 +144,8 @@ func checkDetached(t *testing.T, where string, got reviewResponse) {
 }
 
 // RV-14
-// @vanda:evidence review-detached-shown
-// @vanda:evidence review-detached-unchanged-shown
-// @vanda:evidence review-other-commits
+// @vanda:evidence agreement-detached-when-content-changes
+// @vanda:evidence owner-reviews-every-change
 func TestRV14はストーリーの承認が失効したものをレビュー単位がブランチのときもストーリーのときも変えたストーリーと一緒に示す(t *testing.T) {
 	t.Parallel()
 	bin := buildVanda(t)

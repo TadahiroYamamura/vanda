@@ -1,7 +1,5 @@
 # CMD-03: チェックは、チェックの設定のファイルに並べた順に行う。どれかのチェックが失敗すると、終了コードが失敗になる。
-# @vanda:evidence check-runs-in-order-and-fails
-# @vanda:evidence check-output-lines
-# @vanda:evidence check-error-order
+# @vanda:evidence check-runs-in-ci
 #
 # 2 つのチェックが、それぞれ別のファイルを指すエラーを出すようにしておき、並べる順を入れ替えると、エラーの出る順も入れ替わることを確かめる。
 # - 約束リストの形: .vanda/promises/aaa.toml の 2 行目（ID の形）、.vanda/promises/qqq-broken.toml の 3 行目（refines の先がない）と 9 行目（決まった値にないステージ）

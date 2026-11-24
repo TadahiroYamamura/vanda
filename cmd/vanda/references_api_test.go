@@ -304,7 +304,7 @@ func refsOf(ids ...string) map[string]refInfo {
 	return out
 }
 
-// @vanda:evidence reference-shown
+// @vanda:evidence item-detail-in-one-place
 func Test一覧の変更前と変更後は自然言語で書く項目をセグメントに分け参照は用語と機能なら今の名前で仕様ならIDで見せrefsに指す先を返す(t *testing.T) {
 	t.Parallel()
 	r := setupRefAPI(t)
@@ -339,7 +339,7 @@ func Test一覧の変更前と変更後は自然言語で書く項目をセグ�
 	wantRefs(t, "一覧", r.review.Refs, refsOf("t-keep", "t-rename", "f-rename", "c-other", "t-gone", "f-gone"))
 }
 
-// @vanda:evidence reference-shown
+// @vanda:evidence item-detail-in-one-place
 func Test仕様の詳細とその時点の中身は自然言語で書く項目をセグメントに分けrefsに指す先を返す(t *testing.T) {
 	t.Parallel()
 	r := setupRefAPI(t)
@@ -457,7 +457,7 @@ func checkRefDiff(t *testing.T, where string, parts []refDiffPart, before, after
 	}
 }
 
-// @vanda:evidence reference-diff
+// @vanda:evidence owner-understands-each-change
 func Test差分は両方の参照を今の名前に置き換えて比べ名前を変えただけの参照は差にならず今ない用語と機能は比べる元の名前で比べる(t *testing.T) {
 	t.Parallel()
 	r := setupRefAPI(t)
@@ -531,7 +531,7 @@ func Test差分は両方の参照を今の名前に置き換えて比べ名前�
 	}
 }
 
-// @vanda:evidence reference-diff
+// @vanda:evidence owner-understands-each-change
 func Test参照先の名前を変えただけの仕様は一覧に出ない(t *testing.T) {
 	t.Parallel()
 	r := setupRefAPI(t)
@@ -547,7 +547,7 @@ func Test参照先の名前を変えただけの仕様は一覧に出ない(t *t
 	}
 }
 
-// @vanda:evidence reference-fingerprint-raw
+// @vanda:evidence agreement-detached-when-content-changes
 func Test参照先の名前と定義を変えても仕様の詳細のフィンガープリントは書いたままの文から作り承認済のままになる(t *testing.T) {
 	t.Parallel()
 	bin, version := refSetup(t)

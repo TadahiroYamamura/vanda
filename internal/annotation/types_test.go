@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// @vanda:evidence annotation-links-tla-types
+// @vanda:evidence annotations-link-evidence
 func TestTLATypesはTypeOKの中でinとsubseteqの右にある定義を型とみなす(t *testing.T) {
 	src := `---- MODULE A ----
 EXTENDS Naturals

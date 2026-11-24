@@ -19,7 +19,7 @@ var sensorFiles = [][2]string{
 	{".vanda/checks/ci.toml", "[[check]]\nname = \"agreement\"\nscope = \"all\"\n"},
 }
 
-// @vanda:evidence init-keeps-existing
+// @vanda:evidence start-with-init
 func TestWriteは書いた後の_vandaの中が書いたものと違えば誤りを返し_vandaを消さずに残す(t *testing.T) {
 	cases := []struct {
 		name    string

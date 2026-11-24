@@ -1,6 +1,5 @@
 # CMD-10 約束リストの形: ID は英小文字・数字をハイフンでつないだ形で、用語・機能・仕様を通して重複しない。
-# @vanda:evidence promise-list-id-shape
-# @vanda:evidence promise-list-id-unique
+# @vanda:evidence mistakes-reported-with-fix
 # 重複は、表の組み合わせ（同じ表どうし、違う表どうし）を全部回す。分けたファイルをまたいでも重複しない。
 # 重複したときは、後のほうの行を指し、前の場所（行）をメッセージに書く。前の場所の書き方は決め打ちしない。ファイルは名前の順に読むものとした（one.toml が前）。
 

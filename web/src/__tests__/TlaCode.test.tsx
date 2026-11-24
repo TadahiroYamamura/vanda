@@ -109,8 +109,7 @@ function copyAll(container: HTMLElement, shown: string): string {
 
 describe("TLA+ の表の書き方を数学の記号で見せコピーするとリポジトリの文字に戻る", () => {
   for (const [op, src, shown] of table) {
-    // @vanda:evidence tla-math-symbols
-    // @vanda:evidence tla-copy-ascii
+    // @vanda:evidence owner-understands-each-change
     it(`${op} を見せるときは記号にしコピーすると元の文字に戻る`, async () => {
       const { container } = render(<TlaCode source={src} />);
       expect(container.textContent).toContain(shown);
@@ -120,7 +119,7 @@ describe("TLA+ の表の書き方を数学の記号で見せコピーすると�
 });
 
 // 名前を変数で付けた it には付けられないので、まとまりの describe に付ける
-// @vanda:evidence tla-no-replace-in-strings-comments
+// @vanda:evidence owner-understands-each-change
 describe("TLA+ の置き換えない所と長いものから当てる決まり", () => {
   for (const [name, src, shown] of rules) {
     it(name, async () => {
@@ -131,7 +130,7 @@ describe("TLA+ の置き換えない所と長いものから当てる決まり",
   }
 });
 
-// @vanda:evidence tla-copy-ascii
+// @vanda:evidence owner-understands-each-change
 it("TLA+ の一部だけを選んでコピーしても選んだ所がリポジトリの文字に戻る", () => {
   const shown = "S ≜ a ∧ b";
   const { container } = render(<TlaCode source={"S == a /\\ b"} />);
@@ -155,7 +154,7 @@ it("TLA+ の一部だけを選んでコピーしても選んだ所がリポジ�
   expect(copyRange(range)).toBe("a /\\ b");
 });
 
-// @vanda:evidence tla-copy-ascii
+// @vanda:evidence owner-understands-each-change
 it("TLA+ のコピーのボタンをクリックするとリポジトリの文字のままクリップボードに入る", async () => {
   const user = userEvent.setup();
   const src = "S == \\A x \\in T : x' # x";
@@ -196,7 +195,7 @@ function glyphOf(box: HTMLElement): HTMLElement {
 
 describe("TLA+ の記号は元の ASCII の文字数ぶんの幅の箱の中央に描く", () => {
   for (const [op, src, shown] of table) {
-    // @vanda:evidence tla-symbol-keeps-width
+    // @vanda:evidence owner-understands-each-change
     it(`${op} の記号は元の文字数ぶんの等幅の文字の幅を取り中央に寄せる`, () => {
       const remove = withStyles();
       try {
@@ -254,7 +253,7 @@ describe("TLA+ の記号は画面に同梱した Noto Sans Math で描く", () =
   // 表の記号の全部（≜ と、各行の記号）
   const allSymbols = [...new Set(table.flatMap(([op, src, shown]) => expectedSymbols(op, src, shown).map(([c]) => c)))];
 
-  // @vanda:evidence tla-symbol-font
+  // @vanda:evidence owner-understands-each-change
   it("画面の書体の定めにNoto Sans Mathが同梱のファイルを指してありTLAの記号を全部含む範囲で定めてある", () => {
     const faces = fontFaces("Noto Sans Math");
     expect(faces.length, "Noto Sans Math の @font-face がない").toBeGreaterThan(0);
@@ -273,7 +272,7 @@ describe("TLA+ の記号は画面に同梱した Noto Sans Math で描く", () =
   });
 
   for (const [op, src, shown] of table) {
-    // @vanda:evidence tla-symbol-font
+    // @vanda:evidence owner-understands-each-change
     it(`${op} の記号はNoto Sans Mathだけを書体に指して描く`, () => {
       const remove = withStyles();
       try {

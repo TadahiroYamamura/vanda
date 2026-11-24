@@ -45,10 +45,7 @@ func show(as []Annotation) string {
 	return b.String()
 }
 
-// @vanda:evidence annotation-go-func-doc
-// @vanda:evidence annotation-sql-statement
-// @vanda:evidence annotation-tla-definition
-// @vanda:evidence annotation-txtar-comment-lines
+// @vanda:evidence annotations-link-evidence
 func TestReadはアダプタごとに付いているものの名前を読み取る(t *testing.T) {
 	root, files := setup(t, map[string]string{
 		"x/a_test.go": `package x
@@ -115,11 +112,7 @@ x/a_test.go:08 sensor task-id-unique -> Store.Add
 	}
 }
 
-// @vanda:evidence annotation-syntax-errors
-// @vanda:evidence annotation-go-func-doc
-// @vanda:evidence annotation-tla-definition
-// @vanda:evidence annotation-one-rule-per-file
-// @vanda:evidence annotation-adapter-required
+// @vanda:evidence annotations-link-evidence
 func TestReadは書き方と置き場所の誤りを行の付いたエラーで全部返す(t *testing.T) {
 	root, files := setup(t, map[string]string{
 		"x/a_test.go": `package x
@@ -185,7 +178,7 @@ VARIABLE x
 	}
 }
 
-// @vanda:evidence annotation-outside-comment-ignored
+// @vanda:evidence annotations-link-evidence
 func TestReadはその言語のコメントの外にあるアノテーションを数えない(t *testing.T) {
 	root, files := setup(t, map[string]string{
 		"x/a_test.go": "package x\n\nvar s = \"@vanda:evidence a b\"\nvar r = `\n// @vanda:specx\n`\n",
@@ -208,7 +201,7 @@ func TestReadはその言語のコメントの外にあるアノテーション�
 // 作業ツリーのファイルには書きかけを置き、読む中身（read が返すもの。チェックでは HEAD のコミットの中身）と食い違わせる。
 // アダプタは受け取った標準入力を in.json に書き写すだけにし、JSON の形と中身はテストの側で確かめる
 //
-// @vanda:evidence project-adapter-reads-committed-content
+// @vanda:evidence annotation-adapter-contract
 func TestReadはvanda_adaptersのアダプタにJSONで場所と読む中身と行を渡し名前を受け取る(t *testing.T) {
 	const committed = "x\n<!-- @vanda:evidence a -->\n<!-- @vanda:evidence b -->\n"
 	root, files := setup(t, map[string]string{
@@ -246,8 +239,7 @@ func TestReadはvanda_adaptersのアダプタにJSONで場所と読む中身と�
 	}
 }
 
-// @vanda:evidence project-adapter-failure-reason
-// @vanda:evidence project-adapter-response-errors
+// @vanda:evidence annotation-adapter-contract
 func TestReadはvanda_adaptersのアダプタの失敗と返し漏れを誤りにする(t *testing.T) {
 	root, files := setup(t, map[string]string{
 		"docs/a.md":  "<!-- @vanda:evidence a -->\n<!-- @vanda:evidence b -->\n",
@@ -276,7 +268,7 @@ func TestReadはvanda_adaptersのアダプタの失敗と返し漏れを誤り�
 	}
 }
 
-// @vanda:evidence annotation-kinds-per-builtin-adapter
+// @vanda:evidence annotations-link-evidence
 func TestReadは言語ごとに決まった種類のほかを誤りにする(t *testing.T) {
 	root, files := setup(t, map[string]string{
 		"x/a_test.go": "package x\n\n// @vanda:spec a\nfunc TestA(t *testing.T) {}\n",
@@ -339,7 +331,7 @@ func lineWith(got, prefix string, frags ...string) bool {
 
 // ---- 仕様の文から作ったテスト（docs/plans/self-hosting.md・evidence.md の見直しで足した） ----
 
-// @vanda:evidence annotation-backquoted-ignored
+// @vanda:evidence annotations-link-evidence
 func TestReadはコメントの中のバッククォートで囲んだ書き方を数えず1行に2つあるかを見るときも数えない(t *testing.T) {
 	root, files := setup(t, map[string]string{
 		"x/a_test.go": "package x\n\n// 書き方は `@vanda:foo a b` のとおり\ntype T struct{}\n\n// @vanda:evidence c1\n// `@vanda:evidence c2` とは書かない\nfunc TestA(t *testing.T) {}\n",
@@ -369,7 +361,7 @@ func TestReadはコメントの中のバッククォートで囲んだ書き方�
 	}
 }
 
-// @vanda:evidence annotation-txtar-comment-lines
+// @vanda:evidence annotations-link-evidence
 func TestReadはtxtarの最初の区切りより前でもシャープで始まらない命令の行を読まない(t *testing.T) {
 	root, files := setup(t, map[string]string{"e2e/add.txtar": "# @vanda:evidence c1\nexec echo '@vanda:foo two ids'\n! exec false @vanda:evidence c2\n-- a --\n@vanda:evidence c3\n"})
 	as, errs := Read(root, files, []config.AnnotationRule{{Paths: []string{"e2e/*.txtar"}, Adapter: "txtar"}})
@@ -383,8 +375,7 @@ func TestReadはtxtarの最初の区切りより前でもシャープで始ま�
 
 // tsCases は、組み込みの ts のアダプタの書ける所と、付いているものの名前（計画 annotation-types.md の 2）。
 //
-// @vanda:evidence annotation-ts-test-call
-// @vanda:evidence annotation-ts-fixed-name
+// @vanda:evidence annotations-link-evidence
 func TestReadはtsのテストの呼び出しの直前だけを受け付け名前を最後の呼び出しの最初の引数から外側のdescribeとつなぐ(t *testing.T) {
 	src := "import { describe, it, test } from \"vitest\";\n\n" +
 		"// @vanda:evidence c1\ntest(\"外\", () => {});\n\n" +
@@ -411,10 +402,7 @@ func TestReadはtsのテストの呼び出しの直前だけを受け付け名�
 	}
 }
 
-// @vanda:evidence annotation-ts-fixed-name
-// @vanda:evidence annotation-ts-hooks-rejected
-// @vanda:evidence annotation-ts-test-call
-// @vanda:evidence annotation-kinds-per-builtin-adapter
+// @vanda:evidence annotations-link-evidence
 func TestReadはtsのフックとstepと変数の名前とテストでない呼び出しの前のアノテーションを誤りにする(t *testing.T) {
 	cases := map[string]string{
 		"beforeEach":     "// @vanda:evidence c1\nbeforeEach(() => {});\n",
@@ -465,7 +453,7 @@ func TestReadは前の形の種類claimを組み込みのアダプタのどれ�
 	}
 }
 
-// @vanda:evidence project-adapter-args-and-cwd
+// @vanda:evidence annotation-adapter-contract
 func TestReadはvanda_adaptersのアダプタをリポジトリのルートでargsをそのまま渡して動かす(t *testing.T) {
 	root, files := setup(t, map[string]string{
 		"docs/a.md": "<!-- @vanda:evidence a -->\n",
@@ -487,8 +475,7 @@ func TestReadはvanda_adaptersのアダプタをリポジトリのルートでar
 	}
 }
 
-// @vanda:evidence project-adapter-not-annotation
-// @vanda:evidence project-adapter-response-errors
+// @vanda:evidence annotation-adapter-contract
 func TestReadはvanda_adaptersのアダプタの答えでannotationがfalseの行を数えず誤った答えを誤りにする(t *testing.T) {
 	ans := func(json string) string {
 		return "#!/bin/sh\ncat >/dev/null\necho '" + json + "'\n"
@@ -528,7 +515,7 @@ func TestReadはvanda_adaptersのアダプタの答えでannotationがfalseの�
 	}
 }
 
-// @vanda:evidence project-adapter-not-runnable
+// @vanda:evidence annotation-adapter-contract
 func TestReadは1行目に動かし方がないvanda_adaptersのアダプタを場所と直し方の誤りにする(t *testing.T) {
 	root, files := setup(t, map[string]string{"docs/a.md": "@vanda:evidence a\n", "ad.sh": "cat >/dev/null\necho '{\"names\":[{\"line\":1,\"name\":\"A\"}]}'\n"})
 	_, errs := Read(root, files, []config.AnnotationRule{{Paths: []string{"docs/*.md"}, User: &config.UserAdapter{Name: "ad", Path: "ad.sh"}}})
@@ -537,7 +524,7 @@ func TestReadは1行目に動かし方がないvanda_adaptersのアダプタを�
 	}
 }
 
-// @vanda:evidence annotation-ts-skipped-not-counted
+// @vanda:evidence check-passes-only-with-evidence
 func TestReadはtsのskipとtodoを付けた呼び出しとその中のアノテーションを数えない(t *testing.T) {
 	for _, callee := range []string{"test", "it", "describe"} {
 		for _, mod := range []string{"skip", "todo"} {
@@ -563,7 +550,7 @@ func TestReadはtsのskipとtodoを付けた呼び出しとその中のアノテ
 	}
 }
 
-// @vanda:evidence annotation-ts-only-rejected
+// @vanda:evidence check-passes-only-with-evidence
 func TestReadはtsのonlyを付けた呼び出しをアノテーションの有無によらずその行を指して誤りにする(t *testing.T) {
 	for _, callee := range []string{"test", "it", "describe"} {
 		for name, src := range map[string]string{
@@ -583,7 +570,7 @@ func TestReadはtsのonlyを付けた呼び出しをアノテーションの有�
 
 // アダプタは標準入力を読んだ後、止まったままになる。待つのは timeout の 1 秒で、sleep の 30 秒は待たない
 //
-// @vanda:evidence project-adapter-annotation-timeout
+// @vanda:evidence annotation-adapter-contract
 func TestReadはvanda_adaptersのアダプタがtimeoutを過ぎたらどのアダプタかを書いたタイムアウトの誤りにする(t *testing.T) {
 	root, files := setup(t, map[string]string{
 		"docs/a.md": "<!-- @vanda:evidence a -->\n",
@@ -610,7 +597,7 @@ func runAdapter(t *testing.T, doc, answer string) ([]Annotation, error) {
 	return as, nil
 }
 
-// @vanda:evidence project-adapter-annotation-true-rejected
+// @vanda:evidence annotation-adapter-contract
 func TestReadはvanda_adaptersのアダプタがannotationにtrueを返したらその行の誤りにする(t *testing.T) {
 	const doc = "@vanda:evidence a\n@vanda:evidence b\n"
 	_, err := runAdapter(t, doc, `{"names":[{"line":1,"name":"A"},{"line":2,"annotation":true}]}`)
@@ -626,7 +613,7 @@ func TestReadはvanda_adaptersのアダプタがannotationにtrueを返したら
 	}
 }
 
-// @vanda:evidence project-adapter-missing-answer
+// @vanda:evidence annotation-adapter-contract
 func TestReadはvanda_adaptersのアダプタが渡した行に答えなければその行を指して誤りにする(t *testing.T) {
 	const doc = "@vanda:evidence a\nx\n@vanda:evidence b\n@vanda:evidence c\n"
 	cases := []struct {

@@ -1,8 +1,6 @@
 # CMD-10 エビデンスが揃っている: 予定したエビデンスの 1 件ごとに、そのタイプを types に含む [[annotation]] で読んだ、
 # タイプに合う種類のアノテーションが 1 つ以上ある。
-# @vanda:evidence check-evidence-present
-# @vanda:evidence check-evidence-proof-and-unchecked
-# @vanda:evidence check-evidence-guardrail-needs-definition
+# @vanda:evidence check-passes-only-with-evidence
 # この台本の設定は、組み込みのアダプタの既定のタイプを types に書く（go は unit-test・cross-check・random-check・
 # interface-test・concurrency-test・sensor、txtar は scenario-test、tla は model-check、sql は guardrail）。
 # タイプに合う種類は、model-check が spec、ほかは evidence。guardrail と sensor は 2 つが揃って満たす。guardrail は、

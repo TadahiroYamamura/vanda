@@ -1,6 +1,5 @@
 # CMD-10 約束リストの形: ステージ・タイプ・レイヤーが決まった値の中にある。flags は ai-proposal だけ。
-# @vanda:evidence promise-list-layers-known
-# @vanda:evidence promise-list-fixed-values
+# @vanda:evidence mistakes-reported-with-fix
 # 決まった値は全部を使って通ることを、決まった値の外の値は止まることを確かめる。
 # 決まった値の一覧は仕様 promise-list-fixed-value-list の文のとおり。
 

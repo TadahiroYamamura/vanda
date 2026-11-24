@@ -235,7 +235,7 @@ func rewritten(ops []string) []bool {
 }
 
 // RV-05
-// @vanda:evidence review-file-diff-lines
+// @vanda:evidence owner-understands-each-change
 func Testファイルの差分は変更前と変更後の行をファイルの順に1度ずつ並べ書き換えた行だけを文字の単位で比べる(t *testing.T) {
 	t.Parallel()
 	got := setupDiff(t)
@@ -316,8 +316,8 @@ func Testファイルの差分は変更前と変更後の行をファイルの�
 	}
 }
 
-// @vanda:evidence review-renamed-file
-// @vanda:evidence review-before-after
+// @vanda:evidence owner-reviews-every-change
+// @vanda:evidence owner-understands-each-change
 func Test差分は変更前と変更後の両方があるものだけに付き名前だけを変えたファイルは古い場所の削除と新しい場所の追加になり差分を付けない(t *testing.T) {
 	t.Parallel()
 	got := setupDiff(t)
@@ -340,7 +340,7 @@ func Test差分は変更前と変更後の両方があるものだけに付き�
 }
 
 // RV-05
-// @vanda:evidence review-before-after
+// @vanda:evidence owner-understands-each-change
 func Test仕様と用語と機能の差分は両方に書いた文字の項目だけを文字の単位で比べる(t *testing.T) {
 	t.Parallel()
 	got := setupDiff(t)
@@ -429,7 +429,7 @@ func evidenceTOML(stage, typ string, layers []string, detail string) string {
 	return s
 }
 
-// @vanda:evidence review-evidence-diff-pairing
+// @vanda:evidence owner-understands-each-change
 func Test仕様のエビデンスの予定の差分はステージとタイプで対応づけ足した消した変わった変わらないを示し同じ組は現れた順に対応させる(t *testing.T) {
 	t.Parallel()
 	model, both := []string{"model"}, []string{"model", "db"}

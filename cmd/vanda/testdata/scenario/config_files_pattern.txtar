@@ -1,5 +1,5 @@
 # CM-09: 設定に読むファイルのパターンを書くと、マッチしたファイルを全部読む。
-# @vanda:evidence promise-list-reads-all-patterns
+# @vanda:evidence mistakes-reported-with-fix
 # パターンを書いたときは、既定のファイル（.vanda/promises.toml）は読まない。
 
 exec git init -q -b main

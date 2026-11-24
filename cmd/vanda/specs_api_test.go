@@ -119,12 +119,8 @@ func checkFound(t *testing.T, typ string, got []specFound, want []wantFound) {
 }
 
 // CL-01・02・04・05
-// @vanda:evidence claim-detail-state
-// @vanda:evidence claim-detail-fields
-// @vanda:evidence claim-detail-evidence-content
-// @vanda:evidence claim-detail-origin
-// @vanda:evidence claim-detail-agreements
-// @vanda:evidence found-file-state-shown
+// @vanda:evidence item-detail-in-one-place
+// @vanda:evidence agreement-history-kept
 func Test仕様の詳細は文とレイヤーとエビデンスのタイプごとの中身と変更履歴と承認の履歴を示す(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -245,7 +241,7 @@ func Test仕様の詳細は文とレイヤーとエビデンスのタイプご�
 }
 
 // CL-02: エビデンスの予定があっても、指すアノテーションがなければ found は空
-// @vanda:evidence claim-detail-evidence-content
+// @vanda:evidence item-detail-in-one-place
 func Test仕様の詳細は指すアノテーションのないエビデンスの予定をfoundが空のものとして示す(t *testing.T) {
 	t.Parallel()
 	_, _, s := setupAgree(t)
@@ -262,7 +258,7 @@ func Test仕様の詳細は指すアノテーションのないエビデンス�
 }
 
 // spec-detail-shown-before-history: 仕様の詳細は変更履歴と承認の履歴を返さず、それらは /history で返す（docs/formats.md）
-// @vanda:evidence claim-detail-shown-before-history
+// @vanda:evidence item-detail-in-one-place
 func Test仕様の詳細は変更履歴と承認の履歴を含めず変更履歴と承認の履歴はhistoryで返しない仕様は404にする(t *testing.T) {
 	t.Parallel()
 	_, _, s := setupAgree(t)
@@ -304,7 +300,7 @@ func Test仕様の詳細は変更履歴と承認の履歴を含めず変更履�
 
 // 承認の履歴は承認した日時の新しい順、同じ日時なら承認の記録のファイルで後に書いたものが先（docs/formats.md）。
 // ファイルの順と日時の順をずらして書き、並べ替えを 2 回かけるような誤りでも並びが崩れれば分かるようにする
-// @vanda:evidence claim-detail-agreements
+// @vanda:evidence agreement-history-kept
 func Test承認の履歴は承認した日時の新しい順に並び同じ日時ならファイルで後に書いたものが先になる(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -335,7 +331,7 @@ func Test承認の履歴は承認した日時の新しい順に並び同じ日�
 	}
 }
 
-// @vanda:evidence api-error-shape
+// @vanda:evidence mistakes-reported-with-fix
 func Test仕様の詳細とファイルの中身はないものを404にする(t *testing.T) {
 	t.Parallel()
 	_, _, s := setupAgree(t)
@@ -373,7 +369,7 @@ func Testファイルの中身は承認の対象のファイルとアノテー�
 
 // CL-08: GET /api/specs/<ID>/at/<コミット> は、そのコミットの時点の仕様の中身を返す（docs/formats.md）。
 // 期待する文は、newReviewRepo が main と story-24 に書いた約束リストから手で書いた。
-// @vanda:evidence claim-at-commit
+// @vanda:evidence agreement-history-kept
 func Testその時点の仕様の中身は変更履歴のコミットと承認の記録のコミットの時点の文を返す(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -417,7 +413,7 @@ func Testその時点の仕様の中身は変更履歴のコミットと承認�
 }
 
 // CL-08: ハッシュでない形のコミットは 400、ないコミットとその時点にない仕様は 404。どれも理由を出す
-// @vanda:evidence claim-at-commit-errors
+// @vanda:evidence agreement-history-kept
 func Testその時点の仕様の中身はハッシュでない形を400にしないコミットとその時点にない仕様を404にする(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -443,8 +439,7 @@ func Testその時点の仕様の中身はハッシュでない形を400にし�
 
 // CL-08: その時点のレイヤーのうち今の設定にないものは名前を空にし、その時点の約束リストが読めなければ 500 で理由を出す。
 // どちらの時点も、コミットした後に今の約束リストを元に戻す（今の中身は読めるままにする）
-// @vanda:evidence claim-at-commit-unknown-layer
-// @vanda:evidence claim-at-commit-error-shown
+// @vanda:evidence agreement-history-kept
 func Testその時点の仕様の中身は今の設定にないレイヤーの名前を空にし読めない約束リストの時点を500にして理由を出す(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -490,7 +485,7 @@ func Testその時点の仕様の中身は今の設定にないレイヤーの�
 }
 
 // GET /api/file は、承認の対象のファイルとアノテーションを読むファイルの中身を返し、ほかのファイルは 404 にする
-// @vanda:evidence file-api
+// @vanda:evidence server-operated-only-from-own-screen
 func Testファイルの中身のAPIは承認の対象とアノテーションを読むファイルだけを返しほかを404にする(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)
@@ -517,7 +512,7 @@ func Testファイルの中身のAPIは承認の対象とアノテーション�
 	}
 }
 
-// @vanda:evidence origin-commit-stories
+// @vanda:evidence changes-traceable-to-story
 func Test仕様の変更履歴はコミットごとにそのコミットのStoryのトレーラーのストーリーを結ぶ(t *testing.T) {
 	t.Parallel()
 	_, r, s := setupAgree(t)

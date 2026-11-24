@@ -382,8 +382,7 @@ func tfRefsOf(ids ...string) map[string]refInfo {
 	return out
 }
 
-// @vanda:evidence term-page-content
-// @vanda:evidence reference-shown
+// @vanda:evidence item-detail-in-one-place
 func Test用語の詳細は名前とIDとセグメントに分けた定義と親の用語と書いた順の子の用語とassumesの先を返す(t *testing.T) {
 	t.Parallel()
 	s := setupTFAPI(t)
@@ -444,9 +443,7 @@ func Test性質と前提への参照はIDに置き換えて見せrefsに種類�
 	})
 }
 
-// @vanda:evidence feature-page-content
-// @vanda:evidence term-feature-page-claims
-// @vanda:evidence reference-shown
+// @vanda:evidence item-detail-in-one-place
 func Test機能の詳細は名前とIDとセグメントに分けた定義とコア機能か形式手法を使う機能かとrefinesの先とそれをrefinesする仕様を書いた順に返す(t *testing.T) {
 	t.Parallel()
 	s := setupTFAPI(t)
@@ -494,7 +491,7 @@ func Test機能の詳細は名前とIDとセグメントに分けた定義とコ
 	}
 }
 
-// @vanda:evidence term-feature-page-missing
+// @vanda:evidence item-detail-in-one-place
 func Test今の約束リストにないIDの用語と機能と性質と前提の詳細は404でそのIDが約束リストにないと返す(t *testing.T) {
 	t.Parallel()
 	s := setupTFAPI(t)

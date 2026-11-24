@@ -2,7 +2,7 @@ package diag
 
 import "testing"
 
-// @vanda:evidence check-error-order
+// @vanda:evidence check-runs-in-ci
 func TestSortはファイルの場所の順に並べ同じファイルなら行の順にする(t *testing.T) {
 	es := []Error{{File: "b", Line: 1, What: "1"}, {File: "a", Line: 9, What: "2"}, {File: "a", Line: 0, What: "3"}, {File: "a", Line: 2, What: "4"}, {File: "a", Line: 2, What: "5"}}
 	Sort(es)
@@ -15,7 +15,7 @@ func TestSortはファイルの場所の順に並べ同じファイルなら行�
 	}
 }
 
-// @vanda:evidence check-error-form
+// @vanda:evidence mistakes-reported-with-fix
 func TestErrorは行があれば行を書き行がなければ場所を書く(t *testing.T) {
 	cases := map[string]Error{
 		// どの誤りも「。」で終わる。直し方の後にも、直し方のない誤りにも付ける（docs/plans/stage2-wording.md の「誤りの終わり」とオーナーの決定）
