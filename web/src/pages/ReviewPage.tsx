@@ -794,8 +794,8 @@ function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
         ["文", x.statement, "statement"],
         ["条件", opt(x.condition), "condition"],
         ["理由", opt(x.rationale), "rationale"],
-        ["refines", ids(x.refines)],
-        ["assumes", ids(x.assumes)],
+        ["具体化する機能", ids(x.refines)],
+        ["前提", ids(x.assumes)],
         ["レイヤー", x.layers.join("・")],
         ["エビデンスの予定", x.evidence.map((ev) => `${stageLabel[ev.stage] ?? ev.stage} / ${typeLabel[ev.type] ?? ev.type} / ${ev.layers.join("・")}${ev.detail ? ` — ${proseText(ev.detail)}` : ""}`).join("\n")],
         ["TLA+ で確かめない理由", opt(x.modelCheckWaiver), "modelCheckWaiver"],
@@ -808,7 +808,7 @@ function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
         ["名前", x.name, "name"],
         ["定義", x.definition, "definition"],
         ["〜の一部", opt(x.partOf)],
-        ["assumes", ids(x.assumes)],
+        ["前提", ids(x.assumes)],
       ];
     }
     case "property": {
@@ -816,8 +816,8 @@ function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
       return [
         ["文", x.statement, "statement"],
         ["理由", opt(x.rationale), "rationale"],
-        ["refines", ids(x.refines)],
-        ["assumes", ids(x.assumes)],
+        ["具体化する性質", ids(x.refines)],
+        ["前提", ids(x.assumes)],
       ];
     }
     case "truth":
@@ -828,7 +828,7 @@ function rows(kind: Entry["kind"], c: Entry["before"]): Row[] | null {
       return [
         ["名前", x.name, "name"],
         ["定義", x.definition, "definition"],
-        ["refines", ids(x.refines)],
+        ["具体化する性質", ids(x.refines)],
         ["コア機能", b(x.core)],
         ["形式手法を使う", b(x.formal)],
         ["形式手法を使わない理由", opt(x.formalWaiver), "formalWaiver"],
@@ -877,7 +877,7 @@ function Compare(props: { entry: Entry }) {
 
 // ItemCompare は、約束リストの項目の変更前と変更後を、項目ごとに 1 列で出す（左右に分けない）。
 // 変わっていない項目は 1 回だけ、変わった文の項目は API の文字の単位の差分（diff.fields）で、消した文字を del、足した文字を ins で出す。
-// 文字の差分のない項目（refines・assumes・レイヤー・推測・真偽）が変わったときは、変更前の値を del、変更後の値を ins で並べる。
+// 文字の差分のない項目（具体化する機能・具体化する性質・前提・レイヤー・推測・真偽）が変わったときは、変更前の値を del、変更後の値を ins で並べる。
 // 追加・削除した件は、ある側の中身だけをマークなしで出す（追加・削除は件の見出しに出している）
 function ItemCompare(props: { entry: Pick<Entry, "kind" | "diff" | "before" | "after">; before: Row[] | null; after: Row[] | null }) {
   const { entry: e, before, after } = props;

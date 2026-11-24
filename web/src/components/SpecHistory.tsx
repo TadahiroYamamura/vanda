@@ -158,8 +158,8 @@ function SpecAtRow(props: { cols: number; id: string; commit: string; level: "h3
         ["文", <Prose pieces={d.data.content.statement} />],
         ["条件", d.data.content.condition ? <Prose pieces={d.data.content.condition} /> : none],
         ["理由", d.data.content.rationale ? <Prose pieces={d.data.content.rationale} /> : none],
-        ["refines", d.data.content.refines.join("・") || none],
-        ["assumes", d.data.content.assumes.join("・") || none],
+        ["具体化する機能", d.data.content.refines.join("・") || none],
+        ["前提", d.data.content.assumes.join("・") || none],
         ["レイヤー", <LayerChips layers={d.data.content.layers} names={d.data.layers ?? undefined} />],
         [
           "エビデンスの予定",
