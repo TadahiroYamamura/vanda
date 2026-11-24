@@ -444,7 +444,7 @@ scope = "story"
 | `model-check` | `@vanda:spec` |
 | `cross-check`・`random-check`・`scenario-test`・`unit-test`・`interface-test`・`concurrency-test` | `@vanda:evidence` |
 | `guardrail` | 次の 2 つがどちらもあるときだけ揃う。ガードレールの定義（`[[guardrail]]` の `paths` にマッチするファイル）の `@vanda:evidence`（`types` は問わない）。`types` に `guardrail` を含む `[[annotation]]` で読んだ、ガードレールの定義でないファイルの `@vanda:evidence`（ガードレールが拒むことを確かめるテストなど） |
-| `sensor` | 次の 2 つがどちらもあるときだけ揃う。`types` に `sensor` を含む `[[annotation]]` で読んだ `@vanda:sensor`（実装のコードの中のセンサーの場所）。`types` に `sensor` を含む `[[annotation]]` で読んだ `@vanda:evidence`（センサーが、仕様が破れた時に見つけることを確かめるテスト） |
+| `sensor` | 次の 2 つがどちらもあるときだけ揃う。`types` に `sensor` を含む `[[annotation]]` で読んだ `@vanda:sensor`（実装のコードの中のセンサーの場所）。`types` に `sensor` を含む `[[annotation]]` で読んだ `@vanda:evidence`（センサーが、仕様が満たされない時に見つけることを確かめるテスト） |
 | `proof` | 今は扱えない（予定に書いたら誤り。`types` に書けない） |
 | `human-review` | 確かめない（`types` に書けない） |
 

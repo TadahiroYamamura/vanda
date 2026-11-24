@@ -50,7 +50,7 @@ func Evidence(anns []Annotation, guards []string, id, typ string) []Part {
 				Found: pick(func(a Annotation) bool { return a.Kind == "sensor" && contains(a.Types, typ) }),
 			},
 			{
-				Want:  "types に sensor を含む [[annotation]] で読んだ @vanda:evidence " + id + "（センサーが、仕様が破れた時に見つけることを確かめるもの）",
+				Want:  "types に sensor を含む [[annotation]] で読んだ @vanda:evidence " + id + "（センサーが、仕様が満たされない時に見つけることを確かめるもの）",
 				Found: pick(func(a Annotation) bool { return a.Kind == "evidence" && contains(a.Types, typ) }),
 			},
 		}
