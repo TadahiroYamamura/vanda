@@ -81,7 +81,7 @@ main { padding: 20px 28px 40px; }
 .tooltip { position: fixed; z-index: 50; width: max-content; max-width: min(360px, calc(100vw - 16px)); white-space: normal; overflow-wrap: anywhere; background: var(--fg); color: #fff; font-size: 11px; line-height: 1.5; padding: 3px 8px; border-radius: 6px; pointer-events: none; }
 .tooltip[hidden] { display: none; }
 .tooltip-help { display: block; }
-/* 参照（reference-shown）。色だけに頼らないよう、点線の下線も付ける。約束を指す今の参照はリンクの色と実線の下線にする */
+/* 参照（reference-shown）。色だけに頼らないよう、点線の下線も付ける。仕様を指す今の参照はリンクの色と実線の下線にする */
 .ref { color: var(--accent-dark); text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }
 .ref:focus-visible, .ref a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .ref a { text-decoration: underline solid; }
@@ -245,7 +245,7 @@ del.diff-part { background: var(--del-part); text-decoration: underline 2px var(
 ins.diff-part { background: var(--ins-part); text-decoration: underline 2px var(--ok); text-underline-offset: 3px; border-radius: 2px; }
 .diff-no-newline { margin-left: 8px; font-family: var(--sans); font-size: 11px; color: var(--muted); }
 
-/* 約束の詳細 */
+/* 項目の詳細 */
 .spec { display: flex; flex-direction: column; gap: 16px; }
 .spec > h1 { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0; font-family: var(--mono); font-size: 20px; font-weight: 500; }
 .spec .statement { margin: 0; font-size: 17px; line-height: 1.8; max-width: 920px; }
@@ -322,7 +322,7 @@ ul.evidence-found { margin: 4px 0 0; padding-left: 18px; font-size: 13px; overfl
 .spec-at .evidence-stage-head { font-size: 13px; padding: 6px 10px; }
 .spec-at .evidence-type-group { padding: 6px 10px; }
 
-/* 利用者が書いた文（約束の文・条件・理由・推測、用語・機能の中身、ストーリーの題、コミットのメッセージなど）は、続いた空白と改行をそのまま出し、長い語は折り返す */
+/* 利用者が書いた文（仕様の文・条件・理由・推測、用語・機能の中身、ストーリーの題、コミットのメッセージなど）は、続いた空白と改行をそのまま出し、長い語は折り返す */
 .user-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 /* 空白だけの差分は、点線の枠で場所を示す。改行だけのものは、改行のマーク（↵）を添える（マークは CSS の中だけで、コピーした文には入らない） */
 .diff-part.ws { outline: 1px dashed currentColor; outline-offset: -1px; padding-right: 0.25em; }

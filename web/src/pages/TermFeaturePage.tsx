@@ -44,7 +44,7 @@ export function TermPage(props: { id: string; params?: URLSearchParams }) {
                 </ul>
               )}
             </dd>
-            <dt>assumes</dt>
+            <dt>前提</dt>
             <dd>
               <ItemRefs items={d.data.assumes} query={query} />
             </dd>
@@ -83,7 +83,7 @@ export function FeaturePage(props: { id: string; params?: URLSearchParams }) {
             <dd className="user-text">
               <Prose pieces={d.data.definition} />
             </dd>
-            <dt>refines</dt>
+            <dt>具体化する性質</dt>
             <dd>
               <ItemRefs items={d.data.refines} query={query} />
             </dd>

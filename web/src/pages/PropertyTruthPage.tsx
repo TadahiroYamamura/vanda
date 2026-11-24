@@ -39,11 +39,11 @@ export function PropertyPage(props: { id: string; params?: URLSearchParams; ctx?
           <dl className="fields">
             <dt>理由</dt>
             <dd className="user-text">{d.data.rationale ? <Prose pieces={d.data.rationale} /> : "（なし）"}</dd>
-            <dt>refines</dt>
+            <dt>具体化する性質</dt>
             <dd>
               <ItemRefs items={d.data.refines} query={query} />
             </dd>
-            <dt>assumes</dt>
+            <dt>前提</dt>
             <dd>
               <ItemRefs items={d.data.assumes} query={query} />
             </dd>

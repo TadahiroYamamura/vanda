@@ -10,12 +10,12 @@ import { Prose, RefsProvider } from "../components/Prose";
 import { langOf } from "../highlight";
 import { Link, reviewQuery, reviewURL } from "../route";
 
-// SpecPage は、約束の詳細（CL-01・02・04・05・07）。
+// SpecPage は、仕様の詳細（CL-01・02・04・05・07）。
 export function SpecPage(props: { id: string; params?: URLSearchParams; ctx?: Context | null }) {
   const d = useLoad(() => api.spec(props.id), props.id);
   // 変更履歴と承認の履歴は時間がかかるので、詳細と別に読み、詳細を先に出す（claim-detail-shown-before-history）
   const h = useLoad(() => api.specHistory(props.id), props.id);
-  if (d.error != null) return <ErrorBox error={d.error} title="約束の詳細を読めません" />;
+  if (d.error != null) return <ErrorBox error={d.error} title="仕様の詳細を読めません" />;
   if (!d.data) {
     return (
       <div className="spec">
@@ -54,11 +54,11 @@ export function SpecPage(props: { id: string; params?: URLSearchParams; ctx?: Co
         <dd>
           <LayerChips layers={c.layers.map((l) => l.id)} names={c.layers} />
         </dd>
-        <dt>refines</dt>
+        <dt>具体化する機能</dt>
         <dd>
           <ItemRefs items={c.refines} query={reviewQuery(props.params)} />
         </dd>
-        <dt>assumes</dt>
+        <dt>前提</dt>
         <dd>
           <ItemRefs items={c.assumes} query={reviewQuery(props.params)} />
         </dd>

@@ -1,7 +1,7 @@
 // 画面に出す言葉（約束リストの用語の言葉）。
 import type { Change, FileType, Flag, Kind, State } from "./api";
 
-export const kindLabel: Record<Kind, string> = { spec: "約束", term: "用語", feature: "機能", property: "性質", truth: "前提", file: "ファイル" };
+export const kindLabel: Record<Kind, string> = { spec: "仕様", term: "用語", feature: "機能", property: "性質", truth: "前提", file: "ファイル" };
 
 export const fileTypeLabel: Record<FileType, string> = {
   scenario: "シナリオ",

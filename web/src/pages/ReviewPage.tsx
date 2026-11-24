@@ -73,7 +73,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
   const review = useLoad<Review>(canLoad ? () => api.review(view, base, storyParam) : null, `${view}|${base}|${storyParam}`);
   const story = review.data?.story ?? storyParam;
   // ほかの画面へ引き継ぐクエリ。URL に書いていない既定のもの（レビュー単位、設定のベースブランチ、ブランチのコミットから決まったストーリー）も
-  // いつも書く。移った先（約束の詳細・ファイルの画面）が、同じ一覧を引いて承認の部品を出すため（RV-18）
+  // いつも書く。移った先（項目の詳細・ファイルの画面）が、同じ一覧を引いて承認の部品を出すため（RV-18）
   const carried = (() => {
     const q = new URLSearchParams(params);
     const before = new URLSearchParams(params);
@@ -336,7 +336,7 @@ function groupLabel(group: string, ctx: Context) {
   if (group === "files") return "エビデンスの本体";
   const id = group.replace(/^layer:/, "");
   const layer = ctx.layers.find((l) => l.id === id);
-  return `約束（レイヤー ${layer ? layer.name : id || "なし"}）`;
+  return `仕様（レイヤー ${layer ? layer.name : id || "なし"}）`;
 }
 
 function EntryList(props: {
@@ -656,7 +656,7 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
       )}
       {e.kind === "spec" && e.id && e.change !== "deleted" && (
         <p>
-          <Link to={`/specs/${encodeURIComponent(e.id)}${props.query ? `?${props.query}` : ""}`}>約束の詳細を開く</Link>
+          <Link to={`/specs/${encodeURIComponent(e.id)}${props.query ? `?${props.query}` : ""}`}>仕様の詳細を開く</Link>
         </p>
       )}
       {(e.kind === "property" || e.kind === "truth") && e.id && e.change !== "deleted" && (
@@ -695,7 +695,7 @@ function FeatureSpecs(props: { id: string; query: string }) {
   return (
     <div>
       {d.loading && <Loading />}
-      {d.error != null && <ErrorBox error={d.error} title="機能を refines する仕様を読めません" />}
+      {d.error != null && <ErrorBox error={d.error} title="機能を具体化する仕様を読めません" />}
       {d.data && (
         <RefsProvider refs={d.data.refs} query={props.query}>
           <SpecList specs={d.data.specs} query={props.query} level="h3" />
@@ -706,7 +706,7 @@ function FeatureSpecs(props: { id: string; query: string }) {
 }
 
 // AgreeControls は、1 件の承認の状態と、「承認する」「承認を取り消す」のボタン、承認できない・取り消せない理由（RV-06・RV-17）。
-// 承認済か・取り消せるかは API（/api/review の state・revoke）の判定をそのまま使う。レビューの画面と、そこから移った約束の詳細・ファイルの画面（RV-18）で使う
+// 承認済か・取り消せるかは API（/api/review の state・revoke）の判定をそのまま使う。レビューの画面と、そこから移った項目の詳細・ファイルの画面（RV-18）で使う
 export function AgreeControls(props: { entry: Entry; story: string | null; base: string | null; user: User | null; onDone: () => void }) {
   const { entry: e } = props;
   const [agreeing, setAgreeing] = useState(false);
@@ -937,7 +937,7 @@ function UnifiedEvidence(props: { before: EvidenceContent[]; after: EvidenceCont
   return <EvidenceList items={items} marks={marks} side="both" others={props.before} />;
 }
 
-// SpecSections は、約束のエビデンスの予定と実際の表（RV-08。合格したかは段 3 で足す）と、変更履歴と承認の履歴（RV-16）。
+// SpecSections は、仕様のエビデンスの予定と実際の表（RV-08。合格したかは段 3 で足す）と、変更履歴と承認の履歴（RV-16）。
 export function SpecSections(props: { id: string; query?: string }) {
   const d = useLoad(() => api.spec(props.id), props.id);
   const h = useLoad(() => api.specHistory(props.id), props.id);

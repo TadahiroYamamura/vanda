@@ -5,8 +5,8 @@ import { LayerChips } from "./Chips";
 import { EvidenceGroups } from "./EvidenceGroups";
 import { Prose, ProseLines, RefsProvider } from "./Prose";
 
-// SpecHistory は、約束の変更履歴（CL-04）と承認の履歴（CL-05）。約束の詳細の画面と、レビューの画面の 1 件の詳細（RV-16）で使う。
-// 変更履歴と承認の履歴は、約束の詳細と同時に読み始めるため、読み込みは使う側が持つ（ここで読むと、詳細を読み終えるまで読み始められない）
+// SpecHistory は、仕様の変更履歴（CL-04）と承認の履歴（CL-05）。仕様の詳細の画面と、レビューの画面の 1 件の詳細（RV-16）で使う。
+// 変更履歴と承認の履歴は、仕様の詳細と同時に読み始めるため、読み込みは使う側が持つ（ここで読むと、詳細を読み終えるまで読み始められない）
 // 性質と前提の詳細でも使う。その時点の中身を返す API は仕様にしかないので、noAt で、その時点の中身の列を出さない
 export function SpecHistory(props: { id: string; history: { data: History | null; error: unknown }; level: "h2" | "h3"; noAt?: boolean }) {
   const id = props.id;
@@ -149,7 +149,7 @@ function ExpandButton(props: { open: boolean; onClick: () => void }) {
   );
 }
 
-// SpecAtRow は、ある時点の約束の中身（変更前と変更後の表（RV-05）と同じ項目と並び）を、クリックした行のすぐ下の行に出す。中身は API が、その時点の約束リストから読んだもの。
+// SpecAtRow は、ある時点の仕様の中身（変更前と変更後の表（RV-05）と同じ項目と並び）を、クリックした行のすぐ下の行に出す。中身は API が、その時点の約束リストから読んだもの。
 function SpecAtRow(props: { cols: number; id: string; commit: string; level: "h3" | "h4" }) {
   const d = useLoad(() => api.specAt(props.id, props.commit), `${props.id}@${props.commit}`);
   const none = "（なし）";
@@ -188,7 +188,7 @@ function SpecAtRow(props: { cols: number; id: string; commit: string; level: "h3
   return (
     <tr className="spec-at-row">
       <td colSpan={props.cols}>
-        <section className="spec-at" aria-label="その時点の約束の中身">
+        <section className="spec-at" aria-label="その時点の仕様の中身">
           <div className="spec-at-head">
             <strong>コミット {shortCommit(props.commit)} の時点の中身</strong>
             {d.data && (

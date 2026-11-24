@@ -8,9 +8,9 @@ export function SpecList(props: { specs: SpecSummary[]; query: string; level: "h
   const H = props.level;
   return (
     <>
-      <H>この機能を refines する仕様</H>
+      <H>この機能を具体化する仕様</H>
       {props.specs.length === 0 ? (
-        <p className="note">この機能を refines する仕様はありません。</p>
+        <p className="note">この機能を具体化する仕様はありません。</p>
       ) : (
         <ul className="spec-list">
           {props.specs.map((c) => (

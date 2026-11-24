@@ -78,7 +78,7 @@ export function FlagBadge(props: { flag: Flag }) {
   );
 }
 
-// 一覧のアイコンの形（PO が見本で選んだもの）。状態は丸の形、フラグは丸のない形にし、色だけに頼らずに見分けられるようにする（RV-01・RV-04）
+// 一覧のアイコンの形（オーナーが見本で選んだもの）。状態は丸の形、フラグは丸のない形にし、色だけに頼らずに見分けられるようにする（RV-01・RV-04）
 export type ListIconName = State | "detached" | Flag;
 
 const listIconShape: Record<ListIconName, ReactNode> = {

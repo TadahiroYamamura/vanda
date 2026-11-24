@@ -9,7 +9,7 @@ export function useLayerName(): (id: string) => string {
   return (id) => layers.find((l) => l.id === id)?.name || id;
 }
 
-// LayerChip は、レイヤーのバッジ（レイヤーは利用者が決める値で、1 つのエビデンスや約束に複数付くので、バッジで並べる）。
+// LayerChip は、レイヤーのバッジ（レイヤーは利用者が決める値で、1 つのエビデンスや仕様に複数付くので、バッジで並べる）。
 // マウスを乗せたときの説明とスクリーンリーダーの読み上げに「レイヤー: モデル」のように出す
 function LayerChip(props: { text: string; mark?: "delete" | "insert" }) {
   const label = `レイヤー: ${props.text}`;

@@ -3,7 +3,7 @@ import type { Piece, RefTarget, Refs } from "../api";
 import { Link } from "../route";
 import { useTooltip } from "./common";
 
-// 参照の指す先（API の refs）と、約束の詳細へのリンクに引き継ぐクエリ。セグメントを出す所は、レスポンスごとに入れ子が深いので、props で渡さずに文脈で渡す
+// 参照の指す先（API の refs）と、項目の詳細へのリンクに引き継ぐクエリ。セグメントを出す所は、レスポンスごとに入れ子が深いので、props で渡さずに文脈で渡す
 const RefsContext = createContext<{ refs: Refs; query: string }>({ refs: {}, query: "" });
 
 // RefsProvider は、レスポンスの refs を渡す。query を省けば、外の文脈のものを引き継ぐ
@@ -77,7 +77,7 @@ export function RefView(props: { id: string; children: ReactNode }) {
   );
 }
 
-// PlainProse は、ポップアップの中の文を出す。参照は参照の見た目にするだけで、リンクにもポップアップにもしない（ポップアップから次のポップアップを開かないと PO が決めたため）
+// PlainProse は、ポップアップの中の文を出す。参照は参照の見た目にするだけで、リンクにもポップアップにもしない（ポップアップから次のポップアップを開かないとオーナーが決めたため）
 function PlainProse(props: { pieces: Piece[] }) {
   return (
     <>
