@@ -165,6 +165,7 @@ func TestPromiseListShapeの土台にする約束リストは通る(t *testing.T
 }
 
 // 書ける組み合わせは、性質→性質、機能→性質、仕様→機能だけ（docs/plans/promise-reorg-layers.md の 3 章）
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeはrefinesの書く側の型と指す先の型のすべての組で許可された3つの組だけを通す(t *testing.T) {
 	r := goodRepo(t)
 	allowed := map[string]string{"property": "property", "feature": "property", "spec": "feature"}
@@ -188,6 +189,7 @@ func TestPromiseListShapeはrefinesの書く側の型と指す先の型のすべ
 }
 
 // assumes の相手は前提だけ。書けるのは、性質・仕様・用語（docs/plans/promise-reorg-layers.md の 3 章）
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeはassumesの書く側の型と指す先の型のすべての組で指す先が前提の時だけ通す(t *testing.T) {
 	r := goodRepo(t)
 	for _, wk := range []string{"property", "spec", "term"} {
@@ -210,6 +212,7 @@ func TestPromiseListShapeはassumesの書く側の型と指す先の型のすべ
 }
 
 // 機能と前提は、assumes を持たない（docs/formats.md の表）。指す先がどの型でも、決まっていない項目の誤りになる
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeは機能と前提にassumesを書くとどの型を指しても誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	for _, wk := range []string{"feature", "truth"} {
@@ -226,6 +229,7 @@ func TestPromiseListShapeは機能と前提にassumesを書くとどの型を指
 }
 
 // 用語と前提は、refines を持たない（docs/formats.md の表）
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeは用語と前提にrefinesを書くとどの型を指しても誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	for _, wk := range []string{"term", "truth"} {
@@ -243,6 +247,7 @@ func TestPromiseListShapeは用語と前提にrefinesを書くとどの型を指
 
 // 性質を n 段につなぎ（p1 が一番上、p(i) は p(i-1) を refines する）、機能をそれぞれの段につなぐ。
 // つなげるのは、下に性質を持たない一番下の性質だけ。段が何段でも同じ
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeは下に性質を持つ性質に機能をつなぐと誤りにし下に性質を持たない性質にはつなげる(t *testing.T) {
 	r := goodRepo(t)
 	for depth := 1; depth <= 4; depth++ {
@@ -275,6 +280,7 @@ func TestPromiseListShapeは下に性質を持つ性質に機能をつなぐと�
 }
 
 // 2 つの性質につないだ機能は、片方でも下に性質を持てば誤り
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeは2つの性質につないだ機能の片方の性質が下に性質を持てば誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	src, lines := relRender([]relItem{
@@ -288,6 +294,7 @@ func TestPromiseListShapeは2つの性質につないだ機能の片方の性質
 }
 
 // 輪の上の性質は、refines をたどると自分に戻る。輪につながるだけの性質（tail）は、自分には戻らないので誤りにしない
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeは性質のrefinesが循環すると輪の上の性質をすべて誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	for size := 1; size <= 4; size++ {
@@ -351,6 +358,7 @@ func TestPromiseListShapeは1つの性質が2つの性質を1つの機能が2つ
 }
 
 // refines・assumes を書ける型とキーのすべてで、同じ配列に同じ ID を 2 度書く。隣り合う時も、離れている時も誤り
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeは同じrefinesかassumesの配列に同じIDが2度あれば誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	cases := []struct{ kind, key, target, other string }{
@@ -389,6 +397,7 @@ func TestPromiseListShapeは同じrefinesかassumesの配列に同じIDが2度�
 }
 
 // 同じ ID を、型の組のすべて（先に書く型 × 後に書く型）で 2 度書く。誤りは、後に書いたほうの id の行を指す（docs/formats.md）
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeは性質と前提を含むどの型の組でもIDが同じなら後に書いたほうを誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	for _, first := range relKinds {
@@ -411,6 +420,7 @@ func TestPromiseListShapeは性質と前提を含むどの型の組でもIDが�
 
 // 決まっていない表と項目は、その表の見出し・項目の行を指す誤りになる（docs/formats.md）。
 // [[claim]] と subjects は、古い形。読み替えずに、決まっていない表・項目として誤りにする
+// @vanda:evidence mistakes-reported-with-fix
 func TestPromiseListShapeは古い形のclaimとsubjectsと性質と前提の決まっていない項目を誤りにする(t *testing.T) {
 	r := goodRepo(t)
 	const evidence = "stage = \"implementation\"\ntype = \"unit-test\"\nlayers = [\"model\"]\n"

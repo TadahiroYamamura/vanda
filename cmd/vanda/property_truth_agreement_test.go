@@ -188,6 +188,8 @@ func (r *ptRepo) check(what string, want []string, args ...string) {
 	}
 }
 
+// @vanda:evidence check-passes-only-when-agreed
+// @vanda:evidence agreement-detached-when-content-changes
 func Test性質と前提は足すか変えると承認のチェックで止まり承認すると通り消すかIDを変えると消したことへの承認を求める(t *testing.T) {
 	t.Parallel()
 	r := newPTRepo(t)
@@ -262,6 +264,7 @@ func Test性質と前提は足すか変えると承認のチェックで止ま�
 }
 
 // ストーリーの失効した承認（docs/formats.md の「失効した承認」）は、性質と前提にも同じに当てる
+// @vanda:evidence agreement-detached-when-content-changes
 func Testストーリーが承認した性質と前提をほかのストーリーが変えるとそのストーリーのチェックは承認し直すまで止まる(t *testing.T) {
 	t.Parallel()
 	r := newPTRepo(t)

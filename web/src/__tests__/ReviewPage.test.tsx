@@ -213,6 +213,8 @@ describe("RV-06 承認する", () => {
   });
 
   // 種類（kind）は、docs/formats.md の POST /api/agree・POST /api/revoke のとおりに送る
+  // @vanda:evidence agreement-bound-to-seen-content
+  // @vanda:evidence revoke-own-agreement-only
   it("性質と前提も一覧から承認でき取り消せて種類とIDを送る", async () => {
     const cases = [
       { kind: "property", make: propertyEntry, id: "no-lost-task" },

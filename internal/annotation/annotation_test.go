@@ -427,6 +427,7 @@ func TestReadはtsのフックとstepと変数の名前とテストでない呼�
 }
 
 // 前の形の種類 claim は、spec に読み替えない。組み込みのアダプタのどれでも、書ける所に書いても、決まっていない種類の誤りになる（docs/formats.md の「書き方」）
+// @vanda:evidence annotations-link-evidence
 func TestReadは前の形の種類claimを組み込みのアダプタのどれでも決まっていない種類の誤りにする(t *testing.T) {
 	cases := []struct {
 		adapter, path, src string

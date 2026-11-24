@@ -852,6 +852,7 @@ describe("性質と前提の詳細", () => {
     return within(dt!.nextElementSibling as HTMLElement).queryAllByRole("link").map((a) => new URL((a as HTMLAnchorElement).href).pathname);
   };
 
+  // @vanda:evidence item-detail-in-one-place
   it("性質の詳細のページにIDと状態と文と理由とrefinesとassumesの先と変更履歴と承認の履歴を示す", async () => {
     for (const [state, label, other] of [["agreed", "承認済", "提案中"], ["proposed", "提案中", "承認済"]] as const) {
       openPT("/properties/no-lost-task",
@@ -880,6 +881,7 @@ describe("性質と前提の詳細", () => {
     }
   });
 
+  // @vanda:evidence item-detail-in-one-place
   it("性質の詳細のページは理由とrefinesとassumesがなければないことを示す", async () => {
     openPT("/properties/reliable",
       http.get("/api/properties/:id", () => HttpResponse.json(propertyDetail({ id: "reliable", statement: plain("頼れる"), rationale: null, refines: [], assumes: [] }))),
@@ -891,6 +893,7 @@ describe("性質と前提の詳細", () => {
     expect(screen.getAllByRole("link").map((a) => new URL((a as HTMLAnchorElement).href).pathname).filter((p) => /^\/(properties|truths)\//.test(p)), "先がないのに性質か前提へのリンクがある").toEqual([]);
   });
 
+  // @vanda:evidence item-detail-in-one-place
   it("前提の詳細のページにIDと状態と文と変更履歴と承認の履歴を示す", async () => {
     for (const [state, label, other] of [["agreed", "承認済", "提案中"], ["proposed", "提案中", "承認済"]] as const) {
       openPT("/truths/disk-works",
@@ -909,6 +912,7 @@ describe("性質と前提の詳細", () => {
     }
   });
 
+  // @vanda:evidence item-detail-in-one-place
   it("今の約束リストにないIDの性質と前提の詳細のページを開くとAPIが返した理由を示す", async () => {
     for (const [path, api, message] of [
       ["/properties/p-none", "/api/properties/:id", "性質 p-none は約束リストにありません。"],
@@ -923,6 +927,7 @@ describe("性質と前提の詳細", () => {
   });
 
   // ストーリーのレビューから移ってきて、そのものが一覧にあれば、詳細のページからも承認できる（仕様の詳細と同じ）
+  // @vanda:evidence agreement-bound-to-seen-content
   it("ストーリーのレビューから移ってきた性質と前提の詳細のページで承認すると種類とIDを送りその画面にとどまる", async () => {
     const cases = [
       { kind: "property", path: "/properties/no-lost-task", id: "no-lost-task", entry: propertyEntry(1, "no-lost-task"), shown: "登録したタスクは失われない" },

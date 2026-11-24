@@ -428,6 +428,7 @@ func Test用語の詳細は名前とIDとセグメントに分けた定義と親
 }
 
 // 性質と前提は名前を持たないので、参照は ID に置き換えて見せる（仕様と同じ）。refs の中身は docs/formats.md の「セグメントの配列」の表
+// @vanda:evidence item-detail-in-one-place
 func Test性質と前提への参照はIDに置き換えて見せrefsに種類と文を返す(t *testing.T) {
 	t.Parallel()
 	s := setupTFAPI(t)
@@ -531,6 +532,7 @@ func Test今の約束リストにないIDの用語と機能と性質と前提の
 }
 
 // 性質と前提の詳細（docs/formats.md の GET /api/properties/<ID>・GET /api/truths/<ID>）
+// @vanda:evidence item-detail-in-one-place
 func Test性質と前提の詳細は文と理由とrefinesとassumesの先と承認の状態とフィンガープリントを返す(t *testing.T) {
 	t.Parallel()
 	s := setupTFAPI(t)
@@ -586,6 +588,7 @@ func Test性質と前提の詳細は文と理由とrefinesとassumesの先と承
 }
 
 // 性質と前提の履歴（docs/formats.md の GET /api/properties/<ID>/history・GET /api/truths/<ID>/history）。形と決まりは仕様の履歴と同じ
+// @vanda:evidence agreement-history-kept
 func Test性質と前提の履歴は中身を変えたコミットとその種類でそのIDを指す承認の記録だけを新しい順に返す(t *testing.T) {
 	t.Parallel()
 	s := setupTFAPI(t)
@@ -641,6 +644,7 @@ func Test性質と前提の履歴は中身を変えたコミットとその種�
 }
 
 // 仕様の詳細の refines・assumes（docs/formats.md の GET /api/specs/<ID>）
+// @vanda:evidence item-detail-in-one-place
 func Test仕様の詳細はrefinesとassumesの先を書いた順に種類と名前を付けて返す(t *testing.T) {
 	t.Parallel()
 	s := setupTFAPI(t)

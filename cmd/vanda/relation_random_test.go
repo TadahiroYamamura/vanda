@@ -227,6 +227,7 @@ func relRandGen(rt *rapid.T) []relRandItem {
 	return rapid.Permutation(items).Draw(rt, "書く順")
 }
 
+// @vanda:evidence mistakes-reported-with-fix
 func Test無作為に作った項目の組でrefinesとassumesの誤りの行が決まりの表から書いた判定と一致する(t *testing.T) {
 	// t.Parallel() を呼ばない。rapid のシードはプロセスに 1 つのフラグなので、並行に動くほかのテストがフラグを書き換えると、
 	// 記録に出したシードと、実際に使ったシードが食い違う
