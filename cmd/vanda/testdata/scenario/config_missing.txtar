@@ -2,10 +2,6 @@
 
 exec git init -q -b main
 
-! exec vanda doctor
-stderr 'config\.toml'
-! stderr '(?m)^panic: '
-
 commit '(test) チェックの前にコミットする'
 ! exec vanda check .vanda/checks/all.toml
 stderr 'config\.toml'

@@ -1,0 +1,42 @@
+# CM-09: 設定の [story] の args は、カスタムアダプタにだけ書ける。決まっていない項目は誤りになる。
+# @vanda:evidence project-adapter-args-only-for-project
+
+exec git init -q -b main
+
+# 組み込みの github には args を書けない
+cp cases/config-github-args.toml .vanda/config.toml
+expand .vanda/config.toml
+commit '(test) チェックの前にコミットする'
+! exec vanda check .vanda/checks/all.toml
+stderr '\.vanda/config\.toml.*args'
+! stderr '(?m)^panic: '
+
+# [story] の command は、ほかの決まっていない項目と同じく誤りになる
+cp cases/config-command.toml .vanda/config.toml
+expand .vanda/config.toml
+commit '(test) チェックの前にコミットする'
+! exec vanda check .vanda/checks/all.toml
+stderr '\.vanda/config\.toml.*command'
+! stderr '(?m)^panic: '
+
+-- .vanda/config.toml --
+-- .vanda/checks/all.toml --
+[[check]]
+name = "promise-list-shape"
+scope = "all"
+-- .vanda/adapters/jira-story --
+#!/bin/sh
+cat >/dev/null
+echo '{"title":"t","body":"","url":""}'
+-- cases/config-command.toml --
+version = "${VANDA_VERSION}"
+
+[story]
+command = ["sh", ".vanda/adapters/jira-story"]
+-- cases/config-github-args.toml --
+version = "${VANDA_VERSION}"
+
+[story]
+adapter = "github"
+repository = "owner/app"
+args = ["--strict"]

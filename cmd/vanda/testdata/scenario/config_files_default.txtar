@@ -34,7 +34,6 @@ stderr 'agreements\.toml'
 # 既定のファイルがなければ、空とみなして通る
 rm .vanda/promises.toml
 rm .vanda/agreements.toml
-exec vanda doctor
 commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/shape.toml
 exec vanda check .vanda/checks/targets.toml

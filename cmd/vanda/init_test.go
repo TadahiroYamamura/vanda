@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -849,48 +847,13 @@ func initSetup(t *testing.T) (string, string) {
 
 // ---- テスト ----
 
-// 偽の GitHub。vanda doctor が呼ぶ GET /repos/<owner>/<repo> に、Issues が使えるリポジトリとして応える
-const fakeRepoToken = "gho_inittesttoken"
-
-type fakeRepoAPI struct {
-	URL  string
-	mu   sync.Mutex
-	hits int
-}
-
-func newFakeRepoAPI(t *testing.T, repo string) *fakeRepoAPI {
-	t.Helper()
-	f := &fakeRepoAPI{}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		auth := req.Header.Get("Authorization")
-		if req.Method != http.MethodGet || req.URL.Path != "/repos/"+repo || (auth != "Bearer "+fakeRepoToken && auth != "token "+fakeRepoToken) {
-			writeGitHubError(w, http.StatusNotFound, "Not Found")
-			return
-		}
-		f.mu.Lock()
-		f.hits++
-		f.mu.Unlock()
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		_, _ = w.Write([]byte(`{"full_name":"` + repo + `","has_issues":true}`))
-	}))
-	t.Cleanup(srv.Close)
-	f.URL = srv.URL
-	return f
-}
-
-func (f *fakeRepoAPI) called() bool {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return f.hits > 0
-}
-
 // CMD-11
 // @vanda:evidence init-defaults-from-repository
 // @vanda:evidence init-writes-files
 // @vanda:evidence init-values-only
 // @vanda:evidence init-default-types
 // @vanda:evidence init-guide
-func Test既定の答えのまま進めると読み取った値で5つのファイルができdoctorとciのチェックが通る(t *testing.T) {
+func Test既定の答えのまま進めると読み取った値で5つのファイルができciのチェックが通る(t *testing.T) {
 	t.Parallel()
 	bin, version := initSetup(t)
 	var files []string
@@ -965,26 +928,11 @@ func Test既定の答えのまま進めると読み取った値で5つのファ�
 		t.Errorf("vanda init がコミットした（%s 個）", n)
 	}
 
-	// vanda doctor は GitHub に繋がるかを確かめるので、作った設定の api_url だけを偽の GitHub に向ける
-	gh := newFakeRepoAPI(t, "owner/app")
-	cfgText, err := os.ReadFile(filepath.Join(r.root, ".vanda", "config.toml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	writeFile(t, r.root, ".vanda/config.toml", strings.Replace(string(cfgText), "[story]\n", "[story]\napi_url = \""+gh.URL+"\"\n", 1))
-	// 偽の GitHub（127.0.0.1）は api.github.com でないので、トークンは GH_ENTERPRISE_TOKEN から読まれる
-	env := ghEnv(r.g.env, fakeGH(t, nil), "GH_ENTERPRISE_TOKEN="+fakeRepoToken)
-	doctor := exec.Command(bin, "doctor")
-	doctor.Dir, doctor.Env = r.root, env
-	if out, err := doctor.CombinedOutput(); err != nil {
-		t.Errorf("作った設定で vanda doctor が通らない: %v\n%s", err, out)
-	}
-	if !gh.called() {
-		t.Errorf("vanda doctor が、偽の GitHub のリポジトリを読みに来ていない")
-	}
 	// チェックは HEAD のコミットの中身だけを読むので、作ったファイルをストーリー #1 のコミットにしてから動かす。
 	// ストーリーはトレーラーから #1 に決まるので --story はいらず、--story #1 でも通る
 	r.g.commitAll("(chore) vanda init で作ったファイルを足す", "#1")
+	// 本物の gh のトークンを読まないよう、偽の gh を PATH の先頭に置く
+	env := ghEnv(r.g.env, fakeGH(t, nil))
 	for _, args := range [][]string{
 		{"check", ".vanda/checks/ci.toml", "--base", "origin/main"},
 		{"check", ".vanda/checks/ci.toml", "--base", "origin/main", "--story", "#1"},
@@ -1631,14 +1579,15 @@ func Test答えから作る5つのファイルはストーリーストアと言�
 				}
 			}
 			checkNoComments(t, root)
-			// 作った設定は、vanda に読める（ストーリーストアに繋ぎに行かない「使わない」で、vanda doctor を通す）
+			// 作った設定は、vanda に読める。チェックは HEAD のコミットの中身だけを読むので、コミットしてから動かす
 			if c.a.Store == "none" {
 				g := newRVGit(t, root)
 				g.run("init", "-q", "-b", "main")
-				doctor := exec.Command(bin, "doctor")
-				doctor.Dir, doctor.Env = root, g.env
-				if out, err := doctor.CombinedOutput(); err != nil {
-					t.Errorf("作った設定で vanda doctor が通らない: %v\n%s", err, out)
+				g.commitAll("(chore) vanda init で作ったファイルを足す", "")
+				check := exec.Command(bin, "check", ".vanda/checks/main.toml")
+				check.Dir, check.Env = root, g.env
+				if out, err := check.CombinedOutput(); err != nil {
+					t.Errorf("作った設定で vanda check が通らない: %v\n%s", err, out)
 				}
 			}
 		})

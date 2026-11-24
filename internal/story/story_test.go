@@ -28,7 +28,6 @@ func (f *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	f.mu.Lock()
 	f.reqs = append(f.reqs, req)
 	f.mu.Unlock()
-	// ストーリーを読む（Issue）ときにも、doctor が確かめる（リポジトリ）ときにも足りる中身
 	body := `{"title":"題","body":"本文","html_url":"https://github.com/owner/app/issues/24","full_name":"owner/app","has_issues":true}`
 	return &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": {"application/json"}}, Body: io.NopCloser(strings.NewReader(body)), Request: req}, nil
 }
@@ -112,21 +111,11 @@ func githubConfig(apiURL string) *config.Config {
 	}
 }
 
-// トークンを使う 2 つの所。画面でストーリーを読むときと、vanda doctor が繋がるかを確かめるとき
-var githubOps = []struct {
-	name string
-	run  func(cfg *config.Config) error
-}{
-	{"ストーリーを読む", func(cfg *config.Config) error {
-		if _, e := Read(".", cfg, "#24"); e != nil {
-			return e
-		}
-		return nil
-	}},
-	{"doctorで確かめる", func(cfg *config.Config) error {
-		_, err := Check(".", cfg)
-		return err
-	}},
+func readStory(cfg *config.Config) error {
+	if _, e := Read(".", cfg, "#24"); e != nil {
+		return e
+	}
+	return nil
 }
 
 // 偽の gh がログインしているホストとトークン。どのホストにも、違うトークンを持たせる
@@ -155,29 +144,27 @@ func Testトークンはapi_urlのホストがapi_github_comならGH_TOKENかgit
 		{"api.github.comに似たホストで両方の環境変数がある", "https://api.github.com.example.net", both, "env_enterprise", ""},
 		{"api.github.comに似たホストでGH_ENTERPRISE_TOKENがない", "https://api.github.com.example.net", map[string]string{"GH_TOKEN": "env_dotcom"}, "ghe_gh_lookalike", "auth token --hostname api.github.com.example.net"},
 	}
-	for _, op := range githubOps {
-		for _, c := range cases {
-			t.Run(op.name+"/"+c.name, func(t *testing.T) {
-				f := useFakeGitHub(t)
-				log := useFakeGH(t, ghLogins)
-				setTokens(t, c.env)
-				if err := op.run(githubConfig(c.apiURL)); err != nil {
-					t.Fatalf("失敗した: %v", err)
-				}
-				host := strings.TrimPrefix(strings.TrimPrefix(c.apiURL, "https://"), "http://")
-				host = strings.SplitN(host, "/", 2)[0]
-				if got := f.auths(); len(got) != 1 || got[0] != host+" Bearer "+c.wantKey {
-					t.Errorf("送ったリクエスト: %q（%s に Bearer %s を 1 回のはず）", got, host, c.wantKey)
-				}
-				calls := ghCalls(t, log)
-				if c.wantGH == "" && len(calls) != 0 {
-					t.Errorf("環境変数にトークンがあるのに gh を呼んだ: %q", calls)
-				}
-				if c.wantGH != "" && (len(calls) != 1 || calls[0] != c.wantGH) {
-					t.Errorf("gh の呼ばれ方: %q（%q のはず）", calls, c.wantGH)
-				}
-			})
-		}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			f := useFakeGitHub(t)
+			log := useFakeGH(t, ghLogins)
+			setTokens(t, c.env)
+			if err := readStory(githubConfig(c.apiURL)); err != nil {
+				t.Fatalf("失敗した: %v", err)
+			}
+			host := strings.TrimPrefix(strings.TrimPrefix(c.apiURL, "https://"), "http://")
+			host = strings.SplitN(host, "/", 2)[0]
+			if got := f.auths(); len(got) != 1 || got[0] != host+" Bearer "+c.wantKey {
+				t.Errorf("送ったリクエスト: %q（%s に Bearer %s を 1 回のはず）", got, host, c.wantKey)
+			}
+			calls := ghCalls(t, log)
+			if c.wantGH == "" && len(calls) != 0 {
+				t.Errorf("環境変数にトークンがあるのに gh を呼んだ: %q", calls)
+			}
+			if c.wantGH != "" && (len(calls) != 1 || calls[0] != c.wantGH) {
+				t.Errorf("gh の呼ばれ方: %q（%q のはず）", calls, c.wantGH)
+			}
+		})
 	}
 }
 
@@ -199,22 +186,20 @@ func Test_api_urlのホストに合うトークンが見つからなければリ
 		{"GHEでGH_ENTERPRISE_TOKENがなくghのそのホストのトークンが空", "https://ghe.example.com/api/v3",
 			map[string]string{"GH_TOKEN": "env_dotcom"}, map[string]string{"github.com": "gho_gh_dotcom", "ghe.example.com": ""}},
 	}
-	for _, op := range githubOps {
-		for _, c := range cases {
-			t.Run(op.name+"/"+c.name, func(t *testing.T) {
-				f := useFakeGitHub(t)
-				useFakeGH(t, c.logins)
-				setTokens(t, c.env)
-				err := op.run(githubConfig(c.apiURL))
-				var se *Error
-				if !errors.As(err, &se) || se.Status != http.StatusBadGateway || !strings.Contains(se.Fix, "ください") {
-					t.Errorf("ストーリーストアのエラー（502 と直し方）にならない: %#v", err)
-				}
-				if got := f.auths(); len(got) != 0 {
-					t.Errorf("トークンがないのにリクエストを送った: %q", got)
-				}
-			})
-		}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			f := useFakeGitHub(t)
+			useFakeGH(t, c.logins)
+			setTokens(t, c.env)
+			err := readStory(githubConfig(c.apiURL))
+			var se *Error
+			if !errors.As(err, &se) || se.Status != http.StatusBadGateway || !strings.Contains(se.Fix, "ください") {
+				t.Errorf("ストーリーストアのエラー（502 と直し方）にならない: %#v", err)
+			}
+			if got := f.auths(); len(got) != 0 {
+				t.Errorf("トークンがないのにリクエストを送った: %q", got)
+			}
+		})
 	}
 }
 

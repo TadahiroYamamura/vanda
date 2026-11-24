@@ -3,8 +3,6 @@
 # @vanda:evidence doctor-ok-line
 
 # リポジトリの外
-! exec vanda doctor
-! stderr '(?m)^panic: '
 ! exec vanda check .vanda/checks/all.toml
 ! stderr '(?m)^panic: '
 
@@ -12,14 +10,12 @@ exec git init -q -b main
 expand .vanda/config.toml
 
 # ルートで動かすと通る
-exec vanda doctor
 commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/all.toml
 
 # 下のディレクトリで動かしても、ルートの .vanda/ を使う。チェックの設定のファイルの引数は、カレントディレクトリから読む。
 # 下のディレクトリにある別の .vanda/ は、バージョンが合わないので、読めば止まる
 cd sub
-exec vanda doctor
 exec vanda check ../.vanda/checks/all.toml
 ! exec vanda check .vanda/checks/all.toml
 ! stderr '(?m)^panic: '
