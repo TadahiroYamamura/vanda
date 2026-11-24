@@ -656,7 +656,7 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
       )}
       {e.kind === "spec" && e.id && e.change !== "deleted" && (
         <p>
-          <Link to={`/claims/${encodeURIComponent(e.id)}${props.query ? `?${props.query}` : ""}`}>約束の詳細を開く</Link>
+          <Link to={`/specs/${encodeURIComponent(e.id)}${props.query ? `?${props.query}` : ""}`}>約束の詳細を開く</Link>
         </p>
       )}
       {(e.kind === "property" || e.kind === "truth") && e.id && e.change !== "deleted" && (

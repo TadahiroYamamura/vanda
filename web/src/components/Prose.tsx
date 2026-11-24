@@ -17,7 +17,7 @@ export function proseText(ps: Piece[] | null | undefined): string {
   return (ps ?? []).map((p) => p.text).join("");
 }
 
-const detailPath: Record<RefTarget["kind"], string> = { spec: "claims", term: "terms", feature: "features", property: "properties", truth: "truths" };
+const detailPath: Record<RefTarget["kind"], string> = { spec: "specs", term: "terms", feature: "features", property: "properties", truth: "truths" };
 
 // detailURL は、約束リストの項目の詳細のページの URL。レビューの画面の状態（query）を引き継ぐ
 export function detailURL(kind: RefTarget["kind"], id: string, query: string): string {
