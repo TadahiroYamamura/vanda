@@ -417,7 +417,7 @@ func (u *UserAdapter) Check(root string) *AdapterError {
 }
 
 // runnableHead は、ファイルの先頭のバイト列が、OS がそのまま動かせる形（#! の 1 行目か、実行の形式のファイル）かを返す。
-// 動かしてみて exec format error を見分けるだけでは、vanda doctor のように動かさずに確かめる所で見落とすため、先頭を見る
+// 動かせなかった時に、OS の誤り（exec format error）をそのまま出すより、1 行目に動かし方がないと直し方の分かる形で知らせるため、先頭を見る
 func runnableHead(b []byte) bool {
 	magics := [][]byte{
 		[]byte("#!"),

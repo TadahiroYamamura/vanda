@@ -90,7 +90,7 @@ func runInit(cmd *cobra.Command, root string, d initcmd.Defaults) error {
 	return report(out, root, files, len(a.Annotations) == 0)
 }
 
-// report は、作った設定を vanda doctor と同じく確かめ、作ったファイルと次にすることを出す。
+// report は、作った設定を読んで確かめ、作ったファイルと次にすることを出す。
 // カスタムアダプタは .vanda/ を作った後にしか置けないので、まだないことだけは誤りにせず、置くよう案内する。
 func report(out io.Writer, root string, files [][2]string, noAnnotations bool) error {
 	cfg, missing, errs := config.LoadAllowingMissingAdapters(root)

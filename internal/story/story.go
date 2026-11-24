@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -334,29 +333,4 @@ func readUser(root string, u *config.UserAdapter, id string) (*Story, *Error) {
 		atts = append(atts, a)
 	}
 	return &Story{ID: id, Title: *resp.Title, Body: *resp.Body, URL: *resp.URL, Attachments: atts}, nil
-}
-
-// Check は、ストーリーストアに繋がるかを確かめ、確かめたことを 1 文で返す（CMD-01）。ストーリーストアが設定になければ、空の文を返す。
-func Check(root string, cfg *config.Config) (string, error) {
-	st := cfg.Story
-	switch {
-	case st.User != nil:
-		if e := st.User.Check(root); e != nil {
-			return "", fmt.Errorf("ストーリーストアの%w", e)
-		}
-		return "ストーリーストアの" + st.User.Label() + "があり、実行できます", nil
-	case st.Adapter == "github":
-		var repo struct {
-			HasIssues bool `json:"has_issues"`
-		}
-		notFound := storeErr("GitHub に "+st.Repository+" がないか、今のトークンでは見えません。", "[story] の repository と、トークンの権限を確かめてください。")
-		if e := get(st, "/repos/"+st.Repository, &repo, notFound); e != nil {
-			return "", e
-		}
-		if !repo.HasIssues {
-			return "", errors.New("GitHub の " + st.Repository + " で Issues が使えません。リポジトリの設定で Issues を有効にしてください。")
-		}
-		return "ストーリーストア GitHub Issues（" + st.Repository + "）に繋がりました", nil
-	}
-	return "", nil
 }

@@ -12,7 +12,6 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/config"
 	"github.com/TadahiroYamamura/vanda/internal/diag"
 	"github.com/TadahiroYamamura/vanda/internal/repo"
-	"github.com/TadahiroYamamura/vanda/internal/story"
 	"github.com/TadahiroYamamura/vanda/internal/version"
 )
 
@@ -42,7 +41,7 @@ func newRootCommand() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	root.AddCommand(newVersionCommand(), newDoctorCommand(), newCheckCommand(), newServeCommand(), newInitCommand())
+	root.AddCommand(newVersionCommand(), newCheckCommand(), newServeCommand(), newInitCommand())
 	return root
 }
 
@@ -99,42 +98,6 @@ func newVersionCommand() *cobra.Command {
 			return nil
 		},
 	}
-}
-
-func newDoctorCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "doctor",
-		Short: "設定とバージョンを確かめます",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			root, cfg, err := loadConfig()
-			if err != nil {
-				return err
-			}
-			conn, err := story.Check(root, cfg)
-			if err != nil {
-				return err
-			}
-			if conn != "" {
-				conn = "。" + conn
-			}
-			fmt.Fprintf(cmd.OutOrStdout(), "設定を確かめました: %s（リポジトリ %s、バージョン %s）%s\n", config.File, root, cfg.Version, conn)
-			return nil
-		},
-	}
-}
-
-// loadConfig は、git のリポジトリのルートを探し、作業ツリーの設定を読んでバージョンを確かめる。
-func loadConfig() (string, *config.Config, error) {
-	root, err := findRoot()
-	if err != nil {
-		return "", nil, err
-	}
-	cfg, errs := config.Load(root)
-	if errs != nil {
-		return "", nil, diag.Errors(errs)
-	}
-	return root, cfg, nil
 }
 
 // loadCommittedConfig は、git のリポジトリのルートを探し、HEAD のコミットの設定を読んでバージョンを確かめる（チェックと画面は、コミットした中身だけを読むため）。

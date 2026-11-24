@@ -65,7 +65,7 @@ func (s *Server) config(w http.ResponseWriter) (*config.Config, bool) {
 	}
 	cfg, errs := config.LoadCommitted(s.Root, tree)
 	if errs != nil {
-		writeError(w, http.StatusInternalServerError, fmt.Sprintf("設定（%s）を読めません（%d 件。最初の 1 件: %s）。", config.File, len(errs), errs[0].Error()), "vanda doctor で誤りを確かめて、直してください。")
+		writeError(w, http.StatusInternalServerError, fmt.Sprintf("設定（%s）を読めません（%d 件。最初の 1 件: %s）。", config.File, len(errs), errs[0].Error()), "誤りを直して、コミットしてください。vanda check でも、同じ誤りがすべて出ます。")
 		return nil, false
 	}
 	return cfg, true

@@ -25,14 +25,13 @@
 
 `vanda check` と `vanda serve`（画面と API）は、設定（`.vanda/config.toml`）・約束リスト・承認の記録と、アノテーションを読むファイルを、HEAD のコミットの中身で読む。コミットしていないファイルと変更（`git add` したものを含む）は読まない。コミットが 1 つもなければ、どのファイルもないものとして読む（設定がない誤りになる）。
 
-- `vanda doctor` は、作業ツリーの設定を読む
 - カスタムアダプタ（実行するファイル）と、`vanda check` に渡すチェックの設定のファイルは、作業ツリーのものを使う
 - アノテーションのカスタムアダプタには、アノテーションを読むファイルの HEAD のコミットの中身を、標準入力の `content` で渡す（下の「カスタムアダプタ」）
 - 承認と取り消し（`POST /api/agree`・`POST /api/revoke`）は、作業ツリーのファイルを書き換えてコミットする。書き換えるファイルと承認の対象が書いてあるファイルにコミットしていない変更があれば断るので、承認する中身は HEAD の中身と同じになる
 
 ## バージョン
 
-`.vanda/config.toml` の `version` が動いている vanda のバージョンと合わないときは、`vanda check` も `vanda doctor` も止まる。`vanda version` だけは止まらない。
+`.vanda/config.toml` の `version` が動いている vanda のバージョンと合わないときは、`vanda check` も `vanda serve` も止まる。`vanda version` だけは止まらない。
 
 ## ファイルのパターン
 
@@ -464,7 +463,6 @@ scope = "story"
 | コマンド | 中身 |
 |---|---|
 | `vanda version` | 動いている vanda のバージョンを、1 行で出す（例: `0.1.0`）。`.vanda/` がなくても、バージョンが合わなくても動く |
-| `vanda doctor` | 設定（`.vanda/config.toml`）を読み、バージョンが合うかを確かめる。ストーリーストアが設定にあれば、繋がるかも確かめる（GitHub Issues なら、`api_url` のホストに合うトークンで `GET <api_url>/repos/<repository>` を呼び、Issues が使えるか。カスタムアダプタなら、`.vanda/adapters/` にあって実行できるか）。通れば標準出力に 1 行を出す（ストーリーストアを確かめたら、同じ行の終わりに、何を確かめたかを書き足す）。誤りがあれば、標準エラーに出して終了コード 1 で終わる |
 | `vanda check <チェックの設定のファイル> [--base <ブランチ>] [--story <ID>]` | チェックする。チェックごとの結果の行は標準出力に、誤りの中身は標準エラーに出す。どれかが失敗したら終了コード 1 |
 
 ## GUI の API（`vanda serve`）
@@ -953,7 +951,7 @@ base = "origin/develop"
 ### GitHub Issues のアダプタ
 
 - トークンは設定に書かない。使うたびに、`api_url` のホストに合うものを使う。ホストが `api.github.com` なら、環境変数 `GH_TOKEN` があればそれを、なければ `gh auth token --hostname github.com` の出力を使う。ほかのホスト（GitHub Enterprise）なら、`GH_ENTERPRISE_TOKEN` があればそれを、なければ `gh auth token --hostname <そのホスト>` の出力を使う。ホストはポートを含む（例: `ghe.example.com:8443`）
-- 合うトークンが見つからない（環境変数がなく、`gh` がない・ログインしていない・出力が空）ときは、GitHub へのリクエストを送らずに `502` にし、`gh` が返した理由を出す。`vanda doctor` も同じ決まりでトークンを選ぶ
+- 合うトークンが見つからない（環境変数がなく、`gh` がない・ログインしていない・出力が空）ときは、GitHub へのリクエストを送らずに `502` にし、`gh` が返した理由を出す
 - `api_url` が `http://` で始まるときは、トークンを送るたびに、暗号化せずに送っていることを標準エラーに出す
 - `GET <api_url>/repos/<repository>/issues/<番号>` を呼ぶ。番号は、ストーリーの ID の数字の部分
 - 添付ファイルは、本文の中のリンクと画像（Markdown の `[名前](URL)`・`![名前](URL)` と、HTML の `<img src>`）のうち、URL が `https://github.com/user-attachments/`・`https://github.com/<repository>/assets/`・`https://user-images.githubusercontent.com/` で始まるもの。名前は、リンクの文字か画像の代わりの文字（なければ URL の最後の部分）。並びは本文に出てくる順で、同じ URL は 1 度だけ
