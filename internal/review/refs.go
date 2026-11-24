@@ -7,13 +7,13 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/snapshot"
 )
 
-// Piece は、自然言語で書く項目の文のセグメント。参照なら Ref に指す ID を持ち、Text は見せる文字（用語と機能は名前、約束は ID）。
+// Piece は、自然言語で書く項目の文のセグメント。参照なら Ref に指す ID を持ち、Text は見せる文字（用語と機能は名前、性質・前提・約束は ID）。
 type Piece struct {
 	Text string `json:"text"`
 	Ref  string `json:"ref,omitempty"`
 }
 
-// RefTarget は、セグメントが指す先。Name は用語と機能なら名前、約束なら nil。Text は、用語と機能なら定義、約束なら文を、参照を見せる文字に置き換えたもの。
+// RefTarget は、セグメントが指す先。Name は用語と機能なら名前、性質・前提・約束なら nil。Text は、用語と機能なら定義、性質・前提・約束なら文を、参照を見せる文字に置き換えたもの。
 // Core・Formal は、機能のときだけ持つ（コア機能か・形式手法を使う機能か）。
 type RefTarget struct {
 	Kind    string  `json:"kind"`
@@ -104,6 +104,10 @@ func (r *refs) target(e snapshot.Entry, current bool, base *side) RefTarget {
 		t.Core, t.Formal = ptr(e.Feature.Core), ptr(e.Feature.Formal)
 	case e.Claim != nil:
 		body = e.Claim.Statement
+	case e.Property != nil:
+		body = e.Property.Statement
+	case e.Truth != nil:
+		body = e.Truth.Statement
 	}
 	t.Pieces = r.split(body, base, false)
 	t.Text = plain(t.Pieces)

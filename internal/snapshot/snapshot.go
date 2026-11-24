@@ -26,6 +26,9 @@ type Entry struct {
 	Term    *promises.Term
 	Feature *promises.Feature
 	Claim   *promises.Claim
+	// Property・Truth は、参照の指す先として作る時だけ入る。Entries は、性質と前提を返さない
+	Property *promises.Property
+	Truth    *promises.Truth
 }
 
 // Key は、種類と ID をつないだキー。ID は種類をまたいで重複しない決まりだが、重複した誤りがあっても別のものとして数えるため、種類も入れる。
