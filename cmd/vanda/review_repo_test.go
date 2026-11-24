@@ -217,10 +217,11 @@ func TestUnique(t *testing.T) {}
 
 // 手で書いた、フィンガープリントの元の JSON。
 var reviewItemJSON = map[string]string{
-	"term task":        `{"definition":"やること","id":"task","name":"タスク"}`,
-	"term task-id":     `{"definition":"タスクを見分ける名前","id":"task-id","name":"タスクの ID","part_of":"task"}`,
-	"feature add-task": `{"definition":"タスクを足す","id":"add-task","name":"タスクの登録","refines":["no-lost-task"]}`,
-	"claim task-id-unique": `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"},` +
+	"term task":             `{"definition":"やること","id":"task","name":"タスク"}`,
+	"term task-id":          `{"definition":"タスクを見分ける名前","id":"task-id","name":"タスクの ID","part_of":"task"}`,
+	"property no-lost-task": `{"id":"no-lost-task","statement":"登録したタスクは失われない"}`,
+	"feature add-task":      `{"definition":"タスクを足す","id":"add-task","name":"タスクの登録","refines":["no-lost-task"]}`,
+	"spec task-id-unique": `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"},` +
 		`{"layers":["model"],"stage":"plan","type":"model-check"},` +
 		`{"layers":["db"],"stage":"implementation","type":"guardrail"},` +
 		`{"layers":["model"],"stage":"implementation","type":"unit-test"}],` +
@@ -229,19 +230,19 @@ var reviewItemJSON = map[string]string{
 
 // ストーリー #24 の後の中身の、フィンガープリントの元の JSON。flags と guesses は含めない。
 var reviewStoryItemJSON = map[string]string{
-	"claim task-id-unique": `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"},` +
+	"spec task-id-unique": `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"},` +
 		`{"layers":["model"],"stage":"plan","type":"model-check"},` +
 		`{"layers":["db"],"stage":"implementation","type":"guardrail"},` +
 		`{"layers":["model"],"stage":"implementation","type":"unit-test"}],` +
 		`"id":"task-id-unique","layers":["model","db"],"refines":["add-task"],"statement":"タスクの ID は、すべてのタスクを通して重ならない"}`,
-	"claim task-title-required": `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"}],` +
+	"spec task-title-required": `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"}],` +
 		`"id":"task-title-required","layers":["model"],"refines":["add-task"],"statement":"タスクの題は空にできない"}`,
 }
 
 // ストーリー #24 の、レビュー単位がブランチ（ベースブランチ main）のときに、一覧に出るもの。
 var reviewStoryEntries = []rvEntry{
-	{Kind: "claim", Key: "task-id-unique", Change: "changed"},
-	{Kind: "claim", Key: "task-title-required", Change: "added"},
+	{Kind: "spec", Key: "task-id-unique", Change: "changed"},
+	{Kind: "spec", Key: "task-title-required", Change: "added"},
 	{Kind: "file", Key: "e2e/add-task.txtar", Change: "changed"},
 }
 
@@ -287,7 +288,7 @@ func newReviewRepo(t *testing.T, version string) *reviewRepo {
 	writeFile(t, root, "db/schema.sql", reviewSchema)
 	writeFile(t, root, "internal/task/task_test.go", reviewGoTest)
 	var agreements strings.Builder
-	for _, k := range []string{"term task", "term task-id", "feature add-task", "claim task-id-unique"} {
+	for _, k := range []string{"term task", "term task-id", "property no-lost-task", "feature add-task", "spec task-id-unique"} {
 		kind, id, _ := strings.Cut(k, " ")
 		agreements.WriteString(agreementTOML(kind, id, sha256Hex([]byte(reviewItemJSON[k])), "", "#1", "テスト担当", "tester@example.com"))
 	}

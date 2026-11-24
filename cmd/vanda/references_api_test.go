@@ -290,7 +290,7 @@ var refNow = map[string]refInfo{
 	"t-keep":   {Kind: "term", Name: strp("タスク"), Text: "やること", Current: true, Pieces: textOf("やること")},
 	"t-rename": {Kind: "term", Name: strp("新しい用語"), Text: "後の定義", Current: true, Pieces: textOf("後の定義")},
 	"f-rename": {Kind: "feature", Name: strp("新しい機能"), Text: "タスクを足す", Current: true, Pieces: fragsOf("タスク>t-keep", "を足す"), Core: boolp(false), Formal: boolp(false)},
-	"c-other":  {Kind: "claim", Name: nil, Text: "ほかの約束はタスクを数える", Current: true, Pieces: fragsOf("ほかの約束は", "タスク>t-keep", "を数える")},
+	"c-other":  {Kind: "spec", Name: nil, Text: "ほかの約束はタスクを数える", Current: true, Pieces: fragsOf("ほかの約束は", "タスク>t-keep", "を数える")},
 	// 今ない用語と機能は、比べる元（main）の名前と定義
 	"t-gone": {Kind: "term", Name: strp("消える用語"), Text: "消える定義", Current: false, Pieces: textOf("消える定義")},
 	"f-gone": {Kind: "feature", Name: strp("消える機能"), Text: "消える機能の定義", Current: false, Pieces: textOf("消える機能の定義"), Core: boolp(false), Formal: boolp(false)},
@@ -348,7 +348,7 @@ func Test約束の詳細とその時点の中身は自然言語で書く項目�
 		refClaimContent
 		Refs map[string]refInfo `json:"refs"`
 	}
-	if code, msg := r.s.get("/api/claims/c-ref", &detail); code != 200 {
+	if code, msg := r.s.get("/api/specs/c-ref", &detail); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
 	}
 	wantFrags(t, "詳細の statement", detail.Statement,
@@ -374,7 +374,7 @@ func Test約束の詳細とその時点の中身は自然言語で書く項目�
 		Refs    map[string]refInfo `json:"refs"`
 	}
 	commit := r.g.run("rev-parse", "main")
-	if code, msg := r.s.get("/api/claims/c-ref/at/"+commit, &at); code != 200 {
+	if code, msg := r.s.get("/api/specs/c-ref/at/"+commit, &at); code != 200 {
 		t.Fatalf("main の時点の中身を読めない（%d）: %s", code, msg)
 	}
 	wantFrags(t, "main の時点の statement", at.Content.Statement,
@@ -558,7 +558,7 @@ func Test参照先の名前と定義を変えても約束の詳細のフィン�
 	who := func(kind, id, js, story string) string {
 		return agreementTOML(kind, id, sha256Hex([]byte(js)), "", story, "テスト担当", "tester@example.com")
 	}
-	agreed := who("claim", "c", fpClaimJSON, "#1") + who("term", "t", fpTermV1, "#1") + who("feature", "f", fpFeatureV1, "#1")
+	agreed := who("spec", "c", fpClaimJSON, "#1") + who("term", "t", fpTermV1, "#1") + who("feature", "f", fpFeatureV1, "#1")
 	writeFile(t, root, ".vanda/promises.toml", fpPromises("タスク", "やること", "タスクの登録", "タスクを足す"))
 	writeFile(t, root, ".vanda/agreements.toml", agreed)
 	g.commitAll("約束を置いて承認する", "#1")
@@ -573,7 +573,7 @@ func Test参照先の名前と定義を変えても約束の詳細のフィン�
 		Fingerprint string `json:"fingerprint"`
 		Statement   frags  `json:"statement"`
 	}
-	if code, msg := s.get("/api/claims/c", &detail); code != 200 {
+	if code, msg := s.get("/api/specs/c", &detail); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
 	}
 	h := getHistory(t, s, "c")

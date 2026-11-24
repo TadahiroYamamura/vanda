@@ -12,7 +12,7 @@ import (
 
 // 組み込みの ts のアダプタと、vanda のリポジトリの .vanda/adapters/playwright が付ける名前
 // （docs/plans/annotation-types.md の 2・3）。名前は、呼び出しの最初の引数の文字列で、describe の中なら外側の
-// describe の名前から順に " > " でつなぐ。約束の詳細（GET /api/claims/<ID>）の found の名前で確かめる。
+// describe の名前から順に " > " でつなぐ。約束の詳細（GET /api/specs/<ID>）の found の名前で確かめる。
 
 // tsNamesFile は、入れ子の describe を含むテストのファイル。期待する名前は tsNamesWant。
 // 組み込みの ts は .skip・.todo を数えず .only を誤りにする（annotation_ts.txtar で確かめる）ので、ここには書かない
@@ -88,7 +88,7 @@ func foundNames(t *testing.T, annotation string, files map[string]string, adapte
 	g.commitAll("はじめ", "#1")
 	s := startServe(t, bin, root, g.env)
 	var got claimDetail
-	if code, msg := s.get("/api/claims/task-id-unique", &got); code != 200 {
+	if code, msg := s.get("/api/specs/task-id-unique", &got); code != 200 {
 		t.Fatalf("約束の詳細を読めない（%d）: %s", code, msg)
 	}
 	var names []string

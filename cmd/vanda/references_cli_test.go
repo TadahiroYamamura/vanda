@@ -308,6 +308,7 @@ const (
 	fpTermV2    = `{"definition":"やるべきこと","id":"t","name":"仕事"}`
 	fpFeatureV1 = `{"definition":"タスクを足す","id":"f","name":"タスクの登録","refines":["p"]}`
 	fpFeatureV2 = `{"definition":"仕事を足す","id":"f","name":"仕事の登録","refines":["p"]}`
+	fpProperty  = `{"id":"p","statement":"性質の文"}`
 )
 
 func fpPromises(termName, termDef, featureName, featureDef string) string {
@@ -353,7 +354,7 @@ func Test参照先の用語と機能の名前と定義を変えても参照元�
 	}
 	// 約束 c には、書いたままの文のフィンガープリントで 1 度だけ承認する
 	writeFile(t, root, ".vanda/promises.toml", fpPromises("タスク", "やること", "タスクの登録", "タスクを足す"))
-	writeFile(t, root, ".vanda/agreements.toml", who("claim", "c", fpClaimJSON)+who("term", "t", fpTermV1)+who("feature", "f", fpFeatureV1))
+	writeFile(t, root, ".vanda/agreements.toml", who("spec", "c", fpClaimJSON)+who("term", "t", fpTermV1)+who("feature", "f", fpFeatureV1)+who("property", "p", fpProperty))
 	g.commitAll("約束を置いて承認する", "#1")
 	if code, out := runCheck(t, bin, root, ".vanda/checks/agreement.toml"); code != 0 {
 		t.Fatalf("書いたままの文のフィンガープリントを承認した約束が、承認済にならない（%d）\n%s", code, out)
@@ -361,7 +362,7 @@ func Test参照先の用語と機能の名前と定義を変えても参照元�
 
 	// 参照先の用語と機能の名前と定義を変え、その今の中身にだけ承認し直す。約束 c には承認し直さない
 	writeFile(t, root, ".vanda/promises.toml", fpPromises("仕事", "やるべきこと", "仕事の登録", "仕事を足す"))
-	writeFile(t, root, ".vanda/agreements.toml", who("claim", "c", fpClaimJSON)+who("term", "t", fpTermV1)+who("feature", "f", fpFeatureV1)+
+	writeFile(t, root, ".vanda/agreements.toml", who("spec", "c", fpClaimJSON)+who("term", "t", fpTermV1)+who("feature", "f", fpFeatureV1)+who("property", "p", fpProperty)+
 		who("term", "t", fpTermV2)+who("feature", "f", fpFeatureV2))
 	g.commitAll("用語と機能の名前と定義を変える", "#1")
 	if code, out := runCheck(t, bin, root, ".vanda/checks/agreement.toml"); code != 0 {

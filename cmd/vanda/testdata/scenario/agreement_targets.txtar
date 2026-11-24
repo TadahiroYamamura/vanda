@@ -10,7 +10,7 @@ exec git init -q -b main
 expand .vanda/config.toml
 agree .vanda/agreements.toml '#1' term note fp/any.json
 agree .vanda/agreements.toml '#1' feature task-add fp/any.json
-agree .vanda/agreements.toml '#1' claim task-id-unique fp/any.json
+agree .vanda/agreements.toml '#1' spec task-id-unique fp/any.json
 agree .vanda/agreements.toml '#1' file note.txt
 commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/targets.toml
@@ -28,7 +28,7 @@ stderr 'agreements\.toml.*task-id-unique'
 ! stderr '(?m)^panic: '
 
 # 約束を消したことを承認すると、消した約束を指す承認の記録は誤りにしない（履歴として残る）
-agree -deleted .vanda/agreements.toml '#1' claim task-id-unique
+agree -deleted .vanda/agreements.toml '#1' spec task-id-unique
 commit 'チェックする前にコミットする'
 exec vanda check .vanda/checks/targets.toml
 

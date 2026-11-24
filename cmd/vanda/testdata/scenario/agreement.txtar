@@ -19,7 +19,8 @@ stderr '(?m)promises\.toml.*\btask\b($|[^-])'
 # 承認すると通る
 agree .vanda/agreements.toml '#1' term task fp/term-task.json
 agree .vanda/agreements.toml '#1' feature task-add fp/feature-task-add.json
-agree .vanda/agreements.toml '#1' claim task-id-unique fp/claim-v1.json
+agree .vanda/agreements.toml '#1' property no-lost-task fp/property-no-lost-task.json
+agree .vanda/agreements.toml '#1' spec task-id-unique fp/claim-v1.json
 commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
@@ -56,12 +57,12 @@ stderr 'promises\.toml.*(task-id-unique|guesses)'
 
 # 中身を変えて、別のストーリーが今の中身を承認すれば通る。前の承認は履歴として残っていてよい
 cp cases/promises-v2.toml .vanda/promises.toml
-agree .vanda/agreements.toml '#2' claim task-id-unique fp/claim-v2.json
+agree .vanda/agreements.toml '#2' spec task-id-unique fp/claim-v2.json
 commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
 # 同じ中身に、もう 1 つのストーリーが別に承認しても、承認済のまま
-agree .vanda/agreements.toml '#3' claim task-id-unique fp/claim-v2.json
+agree .vanda/agreements.toml '#3' spec task-id-unique fp/claim-v2.json
 commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/agreement.toml
 
@@ -299,3 +300,5 @@ statement = "Registered tasks are never lost"
 {"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","refines":["task-add"],"statement":"Task IDs are unique"}
 -- fp/claim-v2.json --
 {"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-id-unique","layers":["model"],"rationale":"Tasks are referred to by ID","refines":["task-add"],"statement":"No two tasks share an ID"}
+-- fp/property-no-lost-task.json --
+{"id":"no-lost-task","statement":"Registered tasks are never lost"}

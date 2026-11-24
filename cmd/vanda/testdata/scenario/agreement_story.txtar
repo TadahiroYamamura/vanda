@@ -10,14 +10,15 @@ exec git init -q -b main
 expand .vanda/config.toml
 agree .vanda/agreements/base.toml '#9' term task fp/term-task.json
 agree .vanda/agreements/base.toml '#9' feature task-add fp/feature-task-add.json
-agree .vanda/agreements/base.toml '#9' claim task-id-unique fp/claim-v1.json
+agree .vanda/agreements/base.toml '#9' property no-lost-task fp/property-no-lost-task.json
+agree .vanda/agreements/base.toml '#9' spec task-id-unique fp/claim-v1.json
 commit '約束を足す' '#9'
 exec vanda check .vanda/checks/all.toml
 
 # ストーリー 1: 約束の文を変えて、今の中身を承認する
 exec git checkout -q -b story-1
 cp cases/a-v2.toml .vanda/promises/a.toml
-agree .vanda/agreements/story-1.toml '#1' claim task-id-unique fp/claim-v2.json
+agree .vanda/agreements/story-1.toml '#1' spec task-id-unique fp/claim-v2.json
 commit '約束の文を変える' '#1'
 exec vanda check .vanda/checks/story.toml --base main
 
@@ -25,8 +26,8 @@ exec vanda check .vanda/checks/story.toml --base main
 exec git checkout -q main
 exec git checkout -q -b story-2
 cp cases/b.toml .vanda/promises/b.toml
-agree .vanda/agreements/story-2.toml '#2' claim task-id-unique fp/claim-v1.json
-agree .vanda/agreements/story-2.toml '#2' claim task-title-required fp/claim-b.json
+agree .vanda/agreements/story-2.toml '#2' spec task-id-unique fp/claim-v1.json
+agree .vanda/agreements/story-2.toml '#2' spec task-title-required fp/claim-b.json
 commit '約束を足す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 
@@ -46,7 +47,7 @@ stderr 'task-id-unique'
 ! stderr '(?m)^panic: '
 
 # ストーリー 2 が今の中身を承認し直すと通る
-agree .vanda/agreements/story-2.toml '#2' claim task-id-unique fp/claim-v2.json
+agree .vanda/agreements/story-2.toml '#2' spec task-id-unique fp/claim-v2.json
 commit '変わった約束を承認し直す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 stdout '^チェック agreement（story #2）: 通った$'
@@ -57,7 +58,7 @@ commit '題の約束の文を変える' '#2'
 ! exec vanda check .vanda/checks/story.toml --base main
 stderr 'task-title-required'
 ! stderr '(?m)^panic: '
-agree .vanda/agreements/story-2.toml '#2' claim task-title-required fp/claim-b2.json
+agree .vanda/agreements/story-2.toml '#2' spec task-title-required fp/claim-b2.json
 commit '変えた約束を承認し直す' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 
@@ -161,3 +162,5 @@ detail = "task_test.go"
 {"condition":"always","evidence":[{"detail":"task_test.go","layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"task-title-required","layers":["model"],"rationale":"Tasks are listed by title","refines":["task-add"],"statement":"Every task has a non-empty title"}
 -- fp/feature-task-add.json --
 {"definition":"Add a task","id":"task-add","name":"Adding a task","refines":["no-lost-task"]}
+-- fp/property-no-lost-task.json --
+{"id":"no-lost-task","statement":"Registered tasks are never lost"}

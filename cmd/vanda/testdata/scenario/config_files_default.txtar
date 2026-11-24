@@ -22,7 +22,7 @@ stderr 'promises\.toml'
 # 承認した約束を約束リストから消すと、承認の記録が約束リストにない約束を指すようになる
 # このチェックはフィンガープリントが今の中身に合うかを見ないので、フィンガープリントの元の JSON の書き方（日本語の文字の扱い）は結果に関わらない
 cp cases/promises.toml .vanda/promises.toml
-agree .vanda/agreements.toml '#1' claim task-add-unique fp/claim.json
+agree .vanda/agreements.toml '#1' spec task-add-unique fp/claim.json
 commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/targets.toml
 cp cases/promises-without-claim.toml .vanda/promises.toml

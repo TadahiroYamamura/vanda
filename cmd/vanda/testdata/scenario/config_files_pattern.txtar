@@ -21,8 +21,8 @@ stderr 'b\.toml'
 # 承認した約束を約束リストから消すと、どちらのファイルの記録でも、約束リストにない約束を指すようになる。
 # このチェックはフィンガープリントが今の中身に合うかを見ないので、フィンガープリントの元の JSON の書き方（日本語の文字の扱い）は結果に関わらない。
 cp cases/b.toml .vanda/promises/b.toml
-agree .vanda/agreements/x.toml '#1' claim a-claim fp/a-claim.json
-agree .vanda/agreements/y.toml '#2' claim b-claim fp/b-claim.json
+agree .vanda/agreements/x.toml '#1' spec a-claim fp/a-claim.json
+agree .vanda/agreements/y.toml '#2' spec b-claim fp/b-claim.json
 commit '(test) チェックの前にコミットする'
 exec vanda check .vanda/checks/targets.toml
 cp cases/b-without-claim.toml .vanda/promises/b.toml

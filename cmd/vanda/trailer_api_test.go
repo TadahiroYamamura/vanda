@@ -137,7 +137,7 @@ func TestStoryのトレーラーが誤ったコミットがあってもAPIは200
 	}
 
 	// ほかの API も 200 で返し、誤ったコミットのストーリーを空にする
-	for _, path := range []string{"/api/review?view=branch&base=main", "/api/review?view=story&story=%2324", "/api/review?view=story&story=%231", "/api/claims/task-id-unique", "/api/claims/task-id-unique/history"} {
+	for _, path := range []string{"/api/review?view=branch&base=main", "/api/review?view=story&story=%2324", "/api/review?view=story&story=%231", "/api/specs/task-id-unique", "/api/specs/task-id-unique/history"} {
 		var body json.RawMessage
 		if code, msg := s.get(path, &body); code != 200 {
 			t.Errorf("%s が %d: %s", path, code, msg)

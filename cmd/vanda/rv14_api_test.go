@@ -43,7 +43,7 @@ func rv14Time(d time.Duration) string {
 // agree は、承認の記録を 1 件書き足す。承認した日時は、minute 分のコミットの 30 秒前にする。
 // 失効した承認の by は、承認の記録の agreed_at とコミットの日時を比べて決める（docs/formats.md）ので、日時を本物らしく並べる。
 func (r *rv14Repo) agree(id string, v int, story string, minute int) {
-	rec := agreementTOML("claim", id, rv14FP(id, v), "", story, "テスト担当", "tester@example.com")
+	rec := agreementTOML("spec", id, rv14FP(id, v), "", story, "テスト担当", "tester@example.com")
 	rec = strings.Replace(rec, "agreed_at = 2026-10-31T12:00:00+09:00", "agreed_at = "+rv14Time(time.Duration(minute)*time.Minute-30*time.Second), 1)
 	f, err := os.OpenFile(filepath.Join(r.root, ".vanda", "agreements.toml"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
@@ -137,7 +137,7 @@ func checkDetached(t *testing.T, where string, got reviewResponse) {
 		t.Fatalf("%s: detached が 1 件（item-b）でない: %+v", where, got.Detached)
 	}
 	b := got.Detached[0]
-	if str(b.ID) != "item-b" || b.Kind != "claim" || b.No != nil || b.Change != "unchanged" || !isNull(b.Before) || isNull(b.After) ||
+	if str(b.ID) != "item-b" || b.Kind != "spec" || b.No != nil || b.Change != "unchanged" || !isNull(b.Before) || isNull(b.After) ||
 		b.DetachedAgreement == nil || !reflect.DeepEqual(b.DetachedAgreement.By, []string{"#30"}) {
 		t.Errorf("%s: detached の item-b が決まりどおりでない: %+v（by %+v）", where, b, b.DetachedAgreement)
 	}

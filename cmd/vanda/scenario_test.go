@@ -162,7 +162,7 @@ func cmdOrder(ts *testscript.TestScript, neg bool, args []string) {
 	}
 }
 
-// agree <承認の記録のファイル> <ストーリーの ID> <claim|term|feature> <ID> <フィンガープリントの元の JSON のファイル>
+// agree <承認の記録のファイル> <ストーリーの ID> <spec|term|feature|property|truth> <ID> <フィンガープリントの元の JSON のファイル>
 // agree <承認の記録のファイル> <ストーリーの ID> file <ファイルの場所>
 // commit <subject> [<ストーリーの ID>] は、作業ツリーのすべてを 1 つのコミットにする。ストーリーの ID を渡せば、メッセージの末尾に
 // Story: のトレーラーを書く（vanda はストーリーの ID をトレーラーからだけ読む）。
@@ -189,7 +189,7 @@ func cmdCommit(ts *testscript.TestScript, neg bool, args []string) {
 }
 
 // 承認の記録に 1 件を書き足す。
-// 約束・用語・機能のフィンガープリントは、テストの中で手で書いた JSON（キーを名前の順に並べ、空白なし）の SHA-256 から作る。
+// 約束リストの項目のフィンガープリントは、テストの中で手で書いた JSON（キーを名前の順に並べ、空白なし）の SHA-256 から作る。
 // 約束リストの TOML を読んで JSON を作らないのは、読み込みを実装と同じ作りにすると、実装と同じ誤りに気づけないため。
 func cmdAgree(ts *testscript.TestScript, neg bool, args []string) {
 	if neg {
@@ -200,7 +200,7 @@ func cmdAgree(ts *testscript.TestScript, neg bool, args []string) {
 		args = args[1:]
 	}
 	if len(args) < 4 {
-		ts.Fatalf("使い方: agree [-deleted] <承認の記録のファイル> <ストーリーの ID> <claim|term|feature|file> <ID かファイルの場所> [<JSON のファイル>]")
+		ts.Fatalf("使い方: agree [-deleted] <承認の記録のファイル> <ストーリーの ID> <spec|term|feature|property|truth|file> <ID かファイルの場所> [<JSON のファイル>]")
 	}
 	record, story, kind, key := args[0], args[1], args[2], args[3]
 	if deleted {
@@ -217,7 +217,7 @@ func cmdAgree(ts *testscript.TestScript, neg bool, args []string) {
 	}
 	var fingerprint, path string
 	switch kind {
-	case "claim", "term", "feature":
+	case "spec", "term", "feature", "property", "truth":
 		if len(args) != 5 {
 			ts.Fatalf("%s の承認には、フィンガープリントの元の JSON のファイルが要る", kind)
 		}
@@ -242,7 +242,7 @@ func cmdAgree(ts *testscript.TestScript, neg bool, args []string) {
 		fingerprint = sha256Hex(data)
 		key = fingerprint
 	default:
-		ts.Fatalf("対象の種類 %q は claim・term・feature・file のどれでもない", kind)
+		ts.Fatalf("対象の種類 %q は spec・term・feature・property・truth・file のどれでもない", kind)
 	}
 
 	appendRecord(ts, record, agreementTOML(kind, key, fingerprint, path, story, ts.Getenv("GIT_AUTHOR_NAME"), ts.Getenv("GIT_AUTHOR_EMAIL")))
@@ -261,7 +261,7 @@ func appendRecord(ts *testscript.TestScript, record, text string) {
 }
 
 // deletionAgreementTOML は、消したことへの承認の記録の 1 件を、docs/formats.md の [[agreement]] の形で返す。
-// key は、約束・用語・機能なら ID、ファイルなら場所（path と同じ）。
+// key は、約束リストの項目なら ID、ファイルなら場所（path と同じ）。
 func deletionAgreementTOML(kind, key, path, story, name, email string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "\n[[agreement]]\nkind = %q\nkey = %q\ndeleted = true\n", kind, key)

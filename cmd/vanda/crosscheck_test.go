@@ -447,10 +447,11 @@ types = ["scenario-test"]
 	writeFile(t, root, ".vanda/checks/all.toml", "[[check]]\nname = \"agreement\"\nscope = \"all\"\n")
 	writeFile(t, root, ".vanda/checks/story.toml", "[[check]]\nname = \"agreement\"\nscope = \"story\"\n")
 	r.sync(init)
-	// 用語 t と機能 f はモデルの項目でないので、はじめから、どのストーリーでもない #9 で承認しておく
+	// 用語 t・機能 f・性質 p はモデルの項目でないので、はじめから、どのストーリーでもない #9 で承認しておく
 	writeFile(t, root, ".vanda/agreements/story-9.toml", agreementTOML("term", "t",
 		sha256Hex([]byte(`{"definition":"d","id":"t","name":"n"}`)), "", "#9", "テスト担当", "tester@example.com")+
-		agreementTOML("feature", "f", sha256Hex([]byte(`{"definition":"d","id":"f","name":"n","refines":["p"]}`)), "", "#9", "テスト担当", "tester@example.com"))
+		agreementTOML("feature", "f", sha256Hex([]byte(`{"definition":"d","id":"f","name":"n","refines":["p"]}`)), "", "#9", "テスト担当", "tester@example.com")+
+		agreementTOML("property", "p", sha256Hex([]byte(`{"id":"p","statement":"s"}`)), "", "#9", "テスト担当", "tester@example.com"))
 	r.git("init", "-q", "-b", "main")
 	r.commit("はじめの中身", "#9")
 	r.base = r.git("rev-parse", "HEAD")
@@ -548,9 +549,9 @@ func xcheckRecord(i string, ver int, story string) string {
 	const name, email = "テスト担当", "tester@example.com"
 	if i == "i1" {
 		if ver == 0 {
-			return deletionAgreementTOML("claim", "item-1", "", story, name, email)
+			return deletionAgreementTOML("spec", "item-1", "", story, name, email)
 		}
-		return agreementTOML("claim", "item-1", claimFingerprint(ver), "", story, name, email)
+		return agreementTOML("spec", "item-1", claimFingerprint(ver), "", story, name, email)
 	}
 	path := xcheckPaths[i]
 	if ver == 0 {

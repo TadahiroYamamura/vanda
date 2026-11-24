@@ -110,7 +110,7 @@ paths = ["db/schema.sql"]
 				Present json.RawMessage `json:"present"`
 			} `json:"evidence"`
 		}
-		if code, msg := s.get("/api/claims/"+id, &got); code != 200 {
+		if code, msg := s.get("/api/specs/"+id, &got); code != 200 {
 			t.Fatalf("%s の詳細を読めない（%d）: %s", id, code, msg)
 		}
 		if len(got.Evidence) != len(presentTypes) {
@@ -146,7 +146,7 @@ paths = ["db/schema.sql"]
 				Present json.RawMessage `json:"present"`
 			} `json:"evidence"`
 		}
-		if code, msg := s.get("/api/claims/"+id, &got); code != 200 {
+		if code, msg := s.get("/api/specs/"+id, &got); code != 200 {
 			t.Fatalf("%s の詳細を読めない（%d）: %s", id, code, msg)
 		}
 		if len(got.Evidence) != 2 {

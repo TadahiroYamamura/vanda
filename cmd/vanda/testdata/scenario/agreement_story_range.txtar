@@ -18,7 +18,7 @@ stderr 'b\.toml.*task-title-required'
 ! stderr '(?m)^panic: '
 
 # 承認すれば、スコープ story（ストーリー 2）では通る
-agree .vanda/agreements/story-2.toml '#2' claim task-title-required fp/claim-b.json
+agree .vanda/agreements/story-2.toml '#2' spec task-title-required fp/claim-b.json
 commit '約束を承認する' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 
@@ -34,7 +34,7 @@ commit '約束を消す' '#2'
 ! exec vanda check .vanda/checks/story.toml --base main
 stderr '約束 task-id-unique を消したことに、まだ承認していません'
 ! stderr '(?m)^panic: '
-agree -deleted .vanda/agreements/story-2.toml '#2' claim task-id-unique
+agree -deleted .vanda/agreements/story-2.toml '#2' spec task-id-unique
 commit '約束を消したことを承認する' '#2'
 exec vanda check .vanda/checks/story.toml --base main
 

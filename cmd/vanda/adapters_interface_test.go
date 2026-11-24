@@ -586,7 +586,7 @@ func Test_vanda_adaptersのアダプタがtimeoutを過ぎたら約束の詳細�
 	g.commitAll("(test) はじめ", "#1")
 	s := startServe(t, bin, root, g.env)
 	start := time.Now()
-	code, msg := s.get("/api/claims/task-id-unique", nil)
+	code, msg := s.get("/api/specs/task-id-unique", nil)
 	if d := time.Since(start); d > 15*time.Second {
 		t.Errorf("timeout の 1 秒で止めず、%v 待った", d)
 	}
