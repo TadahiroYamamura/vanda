@@ -870,6 +870,37 @@ describe("RV-18 詳細の画面から戻る", () => {
       }
     }
   });
+
+  // オーナーが、戻った時にたたんだ状態が失われることを不具合として指摘した
+  // @vanda:evidence owner-reviews-every-change
+  it("まとまりをたたんでから仕様の詳細とファイルの画面へ移りストーリーのレビューへ戻るとまとまりのたたんだ状態が移る前のまま", async () => {
+    const foldButtons = () => within(listRegion()).getAllByRole("heading", { level: 3 }).map((h) => within(h).getByRole("button"));
+    const foldStates = () => foldButtons().map((b) => b.getAttribute("aria-expanded"));
+    for (const rt of routes) {
+      window.history.pushState({}, "", "/?view=branch&base=main&story=%2324");
+      open([specEntry(1, "task-id-unique"), specEntry(2, "d-other", { group: "layer:db" }), fileEntry(3, "e2e/add-task.txtar")], {},
+        http.get("/api/specs/:id", () => HttpResponse.json(specDetail())),
+        http.get("/api/file", () => HttpResponse.json({ path: "e2e/add-task.txtar", text: "exec vanda add 買い物\n" })));
+      const user = userEvent.setup();
+      await user.click(within(await listRow(rt.entry)).getByRole("button"));
+      const link = await screen.findByRole("link", { name: rt.link });
+      expect(foldButtons().length, `${rt.name}: まとまりの数`).toBe(3);
+      // 3 つのまとまりのうち、真ん中の DB のレイヤーの仕様のまとまりだけをたたんだ状態にする
+      const db = foldButtons()[1];
+      if (db.getAttribute("aria-expanded") === "true") await user.click(db);
+      await waitFor(() => expect(within(listRegion()).queryByText("d-other", { exact: true }), `${rt.name}: たたんでも中が見えている`).toBeNull());
+      for (const i of [0, 2]) if (foldButtons()[i].getAttribute("aria-expanded") !== "true") await user.click(foldButtons()[i]);
+      expect(foldStates(), `${rt.name}: 移る前`).toEqual(["true", "false", "true"]);
+
+      await user.click(link);
+      await user.click(await screen.findByRole("link", { name: "ストーリーのレビューへ戻る" }));
+      await listRow(rt.entry);
+      expect(foldStates(), `${rt.name}: 戻った後`).toEqual(["true", "false", "true"]);
+      expect(within(listRegion()).queryByText("d-other", { exact: true }), `${rt.name}: 戻った後に、たたんだまとまりの中が見えている`).toBeNull();
+      cleanup();
+      server.resetHandlers();
+    }
+  });
 });
 
 describe("Story: のトレーラーの誤り", () => {

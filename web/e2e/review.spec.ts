@@ -1845,3 +1845,148 @@ test("絞り込みの条件は仕様の詳細から戻っても読み込み直�
   await page.reload();
   await kept("読み込み直したとき");
 });
+
+// 一覧のまとまりのたたんだ・開いた状態と、スクロールの位置は、項目・ファイルの詳細の画面へ移って一覧へ戻っても、移る前のまま
+// （オーナーが、戻った時にたたんだ状態とスクロールの位置が失われることを不具合として指摘した）。
+// 前提: ページ全体も、画面の中の枠もスクロールできるよう、#24 で用語を変え、仕様を 40 件足し、task-id-unique の理由を長くする。
+// シナリオには task-id-unique のエビデンスを付ける
+function withLongList(r: Repo) {
+  const bulk = Array.from({ length: 40 }, (_, i) => `
+[[spec]]
+id = "bulk-spec-${String(i).padStart(2, "0")}"
+refines = ["add-task"]
+statement = "足した仕様 ${i} の文"
+layers = ["model"]
+
+[[spec.evidence]]
+stage = "implementation"
+type = "scenario-test"
+layers = ["model"]
+`).join("");
+  const rationale = Array.from({ length: 80 }, (_, i) => `理由の ${i} 行目。`).join("\\n\\n");
+  const text = promises(v2Statement, true, true)
+    .replace('definition = "タスクを見分ける名前"', 'definition = "タスクを 1 つに決める名前"')
+    .replace(`statement = "${v2Statement}"`, `statement = "${v2Statement}"\nrationale = "${rationale}"`);
+  r.write(".vanda/promises.toml", text + bulk);
+  r.write("e2e/add-task.txtar", annotatedScenario);
+  commit(r, "用語を変え、仕様を足し、シナリオをエビデンスにする", "#24");
+}
+
+interface Scroll {
+  page: [number, number];
+  frames: { path: string; pos: [number, number] }[];
+}
+
+// readScroll は、ページ全体と、画面の中でスクロールする枠（中身が枠より大きく、overflow がスクロールできる値の要素）のすべての
+// スクロールの位置を読む。move を渡せば、読む前に、動かせる向きのそれぞれを、動かせる幅の半分（1 以上）まで動かす
+function readScroll(page: Page, move: boolean): Promise<Scroll> {
+  return page.evaluate((move) => {
+    const path = (el: Element): string => {
+      const parts: string[] = [];
+      for (let e: Element | null = el; e && e !== document.documentElement; e = e.parentElement) {
+        parts.unshift(`${e.tagName.toLowerCase()}:nth-child(${Array.from(e.parentElement!.children).indexOf(e) + 1})`);
+      }
+      return parts.join(" > ");
+    };
+    const half = (max: number) => (max > 0 ? Math.max(1, Math.floor(max / 2)) : 0);
+    const root = document.scrollingElement!;
+    const scrollable = (v: string) => v === "auto" || v === "scroll" || v === "overlay";
+    const frames = Array.from(document.querySelectorAll<HTMLElement>("body, body *")).filter((el) => {
+      if (el === root) return false;
+      const s = getComputedStyle(el);
+      return (el.scrollHeight > el.clientHeight && scrollable(s.overflowY)) || (el.scrollWidth > el.clientWidth && scrollable(s.overflowX));
+    });
+    if (move) {
+      window.scrollTo(half(root.scrollWidth - root.clientWidth), half(root.scrollHeight - root.clientHeight));
+      for (const el of frames) {
+        const s = getComputedStyle(el);
+        if (scrollable(s.overflowX)) el.scrollLeft = half(el.scrollWidth - el.clientWidth);
+        if (scrollable(s.overflowY)) el.scrollTop = half(el.scrollHeight - el.clientHeight);
+      }
+    }
+    return {
+      page: [Math.round(window.scrollX), Math.round(window.scrollY)] as [number, number],
+      frames: frames.map((el) => ({ path: path(el), pos: [Math.round(el.scrollLeft), Math.round(el.scrollTop)] as [number, number] })),
+    };
+  }, move);
+}
+
+// jump は、リンクを、スクロールの位置を動かさずにクリックする（Playwright の click は、クリックする前に、リンクが見える所まで
+// スクロールすることがある）
+async function jump(link: ReturnType<Page["locator"]>) {
+  await expect(link).toBeVisible();
+  await link.evaluate((el: HTMLElement) => el.click());
+}
+
+const folds = (page: Page) => filterList(page).locator("button.fold");
+const foldStates = (page: Page) => folds(page).evaluateAll((bs) => bs.map((b) => b.getAttribute("aria-expanded")));
+
+const awayRoutes = [
+  { name: "仕様の詳細の画面", steps: ["spec"] },
+  { name: "仕様の詳細の画面からエビデンスのファイルの画面", steps: ["spec", "file"] },
+  { name: "エビデンスの予定と実際の表からエビデンスのファイルの画面", steps: ["file"] },
+] as const;
+const backWays = [
+  { name: "画面の中の戻るのリンク", browser: false },
+  { name: "ブラウザの戻る", browser: true },
+];
+
+for (const route of awayRoutes) {
+  for (const back of backWays) {
+    // @vanda:evidence owner-reviews-every-change
+    test(`まとまりをたたみスクロールしてから${route.name}へ移り${back.name}で一覧へ戻るとまとまりのたたんだ状態とページ全体とすべての枠のスクロールの位置が移る前のまま`, async ({ page }) => {
+      withLongList(repo);
+      // ページ全体のほかに、画面の中の枠もスクロールする広さにする（枠が見つからなければ、下で落とす）
+      await page.setViewportSize({ width: 1600, height: 700 });
+      await page.goto(serve.url + "/");
+      await expect(listItem(page, "task-title-required")).toBeVisible();
+      // はじめて開いた時は、まとまりはすべて開いている
+      await expect(folds(page), "まとまりが、用語・仕様・ファイルの 3 つでない").toHaveCount(3);
+      expect(await foldStates(page), "はじめて開いた時に、たたんだまとまりがある").toEqual(["true", "true", "true"]);
+
+      // 用語のまとまりだけをたたむ（すべて開く・すべてたたむのどちらに変わっても気づけるよう、たたんだものと開いたものを混ぜる）
+      await folds(page).filter({ hasText: "用語" }).click();
+      const foldsBefore = await foldStates(page);
+      expect(foldsBefore.filter((s) => s === "false").length, "用語のまとまりだけがたたまれていない").toBe(1);
+      await expect(filterList(page).getByText("task-id", { exact: true }), "たたんだ用語のまとまりの中が見えている").toHaveCount(0);
+
+      await select(page, "task-id-unique");
+      const specLink = page.getByRole("link", { name: "仕様の詳細を開く" });
+      await expect(specLink).toHaveAttribute("href", /task-id-unique/);
+      const fileLink = page.getByRole("link", { name: /e2e\/add-task\.txtar:1/ }).first();
+      await expect(fileLink).toBeVisible();
+      await expect(page.getByText("理由の 79 行目。").first()).toBeAttached();
+
+      const before = await readScroll(page, true);
+      expect(before.page[1], "ページ全体を、0 でない位置までスクロールできていない").toBeGreaterThan(0);
+      expect(before.frames.length, "画面の中に、スクロールする枠が 1 つも見つからない").toBeGreaterThan(0);
+      for (const f of before.frames) expect(f.pos[0] + f.pos[1], `枠 ${f.path} を、0 でない位置までスクロールできていない`).toBeGreaterThan(0);
+      // 動かした後の位置が、そのまま読める（動かしたことで、ほかの位置が変わっていない）
+      expect(await readScroll(page, false)).toEqual(before);
+
+      for (const step of route.steps) {
+        if (step === "spec") {
+          await jump(specLink);
+          await expect(page).toHaveURL(/\/specs\/task-id-unique/);
+        } else {
+          await jump(page.getByRole("link", { name: /e2e\/add-task\.txtar/ }).first());
+          await expect(page).toHaveURL(/\/files\?/);
+        }
+        await expect(page.getByRole("link", { name: "ストーリーのレビューへ戻る" })).toBeVisible();
+      }
+      if (back.browser) {
+        for (const _ of route.steps) await page.goBack();
+      } else {
+        await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
+      }
+      await expect(page.getByRole("link", { name: "仕様の詳細を開く" })).toHaveAttribute("href", /task-id-unique/);
+      await expect(listItem(page, "task-title-required")).toBeVisible();
+
+      // たたんだ状態とスクロールの位置の、片方が違っても、もう片方も確かめる
+      const soft = expect.configure({ soft: true });
+      await soft.poll(() => foldStates(page), { message: "戻った後に、まとまりのたたんだ・開いた状態が、移る前と違う" }).toEqual(foldsBefore);
+      await soft(filterList(page).getByText("task-id", { exact: true }), "戻った後に、たたんだ用語のまとまりの中が見えている").toHaveCount(0);
+      await soft.poll(() => readScroll(page, false), { message: "戻った後に、スクロールの位置が、移る前と違う" }).toEqual(before);
+    });
+  }
+}
