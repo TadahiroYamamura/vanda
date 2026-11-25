@@ -17,9 +17,6 @@ import { detailURL, Prose, RefsProvider, proseText } from "../components/Prose";
 import { changeLabel, fileTypeLabel, kindLabel, stageLabel, typeLabel } from "../labels";
 import { BACK, Link, navigate, reviewQuery } from "../route";
 
-// まとまりの件数がこれを超えたら、開いたときにたたんでおく（RV-10）
-const FOLD_OVER = 10;
-
 export function entryKey(e: Entry) {
   return e.kind === "file" ? `path:${e.path}` : `${e.kind}:${e.id}`;
 }
@@ -443,8 +440,7 @@ function ListPlaceholder(props: { filter: Filter; onFilterText: (v: string) => v
 }
 
 function Group(props: { label: string; entries: Entry[]; selected: string | null; onSelect: (key: string) => void }) {
-  const hasSelected = props.entries.some((e) => entryKey(e) === props.selected);
-  const [open, setOpen] = useState(props.entries.length <= FOLD_OVER || hasSelected);
+  const [open, setOpen] = useState(true);
   return (
     <div className="group">
       <h3>
