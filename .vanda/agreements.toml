@@ -317,3 +317,11 @@ fingerprint = "sha256:3e76eec7fba679ac1354c749fe0bec90c36bcd845aa7dfa507434394a0
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-25T21:44:03+09:00
 story = "#4"
+
+[[agreement]]
+kind = "term"
+key = "guardrail-definition"
+fingerprint = "sha256:3eaa563247edef6544ce7832cd442ff87c7cc126e9a9903c343edb9cfcc368db"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-25T21:44:05+09:00
+story = "#4"
