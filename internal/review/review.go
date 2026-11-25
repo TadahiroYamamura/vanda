@@ -585,7 +585,7 @@ func (s *state) group(e snapshot.Entry) string {
 	return "terms"
 }
 
-// order は、まとまりの順（性質、前提、用語、機能、設定のレイヤーの順の仕様、ファイル）、同じまとまりの中は ID か場所の順に並べる。
+// order は、まとまりの順（前提、用語、性質、機能、設定のレイヤーの順の仕様、ファイル）、同じまとまりの中は ID か場所の順に並べる。
 func (s *state) order(es []Entry) {
 	rank := map[string]int{}
 	for i, l := range s.o.Cfg.Layers {
@@ -593,11 +593,11 @@ func (s *state) order(es []Entry) {
 	}
 	groupRank := func(g string) (int, string) {
 		switch {
-		case g == "properties":
-			return 0, ""
 		case g == "truths":
-			return 1, ""
+			return 0, ""
 		case g == "terms":
+			return 1, ""
+		case g == "properties":
 			return 2, ""
 		case g == "features":
 			return 3, ""

@@ -602,7 +602,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `entries[].state` | 今の中身が承認済なら `agreed`、まだなら `proposed`。`deleted` は、消したことへの承認があれば `agreed`、なければ `proposed` |
 | `entries[].fingerprint` | 今の中身のフィンガープリント。`deleted` は `null` |
 | `entries[].flags` | `ai-proposal`（AI 案。仕様の `flags`）・`guess`（推測。仕様の `guesses` が空でない）・`changed-since-agreement`（差分あり。同じキー（ファイルなら同じ場所）に承認の記録があり、今の中身のフィンガープリントに合う承認がない）。この順 |
-| `entries[].group` | たたむまとまり（RV-10）。仕様は `layer:<仕様の layers の最初のレイヤー>`、性質は `properties`、前提は `truths`、用語は `terms`、機能は `features`、ファイルは `files`。並びは、`properties`、`truths`、`terms`、`features`、設定のレイヤーの順の仕様、`files` |
+| `entries[].group` | たたむまとまり（RV-10）。仕様は `layer:<仕様の layers の最初のレイヤー>`、性質は `properties`、前提は `truths`、用語は `terms`、機能は `features`、ファイルは `files`。並びは、`truths`、`terms`、`properties`、`features`、設定のレイヤーの順の仕様、`files` |
 | `entries[].before`・`after` | 変更前（`added` は `null`）と変更後（`deleted` は `null`）の中身。下の表 |
 | `entries[].detachedAgreement` | このストーリーの承認が失効したもの（RV-14）なら `{"by": ["#30"]}`（`by` は、そのストーリーの承認の後に中身を変えたコミットのストーリーの ID。ID のないコミットは数えない）。ほかは `null`。`by` は見せるための手がかりで、失効したかどうかの判定には使わない。「承認の後」は、日時でなく HEAD の履歴の順で決める。HEAD の履歴を古い順にたどり、そのストーリーのそのキーへの承認の記録（中身への承認）が初めて現れたコミットを、記録ごとに探し、そのうち最も後のコミットより後のコミットを見る（rebase や amend でコミットの日時が変わっても変わらない。手で書いた承認の記録も、コミットした後は同じに扱う）。どの記録もまだコミットしていなければ、`by` は空 |
 | `entries[].otherCommits` | `view=story` で、ストーリーで最初に変えた後に、このストーリーの ID のないコミット（ほかのストーリーのコミットと、ID のないコミット）が同じものを変えていたら、`[{"commit": "…", "subject": "…", "stories": ["#30"]}]`（履歴の古い順）。`view=branch` では空 |
