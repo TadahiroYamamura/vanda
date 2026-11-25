@@ -974,7 +974,7 @@ export function SpecSections(props: { id: string; query?: string }) {
                   {ev.found.map((f) => (
                     <li key={`${f.file}:${f.line}`}>
                       {f.name}{" "}
-                      <Link className="note" to={`/files?${props.query ? `${props.query}&` : ""}path=${encodeURIComponent(f.file)}`}>
+                      <Link className="note" to={`/files?${props.query ? `${props.query}&` : ""}path=${encodeURIComponent(f.file)}&line=${f.line}`}>
                         {f.file}:{f.line}
                       </Link>{" "}
                       <AgreementIcon state={f.state} />
