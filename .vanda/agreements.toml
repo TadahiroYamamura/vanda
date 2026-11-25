@@ -653,3 +653,11 @@ fingerprint = "sha256:52d1b5cc05bf962603622cb730dd5b1b021325cabdfbd40996214b26c7
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-25T21:46:58+09:00
 story = "#4"
+
+[[agreement]]
+kind = "term"
+key = "vanda-dir"
+fingerprint = "sha256:787afb23901752bb6ffacbe051999a3d798a9ea58370fb18f1b9d85d7a8d07b2"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-25T21:47:01+09:00
+story = "#4"
