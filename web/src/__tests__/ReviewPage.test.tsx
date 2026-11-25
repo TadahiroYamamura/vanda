@@ -1585,15 +1585,15 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
   });
 
   // @vanda:evidence owner-reviews-every-change
-  it("一覧は性質と前提と用語と機能と設定のレイヤーの順の仕様とエビデンスの本体のまとまりの順に並べ通し番号を付けて出す", async () => {
+  it("一覧は前提と用語と性質と機能と設定のレイヤーの順の仕様とエビデンスの本体のまとまりの順に並べ通し番号を付けて出す", async () => {
     const term = (no: number, id: string) =>
       specEntry(no, id, { kind: "term", group: "terms", before: { name: id, definition: plain("定義"), partOf: null, assumes: [] }, after: { name: id, definition: plain("定義"), partOf: null, assumes: [] } });
     const feature = (no: number, id: string) =>
       specEntry(no, id, { kind: "feature", group: "features", before: { name: id, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null }, after: { name: id, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null } });
     const entries = [
-      propertyEntry(1, "p-a"),
-      truthEntry(2, "u-a"),
-      term(3, "t-a"),
+      truthEntry(1, "u-a"),
+      term(2, "t-a"),
+      propertyEntry(3, "p-a"),
       feature(4, "f-a"),
       specEntry(5, "m-a"),
       specEntry(6, "m-b"),
@@ -1604,7 +1604,7 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
     open(entries);
     await listRow("m-a");
     const groups = within(listRegion()).getAllByRole("heading", { level: 3 }).map((h) => h.textContent ?? "");
-    const order = [/(?:^|\s)性質\s/, /(?:^|\s)前提\s/, /(?:^|\s)用語\s/, /(?:^|\s)機能\s/, /モデル/, /DB/, /エビデンスの本体/];
+    const order = [/(?:^|\s)前提\s/, /(?:^|\s)用語\s/, /(?:^|\s)性質\s/, /(?:^|\s)機能\s/, /モデル/, /DB/, /エビデンスの本体/];
     expect(groups.length, `まとまりの見出し: ${groups.join(" / ")}`).toBe(order.length);
     order.forEach((re, i) => expect(groups[i], `${i + 1} 番目のまとまり`).toMatch(re));
     const rows = within(listRegion()).getAllByRole("listitem").map((li) => Array.from(within(li).getByRole("button").children).map((el) => el.textContent));
