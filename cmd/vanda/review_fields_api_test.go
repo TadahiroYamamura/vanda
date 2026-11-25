@@ -427,11 +427,11 @@ func Testフラグは仕様のflagsとguessesと前の承認から決まった�
 // RV-10・RV-02
 // z-cli（layers が cli・model）と c-new（layers が db・cli）で、2 つ以上のレイヤーを持つ仕様が最初のレイヤーのまとまりに入ることを見る
 // @vanda:evidence owner-reviews-every-change
-func Test一覧は性質と前提と用語と機能と設定のレイヤーの順の仕様とファイルのまとまりに分かれその中はIDか場所の順に並びその順に通し番号が付く(t *testing.T) {
+func Test一覧は前提と用語と性質と機能と設定のレイヤーの順の仕様とファイルのまとまりに分かれその中はIDか場所の順に並びその順に通し番号が付く(t *testing.T) {
 	t.Parallel()
 	_, _, _, got := setupFields(t)
-	want := []string{"properties p-del", "properties p-mod", "properties p-new", "truths u-del", "truths u-mod", "truths u-new",
-		"terms t-del", "terms t-mod", "terms t-new", "features f-del", "features f-mod", "features f-new",
+	want := []string{"truths u-del", "truths u-mod", "truths u-new", "terms t-del", "terms t-mod", "terms t-new",
+		"properties p-del", "properties p-mod", "properties p-new", "features f-del", "features f-mod", "features f-new",
 		"layer:cli z-cli", "layer:model flag-0", "layer:model flag-1", "layer:model flag-2", "layer:model flag-3",
 		"layer:model flag-4", "layer:model flag-5", "layer:model flag-6", "layer:model flag-7", "layer:model flag-agreed",
 		"layer:db a-db", "layer:db c-new",
