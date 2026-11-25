@@ -898,7 +898,7 @@ detail = "利用者の操作の流れで、反証の条件に当たる状態に�
 [[spec]]
 id = "annotation-adapter-contract"
 refines = ["link-evidence-by-annotation"]
-statement = "外の人は、docs/formats.md の取り決めどおりに{@id:custom-adapter}を作れば、{@id:builtin-adapter}にない言語の{@id:annotation}を読ませられる"
+statement = "{@id:custom-adapter}を作る人は、docs/formats.md の取り決めどおりに作れば、{@id:builtin-adapter}にない言語の{@id:annotation}を {@id:vanda} に読ませられる"
 condition = "取り決めどおりの{@id:custom-adapter}が動かない。取り決めにない答えを、黙って受け入れる"
 layers = ["cli", "api"]
 flags = ["ai-proposal"]
@@ -1216,7 +1216,7 @@ detail = "利用者の操作の流れで、反証の条件に当たる状態に�
 [[spec]]
 id = "story-adapter-contract"
 refines = ["show-story"]
-statement = "外の人は、docs/formats.md の取り決めどおりに{@id:custom-adapter}を作れば、GitHub Issues のほかの{@id:story-store}をつなげられる"
+statement = "{@id:custom-adapter}を作る人は、docs/formats.md の取り決めどおりに作れば、GitHub Issues のほかの{@id:story-store}を {@id:vanda} につなげられる"
 condition = "取り決めどおりの{@id:custom-adapter}で、{@id:story}が画面に出ない"
 layers = ["api"]
 flags = ["ai-proposal"]
