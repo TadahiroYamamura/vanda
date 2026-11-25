@@ -1990,3 +1990,84 @@ for (const route of awayRoutes) {
     });
   }
 }
+
+// オーナーが、エビデンスのリンクの先で、行番号がなく、どの行か分からないことを不具合として指摘した
+// 画面に収まらない長さの Go のテストのファイル。アノテーションの付いた TestUnique を、前後 120 個ずつの関数の間に置く
+const fillerFuncs = (prefix: string) => Array.from({ length: 120 }, (_, i) => [`func Test${prefix}${String(i).padStart(3, "0")}(t *testing.T) {}`, ""]).flat();
+const uniqueFunc = "func TestUnique(t *testing.T) {}";
+const longGoLines = ["package task", "", 'import "testing"', "", ...fillerFuncs("Before"), "// @vanda:evidence task-id-unique", uniqueFunc, "", ...fillerFuncs("After")];
+const longGoPath = "internal/task/task_test.go";
+// Go のアノテーションの行は、func の宣言の行（docs/formats.md）
+const uniqueLine = longGoLines.indexOf(uniqueFunc) + 1;
+const fileRow = (page: Page, line: number) => page.locator(`[data-line="${line}"]`);
+const currentRows = (page: Page) => page.locator('[data-line][aria-current]:not([aria-current="false"])');
+
+// @vanda:evidence item-detail-in-one-place
+test("エビデンスのリンクをクリックするとファイルの画面がその行までスクロールして目立たせ読み込み直しても同じで戻るとレビューのURLに行が残らない", async ({ page }) => {
+  withGoEvidence(repo);
+  repo.write(longGoPath, longGoLines.join("\n") + "\n");
+  commit(repo, "単体テストのファイルを長くする", "#24");
+  await page.goto(serve.url + "/");
+  await select(page, "task-id-unique");
+  await page.getByRole("link", { name: `${longGoPath}:${uniqueLine}`, exact: true }).first().click();
+  await expect(page).toHaveURL(/\/files\?/);
+  const opened = new URL(page.url());
+  expect(opened.searchParams.getAll("path"), `ファイルの画面の URL の path: ${page.url()}`).toEqual([longGoPath]);
+  expect(opened.searchParams.getAll("line"), `ファイルの画面の URL の line: ${page.url()}`).toEqual([String(uniqueLine)]);
+
+  const pointed = async (where: string) => {
+    const row = fileRow(page, uniqueLine);
+    await expect(row, `${where}: ${uniqueLine} 行目の中身`).toContainText(uniqueFunc);
+    await expect(row, `${where}: ${uniqueLine} 行目を目立たせていない`).toHaveAttribute("aria-current", "true");
+    await expect(currentRows(page), `${where}: 目立たせる行が 1 つでない`).toHaveCount(1);
+    await expect(row, `${where}: ${uniqueLine} 行目が見える範囲にない`).toBeInViewport();
+    await expect(fileRow(page, 1), `${where}: 先頭の行が見える範囲に残っている`).not.toBeInViewport();
+    await expect(fileRow(page, longGoLines.length), `${where}: 最後の行まで見える範囲に入っている`).not.toBeInViewport();
+  };
+  await pointed("リンクから開いた時");
+  await page.reload();
+  await pointed("読み込み直した時");
+
+  await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
+  await expect(page.getByRole("region", { name: "変わったものの一覧" })).toBeVisible();
+  const back = new URL(page.url());
+  expect(back.pathname, `戻った後の URL: ${page.url()}`).toBe("/");
+  expect(back.searchParams.has("line"), `戻った後の URL に line が残っている: ${page.url()}`).toBe(false);
+});
+
+// @vanda:evidence item-detail-in-one-place
+test("lineがないかファイルの行の数を超えているURLでファイルの画面を開くと目立たせる行なしでファイルの先頭から出す", async ({ page }) => {
+  withGoEvidence(repo);
+  repo.write(longGoPath, longGoLines.join("\n") + "\n");
+  commit(repo, "単体テストのファイルを長くする", "#24");
+  const base = "/files?view=branch&base=main&story=%2324&path=" + encodeURIComponent(longGoPath);
+  for (const [where, query] of [["line がない", ""], ["line が行の数を 1 つ超えている", `&line=${longGoLines.length + 1}`]]) {
+    await page.goto(serve.url + base + query);
+    await expect(fileRow(page, 1), `${where}: 1 行目の中身`).toContainText(longGoLines[0]);
+    await expect(fileRow(page, longGoLines.length), `${where}: 最後の行の中身`).toContainText(longGoLines[longGoLines.length - 1]);
+    await expect(page.locator("[data-line]"), `${where}: 行の数`).toHaveCount(longGoLines.length);
+    await expect(fileRow(page, 1), `${where}: 先頭の行が見える範囲にない`).toBeInViewport();
+    await expect(fileRow(page, longGoLines.length), `${where}: 最後の行まで見える範囲に入っている`).not.toBeInViewport();
+    await expect(currentRows(page), `${where}: 目立たせる行がある`).toHaveCount(0);
+  }
+});
+
+// @vanda:evidence item-detail-in-one-place
+test("ファイルの画面で全部を選んでコピーするとコードの行の間に行番号が混ざらない", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  const fileLines = scenarioStory.split("\n").filter((l) => l !== "");
+  await page.goto(serve.url + "/files?view=branch&base=main&story=%2324&path=" + encodeURIComponent("e2e/add-task.txtar") + "&line=2");
+  for (const [i, l] of fileLines.entries()) await expect(fileRow(page, i + 1), `${i + 1} 行目の中身`).toContainText(l);
+  await expect(page.locator("[data-line]")).toHaveCount(fileLines.length);
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.press("ControlOrMeta+c");
+  // コピーした文字の、空でない行の並びの中に、ファイルの行が、間に何もはさまず、そのまま続いて出る
+  const copied = () => page.evaluate(() => navigator.clipboard.readText()).then((t) => t.split("\n").map((l) => l.trim()).filter((l) => l !== ""));
+  await expect
+    .poll(async () => {
+      const got = await copied();
+      const at = got.indexOf(fileLines[0]);
+      return at < 0 ? got : got.slice(at, at + fileLines.length);
+    }, { message: "コピーした文字に、ファイルの行がそのまま続いて出ない" })
+    .toEqual(fileLines);
+});

@@ -1035,3 +1035,124 @@ describe("読み込みの間に先に出すもの", () => {
     await waitFor(() => expect(screen.queryByText("読み込んでいます…")).toBeNull());
   });
 });
+
+// オーナーが、エビデンスのリンクの先で、行番号がなく、どの行か分からないことを不具合として指摘した
+describe("ファイルの画面の行番号とエビデンスのリンクが渡す行", () => {
+  // jsdom には scrollIntoView がないので、呼ばれても落ちないように置く。スクロールの位置は E2E（review.spec.ts）で見る
+  const original = Element.prototype.scrollIntoView;
+  beforeAll(() => {
+    Element.prototype.scrollIntoView = () => {};
+  });
+  afterAll(() => {
+    Element.prototype.scrollIntoView = original;
+  });
+
+  const filePath = "e2e/add-task.txtar";
+  const review24 = "?view=branch&base=main&story=%2324";
+  // 空の行をはさんだ 4 行。最後の改行は、開く時に付けるか選ぶ
+  const lines = ["# 一行目の説明", "", "exec vanda add 買い物", "stdout 終わりの行"];
+  function openFile(query: string, text: string) {
+    window.history.pushState({}, "", "/files" + review24 + "&path=" + encodeURIComponent(filePath) + query);
+    server.use(
+      http.get("/api/context", () => HttpResponse.json(ctx)),
+      http.get("/api/review", () => HttpResponse.json(review([fileEntry(1, filePath)]))),
+      http.get("/api/story", () => HttpResponse.json(story)),
+      http.get("/api/file", () => HttpResponse.json({ path: filePath, text })),
+    );
+    render(<App />);
+  }
+  const rows = () => Array.from(document.querySelectorAll<HTMLElement>("[data-line]"));
+  const current = () => rows().filter((r) => r.hasAttribute("aria-current") && r.getAttribute("aria-current") !== "false");
+  // expectNumbered は、行の要素が 1 から最後の行まで順に並び、それぞれがその行の中身を持つことを確かめる
+  async function expectNumbered(where: string) {
+    await waitFor(() => expect(rows().map((r) => r.getAttribute("data-line")), `${where}: 行番号`).toEqual(["1", "2", "3", "4"]));
+    rows().forEach((r, i) => expect(r.textContent ?? "", `${where}: ${i + 1} 行目の中身`).toContain(lines[i]));
+  }
+
+  // @vanda:evidence item-detail-in-one-place
+  it("ファイルの画面は最後の改行があってもなくても1から最後の行までの行番号を1行ずつ出す", async () => {
+    for (const [name, text] of [["最後の改行あり", lines.join("\n") + "\n"], ["最後の改行なし", lines.join("\n")]]) {
+      openFile("", text);
+      await expectNumbered(name);
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+
+  // @vanda:evidence item-detail-in-one-place
+  it("lineのあるURLでファイルの画面を開くとその行だけを目立たせる", async () => {
+    for (let n = 1; n <= lines.length; n++) {
+      openFile(`&line=${n}`, lines.join("\n") + "\n");
+      await expectNumbered(`line=${n}`);
+      await waitFor(() => expect(current().map((r) => r.getAttribute("data-line")), `line=${n}: 目立たせる行`).toEqual([String(n)]));
+      expect(current()[0].getAttribute("aria-current"), `line=${n}: aria-current`).toBe("true");
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+
+  // ファイルは 4 行
+  const badLines = [
+    { name: "lineがない", query: "" },
+    { name: "lineが空", query: "&line=" },
+    { name: "lineが文字", query: "&line=abc" },
+    { name: "lineが負の数", query: "&line=-1" },
+    { name: "lineが0", query: "&line=0" },
+    { name: "lineが小数", query: "&line=1.5" },
+    { name: "lineがファイルの行の数を1つ超えている", query: "&line=5" },
+    { name: "lineがファイルの行の数を大きく超えている", query: "&line=100000" },
+  ];
+  // @vanda:evidence item-detail-in-one-place
+  it("lineがないか数でないかファイルの行の数を超えている時は誤りにせず目立たせる行なしでファイルの中身を出す", async () => {
+    for (const [ending, text] of [["最後の改行あり", lines.join("\n") + "\n"], ["最後の改行なし", lines.join("\n")]]) {
+      for (const c of badLines) {
+        const where = `${c.name}・${ending}`;
+        openFile(c.query, text);
+        await expectNumbered(where);
+        expect(current().map((r) => r.getAttribute("data-line")), `${where}: 目立たせる行がある`).toEqual([]);
+        expect(screen.queryByRole("alert"), `${where}: 誤りを出した`).toBeNull();
+        cleanup();
+        server.resetHandlers();
+      }
+    }
+  });
+
+  // @vanda:evidence item-detail-in-one-place
+  it("実際のエビデンスのリンクはレビューのクエリを保ったままファイルの画面のURLにパスと行を渡す", async () => {
+    window.history.pushState({}, "", "/specs/task-id-unique" + review24);
+    server.use(
+      http.get("/api/review", () => HttpResponse.json(review([specEntry(1, "task-id-unique")]))),
+      http.get("/api/story", () => HttpResponse.json(story)),
+    );
+    open(detail);
+    await screen.findByText(/タスクの ID は重ならない/);
+    await waitFor(() => expect(bodyText()).toContain("TestUnique"));
+    const founds = [
+      { file: "e2e/add-task.txtar", line: 1 },
+      { file: "spec/Task.tla", line: 5 },
+      { file: "db/schema.sql", line: 4 },
+      { file: "internal/task/task_test.go", line: 6 },
+    ];
+    for (const f of founds) {
+      const where = `${f.file}:${f.line} のリンク`;
+      const url = new URL(screen.getByRole("link", { name: `${f.file}:${f.line}` }).getAttribute("href")!, "http://vanda.test");
+      expect(url.pathname, where).toBe("/files");
+      expect(url.searchParams.getAll("path"), `${where}の path`).toEqual([f.file]);
+      expect(url.searchParams.getAll("line"), `${where}の line`).toEqual([String(f.line)]);
+      for (const [k, v] of [["view", "branch"], ["base", "main"], ["story", "#24"]]) {
+        expect(url.searchParams.get(k), `${where}の ${k}`).toBe(v);
+      }
+    }
+  });
+
+  // @vanda:evidence owner-reviews-every-change
+  it("lineのあるURLで開いたファイルの画面からストーリーのレビューへ戻るとレビューのURLにlineが残らない", async () => {
+    openFile("&line=3", lines.join("\n") + "\n");
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("link", { name: "ストーリーのレビューへ戻る" }));
+    await waitFor(() => expect(window.location.pathname).toBe("/"));
+    const q = new URLSearchParams(window.location.search);
+    expect(q.has("line"), `戻った後の URL: ${window.location.search}`).toBe(false);
+    for (const [k, v] of [["view", "branch"], ["base", "main"], ["story", "#24"]]) expect(q.get(k), `戻った後の ${k}`).toBe(v);
+  });
+});
