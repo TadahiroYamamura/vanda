@@ -33,7 +33,7 @@ export interface Filter {
   notAgreed: boolean;
 }
 
-// 文字の絞り込みで見る所。消したものは今の中身がないので、前の中身で見る。文は、参照を見せる文字に置き換えた後の文にマッチさせる（reference-filter）
+// 文字の絞り込みで見る所。消したものは今の中身がないので、前の中身で見る。文は、参照を見せる文字に置き換えた後の文にマッチさせる
 function searchable(e: Entry): string[] {
   if (e.kind === "file") return [e.path ?? ""];
   const c = e.after ?? e.before;
@@ -582,7 +582,7 @@ function currentOf(sel: string): { kind: Kind; name: string; load: () => Promise
   return null;
 }
 
-// SelectedPreview は、一覧を読み込む間に、URL で選ばれている 1 件の今の中身を先に出す（review-detail-shown-before-list）。
+// SelectedPreview は、一覧を読み込む間に、URL で選ばれている 1 件の今の中身を先に出す。
 // 読めなかったとき（今はない 1 件など）は誤りを出さずに一覧を待つ。一覧の側が、読めない理由か、その 1 件の中身を出すため
 function SelectedPreview(props: { sel: string; query: string }) {
   const target = currentOf(props.sel);

@@ -13,7 +13,7 @@ import { Link, reviewQuery, reviewURL } from "../route";
 // SpecPage は、仕様の詳細（CL-01・02・04・05・07）。
 export function SpecPage(props: { id: string; params?: URLSearchParams; ctx?: Context | null }) {
   const d = useLoad(() => api.spec(props.id), props.id);
-  // 変更履歴と承認の履歴は時間がかかるので、詳細と別に読み、詳細を先に出す（claim-detail-shown-before-history）
+  // 変更履歴と承認の履歴は時間がかかるので、詳細と別に読み、詳細を先に出す
   const h = useLoad(() => api.specHistory(props.id), props.id);
   if (d.error != null) return <ErrorBox error={d.error} title="仕様の詳細を読めません" />;
   if (!d.data) {

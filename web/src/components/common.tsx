@@ -158,7 +158,7 @@ export function StateBadge(props: { state: State | null }) {
   return <span className={`badge state state-${props.state}`}>{stateLabel[props.state]}</span>;
 }
 
-// Loading は、読み込みの終わっていないエリアのマーク（loading-indicator）。スピナーは飾りなのでスクリーンリーダーに読み上げさせず、文字だけを読ませる
+// Loading は、読み込みの終わっていないエリアのマーク。スピナーは飾りなのでスクリーンリーダーに読み上げさせず、文字だけを読ませる
 export function Loading(props: { className?: string }) {
   return (
     <p className={props.className ? `note loading ${props.className}` : "note loading"}>

@@ -5,7 +5,7 @@ import { ItemRefs } from "../components/ItemRefs";
 import { detailURL, FeatureMarks, Prose, RefsProvider } from "../components/Prose";
 import { Link, reviewQuery, reviewURL } from "../route";
 
-// TermPage は、用語の詳細（term-page-content・term-feature-page-missing）。
+// TermPage は、用語の詳細。
 export function TermPage(props: { id: string; params?: URLSearchParams }) {
   const d = useLoad(() => api.term(props.id), props.id);
   const query = reviewQuery(props.params);
@@ -55,7 +55,7 @@ export function TermPage(props: { id: string; params?: URLSearchParams }) {
   );
 }
 
-// FeaturePage は、機能の詳細（feature-page-content・term-feature-page-claims・term-feature-page-missing）。
+// FeaturePage は、機能の詳細。
 export function FeaturePage(props: { id: string; params?: URLSearchParams }) {
   const d = useLoad(() => api.feature(props.id), props.id);
   const query = reviewQuery(props.params);
