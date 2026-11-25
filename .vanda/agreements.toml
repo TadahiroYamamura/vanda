@@ -1,0 +1,7 @@
+[[agreement]]
+kind = "truth"
+key = "repository-code-not-malicious"
+fingerprint = "sha256:6c063f197f0c0ae715d533c610516390813061d5bb39542fe8fabd1efb644d0a"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-25T10:27:27+09:00
+story = "#4"
