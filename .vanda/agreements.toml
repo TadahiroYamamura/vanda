@@ -517,3 +517,11 @@ fingerprint = "sha256:b582a758bc5a0bd34e1f5fbf3e908ae0b27260a323062600cd516b079c
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-25T21:45:43+09:00
 story = "#4"
+
+[[agreement]]
+kind = "term"
+key = "sensor"
+fingerprint = "sha256:71cec0fee429a4f5f6721ee716de75ae176767d8b450db382391fea1b494e314"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-25T21:45:45+09:00
+story = "#4"
