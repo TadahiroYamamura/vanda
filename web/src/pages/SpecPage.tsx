@@ -114,7 +114,7 @@ function FoundView(props: { f: Found; params?: URLSearchParams }) {
   const { f } = props;
   const q = reviewQuery(props.params);
   const fileURL = `/files?${q ? `${q}&` : ""}path=${encodeURIComponent(f.file)}`;
-  const fileLink = <Link to={fileURL}>{`${f.file}:${f.line}`}</Link>;
+  const fileLink = <Link to={`${fileURL}&line=${f.line}`}>{`${f.file}:${f.line}`}</Link>;
   return (
     <div className="found">
       <p>
@@ -133,6 +133,9 @@ function FoundView(props: { f: Found; params?: URLSearchParams }) {
 
 export function FilePage(props: { path: string; params?: URLSearchParams; ctx?: Context | null }) {
   const d = useLoad(() => api.file(props.path), props.path);
+  // 数でない line は、誤りにせず、目立たせる行なしで出す
+  const raw = props.params?.get("line") ?? "";
+  const line = /^[0-9]+$/.test(raw) ? Number(raw) : null;
   return (
     <div>
       <p className="note">
@@ -141,7 +144,7 @@ export function FilePage(props: { path: string; params?: URLSearchParams; ctx?: 
       <h1>{props.path}</h1>
       <ReviewAgree params={props.params} ctx={props.ctx ?? null} target={{ kind: "file", path: props.path }} onDone={d.reload} />
       {d.error != null && <ErrorBox error={d.error} title="ファイルを読めません" />}
-      {d.data && <CodeBlock source={d.data.text} lang={langOf(props.path)} />}
+      {d.data && <CodeBlock source={d.data.text} lang={langOf(props.path)} numbered line={line} />}
     </div>
   );
 }

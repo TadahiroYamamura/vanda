@@ -136,12 +136,22 @@ export function useTokens(text: string, lang: Lang | null): Token[][] | null {
 }
 
 // CodeBlock は、シンタックスハイライトしたコードを見せる。TLA+ は数学の記号で見せ、コピーしたときはリポジトリの文字のまま（CL-07）。
-export function CodeBlock(props: { source: string; lang: Lang | null }) {
+// numbered のときは、各行に 1 から始まる行番号を出し、line の行を目立たせて、見える位置までスクロールする。
+export function CodeBlock(props: { source: string; lang: Lang | null; numbered?: boolean; line?: number | null }) {
   const tokens = useTokens(props.source, props.lang);
   const lines = props.source.split("\n");
+  // 改行で終わるファイルは、分けると最後に空の行が 1 つ余る。エディタや wc -l の数え方に合わせ、行として数えない
+  const count = props.numbered && lines.length > 1 && lines[lines.length - 1] === "" ? lines.length - 1 : lines.length;
+  const current = props.numbered && props.line != null && Number.isInteger(props.line) && props.line >= 1 && props.line <= count ? props.line : null;
   const symbols = props.lang === "tlaplus" ? symbolsByLine(props.source) : null;
   const ref = useRef<HTMLPreElement>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  useEffect(() => {
+    if (current === null) return;
+    const el = ref.current?.querySelector<HTMLElement>(`[data-line="${current}"]`);
+    // scrollIntoView のない環境（jsdom）でも、画面を出せるようにする
+    if (el && typeof el.scrollIntoView === "function") el.scrollIntoView({ block: "center" });
+  }, [current, props.source]);
   const onCopy = (e: React.ClipboardEvent<HTMLPreElement>) => {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
@@ -166,9 +176,16 @@ export function CodeBlock(props: { source: string; lang: Lang | null }) {
           {copied && <span className="note">{copied}</span>}
         </div>
       )}
-      <pre ref={ref} className="code" onCopy={onCopy} data-lang={props.lang ?? undefined}>
-        {lines.map((l, i) => (
-          <span key={i} className="code-line">
+      <pre
+        ref={ref}
+        className={props.numbered ? "code numbered" : "code"}
+        onCopy={onCopy}
+        data-lang={props.lang ?? undefined}
+        style={props.numbered ? ({ "--line-digits": String(count).length } as React.CSSProperties) : undefined}
+      >
+        {lines.slice(0, count).map((l, i) => (
+          // 行番号は、要素にせず、data-line を CSS が ::before で描く。文字を選んでコピーしたときに、コードに混ざらないようにするため
+          <span key={i} className="code-line" data-line={props.numbered ? i + 1 : undefined} aria-current={current === i + 1 ? "true" : undefined}>
             <CodeLine line={l} tokens={tokens?.[i] ?? null} symbols={symbols?.[i]} />
             {i + 1 < lines.length ? "\n" : ""}
           </span>

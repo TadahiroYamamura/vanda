@@ -225,6 +225,13 @@ table.compare tr.differs td:nth-child(3) { background: var(--after-bg); }
 /* コードと差分 */
 pre.code { margin: 0; padding: 14px 16px; background: var(--code-bg); border: 1px solid var(--line2); border-radius: 10px; overflow-x: auto; white-space: pre; font: 13px/1.75 var(--mono); font-variant-ligatures: none; }
 .tla pre.code { font-family: "JetBrains Mono", "Noto Sans Math", ui-monospace, monospace; font-size: 13.5px; }
+/* 行番号のあるコード（ファイルの画面）。行をブロックにするのは、目立たせる行の背景を、文字のない右の端まで塗るため。
+   width: max-content は、横にスクロールする長い行でも、背景が行の終わりまで届くようにするため。 */
+pre.code.numbered { padding-left: 0; padding-right: 0; }
+pre.code.numbered .code-line { display: block; width: max-content; min-width: 100%; box-sizing: border-box; padding-right: 16px; }
+pre.code.numbered .code-line::before { content: attr(data-line); display: inline-block; box-sizing: content-box; width: calc(var(--line-digits, 1) * 1ch); padding: 0 12px 0 16px; margin-right: 12px; text-align: right; color: var(--muted); border-right: 1px solid var(--line2); user-select: none; -webkit-user-select: none; }
+pre.code.numbered .code-line[aria-current="true"] { background: var(--pend-bg); }
+pre.code.numbered .code-line[aria-current="true"]::before { color: var(--fg); font-weight: 700; }
 /* TLA+ の記号（CL-07）。幅は Code.tsx が、置き換える前の ASCII の文字数ぶん（ch）を指す。ch は外の span の書体（等幅）の 1 文字の幅で、
    記号の書体は中の span にだけ付ける（外にも付けると、ch が数学の書体の幅になり、等幅の 1 文字とずれる）。
    line-height: 1 は、数学の書体の上下の幅で、記号のある行だけが高くなり、行の間隔がそろわなくなるのを防ぐため。 */
