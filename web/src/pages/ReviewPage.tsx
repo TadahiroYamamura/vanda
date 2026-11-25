@@ -15,6 +15,7 @@ import { langOf } from "../highlight";
 import { TlaCode } from "../components/TlaCode";
 import { detailURL, Prose, RefsProvider, proseText } from "../components/Prose";
 import { changeLabel, fileTypeLabel, kindLabel, stageLabel, typeLabel } from "../labels";
+import { type ReviewMemory, useKeptScroll } from "../reviewMemory";
 import { BACK, Link, navigate, reviewQuery } from "../route";
 
 export function entryKey(e: Entry) {
@@ -49,7 +50,7 @@ export function matchesFilter(e: Entry, f: Filter): boolean {
   return searchable(e).some((s) => s.toLowerCase().includes(t));
 }
 
-export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgreed: () => void }) {
+export function ReviewPage(props: { ctx: Context; params: URLSearchParams; memory: ReviewMemory; onAgreed: () => void }) {
   const { ctx, params } = props;
   const view = params.get("view") === "story" ? "story" : "branch";
   const base = params.get("base") ?? (ctx.defaultBase || null);
@@ -67,7 +68,9 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
   };
 
   const canLoad = view === "branch" ? !!base : !!storyParam;
-  const review = useLoad<Review>(canLoad ? () => api.review(view, base, storyParam) : null, `${view}|${base}|${storyParam}`);
+  const reviewKey = `${view}|${base}|${storyParam}`;
+  const review = useLoad<Review>(canLoad ? () => api.review(view, base, storyParam) : null, reviewKey);
+  const root = useKeptScroll(props.memory, reviewKey, review.data !== null);
   const story = review.data?.story ?? storyParam;
   // ほかの画面へ引き継ぐクエリ。URL に書いていない既定のもの（レビュー単位、設定のベースブランチ、ブランチのコミットから決まったストーリー）も
   // いつも書く。移った先（項目の詳細・ファイルの画面）が、同じ一覧を引いて承認の部品を出すため（RV-18）
@@ -92,7 +95,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
   const selected = all.find((e) => entryKey(e) === sel) ?? null;
 
   return (
-    <div className="review">
+    <div className="review" ref={root}>
       <section className="controls" aria-label="比べるもの">
         <label>
           レビュー単位
@@ -149,6 +152,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; onAgr
               review={review.data}
               ctx={ctx}
               selected={sel}
+              folded={props.memory.folded}
               onSelect={(k) => set({ sel: k }, true)}
               filter={filter}
               // 打つたびに履歴を積むと、ブラウザーの「戻る」が 1 文字ずつ戻るため、置き換える
@@ -340,6 +344,7 @@ function EntryList(props: {
   review: Review;
   ctx: Context;
   selected: string | null;
+  folded: Set<string>;
   onSelect: (key: string) => void;
   filter: Filter;
   onFilterText: (v: string) => void;
@@ -384,7 +389,7 @@ function EntryList(props: {
         <p className="note">絞り込みの条件にマッチするものはありません。</p>
       )}
       {groups.map((g) => (
-        <Group key={g.name} label={groupLabel(g.name, props.ctx)} entries={g.entries} selected={props.selected} onSelect={props.onSelect} />
+        <Group key={g.name} name={g.name} folded={props.folded} label={groupLabel(g.name, props.ctx)} entries={g.entries} selected={props.selected} onSelect={props.onSelect} />
       ))}
     </div>
   );
@@ -439,12 +444,18 @@ function ListPlaceholder(props: { filter: Filter; onFilterText: (v: string) => v
   );
 }
 
-function Group(props: { label: string; entries: Entry[]; selected: string | null; onSelect: (key: string) => void }) {
-  const [open, setOpen] = useState(true);
+// たたんだまとまりは、画面が外れても残る folded にも書く。項目・ファイルの詳細の画面から戻ったときに、移る前のままにするため
+function Group(props: { name: string; folded: Set<string>; label: string; entries: Entry[]; selected: string | null; onSelect: (key: string) => void }) {
+  const [open, setOpen] = useState(!props.folded.has(props.name));
+  const toggle = () => {
+    if (open) props.folded.add(props.name);
+    else props.folded.delete(props.name);
+    setOpen(!open);
+  };
   return (
     <div className="group">
       <h3>
-        <button type="button" className="fold" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <button type="button" className="fold" aria-expanded={open} onClick={toggle}>
           {open ? "▾" : "▸"} {props.label} {props.entries.length} 件{!open && `（たたんだ ${props.entries.length} 件）`}
         </button>
       </h3>

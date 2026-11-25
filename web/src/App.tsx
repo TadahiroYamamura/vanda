@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { api } from "./api";
 import { LayerNames } from "./components/Chips";
 import { ErrorBox, useLoad } from "./components/common";
@@ -5,12 +6,14 @@ import { SpecPage, FilePage } from "./pages/SpecPage";
 import { ReviewPage } from "./pages/ReviewPage";
 import { PropertyPage, TruthPage } from "./pages/PropertyTruthPage";
 import { FeaturePage, TermPage } from "./pages/TermFeaturePage";
+import { newReviewMemory } from "./reviewMemory";
 import { Link, useRoute } from "./route";
 import "./styles.css";
 
 export function App() {
   const route = useRoute();
   const ctx = useLoad(() => api.context(), "context");
+  const [reviewMemory] = useState(newReviewMemory);
   return (
     <div className="app">
       <header className="topbar">
@@ -51,7 +54,7 @@ export function App() {
         {route.page === "property" && <PropertyPage key={route.id} id={route.id} params={route.params} ctx={ctx.data} />}
         {route.page === "truth" && <TruthPage key={route.id} id={route.id} params={route.params} ctx={ctx.data} />}
         {route.page === "file" && <FilePage path={route.path} params={route.params} ctx={ctx.data} />}
-        {route.page === "review" && ctx.data && <ReviewPage ctx={ctx.data} params={route.params} onAgreed={ctx.reload} />}
+        {route.page === "review" && ctx.data && <ReviewPage ctx={ctx.data} params={route.params} memory={reviewMemory} onAgreed={ctx.reload} />}
       </main>
       </LayerNames.Provider>
     </div>
