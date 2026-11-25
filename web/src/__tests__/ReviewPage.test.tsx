@@ -141,49 +141,64 @@ describe("RV-01・RV-02・RV-05 一覧と中身", () => {
 
 describe("RV-10 長い一覧をたたむ", () => {
   // @vanda:evidence owner-reviews-every-change
-  it("長いまとまりはたたんでたたんだ件数を示し開くと中が見える", async () => {
+  it("利用者がまとまりをたたむと中が隠れて件数が出てほかのまとまりは開いたままで開くと中が見える", async () => {
     const files = Array.from({ length: 60 }, (_, i) => fileEntry(i + 2, `e2e/s${String(i).padStart(2, "0")}.txtar`));
     open([specEntry(1, "c-one"), ...files]);
-    await screen.findAllByText(/c-one/);
-    expect(screen.queryByText(/e2e\/s59\.txtar/)).toBeNull();
-    expect(document.body.textContent).toMatch(/60/);
+    await listRow("c-one");
+    const shown = (name: string) => within(listRegion()).queryByText(name, { exact: true }) !== null;
+    const fileHeading = () => {
+      const hs = within(listRegion()).getAllByRole("heading", { level: 3 }).filter((h) => /エビデンスの本体/.test(h.textContent ?? ""));
+      expect(hs.length, "エビデンスの本体の見出しの数").toBe(1);
+      return hs[0];
+    };
     const user = userEvent.setup();
-    const toggle = screen.getAllByRole("button").find((b) => /60/.test(b.textContent ?? "") || /ファイル/.test(b.textContent ?? ""));
-    expect(toggle, "たたんだまとまりを開くボタンがない").toBeTruthy();
-    await user.click(toggle!);
-    expect((await screen.findAllByText(/e2e\/s59\.txtar/)).length).toBeGreaterThan(0);
+    await user.click(within(fileHeading()).getByRole("button"));
+    for (const e of files) expect(shown(e.path!), `たたんだまとまりの ${e.path} が見えている`).toBe(false);
+    expect(fileHeading().textContent, "たたんだまとまりの見出しに件数がない").toMatch(/(^|\D)60\s*件/);
+    expect(within(fileHeading()).getByRole("button").getAttribute("aria-expanded"), "たたんだまとまりのボタンが、開いていると伝えている").toBe("false");
+    expect(shown("c-one"), "ほかのまとまりまで隠れた").toBe(true);
+    await user.click(within(fileHeading()).getByRole("button"));
+    for (const e of files) expect(shown(e.path!), `開いたまとまりの ${e.path} が見えない`).toBe(true);
+    expect(within(fileHeading()).getByRole("button").getAttribute("aria-expanded"), "開いたまとまりのボタンが、たたんでいると伝えている").toBe("true");
   });
 
   // @vanda:evidence owner-reviews-every-change
-  it("用語と機能は別々のまとまりとしてたたみ片方を開いてももう片方はたたんだままで総数と通し番号は変わらない", async () => {
+  it("用語と機能は別々のまとまりで片方をたたんでももう片方は開いたままで総数と通し番号は変わらない", async () => {
     const pad = (i: number) => String(i).padStart(2, "0");
     const terms = Array.from({ length: 11 }, (_, i) =>
       specEntry(i + 1, `t-${pad(i)}`, { kind: "term", group: "terms", before: { name: `t-${pad(i)}`, definition: plain("定義"), partOf: null, assumes: [] }, after: { name: `t-${pad(i)}`, definition: plain("定義"), partOf: null, assumes: [] } }));
     const features = Array.from({ length: 11 }, (_, i) =>
       specEntry(i + 12, `f-${pad(i)}`, { kind: "feature", group: "features", before: { name: `f-${pad(i)}`, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null }, after: { name: `f-${pad(i)}`, definition: plain("定義"), refines: ["no-lost-task"], core: null, formal: null, formalWaiver: null } }));
-    window.history.pushState({}, "", "/?view=branch&base=main&sel=" + encodeURIComponent("path:e2e/a.txtar"));
     open([...terms, ...features, fileEntry(23, "e2e/a.txtar")]);
-    const one = await listRow("e2e/a.txtar");
+    await listRow("e2e/a.txtar");
     const shown = (name: string) => within(listRegion()).queryByText(name, { exact: true }) !== null;
     const heading = (re: RegExp) => {
       const hs = within(listRegion()).getAllByRole("heading", { level: 3 }).filter((h) => re.test(h.textContent ?? ""));
       expect(hs.length, `${re} の見出しの数`).toBe(1);
       return hs[0];
     };
-    const termHeading = heading(/(?:^|\s)用語\s/);
-    const featureHeading = heading(/(?:^|\s)機能\s/);
-    expect(termHeading.textContent, "用語の見出しにたたんだ件数がない").toMatch(/11/);
-    expect(featureHeading.textContent, "機能の見出しにたたんだ件数がない").toMatch(/11/);
-    for (const e of [...terms, ...features]) expect(shown(e.id!), `たたんだまとまりの ${e.id} が見えている`).toBe(false);
-    expect(within(one).getByRole("button").children[0].textContent, "たたんだ件を飛ばして通し番号を付けている").toBe("23");
+    const termHeading = /(?:^|\s)用語\s/;
+    const featureHeading = /(?:^|\s)機能\s/;
+    const numbers = () => within(listRegion()).getAllByRole("listitem").map((li) => within(li).getByRole("button").children[0].textContent);
+    const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => String(from + i));
+    const total = (when: string) => expect(listRegion().textContent, `${when}の総数`).toMatch(/全\s*23\s*件/);
+    expect(numbers(), "画面を開いた時の通し番号").toEqual(range(1, 23));
+    total("画面を開いた時");
     const user = userEvent.setup();
-    await user.click(within(termHeading).getByRole("button"));
+    await user.click(within(heading(termHeading)).getByRole("button"));
+    for (const e of terms) expect(shown(e.id!), `たたんだ用語のまとまりの ${e.id} が見えている`).toBe(false);
+    for (const e of features) expect(shown(e.id!), `用語をたたんだだけで機能の ${e.id} が隠れた`).toBe(true);
+    expect(numbers(), "用語をたたんだ時の通し番号（たたんだ件を飛ばして付け直さない）").toEqual(range(12, 23));
+    total("用語をたたんだ時");
+    await user.click(within(heading(featureHeading)).getByRole("button"));
+    await user.click(within(heading(termHeading)).getByRole("button"));
     for (const e of terms) expect(shown(e.id!), `開いた用語のまとまりの ${e.id} が見えない`).toBe(true);
-    for (const e of features) expect(shown(e.id!), `用語を開いただけで機能の ${e.id} が見えている`).toBe(false);
-    await user.click(within(heading(/(?:^|\s)機能\s/)).getByRole("button"));
-    for (const e of features) expect(shown(e.id!), `開いた機能のまとまりの ${e.id} が見えない`).toBe(true);
-    const rows = within(listRegion()).getAllByRole("listitem").map((li) => within(li).getByRole("button").children[0].textContent);
-    expect(rows).toEqual(Array.from({ length: 23 }, (_, i) => String(i + 1)));
+    for (const e of features) expect(shown(e.id!), `たたんだ機能のまとまりの ${e.id} が見えている`).toBe(false);
+    expect(numbers(), "機能をたたんだ時の通し番号").toEqual([...range(1, 11), "23"]);
+    total("機能をたたんだ時");
+    await user.click(within(heading(featureHeading)).getByRole("button"));
+    expect(numbers(), "どちらも開いた時の通し番号").toEqual(range(1, 23));
+    total("どちらも開いた時");
   });
 });
 
@@ -1552,18 +1567,21 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
   });
 
   // @vanda:evidence owner-reviews-every-change
-  it("画面を開いた時11件以上のまとまりはたたみ10件以下のまとまりと選んだ件を含むまとまりは開いておく", async () => {
+  it("画面を開いた時は11件以上のまとまりも10件以下のまとまりも選んだ件を含まないまとまりもすべて開いている", async () => {
     const pad = (i: number) => String(i).padStart(2, "0");
     const model = Array.from({ length: 10 }, (_, i) => specEntry(i + 1, `m-${pad(i)}`));
     const db = Array.from({ length: 11 }, (_, i) => specEntry(i + 11, `d-${pad(i)}`, { group: "layer:db" }));
-    const files = Array.from({ length: 11 }, (_, i) => fileEntry(i + 22, `e2e/f-${pad(i)}.txtar`));
-    window.history.pushState({}, "", "/?view=branch&base=main&sel=" + encodeURIComponent("path:e2e/f-05.txtar"));
+    const files = Array.from({ length: 60 }, (_, i) => fileEntry(i + 22, `e2e/f-${pad(i)}.txtar`));
+    window.history.pushState({}, "", "/?view=branch&base=main&sel=" + encodeURIComponent("spec:m-03"));
     open([...model, ...db, ...files]);
     await listRow("m-00");
     const shown = (name: string) => within(listRegion()).queryByText(name, { exact: true }) !== null;
-    for (const e of model) expect(shown(e.id!), `10 件のまとまりの ${e.id} が見えない`).toBe(true);
-    for (const e of db) expect(shown(e.id!), `11 件のまとまりの ${e.id} が見えている`).toBe(false);
-    for (const e of files) expect(shown(e.path!), `選んだ件を含む 11 件のまとまりの ${e.path} が見えない`).toBe(true);
+    for (const e of model) expect(shown(e.id!), `選んだ件を含む 10 件のまとまりの ${e.id} が見えない`).toBe(true);
+    for (const e of db) expect(shown(e.id!), `11 件のまとまりの ${e.id} が見えない`).toBe(true);
+    for (const e of files) expect(shown(e.path!), `60 件のまとまりの ${e.path} が見えない`).toBe(true);
+    const folds = within(listRegion()).getAllByRole("heading", { level: 3 }).map((h) => within(h).getByRole("button"));
+    expect(folds.length, "まとまりの数").toBe(3);
+    for (const b of folds) expect(b.getAttribute("aria-expanded"), `${b.textContent} が、たたんでいると伝えている`).toBe("true");
   });
 
   // @vanda:evidence owner-reviews-every-change
