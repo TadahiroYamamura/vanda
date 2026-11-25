@@ -12,7 +12,7 @@ statement = "利用者の端末で、悪意のあるプログラムは動いて�
 
 [[property]]
 id = "accountability-by-design"
-statement = "オーナーと開発者は、答責性を体系的に設計できる。構成要素のそれぞれがどの程度実現されているかを判断でき、改善できる"
+statement = "オーナーと開発者は、{@id:accountability}を体系的に設計できる。構成要素のそれぞれがどの程度実現されているかを判断でき、改善できる"
 
 [[property]]
 id = "agreement-authentic"
@@ -53,31 +53,31 @@ refines = ["accountability-by-design"]
 
 [[property]]
 id = "accountability-level-shown"
-statement = "{@id:vanda} は、逸脱の種類ごとに、次の 4 つのそれぞれに対策があるかを記録する。早く検知される、被害が致命的にならない、原因まで辿れる、同じ逸脱を次は事前に検知できるよう{@id:promise-list}に反映できる。4 つのすべてに対策がある逸脱の種類の割合を、答責性の実現度として、その内訳とともに見せる"
+statement = "{@id:vanda} は、{@id:deviation-kind}ごとに、次の 4 つのそれぞれに{@id:countermeasure}があるかを記録する。早く検知される、被害が致命的にならない、原因まで辿れる、同じ{@id:deviation}を次は事前に検知できるよう{@id:promise-list}に反映できる。4 つのすべてに{@id:countermeasure}がある{@id:deviation-kind}の割合を、{@id:accountability}の実現度として、その内訳とともに見せる"
 refines = ["accountability-by-design"]
 
 [[property]]
 id = "controlled-deviation"
-statement = "逸脱を抜けなく想定し、早く検知し、致命的な状況を避けられる"
+statement = "{@id:deviation}を抜けなく想定し、早く検知し、致命的な状況を避けられる"
 
 [[property]]
 id = "deviation-anticipated"
-statement = "{@id:vanda} は、起こりうる逸脱を抜けなく想定するための手がかりを、{@id:spec}を書く人と{@id:sufficiency}を確認する人に渡す"
+statement = "{@id:vanda} は、起こりうる{@id:deviation}を抜けなく想定するための手がかりを、{@id:spec}を書く人と{@id:sufficiency}を確認する人に渡す"
 refines = ["controlled-deviation"]
 
 [[property]]
 id = "deviation-detected-early"
-statement = "事前に想定した逸脱は、どの{@id:property}からどう外れたかが分かる形で、早く見つかる"
+statement = "事前に想定した{@id:deviation}は、どの{@id:property}からどう外れたかが分かる形で、早く見つかる"
 refines = ["controlled-deviation"]
 
 [[property]]
 id = "feedback-through-developer"
-statement = "オーナーは開発者（人）に、開発者（人）は開発者（AI）に、見つけた逸脱と、{@id:agreement}しない理由をフィードバックできる。開発者（AI）は開発者（人）に、開発者（人）はオーナーに、{@id:promise-list}の不備をフィードバックできる。{@id:vanda} は、どちらの向きでも、開発者（人）を飛ばして届けない"
+statement = "オーナーは開発者（人）に、開発者（人）は開発者（AI）に、見つけた{@id:deviation}と、{@id:agreement}しない理由をフィードバックできる。開発者（AI）は開発者（人）に、開発者（人）はオーナーに、{@id:promise-list}の不備をフィードバックできる。{@id:vanda} は、どちらの向きでも、開発者（人）を飛ばして届けない"
 refines = ["controlled-deviation"]
 
 [[property]]
 id = "fatal-situation-avoided"
-statement = "リリースの前に見つけられない逸脱に備えて、{@id:vanda} は、リリースの後の{@id:stage}の{@id:evidence}も求め、満たされなくなった時に知らせる"
+statement = "リリースの前に見つけられない{@id:deviation}に備えて、{@id:vanda} は、リリースの後の{@id:stage}の{@id:evidence}も求め、満たされなくなった時に知らせる"
 refines = ["controlled-deviation"]
 
 [[property]]
@@ -91,7 +91,7 @@ statement = "オーナーと開発者（人）は、リスクを判断でき、�
 
 [[property]]
 id = "judge-without-reading-code"
-statement = "オーナーは、ソースコードを読まずに、開発者の変更が逸脱を持ち込んでいないことを判断できる"
+statement = "オーナーは、ソースコードを読まずに、開発者の変更が{@id:deviation}を持ち込んでいないことを判断できる"
 refines = ["risk-judged-attention-spent-well"]
 
 [[property]]
@@ -182,6 +182,26 @@ definition = "下の{@id:tier}の{@id:item}が、上の{@id:tier}の{@id:item}�
 id = "sufficiency"
 name = "十分性"
 definition = "上の{@id:tier}の{@id:item}が、下の{@id:tier}の{@id:item}により、抜け漏れなく具体化されていること"
+
+[[term]]
+id = "deviation"
+name = "逸脱"
+definition = "{@id:software}が、満たすべき{@id:property}を満たさなくなること。{@id:mistake}と{@id:error}は、開発者が受け取って直すもので、逸脱とは区別する"
+
+[[term]]
+id = "deviation-kind"
+name = "逸脱の種類"
+definition = "{@id:deviation}を、どの{@id:property}から、どのように外れるかで分けたもの。1 つの{@id:property}に、複数ある"
+
+[[term]]
+id = "countermeasure"
+name = "対策"
+definition = "{@id:deviation}が起きた時に、早く検知し、被害を致命的にせず、原因まで辿り、同じ{@id:deviation}を次は事前に検知できるよう{@id:promise-list}に反映するために、事前に用意しておく手段"
+
+[[term]]
+id = "accountability"
+name = "答責性"
+definition = "{@id:software}が{@id:deviation}によって損失を出した時に、オーナーと開発者が、何が起き、事前にどんな{@id:countermeasure}を取っていて、どう最悪の事態を避けて収束させたかを説明し、責任を取れること"
 
 [[term]]
 id = "core-feature"
