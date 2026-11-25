@@ -53,7 +53,7 @@ refines = ["accountability-by-design"]
 
 [[property]]
 id = "accountability-level-shown"
-statement = "{@id:vanda} は、逸脱の種類ごとに、4 つの条件のそれぞれに対策があるかを記録し、答責性の実現度とその内訳を見せる"
+statement = "{@id:vanda} は、逸脱の種類ごとに、次の 4 つのそれぞれに対策があるかを記録する。早く検知される、被害が致命的にならない、原因まで辿れる、同じ逸脱を次は事前に検知できるよう{@id:promise-list}に反映できる。4 つのすべてに対策がある逸脱の種類の割合を、答責性の実現度として、その内訳とともに見せる"
 refines = ["accountability-by-design"]
 
 [[property]]
