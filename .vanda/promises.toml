@@ -705,19 +705,16 @@ model_check_waiver = "画面と git の操作の決まりで、{@id:agreement-re
 stage = "implementation"
 type = "unit-test"
 layers = ["api", "gui"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "human-review"
 layers = ["gui"]
-detail = "人が画面を見て、反証の条件に当たらないことを確かめる"
 
 [[spec]]
 id = "screen-matches-check"
@@ -732,13 +729,11 @@ model_check_waiver = "画面と git の操作の決まりで、{@id:agreement-re
 stage = "implementation"
 type = "unit-test"
 layers = ["cli", "api", "gui"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec]]
 id = "agreement-keeps-files-safe"
@@ -753,19 +748,16 @@ model_check_waiver = "画面と git の操作の決まりで、{@id:agreement-re
 stage = "implementation"
 type = "unit-test"
 layers = ["api"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "concurrency-test"
 layers = ["api"]
-detail = "同時に操作しても、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "sensor"
 layers = ["api"]
-detail = "操作の後に、反証の条件に当たる状態を見つけて知らせることを確かめる"
 
 [[spec]]
 id = "agreement-detached-when-content-changes"
@@ -779,31 +771,26 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["cli", "api", "gui"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "random-check"
 layers = ["cli"]
-detail = "無作為な入力で、反証の条件に当たる結果が出ないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "model-check"
 layers = ["model"]
-detail = "決めた範囲のすべての状態で、反証の条件に当たる状態に届かないことを TLC で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "cross-check"
 layers = ["cli", "api"]
-detail = "TLA+ のモデルと実装に同じ操作を送り、結果が一致することを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec]]
 id = "revoke-own-agreement-only"
@@ -817,31 +804,26 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["cli", "api", "gui"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "model-check"
 layers = ["model"]
-detail = "決めた範囲のすべての状態で、反証の条件に当たる状態に届かないことを TLC で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "cross-check"
 layers = ["cli", "api"]
-detail = "TLA+ のモデルと実装に同じ操作を送り、結果が一致することを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "sensor"
 layers = ["api"]
-detail = "操作の後に、反証の条件に当たる状態を見つけて知らせることを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec]]
 id = "check-passes-only-when-agreed"
@@ -855,25 +837,21 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "model-check"
 layers = ["model"]
-detail = "決めた範囲のすべての状態で、反証の条件に当たる状態に届かないことを TLC で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "cross-check"
 layers = ["cli"]
-detail = "TLA+ のモデルと実装に同じ操作を送り、結果が一致することを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "unit-test"
 layers = ["cli", "api"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec]]
 id = "annotations-link-evidence"
@@ -887,13 +865,11 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec]]
 id = "annotation-adapter-contract"
@@ -907,19 +883,16 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["cli", "api"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
-detail = "CLI と API の境界で、反証の条件に当たる出力やレスポンスが出ないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec]]
 id = "check-passes-only-with-evidence"
@@ -933,13 +906,11 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec]]
 id = "changes-traceable-to-story"
@@ -953,13 +924,11 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["cli", "api", "gui"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec]]
 id = "agreement-history-kept"
@@ -973,31 +942,26 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["cli", "api", "gui"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "model-check"
 layers = ["model"]
-detail = "決めた範囲のすべての状態で、反証の条件に当たる状態に届かないことを TLC で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "cross-check"
 layers = ["cli"]
-detail = "TLA+ のモデルと実装に同じ操作を送り、結果が一致することを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "sensor"
 layers = ["cli"]
-detail = "操作の後に、反証の条件に当たる状態を見つけて知らせることを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec]]
 id = "mistakes-reported-with-fix"
@@ -1011,31 +975,26 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["cli", "api", "gui"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "interface-test"
 layers = ["cli", "api"]
-detail = "CLI と API の境界で、反証の条件に当たる出力やレスポンスが出ないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "random-check"
 layers = ["cli"]
-detail = "無作為な入力で、反証の条件に当たる結果が出ないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "human-review"
 layers = ["cli"]
-detail = "人が画面を見て、反証の条件に当たらないことを確かめる"
 
 [[spec]]
 id = "check-runs-in-ci"
@@ -1049,13 +1008,11 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec]]
 id = "server-operated-only-from-own-screen"
@@ -1069,13 +1026,11 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["api", "gui"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "interface-test"
 layers = ["api"]
-detail = "CLI と API の境界で、反証の条件に当たる出力やレスポンスが出ないことを確かめる"
 
 [[spec]]
 id = "token-sent-only-to-its-host"
@@ -1089,13 +1044,11 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["api"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "interface-test"
 layers = ["api"]
-detail = "CLI と API の境界で、反証の条件に当たる出力やレスポンスが出ないことを確かめる"
 
 [[spec]]
 id = "owner-reviews-every-change"
@@ -1109,25 +1062,21 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["api", "gui"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "random-check"
 layers = ["api"]
-detail = "無作為な入力で、反証の条件に当たる結果が出ないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "sensor"
 layers = ["api"]
-detail = "操作の後に、反証の条件に当たる状態を見つけて知らせることを確かめる"
 
 [[spec]]
 id = "owner-understands-each-change"
@@ -1141,25 +1090,21 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["api", "gui"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "random-check"
 layers = ["api"]
-detail = "無作為な入力で、反証の条件に当たる結果が出ないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "human-review"
 layers = ["gui"]
-detail = "人が画面を見て、反証の条件に当たらないことを確かめる"
 
 [[spec]]
 id = "item-detail-in-one-place"
@@ -1173,19 +1118,16 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["api", "gui"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "human-review"
 layers = ["gui"]
-detail = "人が画面を見て、反証の条件に当たらないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec]]
 id = "owner-reads-story-with-review"
@@ -1199,19 +1141,16 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["cli", "api", "gui"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "interface-test"
 layers = ["api"]
-detail = "CLI と API の境界で、反証の条件に当たる出力やレスポンスが出ないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec]]
 id = "story-adapter-contract"
@@ -1225,13 +1164,11 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["api"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "interface-test"
 layers = ["api"]
-detail = "CLI と API の境界で、反証の条件に当たる出力やレスポンスが出ないことを確かめる"
 
 [[spec]]
 id = "core-specs-need-model-check"
@@ -1245,13 +1182,11 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec]]
 id = "flags-visible-before-open"
@@ -1265,19 +1200,16 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["api", "gui"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "human-review"
 layers = ["gui"]
-detail = "人が画面を見て、反証の条件に当たらないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["gui"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec]]
 id = "flags-block-check"
@@ -1291,13 +1223,11 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["cli", "api"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "sensor"
 layers = ["api"]
-detail = "操作の後に、反証の条件に当たる状態を見つけて知らせることを確かめる"
 
 [[spec]]
 id = "start-with-init"
@@ -1311,28 +1241,23 @@ flags = ["ai-proposal"]
 stage = "implementation"
 type = "unit-test"
 layers = ["cli"]
-detail = "仕様の文と反証の条件に当たる振る舞いを、部品ごとに、決めた入力で確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "interface-test"
 layers = ["cli"]
-detail = "CLI と API の境界で、反証の条件に当たる出力やレスポンスが出ないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "sensor"
 layers = ["cli"]
-detail = "操作の後に、反証の条件に当たる状態を見つけて知らせることを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "scenario-test"
 layers = ["cli"]
-detail = "利用者の操作の流れで、反証の条件に当たる状態にならないことを確かめる"
 
 [[spec.evidence]]
 stage = "implementation"
 type = "human-review"
 layers = ["cli"]
-detail = "人が画面を見て、反証の条件に当たらないことを確かめる"
