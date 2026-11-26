@@ -1436,3 +1436,12 @@ path = "cmd/vanda/testdata/scenario/config_version.txtar"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T10:52:38+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "cmd/vanda/testdata/scenario/doctor_user_adapter.txtar"
+deleted = true
+path = "cmd/vanda/testdata/scenario/doctor_user_adapter.txtar"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T10:52:40+09:00
+story = "#4"
