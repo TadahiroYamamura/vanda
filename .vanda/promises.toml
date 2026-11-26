@@ -739,7 +739,6 @@ refines = ["agree-on-seen-content"]
 statement = "{@id:agreement}と取り消しは、{@id:promise-list}と{@id:agreement-record}を壊さず、{@id:agreement}していない変更をコミットに巻き込まない"
 condition = "{@id:agreement}か取り消しの後に、{@id:promise-list}か{@id:agreement-record}が読めない。ほかの変更が{@id:agreement}のコミットに入る。同時の操作で記録が欠ける"
 layers = ["api"]
-flags = ["ai-proposal"]
 model_check_waiver = "画面と git の操作の決まりで、{@id:agreement-record}の移り変わりではないため"
 
 [[spec.evidence]]
