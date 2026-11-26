@@ -765,7 +765,6 @@ refines = ["detach-changed-agreement"]
 statement = "中身が変われば（ID や場所を変えた時を含む）、{@id:agreed}でなくなる。書き方の違いだけでは、{@id:agreed}のまま。ある{@id:story}が{@id:agreement}した後に中身が変われば、その{@id:story}が{@id:agreement}し直すまで、{@id:detached}のままにする"
 condition = "中身・ID・場所が変わったのに{@id:agreed}のまま。TOML の書き方か{@id:flag}の違いだけで{@id:agreed}でなくなる。ほかの{@id:story}の{@id:agreement}で、{@id:detached}が消える"
 layers = ["model", "cli", "api", "gui"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
