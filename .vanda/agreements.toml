@@ -1639,3 +1639,12 @@ fingerprint = "sha256:e8a2ac872e2d545803bc42993aa57f40d3d14f026f77ab5765b0340f64
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T15:28:44+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:1f6f0711a91c3a2767f2a1e09d3e607e716d8e2d4e90a685fe7cace844a69782"
+fingerprint = "sha256:1f6f0711a91c3a2767f2a1e09d3e607e716d8e2d4e90a685fe7cace844a69782"
+path = "web/e2e/review.spec.ts"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T15:28:48+09:00
+story = "#4"
