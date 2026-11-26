@@ -1346,3 +1346,12 @@ path = "cmd/vanda/testdata/scenario/annotation_ts.txtar"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T10:52:20+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:caca05a8fee47013dc50a590556e58546ce0b605987d3ceb5fe6836753192a6b"
+fingerprint = "sha256:caca05a8fee47013dc50a590556e58546ce0b605987d3ceb5fe6836753192a6b"
+path = "cmd/vanda/testdata/scenario/check_args.txtar"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T10:52:22+09:00
+story = "#4"
