@@ -1406,13 +1406,15 @@ describe("参照", () => {
     }
   };
 
-  // @vanda:evidence item-detail-in-one-place
-  it("参照にマウスを乗せた時とフォーカスした時に指す先のIDと中身と機能ならコア機能か形式手法を使う機能かのマークをポップアップで出し離れるかEscで消す", async () => {
-    open([popupEntry()], { refs: popupRefs });
-    await openEntry(/c-pop/);
-    await waitFor(() => expect(detailRegion().textContent).toContain("マークのない機能"));
-    const user = userEvent.setup();
-    for (const p of popupTargets) {
+  // 指す先ごとに 1 本にする: 全部の指す先を 1 本でたどると、負荷のない時でも 2 秒を超え、負荷があると 1 本の時間の上限に届く。
+  // 時間切れになった本体は止まらず、後ろのテストの画面を操作して、そちらも落とす
+  for (const p of popupTargets) {
+    // @vanda:evidence item-detail-in-one-place
+    it(`参照（${p.name}）にマウスを乗せた時とフォーカスした時に指す先のIDと中身と機能ならコア機能か形式手法を使う機能かのマークをポップアップで出し離れるかEscで消す`, async () => {
+      open([popupEntry()], { refs: popupRefs });
+      await openEntry(/c-pop/);
+      await waitFor(() => expect(detailRegion().textContent).toContain("マークのない機能"));
+      const user = userEvent.setup();
       const el = refElement(detailRegion(), p.name)!;
       expect(el, `参照 ${p.name} がない`).toBeTruthy();
       expect(tipWith(p.text), `${p.name}: マウスを乗せる前から出ている`).toBeNull();
@@ -1441,8 +1443,8 @@ describe("参照", () => {
       await waitFor(() => expect(tipWith(p.text), `${p.name}: フォーカスして開いたポップアップが Esc で消えない`).toBeNull());
       el.blur();
       await waitFor(() => expect(tipWith(p.text), `${p.name}: フォーカスを外しても消えない`).toBeNull());
-    }
-  });
+    });
+  }
 
   // @vanda:evidence item-detail-in-one-place
   it("ポップアップの中の文の参照は参照の見た目で出しリンクにもせずマウスを乗せてもフォーカスしても次のポップアップを出さない", async () => {
