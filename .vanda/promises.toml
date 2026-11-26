@@ -1179,7 +1179,6 @@ refines = ["raise-flags"]
 statement = "開発者（AI）が提案した{@id:spec}と、推測した所は、一覧で、1 件を開く前に見分けられる"
 condition = "{@id:flag}があるのに、一覧で気づけない"
 layers = ["api", "gui"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
