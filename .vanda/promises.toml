@@ -995,7 +995,6 @@ refines = ["report-mistakes"]
 statement = "利用者は、docs/formats.md の呼び方で CI から vanda check を動かし、通ったか・何が失敗したかを、終了コードと出力で知ることができる"
 condition = "取り決めの呼び方で動かない。失敗があるのに終了コードが 0。どの{@id:check}の何が失敗したかが、出力から分からない"
 layers = ["cli"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
