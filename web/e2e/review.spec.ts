@@ -218,10 +218,13 @@ async function select(page: Page, text: string) {
   await page.getByText(text, { exact: false }).first().click();
 }
 
+// agreeButton は、右のペイン（仕様の詳細の画面とファイルの画面では、その画面）の承認のボタン。左の一覧の行の中の「承認する」は指さない
+const agreeButton = (page: Page) => page.getByRole("button", { name: /承認する/ }).and(page.locator('button:not([aria-label="変わったものの一覧"] *)'));
+
 async function agreeAll(page: Page, items: string[]) {
   for (const item of items) {
     await select(page, item);
-    const button = page.getByRole("button", { name: /承認する/ });
+    const button = agreeButton(page);
     await expect(button).toBeEnabled();
     const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
     await button.click();
@@ -360,7 +363,7 @@ for (const v of states) {
         if (before.story !== null) await expect(storyField(page)).toHaveValue(before.story);
         else await expect(page.getByText(/ストーリー\s*[:：]\s*#24/).first(), "戻った後に、決まったストーリーが示されない").toBeVisible();
         await expect(page.getByRole("link", { name: "仕様の詳細を開く" }), "選んでいた task-id-unique の 1 件の詳細に戻っていない").toHaveAttribute("href", /task-id-unique/);
-        await expect(page.getByRole("button", { name: /承認する/ })).toBeVisible();
+        await expect(agreeButton(page)).toBeVisible();
       });
   }
 }
@@ -486,7 +489,7 @@ test("レビューの画面の1件の詳細に仕様の変更履歴と承認の�
   await expect(page.getByRole("row").filter({ hasText: "承認する人" })).toHaveCount(0);
 
   const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
-  await page.getByRole("button", { name: /承認する/ }).click();
+  await agreeButton(page).click();
   expect((await res).status()).toBe(200);
   const now = rowOf(page, "承認する人");
   await expect(now, "承認した後に、承認の履歴に足されていない").toBeVisible();
@@ -551,7 +554,7 @@ for (const pg of pages) {
     // v3 のときに画面で承認し、その後に v4 へ変える
     await openReviewDetail(page);
     const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
-    await page.getByRole("button", { name: /承認する/ }).click();
+    await agreeButton(page).click();
     expect((await res).status()).toBe(200);
     repo.write(".vanda/promises.toml", promisesAt(v4));
     commit(repo, "文を直す", "#24");
@@ -610,7 +613,7 @@ layers = ["model"]
     commitV3(repo);
     await openReviewDetail(page);
     const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
-    await page.getByRole("button", { name: /承認する/ }).click();
+    await agreeButton(page).click();
     expect((await res).status()).toBe(200);
     repo.write(".vanda/promises.toml", promisesAt(v4));
     commit(repo, "文を直す", "#24");
@@ -822,7 +825,7 @@ test("承認済の仕様で承認を取り消すとストーリーの今の中�
   decorateAgreements(repo);
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await select(page, "task-id-unique");
-  await expect(page.getByRole("button", { name: /承認する/ })).toBeVisible();
+  await expect(agreeButton(page)).toBeVisible();
   await expect(unagreeButton(page), "提案中のものに取り消しが出ている").toHaveCount(0);
   await agreeAll(page, items);
   const passed = repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main");
@@ -949,7 +952,7 @@ async function storyChoices(page: Page): Promise<string[]> {
 async function agreeTaskIdUnique(page: Page) {
   await select(page, "task-id-unique");
   const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
-  await page.getByRole("button", { name: /承認する/ }).click();
+  await agreeButton(page).click();
   expect((await res).status()).toBe(200);
 }
 
@@ -1192,7 +1195,7 @@ const recordsOf = (key: string, story: string) => {
 async function agreeHere(page: Page, url: RegExp) {
   const count = commitCount();
   const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
-  await page.getByRole("button", { name: /承認する/ }).click();
+  await agreeButton(page).click();
   expect((await res).status()).toBe(200);
   await expect.poll(commitCount, { message: "承認が 1 つのコミットにならない" }).toBe(count + 1);
   await expect(page, "承認した後に、画面を移った").toHaveURL(url);

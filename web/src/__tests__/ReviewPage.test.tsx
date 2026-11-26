@@ -37,6 +37,8 @@ const bodyText = () => document.body.textContent ?? "";
 
 const listRegion = () => screen.getByRole("region", { name: "変わったものの一覧" });
 const detailRegion = () => screen.getByRole("region", { name: "1 件の中身" });
+// detailAgreeButtons は、右のペイン（1 件の中身）に今出ている承認のボタン。1 件を選ぶ前で、右のペインがまだなければ空
+const detailAgreeButtons = () => screen.queryAllByRole("region", { name: "1 件の中身" }).flatMap((r) => within(r).queryAllByRole("button", { name: /承認する/ }));
 // listRow は、一覧で名前が name の 1 件（<li>）
 const listRow = async (name: string) => (await within(await screen.findByRole("region", { name: "変わったものの一覧" })).findByText(name, { exact: true })).closest("li")! as HTMLElement;
 
@@ -216,10 +218,10 @@ describe("RV-06 承認する", () => {
     );
     const user = userEvent.setup();
     const [item] = await screen.findAllByText(/task-id-unique/);
-    let button = screen.queryAllByRole("button", { name: /承認する/ })[0];
+    let button = detailAgreeButtons()[0];
     if (!button) {
       await user.click(item);
-      button = await screen.findByRole("button", { name: /承認する/ });
+      button = await within(await screen.findByRole("region", { name: "1 件の中身" })).findByRole("button", { name: /承認する/ });
     }
     const before = reviewRequests().length;
     await user.click(button);
@@ -307,10 +309,10 @@ describe("RV-06 承認する", () => {
     server.use(http.post("/api/agree", () => apiError(409, "約束リストに書きかけの変更がある。先にコミットする")));
     const user = userEvent.setup();
     const [item] = await screen.findAllByText(/task-id-unique/);
-    let button = screen.queryAllByRole("button", { name: /承認する/ })[0];
+    let button = detailAgreeButtons()[0];
     if (!button) {
       await user.click(item);
-      button = await screen.findByRole("button", { name: /承認する/ });
+      button = await within(await screen.findByRole("region", { name: "1 件の中身" })).findByRole("button", { name: /承認する/ });
     }
     await user.click(button);
     expect(await screen.findByText(/約束リストに書きかけの変更がある/)).toBeTruthy();
@@ -648,8 +650,8 @@ describe("RV-06 承認した後に読み直す", () => {
     const li = () => screen.getAllByText(/task-id-unique/).map((el) => el.closest("li")).find((x) => x)!;
     const stateIcons = (name: string) => within(li()).queryAllByRole("img", { name }).length;
     expect(stateIcons("提案中")).toBe(1);
-    if (!screen.queryAllByRole("button", { name: /承認する/ })[0]) await user.click(item);
-    await user.click(await screen.findByRole("button", { name: /承認する/ }));
+    if (!detailAgreeButtons()[0]) await user.click(item);
+    await user.click(await within(await screen.findByRole("region", { name: "1 件の中身" })).findByRole("button", { name: /承認する/ }));
     await waitFor(() => expect(stateIcons("承認済"), "承認した後の一覧が承認済にならない").toBe(1));
     expect(stateIcons("提案中")).toBe(0);
   });
@@ -2034,7 +2036,7 @@ describe("一覧を読み込む間に選んだ件を先に出す", () => {
       for (const el of screen.getAllByText("読み込んでいます…")) expectLoading(el, `${c.kind}: 一覧の前の読み込み中のエリア`);
 
       g.open();
-      expect(await screen.findByRole("button", { name: /承認する/ }), `${c.kind}: 一覧の後に承認のボタンが出ない`).toBeTruthy();
+      expect(await within(await screen.findByRole("region", { name: "1 件の中身" })).findByRole("button", { name: /承認する/ }), `${c.kind}: 一覧の後に承認のボタンが出ない`).toBeTruthy();
       await waitFor(() => expect(bodyText(), `${c.kind}: 一覧の後に変更前の中身が出ない`).toMatch(/の前の(文|定義|中身)/));
       expect(bodyText(), `${c.kind}: 一覧の後に状態が出ない`).toContain("提案中");
       if (c.flag) expect(bodyText(), `${c.kind}: 一覧の後にフラグが出ない`).toContain("AI 案");
