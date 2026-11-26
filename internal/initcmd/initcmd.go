@@ -20,6 +20,7 @@ import (
 	"github.com/TadahiroYamamura/vanda/internal/version"
 
 	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
 	"charm.land/huh/v2"
 )
 
@@ -162,16 +163,19 @@ func newAsker(t *Terminal) *asker {
 	return &asker{t: t, keys: keys}
 }
 
-func (a *asker) run(fields ...huh.Field) error {
+// run は、質問を 1 つ出す。filter は、bubbletea が huh に渡す前のメッセージを受け、捨てるものには nil を返す
+func (a *asker) run(field huh.Field, filter func(tea.Model, tea.Msg) tea.Msg) error {
 	err := a.t.with(func(in io.Reader) error {
-		group := huh.NewGroup(fields...)
+		group := huh.NewGroup(field)
 		// huh は、端末の幅が届くまで幅 80 で描く。80 桁を超える題は、切れた形で 1 度出てから描き直されるので、はじめから幅を渡す。
 		// フォームではなくグループに渡すのは、フォームに渡すと、質問の間に端末の幅が変わっても huh が追わなくなるため。
 		// 幅を読めないときは渡さず、huh が端末の幅で描き直すのに任せる
 		if w, ok := a.t.width(); ok {
 			group.WithWidth(w)
 		}
-		return huh.NewForm(group).WithInput(in).WithOutput(a.t.out).WithKeyMap(a.keys).WithShowHelp(true).Run()
+		// WithProgramOptions は、それまでに渡した入力と出力を消すので、WithInput・WithOutput より先に呼ぶ
+		return huh.NewForm(group).WithProgramOptions(tea.WithFilter(filter)).
+			WithInput(in).WithOutput(a.t.out).WithKeyMap(a.keys).WithShowHelp(true).Run()
 	})
 	if errors.Is(err, huh.ErrUserAborted) {
 		return ErrInterrupted
@@ -187,21 +191,31 @@ func (a *asker) run(fields ...huh.Field) error {
 // huh は、Enter で値を確かめた後、次へ進む合図を別のメッセージで送り、進む時に、その時の値をもう一度確かめる。
 // 合図より先に届いたキー（貼り付け・先打ち・スクリプトからの入力）は、答えた質問の値を変える。変わった値が形に合わないと、
 // huh は進むのをやめたままキーを受け付けなくなり、形に合えば、Enter で確かめたのと違う値が答えになる。
-// そのため、Enter で確かめた値を答えにし、その後は huh に確かめ直させない。合図より先に届いたキーは捨てることになる。
-// bubbletea のメッセージを見て後のキーを次の質問へ回す案は、Enter で進むかどうかがキーの時点では分からず、
-// 質問の種類ごとに huh の中の動きを写すことになるので、選ばなかった。
+// そのため、Enter で確かめた値を答えにし、その後のキーは huh に渡さずに捨てる。
+// 捨てずに次の質問へ回す案は、bubbletea がキーに読み解いた後では、元のバイトとして入力に戻せないので、選ばなかった。
 //
-// TODO: 複数選ぶ質問と作るかの質問は、huh が Enter の時に確かめを呼ばないので、この形では守れない。
-// Enter と同じ書き込みで届いたキーが、答えた質問の選びを変える（止まりはしない）
+// huh は、Enter の時のほかにも確かめを呼ぶ（複数選ぶ質問では、選びを変えるたびに呼ぶ）。
+// Enter の時の確かめだけを見分けるために、huh が今扱っているキーが keys のどれかの間に呼ばれた確かめだけを使う
 type entered[T any] struct {
-	value T
-	ok    bool
+	keys     []key.Binding // huh が値を確かめて次へ進むキー
+	entering bool
+	value    T
+	ok       bool
 }
 
-// validate は、huh に渡す確かめ。Enter で check を通った値を覚え、その後は何も確かめない。
+func (e *entered[T]) filter(_ tea.Model, msg tea.Msg) tea.Msg {
+	k, isKey := msg.(tea.KeyPressMsg)
+	if isKey && e.ok {
+		return nil
+	}
+	e.entering = isKey && key.Matches(k, e.keys...)
+	return msg
+}
+
+// validate は、huh に渡す確かめ。Enter で check を通った値を覚える。
 func (e *entered[T]) validate(check func(T) (T, error)) func(T) error {
 	return func(v T) error {
-		if e.ok {
+		if e.ok || !e.entering {
 			return nil
 		}
 		v, err := check(v)
@@ -224,11 +238,11 @@ func (e *entered[T]) answer(err error) (T, error) {
 // input は、既定の答えを入れた状態から始める入力。check は、形に合わない答えのときに、その場で理由を出す
 func (a *asker) input(title, def string, check func(string) error) (string, error) {
 	v := def
-	var e entered[string]
+	e := entered[string]{keys: []key.Binding{a.keys.Input.Next, a.keys.Input.Submit}}
 	return e.answer(a.run(huh.NewInput().Title(title).Value(&v).Validate(e.validate(func(s string) (string, error) {
 		s = strings.TrimSpace(s)
 		return s, check(s)
-	}))))
+	})), e.filter))
 }
 
 // Ask は、d を既定の答えにして、t で質問し、答えを集める。
@@ -269,9 +283,9 @@ func Ask(root string, d Defaults, t *Terminal) (Answers, error) {
 	for _, c := range choices {
 		opts = append(opts, huh.NewOption(c.title, c))
 	}
-	var store entered[storeChoice]
+	store := entered[storeChoice]{keys: []key.Binding{q.keys.Select.Next, q.keys.Select.Submit}}
 	choice, err = store.answer(q.run(huh.NewSelect[storeChoice]().Title("ストーリーストア").Options(opts...).Value(&choice).
-		Validate(store.validate(func(c storeChoice) (storeChoice, error) { return c, nil }))))
+		Validate(store.validate(func(c storeChoice) (storeChoice, error) { return c, nil })), store.filter))
 	if err != nil {
 		return a, err
 	}
@@ -331,7 +345,10 @@ func Ask(root string, d Defaults, t *Terminal) (Answers, error) {
 		langOpts = append(langOpts, huh.NewOption(l.Title, l.Name).Selected(found[l.Name]))
 	}
 	var picked []string
-	if err := q.run(huh.NewMultiSelect[string]().Title("アノテーションを読む言語（スペースで選ぶ）").Options(langOpts...).Value(&picked)); err != nil {
+	langs := entered[[]string]{keys: []key.Binding{q.keys.MultiSelect.Next, q.keys.MultiSelect.Submit}}
+	picked, err = langs.answer(q.run(huh.NewMultiSelect[string]().Title("アノテーションを読む言語（スペースで選ぶ）").Options(langOpts...).Value(&picked).
+		Validate(langs.validate(func(names []string) ([]string, error) { return names, nil })), langs.filter))
+	if err != nil {
 		return a, err
 	}
 	for _, l := range annotation.Builtins {
@@ -362,7 +379,22 @@ func Ask(root string, d Defaults, t *Terminal) (Answers, error) {
 func Confirm(t *Terminal) (bool, error) {
 	q := newAsker(t)
 	yes := true
-	err := q.run(huh.NewConfirm().Title("この内容で .vanda/ を作りますか").Affirmative("作る").Negative("作らない").Value(&yes))
+	// huh は、作るかの質問では Enter の時に確かめを呼ばないので、entered では Enter の時の値を取れない。
+	// この質問では、次へ進むキーは必ず進むので、そのキーを huh に渡した後のキーを捨てる
+	keys := q.keys.Confirm
+	answered := false
+	err := q.run(huh.NewConfirm().Title("この内容で .vanda/ を作りますか").Affirmative("作る").Negative("作らない").Value(&yes),
+		func(_ tea.Model, msg tea.Msg) tea.Msg {
+			k, isKey := msg.(tea.KeyPressMsg)
+			if !isKey {
+				return msg
+			}
+			if answered {
+				return nil
+			}
+			answered = key.Matches(k, keys.Next, keys.Submit, keys.Accept, keys.Reject)
+			return msg
+		})
 	return yes, err
 }
 
