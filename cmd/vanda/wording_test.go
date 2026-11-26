@@ -46,7 +46,7 @@ func Testシナリオで出たチェックの結果の行と誤りの文に仕�
 		"cat \"$f.out\"\n" +
 		"cat \"$f.err\" >&2\n" +
 		"exit $code\n"
-	if err := os.WriteFile(filepath.Join(wrapDir, "vanda"), []byte(wrapper), 0o755); err != nil {
+	if err := writeFileForExec(filepath.Join(wrapDir, "vanda"), []byte(wrapper), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	// 並べて動くシナリオが全部終わってから読むよう、t.Run で囲む

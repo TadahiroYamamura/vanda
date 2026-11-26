@@ -164,7 +164,7 @@ fi
 echo "偽の gh: 思っていない引数: $*" >&2
 exit 2
 `, log, cases.String())
-	if err := os.WriteFile(filepath.Join(dir, "gh"), []byte(script), 0o755); err != nil {
+	if err := writeFileForExec(filepath.Join(dir, "gh"), []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	return dir

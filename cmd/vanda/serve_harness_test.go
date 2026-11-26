@@ -521,7 +521,7 @@ func fakeOpenerPath(t *testing.T, fail bool) string {
 	}
 	if fail {
 		for _, name := range []string{"xdg-open", "open"} {
-			if err := os.WriteFile(filepath.Join(dir, name), []byte("#!/bin/sh\necho ブラウザがない >&2\nexit 3\n"), 0o755); err != nil {
+			if err := writeFileForExec(filepath.Join(dir, name), []byte("#!/bin/sh\necho ブラウザがない >&2\nexit 3\n"), 0o755); err != nil {
 				t.Fatal(err)
 			}
 		}

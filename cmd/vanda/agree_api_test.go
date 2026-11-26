@@ -1314,7 +1314,7 @@ func newBlockingHook(t *testing.T, r *reviewRepo) *blockingHook {
 	h := &blockingHook{t: t, dir: t.TempDir()}
 	script := fmt.Sprintf("#!/bin/sh\necho x >> %q\nn=$(wc -l < %q | tr -d ' ')\nwhile [ ! -f %q-$n ]; do sleep 0.02; done\n",
 		filepath.Join(h.dir, "started"), filepath.Join(h.dir, "started"), filepath.Join(h.dir, "release"))
-	if err := os.WriteFile(filepath.Join(r.Root, ".git", "hooks", "pre-commit"), []byte(script), 0o755); err != nil {
+	if err := writeFileForExec(filepath.Join(r.Root, ".git", "hooks", "pre-commit"), []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	// テストが途中で落ちても、止まったフックを残さない

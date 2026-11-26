@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 
 	"pgregory.net/rapid"
@@ -186,9 +187,19 @@ func writeFile(t interface{ Fatalf(string, ...any) }, root, path, src string) {
 	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
 		t.Fatalf("%v", err)
 	}
-	if err := os.WriteFile(abs, []byte(src), 0o644); err != nil {
+	if err := writeFileForExec(abs, []byte(src), 0o644); err != nil {
 		t.Fatalf("%v", err)
 	}
+}
+
+// writeFileForExec は、後で動かすファイル（偽のコマンド、カスタムアダプタ、git のフック）を書く。
+// os.WriteFile をそのまま使わない: 書いている間に、並行するテストがコマンドを起こす（fork する）と、その子プロセスが
+// 書き込み用に開いたファイルを持ったまま生まれ、子が exec するまでの間にこのファイルを動かすと、Linux では
+// text file busy で失敗する。syscall.ForkLock を読む側で取り、書いている間は fork させない。
+func writeFileForExec(path string, data []byte, perm os.FileMode) error {
+	syscall.ForkLock.RLock()
+	defer syscall.ForkLock.RUnlock()
+	return os.WriteFile(path, data, perm)
 }
 
 func dump(srcs map[string]string) string {
