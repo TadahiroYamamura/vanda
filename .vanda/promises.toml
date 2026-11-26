@@ -830,7 +830,6 @@ refines = ["block-unagreed-changes"]
 statement = "{@id:agreement-check}が通れば、対象の{@id:item}と{@id:agreement}の対象のファイル（消したことを含む）は、どれも今の中身で{@id:agreed}である"
 condition = "今の中身に{@id:agreement}していないもの（消したものを含む）があるのに、{@id:agreement-check}が通る"
 layers = ["model", "cli", "api"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
