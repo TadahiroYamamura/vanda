@@ -19,6 +19,7 @@ const sha = (s: string) => "sha256:" + createHash("sha256").update(s, "utf8").di
 const termJSON = `{"definition":"タスクを見分ける名前","id":"task-id","name":"タスクの ID"}`;
 const specJSON = (statement: string) =>
   `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"}],"id":"task-id-unique","layers":["model"],"refines":["add-task"],"statement":"${statement}"}`;
+const titleJSON = `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"}],"id":"task-title-required","layers":["model"],"refines":["add-task"],"statement":"タスクの題は空にできない"}`;
 const propertyJSON = `{"id":"no-lost-task","statement":"登録したタスクは失われない"}`;
 const featureJSON = `{"definition":"タスクを足す","id":"add-task","name":"タスクの登録","refines":["no-lost-task"]}`;
 
@@ -317,8 +318,10 @@ test("承認した仕様を変えると一覧に差分ありとして戻る", as
 });
 
 test("ベースブランチとレビュー単位を切り替えると一覧が変わる", async ({ page }) => {
-  // release は、#24 の最初のコミットの後から分かれたことにする（シナリオの変更だけが残る）
-  repo.git("branch", "release", "story-24~1");
+  // release は、#24 の最初のコミットの後から分かれたことにする（シナリオの変更だけが残る）。
+  // task-title-required は承認済にしておき、release と比べると一覧から消えるようにする
+  agreeByHand(repo, titleAgreed());
+  repo.git("branch", "release", "story-24~2");
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await expect(page.getByText("task-title-required").first()).toBeVisible();
   const baseSelect = page.getByRole("combobox", { name: "ベースブランチ" });
@@ -357,7 +360,9 @@ for (const v of states) {
       // @vanda:evidence owner-reviews-every-change
       test(`${v.name}選んだ仕様で${route.name}ストーリーのレビューへ戻ると行く前と同じ状態に戻る`, async ({ page }) => {
         // シナリオに task-id-unique のエビデンスを付け、仕様の文も変える。release は、このコミットの直前から分かれたことに
-        // する（release と比べても task-id-unique が一覧に出て、main と比べたときとは一覧が変わる）
+        // する（release と比べても task-id-unique が一覧に出て、main と比べたときとは一覧が変わる）。
+        // task-title-required は承認済にしておき、release と比べると一覧から消えるようにする
+        agreeByHand(repo, titleAgreed());
         repo.git("branch", "release", "story-24");
         repo.write("e2e/add-task.txtar", "# シナリオ\n# @vanda:evidence task-id-unique\n! exec vanda-task add a\n-- a.txt --\na\n");
         const text = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
@@ -479,6 +484,14 @@ function commit(r: Repo, subject: string, story: string | null, date?: string): 
   });
   return r.git("rev-parse", "HEAD");
 }
+
+// agreeByHand は、#24 の承認の記録を手で書き足し、#24 のコミットにする。ベースブランチと比べて変わっていないものを一覧に出さない
+// 場面を作るのに使う（承認済でないものは、変わっていなくても一覧に出るため）
+function agreeByHand(r: Repo, ...records: string[]) {
+  r.write(".vanda/agreements.toml", readFileSync(join(r.root, ".vanda/agreements.toml"), "utf8") + records.join(""));
+  commit(r, "承認の記録を書く", "#24");
+}
+const titleAgreed = () => agreement("spec", "task-title-required", sha(titleJSON), null, "#24");
 
 // commitV3 は、DB のレイヤーを設定に足し、task-id-unique を v3 にする。
 function commitV3(r: Repo, date?: string): string {
@@ -1364,7 +1377,12 @@ for (const w of writers) {
 
 // @vanda:evidence agreement-bound-to-seen-content
 test("ストーリーのレビューから一覧にないファイルや仕様を開くと承認のボタンがなくこのストーリーでは変わっていないと示す", async ({ page }) => {
-  // release は story-24 の今と同じ。release と比べると一覧は空なので、どのファイルも仕様も一覧にない
+  // release は story-24 の今と同じ。開く仕様とファイルは #24 で承認済にしておくので、release と比べると、どちらも一覧にない
+  agreeByHand(
+    repo,
+    agreement("spec", "task-id-unique", sha(specJSON("タスクの ID は、すべてのタスクを通して重ならない")), null, "#24"),
+    agreement("file", sha(scenarioStory), sha(scenarioStory), "e2e/add-task.txtar", "#24"),
+  );
   repo.git("branch", "release", "story-24");
   await page.goto(serve.url + "/?view=branch&base=main");
   await select(page, "task-id-unique");

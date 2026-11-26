@@ -532,18 +532,25 @@ func Test差分は両方の参照を今の名前に置き換えて比べ名前�
 }
 
 // @vanda:evidence owner-understands-each-change
-func Test参照先の名前を変えただけの仕様は一覧に出ない(t *testing.T) {
+func Test参照先の名前を変えただけの仕様は変わったものとして一覧に出ない(t *testing.T) {
 	t.Parallel()
 	r := setupRefAPI(t)
-	// c-other は {@id:t-keep} を指したまま、書いた文は変えていない。t-rename の名前を変えた story-24 でも出ない
+	// c-other は {@id:t-keep} を指したまま、書いた文は変えていない。t-rename の名前を変えた story-24 でも、変わったものにならない。
+	// このリポジトリには承認の記録がないので、変えていないものは、変わっていない行として出る
 	var keys []string
 	for _, e := range r.review.Entries {
+		if e.Change == "unchanged" {
+			continue
+		}
 		keys = append(keys, e.key())
 	}
 	sort.Strings(keys)
 	want := []string{"c-ref", "c-same", "f-gone", "f-rename", "t-gone", "t-rename"}
 	if !reflect.DeepEqual(keys, want) {
-		t.Errorf("一覧の件: %v（思ったもの %v）", keys, want)
+		t.Errorf("一覧の変わったものの件: %v（思ったもの %v）", keys, want)
+	}
+	if e := r.entry(t, "c-other"); e.Change != "unchanged" {
+		t.Errorf("c-other の change: %q（unchanged のはず）", e.Change)
 	}
 }
 

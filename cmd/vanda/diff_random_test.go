@@ -142,8 +142,9 @@ func Testファイルの差分は無作為な変更前と変更後でもすべ�
 				}
 			}
 			if p.before == p.after {
-				if e != nil {
-					rt.Errorf("%s: 中身が変わっていないのに一覧にある", path)
+				// このリポジトリには承認の記録がないので、変えていないファイルも、変わっていない行として一覧に出る
+				if e != nil && (e.Change != "unchanged" || !isNull(e.Diff)) {
+					rt.Errorf("%s: 中身が変わっていないのに、変わったものとして一覧にある（change %q、diff %s）", path, e.Change, e.Diff)
 				}
 				continue
 			}
