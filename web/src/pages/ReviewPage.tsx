@@ -175,7 +175,7 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; memor
           )}
         </aside>
 
-        <section className="list" aria-label="変わったものの一覧">
+        <section className="list" aria-label="レビュー対象の一覧">
           {review.error != null && <ErrorBox error={review.error} title="一覧を作れません" />}
           {review.data ? (
             <EntryList
@@ -409,7 +409,7 @@ function EntryList(props: {
       </p>
       {detached.length > 0 && (
         <div className="detached">
-          <h3>承認が失効したもの（{detached.length} 件。比べる元から変わっていないため、総数に数えません）</h3>
+          <h3>承認が失効したもの（{detached.length} 件。承認済で、比べる元から変わっていないため、総数に数えません）</h3>
           <ul className="entries">
             {detached.map((e) => (
               <EntryRow key={entryKey(e)} e={e} selected={props.selected === entryKey(e)} onSelect={props.onSelect} story={props.story} onAgreed={props.onAgreed} />
@@ -417,7 +417,7 @@ function EntryList(props: {
           </ul>
         </div>
       )}
-      {review.total === 0 && <p className="note">比べる元と今のあいだで、変わったものはありません。</p>}
+      {review.total === 0 && <p className="note">レビュー対象はありません。</p>}
       {filtering && (review.total > 0 || review.detached.length > 0) && entries.length === 0 && detached.length === 0 && (
         <p className="note">絞り込みの条件にマッチするものはありません。</p>
       )}
@@ -434,7 +434,7 @@ function ListHead(props: { total: string; loading: boolean; filter: Filter; onFi
   return (
     <>
       <h2>
-        変わったもの <span className="total">{props.total}</span>
+        レビュー対象 <span className="total">{props.total}</span>
       </h2>
       {props.loading && <Loading className="loading-over" />}
       <div className="filter" role="search" aria-label="一覧の絞り込み">
