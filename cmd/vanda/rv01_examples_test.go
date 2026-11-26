@@ -30,7 +30,7 @@ func pickCycle() rvPick {
 
 var rvExamples = []rvExample{
 	{
-		name: "追加・変更・削除のそれぞれが1度ずつ出て名前の変更は削除と追加の2件になり変わっていないものもコミットしていない書きかけの変更も出ない",
+		name: "追加・変更・削除のそれぞれが1度ずつ出て名前の変更は削除と追加の2件になりコミットしていない書きかけの変更は出ない",
 		build: func(r *rvRepo) {
 			r.addItem("spec", "c-keep", 0)
 			r.addItem("spec", "c-change", 1)
@@ -103,7 +103,7 @@ var rvExamples = []rvExample{
 		}},
 	},
 	{
-		name: "項目の順や空白や引用符やファイルの分け方だけを変えたものは出ない",
+		name: "項目の順や空白や引用符やファイルの分け方だけを変えたものは変わったものとして出ない",
 		build: func(r *rvRepo) {
 			r.addItem("spec", "c-a", 0)
 			r.addItem("spec", "c-b", 0)

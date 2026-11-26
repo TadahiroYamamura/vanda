@@ -96,10 +96,10 @@ func (s rvState) clone() rvState {
 	return c
 }
 
-// どの操作も変えない用語。一覧には出ない。
+// どの操作も変えない用語。変わったものとしては出ない。
 const rvBaseTerm = "base"
 
-// 仕様が refines する機能と、機能が refines する性質。どの操作も変えないので、最初のコミットの後は一覧に出ない。
+// 仕様が refines する機能と、機能が refines する性質。どの操作も変えないので、最初のコミットの後は、変わったものとしては出ない。
 const (
 	rvBaseFeature  = "base-feature"
 	rvBaseProperty = "base-property"

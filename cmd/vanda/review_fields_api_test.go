@@ -339,6 +339,15 @@ func newFieldsRepo(t *testing.T, version string) *fieldsRepo {
 		return sha256Hex([]byte(fmt.Sprintf(`{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],"id":"flag-agreed","layers":["model"],"refines":["f-keep"],"statement":%q}`, v)))
 	}
 	agreements.WriteString(agreementTOML("spec", "flag-agreed", agreedFP("v0"), "", "#1", "テスト担当", "tester@example.com"))
+	// #24 が変えない項目は、承認済にしておく（変えていなくても、承認済でないものは一覧に出るため）
+	for _, k := range []struct{ kind, id, json string }{
+		{"property", "p", `{"id":"p","statement":"性質の文"}`},
+		{"property", "p2", `{"id":"p2","statement":"変えない性質"}`},
+		{"feature", "f-keep", `{"definition":"仕様が refines する機能","id":"f-keep","name":"変えない機能","refines":["p"]}`},
+		{"term", "t-keep", `{"definition":"仕様の対象","id":"t-keep","name":"変えない用語"}`},
+	} {
+		agreements.WriteString(agreementTOML(k.kind, k.id, sha256Hex([]byte(k.json)), "", "#1", "テスト担当", "tester@example.com"))
+	}
 	sqlFP := sha256Hex([]byte(fieldsSQLBase))
 	agreements.WriteString(agreementTOML("file", sqlFP, sqlFP, "db/a.sql", "#1", "テスト担当", "tester@example.com"))
 

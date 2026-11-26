@@ -86,6 +86,7 @@ func newRV14Repo(t *testing.T, version string) *rv14Repo {
 	writeFile(t, root, ".vanda/config.toml", fmt.Sprintf("version = %q\n\n[[layer]]\nid = \"model\"\nname = \"モデル\"\ndescription = \"判定と状態の変化\"\n", version))
 	writeFile(t, root, ".vanda/promises.toml", rv14Promises(0, 0))
 	writeFile(t, root, ".vanda/agreements.toml", agreementTOML("term", "t", sha256Hex([]byte(`{"definition":"d","id":"t","name":"n"}`)), "", "#9", "テスト担当", "tester@example.com")+
+		agreementTOML("property", "p", sha256Hex([]byte(`{"id":"p","statement":"s"}`)), "", "#9", "テスト担当", "tester@example.com")+
 		agreementTOML("feature", "f", sha256Hex([]byte(`{"definition":"d","id":"f","name":"n","refines":["p"]}`)), "", "#9", "テスト担当", "tester@example.com"))
 	r.agree("item-a", 0, "#9", 0)
 	r.agree("item-b", 0, "#9", 0)

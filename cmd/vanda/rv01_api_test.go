@@ -91,9 +91,24 @@ func rvFileType(path string) string {
 
 func isNull(raw json.RawMessage) bool { return len(raw) == 0 || string(raw) == "null" }
 
-// checkReview は、一覧が want とちょうど一致し（漏れも重複もない）、通し番号と総数と、各項目の形が決まりどおりかを確かめる。
-func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]bool) {
+// checkReview は、一覧の変わったものが want とちょうど一致し（漏れも重複もない）、通し番号と総数と、各項目の形が決まりどおりかを確かめる。
+// rvRepo は承認の記録を書かないので、今（HEAD のコミットの中身 cur）ある承認の対象のうち want にないものは、どれも承認済でない。
+// それらが、変わっていない提案中の行として 1 度ずつ出て、ほかに変わっていない行がないことも確かめる。
+// 変わっていない行を entries と detached のどちらに置くかは決めていないので、両方から数える。
+func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]bool, cur rvState) {
 	var b strings.Builder
+	unchanged := map[string]int{}
+	noteUnchanged := func(e reviewEntry) {
+		unchanged[rvRowKey(e.Kind, e.key())]++
+		if str(e.State) != "proposed" || e.Fingerprint == nil {
+			fmt.Fprintf(&b, "  変わっていない行が、フィンガープリントのある提案中の行でない: %s %s（state %q）\n", e.Kind, e.key(), str(e.State))
+		}
+	}
+	for _, e := range got.Detached {
+		if e.Change == "unchanged" {
+			noteUnchanged(e)
+		}
+	}
 	if got.Total != len(got.Entries) {
 		fmt.Fprintf(&b, "  total が %d、entries が %d 件\n", got.Total, len(got.Entries))
 	}
@@ -103,10 +118,14 @@ func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]b
 			fmt.Fprintf(&b, "  %d 件目の no が %v（1 から順に振る）\n", i+1, e.No)
 		}
 		r := e.rv()
-		if set[r] {
-			fmt.Fprintf(&b, "  2 度出た: %s\n", r)
+		if e.Change == "unchanged" {
+			noteUnchanged(e)
+		} else {
+			if set[r] {
+				fmt.Fprintf(&b, "  2 度出た: %s\n", r)
+			}
+			set[r] = true
 		}
-		set[r] = true
 		if got.View == "branch" && len(e.OtherCommits) != 0 {
 			fmt.Fprintf(&b, "  レビュー単位がブランチなのに otherCommits がある: %s\n", r)
 		}
@@ -120,7 +139,7 @@ func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]b
 		if want := map[string]string{"spec": "layer:model", "term": "terms", "feature": "features", "property": "properties", "truth": "truths", "file": "files"}[e.Kind]; e.Group != want {
 			fmt.Fprintf(&b, "  group が %q（%q のはず）: %s\n", e.Group, want, r)
 		}
-		if (e.Change == "added") != isNull(e.Before) || (e.Change == "deleted") != isNull(e.After) {
+		if e.Change != "unchanged" && ((e.Change == "added") != isNull(e.Before) || (e.Change == "deleted") != isNull(e.After)) {
 			fmt.Fprintf(&b, "  before は追加のときだけ、after は削除のときだけ null: %s\n", r)
 		}
 		if (e.Change == "deleted") != (e.Fingerprint == nil) {
@@ -134,9 +153,52 @@ func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]b
 	if d := rvDiffEntries(want, set); d != "" {
 		b.WriteString(d)
 	}
+	changed := map[string]bool{}
+	for e := range want {
+		changed[rvRowKey(e.Kind, e.Key)] = true
+	}
+	wantUnchanged := map[string]bool{}
+	for k, v := range rvKeyed(cur) {
+		_, name, _ := strings.Cut(k, ":")
+		if row := rvRowKey(v.kind, name); !changed[row] {
+			wantUnchanged[row] = true
+		}
+	}
+	rows := map[string]bool{}
+	for row := range wantUnchanged {
+		rows[row] = true
+	}
+	for row := range unchanged {
+		rows[row] = true
+	}
+	for _, row := range sortedKeys(rows) {
+		switch n := unchanged[row]; {
+		case !wantUnchanged[row]:
+			fmt.Fprintf(&b, "  余計な変わっていない行: %s\n", row)
+		case n != 1:
+			fmt.Fprintf(&b, "  変えていない承認済でない %s が、変わっていない行として %d 度出た（1 度だけ出る）\n", row, n)
+		}
+	}
 	if b.Len() > 0 {
 		t.Fatalf("%s の一覧が思ったものでない\n%s", where, b.String())
 	}
+}
+
+// rvRowKey は、一覧の行を、項目かファイルかと、ID か場所で見分ける。
+func rvRowKey(kind, key string) string {
+	if kind == "file" {
+		return "file " + key
+	}
+	return "item " + key
+}
+
+func sortedKeys(m map[string]bool) []string {
+	var ks []string
+	for k := range m {
+		ks = append(ks, k)
+	}
+	sort.Strings(ks)
+	return ks
 }
 
 // RV-01・RV-02・RV-13
@@ -164,7 +226,7 @@ func TestRV01の一覧はAPIで手で作った例と合う(t *testing.T) {
 				if got.View != "branch" || str(got.Base) != base || str(got.MergeBase) != r.mergeBase(base).hash {
 					t.Errorf("view %q、base %q、mergeBase %q（マージベースは %s）", got.View, str(got.Base), str(got.MergeBase), r.mergeBase(base).hash)
 				}
-				checkReview(t, "ベースブランチ "+base+" の、レビュー単位がブランチのとき", got, rvSet(want))
+				checkReview(t, "ベースブランチ "+base+" の、レビュー単位がブランチのとき", got, rvSet(want), r.head().state)
 			}
 			for story, want := range ex.story {
 				var got reviewResponse
@@ -174,7 +236,7 @@ func TestRV01の一覧はAPIで手で作った例と合う(t *testing.T) {
 				if got.View != "story" || got.MergeBase != nil || str(got.Story) != story {
 					t.Errorf("view %q、mergeBase %v、story %q", got.View, got.MergeBase, str(got.Story))
 				}
-				checkReview(t, "ストーリー "+story+" の、レビュー単位がストーリーのとき", got, rvSet(want))
+				checkReview(t, "ストーリー "+story+" の、レビュー単位がストーリーのとき", got, rvSet(want), r.head().state)
 			}
 		})
 	}
@@ -191,13 +253,13 @@ func TestRV01の一覧は無作為な操作の列を当ててもテストの中�
 		if code, msg := s.get("/api/review?view=branch&base=main&story="+q("#24"), &got); code != 200 {
 			rt.Fatalf("一覧を読めない（%d）: %s", code, msg)
 		}
-		checkReview(rt, "レビュー単位がブランチのとき", got, branch)
+		checkReview(rt, "レビュー単位がブランチのとき", got, branch, r.head().state)
 		for story, want := range stories {
 			var got reviewResponse
 			if code, msg := s.get("/api/review?view=story&story="+q(story), &got); code != 200 {
 				rt.Fatalf("ストーリー %s の一覧を読めない（%d）: %s", story, code, msg)
 			}
-			checkReview(rt, "ストーリー "+story+" の、レビュー単位がストーリーのとき", got, want)
+			checkReview(rt, "ストーリー "+story+" の、レビュー単位がストーリーのとき", got, want, r.head().state)
 		}
 	})
 }
