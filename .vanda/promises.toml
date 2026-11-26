@@ -797,7 +797,6 @@ refines = ["revoke-agreement"]
 statement = "オーナーは、自分が今のブランチで行った{@id:agreement}を取り消せる。ほかの人・ほかの{@id:story}の{@id:agreement}は消えない"
 condition = "取り消した後も、その人の{@id:agreement}が残る。ほかの人・ほかのブランチ・ほかの{@id:story}の{@id:agreement-record}が消える"
 layers = ["model", "cli", "api", "gui"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
