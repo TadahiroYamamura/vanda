@@ -1373,3 +1373,12 @@ path = "cmd/vanda/testdata/scenario/check_errors_before_run.txtar"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T10:52:25+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:a0878a8724d1e1dc779dec5d6a1cdb4433c9d8f85cd7ac5f820aebca5394aa94"
+fingerprint = "sha256:a0878a8724d1e1dc779dec5d6a1cdb4433c9d8f85cd7ac5f820aebca5394aa94"
+path = "cmd/vanda/testdata/scenario/check_order.txtar"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T10:52:26+09:00
+story = "#4"
