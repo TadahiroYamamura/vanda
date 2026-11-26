@@ -1207,7 +1207,6 @@ refines = ["raise-flags"]
 statement = "{@id:flag}が残っている{@id:spec}があれば、{@id:agreement-check}は通らない。{@id:agreement}すると、{@id:flag}が外れる"
 condition = "{@id:flag}が残ったまま、{@id:check}が通る"
 layers = ["cli", "api"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
