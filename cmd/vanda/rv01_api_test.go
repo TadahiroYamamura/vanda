@@ -320,6 +320,7 @@ type listRow struct {
 	Change      string          `json:"change"`
 	State       string          `json:"state"`
 	Fingerprint *string         `json:"fingerprint"`
+	Flags       []string        `json:"flags"`
 	Agree       *struct {
 		Possible bool `json:"possible"`
 	} `json:"agree"`
@@ -632,52 +633,132 @@ func setupCheckFailsUnchanged(t *testing.T) (string, *reviewRepo, *vandaServer, 
 	return bin, r, startServe(t, bin, r.Root, r.Env), filepath.Join(checks, "all.toml")
 }
 
-// checkFailsAndListed は、承認のチェック（範囲がすべて）の誤りに key を名指しする行があることを確かめてから、
-// その対象が、どちらのレビュー単位でも、一覧（entries か detached）に出ることを確かめる。
-func checkFailsAndListed(t *testing.T, bin string, r *reviewRepo, s *vandaServer, checks, label, kind, key string) {
+// checkFails は、承認のチェック（範囲がすべて）の誤りのうち、key を名指しする行を返す。
+func checkFails(t *testing.T, bin string, r *reviewRepo, checks, key string) []string {
 	t.Helper()
-	code, _, errs := r.vanda(bin, "check", checks)
+	_, _, errs := r.vanda(bin, "check", checks)
 	var lines []string
 	for _, line := range strings.Split(errs, "\n") {
 		if strings.Contains(line, key) {
 			lines = append(lines, line)
 		}
 	}
-	if code == 0 || len(lines) == 0 {
-		t.Fatalf("承認のチェック（%d）が %s %s で失敗しない\n%s", code, label, key, errs)
+	return lines
+}
+
+// checkFailsAndListed は、承認のチェック（範囲がすべて）の誤りに key を名指しする行があることを確かめてから、
+// その対象が、どちらのレビュー単位でも、entries に 1 度だけ出て、detached に出ず、総数が total であることを確かめ、レビュー単位ごとの行を返す。
+func checkFailsAndListed(t *testing.T, bin string, r *reviewRepo, s *vandaServer, checks, label, kind, key string, total int) map[string]listRow {
+	t.Helper()
+	lines := checkFails(t, bin, r, checks, key)
+	if len(lines) == 0 {
+		t.Fatalf("承認のチェックが %s %s で失敗しない", label, key)
 	}
+	found := map[string]listRow{}
 	for _, v := range unagreedViews {
-		rows := listRows(t, s, v.path)
-		if len(rowsOf(rows, kind, key)) == 0 {
+		got := getList(t, s, v.path)
+		if got.Total != total || len(got.Entries) != total {
+			t.Errorf("%s: total %d、entries %d 件（どちらも %d のはず）", v.name, got.Total, len(got.Entries), total)
+		}
+		if rows := rowsOf(got.Detached, kind, key); len(rows) != 0 {
+			t.Errorf("%s: %s %s が detached に出た: %+v", v.name, label, key, rows)
+		}
+		rows := rowsOf(got.Entries, kind, key)
+		if len(rows) != 1 {
 			var listed []string
-			for _, row := range rows {
+			for _, row := range got.Entries {
 				listed = append(listed, row.Kind+" "+row.key()+"（"+row.Change+"・"+row.State+"）")
 			}
-			t.Errorf("%s: 承認のチェックが失敗と言う %s %s が、一覧にない\nチェックの誤り: %s\n一覧: %s", v.name, label, key, strings.Join(lines, "\n"), strings.Join(listed, "、"))
+			t.Errorf("%s: 承認のチェックが失敗と言う %s %s が、entries に %d 度出た（1 度だけ出る）\nチェックの誤り: %s\n一覧: %s", v.name, label, key, len(rows), strings.Join(lines, "\n"), strings.Join(listed, "、"))
+			continue
 		}
+		found[v.name] = rows[0]
+	}
+	return found
+}
+
+// 用意したリポジトリの一覧の総数。#24 が変えた 3 つ、消したことへの承認がない 2 つ、フラグか推測の残る 2 つ
+const checkFailsUnchangedTotal = 7
+
+// @vanda:evidence owner-reviews-every-change
+func Testほかのストーリーが消して消したことへの承認がないままベースブランチに取り込まれた仕様とファイルは一覧に中身のない提案中の削除の行として1度だけ出て消したことを承認すると一覧から消え承認のチェックがその対象で失敗しなくなる(t *testing.T) {
+	t.Parallel()
+	bin, r, s, checks := setupCheckFailsUnchanged(t)
+	targets := []struct{ label, kind, key string }{
+		{"仕様", "spec", reviewRemovedSpecID},
+		{"ファイル", "file", reviewUnagreedPath},
+	}
+	for i, tg := range targets {
+		t.Run(tg.label, func(t *testing.T) {
+			// 先に承認した対象は一覧から消えるので、総数は 1 つずつ減る
+			for name, row := range checkFailsAndListed(t, bin, r, s, checks, tg.label, tg.kind, tg.key, checkFailsUnchangedTotal-i) {
+				if row.Change != "deleted" || row.State != "proposed" || row.Fingerprint != nil {
+					t.Errorf("%s: %s %s の change %q、state %q、fingerprint %q（思ったもの deleted・proposed・なし）", name, tg.label, tg.key, row.Change, row.State, str(row.Fingerprint))
+				}
+				// 消す前の中身は、承認の記録に残っていないので出せない（docs/formats.md）
+				if !isNull(row.Before) || !isNull(row.After) || !isNull(row.Diff) {
+					t.Errorf("%s: %s %s の before・after・diff が null でない（before %s、after %s、diff %s）", name, tg.label, tg.key, row.Before, row.After, row.Diff)
+				}
+				if len(row.Flags) != 0 {
+					t.Errorf("%s: %s %s の flags が空でない: %v", name, tg.label, tg.key, row.Flags)
+				}
+				if row.Agree == nil || !row.Agree.Possible {
+					t.Errorf("%s: %s %s を消したことを承認できると出ていない: %+v", name, tg.label, tg.key, row.Agree)
+				}
+			}
+			body := map[string]any{"kind": tg.kind, "id": nil, "path": nil, "fingerprint": nil, "story": reviewStory, "deleted": true}
+			if tg.kind == "file" {
+				body["path"] = tg.key
+			} else {
+				body["id"] = tg.key
+			}
+			if code, msg := s.post("/api/agree", body, nil); code != 200 {
+				t.Fatalf("%s %s を消したことを承認できない（%d）: %s", tg.label, tg.key, code, msg)
+			}
+			if got, want := r.git("log", "-1", "--format=%s"), "(chore) #24 で "+tg.label+" "+tg.key+" を消したことを承認する"; got != want {
+				t.Errorf("承認のコミットの subject: %q（思ったもの %q）", got, want)
+			}
+			for _, v := range unagreedViews {
+				if after := rowsOf(listRows(t, s, v.path), tg.kind, tg.key); len(after) != 0 {
+					t.Errorf("%s: 消したことを承認した %s %s が、一覧に残っている: %+v", v.name, tg.label, tg.key, after)
+				}
+			}
+			if lines := checkFails(t, bin, r, checks, tg.key); len(lines) != 0 {
+				t.Errorf("消したことを承認した後も、承認のチェックが %s %s で失敗する: %s", tg.label, tg.key, strings.Join(lines, "\n"))
+			}
+		})
 	}
 }
 
 // @vanda:evidence owner-reviews-every-change
-func Testほかのストーリーが消して消したことへの承認がないままベースブランチに取り込まれた仕様とファイルは承認のチェックが失敗と言い一覧に出る(t *testing.T) {
+func Testストーリーで変えていない承認済の仕様にフラグか推測が残っていれば一覧に変わっていない承認済の行として今の中身とフラグの印を付けて1度だけ出る(t *testing.T) {
 	t.Parallel()
 	bin, r, s, checks := setupCheckFailsUnchanged(t)
-	t.Run("仕様", func(t *testing.T) {
-		checkFailsAndListed(t, bin, r, s, checks, "仕様", "spec", reviewRemovedSpecID)
-	})
-	t.Run("ファイル", func(t *testing.T) {
-		checkFailsAndListed(t, bin, r, s, checks, "ファイル", "file", reviewUnagreedPath)
-	})
-}
-
-// @vanda:evidence owner-reviews-every-change
-func Testストーリーで変えていない承認済の仕様にフラグか推測が残っていれば承認のチェックが失敗と言い一覧に出る(t *testing.T) {
-	t.Parallel()
-	bin, r, s, checks := setupCheckFailsUnchanged(t)
-	t.Run("フラグ", func(t *testing.T) {
-		checkFailsAndListed(t, bin, r, s, checks, "仕様", "spec", reviewFlaggedSpecID)
-	})
-	t.Run("推測", func(t *testing.T) {
-		checkFailsAndListed(t, bin, r, s, checks, "仕様", "spec", reviewGuessedSpecID)
-	})
+	for _, tg := range []struct{ name, key, fp, flag, statement string }{
+		{"フラグ", reviewFlaggedSpecID, sha256Hex([]byte(reviewFlaggedSpecJSON)), "ai-proposal", "タスクの題は 1 行に収まる"},
+		{"推測", reviewGuessedSpecID, sha256Hex([]byte(reviewGuessedSpecJSON)), "guess", "タスクの題の前後の空白は除く"},
+	} {
+		t.Run(tg.name, func(t *testing.T) {
+			for name, row := range checkFailsAndListed(t, bin, r, s, checks, "仕様", "spec", tg.key, checkFailsUnchangedTotal) {
+				if row.Change != "unchanged" || row.State != "agreed" || str(row.Fingerprint) != tg.fp {
+					t.Errorf("%s: 仕様 %s の change %q、state %q、fingerprint %q（思ったもの unchanged・agreed・%q）", name, tg.key, row.Change, row.State, str(row.Fingerprint), tg.fp)
+				}
+				if !isNull(row.Before) || !isNull(row.Diff) || isNull(row.After) {
+					t.Errorf("%s: 仕様 %s の before と diff が null、after が今の中身でない（before %s、diff %s、after %s）", name, tg.key, row.Before, row.Diff, row.After)
+				}
+				// after の statement は、文をテキストと参照に分けた並び（docs/formats.md）。参照のない文なので、テキスト 1 つ
+				var after struct {
+					Statement []struct {
+						Text string `json:"text"`
+					} `json:"statement"`
+				}
+				if err := json.Unmarshal(row.After, &after); err != nil || len(after.Statement) != 1 || after.Statement[0].Text != tg.statement {
+					t.Errorf("%s: 仕様 %s の after が、その仕様の今の中身でない（%v）: %s", name, tg.key, err, row.After)
+				}
+				if !slices.Equal(row.Flags, []string{tg.flag}) {
+					t.Errorf("%s: 仕様 %s の flags が %v（思ったもの [%s]）", name, tg.key, row.Flags, tg.flag)
+				}
+			}
+		})
+	}
 }

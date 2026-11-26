@@ -310,6 +310,52 @@ test("ストーリーで変えていない承認の記録のない仕様とシ�
   }
 });
 
+// 消したことへの承認がないものは、ストーリーで変えていなくても、チェック agreement（範囲がすべて）が失敗と言うので、一覧に出して画面から直せるようにする（オーナーの決定）
+// @vanda:evidence owner-reviews-every-change
+test("ほかのストーリーが消して消したことへの承認がないままベースブランチに取り込まれた仕様が一覧に削除として出て消したことを承認すると一覧から消え範囲がすべての承認のチェックがその仕様で失敗しなくなる", async ({ page }) => {
+  // main に、#2 が仕様 task-list-order を足して承認し、#3 が消した（消したことは承認しない）コミットを足し、story-24 をその上に載せ直す
+  const gone = "task-list-order";
+  const goneJSON = `{"evidence":[{"layers":["model"],"stage":"implementation","type":"scenario-test"}],"id":"task-list-order","layers":["model"],"refines":["add-task"],"statement":"タスクは登録した順に並ぶ"}`;
+  repo.git("switch", "-q", "main");
+  const base = readFileSync(join(repo.root, ".vanda/promises.toml"), "utf8");
+  repo.write(".vanda/promises.toml", base + unagreedSpec);
+  repo.write(".vanda/checks/agreement-all.toml", '[[check]]\nname = "agreement"\nscope = "all"\n');
+  repo.write(".vanda/agreements.toml", readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + agreement("spec", gone, sha(goneJSON), null, "#2"));
+  commit(repo, "並びの仕様を足して承認する", "#2");
+  const added = repo.vanda("check", ".vanda/checks/agreement-all.toml");
+  expect(added.code, "用意の誤り: 消す前の main で、承認のチェックが通らない\n" + added.out).toBe(0);
+  repo.write(".vanda/promises.toml", base);
+  commit(repo, "並びの仕様を消す", "#3");
+  expect(repo.git("show", "HEAD:.vanda/promises.toml"), "用意の誤り: 消したコミットに仕様が残っている").not.toContain(gone);
+  repo.git("switch", "-q", "story-24");
+  repo.git("rebase", "-q", "main");
+  expect(repo.git("diff", "main", "HEAD", "--", ".vanda/promises.toml"), "用意の誤り: #24 が仕様を変えている").not.toContain(gone);
+
+  const before = repo.vanda("check", ".vanda/checks/agreement-all.toml");
+  expect(before.code, "承認する前からチェックが通っている").toBe(1);
+  expect(before.out, "承認する前のチェックが、消した仕様で失敗していない").toContain(gone);
+
+  await page.goto(serve.url + "/");
+  for (const item of [gone, ...items]) {
+    await expect(filterList(page).getByText(item, { exact: true }), `${item} が一覧に 1 度だけ出ていない`).toHaveCount(1);
+  }
+  await expect(page.getByText(/全 4 件/).first()).toBeVisible();
+  await expect(listIcon(page, gone, "提案中"), "消した仕様が提案中でない").toBeVisible();
+  await select(page, gone);
+  const detail = page.getByRole("region", { name: "1 件の中身" });
+  await expect(detail.getByText("削除").first()).toBeVisible();
+  await expect(detail.getByText("前に中身を承認していて、今はありません。消す前の中身は、承認の記録に残っていないため、表示できません。")).toBeVisible();
+  const res = page.waitForResponse((r) => r.url().includes("/api/agree"));
+  await detail.getByRole("button", { name: /消したことを承認する/ }).click();
+  expect((await res).status(), "消したことを承認できない").toBe(200);
+  await expect(filterList(page).getByText(gone, { exact: true }), "消したことを承認した仕様が一覧に残っている").toHaveCount(0);
+  await expect(page.getByText(/全 3 件/).first()).toBeVisible();
+  for (const item of items) await expect(filterList(page).getByText(item, { exact: true }), `${item} が一覧から消えた`).toHaveCount(1);
+  expect(readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8"), "消したことへの承認の記録が書かれていない").toMatch(/kind = "spec"\nkey = "task-list-order"\ndeleted = true/);
+  const after = repo.vanda("check", ".vanda/checks/agreement-all.toml");
+  expect(after.out, "消したことを承認した後も、チェックが消した仕様で失敗する").not.toContain(gone);
+});
+
 test("承認した仕様を変えると一覧に差分ありとして戻る", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await agreeAll(page, ["task-id-unique"]);
@@ -493,9 +539,14 @@ function commit(r: Repo, subject: string, story: string | null, date?: string): 
 }
 
 // agreeByHand は、#24 の承認の記録を手で書き足し、#24 のコミットにする。ベースブランチと比べて変わっていないものを一覧に出さない
-// 場面を作るのに使う（承認済でないものは、変わっていなくても一覧に出るため）
+// 場面を作るのに使う（承認済でないものは、変わっていなくても一覧に出るため）。
+// 承認済でも、フラグか推測の残る仕様は、変わっていなくても一覧に出るので、画面から承認した時と同じく、約束リストの仕様の flags と guesses も外す
 function agreeByHand(r: Repo, ...records: string[]) {
   r.write(".vanda/agreements.toml", readFileSync(join(r.root, ".vanda/agreements.toml"), "utf8") + records.join(""));
+  const promisesNow = readFileSync(join(r.root, ".vanda/promises.toml"), "utf8");
+  const cleared = promisesNow.replace(/^(flags|guesses) = \[.*\]\n/gm, "");
+  if (cleared === promisesNow) throw new Error("用意の誤り: 約束リストに、外す flags も guesses もない");
+  r.write(".vanda/promises.toml", cleared);
   commit(r, "承認の記録を書く", "#24");
 }
 const titleAgreed = () => agreement("spec", "task-title-required", sha(titleJSON), null, "#24");

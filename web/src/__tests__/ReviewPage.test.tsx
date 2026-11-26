@@ -2255,3 +2255,134 @@ describe("RV-06 一覧の選んでいる行から承認する", () => {
     expect(posted.length, "承認のリクエストの数").toBe(1);
   });
 });
+
+// ストーリーで変えていなくても、チェック agreement（範囲がすべて）が失敗と言うものは、一覧に出して画面から直せるようにする（オーナーの決定）。
+// 消したことへの承認がないもの（比べる元より前に消したもの）は、change が deleted で before も after も null。
+// フラグか推測の残る承認済の仕様は、change が unchanged で state が agreed（docs/formats.md の entries[].change）。
+describe("RV-01 変えていなくても承認のチェックが失敗と言うもの", () => {
+  const gone = { change: "deleted", state: "proposed", before: null, after: null, fingerprint: null } as const;
+  const goneSpec = (no: number, id: string) => specEntry(no, id, { ...gone, group: "layer:" });
+  const goneFile = (no: number, path: string) => fileEntry(no, path, gone);
+  const kept = { change: "unchanged", before: null } as const;
+  const flagged = (no: number, id: string, flag: "ai-proposal" | "guess") => specEntry(no, id, { ...kept, state: "agreed", flags: [flag] });
+  const unagreed = (no: number, id: string) => specEntry(no, id, { ...kept, state: "proposed" });
+  const note = "前に中身を承認していて、今はありません。消す前の中身は、承認の記録に残っていないため、表示できません。";
+  const shown = (name: string) => within(listRegion()).queryByText(name, { exact: true }) !== null;
+  const rowOf = (name: string) => within(listRegion()).getByText(name, { exact: true }).closest("li")! as HTMLElement;
+  const iconNames = (name: string) => within(rowOf(name)).queryAllByRole("img").map((i) => i.getAttribute("aria-label") ?? i.textContent ?? "");
+  const detailShows = (name: string) => within(detailRegion()).queryAllByText(name, { selector: "h2", exact: false }).length > 0;
+
+  // @vanda:evidence owner-reviews-every-change
+  it("消す前の中身が分からない削除の件は中身の代わりに表示できないと注意書きを出し消したことを承認するとdeletedを添えて送り消す前の中身が分かる削除の件には注意書きを出さない", async () => {
+    const cases = [
+      { e: goneSpec(1, "c-gone"), name: "c-gone", body: { kind: "spec", id: "c-gone", path: null } },
+      { e: goneFile(2, "e2e/gone.txtar"), name: "e2e/gone.txtar", body: { kind: "file", id: null, path: "e2e/gone.txtar" } },
+    ];
+    const withBefore = fileEntry(3, "e2e/old.txtar", { change: "deleted", after: null, fingerprint: null, before: { text: "消す前のシナリオの中身\n" } });
+    const posted: unknown[] = [];
+    open([...cases.map((c) => c.e), withBefore], {},
+      http.post("/api/agree", async ({ request }) => {
+        posted.push(await request.json());
+        return HttpResponse.json({ commit: "c".repeat(40), agreement: {} });
+      }));
+    const user = userEvent.setup();
+    for (const c of cases) {
+      await user.click((await listRow(c.name)).querySelector("button")!);
+      await waitFor(() => expect(detailShows(c.name), `${c.name} の中身が右のペインに出ない`).toBe(true));
+      expect(within(detailRegion()).queryAllByText(note).length, `${c.name}: 注意書きの数`).toBe(1);
+      const button = await within(detailRegion()).findByRole("button", { name: /消したことを承認する/ });
+      const before = reviewRequests().length;
+      const sent = posted.length;
+      await user.click(button);
+      await waitFor(() => expect(posted.length, `${c.name}: 承認のリクエストの数`).toBe(sent + 1));
+      expect(posted[sent]).toEqual({ ...c.body, fingerprint: null, story: "#24", deleted: true });
+      await waitFor(() => expect(reviewRequests().length, `${c.name}: 承認した後に一覧を読み直さない`).toBeGreaterThan(before));
+    }
+    await user.click((await listRow("e2e/old.txtar")).querySelector("button")!);
+    await waitFor(() => expect(within(detailRegion()).getByText(/消す前のシナリオの中身/)).toBeTruthy());
+    expect(within(detailRegion()).queryAllByText(note).length, "消す前の中身が分かる件に注意書きが出ている").toBe(0);
+  });
+
+  // @vanda:evidence owner-reviews-every-change
+  it("フラグか推測の残る変わっていない承認済の仕様は一覧の行にストーリーで変わった仕様と同じフラグの印が付き選んでも行の中に承認するのボタンを出さない", async () => {
+    const cases = [
+      { same: "c-same-ai", changed: "c-changed-ai", flag: "ai-proposal", icons: ["承認済", "AI 案"] },
+      { same: "c-same-guess", changed: "c-changed-guess", flag: "guess", icons: ["承認済", "推測"] },
+    ] as const;
+    open([
+      ...cases.flatMap((c, i) => [flagged(2 * i + 1, c.same, c.flag), specEntry(2 * i + 2, c.changed, { state: "agreed", flags: [c.flag], agree: { possible: false, reason: "このストーリーで今の中身にもう承認しています" } })]),
+      unagreed(5, "c-same-proposed"),
+    ]);
+    const user = userEvent.setup();
+    const rowAgree = (name: string) => within(rowOf(name)).queryAllByRole("button", { name: "承認する" }).length;
+    for (const c of cases) {
+      await listRow(c.same);
+      for (const w of c.icons) expect(within(rowOf(c.same)).queryAllByRole("img", { name: w }).length, `${c.same} の行の「${w}」の印の数`).toBe(1);
+      expect(within(rowOf(c.same)).queryAllByRole("img").length, `${c.same} の行の印の数`).toBe(c.icons.length);
+      expect(iconNames(c.same), `${c.same} の行の印が、ストーリーで変わった仕様 ${c.changed} の行と違う`).toEqual(iconNames(c.changed));
+      const shape = (name: string) => within(rowOf(name)).getByRole("img", { name: c.icons[1] }).querySelector("svg")!.innerHTML;
+      expect(shape(c.same), `${c.same} の「${c.icons[1]}」の印の形が、${c.changed} と違う`).toBe(shape(c.changed));
+      await user.click(rowOf(c.same).querySelector("button")!);
+      await waitFor(() => expect(detailShows(c.same), `${c.same} の中身が右のペインに出ない`).toBe(true));
+      expect(rowAgree(c.same), `選んでいる行 ${c.same} の「承認する」の数`).toBe(0);
+      expect(within(listRegion()).queryAllByRole("button", { name: "承認する" }).length, `${c.same} を選んでいる時の、一覧の「承認する」の数`).toBe(0);
+    }
+    // 提案中の変わっていない行は、選ぶと行の中に「承認する」が出る（出ないのは、承認済の行だから）
+    await user.click(rowOf("c-same-proposed").querySelector("button")!);
+    await waitFor(() => expect(rowAgree("c-same-proposed"), "選んでいる提案中の変わっていない行の「承認する」の数").toBe(1));
+  });
+
+  // @vanda:evidence owner-reviews-every-change
+  it("件数の行は消す前の中身が分からない削除の件を削除に数え変わっていない件を提案中と承認済に分けて数え承認済が0件ならその数を出さない", async () => {
+    const add = { change: "added", before: null } as const;
+    const base = [
+      specEntry(1, "c-add", add),
+      specEntry(2, "c-mod"),
+      specEntry(3, "c-del", { change: "deleted", after: null, fingerprint: null }),
+      goneSpec(4, "c-gone"),
+      goneFile(5, "e2e/gone.txtar"),
+      unagreed(6, "c-same-proposed-1"),
+      unagreed(7, "c-same-proposed-2"),
+    ];
+    const agreedOnes = [flagged(8, "c-same-ai", "ai-proposal"), flagged(9, "c-same-guess", "guess"), flagged(10, "c-same-ai-2", "ai-proposal")];
+    const count = (text: string, word: string) => text.match(new RegExp(word.replace(/[（）]/g, "\\$&") + "\\D{0,3}(\\d+)"))?.[1] ?? null;
+    const cases = [
+      { name: "承認済の変わっていない件が 3 件", entries: [...base, ...agreedOnes], total: 10, agreed: "3" },
+      { name: "承認済の変わっていない件が 0 件", entries: base, total: 7, agreed: null },
+    ];
+    for (const c of cases) {
+      open(c.entries);
+      await listRow("c-add");
+      const text = listRegion().textContent ?? "";
+      expect(within(listRegion()).getByRole("heading", { level: 2 }).textContent, `${c.name}: 総数`).toMatch(new RegExp(`全\\s*${c.total}\\s*件`));
+      expect(count(text, "追加"), `${c.name}: 追加の件数`).toBe("1");
+      expect(count(text, "変更"), `${c.name}: 変更の件数`).toBe("1");
+      expect(count(text, "削除"), `${c.name}: 削除の件数`).toBe("3");
+      expect(count(text, "変更なし（提案中）"), `${c.name}: 変更なし（提案中）の件数`).toBe("2");
+      if (c.agreed === null) expect(text, `${c.name}: 変更なし（承認済）が出ている`).not.toContain("変更なし（承認済）");
+      else {
+        expect(text, `${c.name}: 件数の行の形`).toContain(`・変更なし（承認済） ${c.agreed}`);
+        expect(count(text, "変更なし（承認済）"), `${c.name}: 変更なし（承認済）の件数`).toBe(c.agreed);
+      }
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+
+  // @vanda:evidence owner-reviews-every-change
+  it("承認済でないものだけにすると消す前の中身が分からない削除の件は出しフラグか推測の残る変わっていない承認済の仕様は出さない", async () => {
+    const keptOnes = ["c-gone", "e2e/gone.txtar", "c-same-proposed"];
+    const dropped = ["c-same-ai", "c-same-guess"];
+    open([goneSpec(1, "c-gone"), unagreed(2, "c-same-proposed"), flagged(3, "c-same-ai", "ai-proposal"), flagged(4, "c-same-guess", "guess"), goneFile(5, "e2e/gone.txtar")]);
+    await listRow("c-gone");
+    for (const name of [...keptOnes, ...dropped]) expect(shown(name), `絞り込む前に ${name} が出ない`).toBe(true);
+    const user = userEvent.setup();
+    const box = within(listRegion()).getByRole("checkbox", { name: "承認済でないものだけ" });
+    await user.click(box);
+    await waitFor(() => expect(shown("c-same-ai")).toBe(false));
+    for (const name of keptOnes) expect(shown(name), `承認済でない ${name} が出ない`).toBe(true);
+    for (const name of dropped) expect(shown(name), `承認済の ${name} が出ている`).toBe(false);
+    await user.click(box);
+    await waitFor(() => expect(shown("c-same-ai")).toBe(true));
+  });
+});
