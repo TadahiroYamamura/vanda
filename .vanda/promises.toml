@@ -1043,7 +1043,6 @@ refines = ["list-story-changes"]
 statement = "オーナーは、{@id:story}で変わった{@id:item}と{@id:agreement}の対象のファイルを、漏れも重複もなく閲覧できる"
 condition = "変わったものが一覧から漏れる・2 度出る。変わったものを、一覧の中で探せない"
 layers = ["api", "gui"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
