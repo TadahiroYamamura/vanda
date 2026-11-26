@@ -961,7 +961,6 @@ refines = ["report-mistakes"]
 statement = "{@id:promise-list}・{@id:agreement-record}・設定・{@id:annotation}の{@id:mistake}を、黙って見逃さず、どのファイルの何行目の何がいけないかと、どう直せばよいかを添えて知らせる"
 condition = "{@id:mistake}があるのに{@id:check}が通る。画面が黙って空になる。知らせを読んだ人が、どこをどう直せばよいか分からない"
 layers = ["cli", "api", "gui"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
