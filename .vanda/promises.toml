@@ -653,7 +653,7 @@ refines = ["user-pc-and-secrets-safe"]
 [[feature]]
 id = "list-story-changes"
 name = "ストーリーで変わったものを並べる"
-definition = "{@id:story}で変わった{@id:item}と{@id:agreement}の対象のファイルを、一覧にする。変わっていなくても、{@id:agreed}でないものは一覧に入れる"
+definition = "{@id:story}で変わった{@id:item}と{@id:agreement}の対象のファイルを、一覧にする。変わっていなくても、{@id:agreement-check}が通さないものは一覧に入れる"
 refines = ["judge-without-reading-code"]
 
 [[feature]]
@@ -1038,8 +1038,8 @@ layers = ["api"]
 [[spec]]
 id = "owner-reviews-every-change"
 refines = ["list-story-changes"]
-statement = "オーナーは、{@id:story}で変わった{@id:item}と{@id:agreement}の対象のファイルを、漏れも重複もなく閲覧できる。{@id:story}で変わっていなくても、{@id:agreed}でないものは、同じ一覧で閲覧できる"
-condition = "変わったものが一覧から漏れる・2 度出る。変わったものを、一覧の中で探せない。変わっていない、{@id:agreed}でないものが、一覧に出ない"
+statement = "オーナーは、{@id:story}で変わった{@id:item}と{@id:agreement}の対象のファイルを、漏れも重複もなく閲覧できる。{@id:story}で変わっていなくても、{@id:agreement-check}が通さないもの（{@id:agreed}でないもの、消したことを{@id:agreement}していないもの、{@id:flag}の残る{@id:spec}）は、同じ一覧で閲覧できる"
+condition = "変わったものが一覧から漏れる・2 度出る。変わったものを、一覧の中で探せない。変わっていない、{@id:agreement-check}が通さないものが、一覧に出ない"
 layers = ["api", "gui"]
 
 [[spec.evidence]]
