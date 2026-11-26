@@ -1070,7 +1070,6 @@ refines = ["compare-contents"]
 statement = "オーナーは、1 件ごとに何がどう変わったかを、ソースコードや git を読まずに理解できる"
 condition = "変更の中身を判断するために、ファイルや git の差分を開く必要がある。オーナーが、TLA+ の記号を読み違える"
 layers = ["api", "gui"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
