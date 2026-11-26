@@ -180,6 +180,9 @@ ul.entries { list-style: none; padding: 0; margin: 0; }
 /* 2 行目は、番号の幅だけ下げて、名前の書き出しに揃える。左端に種類、続けて状態のアイコン、フラグのアイコン */
 .entry-line2 { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin: 2px 0 0 calc(22px + 6px); }
 .entry-line2 .kind { font-size: 11px; color: var(--muted); flex: none; margin-right: 4px; }
+.entry-agree { margin: 6px 0 2px calc(22px + 6px); }
+.entry-agree button { min-height: 32px; padding: 0 12px; font-size: 13px; }
+.entry-agree .error { margin-bottom: 0; cursor: default; overflow-wrap: anywhere; }
 .entry-sep { width: 1px; height: 16px; background: var(--line); margin: 0 3px; flex: none; }
 /* 一覧のアイコン: 16px の形を、マウスを乗せられる 24px の枠に入れる */
 .list-icon { position: relative; display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; flex: none; }

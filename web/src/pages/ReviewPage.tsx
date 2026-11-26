@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 // 本文の中の生の HTML は描かない（react-markdown の既定。rehype-raw などを足さない）。Issue の本文に悪意のある HTML があっても、画面で動かないようにするため
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -41,10 +41,25 @@ function searchable(e: Entry): string[] {
   return out;
 }
 
+function notAgreed(e: Entry): boolean {
+  return e.state === "proposed" || !!e.detachedAgreement;
+}
+
+// nextNotAgreed は、一覧の並びで、key の行より後ろにある、承認済でない最初の 1 件のキー。なければ null。
+// 一覧に出ていない行（絞り込みにマッチしない行、たたんだまとまりの中の行）へは移らない。見えない行を選ぶと、どの行を開いているかが一覧で分からなくなるため。
+// 承認が失効したものは、まとまりに入れずに一覧の先頭に出すので、たたまれない
+function nextNotAgreed(review: Review, filter: Filter, folded: Set<string>, key: string): string | null {
+  const shown = [...review.detached, ...review.entries.filter((e) => !folded.has(e.group))].filter((e) => matchesFilter(e, filter));
+  const at = shown.findIndex((e) => entryKey(e) === key);
+  if (at < 0) return null;
+  const next = shown.slice(at + 1).find(notAgreed);
+  return next ? entryKey(next) : null;
+}
+
 // 承認済でないものは、提案中と、承認が失効したもの。承認が失効したものは、ほかのストーリーの承認で承認済のこともあるので、状態とは別に見る。
 // 消したものは承認できない（状態がない）ので、どちらにもマッチしない
 export function matchesFilter(e: Entry, f: Filter): boolean {
-  if (f.notAgreed && e.state !== "proposed" && !e.detachedAgreement) return false;
+  if (f.notAgreed && !notAgreed(e)) return false;
   if (f.text === "") return true;
   const t = f.text.toLowerCase();
   return searchable(e).some((s) => s.toLowerCase().includes(t));
@@ -93,6 +108,21 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; memor
   const pending = canLoad && review.data === null && review.error == null;
   const all = review.data ? [...review.data.detached, ...review.data.entries] : [];
   const selected = all.find((e) => entryKey(e) === sel) ?? null;
+  // 承認・取り消しのたびに増やし、変更履歴と承認の履歴（RV-16）を読み直す。一覧の行から承認して同じ 1 件を開いたままのときも読み直すので、1 件の中身の側ではなくここに持つ
+  const [written, setWritten] = useState(0);
+  const agreed = () => {
+    setWritten((n) => n + 1);
+    review.reload();
+    props.onAgreed();
+  };
+  // 一覧の行からの承認が済んだ後の動き。承認を待つ間に、選ぶ行・絞り込み・たたみ方が変わりうるので、済んだ時点のもので決める（ref で最新の関数を呼ぶ）。
+  // 待つ間にほかの行を選んでいたら、その行から動かさない
+  const afterListAgree = useRef<(key: string) => void>(() => {});
+  afterListAgree.current = (key) => {
+    const next = review.data && sel === key ? nextNotAgreed(review.data, filter, props.memory.folded, key) : null;
+    if (next) set({ sel: next }, true);
+    agreed();
+  };
 
   return (
     <div className="review" ref={root}>
@@ -152,6 +182,8 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; memor
               review={review.data}
               ctx={ctx}
               selected={sel}
+              story={story}
+              onAgreed={(key) => afterListAgree.current(key)}
               folded={props.memory.folded}
               onSelect={(k) => set({ sel: k }, true)}
               filter={filter}
@@ -182,10 +214,8 @@ export function ReviewPage(props: { ctx: Context; params: URLSearchParams; memor
               base={base}
               ctx={ctx}
               query={carried}
-              onAgreed={() => {
-                review.reload();
-                props.onAgreed();
-              }}
+              written={written}
+              onAgreed={agreed}
             />
             </RefsProvider>
           ) : sel && pending ? (
@@ -344,6 +374,8 @@ function EntryList(props: {
   review: Review;
   ctx: Context;
   selected: string | null;
+  story: string | null;
+  onAgreed: (key: string) => void;
   folded: Set<string>;
   onSelect: (key: string) => void;
   filter: Filter;
@@ -379,7 +411,7 @@ function EntryList(props: {
           <h3>承認が失効したもの（{detached.length} 件。比べる元から変わっていないため、総数に数えません）</h3>
           <ul className="entries">
             {detached.map((e) => (
-              <EntryRow key={entryKey(e)} e={e} selected={props.selected === entryKey(e)} onSelect={props.onSelect} />
+              <EntryRow key={entryKey(e)} e={e} selected={props.selected === entryKey(e)} onSelect={props.onSelect} story={props.story} onAgreed={props.onAgreed} />
             ))}
           </ul>
         </div>
@@ -389,7 +421,7 @@ function EntryList(props: {
         <p className="note">絞り込みの条件にマッチするものはありません。</p>
       )}
       {groups.map((g) => (
-        <Group key={g.name} name={g.name} folded={props.folded} label={groupLabel(g.name, props.ctx)} entries={g.entries} selected={props.selected} onSelect={props.onSelect} />
+        <Group key={g.name} name={g.name} folded={props.folded} label={groupLabel(g.name, props.ctx)} entries={g.entries} selected={props.selected} onSelect={props.onSelect} story={props.story} onAgreed={props.onAgreed} />
       ))}
     </div>
   );
@@ -445,7 +477,16 @@ function ListPlaceholder(props: { filter: Filter; onFilterText: (v: string) => v
 }
 
 // たたんだまとまりは、画面が外れても残る folded にも書く。項目・ファイルの詳細の画面から戻ったときに、移る前のままにするため
-function Group(props: { name: string; folded: Set<string>; label: string; entries: Entry[]; selected: string | null; onSelect: (key: string) => void }) {
+function Group(props: {
+  name: string;
+  folded: Set<string>;
+  label: string;
+  entries: Entry[];
+  selected: string | null;
+  onSelect: (key: string) => void;
+  story: string | null;
+  onAgreed: (key: string) => void;
+}) {
   const [open, setOpen] = useState(!props.folded.has(props.name));
   const toggle = () => {
     if (open) props.folded.add(props.name);
@@ -462,7 +503,7 @@ function Group(props: { name: string; folded: Set<string>; label: string; entrie
       {open && (
         <ul className="entries">
           {props.entries.map((e) => (
-            <EntryRow key={entryKey(e)} e={e} selected={props.selected === entryKey(e)} onSelect={props.onSelect} />
+            <EntryRow key={entryKey(e)} e={e} selected={props.selected === entryKey(e)} onSelect={props.onSelect} story={props.story} onAgreed={props.onAgreed} />
           ))}
         </ul>
       )}
@@ -470,7 +511,7 @@ function Group(props: { name: string; folded: Set<string>; label: string; entrie
   );
 }
 
-function EntryRow(props: { e: Entry; selected: boolean; onSelect: (key: string) => void }) {
+function EntryRow(props: { e: Entry; selected: boolean; onSelect: (key: string) => void; story: string | null; onAgreed: (key: string) => void }) {
   const { e } = props;
   return (
     // 1 件の枠（番号・名前・種類・アイコン）のどこをクリックしても選ぶ。キーボードとスクリーンリーダーのために、名前の所は <button> のまま残す
@@ -497,7 +538,49 @@ function EntryRow(props: { e: Entry; selected: boolean; onSelect: (key: string) 
           <ListIcon key={f} name={f} />
         ))}
       </div>
+      {/* 開いている行にだけ出す。開いていない行から、中身を見ずに承認できないようにするため（オーナーの決定） */}
+      {props.selected && e.state === "proposed" && <RowAgree entry={e} story={props.story} onAgreed={() => props.onAgreed(entryKey(e))} />}
     </li>
+  );
+}
+
+// RowAgree は、一覧の開いている行から承認するボタン。1 件の中身を下まで読んだ後、上の承認のボタンまで戻らずに承認するためにある。
+// 承認の中身と、クリックできるかは、1 件の中身の側のボタン（AgreeControls）と同じ。取り消しと、承認し直し（承認済の行）は、1 件の中身の側だけに置く
+function RowAgree(props: { entry: Entry; story: string | null; onAgreed: () => void }) {
+  const { entry: e } = props;
+  const [agreeing, setAgreeing] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const story = props.story;
+  const agree = async () => {
+    if (!story) return;
+    setAgreeing(true);
+    setError(null);
+    try {
+      await api.agree(e, story);
+    } catch (err) {
+      setError(err);
+      setAgreeing(false);
+      return;
+    }
+    setAgreeing(false);
+    props.onAgreed();
+  };
+  return (
+    <div className="entry-agree">
+      <button
+        type="button"
+        className="primary"
+        disabled={agreeing || !story || !(e.agree?.possible ?? false)}
+        onClick={(ev) => {
+          // 枠のクリック（選ぶ）へ伝えない。承認の後で次の 1 件を選ぶのを、同じ行を選び直す動きで上書きしないため
+          ev.stopPropagation();
+          void agree();
+        }}
+      >
+        {agreeing ? "承認しています…" : "承認する"}
+      </button>
+      {error != null && <ErrorBox error={error} title="承認できません" />}
+    </div>
   );
 }
 
@@ -627,10 +710,8 @@ function SelectedPreview(props: { sel: string; query: string }) {
   );
 }
 
-function EntryDetail(props: { entry: Entry; total: number; story: string | null; base: string | null; ctx: Context; query: string; onAgreed: () => void }) {
+function EntryDetail(props: { entry: Entry; total: number; story: string | null; base: string | null; ctx: Context; query: string; written: number; onAgreed: () => void }) {
   const { entry: e } = props;
-  // 承認・取り消しのたびに増やし、変更履歴と承認の履歴（RV-16）を読み直す
-  const [written, setWritten] = useState(0);
 
   return (
     <div>
@@ -682,14 +763,11 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
         story={props.story}
         base={props.base}
         user={props.ctx.user}
-        onDone={() => {
-          setWritten((n) => n + 1);
-          props.onAgreed();
-        }}
+        onDone={props.onAgreed}
       />
 
       <Compare entry={e} />
-      {e.kind === "spec" && e.id && e.change !== "deleted" && <SpecSections key={written} id={e.id} query={props.query} />}
+      {e.kind === "spec" && e.id && e.change !== "deleted" && <SpecSections key={props.written} id={e.id} query={props.query} />}
       {e.kind === "feature" && e.id && (e.change === "added" || e.change === "modified") && <FeatureSpecs id={e.id} query={props.query} />}
     </div>
   );
