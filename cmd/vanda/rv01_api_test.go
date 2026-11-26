@@ -3,6 +3,7 @@ package main_test
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"sort"
@@ -524,4 +525,159 @@ func Test範囲がすべての承認のチェックがまだ承認していな�
 			}
 		}
 	}
+}
+
+// ---- ストーリーで変えていない、承認の記録はあるのに承認のチェック（範囲がすべて）が失敗と言うもの ----
+// 前のストーリーが承認し、別のストーリーが消して、消したことを承認しないままベースブランチに取り込んだ仕様とシナリオと、
+// 承認済だが、フラグ（flags）か推測（guesses）が残っている仕様。
+
+const (
+	reviewRemovedSpecID = "task-list-order"
+	reviewFlaggedSpecID = "task-title-short"
+	reviewFlaggedSpec   = `
+[[spec]]
+id = "task-title-short"
+refines = ["add-task"]
+statement = "タスクの題は 1 行に収まる"
+layers = ["model"]
+flags = ["ai-proposal"]
+
+[[spec.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+`
+	reviewFlaggedSpecJSON = `{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],` +
+		`"id":"task-title-short","layers":["model"],"refines":["add-task"],"statement":"タスクの題は 1 行に収まる"}`
+	reviewGuessedSpecID = "task-title-trimmed"
+	reviewGuessedSpec   = `
+[[spec]]
+id = "task-title-trimmed"
+refines = ["add-task"]
+statement = "タスクの題の前後の空白は除く"
+layers = ["model"]
+guesses = ["全角の空白も除く"]
+
+[[spec.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+`
+	reviewGuessedSpecJSON = `{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],` +
+		`"id":"task-title-trimmed","layers":["model"],"refines":["add-task"],"statement":"タスクの題の前後の空白は除く"}`
+)
+
+// setupCheckFailsUnchanged は、setupUnagreed と同じ並びのものを返す。リポジトリの main には、#24 が分かれた後に次の 2 つのコミットを足し、story-24 をその上に載せ直す。
+// #2: フラグの残る仕様と推測の残る仕様を承認し、仕様 task-list-order とシナリオ e2e/list-task.txtar を足して承認する。
+// #3: その仕様とシナリオを消す（消したことは承認しない）。
+// #24 は、どれも変えない。
+func setupCheckFailsUnchanged(t *testing.T) (string, *reviewRepo, *vandaServer, string) {
+	t.Helper()
+	bin := buildVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := newReviewRepoWith(t, version, reviewFlaggedSpec+reviewGuessedSpec, nil)
+	r.git("switch", "-q", "main")
+	promises, err := os.ReadFile(filepath.Join(r.Root, ".vanda/promises.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	agreements, err := os.ReadFile(filepath.Join(r.Root, ".vanda/agreements.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	fileFP := sha256Hex([]byte(reviewUnagreedScenario))
+	writeFile(t, r.Root, ".vanda/promises.toml", string(promises)+reviewUnagreedSpec)
+	writeFile(t, r.Root, reviewUnagreedPath, reviewUnagreedScenario)
+	writeFile(t, r.Root, ".vanda/agreements.toml", string(agreements)+
+		agreementTOML("spec", reviewFlaggedSpecID, sha256Hex([]byte(reviewFlaggedSpecJSON)), "", "#2", "テスト担当", "tester@example.com")+
+		agreementTOML("spec", reviewGuessedSpecID, sha256Hex([]byte(reviewGuessedSpecJSON)), "", "#2", "テスト担当", "tester@example.com")+
+		agreementTOML("spec", reviewRemovedSpecID, sha256Hex([]byte(reviewUnagreedSpecJSON)), "", "#2", "テスト担当", "tester@example.com")+
+		agreementTOML("file", fileFP, fileFP, reviewUnagreedPath, "#2", "テスト担当", "tester@example.com"))
+	r.g.commitAll("並びの仕様とシナリオを足して承認する", "#2")
+	// 消す前の main では、フラグと推測の残る 2 つの仕様のほかは、承認のチェックが何も言わない（足した承認の記録が、中身に合っている）
+	checks := t.TempDir()
+	writeFile(t, checks, "all.toml", "[[check]]\nname = \"agreement\"\nscope = \"all\"\n")
+	_, _, errs := r.vanda(bin, "check", filepath.Join(checks, "all.toml"))
+	for _, line := range strings.Split(strings.TrimSpace(errs), "\n") {
+		if !strings.Contains(line, reviewFlaggedSpecID) && !strings.Contains(line, reviewGuessedSpecID) {
+			t.Fatalf("用意の誤り: 消す前の main で、承認のチェックが、フラグと推測の残る仕様のほかで失敗する\n%s", errs)
+		}
+	}
+	writeFile(t, r.Root, ".vanda/promises.toml", string(promises))
+	if err := os.Remove(filepath.Join(r.Root, filepath.FromSlash(reviewUnagreedPath))); err != nil {
+		t.Fatal(err)
+	}
+	r.g.commitAll("並びの仕様とシナリオを消す", "#3")
+	if strings.Contains(r.git("show", "HEAD:.vanda/promises.toml"), reviewRemovedSpecID) || !strings.Contains(r.git("show", "HEAD~1:.vanda/promises.toml"), reviewRemovedSpecID) {
+		t.Fatalf("用意の誤り: #2 のコミットに仕様 %s がないか、#3 のコミットに残っている", reviewRemovedSpecID)
+	}
+	if strings.Contains(r.git("ls-tree", "-r", "--name-only", "HEAD"), reviewUnagreedPath) || !strings.Contains(r.git("ls-tree", "-r", "--name-only", "HEAD~1"), reviewUnagreedPath) {
+		t.Fatalf("用意の誤り: #2 のコミットに %s がないか、#3 のコミットに残っている", reviewUnagreedPath)
+	}
+	r.git("switch", "-q", reviewBranch)
+	r.git("rebase", "-q", "main")
+	// #24 が変えたのは、もとの 3 つだけ（消したものと、フラグ・推測の残る仕様は変えていない）
+	if got := strings.Fields(r.git("diff", "--name-only", "main", "HEAD")); !slices.Equal(got, []string{".vanda/promises.toml", "e2e/add-task.txtar"}) {
+		t.Fatalf("用意の誤り: main と story-24 で違うファイルが %v", got)
+	}
+	diff := r.git("diff", "-U0", "main", "HEAD", "--", ".vanda/promises.toml")
+	for _, id := range []string{reviewFlaggedSpecID, reviewGuessedSpecID, reviewRemovedSpecID} {
+		if strings.Contains(diff, id) {
+			t.Fatalf("用意の誤り: #24 が仕様 %s を変えている\n%s", id, diff)
+		}
+	}
+	return bin, r, startServe(t, bin, r.Root, r.Env), filepath.Join(checks, "all.toml")
+}
+
+// checkFailsAndListed は、承認のチェック（範囲がすべて）の誤りに key を名指しする行があることを確かめてから、
+// その対象が、どちらのレビュー単位でも、一覧（entries か detached）に出ることを確かめる。
+func checkFailsAndListed(t *testing.T, bin string, r *reviewRepo, s *vandaServer, checks, label, kind, key string) {
+	t.Helper()
+	code, _, errs := r.vanda(bin, "check", checks)
+	var lines []string
+	for _, line := range strings.Split(errs, "\n") {
+		if strings.Contains(line, key) {
+			lines = append(lines, line)
+		}
+	}
+	if code == 0 || len(lines) == 0 {
+		t.Fatalf("承認のチェック（%d）が %s %s で失敗しない\n%s", code, label, key, errs)
+	}
+	for _, v := range unagreedViews {
+		rows := listRows(t, s, v.path)
+		if len(rowsOf(rows, kind, key)) == 0 {
+			var listed []string
+			for _, row := range rows {
+				listed = append(listed, row.Kind+" "+row.key()+"（"+row.Change+"・"+row.State+"）")
+			}
+			t.Errorf("%s: 承認のチェックが失敗と言う %s %s が、一覧にない\nチェックの誤り: %s\n一覧: %s", v.name, label, key, strings.Join(lines, "\n"), strings.Join(listed, "、"))
+		}
+	}
+}
+
+// @vanda:evidence owner-reviews-every-change
+func Testほかのストーリーが消して消したことへの承認がないままベースブランチに取り込まれた仕様とファイルは承認のチェックが失敗と言い一覧に出る(t *testing.T) {
+	t.Parallel()
+	bin, r, s, checks := setupCheckFailsUnchanged(t)
+	t.Run("仕様", func(t *testing.T) {
+		checkFailsAndListed(t, bin, r, s, checks, "仕様", "spec", reviewRemovedSpecID)
+	})
+	t.Run("ファイル", func(t *testing.T) {
+		checkFailsAndListed(t, bin, r, s, checks, "ファイル", "file", reviewUnagreedPath)
+	})
+}
+
+// @vanda:evidence owner-reviews-every-change
+func Testストーリーで変えていない承認済の仕様にフラグか推測が残っていれば承認のチェックが失敗と言い一覧に出る(t *testing.T) {
+	t.Parallel()
+	bin, r, s, checks := setupCheckFailsUnchanged(t)
+	t.Run("フラグ", func(t *testing.T) {
+		checkFailsAndListed(t, bin, r, s, checks, "仕様", "spec", reviewFlaggedSpecID)
+	})
+	t.Run("推測", func(t *testing.T) {
+		checkFailsAndListed(t, bin, r, s, checks, "仕様", "spec", reviewGuessedSpecID)
+	})
 }
