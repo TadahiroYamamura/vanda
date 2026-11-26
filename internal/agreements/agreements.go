@@ -181,6 +181,32 @@ func (r *Records) DeletionAgreedBy(kind, target, story string) bool {
 	return false
 }
 
+// DeletionsNotAgreed は、中身を承認したことがあり、今はなく（present が偽）、消したことへの承認もないものを返す。
+// 同じものへの記録が 2 つ以上あっても 1 度だけ、最初の記録の順で、最後の記録を返す。
+// チェック agreement（範囲がすべて）と、レビューの画面の一覧が、同じものを指すように、どちらもこれで決める
+func (r *Records) DeletionsNotAgreed(present func(kind, target string) bool) []*Agreement {
+	last := map[string]*Agreement{}
+	var keys []string
+	for _, a := range r.Agreements {
+		if a.Deleted || a.Kind == "" || a.Target() == "" {
+			continue
+		}
+		if present(a.Kind, a.Target()) || r.DeletionAgreed(a.Kind, a.Target()) {
+			continue
+		}
+		k := a.Kind + "\x00" + a.Target()
+		if _, ok := last[k]; !ok {
+			keys = append(keys, k)
+		}
+		last[k] = a
+	}
+	var out []*Agreement
+	for _, k := range keys {
+		out = append(out, last[k])
+	}
+	return out
+}
+
 // EverAgreed は、kind・target の中身を承認したことがあるかを返す（消したことへの承認は数えない）。
 func (r *Records) EverAgreed(kind, target string) bool {
 	for _, a := range r.Agreements {

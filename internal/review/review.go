@@ -1,4 +1,4 @@
-// Package review は、ストーリーで追加・変更・削除されたものと、変わっていなくても承認済でないものの一覧（RV-01）を作る。
+// Package review は、ストーリーで追加・変更・削除されたものと、変わっていなくても承認のチェックが通さないものの一覧（RV-01）を作る。
 package review
 
 import (
@@ -755,9 +755,10 @@ func (s *state) changedBy(key string, recs []*agreements.Agreement, written map[
 	return out, nil
 }
 
-// addNotAgreed は、es にない（比べる元と今で変わっていない）もののうち、承認済でない項目と承認の対象のファイルを、es に足す。
-// 変わっていないものまで見るのは、チェック agreement（範囲がすべて）が失敗と言うものを、画面から承認できるようにするため（オーナーの決定）。
-// 承認済かは、そのチェックと同じく、今の中身のフィンガープリントに合う承認の記録があるかで決める
+// addNotAgreed は、es にない（比べる元と今で変わっていない）もののうち、チェック agreement（範囲がすべて）が失敗と言うものを、es に足す。
+// 承認済でない項目と承認の対象のファイル、承認済でもフラグか推測の残る仕様、前に中身を承認していて今はなく、消したことへの承認がないもの。
+// 変わっていないものまで見るのは、そのチェックが失敗と言うものを、画面で閲覧し、承認できるようにするため（オーナーの決定）。
+// どれも、そのチェックと同じ関数（Agreed・HasFlagsOrGuesses・DeletionsNotAgreed）で決める
 func (s *state) addNotAgreed(es []Entry) ([]Entry, error) {
 	listed := map[string]bool{}
 	for _, e := range es {
@@ -766,7 +767,11 @@ func (s *state) addNotAgreed(es []Entry) ([]Entry, error) {
 	var keys []string
 	for k, cur := range s.cur.items {
 		fp := s.cur.itemFP[k]
-		if !listed[k] && !(fp != "" && s.recs.Agreed(cur.Kind, cur.ID, fp)) {
+		if listed[k] {
+			continue
+		}
+		agreed := fp != "" && s.recs.Agreed(cur.Kind, cur.ID, fp)
+		if !agreed || cur.Spec != nil && cur.Spec.HasFlagsOrGuesses() {
 			keys = append(keys, k)
 		}
 	}
@@ -790,7 +795,41 @@ func (s *state) addNotAgreed(es []Entry) ([]Entry, error) {
 		}
 		es = append(es, e)
 	}
+	gone := s.recs.DeletionsNotAgreed(func(kind, target string) bool {
+		if kind == "file" {
+			_, ok := s.cur.types[target]
+			return ok
+		}
+		_, ok := s.cur.items[kind+":"+target]
+		return ok
+	})
+	for _, a := range gone {
+		e := s.gone(a)
+		if !listed[e.key] {
+			es = append(es, e)
+		}
+	}
 	return es, nil
+}
+
+// gone は、前に中身を承認していて今はないものの 1 件を、消したものとして作る。a は、その中身への承認の記録。
+// 消したコミットは比べる元より前にあり、承認の記録にはフィンガープリントしかないので、前の中身は出さない。
+// 仕様のレイヤーも分からないので、レイヤーのない仕様のまとまりに置く
+func (s *state) gone(a *agreements.Agreement) Entry {
+	e := Entry{Kind: a.Kind, Change: "deleted", State: ptr(stateName(false)), Flags: []string{}, OtherCommits: []CommitRef{}}
+	switch a.Kind {
+	case "file":
+		e.Path, e.Group, e.key = ptr(a.Path), "files", "path:"+a.Path
+		// ファイルの種類は、場所が今の設定のパターンにマッチすれば分かる
+		if ts := snapshot.Targets([]string{a.Path}, s.o.Cfg); len(ts) == 1 {
+			e.FileType = ptr(ts[0].Type)
+		}
+	case "spec":
+		e.ID, e.Group, e.key = ptr(a.Key), "layer:", a.Kind+":"+a.Key
+	default:
+		e.ID, e.Group, e.key = ptr(a.Key), s.group(snapshot.Entry{Kind: a.Kind}), a.Kind+":"+a.Key
+	}
+	return e
 }
 
 // unchanged は、比べる元と今で変わっていないものの 1 件を作る。

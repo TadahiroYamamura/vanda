@@ -73,6 +73,12 @@ type Spec struct {
 	ModelCheckWaiver string
 }
 
+// HasFlagsOrGuesses は、フラグか推測が残っているかを返す。残っていれば、承認済でも、チェック agreement は通さない。
+// そのチェックと、レビューの画面の一覧が食い違わないように、どちらもこれで決める
+func (c *Spec) HasFlagsOrGuesses() bool {
+	return len(c.Flags) > 0 || len(c.Guesses) > 0
+}
+
 type Evidence struct {
 	Table  *tomlread.Table
 	Stage  string

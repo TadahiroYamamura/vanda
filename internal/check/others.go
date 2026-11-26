@@ -105,7 +105,7 @@ func (e *env) agreement(scope string) []diag.Error {
 		if !changed {
 			continue
 		}
-		if it.spec != nil {
+		if it.spec != nil && it.spec.HasFlagsOrGuesses() {
 			if len(it.spec.Flags) > 0 {
 				errs = append(errs, it.table.Err("flags", "仕様 "+it.id+" にフラグ（"+strings.Join(it.spec.Flags, "・")+"）が残っています", "承認するときに、フラグを外してください（承認の後にフラグだけを立てたなら、中身を確かめ直してから外してください）"))
 			}
@@ -180,24 +180,8 @@ func (e *env) deletions(scope string) []diag.Error {
 	for _, f := range e.targetFiles() {
 		present["path:"+f] = true
 	}
-	// 同じものへの記録が 2 つ以上あっても 1 度だけ出し、誤りの行は最後の記録を指す
-	last := map[string]*agreements.Agreement{}
-	var keys []string
-	for _, a := range e.recs.Agreements {
-		if a.Deleted || a.Kind == "" || a.Target() == "" {
-			continue
-		}
-		k := targetKey(a.Kind, a.Target())
-		if present[k] {
-			continue
-		}
-		if _, ok := last[k]; !ok {
-			keys = append(keys, k)
-		}
-		last[k] = a
-	}
-	for _, k := range keys {
-		a := last[k]
+	// 誤りの行は、同じものへの最後の記録を指す
+	for _, a := range e.recs.DeletionsNotAgreed(func(kind, target string) bool { return present[targetKey(kind, target)] }) {
 		what := "前に中身を承認していて、今の約束リストにありません"
 		if a.Kind == "file" {
 			what = "前に中身を承認していて、今は承認の対象のファイルにありません"

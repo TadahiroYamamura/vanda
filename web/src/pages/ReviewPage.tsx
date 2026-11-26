@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 // 本文の中の生の HTML は描かない（react-markdown の既定。rehype-raw などを足さない）。Issue の本文に悪意のある HTML があっても、画面で動かないようにするため
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { api, type SpecContent, type Content, type Piece, type Refs, type User, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FileContent, type Kind, type PropertyContent, type Review, type TermContent, type TruthContent } from "../api";
+import { api, type SpecContent, type Content, type Piece, type Refs, type User, type EvidenceContent, type EvidenceMark, type Context, type Entry, type FeatureContent, type FileContent, type Kind, type PropertyContent, type Review, type State, type TermContent, type TruthContent } from "../api";
 import { AgreementIcon, ErrorBox, FlagBadge, ListIcon, Loading, PresentIcon, StateBadge, shortCommit, useLoad } from "../components/common";
 import { SpecHistory } from "../components/SpecHistory";
 import { SpecList } from "../components/SpecList";
@@ -57,7 +57,6 @@ function nextNotAgreed(review: Review, filter: Filter, folded: Set<string>, key:
 }
 
 // 承認済でないものは、提案中と、承認が失効したもの。承認が失効したものは、ほかのストーリーの承認で承認済のこともあるので、状態とは別に見る。
-// 消したものは承認できない（状態がない）ので、どちらにもマッチしない
 export function matchesFilter(e: Entry, f: Filter): boolean {
   if (f.notAgreed && !notAgreed(e)) return false;
   if (f.text === "") return true;
@@ -394,6 +393,8 @@ function EntryList(props: {
     else groups.push({ name: e.group, entries: [e] });
   }
   const count = (c: string) => review.entries.filter((e) => e.change === c).length;
+  // 変わっていない行は、提案中のものと、承認済でもフラグ・推測の残るものがあるので、状態ごとに数える
+  const unchanged = (s: State) => review.entries.filter((e) => e.change === "unchanged" && e.state === s).length;
   return (
     <div className={props.reloading ? "entry-list reloading" : "entry-list"}>
       <ListHead
@@ -405,7 +406,8 @@ function EntryList(props: {
       />
       <p className="note">
         追加 {count("added")}・変更 {count("modified")}・削除 {count("deleted")}
-        {count("unchanged") > 0 && `・${changeLabel.unchanged}（${stateLabel.proposed}） ${count("unchanged")}`}
+        {unchanged("proposed") > 0 && `・${changeLabel.unchanged}（${stateLabel.proposed}） ${unchanged("proposed")}`}
+        {unchanged("agreed") > 0 && `・${changeLabel.unchanged}（${stateLabel.agreed}） ${unchanged("agreed")}`}
       </p>
       {detached.length > 0 && (
         <div className="detached">
@@ -767,7 +769,12 @@ function EntryDetail(props: { entry: Entry; total: number; story: string | null;
         onDone={props.onAgreed}
       />
 
-      <Compare entry={e} />
+      {/* 比べる元より前に消したものは、承認の記録にフィンガープリントしかなく、API が前の中身を返さない */}
+      {e.change === "deleted" && !e.before ? (
+        <p className="note">前に中身を承認していて、今はありません。消す前の中身は、承認の記録に残っていないため、表示できません。</p>
+      ) : (
+        <Compare entry={e} />
+      )}
       {e.kind === "spec" && e.id && e.change !== "deleted" && <SpecSections key={props.written} id={e.id} query={props.query} />}
       {e.kind === "feature" && e.id && (e.change === "added" || e.change === "modified") && <FeatureSpecs id={e.id} query={props.query} />}
     </div>
