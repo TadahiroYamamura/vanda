@@ -53,6 +53,20 @@ func (t *Terminal) pump() {
 	}
 }
 
+// width は、端末の幅（桁の数）を返す。質問を描く出力の側から読み、出力が端末のファイルでなければ入力の側から読む。
+// どちらからも読めなければ ok が false
+func (t *Terminal) width() (int, bool) {
+	if f, isFile := t.out.(*os.File); isFile {
+		if w, _, err := term.GetSize(f.Fd()); err == nil && w > 0 {
+			return w, true
+		}
+	}
+	if w, _, err := term.GetSize(t.in.Fd()); err == nil && w > 0 {
+		return w, true
+	}
+	return 0, false
+}
+
 // session は、1 つの質問のプログラムに渡す入力。done を閉じた後は、何も読まずに io.EOF を返す
 type session struct {
 	t    *Terminal

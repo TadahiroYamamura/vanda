@@ -164,7 +164,14 @@ func newAsker(t *Terminal) *asker {
 
 func (a *asker) run(fields ...huh.Field) error {
 	err := a.t.with(func(in io.Reader) error {
-		return huh.NewForm(huh.NewGroup(fields...)).WithInput(in).WithOutput(a.t.out).WithKeyMap(a.keys).WithShowHelp(true).Run()
+		group := huh.NewGroup(fields...)
+		// huh は、端末の幅が届くまで幅 80 で描く。80 桁を超える題は、切れた形で 1 度出てから描き直されるので、はじめから幅を渡す。
+		// フォームではなくグループに渡すのは、フォームに渡すと、質問の間に端末の幅が変わっても huh が追わなくなるため。
+		// 幅を読めないときは渡さず、huh が端末の幅で描き直すのに任せる
+		if w, ok := a.t.width(); ok {
+			group.WithWidth(w)
+		}
+		return huh.NewForm(group).WithInput(in).WithOutput(a.t.out).WithKeyMap(a.keys).WithShowHelp(true).Run()
 	})
 	if errors.Is(err, huh.ErrUserAborted) {
 		return ErrInterrupted
