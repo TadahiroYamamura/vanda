@@ -1213,3 +1213,11 @@ fingerprint = "sha256:16add13eb0da12ee24a29e5c9726498dea8125a6e33d72edc5122a58ad
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T09:11:22+09:00
 story = "#4"
+
+[[agreement]]
+kind = "spec"
+key = "token-sent-only-to-its-host"
+fingerprint = "sha256:12b166fa1f7395d1c7c1bbe0bbb0cfc31537a18256599c1d04f04377093d99bf"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T09:11:25+09:00
+story = "#4"

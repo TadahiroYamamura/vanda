@@ -1024,7 +1024,6 @@ refines = ["keep-secrets-unwritten"]
 statement = "{@id:story-store}のトークンは、それを使うホストにだけ送り、ファイルと出力に書かない"
 condition = "トークンが、設定と違うホストに送られる。トークンが、ファイルか出力に出る"
 layers = ["api"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
