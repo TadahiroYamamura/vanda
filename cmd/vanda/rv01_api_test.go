@@ -3,6 +3,8 @@ package main_test
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -220,6 +222,216 @@ func TestRV01の一覧はないベースブランチや足りない引数や形�
 	} {
 		if code, msg := s.get(path, nil); code != 400 || msg == "" {
 			t.Errorf("%s に %d（%q）を返した。400 で、理由を出す", path, code, msg)
+		}
+	}
+}
+
+// ---- ストーリーで変えていない、承認済でないもの ----
+// リポジトリは review_repo_test.go の newReviewRepoWith。main に、承認の記録を書かない仕様・用語・シナリオを置き、#24 はどれも変えない。
+// 一覧に出すのは、すでにあるリポジトリに vanda を入れた時、対象のファイルすべてが、チェックは失敗するのに画面から承認できない状態になるため。
+
+type unagreedTarget struct {
+	label, kind, key, fp string
+}
+
+var reviewUnagreed = []unagreedTarget{
+	{"仕様", "spec", "task-list-order", sha256Hex([]byte(reviewUnagreedSpecJSON))},
+	{"用語", "term", "task-title", sha256Hex([]byte(reviewUnagreedTermJSON))},
+	{"ファイル", "file", reviewUnagreedPath, sha256Hex([]byte(reviewUnagreedScenario))},
+}
+
+var unagreedViews = []struct{ name, path string }{
+	{"レビュー単位がブランチのとき", "/api/review?view=branch&base=main"},
+	{"レビュー単位がストーリーのとき", "/api/review?view=story&story=" + q(reviewStory)},
+}
+
+type listRow struct {
+	Kind        string  `json:"kind"`
+	ID          *string `json:"id"`
+	Path        *string `json:"path"`
+	Change      string  `json:"change"`
+	State       string  `json:"state"`
+	Fingerprint *string `json:"fingerprint"`
+	Agree       *struct {
+		Possible bool `json:"possible"`
+	} `json:"agree"`
+}
+
+func (r listRow) key() string {
+	if r.Kind == "file" {
+		return str(r.Path)
+	}
+	return str(r.ID)
+}
+
+// listRows は、一覧のレスポンスの行をすべて返す。変わっていない行を entries と detached のどちらに置くかは決めていないので、両方を合わせる。
+func listRows(t *testing.T, s *vandaServer, path string) []listRow {
+	t.Helper()
+	var got struct {
+		Entries  []listRow `json:"entries"`
+		Detached []listRow `json:"detached"`
+	}
+	if code, msg := s.get(path, &got); code != 200 {
+		t.Fatalf("一覧 %s を読めない（%d）: %s", path, code, msg)
+	}
+	return append(got.Entries, got.Detached...)
+}
+
+func rowsOf(rows []listRow, kind, key string) []listRow {
+	var found []listRow
+	for _, r := range rows {
+		if r.Kind == kind && r.key() == key {
+			found = append(found, r)
+		}
+	}
+	return found
+}
+
+// setupUnagreed は、リポジトリと vanda サーバーと、承認のチェック（範囲がすべて）だけのチェックの設定の場所を返す。
+func setupUnagreed(t *testing.T) (string, *reviewRepo, *vandaServer, string) {
+	t.Helper()
+	bin := buildVanda(t)
+	version, err := runningVersion(bin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := newReviewRepoWith(t, version, reviewUnagreedSpec+reviewUnagreedTerm, map[string]string{reviewUnagreedPath: reviewUnagreedScenario})
+	checks := t.TempDir()
+	writeFile(t, checks, "all.toml", "[[check]]\nname = \"agreement\"\nscope = \"all\"\n")
+	return bin, r, startServe(t, bin, r.Root, r.Env), filepath.Join(checks, "all.toml")
+}
+
+// notAgreedLines は、承認のチェックの誤りのうち、今の中身にまだ承認していないと言う行を返す。
+func notAgreedLines(errs string) []string {
+	var lines []string
+	for _, line := range strings.Split(errs, "\n") {
+		if strings.Contains(line, "まだ承認していません") && !strings.Contains(line, "消したこと") {
+			lines = append(lines, line)
+		}
+	}
+	return lines
+}
+
+// names は、誤りの行が、その対象を名指ししているか。項目は「<種類> <ID> の」、ファイルは行の頭の「<場所>: 」（.claude/rules/wording.md の誤りの形）。
+func names(line, key string) bool {
+	return strings.Contains(line, " "+key+" ") || strings.HasPrefix(line, key+": ")
+}
+
+// @vanda:evidence owner-reviews-every-change
+func Testストーリーで変えていない承認の記録のない仕様と用語とファイルは一覧に変わっていない提案中の行として1度だけ出て承認できる(t *testing.T) {
+	t.Parallel()
+	_, _, s, _ := setupUnagreed(t)
+	for _, v := range unagreedViews {
+		rows := listRows(t, s, v.path)
+		for _, u := range reviewUnagreed {
+			found := rowsOf(rows, u.kind, u.key)
+			if len(found) != 1 {
+				t.Errorf("%s: %s %s が一覧に %d 度出た（1 度だけ出る）", v.name, u.label, u.key, len(found))
+				continue
+			}
+			row := found[0]
+			if row.Change != "unchanged" || row.State != "proposed" || str(row.Fingerprint) != u.fp {
+				t.Errorf("%s: %s %s の change %q、state %q、fingerprint %q（思ったもの unchanged・proposed・%q）", v.name, u.label, u.key, row.Change, row.State, str(row.Fingerprint), u.fp)
+			}
+			if row.Agree == nil || !row.Agree.Possible {
+				t.Errorf("%s: %s %s を承認できると出ていない: %+v", v.name, u.label, u.key, row.Agree)
+			}
+		}
+	}
+}
+
+// @vanda:evidence owner-reviews-every-change
+func Test変えていない承認済のものと承認の対象でないGoのテストは一覧に出ずストーリーで変えたものは変わっていない行と重ならず1度だけ出る(t *testing.T) {
+	t.Parallel()
+	_, _, s, _ := setupUnagreed(t)
+	agreed := []struct{ kind, key string }{
+		{"term", "task"}, {"term", "task-id"}, {"property", "no-lost-task"}, {"feature", "add-task"},
+		{"file", "spec/Task.tla"}, {"file", "db/schema.sql"},
+	}
+	changed := []struct{ kind, key, change string }{
+		{"spec", "task-id-unique", "modified"}, {"spec", "task-title-required", "added"}, {"file", "e2e/add-task.txtar", "modified"},
+	}
+	for _, v := range unagreedViews {
+		rows := listRows(t, s, v.path)
+		for _, a := range agreed {
+			if found := rowsOf(rows, a.kind, a.key); len(found) != 0 {
+				t.Errorf("%s: 変えていない承認済の %s %s が一覧に出た: %+v", v.name, a.kind, a.key, found)
+			}
+		}
+		if found := rowsOf(rows, "file", "internal/task/task_test.go"); len(found) != 0 {
+			t.Errorf("%s: 承認の対象でない Go のテストが一覧に出た: %+v", v.name, found)
+		}
+		for _, c := range changed {
+			found := rowsOf(rows, c.kind, c.key)
+			if len(found) != 1 || found[0].Change != c.change {
+				t.Errorf("%s: ストーリーで変えた %s %s が、%s の行 1 つでない: %+v", v.name, c.kind, c.key, c.change, found)
+			}
+		}
+	}
+}
+
+// @vanda:evidence owner-reviews-every-change
+func Test一覧に出た変えていない承認の記録のないものを承認すると承認済になり範囲がすべての承認のチェックがその対象で失敗しなくなる(t *testing.T) {
+	t.Parallel()
+	bin, r, s, checks := setupUnagreed(t)
+	for _, u := range reviewUnagreed {
+		_, _, errs := r.vanda(bin, "check", checks)
+		if !slices.ContainsFunc(notAgreedLines(errs), func(line string) bool { return names(line, u.key) }) {
+			t.Fatalf("承認する前に、承認のチェックが %s %s をまだ承認していないと言わない\n%s", u.label, u.key, errs)
+		}
+		// 承認するのは、一覧に見せていた中身（その行のフィンガープリント）
+		found := rowsOf(listRows(t, s, unagreedViews[0].path), u.kind, u.key)
+		if len(found) != 1 {
+			t.Errorf("%s %s が一覧に %d 度出た（1 度だけ出る）", u.label, u.key, len(found))
+			continue
+		}
+		path := ""
+		if u.kind == "file" {
+			path = u.key
+		}
+		if code, msg := s.post("/api/agree", agreeBody(u.kind, u.key, path, str(found[0].Fingerprint)), nil); code != 200 {
+			t.Errorf("%s %s を承認できない（%d）: %s", u.label, u.key, code, msg)
+			continue
+		}
+		if got, want := r.git("log", "-1", "--format=%s"), "(chore) #24 で "+u.label+" "+u.key+" を承認する"; got != want {
+			t.Errorf("承認のコミットの subject: %q（思ったもの %q）", got, want)
+		}
+		// 承認した後に行を残すかは決めていない。残すなら、承認済の行 1 つ
+		for _, v := range unagreedViews {
+			after := rowsOf(listRows(t, s, v.path), u.kind, u.key)
+			if len(after) > 1 || (len(after) == 1 && after[0].State != "agreed") {
+				t.Errorf("%s: 承認した %s %s が、承認済になっていない: %+v", v.name, u.label, u.key, after)
+			}
+		}
+		_, _, errs = r.vanda(bin, "check", checks)
+		for _, line := range notAgreedLines(errs) {
+			if names(line, u.key) {
+				t.Errorf("承認した後も、承認のチェックが %s %s で失敗する: %s", u.label, u.key, line)
+			}
+		}
+	}
+}
+
+// @vanda:evidence owner-reviews-every-change
+// @vanda:evidence check-passes-only-when-agreed
+func Test範囲がすべての承認のチェックがまだ承認していないと言う対象はすべて一覧に出る(t *testing.T) {
+	t.Parallel()
+	bin, r, s, checks := setupUnagreed(t)
+	code, _, errs := r.vanda(bin, "check", checks)
+	lines := notAgreedLines(errs)
+	// 用意したリポジトリで承認済でないのは、#24 が変えた 3 つと、変えていない 3 つ
+	want := []string{"task-id-unique", "task-title-required", "e2e/add-task.txtar", "task-list-order", "task-title", reviewUnagreedPath}
+	for _, key := range want {
+		if !slices.ContainsFunc(lines, func(line string) bool { return names(line, key) }) {
+			t.Fatalf("承認のチェック（%d）が %s をまだ承認していないと言わない\n%s", code, key, errs)
+		}
+	}
+	for _, v := range unagreedViews {
+		rows := listRows(t, s, v.path)
+		for _, line := range lines {
+			if !slices.ContainsFunc(rows, func(row listRow) bool { return names(line, row.key()) }) {
+				t.Errorf("%s: 承認のチェックがまだ承認していないと言う対象が、一覧にない: %s", v.name, line)
+			}
 		}
 	}
 }

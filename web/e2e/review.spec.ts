@@ -127,8 +127,25 @@ function makeRepo(): Repo {
   return { root, env, git, write, vanda };
 }
 
+// main に置く、承認の記録を書かない仕様とシナリオ。ストーリー #24 は、どちらも変えない
+const unagreedSpec = `
+[[spec]]
+id = "task-list-order"
+refines = ["add-task"]
+statement = "タスクは登録した順に並ぶ"
+layers = ["model"]
+
+[[spec.evidence]]
+stage = "implementation"
+type = "scenario-test"
+layers = ["model"]
+`;
+const unagreedScenario = "e2e/list-task.txtar";
+const unagreed = ["task-list-order", unagreedScenario];
+
 // buildRepo は、main（#1 で承認済）と、ストーリー #24 が仕様を変え・足し、シナリオを変えた story-24 を作る。HEAD は story-24。
-function buildRepo(): Repo {
+// withUnagreed を渡せば、main に、承認の記録を書かない仕様とシナリオ（unagreed）と、承認のチェック（範囲がすべて）だけのチェックの設定も置く
+function buildRepo(withUnagreed = false): Repo {
   const r = makeRepo();
   const version = readFileSync(resolve(here, "..", "..", "internal", "version", "version.go"), "utf8").match(/const Current = "(\d+\.\d+\.\d+)"/)![1];
   r.git("init", "-q", "-b", "main");
@@ -136,7 +153,12 @@ function buildRepo(): Repo {
   r.git("config", "user.email", "po@example.com");
   r.write(".vanda/config.toml", config(version));
   r.write(".vanda/checks/merge.toml", '[[check]]\nname = "story-origin"\nscope = "story"\n\n[[check]]\nname = "agreement"\nscope = "story"\n');
-  r.write(".vanda/promises.toml", promises("タスクの ID は重ならない", false, false));
+  const more = withUnagreed ? unagreedSpec : "";
+  r.write(".vanda/promises.toml", promises("タスクの ID は重ならない", false, false) + more);
+  if (withUnagreed) {
+    r.write(unagreedScenario, "# シナリオ\nexec vanda-task list\n");
+    r.write(".vanda/checks/agreement-all.toml", '[[check]]\nname = "agreement"\nscope = "all"\n');
+  }
   r.write("e2e/add-task.txtar", scenarioBase);
   r.write(
     ".vanda/agreements.toml",
@@ -148,7 +170,7 @@ function buildRepo(): Repo {
   );
   commit(r, "はじめの仕様を置く", "#1");
   r.git("switch", "-q", "-c", "story-24");
-  r.write(".vanda/promises.toml", promises("タスクの ID は、すべてのタスクを通して重ならない", true, true));
+  r.write(".vanda/promises.toml", promises("タスクの ID は、すべてのタスクを通して重ならない", true, true) + more);
   commit(r, "仕様を変え、題の仕様を足す", "#24");
   r.write("e2e/add-task.txtar", scenarioStory);
   commit(r, "シナリオを変える", "#24");
@@ -252,6 +274,32 @@ test("ブランチのコミットからストーリーが決まるブランチ�
   expect(check.code, check.out).toBe(0);
   // 承認は 1 件ごとに 1 つのコミット
   expect(repo.git("rev-list", "--count", "main..HEAD")).toBe(String(2 + items.length));
+});
+
+// 一覧に出すのは、すでにあるリポジトリに vanda を入れた時、対象のファイルすべてが、チェックは失敗するのに画面から承認できない状態になるため
+// @vanda:evidence owner-reviews-every-change
+test("ストーリーで変えていない承認の記録のない仕様とシナリオが一覧に提案中で1度だけ出て承認でき全部を承認すると範囲がすべての承認のチェックが通る", async ({ page }) => {
+  const r = buildRepo(true);
+  const s = await startServe(r);
+  try {
+    const before = r.vanda("check", ".vanda/checks/agreement-all.toml");
+    expect(before.code, "承認する前からチェックが通っている").toBe(1);
+    for (const item of unagreed) expect(before.out, `承認する前のチェックが ${item} で失敗していない`).toContain(item);
+    await page.goto(s.url + "/");
+    for (const item of [...unagreed, ...items]) {
+      await expect(filterList(page).getByText(item, { exact: true }), `${item} が一覧に 1 度だけ出ていない`).toHaveCount(1);
+    }
+    for (const item of unagreed) await expect(listIcon(page, item, "提案中"), `${item} が提案中でない`).toBeVisible();
+    await agreeAll(page, unagreed);
+    const half = r.vanda("check", ".vanda/checks/agreement-all.toml");
+    for (const item of unagreed) expect(half.out, `承認した後もチェックが ${item} で失敗する`).not.toContain(item);
+    await agreeAll(page, items);
+    const after = r.vanda("check", ".vanda/checks/agreement-all.toml");
+    expect(after.code, after.out).toBe(0);
+  } finally {
+    await s.stop();
+    rmSync(r.root, { recursive: true, force: true });
+  }
 });
 
 test("承認した仕様を変えると一覧に差分ありとして戻る", async ({ page }) => {

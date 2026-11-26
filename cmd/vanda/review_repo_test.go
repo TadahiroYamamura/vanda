@@ -269,6 +269,43 @@ func reviewBaseEnv(root string) []string {
 
 func newReviewRepo(t *testing.T, version string) *reviewRepo {
 	t.Helper()
+	return newReviewRepoWith(t, version, "", nil)
+}
+
+// main に置く、承認の記録を書かない承認の対象。ストーリー #24 は、どれも変えない。
+const (
+	reviewUnagreedSpec = `
+[[spec]]
+id = "task-list-order"
+refines = ["add-task"]
+statement = "タスクは登録した順に並ぶ"
+layers = ["model"]
+
+[[spec.evidence]]
+stage = "implementation"
+type = "unit-test"
+layers = ["model"]
+`
+	reviewUnagreedSpecJSON = `{"evidence":[{"layers":["model"],"stage":"implementation","type":"unit-test"}],` +
+		`"id":"task-list-order","layers":["model"],"refines":["add-task"],"statement":"タスクは登録した順に並ぶ"}`
+	reviewUnagreedTerm = `
+[[term]]
+id = "task-title"
+name = "タスクの題"
+definition = "タスクに付ける短い文"
+`
+	reviewUnagreedTermJSON = `{"definition":"タスクに付ける短い文","id":"task-title","name":"タスクの題"}`
+	reviewUnagreedPath     = "e2e/list-task.txtar"
+	reviewUnagreedScenario = `vanda-task add a
+vanda-task list
+stdout a
+`
+)
+
+// newReviewRepoWith は、newReviewRepo のリポジトリの main に、承認の記録を書かない承認の対象を足す。
+// promises は、main と story-24 の約束リストの末尾に同じものを足し、files（場所 → 中身）は main に置く。どちらも #24 は変えない。
+func newReviewRepoWith(t *testing.T, version, promises string, files map[string]string) *reviewRepo {
+	t.Helper()
 	root := t.TempDir()
 	r := &reviewRepo{t: t, Root: root, Env: reviewBaseEnv(root)}
 	// 用意のためのコミットは、承認する人と別の作者で作る
@@ -282,7 +319,10 @@ func newReviewRepo(t *testing.T, version string) *reviewRepo {
 	writeFile(t, root, ".vanda/config.toml", fmt.Sprintf(reviewConfig, version))
 	writeFile(t, root, ".vanda/checks/all.toml", "[[check]]\nname = \"promise-list-shape\"\nscope = \"all\"\n\n[[check]]\nname = \"annotation-links\"\nscope = \"all\"\n\n[[check]]\nname = \"agreement\"\nscope = \"all\"\n\n[[check]]\nname = \"agreement-targets\"\nscope = \"all\"\n\n[[check]]\nname = \"unread-files\"\nscope = \"all\"\n")
 	writeFile(t, root, ".vanda/checks/merge.toml", "[[check]]\nname = \"story-origin\"\nscope = \"story\"\n\n[[check]]\nname = \"agreement\"\nscope = \"story\"\n")
-	writeFile(t, root, ".vanda/promises.toml", reviewPromisesBase)
+	writeFile(t, root, ".vanda/promises.toml", reviewPromisesBase+promises)
+	for path, content := range files {
+		writeFile(t, root, path, content)
+	}
 	writeFile(t, root, "e2e/add-task.txtar", reviewScenarioBase)
 	writeFile(t, root, "spec/Task.tla", reviewTLA)
 	writeFile(t, root, "db/schema.sql", reviewSchema)
@@ -300,7 +340,7 @@ func newReviewRepo(t *testing.T, version string) *reviewRepo {
 	r.g.commitAll("はじめの仕様を置く", "#1")
 
 	r.g.run("switch", "-q", "-c", reviewBranch)
-	writeFile(t, root, ".vanda/promises.toml", reviewPromisesStory)
+	writeFile(t, root, ".vanda/promises.toml", reviewPromisesStory+promises)
 	r.g.commitAll("タスクの ID の仕様を変え、題の仕様を足す", reviewStory)
 	writeFile(t, root, "e2e/add-task.txtar", reviewScenarioStory)
 	r.g.commitAll("重なった ID を拒むシナリオにする", reviewStory)
