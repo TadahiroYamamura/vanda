@@ -1669,6 +1669,189 @@ func Test質問が出てから1回だけ答えを送ると2問目以降の答え
 	}
 }
 
+// ---- Enter のすぐ後に届いたキー ----
+
+// enterThrough は、題に steps の言葉を含む質問を、順に、既定の答えのまま Enter で進む。
+func (s *initSession) enterThrough(steps ...string) {
+	s.t.Helper()
+	for _, step := range steps {
+		f := s.waitField(step, step)
+		s.press(step+" で既定のまま進む", keyEnter, fieldIsNot(f.title))
+	}
+}
+
+// enterWith は、題が title の質問に、Enter と after を 1 回の書き込みで送り、別の質問が描き終わるまで待って、
+// その質問を返す。
+func (s *initSession) enterWith(what, title, after string) initField {
+	s.t.Helper()
+	next, _ := fieldOf(s.press(what+" で Enter と次のキーを 1 回の書き込みで送る", keyEnter+after, fieldIsNot(title)))
+	return next
+}
+
+// rewriteInput は、題に keyword を含む入力の質問で、入力欄を消してから a を書き、Enter で答える。質問の題を返す。
+// Enter のすぐ後に届いたキーが、次の質問への入力になるか、捨てられるかは、まだ決まっていない。どちらでも a が
+// 答えになるように、入力欄に何が入っていても消す。
+func (s *initSession) rewriteInput(what, keyword, a string) string {
+	s.t.Helper()
+	f := s.waitField(what, keyword)
+	s.press(what+" の入力欄を消す", keyClear, func(sc string) bool { return cursorOf(sc) == "" })
+	s.press(what+" に書く", a, func(sc string) bool { return cursorOf(sc) == a })
+	s.press(what+" で答えを送る", keyEnter, fieldIsNot(f.title))
+	return f.title
+}
+
+// finishFrom は、題が prev の質問の次から、残りの質問を既定の答えのまま Enter で進み、作るかの質問に y と答える。
+func (s *initSession) finishFrom(prev string) {
+	s.t.Helper()
+	for {
+		f, _ := fieldOf(s.waitFor("残りの質問", fieldIsNot(prev)))
+		if strings.Contains(f.title, "作りますか") {
+			s.press("作るかに答える", "y", fieldIsNot(f.title))
+			return
+		}
+		s.press("「"+f.title+"」で既定のまま進む", keyEnter, fieldIsNot(f.title))
+		prev = f.title
+	}
+}
+
+// CMD-11: Enter を受けた時の値が答えになる。Enter のすぐ後（同じ 1 回の書き込み）に届いたキーは、答え終えた質問の
+// 答えを変えず、フォームは止まらずに最後まで進む。質問の 4 つの種類（入力、1 つ選ぶ、複数選ぶ、作るか）で確かめる。
+// 後から届いたキーが、次の質問への入力になるか、捨てられるかは、まだ決まっていないので、答え終えた質問の答えだけを
+// 確かめる。
+// @vanda:evidence start-with-init
+func Test_Enterと同じ書き込みで後から届いたキーは答え終えた質問の答えを変えずフォームは最後まで進む(t *testing.T) {
+	t.Parallel()
+	bin, _ := initSetup(t)
+	// remote が GitHub なので、ストーリーストアの既定は GitHub Issues、リポジトリの既定は owner/app。シナリオだけが見つかる
+	start := func(t *testing.T) (*initRepo, *initSession) {
+		r := newInitRepo(t, "https://github.com/owner/app.git", true, "e2e/a.txtar")
+		return r, startInit(t, bin, r.root, r.g.env)
+	}
+	created := func(t *testing.T, r *initRepo, s *initSession) initConfig {
+		t.Helper()
+		if code := s.wait(); code != 0 {
+			t.Fatalf("vanda init が %d で終わった\n%s\n%s", code, s.screen(), s.stderr.String())
+		}
+		return readInitConfig(t, r.root)
+	}
+
+	t.Run("入力の質問のリポジトリで既定のままEnterと文字", func(t *testing.T) {
+		t.Parallel()
+		r, s := start(t)
+		s.enterThrough("ベースブランチ", "ストーリーストア")
+		f := s.waitField("リポジトリ", "リポジトリ")
+		if def, _ := f.cursorLine(); def != "owner/app" {
+			t.Fatalf("リポジトリの既定の答えが %q（owner/app のはず）\n%s", def, s.screen())
+		}
+		s.enterWith("リポジトリ", f.title, "x")
+		s.finishFrom(s.rewriteInput("ID の書き方", "ID", "PROJ-[0-9]+"))
+		st := created(t, r, s).Story
+		if st == nil || st.Repository != "owner/app" {
+			t.Errorf("既定のまま Enter で答えたリポジトリが、後から届いた x で変わった: %+v（思ったもの repository owner/app）", st)
+		}
+		if st == nil || st.IDPattern != "PROJ-[0-9]+" {
+			t.Errorf("次の質問に書き直した答えで書かれていない: %+v（思ったもの id_pattern PROJ-[0-9]+）", st)
+		}
+	})
+
+	t.Run("入力の質問の読むファイルのパターンで既定のままEnterと入力欄を消すキー", func(t *testing.T) {
+		t.Parallel()
+		r, s := start(t)
+		s.enterThrough("ベースブランチ", "ストーリーストア", "リポジトリ", "ID", "言語")
+		f := s.waitField("読むファイル", "読むファイル")
+		s.enterWith("読むファイル", f.title, keyClear)
+		s.finishFrom(f.title)
+		if got, want := annotationsOf(created(t, r, s)), []string{"txtar **/*.txtar"}; !reflect.DeepEqual(got, want) {
+			t.Errorf("既定のまま Enter で答えたパターンが、後から届いたキーで変わった。[[annotation]]: %v（思ったもの %v）", got, want)
+		}
+	})
+
+	t.Run("1つ選ぶ質問で既定のGitHub_IssuesのままEnterと下の矢印", func(t *testing.T) {
+		t.Parallel()
+		r, s := start(t)
+		s.enterThrough("ベースブランチ")
+		f := s.waitField("ストーリーストア", "ストーリーストア")
+		if c, _ := f.cursorLine(); !strings.Contains(c, "GitHub Issues") {
+			t.Fatalf("ストーリーストアの既定が GitHub Issues でない（%q）\n%s", c, s.screen())
+		}
+		next := s.enterWith("ストーリーストア", f.title, keyDown)
+		if !strings.Contains(next.title, "リポジトリ") {
+			t.Fatalf("GitHub Issues を選んで Enter を送ったのに、次の質問がリポジトリでない\n%s", s.screen())
+		}
+		s.finishFrom(s.rewriteInput("リポジトリ", "リポジトリ", "other/repo"))
+		st := created(t, r, s).Story
+		if st == nil || st.Adapter != "github" || st.Repository != "other/repo" {
+			t.Errorf("Enter の時に選んでいた GitHub Issues が答えになっていない: %+v（思ったもの adapter github、repository other/repo）", st)
+		}
+	})
+
+	t.Run("1つ選ぶ質問でカスタムアダプタへ動かしてからEnterと下の矢印", func(t *testing.T) {
+		t.Parallel()
+		r, s := start(t)
+		s.enterThrough("ベースブランチ")
+		f := s.waitField("ストーリーストア", "ストーリーストア")
+		s.press("ストーリーストア で下へ動かす", keyDown, func(sc string) bool { return strings.Contains(cursorOf(sc), "カスタムアダプタ") })
+		next := s.enterWith("ストーリーストア", f.title, keyDown)
+		if !strings.Contains(next.title, "名前") {
+			t.Fatalf("カスタムアダプタを選んで Enter を送ったのに、次の質問がカスタムアダプタの名前でない\n%s", s.screen())
+		}
+		s.rewriteInput("カスタムアダプタの名前", "名前", "jira-story")
+		s.enterThrough("引数")
+		s.finishFrom(s.rewriteInput("ID の書き方", "ID", "PROJ-[0-9]+"))
+		st := created(t, r, s).Story
+		if st == nil || st.Adapter != "jira-story" {
+			t.Errorf("Enter の時に選んでいたカスタムアダプタが答えになっていない: %+v（思ったもの adapter jira-story）", st)
+		}
+	})
+
+	// 複数選ぶ質問は、はじめに選ばれているシナリオにカーソルがある。選びを切り替えるキーは、スペースと x
+	for _, k := range []struct{ name, key string }{{"スペース", keySpace}, {"x", "x"}} {
+		multi := func(t *testing.T, move func(s *initSession)) {
+			r, s := start(t)
+			s.enterThrough("ベースブランチ", "ストーリーストア", "リポジトリ", "ID")
+			f := s.waitField("言語", "言語")
+			if c, _ := f.cursorLine(); langOf(c) != "シナリオ" || !strings.Contains(c, "✓") {
+				t.Fatalf("言語の質問のカーソルが、選ばれているシナリオにない（%q）\n%s", c, s.screen())
+			}
+			move(s)
+			next := s.enterWith("言語", f.title, k.key)
+			prev := f.title
+			if strings.Contains(next.title, "読むファイル") {
+				prev = s.rewriteInput("シナリオ のパターン", "読むファイル", "e2e/**/*.txtar")
+			}
+			s.finishFrom(prev)
+			if got, want := annotationsOf(created(t, r, s)), []string{"txtar e2e/**/*.txtar"}; !reflect.DeepEqual(got, want) {
+				t.Errorf("Enter の時の選び（シナリオだけ）が答えになっていない。[[annotation]]: %v（思ったもの %v）", got, want)
+			}
+		}
+		t.Run("複数選ぶ質問で選んでいるシナリオの上でEnterと"+k.name, func(t *testing.T) {
+			t.Parallel()
+			multi(t, func(*initSession) {})
+		})
+		t.Run("複数選ぶ質問で選んでいないTLA+の上でEnterと"+k.name, func(t *testing.T) {
+			t.Parallel()
+			multi(t, func(s *initSession) {
+				s.press("言語 で下へ動かす", keyDown, func(sc string) bool { return langOf(cursorOf(sc)) == "TLA+" })
+			})
+		})
+	}
+
+	// 作るかの質問は、既定の「作る」のまま Enter を送る。後のキーなしの Enter だけで作られることも、同じ流れで確かめる
+	for _, k := range []struct{ name, key string }{{"だけ", ""}, {"と右の矢印", "\x1b[C"}, {"と左の矢印", "\x1b[D"}, {"とn", "n"}} {
+		t.Run("作るかの質問で作るのままEnter"+k.name, func(t *testing.T) {
+			t.Parallel()
+			r, s := start(t)
+			s.enterThrough("ベースブランチ", "ストーリーストア", "リポジトリ", "ID", "言語", "読むファイル")
+			s.waitField("作りますか", "作りますか")
+			s.press("作るか で Enter と次のキーを 1 回の書き込みで送る", keyEnter+k.key, func(string) bool { return false })
+			code := s.wait()
+			if code != 0 || !r.exists(".vanda/config.toml") {
+				t.Errorf("「作る」で Enter を送ったのに、作られていない（終了コード %d、.vanda/config.toml があるか %v）\n%s\n%s", code, r.exists(".vanda/config.toml"), s.screen(), s.stderr.String())
+			}
+		})
+	}
+}
+
 // ---- 端末の状態を戻すことと、組み込みと同じ名前のアダプタ ----
 
 // sttyOf は、端末 tty の今の設定を、stty -g の形で返す。
