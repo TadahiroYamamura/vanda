@@ -912,7 +912,6 @@ refines = ["link-changes-to-story"]
 statement = "{@id:promise-list}の変更は、どれも{@id:story}に結びつく。{@id:story-trailer}のないコミットで変えると、{@id:story-origin-check}が通らない"
 condition = "{@id:story-trailer}のないコミットで{@id:promise-list}を変えても、{@id:check}が通る。コミットから{@id:story}が分からない"
 layers = ["cli", "api", "gui"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
