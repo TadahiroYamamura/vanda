@@ -722,7 +722,6 @@ refines = ["agree-on-seen-content"]
 statement = "オーナーが画面で見る中身と判定は、{@id:check}が使うコミットした中身と判定に一致する"
 condition = "同じコミットで、画面では{@id:agreed}・{@id:evidence}が揃っているのに、{@id:check}では{@id:mistake}になる（またはその逆）。コミットしていない変更で、画面の判定が変わる"
 layers = ["cli", "api", "gui"]
-flags = ["ai-proposal"]
 model_check_waiver = "画面と git の操作の決まりで、{@id:agreement-record}の移り変わりではないため"
 
 [[spec.evidence]]
