@@ -1125,7 +1125,6 @@ refines = ["show-story"]
 statement = "オーナーは、レビューしている変更が何のためか（{@id:story}の題・本文・添付）を、同じ画面で読める"
 condition = "{@id:story-store}にある{@id:story}が画面に出ない。読めない理由が分からないまま、空になる"
 layers = ["cli", "api", "gui"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
