@@ -35,12 +35,12 @@ async function openEntry(text: RegExp) {
 
 const bodyText = () => document.body.textContent ?? "";
 
-const listRegion = () => screen.getByRole("region", { name: "変わったものの一覧" });
+const listRegion = () => screen.getByRole("region", { name: "レビュー対象の一覧" });
 const detailRegion = () => screen.getByRole("region", { name: "1 件の中身" });
 // detailAgreeButtons は、右のペイン（1 件の中身）に今出ている承認のボタン。1 件を選ぶ前で、右のペインがまだなければ空
 const detailAgreeButtons = () => screen.queryAllByRole("region", { name: "1 件の中身" }).flatMap((r) => within(r).queryAllByRole("button", { name: /承認する/ }));
 // listRow は、一覧で名前が name の 1 件（<li>）
-const listRow = async (name: string) => (await within(await screen.findByRole("region", { name: "変わったものの一覧" })).findByText(name, { exact: true })).closest("li")! as HTMLElement;
+const listRow = async (name: string) => (await within(await screen.findByRole("region", { name: "レビュー対象の一覧" })).findByText(name, { exact: true })).closest("li")! as HTMLElement;
 
 const reviewRequests = () => requests.filter((r) => r.url.pathname === "/api/review");
 
@@ -935,7 +935,7 @@ describe("Story: のトレーラーの誤り", () => {
 });
 
 describe("RV-01 一覧の絞り込み", () => {
-  const list = () => screen.getByRole("region", { name: "変わったものの一覧" });
+  const list = () => screen.getByRole("region", { name: "レビュー対象の一覧" });
   // shown は、一覧に名前 name の 1 件が出ているか
   const shown = (name: string) => within(list()).queryByText(name, { exact: true }) !== null;
   const searchBox = () => within(list()).getByRole("searchbox", { name: "絞り込み" });
@@ -1466,7 +1466,7 @@ describe("参照", () => {
 });
 
 describe("参照の絞り込み", () => {
-  const list = () => screen.getByRole("region", { name: "変わったものの一覧" });
+  const list = () => screen.getByRole("region", { name: "レビュー対象の一覧" });
   const shown = (name: string) => within(list()).queryByText(name, { exact: true }) !== null;
   const searchBox = () => within(list()).getByRole("searchbox", { name: "絞り込み" });
   const ref = (text: string, id: string) => ({ text, ref: id });
@@ -1565,7 +1565,7 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
     const top = headings.find((h) => /承認が失効したもの/.test(h.textContent ?? ""));
     expect(top, "「承認が失効したもの」の見出しがない").toBeTruthy();
     expect(headings[0], "「承認が失効したもの」の見出しが、まとまりの見出しより上にない").toBe(top);
-    expect(top!.textContent, "総数に数えないことを添えていない").toMatch(/総数に数え(ない|ません)/);
+    expect(top!.textContent?.trim(), "件数と、総数に数えない理由を添えていない").toBe("承認が失効したもの（2 件。承認済で、比べる元から変わっていないため、総数に数えません）");
     const after = (a: Node, b: Node) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
     for (const name of ["c-detached-1", "c-detached-2"]) {
       const li = await listRow(name);
@@ -1574,12 +1574,13 @@ describe("RV-01 一覧の件数・並び・失効した承認", () => {
     }
     // 総数は、一覧の 2 件だけ
     expect(listHeading().textContent).toMatch(/(^|[^0-9])2([^0-9]|$)/);
+    expect(listHeading().textContent, "一覧の見出し").toMatch(/^\s*レビュー対象\s*全\s*2\s*件/);
     expect(listHeading().textContent).not.toMatch(/(^|[^0-9])4([^0-9]|$)/);
   });
 
   // @vanda:evidence owner-reviews-every-change
-  it("変わったものが0件なら比べる元と今のあいだで変わったものはないと示し1件でもあれば示さない", async () => {
-    const note = "比べる元と今のあいだで、変わったものはありません。";
+  it("レビュー対象が0件ならレビュー対象はないと示し1件でもあれば示さない", async () => {
+    const note = "レビュー対象はありません。";
     const detached = specEntry(0, "c-detached", { no: null, change: "unchanged", before: null, detachedAgreement: { by: ["#30"] } });
     const cases = [
       { name: "0 件", entries: [], over: {}, shown: true },
@@ -2032,7 +2033,7 @@ describe("一覧を読み込む間に選んだ件を先に出す", () => {
       for (const t of ["提案中", "AI 案"]) expect(bodyText(), `${c.kind}: 一覧の前に ${t} が出た`).not.toContain(t);
       expect(screen.queryByRole("button", { name: /承認する/ }), `${c.kind}: 一覧の前に承認のボタンが出た`).toBeNull();
       // 一覧のエリアは読み込み中
-      expectLoading(await within(await screen.findByRole("region", { name: "変わったものの一覧" })).findByText("読み込んでいます…"), `${c.kind}: 一覧`);
+      expectLoading(await within(await screen.findByRole("region", { name: "レビュー対象の一覧" })).findByText("読み込んでいます…"), `${c.kind}: 一覧`);
       for (const el of screen.getAllByText("読み込んでいます…")) expectLoading(el, `${c.kind}: 一覧の前の読み込み中のエリア`);
 
       g.open();
@@ -2057,7 +2058,7 @@ describe("一覧を読み込む間に選んだ件を先に出す", () => {
         await g.wait;
         return HttpResponse.json(review([gone]));
       }));
-    expectLoading(await within(await screen.findByRole("region", { name: "変わったものの一覧" })).findByText("読み込んでいます…"), "一覧");
+    expectLoading(await within(await screen.findByRole("region", { name: "レビュー対象の一覧" })).findByText("読み込んでいます…"), "一覧");
     // 詳細の API の答え（404）が届くのを待ってから、誤りを出していないか見る
     await waitFor(() => expect(requests.some((r) => r.url.pathname === "/api/specs/c-gone")).toBe(true));
     await new Promise((r) => setTimeout(r, 50));
@@ -2085,7 +2086,7 @@ describe("RV-06 一覧の選んでいる行から承認する", () => {
 
   // choose は、一覧で名前が name の 1 件を選び、右のペインにその中身が出るまで待つ
   async function choose(user: User, name: string) {
-    await user.click((await within(await screen.findByRole("region", { name: "変わったものの一覧" })).findByText(name, { exact: true })).closest("button")!);
+    await user.click((await within(await screen.findByRole("region", { name: "レビュー対象の一覧" })).findByText(name, { exact: true })).closest("button")!);
     await waitFor(() => expect(selected([name]), `${name} が選ばれない`).toEqual([name]));
     await waitFor(() => expect(detailShows(name), `${name} の中身が右のペインに出ない`).toBe(true));
   }

@@ -242,7 +242,7 @@ async function select(page: Page, text: string) {
 }
 
 // agreeButton は、右のペイン（仕様の詳細の画面とファイルの画面では、その画面）の承認のボタン。左の一覧の行の中の「承認する」は指さない
-const agreeButton = (page: Page) => page.getByRole("button", { name: /承認する/ }).and(page.locator('button:not([aria-label="変わったものの一覧"] *)'));
+const agreeButton = (page: Page) => page.getByRole("button", { name: /承認する/ }).and(page.locator('button:not([aria-label="レビュー対象の一覧"] *)'));
 
 async function agreeAll(page: Page, items: string[]) {
   for (const item of items) {
@@ -1154,7 +1154,7 @@ test("エビデンスの予定と実際の詳細は長い文も改行も省略�
 });
 
 // 一覧の 1 件は、枠のどこをクリックしても選ばれる（番号・種類・状態のアイコン・フラグのアイコン・枠の端）
-test("変わったものの一覧の1件は名前のほかに番号や種類や状態のアイコンやフラグのアイコンや枠の端をクリックしても選ばれる", async ({ page }) => {
+test("レビュー対象の一覧の1件は名前のほかに番号や種類や状態のアイコンやフラグのアイコンや枠の端をクリックしても選ばれる", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   const detailOf = (id: string) => expect(page.getByRole("link", { name: "仕様の詳細を開く" }), `${id} が選ばれていない`).toHaveAttribute("href", new RegExp(`/specs/${id}`));
   // task-title-required は 2 件目で、提案中のアイコンと AI 案のアイコンを持つ
@@ -1860,7 +1860,7 @@ test("TLAの記号は画面に同梱したNoto Sans Mathを読み込んでその
 });
 
 // RV-01 の絞り込み。story-24 の一覧は task-id-unique（文を変えた）・task-title-required（足した）・e2e/add-task.txtar の 3 件
-const filterList = (page: Page) => page.getByRole("region", { name: "変わったものの一覧" });
+const filterList = (page: Page) => page.getByRole("region", { name: "レビュー対象の一覧" });
 async function expectListed(page: Page, want: string[], where: string) {
   const list = filterList(page);
   for (const item of items) {
@@ -2105,7 +2105,7 @@ test("エビデンスのリンクをクリックするとファイルの画面�
   await pointed("読み込み直した時");
 
   await page.getByRole("link", { name: "ストーリーのレビューへ戻る" }).click();
-  await expect(page.getByRole("region", { name: "変わったものの一覧" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "レビュー対象の一覧" })).toBeVisible();
   const back = new URL(page.url());
   expect(back.pathname, `戻った後の URL: ${page.url()}`).toBe("/");
   expect(back.searchParams.has("line"), `戻った後の URL に line が残っている: ${page.url()}`).toBe(false);
