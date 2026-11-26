@@ -1364,3 +1364,12 @@ path = "cmd/vanda/testdata/scenario/check_committed_only.txtar"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T10:52:23+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:49a8616270e39067f00f31080d630db26118bed7fc0651364c54ad9b3c4f2329"
+fingerprint = "sha256:49a8616270e39067f00f31080d630db26118bed7fc0651364c54ad9b3c4f2329"
+path = "cmd/vanda/testdata/scenario/check_errors_before_run.txtar"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T10:52:25+09:00
+story = "#4"
