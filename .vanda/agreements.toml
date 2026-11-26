@@ -1580,3 +1580,11 @@ path = "web/e2e/review.spec.ts"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T10:53:09+09:00
 story = "#4"
+
+[[agreement]]
+kind = "feature"
+key = "list-story-changes"
+fingerprint = "sha256:957f40b2f384399868a4648d43fc842dc2f903538064069ef5c91e3e71e235f2"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T12:19:43+09:00
+story = "#4"
