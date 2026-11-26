@@ -182,11 +182,53 @@ func (a *asker) run(fields ...huh.Field) error {
 	return nil
 }
 
+// entered は、質問の答えを、Enter で確かめた時の値で持つ。
+//
+// huh は、Enter で値を確かめた後、次へ進む合図を別のメッセージで送り、進む時に、その時の値をもう一度確かめる。
+// 合図より先に届いたキー（貼り付け・先打ち・スクリプトからの入力）は、答えた質問の値を変える。変わった値が形に合わないと、
+// huh は進むのをやめたままキーを受け付けなくなり、形に合えば、Enter で確かめたのと違う値が答えになる。
+// そのため、Enter で確かめた値を答えにし、その後は huh に確かめ直させない。合図より先に届いたキーは捨てることになる。
+// bubbletea のメッセージを見て後のキーを次の質問へ回す案は、Enter で進むかどうかがキーの時点では分からず、
+// 質問の種類ごとに huh の中の動きを写すことになるので、選ばなかった。
+//
+// TODO: 複数選ぶ質問と作るかの質問は、huh が Enter の時に確かめを呼ばないので、この形では守れない。
+// Enter と同じ書き込みで届いたキーが、答えた質問の選びを変える（止まりはしない）
+type entered[T any] struct {
+	value T
+	ok    bool
+}
+
+// validate は、huh に渡す確かめ。Enter で check を通った値を覚え、その後は何も確かめない。
+func (e *entered[T]) validate(check func(T) (T, error)) func(T) error {
+	return func(v T) error {
+		if e.ok {
+			return nil
+		}
+		v, err := check(v)
+		if err != nil {
+			return err
+		}
+		e.value, e.ok = v, true
+		return nil
+	}
+}
+
+// answer は、Enter で確かめた値を返す。err は、質問を出した結果。
+func (e *entered[T]) answer(err error) (T, error) {
+	if err == nil && !e.ok {
+		err = errors.New("質問の答えを受け取れませんでした。もう一度 vanda init を動かしてください。")
+	}
+	return e.value, err
+}
+
 // input は、既定の答えを入れた状態から始める入力。check は、形に合わない答えのときに、その場で理由を出す
 func (a *asker) input(title, def string, check func(string) error) (string, error) {
 	v := def
-	err := a.run(huh.NewInput().Title(title).Value(&v).Validate(func(s string) error { return check(strings.TrimSpace(s)) }))
-	return strings.TrimSpace(v), err
+	var e entered[string]
+	return e.answer(a.run(huh.NewInput().Title(title).Value(&v).Validate(e.validate(func(s string) (string, error) {
+		s = strings.TrimSpace(s)
+		return s, check(s)
+	}))))
 }
 
 // Ask は、d を既定の答えにして、t で質問し、答えを集める。
@@ -227,7 +269,10 @@ func Ask(root string, d Defaults, t *Terminal) (Answers, error) {
 	for _, c := range choices {
 		opts = append(opts, huh.NewOption(c.title, c))
 	}
-	if err := q.run(huh.NewSelect[storeChoice]().Title("ストーリーストア").Options(opts...).Value(&choice)); err != nil {
+	var store entered[storeChoice]
+	choice, err = store.answer(q.run(huh.NewSelect[storeChoice]().Title("ストーリーストア").Options(opts...).Value(&choice).
+		Validate(store.validate(func(c storeChoice) (storeChoice, error) { return c, nil }))))
+	if err != nil {
 		return a, err
 	}
 	a.Store = choice.key
