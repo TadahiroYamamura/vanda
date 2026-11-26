@@ -1099,7 +1099,6 @@ refines = ["show-item-detail"]
 statement = "オーナーは、1 つの{@id:item}の中身と、{@id:evidence-plan}と実際の{@id:evidence}を、1 か所で確かめられる。文の中の{@id:reference}から、指す先の定義を読める"
 condition = "{@id:item}の中身か{@id:evidence}を知るために、ファイルや git を開く必要がある。{@id:reference}が何を指すか分からない"
 layers = ["api", "gui"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
