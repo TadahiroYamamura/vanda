@@ -1553,3 +1553,12 @@ path = "spec/Agreement.tla"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T10:53:02+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:2d4f30ed3d25487826b68aca01f7c0199aa631dbf4823f90f9b8166ffe2a34fb"
+fingerprint = "sha256:2d4f30ed3d25487826b68aca01f7c0199aa631dbf4823f90f9b8166ffe2a34fb"
+path = "spec/AgreementTrace.tla"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T10:53:04+09:00
+story = "#4"
