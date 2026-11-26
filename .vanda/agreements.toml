@@ -1472,3 +1472,12 @@ path = "cmd/vanda/testdata/scenario/shape_formal_specs.txtar"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T10:52:46+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:ebe627d81635c48a5215ec6e0c6364c99b90325712d151a2c6034619783828e4"
+fingerprint = "sha256:ebe627d81635c48a5215ec6e0c6364c99b90325712d151a2c6034619783828e4"
+path = "cmd/vanda/testdata/scenario/shape_id.txtar"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T10:52:48+09:00
+story = "#4"
