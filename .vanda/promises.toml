@@ -1007,7 +1007,6 @@ refines = ["serve-local-only"]
 statement = "{@id:vanda-server}は、利用者の PC のブラウザの {@id:vanda} の画面からしか操作できない"
 condition = "ほかの PC・ほかのサイト・{@id:story}の本文から開いたページから、{@id:agreement}・取り消し・ファイルの読み出しができる"
 layers = ["api", "gui"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
