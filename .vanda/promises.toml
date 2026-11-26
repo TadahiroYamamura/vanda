@@ -1139,7 +1139,6 @@ refines = ["show-story"]
 statement = "{@id:custom-adapter}を作る人は、docs/formats.md の取り決めどおりに作れば、GitHub Issues のほかの{@id:story-store}を {@id:vanda} につなげられる"
 condition = "取り決めどおりの{@id:custom-adapter}で、{@id:story}が画面に出ない"
 layers = ["api"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
