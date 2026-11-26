@@ -493,11 +493,21 @@ func fieldIs(keyword string) func(string) bool {
 	}
 }
 
-// fieldIsNot は、題が title でない質問が描き終わっているか。
+// sameField は、題 a と b が同じ質問のものか。一方がもう一方の頭に一致すれば、同じ質問とみなす。
+// 題が等しいかで比べない: 質問は、端末の幅より狭い幅で描かれてから描き直されることがあり、その間に読んだ題は
+// 後ろが切れている。等しいかで比べると、描き直しを「次の質問になった」と読み違え、待たずに次のキーを送る。
+func sameField(a, b string) bool {
+	if a == "" || b == "" {
+		return a == b
+	}
+	return strings.HasPrefix(a, b) || strings.HasPrefix(b, a)
+}
+
+// fieldIsNot は、題が title の質問とは別の質問が描き終わっているか。
 func fieldIsNot(title string) func(string) bool {
 	return func(sc string) bool {
 		f, ok := fieldOf(sc)
-		return ok && f.done && f.title != title
+		return ok && f.done && !sameField(f.title, title)
 	}
 }
 
@@ -603,7 +613,7 @@ func (s *initSession) input(what, keyword string, invalid []string, a string) st
 		sc := s.press(what+" で形に合わない答えを送る", keyEnter, func(sc string) bool {
 			return errorText(sc) != "" || fieldIsNot(f.title)(sc)
 		})
-		if again, ok := fieldOf(sc); !ok || again.title != f.title {
+		if again, ok := fieldOf(sc); !ok || !sameField(again.title, f.title) {
 			s.t.Errorf("%s に形に合わない答え %q を書いても、同じ質問にとどまらない\n%s", what, bad, sc)
 		} else if errorText(sc) == "" {
 			s.t.Errorf("%s に形に合わない答え %q を書いても、理由が出ない\n%s", what, bad, sc)
