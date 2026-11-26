@@ -538,7 +538,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 
 ### `GET /api/review`
 
-ストーリーで変わったものの一覧（RV-01・02・04・05・10・13・14）。
+ストーリーで変わったものの一覧（RV-01・02・04・05・10・13・14）。変わっていなくても、承認済でないもの（約束リストの項目と、承認の対象のファイル）は、同じ一覧に入れる。
 
 | 引数 | 中身 |
 |---|---|
@@ -595,15 +595,15 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | 項目 | 中身 |
 |---|---|
 | `mergeBase` | `view=branch` のときのマージベースのコミット。`view=story` では `null` |
-| `total` | `entries` の数（RV-02 の総数） |
+| `total` | `entries` の数（RV-02 の総数）。変わっていない、承認済でないものも数える |
 | `entries[].no` | 通し番号（1 から）。並びは `group` の順（下）、同じまとまりの中は ID か場所の順 |
 | `entries[].id`・`path` | 約束リストの項目は `id`、ファイルは `path`（削除したものは前の場所） |
-| `entries[].change` | `added`・`modified`・`deleted` |
+| `entries[].change` | `added`・`modified`・`deleted`・`unchanged`。`unchanged` は、比べる元と今のあいだで変わっていない、承認済でないもの（今の中身のフィンガープリントに合う承認の記録がないもの。チェック agreement の範囲がすべてのときと同じ決め方）。`state` は `proposed`、`before` と `diff` は `null`、`otherCommits` は空。承認済のものは、変わっていなければ出さない |
 | `entries[].state` | 今の中身が承認済なら `agreed`、まだなら `proposed`。`deleted` は、消したことへの承認があれば `agreed`、なければ `proposed` |
 | `entries[].fingerprint` | 今の中身のフィンガープリント。`deleted` は `null` |
 | `entries[].flags` | `ai-proposal`（AI 案。仕様の `flags`）・`guess`（推測。仕様の `guesses` が空でない）・`changed-since-agreement`（差分あり。同じキー（ファイルなら同じ場所）に承認の記録があり、今の中身のフィンガープリントに合う承認がない）。この順 |
 | `entries[].group` | たたむまとまり（RV-10）。仕様は `layer:<仕様の layers の最初のレイヤー>`、性質は `properties`、前提は `truths`、用語は `terms`、機能は `features`、ファイルは `files`。並びは、`truths`、`terms`、`properties`、`features`、設定のレイヤーの順の仕様、`files` |
-| `entries[].before`・`after` | 変更前（`added` は `null`）と変更後（`deleted` は `null`）の中身。下の表 |
+| `entries[].before`・`after` | 変更前（`added` と `unchanged` は `null`）と変更後（`deleted` は `null`）の中身。下の表 |
 | `entries[].detachedAgreement` | このストーリーの承認が失効したもの（RV-14）なら `{"by": ["#30"]}`（`by` は、そのストーリーの承認の後に中身を変えたコミットのストーリーの ID。ID のないコミットは数えない）。ほかは `null`。`by` は見せるための手がかりで、失効したかどうかの判定には使わない。「承認の後」は、日時でなく HEAD の履歴の順で決める。HEAD の履歴を古い順にたどり、そのストーリーのそのキーへの承認の記録（中身への承認）が初めて現れたコミットを、記録ごとに探し、そのうち最も後のコミットより後のコミットを見る（rebase や amend でコミットの日時が変わっても変わらない。手で書いた承認の記録も、コミットした後は同じに扱う）。どの記録もまだコミットしていなければ、`by` は空 |
 | `entries[].otherCommits` | `view=story` で、ストーリーで最初に変えた後に、このストーリーの ID のないコミット（ほかのストーリーのコミットと、ID のないコミット）が同じものを変えていたら、`[{"commit": "…", "subject": "…", "stories": ["#30"]}]`（履歴の古い順）。`view=branch` では空 |
 | `entries[].revoke` | 承認済（`state` が `agreed`）の件だけ。今の人が、このストーリーの、今の中身への承認（`deleted` なら、消したことへの承認）を取り消せるか（RV-17）。`{"possible": true, "reason": null, "others": []}`。取り消せるのは、今の git の `user.name`・`user.email` の人が、今のブランチ（マージベースより後）で書いた承認の記録。取り消せないときは `possible` が `false` で、`reason` に短い理由を出す（ストーリーが決まっていない、git の人が分からない、このストーリーの承認がない、ほかの人が書いた、ベースブランチにすでにある、ベースブランチが決まっていない）。`others` は、取り消しても残る、同じストーリーの今の中身へのほかの人の承認（残れば承認済のまま）。ほかの件は `null` |
@@ -612,7 +612,7 @@ v1.0.0 からは変えない取り決めではないが、画面とテストが�
 | `storyFrom` | `story` をどう決めたか。`query`（`story` で名指しした）・`branch`（ブランチのコミットから 1 つに決まった）。決まっていなければ空の文字列 |
 | `storyChoice` | 画面でストーリーをどう示すか（RV-13）。`fixed`: レビュー単位がブランチで、ブランチのコミットからストーリーが 1 つに決まる（`story` で別のものを名指ししたときを除く）。選ばせずに示すだけにする。`branch`: レビュー単位がブランチで、ブランチのストーリーが 2 つ以上ある。`branchStories` から選ばせる。`all`: レビュー単位がストーリーのときと、ブランチのストーリーが見つからない（か、名指ししたものが違う）とき。すべてのストーリー（`/api/context` の `stories`）から選ばせる |
 | `refs` | `entries` と `detached` の中のセグメントが指すすべての ID の、指す先（下の「自然言語で書く項目（セグメントの配列）」） |
-| `detached` | このストーリーの失効した承認のうち、`entries` に出ないもの（比べる元と今のあいだで変わっていないもの）。形は `entries` と同じで、`no` は `null`、`change` は `unchanged`、`before` は `null`。`total` に数えない |
+| `detached` | このストーリーの失効した承認のうち、`entries` に出ないもの（比べる元と今のあいだで変わっておらず、ほかのストーリーの承認で承認済のもの。承認済でなければ `entries` に出て、`detachedAgreement` が付く）。形は `entries` と同じで、`no` は `null`、`change` は `unchanged`、`before` は `null`。`total` に数えない |
 
 `before`・`after` の中身（項目は、約束リストの書いたとおり。省いた項目は `null`、配列は `[]`。自然言語で書く項目は、下のセグメントの配列）:
 

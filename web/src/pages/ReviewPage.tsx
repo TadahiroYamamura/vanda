@@ -14,7 +14,7 @@ import { EvidenceList } from "../components/EvidenceList";
 import { langOf } from "../highlight";
 import { TlaCode } from "../components/TlaCode";
 import { detailURL, Prose, RefsProvider, proseText } from "../components/Prose";
-import { changeLabel, fileTypeLabel, kindLabel, stageLabel, typeLabel } from "../labels";
+import { changeLabel, fileTypeLabel, kindLabel, stageLabel, stateLabel, typeLabel } from "../labels";
 import { type ReviewMemory, useKeptScroll } from "../reviewMemory";
 import { BACK, Link, navigate, reviewQuery } from "../route";
 
@@ -405,6 +405,7 @@ function EntryList(props: {
       />
       <p className="note">
         追加 {count("added")}・変更 {count("modified")}・削除 {count("deleted")}
+        {count("unchanged") > 0 && `・${changeLabel.unchanged}（${stateLabel.proposed}） ${count("unchanged")}`}
       </p>
       {detached.length > 0 && (
         <div className="detached">

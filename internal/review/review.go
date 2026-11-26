@@ -1,4 +1,4 @@
-// Package review は、ストーリーで追加・変更・削除されたものの一覧（RV-01）を作る。
+// Package review は、ストーリーで追加・変更・削除されたものと、変わっていなくても承認済でないものの一覧（RV-01）を作る。
 package review
 
 import (
@@ -167,6 +167,10 @@ func Build(o Options) (*Result, *Error) {
 	}
 	if err := checkCount(changes, entries); err != nil {
 		return nil, err
+	}
+	entries, err = s.addNotAgreed(entries)
+	if err != nil {
+		return nil, internalErr(err)
 	}
 	detached, err := s.detached(entries)
 	if err != nil {
@@ -751,7 +755,45 @@ func (s *state) changedBy(key string, recs []*agreements.Agreement, written map[
 	return out, nil
 }
 
-// unchanged は、比べる元と今で変わっていない、失効した承認の 1 件を作る。
+// addNotAgreed は、es にない（比べる元と今で変わっていない）もののうち、承認済でない項目と承認の対象のファイルを、es に足す。
+// 変わっていないものまで見るのは、チェック agreement（範囲がすべて）が失敗と言うものを、画面から承認できるようにするため（オーナーの決定）。
+// 承認済かは、そのチェックと同じく、今の中身のフィンガープリントに合う承認の記録があるかで決める
+func (s *state) addNotAgreed(es []Entry) ([]Entry, error) {
+	listed := map[string]bool{}
+	for _, e := range es {
+		listed[e.key] = true
+	}
+	var keys []string
+	for k, cur := range s.cur.items {
+		fp := s.cur.itemFP[k]
+		if !listed[k] && !(fp != "" && s.recs.Agreed(cur.Kind, cur.ID, fp)) {
+			keys = append(keys, k)
+		}
+	}
+	for f := range s.cur.types {
+		if listed["path:"+f] {
+			continue
+		}
+		fp, err := s.cur.fileFP(f)
+		if err != nil {
+			return nil, err
+		}
+		if !s.recs.Agreed("file", f, fp) {
+			keys = append(keys, "path:"+f)
+		}
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		e, err := s.unchanged(k)
+		if err != nil {
+			return nil, err
+		}
+		es = append(es, e)
+	}
+	return es, nil
+}
+
+// unchanged は、比べる元と今で変わっていないものの 1 件を作る。
 func (s *state) unchanged(key string) (Entry, error) {
 	if f, ok := strings.CutPrefix(key, "path:"); ok {
 		e := Entry{Kind: "file", Path: ptr(f), Change: "unchanged", Flags: []string{}, Group: "files", OtherCommits: []CommitRef{}, key: key}
