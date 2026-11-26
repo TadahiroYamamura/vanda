@@ -48,6 +48,7 @@ function notAgreed(e: Entry): boolean {
 // nextNotAgreed は、一覧の並びで、key の行より後ろにある、承認済でない最初の 1 件のキー。なければ null。
 // 一覧に出ていない行（絞り込みにマッチしない行、たたんだまとまりの中の行）へは移らない。見えない行を選ぶと、どの行を開いているかが一覧で分からなくなるため。
 // 承認が失効したものは、まとまりに入れずに一覧の先頭に出すので、たたまれない
+// AI 案か推測のフラグの残る承認済の行は、絞り込み「承認が要るものだけ」にはマッチするが、ここでは飛ばす。行の中に承認のボタンがないため
 function nextNotAgreed(review: Review, filter: Filter, folded: Set<string>, key: string): string | null {
   const shown = [...review.detached, ...review.entries.filter((e) => !folded.has(e.group))].filter((e) => matchesFilter(e, filter));
   const at = shown.findIndex((e) => entryKey(e) === key);
@@ -57,8 +58,13 @@ function nextNotAgreed(review: Review, filter: Filter, folded: Set<string>, key:
 }
 
 // 承認済でないものは、提案中と、承認が失効したもの。承認が失効したものは、ほかのストーリーの承認で承認済のこともあるので、状態とは別に見る。
+// 承認が要るものには、AI 案か推測のフラグの残る承認済の行も入れる。チェック agreement は、フラグ・推測の残る仕様でも失敗するので、絞り込みで残りをたどり終えた時に、チェックが失敗したままにならないようにするため
+function needsAgreement(e: Entry): boolean {
+  return notAgreed(e) || e.flags.includes("ai-proposal") || e.flags.includes("guess");
+}
+
 export function matchesFilter(e: Entry, f: Filter): boolean {
-  if (f.notAgreed && !notAgreed(e)) return false;
+  if (f.notAgreed && !needsAgreement(e)) return false;
   if (f.text === "") return true;
   const t = f.text.toLowerCase();
   return searchable(e).some((s) => s.toLowerCase().includes(t));
@@ -446,7 +452,7 @@ function ListHead(props: { total: string; loading: boolean; filter: Filter; onFi
         </label>
         <label>
           <input type="checkbox" checked={props.filter.notAgreed} onChange={(e) => props.onFilterNotAgreed(e.target.checked)} />
-          承認済でないものだけ
+          承認が要るものだけ
         </label>
       </div>
     </>
