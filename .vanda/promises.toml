@@ -935,7 +935,6 @@ refines = ["show-item-history"]
 statement = "{@id:agreement}と取り消しは、誰が・いつ・どの{@id:story}で・どの中身に行ったかが残り、{@id:item}ごとに辿れる。{@id:agreement}した時点の中身を読める"
 condition = "{@id:agreement}か取り消しの後に、誰の・どの{@id:story}のものかが、記録や履歴から分からない。古い{@id:agreement-record}が消える。{@id:agreement}した時点の中身を知るのに、git を開く必要がある"
 layers = ["model", "cli", "api", "gui"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
