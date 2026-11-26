@@ -1571,3 +1571,12 @@ path = "spec/AgreementVacuity.tla"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T10:53:07+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:b29456d2796e11772ebc04c771c73dda41d619d0e3f47df0fd51a32c009445a6"
+fingerprint = "sha256:b29456d2796e11772ebc04c771c73dda41d619d0e3f47df0fd51a32c009445a6"
+path = "web/e2e/review.spec.ts"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T10:53:09+09:00
+story = "#4"
