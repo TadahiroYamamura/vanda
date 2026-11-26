@@ -1409,3 +1409,12 @@ path = "cmd/vanda/testdata/scenario/config_missing.txtar"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T10:52:33+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:d3f64279f2b16e8ab6ab39a1897853180babaf359800dcdfe02470fc0521a536"
+fingerprint = "sha256:d3f64279f2b16e8ab6ab39a1897853180babaf359800dcdfe02470fc0521a536"
+path = "cmd/vanda/testdata/scenario/config_repo_root.txtar"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T10:52:35+09:00
+story = "#4"
