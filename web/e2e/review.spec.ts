@@ -1921,7 +1921,7 @@ async function expectListed(page: Page, want: string[], where: string) {
 }
 
 // @vanda:evidence owner-reviews-every-change
-test("一覧を文字で絞り込み承認した後に承認済でないものだけにすると承認したものが消え文字の絞り込みと重ねられる", async ({ page }) => {
+test("一覧を文字で絞り込み承認した後に承認が要るものだけにすると承認したものが消え文字の絞り込みと重ねられる", async ({ page }) => {
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await expectListed(page, items, "絞り込む前");
   const box = filterList(page).getByRole("searchbox", { name: "絞り込み" });
@@ -1936,18 +1936,18 @@ test("一覧を文字で絞り込み承認した後に承認済でないもの�
   await expectListed(page, items, "文字を消したとき");
 
   await agreeAll(page, ["task-id-unique"]);
-  const notAgreed = filterList(page).getByRole("checkbox", { name: "承認済でないものだけ" });
+  const notAgreed = filterList(page).getByRole("checkbox", { name: "承認が要るものだけ" });
   await notAgreed.check();
-  await expectListed(page, ["task-title-required", "e2e/add-task.txtar"], "承認済でないものだけにしたとき");
+  await expectListed(page, ["task-title-required", "e2e/add-task.txtar"], "承認が要るものだけにしたとき");
   await box.fill("task");
-  await expectListed(page, ["task-title-required", "e2e/add-task.txtar"], "承認済でないものだけと task を重ねたとき");
+  await expectListed(page, ["task-title-required", "e2e/add-task.txtar"], "承認が要るものだけと task を重ねたとき");
   await box.fill("required");
-  await expectListed(page, ["task-title-required"], "承認済でないものだけと required を重ねたとき");
+  await expectListed(page, ["task-title-required"], "承認が要るものだけと required を重ねたとき");
   await box.fill("unique");
-  await expectListed(page, [], "承認済でないものだけと承認した件の文字を重ねたとき");
+  await expectListed(page, [], "承認が要るものだけと承認した件の文字を重ねたとき");
   await expect(filterList(page).getByText(/絞り込みの条件にマッチするものはありません/)).toBeVisible();
   await notAgreed.uncheck();
-  await expectListed(page, ["task-id-unique"], "承認済でないものだけを外したとき");
+  await expectListed(page, ["task-id-unique"], "承認が要るものだけを外したとき");
 });
 
 // @vanda:evidence owner-reviews-every-change
@@ -1955,13 +1955,13 @@ test("絞り込みの条件は仕様の詳細から戻っても読み込み直�
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
   await expectListed(page, items, "絞り込む前");
   const box = filterList(page).getByRole("searchbox", { name: "絞り込み" });
-  const notAgreed = filterList(page).getByRole("checkbox", { name: "承認済でないものだけ" });
+  const notAgreed = filterList(page).getByRole("checkbox", { name: "承認が要るものだけ" });
   await box.fill("Title");
   await notAgreed.check();
   await expectListed(page, ["task-title-required"], "絞り込んだとき");
   const kept = async (where: string) => {
     await expect(box, `${where}: 文字が消えた`).toHaveValue("Title");
-    await expect(notAgreed, `${where}: 承認済でないものだけが外れた`).toBeChecked();
+    await expect(notAgreed, `${where}: 承認が要るものだけが外れた`).toBeChecked();
     await expectListed(page, ["task-title-required"], where);
   };
   await select(page, "task-title-required");
@@ -2266,10 +2266,10 @@ test("一覧の選んでいる行の承認するで承認すると右のペイ�
 });
 
 // @vanda:evidence agreement-bound-to-seen-content
-test("承認済でないものだけにして選んでいる行の承認するを続けてクリックすると一覧の並びの順に次の1件が開き全部を承認できてvanda checkの承認のチェックが通る", async ({ page }) => {
+test("承認が要るものだけにして選んでいる行の承認するを続けてクリックすると一覧の並びの順に次の1件が開き全部を承認できてvanda checkの承認のチェックが通る", async ({ page }) => {
   const sent = countAgreeRequests(page);
   await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
-  await filterList(page).getByRole("checkbox", { name: "承認済でないものだけ" }).check();
+  await filterList(page).getByRole("checkbox", { name: "承認が要るものだけ" }).check();
   await select(page, items[0]);
   for (const [i, item] of items.entries()) {
     await expect(detailHeading(page), `${i + 1} 件目に ${item} が右に開いていない`).toContainText(item);

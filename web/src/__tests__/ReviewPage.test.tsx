@@ -939,7 +939,7 @@ describe("RV-01 一覧の絞り込み", () => {
   // shown は、一覧に名前 name の 1 件が出ているか
   const shown = (name: string) => within(list()).queryByText(name, { exact: true }) !== null;
   const searchBox = () => within(list()).getByRole("searchbox", { name: "絞り込み" });
-  const notAgreedBox = () => within(list()).getByRole("checkbox", { name: "承認済でないものだけ" });
+  const notAgreedBox = () => within(list()).getByRole("checkbox", { name: "承認が要るものだけ" });
 
   const term = (no: number, id: string, name: string, definition: string, over: Partial<Entry> = {}) =>
     specEntry(no, id, { kind: "term", group: "terms", before: { name, definition: plain(definition), partOf: null, assumes: [] }, after: { name, definition: plain(definition), partOf: null, assumes: [] }, ...over });
@@ -1000,19 +1000,34 @@ describe("RV-01 一覧の絞り込み", () => {
     expect(shown("c-detached-miss"), "承認が失効したもので文字がないものが出ている").toBe(false);
   });
 
-  // 承認済でないもの（提案中と、承認が失効したもの）。消したものは、消したことへの承認がなければ提案中
+  // 承認が要るものは、提案中のもの、承認が失効したもの、フラグ（AI 案）か推測の残る承認済のもの。消したものは、消したことへの承認がなければ提案中。
+  // 承認済でもフラグか推測の残るものを出すのは、絞り込みで残りをたどり終えても、チェック agreement がフラグ・推測の残る仕様で失敗したままになるため（オーナーの決定）。
+  // 差分ありのフラグだけの承認済のものは、出さない。ストーリーで変わった承認済の仕様に、フラグの組み合わせを全部回す
+  const agreedWithFlags: [Entry["flags"], boolean][] = [
+    [["ai-proposal"], true],
+    [["guess"], true],
+    [["changed-since-agreement"], false],
+    [["ai-proposal", "guess"], true],
+    [["ai-proposal", "changed-since-agreement"], true],
+    [["guess", "changed-since-agreement"], true],
+    [["ai-proposal", "guess", "changed-since-agreement"], true],
+  ];
   const stateEntries = () => {
+    const flagged = agreedWithFlags.map(([flags, needed], i): [boolean, [string, Entry]] =>
+      [needed, [`フラグ ${flags.join("・")} の残る承認済の仕様`, specEntry(9 + i, `c-agreed-${flags.join("-")}`, { state: "agreed", flags })]]);
     const kept: [string, Entry][] = [
       ["提案中の仕様", specEntry(1, "c-proposed", { state: "proposed" })],
       ["提案中のファイル", fileEntry(2, "e2e/proposed.txtar", { state: "proposed" })],
       ["承認が失効した提案中の仕様", specEntry(3, "c-detached-proposed", { state: "proposed", detachedAgreement: { by: ["#31"] } })],
       ["ほかのストーリーの承認で承認済だが承認が失効した仕様", specEntry(4, "c-detached-agreed", { state: "agreed", detachedAgreement: { by: ["#31"] } })],
       ["消したことへの承認がない消した仕様", specEntry(7, "c-deleted-proposed", { change: "deleted", after: null, state: "proposed", fingerprint: null })],
+      ...flagged.filter(([needed]) => needed).map(([, e]) => e),
     ];
     const dropped: [string, Entry][] = [
       ["承認済の仕様", specEntry(5, "c-agreed", { state: "agreed" })],
       ["承認済のファイル", fileEntry(6, "e2e/agreed.txtar", { state: "agreed" })],
       ["消したことを承認済の消した仕様", specEntry(8, "c-deleted-agreed", { change: "deleted", after: null, state: "agreed", fingerprint: null })],
+      ...flagged.filter(([needed]) => !needed).map(([, e]) => e),
     ];
     const detached = [
       specEntry(0, "u-detached-proposed", { no: null, change: "unchanged", before: null, state: "proposed", detachedAgreement: { by: ["#30"] } }),
@@ -1022,7 +1037,7 @@ describe("RV-01 一覧の絞り込み", () => {
   };
 
   // @vanda:evidence owner-reviews-every-change
-  it("承認済でないものだけにすると提案中のものと承認が失効したものだけを出し承認済のものは消したものも含めて出さない", async () => {
+  it("承認が要るものだけにすると提案中のものと承認が失効したものとフラグか推測の残る承認済の仕様だけを出しフラグも推測もない承認済のものは消したものも差分ありのフラグだけのものも含めて出さない", async () => {
     const { kept, dropped, detached } = stateEntries();
     open(byGroup([...kept, ...dropped].map(([, e]) => e)), { detached });
     const name = (e: Entry) => (e.kind === "file" ? e.path! : e.id!);
@@ -1041,7 +1056,7 @@ describe("RV-01 一覧の絞り込み", () => {
   });
 
   // @vanda:evidence owner-reviews-every-change
-  it("承認済でないものだけにするのと文字の絞り込みを重ねると両方にマッチするものだけを出す", async () => {
+  it("承認が要るものだけにするのと文字の絞り込みを重ねると両方にマッチするものだけを出す", async () => {
     open([
       specEntry(1, "pear-proposed", { state: "proposed" }),
       specEntry(2, "pear-agreed", { state: "agreed" }),
@@ -1071,7 +1086,7 @@ describe("RV-01 一覧の絞り込み", () => {
     await user.click(notAgreedBox());
     await waitFor(() => expect(heading()).toMatch(/絞り込んだ後 2 件/));
     expect(heading()).toMatch(/全 5 件/);
-    // 文字を消しても、承認済でないものだけにしているあいだは絞り込んでいる
+    // 文字を消しても、承認が要るものだけにしているあいだは絞り込んでいる
     await user.clear(searchBox());
     await waitFor(() => expect(heading()).toMatch(/絞り込んだ後 4 件/));
     await user.click(notAgreedBox());
@@ -1115,7 +1130,7 @@ describe("RV-01 一覧の絞り込み", () => {
       expect(shown("pear-b"), "承認済のものが出ている").toBe(false);
       expect(shown("plum-c"), "文字にマッチしないものが出ている").toBe(false);
       expect((searchBox() as HTMLInputElement).value, "絞り込み欄の文字").toBe("PEAR");
-      expect((notAgreedBox() as HTMLInputElement).checked, "承認済でないものだけのマーク").toBe(true);
+      expect((notAgreedBox() as HTMLInputElement).checked, "承認が要るものだけのマーク").toBe(true);
     };
     filtered();
     const url = window.location.pathname + window.location.search;
@@ -2192,7 +2207,13 @@ describe("RV-06 一覧の選んでいる行から承認する", () => {
     { when: "最後の行の時は前に承認済でない行があっても", entries: [specEntry(1, "c-one"), specEntry(2, "c-two")], from: "c-two", want: "c-two" },
     { when: "すぐ後ろの承認済でない行が文字の絞り込みで出ていない時は", entries: [specEntry(1, "pear-one"), specEntry(2, "plum-two"), specEntry(3, "pear-three")], text: "pear", from: "pear-one", want: "pear-three" },
     { when: "後ろの承認済でない行がどれも文字の絞り込みで出ていない時は", entries: [specEntry(1, "pear-one"), specEntry(2, "plum-two")], text: "pear", from: "pear-one", want: "pear-one" },
-    { when: "承認済でないものだけに絞り込んでいる時は", entries: [specEntry(1, "c-one"), agreedSpec(2, "c-two"), specEntry(3, "c-three")], notAgreedOnly: true, from: "c-one", want: "c-three" },
+    { when: "承認が要るものだけに絞り込んでいる時は", entries: [specEntry(1, "c-one"), agreedSpec(2, "c-two"), specEntry(3, "c-three")], notAgreedOnly: true, from: "c-one", want: "c-three" },
+    // フラグの残る承認済の行は、絞り込みで一覧に出ているが、行の中に承認のボタンがないので飛ばす
+    ...(["ai-proposal", "guess"] as const).map((flag) => ({
+      when: `承認が要るものだけに絞り込んでいてすぐ後ろの行がフラグ ${flag} の残る承認済の時は`,
+      entries: [specEntry(1, "c-one"), specEntry(2, "c-two", { state: "agreed", flags: [flag], agree: { possible: false, reason: done } }), specEntry(3, "c-three")],
+      notAgreedOnly: true, from: "c-one", want: "c-three",
+    })),
     { when: "すぐ後ろの承認済でない行がたたんだまとまりの中にある時は", entries: [specEntry(1, "c-one"), specEntry(2, "d-two", { group: "layer:db" }), fileEntry(3, "e2e/three.txtar")], fold: 1, from: "c-one", want: "e2e/three.txtar" },
     { when: "後ろの承認済でない行がどれもたたんだまとまりの中にある時は", entries: [specEntry(1, "c-one"), specEntry(2, "d-two", { group: "layer:db" })], fold: 1, from: "c-one", want: "c-one" },
   ];
@@ -2206,7 +2227,7 @@ describe("RV-06 一覧の選んでいる行から承認する", () => {
       const user = userEvent.setup();
       await listRow(c.from);
       if (c.text) await user.type(within(listRegion()).getByRole("searchbox", { name: "絞り込み" }), c.text);
-      if (c.notAgreedOnly) await user.click(within(listRegion()).getByRole("checkbox", { name: "承認済でないものだけ" }));
+      if (c.notAgreedOnly) await user.click(within(listRegion()).getByRole("checkbox", { name: "承認が要るものだけ" }));
       if (c.fold !== undefined) {
         const fold = within(within(listRegion()).getAllByRole("heading", { level: 3 })[c.fold]).getByRole("button");
         await user.click(fold);
@@ -2370,19 +2391,24 @@ describe("RV-01 変えていなくても承認のチェックが失敗と言う�
   });
 
   // @vanda:evidence owner-reviews-every-change
-  it("承認済でないものだけにすると消す前の中身が分からない削除の件は出しフラグか推測の残る変わっていない承認済の仕様は出さない", async () => {
-    const keptOnes = ["c-gone", "e2e/gone.txtar", "c-same-proposed"];
-    const dropped = ["c-same-ai", "c-same-guess"];
-    open([goneSpec(1, "c-gone"), unagreed(2, "c-same-proposed"), flagged(3, "c-same-ai", "ai-proposal"), flagged(4, "c-same-guess", "guess"), goneFile(5, "e2e/gone.txtar")]);
+  it("承認が要るものだけにすると消す前の中身が分からない削除の件とフラグか推測の残る変わっていない承認済の仕様は出しフラグも推測もない変わっていない承認済の仕様は差分ありのフラグだけのものも含めて出さない", async () => {
+    // 承認済でもフラグか推測の残る仕様を出すのは、絞り込みで残りをたどり終えても、チェック agreement がその仕様で失敗したままになるため（オーナーの決定）
+    const keptOnes = ["c-gone", "e2e/gone.txtar", "c-same-proposed", "c-same-ai", "c-same-guess"];
+    const dropped = ["c-same-agreed", "c-same-diff"];
+    open([
+      goneSpec(1, "c-gone"), unagreed(2, "c-same-proposed"), flagged(3, "c-same-ai", "ai-proposal"), flagged(4, "c-same-guess", "guess"),
+      specEntry(6, "c-same-agreed", { ...kept, state: "agreed" }), specEntry(7, "c-same-diff", { ...kept, state: "agreed", flags: ["changed-since-agreement"] }),
+      goneFile(5, "e2e/gone.txtar"),
+    ]);
     await listRow("c-gone");
     for (const name of [...keptOnes, ...dropped]) expect(shown(name), `絞り込む前に ${name} が出ない`).toBe(true);
     const user = userEvent.setup();
-    const box = within(listRegion()).getByRole("checkbox", { name: "承認済でないものだけ" });
+    const box = within(listRegion()).getByRole("checkbox", { name: "承認が要るものだけ" });
     await user.click(box);
-    await waitFor(() => expect(shown("c-same-ai")).toBe(false));
-    for (const name of keptOnes) expect(shown(name), `承認済でない ${name} が出ない`).toBe(true);
-    for (const name of dropped) expect(shown(name), `承認済の ${name} が出ている`).toBe(false);
+    await waitFor(() => expect(shown("c-same-agreed")).toBe(false));
+    for (const name of keptOnes) expect(shown(name), `承認が要る ${name} が出ない`).toBe(true);
+    for (const name of dropped) expect(shown(name), `承認が要らない ${name} が出ている`).toBe(false);
     await user.click(box);
-    await waitFor(() => expect(shown("c-same-ai")).toBe(true));
+    await waitFor(() => expect(shown("c-same-agreed")).toBe(true));
   });
 });
