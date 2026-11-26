@@ -1605,3 +1605,12 @@ path = "cmd/vanda/testdata/scenario/init_not_terminal.txtar"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T12:21:51+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:af756cdab188d57930db9721d09677dfa4f00aef7dd5ad1bb127c4c46b29f350"
+fingerprint = "sha256:af756cdab188d57930db9721d09677dfa4f00aef7dd5ad1bb127c4c46b29f350"
+path = "web/e2e/review.spec.ts"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T12:22:02+09:00
+story = "#4"
