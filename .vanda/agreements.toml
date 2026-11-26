@@ -1265,3 +1265,12 @@ path = "cmd/vanda/testdata/scenario/agreement_story.txtar"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T10:52:04+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:9105f0caccd75153037fd19daca95c7c81fdca6a423ba1dfeb19d69c68acc7c3"
+fingerprint = "sha256:9105f0caccd75153037fd19daca95c7c81fdca6a423ba1dfeb19d69c68acc7c3"
+path = "cmd/vanda/testdata/scenario/agreement_story_range.txtar"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T10:52:06+09:00
+story = "#4"
