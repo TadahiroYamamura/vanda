@@ -874,7 +874,6 @@ refines = ["link-evidence-by-annotation"]
 statement = "{@id:custom-adapter}を作る人は、docs/formats.md の取り決めどおりに作れば、{@id:builtin-adapter}にない言語の{@id:annotation}を {@id:vanda} に読ませられる"
 condition = "取り決めどおりの{@id:custom-adapter}が動かない。取り決めにない答えを、黙って受け入れる"
 layers = ["cli", "api"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
