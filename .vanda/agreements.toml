@@ -1238,3 +1238,12 @@ path = "cmd/vanda/testdata/expect/init_writes_files.exp"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T09:12:24+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:8ca09d8e0f1c76f399794623c8ee30327aaa2d0783992069b1679b91857c874e"
+fingerprint = "sha256:8ca09d8e0f1c76f399794623c8ee30327aaa2d0783992069b1679b91857c874e"
+path = "cmd/vanda/testdata/scenario/agreement.txtar"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T10:51:59+09:00
+story = "#4"
