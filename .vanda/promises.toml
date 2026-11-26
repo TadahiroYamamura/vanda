@@ -895,7 +895,6 @@ refines = ["block-specs-without-evidence"]
 statement = "{@id:evidence-present-check}が通れば、{@id:spec}の{@id:evidence-plan}のうち、{@id:annotation}で確かめられるものは、どれも揃っている"
 condition = "{@id:evidence-plan}のとおりの{@id:evidence}が揃っていない（スキップしたテスト、定義だけの{@id:guardrail}、印だけの{@id:sensor}を含む）のに、{@id:evidence-present-check}が通る"
 layers = ["cli"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
