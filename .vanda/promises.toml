@@ -1167,7 +1167,6 @@ refines = ["require-formal-evidence-for-core"]
 statement = "{@id:formal-feature}を具体化する{@id:spec}に、{@id:model-check}の{@id:evidence-plan}も、行わない理由もなければ、{@id:promise-list-shape-check}が通らない"
 condition = "{@id:formal-feature}を具体化する{@id:spec}に、{@id:model-check}も理由もないのに、{@id:check}が通る"
 layers = ["cli"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
