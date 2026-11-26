@@ -1596,3 +1596,12 @@ fingerprint = "sha256:fab1f3ad2e81a69ddc5d47439f2bd69d9c5f177984f0e49e99b515bf1f
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T12:21:13+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:6d0457a367706431a3ab0dbb75ffc105dd3ac8461b10bd2522d16c087178bdd6"
+fingerprint = "sha256:6d0457a367706431a3ab0dbb75ffc105dd3ac8461b10bd2522d16c087178bdd6"
+path = "cmd/vanda/testdata/scenario/init_not_terminal.txtar"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T12:21:51+09:00
+story = "#4"
