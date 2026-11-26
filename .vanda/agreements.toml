@@ -1418,3 +1418,12 @@ path = "cmd/vanda/testdata/scenario/config_repo_root.txtar"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T10:52:35+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:411b7a6ca632ab7e194a3a54a99a7b3872d06f394a8d8b05e45576175d2554a1"
+fingerprint = "sha256:411b7a6ca632ab7e194a3a54a99a7b3872d06f394a8d8b05e45576175d2554a1"
+path = "cmd/vanda/testdata/scenario/config_story_args.txtar"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T10:52:36+09:00
+story = "#4"
