@@ -1319,3 +1319,12 @@ path = "cmd/vanda/testdata/scenario/annotation_overlap.txtar"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T10:52:15+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:a946ce4dfa680cfcee6c6763bbd804b5ba125d83207f1d20fbf56f4b1380fd23"
+fingerprint = "sha256:a946ce4dfa680cfcee6c6763bbd804b5ba125d83207f1d20fbf56f4b1380fd23"
+path = "cmd/vanda/testdata/scenario/annotation_place.txtar"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T10:52:17+09:00
+story = "#4"
