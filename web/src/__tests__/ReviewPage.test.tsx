@@ -1892,7 +1892,7 @@ describe("RV-06・RV-17 承認と取り消しのボタン", () => {
     for (const c of cases) {
       // 承認できるかと理由は API（entries[].agree）が決める。その答えを手で作って渡す
       open([specEntry(1, "c-one", { agree: { possible: false, reason: c.reason } })], c.over, http.get("/api/context", () => HttpResponse.json({ ...ctx, ...c.ctxOver })));
-      await userEvent.setup().click(within(await listRow("c-one")).getByRole("button"));
+      await userEvent.setup().click(within(await listRow("c-one")).getByRole("button", { name: /c-one/ }));
       const button = await within(detailRegion()).findByRole("button", { name: /承認する/ });
       expect((button as HTMLButtonElement).disabled, `${c.name}: 承認のボタンをクリックできる`).toBe(true);
       expect(within(detailRegion()).getByText(c.reason), `${c.name}: 理由がない`).toBeTruthy();
