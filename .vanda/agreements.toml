@@ -1535,3 +1535,12 @@ path = "cmd/vanda/testdata/scenario/story_origin.txtar"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T10:52:58+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:c7a1d555b4a02c322539e022c82903307f064b2b09d2afc05d114ce84257835c"
+fingerprint = "sha256:c7a1d555b4a02c322539e022c82903307f064b2b09d2afc05d114ce84257835c"
+path = "cmd/vanda/testdata/scenario/unread_files.txtar"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T10:53:00+09:00
+story = "#4"
