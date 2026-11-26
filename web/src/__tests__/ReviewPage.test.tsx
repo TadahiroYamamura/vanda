@@ -2067,3 +2067,190 @@ describe("一覧を読み込む間に選んだ件を先に出す", () => {
     expect(bodyText()).not.toContain("約束リストにありません");
   });
 });
+
+// オーナーの要望: 右のペインで一番下まで読んだ後、一番上まで戻って承認しているので、左の一覧で承認したい。
+// オーナーの決定: 承認できるのは、開いている行だけ
+describe("RV-06 一覧の選んでいる行から承認する", () => {
+  const done = "このストーリーで今の中身にもう承認しています";
+  const nameOf = (e: Entry) => (e.kind === "file" ? e.path! : e.id!);
+  // row は、一覧に今出ている、名前が name の 1 件（<li>）
+  const row = (name: string) => within(listRegion()).getByText(name, { exact: true }).closest("li")! as HTMLElement;
+  const rowAgreeButtons = (name: string) => within(row(name)).queryAllByRole("button", { name: "承認する" });
+  const listAgreeButtons = () => within(listRegion()).queryAllByRole("button", { name: "承認する" });
+  // selected は、names のうち、一覧に出ていて、選ばれているもの
+  const selected = (names: string[]) => names.filter((n) => within(listRegion()).queryByText(n, { exact: true })?.closest("button")?.getAttribute("aria-current") === "true");
+  const detailShows = (name: string) => within(detailRegion()).queryAllByText(name, { selector: "h2", exact: false }).length > 0;
+  const stateIcons = (name: string, state: string) => within(row(name)).queryAllByRole("img", { name: state }).length;
+  type User = ReturnType<typeof userEvent.setup>;
+
+  // choose は、一覧で名前が name の 1 件を選び、右のペインにその中身が出るまで待つ
+  async function choose(user: User, name: string) {
+    await user.click((await within(await screen.findByRole("region", { name: "変わったものの一覧" })).findByText(name, { exact: true })).closest("button")!);
+    await waitFor(() => expect(selected([name]), `${name} が選ばれない`).toEqual([name]));
+    await waitFor(() => expect(detailShows(name), `${name} の中身が右のペインに出ない`).toBe(true));
+  }
+
+  // clickRowAgree は、選んでいる行の「承認する」を 1 回クリックする
+  async function clickRowAgree(user: User, name: string, where: string) {
+    await waitFor(() => expect(rowAgreeButtons(name).length, `${where}: 選んでいる行 ${name} の「承認する」の数`).toBe(1));
+    await user.click(rowAgreeButtons(name)[0]);
+  }
+
+  // serve は、承認を受けるとその 1 件を承認済にして一覧を返す API で、画面を開く。受けた承認のリクエストの中身を、受けた順に返す
+  function serve(entries: Entry[]) {
+    const agreed = new Set<string>();
+    const posted: unknown[] = [];
+    const now = () => entries.map((e): Entry => (agreed.has(nameOf(e)) ? { ...e, state: "agreed", agree: { possible: false, reason: done }, revoke: { possible: true, reason: null, others: [] } } : e));
+    open([], {},
+      http.get("/api/review", () => HttpResponse.json(review(now()))),
+      http.post("/api/agree", async ({ request }) => {
+        const body = (await request.json()) as { id: string | null; path: string | null };
+        posted.push(body);
+        agreed.add(body.id ?? body.path ?? "");
+        return HttpResponse.json({ commit: "c".repeat(40), agreement: {} });
+      }));
+    return posted;
+  }
+
+  const agreedSpec = (no: number, id: string) => specEntry(no, id, { state: "agreed", agree: { possible: false, reason: done } });
+
+  // @vanda:evidence agreement-bound-to-seen-content
+  it("一覧の選んでいる行の中にだけ名前がちょうど承認するのボタンを出し選んでいない行と承認済の行には出さない", async () => {
+    const notAgreed = ["c-one", "c-two", "e2e/a.txtar"];
+    const names = [...notAgreed, "c-agreed"];
+    open([specEntry(1, "c-one"), specEntry(2, "c-two"), agreedSpec(3, "c-agreed"), fileEntry(4, "e2e/a.txtar")]);
+    const user = userEvent.setup();
+    for (const name of notAgreed) {
+      await choose(user, name);
+      await waitFor(() => expect(rowAgreeButtons(name).length, `選んでいる行 ${name} の「承認する」の数`).toBe(1));
+      for (const other of names.filter((n) => n !== name)) expect(rowAgreeButtons(other).length, `${name} を選んでいる時の、選んでいない行 ${other} の「承認する」の数`).toBe(0);
+      expect(listAgreeButtons().length, `${name} を選んでいる時の、一覧の「承認する」の数`).toBe(1);
+    }
+    await choose(user, "c-agreed");
+    expect(listAgreeButtons().length, "承認済の行を選んでいる時の、一覧の「承認する」の数").toBe(0);
+  });
+
+  // 送る中身は、右のペインのボタンの時（「承認すると見せていた中身のフィンガープリントとストーリーを送り一覧を読み直す」
+  // 「削除したものは…deletedを添えて送り…」）と同じ
+  // @vanda:evidence agreement-bound-to-seen-content
+  it("選んでいる行の承認するをクリックすると右のペインのボタンと同じ中身の承認を1回だけ送り一覧を読み直してその行を承認済にする", async () => {
+    const spec = specEntry(2, "c-two");
+    const file = fileEntry(2, "e2e/a.txtar");
+    const gone = fileEntry(2, "e2e/old.txtar", { change: "deleted", after: null, fingerprint: null, before: { text: "消す前のシナリオの中身\n" } });
+    const cases = [
+      { name: "仕様", e: spec, want: { kind: "spec", id: "c-two", path: null, fingerprint: spec.fingerprint, story: "#24", deleted: false } },
+      { name: "ファイル", e: file, want: { kind: "file", id: null, path: "e2e/a.txtar", fingerprint: file.fingerprint, story: "#24", deleted: false } },
+      { name: "削除したファイル", e: gone, want: { kind: "file", id: null, path: "e2e/old.txtar", fingerprint: null, story: "#24", deleted: true } },
+    ];
+    for (const c of cases) {
+      const target = nameOf(c.e);
+      const posted = serve([specEntry(1, "c-one"), c.e]);
+      const user = userEvent.setup();
+      await choose(user, target);
+      const before = reviewRequests().length;
+      await clickRowAgree(user, target, c.name);
+      await waitFor(() => expect(posted, `${c.name}: 承認で送ったもの`).toEqual([c.want]));
+      await waitFor(() => expect(reviewRequests().length, `${c.name}: 一覧を読み直していない`).toBeGreaterThan(before));
+      await waitFor(() => expect(stateIcons(target, "承認済"), `${c.name}: 承認した行が承認済にならない`).toBe(1));
+      expect(posted.length, `${c.name}: 承認のリクエストの数`).toBe(1);
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+
+  // @vanda:evidence agreement-bound-to-seen-content
+  it("右のペインの承認のボタンをクリックできない時は選んでいる行の承認するも出さないかクリックできなくし承認を送らない", async () => {
+    const cases = [
+      { name: "ストーリーが決まっていない", ctxOver: {}, over: { story: null, storyChoice: "all", branchStories: [] }, reason: "ストーリーを選ぶと、承認できます。" },
+      { name: "user.nameとuser.emailがない", ctxOver: { user: null }, over: {}, reason: "git の user.name と user.email を設定すると、承認できます。" },
+    ];
+    for (const c of cases) {
+      // 承認できるかと理由は API（entries[].agree）が決める。その答えを手で作って渡す
+      open([specEntry(1, "c-one", { agree: { possible: false, reason: c.reason } })], c.over, http.get("/api/context", () => HttpResponse.json({ ...ctx, ...c.ctxOver })));
+      const user = userEvent.setup();
+      await choose(user, "c-one");
+      const right = await within(detailRegion()).findByRole("button", { name: /承認する/ });
+      expect((right as HTMLButtonElement).disabled, `${c.name}: 右のペインの承認のボタンをクリックできる`).toBe(true);
+      for (const b of rowAgreeButtons("c-one")) {
+        expect((b as HTMLButtonElement).disabled, `${c.name}: 選んでいる行の「承認する」をクリックできる`).toBe(true);
+        await user.click(b);
+      }
+      expect(requests.filter((r) => r.url.pathname === "/api/agree").length, `${c.name}: 承認を送った`).toBe(0);
+      cleanup();
+      server.resetHandlers();
+    }
+  });
+
+  // 次に選ぶのは、一覧の並びで、承認した行より後ろにある、承認済でない最初の 1 件。絞り込みで出ていない行と、たたんだまとまりの中の行は飛ばす。
+  // 後ろに当たる行がなければ、今の 1 件を選んだまま。fold は、たたむまとまりの、上からの順番（0 から）
+  const next: { when: string; entries: Entry[]; text?: string; notAgreedOnly?: boolean; fold?: number; from: string; want: string }[] = [
+    { when: "すぐ後ろの行が承認済でない時は", entries: [specEntry(1, "c-one"), specEntry(2, "c-two"), specEntry(3, "c-three")], from: "c-one", want: "c-two" },
+    { when: "すぐ後ろの行が承認済の時は", entries: [specEntry(1, "c-one"), agreedSpec(2, "c-two"), specEntry(3, "c-three")], from: "c-one", want: "c-three" },
+    { when: "後ろの承認済でない行が次のまとまりにある時は", entries: [specEntry(1, "c-one"), specEntry(2, "d-two", { group: "layer:db" }), fileEntry(3, "e2e/three.txtar")], from: "c-one", want: "d-two" },
+    { when: "後ろの行がすべて承認済の時は前に承認済でない行があっても", entries: [specEntry(1, "c-one"), specEntry(2, "c-two"), agreedSpec(3, "c-three")], from: "c-two", want: "c-two" },
+    { when: "最後の行の時は前に承認済でない行があっても", entries: [specEntry(1, "c-one"), specEntry(2, "c-two")], from: "c-two", want: "c-two" },
+    { when: "すぐ後ろの承認済でない行が文字の絞り込みで出ていない時は", entries: [specEntry(1, "pear-one"), specEntry(2, "plum-two"), specEntry(3, "pear-three")], text: "pear", from: "pear-one", want: "pear-three" },
+    { when: "後ろの承認済でない行がどれも文字の絞り込みで出ていない時は", entries: [specEntry(1, "pear-one"), specEntry(2, "plum-two")], text: "pear", from: "pear-one", want: "pear-one" },
+    { when: "承認済でないものだけに絞り込んでいる時は", entries: [specEntry(1, "c-one"), agreedSpec(2, "c-two"), specEntry(3, "c-three")], notAgreedOnly: true, from: "c-one", want: "c-three" },
+    { when: "すぐ後ろの承認済でない行がたたんだまとまりの中にある時は", entries: [specEntry(1, "c-one"), specEntry(2, "d-two", { group: "layer:db" }), fileEntry(3, "e2e/three.txtar")], fold: 1, from: "c-one", want: "e2e/three.txtar" },
+    { when: "後ろの承認済でない行がどれもたたんだまとまりの中にある時は", entries: [specEntry(1, "c-one"), specEntry(2, "d-two", { group: "layer:db" })], fold: 1, from: "c-one", want: "c-one" },
+  ];
+
+  for (const c of next) {
+    const then = c.want === c.from ? "今の1件を選んだままにする" : "その行より後ろにある一覧に出ている承認済でない最初の1件を選んで右に開く";
+    // @vanda:evidence agreement-bound-to-seen-content
+    it(`${c.when}選んでいる行の承認するで承認が済むと${then}`, async () => {
+      const names = c.entries.map(nameOf);
+      const posted = serve(c.entries);
+      const user = userEvent.setup();
+      await listRow(c.from);
+      if (c.text) await user.type(within(listRegion()).getByRole("searchbox", { name: "絞り込み" }), c.text);
+      if (c.notAgreedOnly) await user.click(within(listRegion()).getByRole("checkbox", { name: "承認済でないものだけ" }));
+      if (c.fold !== undefined) {
+        const fold = within(within(listRegion()).getAllByRole("heading", { level: 3 })[c.fold]).getByRole("button");
+        await user.click(fold);
+        await waitFor(() => expect(fold.getAttribute("aria-expanded"), "まとまりをたためない").toBe("false"));
+      }
+      await choose(user, c.from);
+      const before = reviewRequests().length;
+      await clickRowAgree(user, c.from, "承認する前");
+      await waitFor(() => expect(posted.length, "承認を送っていない").toBe(1));
+      await waitFor(() => expect(reviewRequests().length, "一覧を読み直していない").toBeGreaterThan(before));
+      if (c.want === c.from) {
+        await waitFor(() => expect(stateIcons(c.from, "承認済"), "承認した行が承認済にならない").toBe(1));
+        expect(rowAgreeButtons(c.from).length, "承認済になった行に「承認する」が残っている").toBe(0);
+      }
+      await waitFor(() => expect(selected(names), "承認した後に選ばれている行").toEqual([c.want]));
+      await waitFor(() => expect(detailShows(c.want), `右のペインに ${c.want} が開いていない`).toBe(true));
+      expect(posted.length, "承認のリクエストの数").toBe(1);
+    });
+  }
+
+  // @vanda:evidence agreement-bound-to-seen-content
+  it("選んでいる行の承認するで承認に失敗するとエラーを出し選んでいる行を変えない", async () => {
+    const message = "仕様 c-one の中身が、画面に表示した後に変わりました。";
+    open([specEntry(1, "c-one"), specEntry(2, "c-two")], {}, http.post("/api/agree", () => apiError(409, message)));
+    const user = userEvent.setup();
+    await choose(user, "c-one");
+    await clickRowAgree(user, "c-one", "承認に失敗する時");
+    expect(await screen.findByText(message, { exact: false }), "エラーが出ない").toBeTruthy();
+    expect(selected(["c-one", "c-two"]), "承認に失敗した後に選ばれている行").toEqual(["c-one"]);
+    expect(detailShows("c-one"), "承認に失敗した後に、右のペインが c-one でない").toBe(true);
+    expect(stateIcons("c-one", "提案中"), "承認に失敗した行が提案中でない").toBe(1);
+  });
+
+  // @vanda:evidence agreement-bound-to-seen-content
+  it("右のペインのボタンで承認した後は後ろに承認済でないものがあってもその1件を開いたままにし承認を取り消すのボタンを出す", async () => {
+    const posted = serve([specEntry(1, "c-one"), specEntry(2, "c-two")]);
+    const user = userEvent.setup();
+    await choose(user, "c-one");
+    const right = await within(detailRegion()).findByRole("button", { name: /承認する/ });
+    expect(right.textContent, "右のペインの承認のボタンの文言").toBe("ストーリー #24 で承認する");
+    await user.click(right);
+    await waitFor(() => expect(stateIcons("c-one", "承認済"), "承認した行が承認済にならない").toBe(1));
+    expect(await within(detailRegion()).findByRole("button", { name: /取り消/ }), "承認を取り消すボタンが出ない").toBeTruthy();
+    expect(selected(["c-one", "c-two"]), "右のペインのボタンで承認した後に選ばれている行").toEqual(["c-one"]);
+    expect(detailShows("c-one"), "右のペインのボタンで承認した後に、右のペインが c-one でない").toBe(true);
+    expect(posted.length, "承認のリクエストの数").toBe(1);
+  });
+});

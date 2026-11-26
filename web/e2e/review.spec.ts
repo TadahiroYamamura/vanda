@@ -2074,3 +2074,110 @@ test("ファイルの画面で全部を選んでコピーするとコードの�
     }, { message: "コピーした文字に、ファイルの行がそのまま続いて出ない" })
     .toEqual(fileLines);
 });
+
+// RV-06: 左の一覧の、選んでいる行の中の「承認する」。
+// オーナーの要望: 右のペインで一番下まで読んだ後、一番上まで戻って承認しているので、左の一覧で承認したい。
+// オーナーの決定: 承認できるのは、開いている行だけ
+const rowAgreeButton = (page: Page, text: string) => listItem(page, text).getByRole("button", { name: "承認する", exact: true });
+const listAgreeButtons = (page: Page) => filterList(page).getByRole("button", { name: "承認する", exact: true });
+const detailHeading = (page: Page) => page.getByRole("region", { name: "1 件の中身" }).getByRole("heading", { level: 2 });
+// recordShape は、key と story の承認の記録を、1 件ごとに変わる値（key・fingerprint・agreed_at）を伏せた行の並びにする
+function recordShape(key: string, story: string): string[][] {
+  const text = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8");
+  return text
+    .split("[[agreement]]")
+    .filter((b) => b.includes(`key = "${key}"`) && b.includes(`story = "${story}"`))
+    .map((b) => nonBlank(b).map((l) => l.replace(/^(key|fingerprint|agreed_at) = .*$/, "$1 = …")));
+}
+// lastCommit は、最後のコミットのメッセージ（id を伏せる）・作者・変えたファイル
+const lastCommit = (id: string) => ({
+  message: repo.git("log", "-1", "--format=%B").replaceAll(id, "<ID>"),
+  author: repo.git("log", "-1", "--format=%an <%ae>"),
+  files: repo.git("diff", "--name-only", "HEAD~1", "HEAD").split("\n").sort(),
+});
+// countAgreeRequests は、この後に画面が送る承認のリクエストを数える
+function countAgreeRequests(page: Page) {
+  const sent: string[] = [];
+  page.on("request", (r) => {
+    if (r.url().includes("/api/agree")) sent.push(r.method());
+  });
+  return sent;
+}
+
+// @vanda:evidence agreement-bound-to-seen-content
+test("一覧の選んでいる行の承認するで承認すると右のペインのボタンで承認した時と同じ形の承認の記録とコミットが1つできて後ろの承認済でない1件が開く", async ({ page }) => {
+  const sent = countAgreeRequests(page);
+  await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
+  await select(page, "task-id-unique");
+  await expect(detailHeading(page)).toContainText("task-id-unique");
+  await expect(rowAgreeButton(page, "task-id-unique"), "選んでいる行に「承認する」がない").toBeVisible();
+  await expect(listAgreeButtons(page), "選んでいない行にも「承認する」がある").toHaveCount(1);
+  const count = commitCount();
+
+  await rowAgreeButton(page, "task-id-unique").click();
+  await expect.poll(commitCount, { message: "行の「承認する」での承認が 1 つのコミットにならない" }).toBe(count + 1);
+  const left = { record: recordShape("task-id-unique", "#24"), commit: lastCommit("task-id-unique") };
+  await expect(listIcon(page, "task-id-unique", "承認済")).toBeVisible();
+  // 後ろにある、承認済でない最初の 1 件（task-title-required）が選ばれ、右に開く
+  await expect(detailHeading(page), "後ろの承認済でない 1 件が右に開かない").toContainText("task-title-required");
+  await expect(rowAgreeButton(page, "task-title-required"), "次に選ばれた行に「承認する」がない").toBeVisible();
+  await expect(listAgreeButtons(page)).toHaveCount(1);
+
+  // 右のペインのボタンは今のまま。承認した後も、その 1 件を開いたまま
+  await expect(agreeButton(page)).toHaveText("ストーリー #24 で承認する");
+  await agreeButton(page).click();
+  await expect.poll(commitCount, { message: "右のペインのボタンでの承認が 1 つのコミットにならない" }).toBe(count + 2);
+  const right = { record: recordShape("task-title-required", "#24"), commit: lastCommit("task-title-required") };
+  await expect(listIcon(page, "task-title-required", "承認済")).toBeVisible();
+  await expect(detailHeading(page), "右のペインのボタンで承認した後に、ほかの 1 件が開いた").toContainText("task-title-required");
+  await expect(unagreeButton(page), "右のペインのボタンで承認した後に、取り消しのボタンが出ない").toBeVisible();
+  await expect(listAgreeButtons(page), "承認済の行に「承認する」がある").toHaveCount(0);
+
+  expect(left.record.length, "行の「承認する」での承認の記録の数").toBe(1);
+  expect(left.record, "承認の記録の形が、右のペインのボタンの時と違う").toEqual(right.record);
+  expect(left.commit, "コミットの形が、右のペインのボタンの時と違う").toEqual(right.commit);
+  expect(left.commit.message).toContain("#24");
+  expect(left.commit.files).toContain(".vanda/agreements.toml");
+  expect(sent, "承認のリクエストの数（行の「承認する」で 1 回、右のペインのボタンで 1 回）").toEqual(["POST", "POST"]);
+});
+
+// @vanda:evidence agreement-bound-to-seen-content
+test("承認済でないものだけにして選んでいる行の承認するを続けてクリックすると一覧の並びの順に次の1件が開き全部を承認できてvanda checkの承認のチェックが通る", async ({ page }) => {
+  const sent = countAgreeRequests(page);
+  await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
+  await filterList(page).getByRole("checkbox", { name: "承認済でないものだけ" }).check();
+  await select(page, items[0]);
+  for (const [i, item] of items.entries()) {
+    await expect(detailHeading(page), `${i + 1} 件目に ${item} が右に開いていない`).toContainText(item);
+    const count = commitCount();
+    await rowAgreeButton(page, item).click();
+    await expect.poll(commitCount, { message: `${item} の承認が 1 つのコミットにならない` }).toBe(count + 1);
+    await expectListed(page, items.slice(i + 1), `${item} を承認した後`);
+  }
+  // 後ろに当たる行がないので、最後の 1 件を選んだまま
+  await expect(detailHeading(page), "最後の 1 件を承認した後に、右のペインが変わった").toContainText(items[items.length - 1]);
+  const check = repo.vanda("check", ".vanda/checks/merge.toml", "--base", "main");
+  expect(check.code, check.out).toBe(0);
+  // 承認は 1 件ごとに 1 つのコミット、リクエストも 1 回
+  expect(repo.git("rev-list", "--count", "main..HEAD")).toBe(String(2 + items.length));
+  expect(sent).toEqual(items.map(() => "POST"));
+});
+
+// @vanda:evidence agreement-bound-to-seen-content
+test("承認の記録のファイルに書きかけの変更があると選んでいる行の承認するでの承認を断り理由を出しコミットせず選んでいる行を変えない", async ({ page }) => {
+  await page.goto(serve.url + "/?view=branch&base=main&story=%2324");
+  await select(page, "task-id-unique");
+  await expect(detailHeading(page)).toContainText("task-id-unique");
+  const dirty = readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8") + "# 書きかけ\n";
+  repo.write(".vanda/agreements.toml", dirty);
+  const countBefore = commitCount();
+  await expect(page.getByText(/agreements\.toml|承認の記録/)).toHaveCount(0);
+
+  await rowAgreeButton(page, "task-id-unique").click();
+  await expect(page.getByText(/agreements\.toml|承認の記録/).first(), "断った理由が出ない").toBeVisible();
+  expect(commitCount()).toBe(countBefore);
+  expect(readFileSync(join(repo.root, ".vanda/agreements.toml"), "utf8")).toBe(dirty);
+  await expect(detailHeading(page), "承認に失敗した後に、ほかの 1 件が開いた").toContainText("task-id-unique");
+  await expect(listIcon(page, "task-id-unique", "提案中")).toBeVisible();
+  await expect(rowAgreeButton(page, "task-id-unique"), "承認に失敗した後に、選んでいる行が変わった").toBeVisible();
+});
