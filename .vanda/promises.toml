@@ -698,7 +698,6 @@ refines = ["agree-on-seen-content"]
 statement = "{@id:agreement}は、オーナーが画面で見た時点の中身に結びつく。見せた後に中身が変わっていれば、{@id:agreement}を受け付けない"
 condition = "オーナーが見ていない中身が{@id:agreed}になる。画面に見せた後に変わった中身への{@id:agreement}が通る"
 layers = ["api", "gui"]
-flags = ["ai-proposal"]
 model_check_waiver = "画面と git の操作の決まりで、{@id:agreement-record}の移り変わりではないため"
 
 [[spec.evidence]]
