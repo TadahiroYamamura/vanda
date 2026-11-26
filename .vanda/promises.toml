@@ -856,7 +856,6 @@ refines = ["link-evidence-by-annotation"]
 statement = "開発者は、テストやモデルに付けた{@id:annotation}で、それが支持する{@id:spec}を示せる。指す先のない{@id:annotation}は、{@id:annotation-links-check}で見つかる"
 condition = "正しく付けた{@id:annotation}が数えられない。指す先のない{@id:annotation}や、書き方の誤った{@id:annotation}があるのに、{@id:check}が通る"
 layers = ["cli"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
