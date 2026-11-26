@@ -1221,7 +1221,6 @@ refines = ["create-vanda-dir"]
 statement = "新しいリポジトリで使い始める人は、端末の質問に答えるだけで、すぐ vanda check が通る {@id:vanda-dir} を作れる。すでにある {@id:vanda-dir} は壊されない"
 condition = "vanda init の後に、手で直さないと{@id:check}が通らない。すでにある {@id:vanda-dir} が書き換わる。途中でやめると、作りかけのファイルが残る"
 layers = ["cli"]
-flags = ["ai-proposal"]
 
 [[spec.evidence]]
 stage = "implementation"
