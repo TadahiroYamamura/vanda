@@ -291,7 +291,14 @@ test("ストーリーで変えていない承認の記録のない仕様とシ�
       await expect(filterList(page).getByText(item, { exact: true }), `${item} が一覧に 1 度だけ出ていない`).toHaveCount(1);
     }
     for (const item of unagreed) await expect(listIcon(page, item, "提案中"), `${item} が提案中でない`).toBeVisible();
+    // 変わっていない行も、総数に数える
+    await expect(page.getByText(/全 5 件/).first()).toBeVisible();
     await agreeAll(page, unagreed);
+    // 承認済で、変わっていないものは、一覧から消える
+    for (const item of unagreed) {
+      await expect(filterList(page).getByText(item, { exact: true }), `承認した ${item} が一覧に残っている`).toHaveCount(0);
+    }
+    await expect(page.getByText(/全 3 件/).first()).toBeVisible();
     const half = r.vanda("check", ".vanda/checks/agreement-all.toml");
     for (const item of unagreed) expect(half.out, `承認した後もチェックが ${item} で失敗する`).not.toContain(item);
     await agreeAll(page, items);

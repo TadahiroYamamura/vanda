@@ -94,7 +94,7 @@ func isNull(raw json.RawMessage) bool { return len(raw) == 0 || string(raw) == "
 // checkReview は、一覧の変わったものが want とちょうど一致し（漏れも重複もない）、通し番号と総数と、各項目の形が決まりどおりかを確かめる。
 // rvRepo は承認の記録を書かないので、今（HEAD のコミットの中身 cur）ある承認の対象のうち want にないものは、どれも承認済でない。
 // それらが、変わっていない提案中の行として 1 度ずつ出て、ほかに変わっていない行がないことも確かめる。
-// 変わっていない行を entries と detached のどちらに置くかは決めていないので、両方から数える。
+// 変わっていない、承認済でない行は entries に入る。rvRepo には承認がないので、detached は空（docs/formats.md）。
 func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]bool, cur rvState) {
 	var b strings.Builder
 	unchanged := map[string]int{}
@@ -104,10 +104,8 @@ func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]b
 			fmt.Fprintf(&b, "  変わっていない行が、フィンガープリントのある提案中の行でない: %s %s（state %q）\n", e.Kind, e.key(), str(e.State))
 		}
 	}
-	for _, e := range got.Detached {
-		if e.Change == "unchanged" {
-			noteUnchanged(e)
-		}
+	if len(got.Detached) != 0 {
+		fmt.Fprintf(&b, "  承認の記録がないのに detached が %d 件ある\n", len(got.Detached))
 	}
 	if got.Total != len(got.Entries) {
 		fmt.Fprintf(&b, "  total が %d、entries が %d 件\n", got.Total, len(got.Entries))
@@ -139,8 +137,11 @@ func checkReview(t fataler, where string, got reviewResponse, want map[rvEntry]b
 		if want := map[string]string{"spec": "layer:model", "term": "terms", "feature": "features", "property": "properties", "truth": "truths", "file": "files"}[e.Kind]; e.Group != want {
 			fmt.Fprintf(&b, "  group が %q（%q のはず）: %s\n", e.Group, want, r)
 		}
-		if e.Change != "unchanged" && ((e.Change == "added") != isNull(e.Before) || (e.Change == "deleted") != isNull(e.After)) {
-			fmt.Fprintf(&b, "  before は追加のときだけ、after は削除のときだけ null: %s\n", r)
+		if (e.Change == "added" || e.Change == "unchanged") != isNull(e.Before) || (e.Change == "deleted") != isNull(e.After) {
+			fmt.Fprintf(&b, "  before は追加と変わっていないときだけ、after は削除のときだけ null: %s\n", r)
+		}
+		if e.Change == "unchanged" && (!isNull(e.Diff) || len(e.OtherCommits) != 0) {
+			fmt.Fprintf(&b, "  変わっていない行に diff か otherCommits がある: %s\n", r)
 		}
 		if (e.Change == "deleted") != (e.Fingerprint == nil) {
 			fmt.Fprintf(&b, "  fingerprint は削除のときだけ null: %s\n", r)
@@ -308,12 +309,16 @@ var unagreedViews = []struct{ name, path string }{
 }
 
 type listRow struct {
-	Kind        string  `json:"kind"`
-	ID          *string `json:"id"`
-	Path        *string `json:"path"`
-	Change      string  `json:"change"`
-	State       string  `json:"state"`
-	Fingerprint *string `json:"fingerprint"`
+	No          *int            `json:"no"`
+	Before      json.RawMessage `json:"before"`
+	After       json.RawMessage `json:"after"`
+	Diff        json.RawMessage `json:"diff"`
+	Kind        string          `json:"kind"`
+	ID          *string         `json:"id"`
+	Path        *string         `json:"path"`
+	Change      string          `json:"change"`
+	State       string          `json:"state"`
+	Fingerprint *string         `json:"fingerprint"`
 	Agree       *struct {
 		Possible bool `json:"possible"`
 	} `json:"agree"`
@@ -326,16 +331,25 @@ func (r listRow) key() string {
 	return str(r.ID)
 }
 
-// listRows は、一覧のレスポンスの行をすべて返す。変わっていない行を entries と detached のどちらに置くかは決めていないので、両方を合わせる。
-func listRows(t *testing.T, s *vandaServer, path string) []listRow {
+type listResponse struct {
+	Total    int       `json:"total"`
+	Entries  []listRow `json:"entries"`
+	Detached []listRow `json:"detached"`
+}
+
+func getList(t *testing.T, s *vandaServer, path string) listResponse {
 	t.Helper()
-	var got struct {
-		Entries  []listRow `json:"entries"`
-		Detached []listRow `json:"detached"`
-	}
+	var got listResponse
 	if code, msg := s.get(path, &got); code != 200 {
 		t.Fatalf("一覧 %s を読めない（%d）: %s", path, code, msg)
 	}
+	return got
+}
+
+// listRows は、一覧のレスポンスの行を、entries と detached を合わせてすべて返す（どこにも出ないことを確かめるのに使う）。
+func listRows(t *testing.T, s *vandaServer, path string) []listRow {
+	t.Helper()
+	got := getList(t, s, path)
 	return append(got.Entries, got.Detached...)
 }
 
@@ -384,14 +398,29 @@ func Testストーリーで変えていない承認の記録のない仕様と�
 	t.Parallel()
 	_, _, s, _ := setupUnagreed(t)
 	for _, v := range unagreedViews {
-		rows := listRows(t, s, v.path)
+		got := getList(t, s, v.path)
+		// #24 が変えた 3 つと、変えていない承認済でない 3 つ。変わっていない行も、総数と通し番号に数える
+		if got.Total != 6 || len(got.Entries) != 6 {
+			t.Errorf("%s: total %d、entries %d 件（どちらも 6 のはず）", v.name, got.Total, len(got.Entries))
+		}
+		for i, e := range got.Entries {
+			if e.No == nil || *e.No != i+1 {
+				t.Errorf("%s: %d 件目の %s の no が %v（1 から順に振る）", v.name, i+1, e.key(), e.No)
+			}
+		}
+		if len(got.Detached) != 0 {
+			t.Errorf("%s: 失効した承認がないのに detached がある: %+v", v.name, got.Detached)
+		}
 		for _, u := range reviewUnagreed {
-			found := rowsOf(rows, u.kind, u.key)
+			found := rowsOf(got.Entries, u.kind, u.key)
 			if len(found) != 1 {
-				t.Errorf("%s: %s %s が一覧に %d 度出た（1 度だけ出る）", v.name, u.label, u.key, len(found))
+				t.Errorf("%s: %s %s が entries に %d 度出た（1 度だけ出る）", v.name, u.label, u.key, len(found))
 				continue
 			}
 			row := found[0]
+			if !isNull(row.Before) || !isNull(row.Diff) || isNull(row.After) {
+				t.Errorf("%s: %s %s の before と diff が null、after が今の中身でない（before %s、diff %s、after %s）", v.name, u.label, u.key, row.Before, row.Diff, row.After)
+			}
 			if row.Change != "unchanged" || row.State != "proposed" || str(row.Fingerprint) != u.fp {
 				t.Errorf("%s: %s %s の change %q、state %q、fingerprint %q（思ったもの unchanged・proposed・%q）", v.name, u.label, u.key, row.Change, row.State, str(row.Fingerprint), u.fp)
 			}
@@ -433,7 +462,7 @@ func Test変えていない承認済のものと承認の対象でないGoのテ
 }
 
 // @vanda:evidence owner-reviews-every-change
-func Test一覧に出た変えていない承認の記録のないものを承認すると承認済になり範囲がすべての承認のチェックがその対象で失敗しなくなる(t *testing.T) {
+func Test一覧に出た変えていない承認の記録のないものを承認すると一覧から消え範囲がすべての承認のチェックがその対象で失敗しなくなる(t *testing.T) {
 	t.Parallel()
 	bin, r, s, checks := setupUnagreed(t)
 	for _, u := range reviewUnagreed {
@@ -442,9 +471,9 @@ func Test一覧に出た変えていない承認の記録のないものを承�
 			t.Fatalf("承認する前に、承認のチェックが %s %s をまだ承認していないと言わない\n%s", u.label, u.key, errs)
 		}
 		// 承認するのは、一覧に見せていた中身（その行のフィンガープリント）
-		found := rowsOf(listRows(t, s, unagreedViews[0].path), u.kind, u.key)
+		found := rowsOf(getList(t, s, unagreedViews[0].path).Entries, u.kind, u.key)
 		if len(found) != 1 {
-			t.Errorf("%s %s が一覧に %d 度出た（1 度だけ出る）", u.label, u.key, len(found))
+			t.Errorf("%s %s が entries に %d 度出た（1 度だけ出る）", u.label, u.key, len(found))
 			continue
 		}
 		path := ""
@@ -458,11 +487,10 @@ func Test一覧に出た変えていない承認の記録のないものを承�
 		if got, want := r.git("log", "-1", "--format=%s"), "(chore) #24 で "+u.label+" "+u.key+" を承認する"; got != want {
 			t.Errorf("承認のコミットの subject: %q（思ったもの %q）", got, want)
 		}
-		// 承認した後に行を残すかは決めていない。残すなら、承認済の行 1 つ
+		// 承認済で、変わっていないものは、一覧に出さない（docs/formats.md）
 		for _, v := range unagreedViews {
-			after := rowsOf(listRows(t, s, v.path), u.kind, u.key)
-			if len(after) > 1 || (len(after) == 1 && after[0].State != "agreed") {
-				t.Errorf("%s: 承認した %s %s が、承認済になっていない: %+v", v.name, u.label, u.key, after)
+			if after := rowsOf(listRows(t, s, v.path), u.kind, u.key); len(after) != 0 {
+				t.Errorf("%s: 承認した %s %s が、一覧に残っている: %+v", v.name, u.label, u.key, after)
 			}
 		}
 		_, _, errs = r.vanda(bin, "check", checks)
