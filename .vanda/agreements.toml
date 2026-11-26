@@ -1614,3 +1614,12 @@ path = "web/e2e/review.spec.ts"
 user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
 agreed_at = 2026-11-26T12:22:02+09:00
 story = "#4"
+
+[[agreement]]
+kind = "file"
+key = "sha256:9f527ba858c0d8db317efea741b34159bf7a10373759fad483aae6b1886abeb7"
+fingerprint = "sha256:9f527ba858c0d8db317efea741b34159bf7a10373759fad483aae6b1886abeb7"
+path = "web/e2e/review.spec.ts"
+user = { name = "TadahiroYamamura", email = "mt.village12@gmail.com" }
+agreed_at = 2026-11-26T13:25:38+09:00
+story = "#4"
